@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import VerifyPage from './VerifyPage'
 
 export const metadata: Metadata = {
   title: 'Enter verification code',
@@ -26,7 +26,7 @@ export default async function Page(props: {
         <div className="dark:text-polar-400 mb-6 text-center text-sm text-gray-500">
           Please enter the 6-character code below
         </div>
-        <ClientPage return_to={return_to} error={error} email={email} />
+        <VerifyPage return_to={return_to} error={error} email={email} />
       </div>
     </div>
   )

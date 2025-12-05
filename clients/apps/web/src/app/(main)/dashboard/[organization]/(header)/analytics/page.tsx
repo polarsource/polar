@@ -4,7 +4,7 @@ import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
 import { endOfDay, max, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
+import AnalyticsPage from './AnalyticsPage'
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
@@ -118,7 +118,7 @@ export default async function Page(props: {
   }
 
   return (
-    <ClientPage
+    <AnalyticsPage
       organization={organization}
       earliestDateISOString={limits.min_date}
       startDateISOString={startDateISOString}

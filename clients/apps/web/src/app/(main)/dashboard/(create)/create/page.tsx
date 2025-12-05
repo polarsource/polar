@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
+import CreatePage from './CreatePage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -49,7 +49,7 @@ export default async function Page(props: {
   }
 
   return (
-    <ClientPage
+    <CreatePage
       hasExistingOrg={!!existing_org}
       validationErrors={validationErrors}
       error={error}

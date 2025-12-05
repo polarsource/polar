@@ -2,7 +2,7 @@ import { getCheckoutById } from '@/utils/checkout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import CheckoutsPage from './CheckoutsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -21,5 +21,5 @@ export default async function Page(props: {
   )
   const checkout = await getCheckoutById(api, params.id)
 
-  return <ClientPage organization={organization} checkout={checkout} />
+  return <CheckoutsPage organization={organization} checkout={checkout} />
 }

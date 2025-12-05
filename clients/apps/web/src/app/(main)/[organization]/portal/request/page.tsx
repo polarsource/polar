@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import RequestPage from './RequestPage'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
@@ -59,5 +59,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return <ClientPage organization={organization} email={searchParams.email} />
+  return <RequestPage organization={organization} email={searchParams.email} />
 }

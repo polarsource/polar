@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import ClaimPage from './ClaimPage'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
@@ -33,5 +33,5 @@ export default async function Page(props: {
     searchParams,
   )
 
-  return <ClientPage organization={organization} invitationToken={token} />
+  return <ClaimPage organization={organization} invitationToken={token} />
 }

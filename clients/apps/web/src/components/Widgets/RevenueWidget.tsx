@@ -28,7 +28,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
     organization_id: organization.id,
     interval: 'month',
     product_id: productId ? [productId] : undefined,
-    focus_metrics: ['revenue'],
+    metrics: ['revenue'],
   })
 
   const maxRevenue = Math.max(

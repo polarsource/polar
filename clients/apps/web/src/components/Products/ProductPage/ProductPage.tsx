@@ -50,7 +50,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     startDate: allTimeStart,
     endDate: allTimeEnd,
     interval: allTimeInterval,
-    focus_metrics: product.is_recurring
+    metrics: product.is_recurring
       ? [
           // Subscription metrics
           'monthly_recurring_revenue',
@@ -81,7 +81,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     endDate: new Date(),
     interval: 'day',
     product_id: [product.id],
-    focus_metrics: ['revenue'],
+    metrics: ['revenue'],
   })
 
   const updateProduct = useUpdateProduct(organization)

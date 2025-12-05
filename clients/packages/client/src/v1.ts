@@ -21000,6 +21000,7 @@ export interface components {
       | 'customer_request'
       | 'service_disruption'
       | 'satisfaction_guarantee'
+      | 'dispute_prevention'
       | 'other'
     /**
      * RefundSortProperty
@@ -28872,6 +28873,11 @@ export interface operations {
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned. */
+        metrics?: string[] | null
+        /**
+         * @deprecated
+         * @description Deprecated. Use 'metrics' instead.
+         */
         focus_metrics?: string[] | null
       }
       header?: never
@@ -38641,6 +38647,7 @@ export const refundReasonValues: ReadonlyArray<
   'customer_request',
   'service_disruption',
   'satisfaction_guarantee',
+  'dispute_prevention',
   'other',
 ]
 export const refundSortPropertyValues: ReadonlyArray<

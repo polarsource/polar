@@ -39,7 +39,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
     interval: 'day',
     startDate,
     endDate,
-    focus_metrics: ['orders'],
+    metrics: ['orders'],
   })
 
   // Calculate weekday index for first day (Monday = 0, Sunday = 6)

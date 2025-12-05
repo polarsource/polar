@@ -26,6 +26,7 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
+    UpdateOrganizationSocialsForm,
 )
 from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
@@ -1097,6 +1098,167 @@ async def edit_order_settings(
                     with button(ghost=True):
                         text("Cancel")
                 with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-socials",
+    name="organizations-v2:edit_socials",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_socials(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization social media links."""
+    # Platform name constants for consistency
+    PLATFORM_YOUTUBE = "youtube"
+    PLATFORM_INSTAGRAM = "instagram"
+    PLATFORM_LINKEDIN = "linkedin"
+    PLATFORM_X = "x"
+    PLATFORM_FACEBOOK = "facebook"
+    PLATFORM_THREADS = "threads"
+    PLATFORM_TIKTOK = "tiktok"
+    PLATFORM_GITHUB = "github"
+    PLATFORM_DISCORD = "discord"
+    PLATFORM_OTHER = "other"
+
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error = None
+
+    if request.method == "POST":
+        try:
+            data = await request.form()
+            form = UpdateOrganizationSocialsForm.model_validate_form(data)
+
+            # Build socials list from form data
+            socials: list[dict[str, str]] = []
+            if form.youtube_url:
+                socials.append(
+                    {"platform": PLATFORM_YOUTUBE, "url": str(form.youtube_url)}
+                )
+            if form.instagram_url:
+                socials.append(
+                    {"platform": PLATFORM_INSTAGRAM, "url": str(form.instagram_url)}
+                )
+            if form.linkedin_url:
+                socials.append(
+                    {"platform": PLATFORM_LINKEDIN, "url": str(form.linkedin_url)}
+                )
+            if form.x_url:
+                socials.append({"platform": PLATFORM_X, "url": str(form.x_url)})
+            if form.facebook_url:
+                socials.append(
+                    {"platform": PLATFORM_FACEBOOK, "url": str(form.facebook_url)}
+                )
+            if form.threads_url:
+                socials.append(
+                    {"platform": PLATFORM_THREADS, "url": str(form.threads_url)}
+                )
+            if form.tiktok_url:
+                socials.append(
+                    {"platform": PLATFORM_TIKTOK, "url": str(form.tiktok_url)}
+                )
+            if form.github_url:
+                socials.append(
+                    {"platform": PLATFORM_GITHUB, "url": str(form.github_url)}
+                )
+            if form.discord_url:
+                socials.append(
+                    {"platform": PLATFORM_DISCORD, "url": str(form.discord_url)}
+                )
+            if form.other_url:
+                socials.append({"platform": PLATFORM_OTHER, "url": str(form.other_url)})
+
+            # Update organization with new socials
+            organization = await repository.update(
+                organization,
+                update_dict={"socials": socials},
+            )
+            redirect_url = (
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings"
+            )
+            return HXRedirectResponse(request, redirect_url, 303)
+
+        except ValidationError as e:
+            validation_error = e
+
+    # Prepare data for form rendering - extract URLs from existing socials
+    existing_socials = organization.socials or []
+    form_data: dict[str, str | None] = {
+        "youtube_url": None,
+        "instagram_url": None,
+        "linkedin_url": None,
+        "x_url": None,
+        "facebook_url": None,
+        "threads_url": None,
+        "tiktok_url": None,
+        "github_url": None,
+        "discord_url": None,
+        "other_url": None,
+    }
+    for social in existing_socials:
+        platform = social.get("platform", "").lower()
+        url = social.get("url", "")
+        if platform == PLATFORM_YOUTUBE:
+            form_data["youtube_url"] = url
+        elif platform == PLATFORM_INSTAGRAM:
+            form_data["instagram_url"] = url
+        elif platform == PLATFORM_LINKEDIN:
+            form_data["linkedin_url"] = url
+        elif platform == PLATFORM_X:
+            form_data["x_url"] = url
+        elif platform == PLATFORM_FACEBOOK:
+            form_data["facebook_url"] = url
+        elif platform == PLATFORM_THREADS:
+            form_data["threads_url"] = url
+        elif platform == PLATFORM_TIKTOK:
+            form_data["tiktok_url"] = url
+        elif platform == PLATFORM_GITHUB:
+            form_data["github_url"] = url
+        elif platform == PLATFORM_DISCORD:
+            form_data["discord_url"] = url
+        elif platform == PLATFORM_OTHER:
+            form_data["other_url"] = url
+
+    with modal("Edit Social Media Links", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text("Update organization social media links for creator outreach")
+
+        with UpdateOrganizationSocialsForm.render(
+            data=form_data,
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:edit_socials", organization_id=organization_id
+                )
+            ),
+            hx_target="#modal",
+            classes="space-y-4",
+        ):
+            # Action buttons
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
                     text("Save Changes")
 
     return None

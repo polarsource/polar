@@ -139,3 +139,98 @@ class UpdateOrganizationInternalNotesForm(forms.BaseForm):
             description="Internal notes about this organization (admin only)",
         ),
     ]
+
+
+class UpdateOrganizationSocialsForm(forms.BaseForm):
+    """Form for editing organization social media links."""
+
+    youtube_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://youtube.com/@channel"),
+        Field(
+            None,
+            title="YouTube",
+            description="YouTube channel URL",
+        ),
+    ]
+    instagram_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://instagram.com/username"),
+        Field(
+            None,
+            title="Instagram",
+            description="Instagram profile URL",
+        ),
+    ]
+    linkedin_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://linkedin.com/company/name"),
+        Field(
+            None,
+            title="LinkedIn",
+            description="LinkedIn profile or company page URL",
+        ),
+    ]
+    x_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://x.com/username"),
+        Field(
+            None,
+            title="X (Twitter)",
+            description="X (Twitter) profile URL",
+        ),
+    ]
+    facebook_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://facebook.com/page"),
+        Field(
+            None,
+            title="Facebook",
+            description="Facebook page URL",
+        ),
+    ]
+    threads_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://threads.net/@username"),
+        Field(
+            None,
+            title="Threads",
+            description="Threads profile URL",
+        ),
+    ]
+    tiktok_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://tiktok.com/@username"),
+        Field(
+            None,
+            title="TikTok",
+            description="TikTok profile URL",
+        ),
+    ]
+    github_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://github.com/username"),
+        Field(
+            None,
+            title="GitHub",
+            description="GitHub profile URL",
+        ),
+    ]
+    discord_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://discord.gg/invite"),
+        Field(
+            None,
+            title="Discord",
+            description="Discord server invite URL",
+        ),
+    ]
+    other_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://..."),
+        Field(
+            None,
+            title="Other",
+            description="Other social media or website URL",
+        ),
+    ]

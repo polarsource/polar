@@ -1,3 +1,4 @@
+import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -608,6 +609,8 @@ const OrganizationProfileSettings: React.FC<
   const { handleSubmit, setError, formState, reset } = form
   const inKYCMode = kyc === true
 
+  const { currentUser } = useAuth()
+
   const updateOrganization = useUpdateOrganization()
 
   const onSave = async (body: schemas['OrganizationUpdate']) => {
@@ -625,6 +628,7 @@ const OrganizationProfileSettings: React.FC<
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: cleanedBody,
+      userId: currentUser?.id,
     })
 
     if (error) {

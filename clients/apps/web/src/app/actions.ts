@@ -3,8 +3,8 @@
 import { revalidateTag } from 'next/cache'
 
 export default async function revalidate(
-  tag: string,
-  cacheProfile: string = 'default',
+  tag: Parameters<typeof revalidateTag>[0],
+  cacheProfile: Parameters<typeof revalidateTag>[1] = 'default',
 ) {
   revalidateTag(tag, cacheProfile)
 }

@@ -22,5 +22,6 @@ export const RefundReasonDisplay: Record<schemas['RefundReason'], string> = {
   customer_request: 'Customer Request',
   service_disruption: 'Service Disruption',
   satisfaction_guarantee: 'Satisfaction Guarantee',
+  dispute_prevention: 'Dispute Prevention',
   other: 'Other',
 }

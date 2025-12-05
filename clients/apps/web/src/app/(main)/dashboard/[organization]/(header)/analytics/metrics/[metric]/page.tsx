@@ -131,16 +131,8 @@ export default async function Page(props: {
     }),
   )
 
-  // Filter by product_id if provided in URL
-  const productIdParam = searchParams.product_id
-  const productIds = productIdParam
-    ? Array.isArray(productIdParam)
-      ? productIdParam
-      : [productIdParam]
-    : undefined
-
-  const relevantProducts = productIds
-    ? products.items.filter((p) => productIds.includes(p.id))
+  const relevantProducts = productId
+    ? products.items.filter((p) => productId.includes(p.id))
     : products.items
 
   const hasRecurringProducts = relevantProducts.some((p) => p.is_recurring)

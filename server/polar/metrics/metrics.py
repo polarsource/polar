@@ -36,12 +36,13 @@ class MetricType(StrEnum):
 
 
 def cumulative_sum(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
-    return sum(getattr(p, slug) for p in periods)
+    return sum(getattr(p, slug) or 0 for p in periods)
 
 
 def cumulative_last(periods: Iterable["MetricsPeriod"], slug: str) -> int | float:
     dd = deque((getattr(p, slug) for p in periods), maxlen=1)
-    return dd.pop()
+    value = dd.pop()
+    return value if value is not None else 0
 
 
 class Metric(Protocol):
@@ -166,8 +167,8 @@ class AverageOrderValueMetric(SQLMetric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_orders = sum(getattr(p, "orders") for p in periods)
-        revenue = sum(getattr(p, "revenue") for p in periods)
+        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
+        revenue = sum(getattr(p, "revenue") or 0 for p in periods)
         return revenue / total_orders if total_orders > 0 else 0.0
 
 
@@ -185,8 +186,8 @@ class NetAverageOrderValueMetric(SQLMetric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_orders = sum(getattr(p, "orders") for p in periods)
-        revenue = sum(getattr(p, "net_revenue") for p in periods)
+        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
+        revenue = sum(getattr(p, "net_revenue") or 0 for p in periods)
         return revenue / total_orders if total_orders > 0 else 0.0
 
 
@@ -548,8 +549,8 @@ class CheckoutsConversionMetric(SQLMetric):
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
-        total_checkouts = sum(getattr(p, "checkouts") for p in periods)
-        total_succeeded = sum(getattr(p, "succeeded_checkouts") for p in periods)
+        total_checkouts = sum(getattr(p, "checkouts") or 0 for p in periods)
+        total_succeeded = sum(getattr(p, "succeeded_checkouts") or 0 for p in periods)
         return total_succeeded / total_checkouts if total_checkouts > 0 else 0.0
 
 
@@ -867,7 +868,7 @@ class CostPerUserMetric(SQLMetric):
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
         total_active_users = cumulative_last(periods, ActiveSubscriptionsMetric.slug)
-        total_costs = sum(getattr(p, CostsMetric.slug) for p in periods)
+        total_costs = sum(getattr(p, CostsMetric.slug) or 0 for p in periods)
         return total_costs / total_active_users if total_active_users > 0 else 0.0
 
 

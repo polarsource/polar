@@ -17043,16 +17043,47 @@ export interface components {
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {
-      /** Customer Name */
-      customer_name: string
       /** Product Name */
       product_name: string
       /** Product Price Amount */
       product_price_amount: number
-      /** Organization Name */
+      /**
+       * Customer Name
+       * @default
+       */
+      customer_name: string
+      /**
+       * Organization Name
+       * @default
+       */
       organization_name: string
+      /** Customer Email */
+      customer_email?: string | null
+      /** Billing Address Country */
+      billing_address_country?: string | null
+      /** Billing Address City */
+      billing_address_city?: string | null
+      /** Billing Address Line1 */
+      billing_address_line1?: string | null
+      /** Product Image Url */
+      product_image_url?: string | null
+      /** Order Id */
+      order_id?: string | null
+      /** Order Date */
+      order_date?: string | null
+      /** Organization Slug */
+      organization_slug?: string | null
+      billing_reason?:
+        | components['schemas']['OrderBillingReasonInternal']
+        | null
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
+      /** Formatted Billing Reason */
+      readonly formatted_billing_reason: string | null
+      /** Formatted Address Country */
+      readonly formatted_address_country: string | null
+      /** Order Url */
+      readonly order_url: string | null
     }
     /**
      * Member
@@ -17451,89 +17482,89 @@ export interface components {
        */
       timestamp: string
       /** Orders */
-      orders: number
+      orders?: number | null
       /** Revenue */
-      revenue: number
+      revenue?: number | null
       /** Net Revenue */
-      net_revenue: number
+      net_revenue?: number | null
       /** Cumulative Revenue */
-      cumulative_revenue: number
+      cumulative_revenue?: number | null
       /** Net Cumulative Revenue */
-      net_cumulative_revenue: number
+      net_cumulative_revenue?: number | null
       /** Costs */
-      costs: number
+      costs?: number | null
       /** Cumulative Costs */
-      cumulative_costs: number
+      cumulative_costs?: number | null
       /** Average Order Value */
-      average_order_value: number
+      average_order_value?: number | null
       /** Net Average Order Value */
-      net_average_order_value: number
+      net_average_order_value?: number | null
       /** Average Revenue Per User */
-      average_revenue_per_user: number
+      average_revenue_per_user?: number | null
       /** Cost Per User */
-      cost_per_user: number
+      cost_per_user?: number | null
       /** Active User By Event */
-      active_user_by_event: number
+      active_user_by_event?: number | null
       /** One Time Products */
-      one_time_products: number
+      one_time_products?: number | null
       /** One Time Products Revenue */
-      one_time_products_revenue: number
+      one_time_products_revenue?: number | null
       /** One Time Products Net Revenue */
-      one_time_products_net_revenue: number
+      one_time_products_net_revenue?: number | null
       /** New Subscriptions */
-      new_subscriptions: number
+      new_subscriptions?: number | null
       /** New Subscriptions Revenue */
-      new_subscriptions_revenue: number
+      new_subscriptions_revenue?: number | null
       /** New Subscriptions Net Revenue */
-      new_subscriptions_net_revenue: number
+      new_subscriptions_net_revenue?: number | null
       /** Renewed Subscriptions */
-      renewed_subscriptions: number
+      renewed_subscriptions?: number | null
       /** Renewed Subscriptions Revenue */
-      renewed_subscriptions_revenue: number
+      renewed_subscriptions_revenue?: number | null
       /** Renewed Subscriptions Net Revenue */
-      renewed_subscriptions_net_revenue: number
+      renewed_subscriptions_net_revenue?: number | null
       /** Active Subscriptions */
-      active_subscriptions: number
+      active_subscriptions?: number | null
       /** Monthly Recurring Revenue */
-      monthly_recurring_revenue: number
+      monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */
-      committed_monthly_recurring_revenue: number
+      committed_monthly_recurring_revenue?: number | null
       /** Checkouts */
-      checkouts: number
+      checkouts?: number | null
       /** Succeeded Checkouts */
-      succeeded_checkouts: number
+      succeeded_checkouts?: number | null
       /** Checkouts Conversion */
-      checkouts_conversion: number
+      checkouts_conversion?: number | null
       /** Canceled Subscriptions */
-      canceled_subscriptions: number
+      canceled_subscriptions?: number | null
       /** Canceled Subscriptions Customer Service */
-      canceled_subscriptions_customer_service: number
+      canceled_subscriptions_customer_service?: number | null
       /** Canceled Subscriptions Low Quality */
-      canceled_subscriptions_low_quality: number
+      canceled_subscriptions_low_quality?: number | null
       /** Canceled Subscriptions Missing Features */
-      canceled_subscriptions_missing_features: number
+      canceled_subscriptions_missing_features?: number | null
       /** Canceled Subscriptions Switched Service */
-      canceled_subscriptions_switched_service: number
+      canceled_subscriptions_switched_service?: number | null
       /** Canceled Subscriptions Too Complex */
-      canceled_subscriptions_too_complex: number
+      canceled_subscriptions_too_complex?: number | null
       /** Canceled Subscriptions Too Expensive */
-      canceled_subscriptions_too_expensive: number
+      canceled_subscriptions_too_expensive?: number | null
       /** Canceled Subscriptions Unused */
-      canceled_subscriptions_unused: number
+      canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
-      canceled_subscriptions_other: number
+      canceled_subscriptions_other?: number | null
       /** Churned Subscriptions */
-      churned_subscriptions: number
+      churned_subscriptions?: number | null
       /** Churn Rate */
-      churn_rate: number
+      churn_rate?: number | null
       /** Ltv */
-      ltv: number
+      ltv?: number | null
       /** Gross Margin */
-      gross_margin: number
+      gross_margin?: number | null
       /** Gross Margin Percentage */
-      gross_margin_percentage: number
+      gross_margin_percentage?: number | null
       /** Cashflow */
-      cashflow: number
+      cashflow?: number | null
     }
     /**
      * MetricType
@@ -17542,48 +17573,62 @@ export interface components {
     MetricType: 'scalar' | 'currency' | 'currency_sub_cent' | 'percentage'
     /** Metrics */
     Metrics: {
-      orders: components['schemas']['Metric']
-      revenue: components['schemas']['Metric']
-      net_revenue: components['schemas']['Metric']
-      cumulative_revenue: components['schemas']['Metric']
-      net_cumulative_revenue: components['schemas']['Metric']
-      costs: components['schemas']['Metric']
-      cumulative_costs: components['schemas']['Metric']
-      average_order_value: components['schemas']['Metric']
-      net_average_order_value: components['schemas']['Metric']
-      average_revenue_per_user: components['schemas']['Metric']
-      cost_per_user: components['schemas']['Metric']
-      active_user_by_event: components['schemas']['Metric']
-      one_time_products: components['schemas']['Metric']
-      one_time_products_revenue: components['schemas']['Metric']
-      one_time_products_net_revenue: components['schemas']['Metric']
-      new_subscriptions: components['schemas']['Metric']
-      new_subscriptions_revenue: components['schemas']['Metric']
-      new_subscriptions_net_revenue: components['schemas']['Metric']
-      renewed_subscriptions: components['schemas']['Metric']
-      renewed_subscriptions_revenue: components['schemas']['Metric']
-      renewed_subscriptions_net_revenue: components['schemas']['Metric']
-      active_subscriptions: components['schemas']['Metric']
-      monthly_recurring_revenue: components['schemas']['Metric']
-      committed_monthly_recurring_revenue: components['schemas']['Metric']
-      checkouts: components['schemas']['Metric']
-      succeeded_checkouts: components['schemas']['Metric']
-      checkouts_conversion: components['schemas']['Metric']
-      canceled_subscriptions: components['schemas']['Metric']
-      canceled_subscriptions_customer_service: components['schemas']['Metric']
-      canceled_subscriptions_low_quality: components['schemas']['Metric']
-      canceled_subscriptions_missing_features: components['schemas']['Metric']
-      canceled_subscriptions_switched_service: components['schemas']['Metric']
-      canceled_subscriptions_too_complex: components['schemas']['Metric']
-      canceled_subscriptions_too_expensive: components['schemas']['Metric']
-      canceled_subscriptions_unused: components['schemas']['Metric']
-      canceled_subscriptions_other: components['schemas']['Metric']
-      churned_subscriptions: components['schemas']['Metric']
-      churn_rate: components['schemas']['Metric']
-      ltv: components['schemas']['Metric']
-      gross_margin: components['schemas']['Metric']
-      gross_margin_percentage: components['schemas']['Metric']
-      cashflow: components['schemas']['Metric']
+      orders?: components['schemas']['Metric'] | null
+      revenue?: components['schemas']['Metric'] | null
+      net_revenue?: components['schemas']['Metric'] | null
+      cumulative_revenue?: components['schemas']['Metric'] | null
+      net_cumulative_revenue?: components['schemas']['Metric'] | null
+      costs?: components['schemas']['Metric'] | null
+      cumulative_costs?: components['schemas']['Metric'] | null
+      average_order_value?: components['schemas']['Metric'] | null
+      net_average_order_value?: components['schemas']['Metric'] | null
+      average_revenue_per_user?: components['schemas']['Metric'] | null
+      cost_per_user?: components['schemas']['Metric'] | null
+      active_user_by_event?: components['schemas']['Metric'] | null
+      one_time_products?: components['schemas']['Metric'] | null
+      one_time_products_revenue?: components['schemas']['Metric'] | null
+      one_time_products_net_revenue?: components['schemas']['Metric'] | null
+      new_subscriptions?: components['schemas']['Metric'] | null
+      new_subscriptions_revenue?: components['schemas']['Metric'] | null
+      new_subscriptions_net_revenue?: components['schemas']['Metric'] | null
+      renewed_subscriptions?: components['schemas']['Metric'] | null
+      renewed_subscriptions_revenue?: components['schemas']['Metric'] | null
+      renewed_subscriptions_net_revenue?: components['schemas']['Metric'] | null
+      active_subscriptions?: components['schemas']['Metric'] | null
+      monthly_recurring_revenue?: components['schemas']['Metric'] | null
+      committed_monthly_recurring_revenue?:
+        | components['schemas']['Metric']
+        | null
+      checkouts?: components['schemas']['Metric'] | null
+      succeeded_checkouts?: components['schemas']['Metric'] | null
+      checkouts_conversion?: components['schemas']['Metric'] | null
+      canceled_subscriptions?: components['schemas']['Metric'] | null
+      canceled_subscriptions_customer_service?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_low_quality?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_missing_features?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_switched_service?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_too_complex?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_too_expensive?:
+        | components['schemas']['Metric']
+        | null
+      canceled_subscriptions_unused?: components['schemas']['Metric'] | null
+      canceled_subscriptions_other?: components['schemas']['Metric'] | null
+      churned_subscriptions?: components['schemas']['Metric'] | null
+      churn_rate?: components['schemas']['Metric'] | null
+      ltv?: components['schemas']['Metric'] | null
+      gross_margin?: components['schemas']['Metric'] | null
+      gross_margin_percentage?: components['schemas']['Metric'] | null
+      cashflow?: components['schemas']['Metric'] | null
     }
     /**
      * MetricsIntervalLimit
@@ -17649,89 +17694,89 @@ export interface components {
     /** MetricsTotals */
     MetricsTotals: {
       /** Orders */
-      orders: number
+      orders?: number | null
       /** Revenue */
-      revenue: number
+      revenue?: number | null
       /** Net Revenue */
-      net_revenue: number
+      net_revenue?: number | null
       /** Cumulative Revenue */
-      cumulative_revenue: number
+      cumulative_revenue?: number | null
       /** Net Cumulative Revenue */
-      net_cumulative_revenue: number
+      net_cumulative_revenue?: number | null
       /** Costs */
-      costs: number
+      costs?: number | null
       /** Cumulative Costs */
-      cumulative_costs: number
+      cumulative_costs?: number | null
       /** Average Order Value */
-      average_order_value: number
+      average_order_value?: number | null
       /** Net Average Order Value */
-      net_average_order_value: number
+      net_average_order_value?: number | null
       /** Average Revenue Per User */
-      average_revenue_per_user: number
+      average_revenue_per_user?: number | null
       /** Cost Per User */
-      cost_per_user: number
+      cost_per_user?: number | null
       /** Active User By Event */
-      active_user_by_event: number
+      active_user_by_event?: number | null
       /** One Time Products */
-      one_time_products: number
+      one_time_products?: number | null
       /** One Time Products Revenue */
-      one_time_products_revenue: number
+      one_time_products_revenue?: number | null
       /** One Time Products Net Revenue */
-      one_time_products_net_revenue: number
+      one_time_products_net_revenue?: number | null
       /** New Subscriptions */
-      new_subscriptions: number
+      new_subscriptions?: number | null
       /** New Subscriptions Revenue */
-      new_subscriptions_revenue: number
+      new_subscriptions_revenue?: number | null
       /** New Subscriptions Net Revenue */
-      new_subscriptions_net_revenue: number
+      new_subscriptions_net_revenue?: number | null
       /** Renewed Subscriptions */
-      renewed_subscriptions: number
+      renewed_subscriptions?: number | null
       /** Renewed Subscriptions Revenue */
-      renewed_subscriptions_revenue: number
+      renewed_subscriptions_revenue?: number | null
       /** Renewed Subscriptions Net Revenue */
-      renewed_subscriptions_net_revenue: number
+      renewed_subscriptions_net_revenue?: number | null
       /** Active Subscriptions */
-      active_subscriptions: number
+      active_subscriptions?: number | null
       /** Monthly Recurring Revenue */
-      monthly_recurring_revenue: number
+      monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */
-      committed_monthly_recurring_revenue: number
+      committed_monthly_recurring_revenue?: number | null
       /** Checkouts */
-      checkouts: number
+      checkouts?: number | null
       /** Succeeded Checkouts */
-      succeeded_checkouts: number
+      succeeded_checkouts?: number | null
       /** Checkouts Conversion */
-      checkouts_conversion: number
+      checkouts_conversion?: number | null
       /** Canceled Subscriptions */
-      canceled_subscriptions: number
+      canceled_subscriptions?: number | null
       /** Canceled Subscriptions Customer Service */
-      canceled_subscriptions_customer_service: number
+      canceled_subscriptions_customer_service?: number | null
       /** Canceled Subscriptions Low Quality */
-      canceled_subscriptions_low_quality: number
+      canceled_subscriptions_low_quality?: number | null
       /** Canceled Subscriptions Missing Features */
-      canceled_subscriptions_missing_features: number
+      canceled_subscriptions_missing_features?: number | null
       /** Canceled Subscriptions Switched Service */
-      canceled_subscriptions_switched_service: number
+      canceled_subscriptions_switched_service?: number | null
       /** Canceled Subscriptions Too Complex */
-      canceled_subscriptions_too_complex: number
+      canceled_subscriptions_too_complex?: number | null
       /** Canceled Subscriptions Too Expensive */
-      canceled_subscriptions_too_expensive: number
+      canceled_subscriptions_too_expensive?: number | null
       /** Canceled Subscriptions Unused */
-      canceled_subscriptions_unused: number
+      canceled_subscriptions_unused?: number | null
       /** Canceled Subscriptions Other */
-      canceled_subscriptions_other: number
+      canceled_subscriptions_other?: number | null
       /** Churned Subscriptions */
-      churned_subscriptions: number
+      churned_subscriptions?: number | null
       /** Churn Rate */
-      churn_rate: number
+      churn_rate?: number | null
       /** Ltv */
-      ltv: number
+      ltv?: number | null
       /** Gross Margin */
-      gross_margin: number
+      gross_margin?: number | null
       /** Gross Margin Percentage */
-      gross_margin_percentage: number
+      gross_margin_percentage?: number | null
       /** Cashflow */
-      cashflow: number
+      cashflow?: number | null
     }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
@@ -28826,6 +28871,8 @@ export interface operations {
           | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned. */
+        focus_metrics?: string[] | null
       }
       header?: never
       path?: never

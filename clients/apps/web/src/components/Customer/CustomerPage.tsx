@@ -124,6 +124,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       }
 
       const metric = metricsData.metrics[metricKey]
+      if (!metric) {
+        return undefined
+      }
       const currentValue = metricsData.totals[metricKey]
       const previousValue = previousPeriodMetrics.totals[metricKey]
 

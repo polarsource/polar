@@ -64,7 +64,9 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
             <h3 className="text-xl">Profit</h3>
             <h3 className="text-5xl font-light">
               {formatCurrencyAndAmount(
-                data ? data.totals.revenue - data.totals.costs : 0,
+                data
+                  ? (data.totals.revenue ?? 0) - (data.totals.costs ?? 0)
+                  : 0,
                 'usd',
               )}
             </h3>
@@ -110,7 +112,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
                   timestamp: period.timestamp,
                   revenue: period.revenue,
                   cost: period.costs,
-                  profit: period.revenue - period.costs,
+                  profit: (period.revenue ?? 0) - (period.costs ?? 0),
                 }))}
                 margin={{
                   left: 24,

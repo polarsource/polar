@@ -39,6 +39,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
     interval: 'day',
     startDate,
     endDate,
+    focus_metrics: ['orders'],
   })
 
   // Calculate weekday index for first day (Monday = 0, Sunday = 6)
@@ -93,11 +94,11 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
       <div className="flex items-center justify-between px-4 pb-4">
         <div className="flex items-baseline gap-x-2">
           <h3 className="text-5xl font-light">
-            {orderMetrics.data?.totals.orders.toLocaleString('en-US', {
+            {(orderMetrics.data?.totals.orders ?? 0).toLocaleString('en-US', {
               style: 'decimal',
               compactDisplay: 'short',
               notation: 'compact',
-            }) ?? 0}
+            })}
           </h3>
           <span className="text-lg">
             {orderMetrics.data?.totals.orders === 1 ? 'Order' : 'Orders'}

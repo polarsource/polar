@@ -72,7 +72,7 @@ export const CatalogueTile = () => {
                   height: 10,
                   width: 10,
                   backgroundColor:
-                    period.orders > 0 ? colors.primary : colors.border,
+                    (period.orders ?? 0) > 0 ? colors.primary : colors.border,
                   borderRadius: 10,
                 }}
               />

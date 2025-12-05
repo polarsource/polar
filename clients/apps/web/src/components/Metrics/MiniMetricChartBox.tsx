@@ -11,8 +11,8 @@ import {
 
 export interface MiniMetricBoxProps {
   title?: string
-  metric?: schemas['Metric']
-  value?: number
+  metric?: schemas['Metric'] | null
+  value?: number | null
 }
 
 export const MiniMetricChartBox = ({

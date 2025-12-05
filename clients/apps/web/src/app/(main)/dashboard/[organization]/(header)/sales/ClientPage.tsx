@@ -246,6 +246,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     endDate: allTimeEnd,
     interval: allTimeInterval,
     product_id: productId,
+    focus_metrics: ['orders', 'revenue', 'cumulative_revenue'],
   })
   const { data: todayMetricsData } = useMetrics({
     organization_id: organization.id,
@@ -253,6 +254,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     endDate: new Date(),
     interval: 'day',
     product_id: productId,
+    focus_metrics: ['revenue'],
   })
 
   const onExport = () => {

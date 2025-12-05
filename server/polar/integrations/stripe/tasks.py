@@ -29,6 +29,7 @@ from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
 from polar.pledge.service import pledge as pledge_service
+from polar.refund.service import MissingRelatedDispute
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist, SubscriptionLocked
 from polar.subscription.service import subscription as subscription_service
@@ -275,7 +276,16 @@ async def refund_created(event_id: uuid.UUID) -> None:
                 charge_id=refund.charge,
                 payment_intent=refund.payment_intent,
             )
-            await refund_service.create_from_stripe(session, stripe_refund=refund)
+            try:
+                await refund_service.create_from_stripe(session, stripe_refund=refund)
+            except MissingRelatedDispute as e:
+                log.warning(e.message, event_id=event.id)
+                # Retry because we may not have been able to handle the dispute yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.refund.updated", priority=TaskPriority.HIGH)
@@ -290,7 +300,16 @@ async def refund_updated(event_id: uuid.UUID) -> None:
                 charge_id=refund.charge,
                 payment_intent=refund.payment_intent,
             )
-            await refund_service.upsert_from_stripe(session, stripe_refund=refund)
+            try:
+                await refund_service.upsert_from_stripe(session, stripe_refund=refund)
+            except MissingRelatedDispute as e:
+                log.warning(e.message, event_id=event.id)
+                # Retry because we may not have been able to handle the dispute yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.refund.failed", priority=TaskPriority.HIGH)
@@ -305,7 +324,16 @@ async def refund_failed(event_id: uuid.UUID) -> None:
                 charge_id=refund.charge,
                 payment_intent=refund.payment_intent,
             )
-            await refund_service.upsert_from_stripe(session, stripe_refund=refund)
+            try:
+                await refund_service.upsert_from_stripe(session, stripe_refund=refund)
+            except MissingRelatedDispute as e:
+                log.warning(e.message, event_id=event.id)
+                # Retry because we may not have been able to handle the dispute yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.charge.dispute.created", priority=TaskPriority.HIGH)

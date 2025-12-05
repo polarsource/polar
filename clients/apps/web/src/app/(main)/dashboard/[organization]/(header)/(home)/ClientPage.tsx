@@ -38,7 +38,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       startDate: startDate,
       endDate: endDate,
       interval: interval,
-      focus_metrics: [selectedMetric],
+      metrics: [selectedMetric],
     })
 
   const previousParams = React.useMemo(
@@ -53,7 +53,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
         startDate: previousParams ? previousParams[0] : startDate,
         endDate: previousParams ? previousParams[1] : endDate,
         interval: interval,
-        focus_metrics: [selectedMetric],
+        metrics: [selectedMetric],
       },
       previousParams !== null,
     )

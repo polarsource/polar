@@ -1,13 +1,12 @@
 from collections.abc import Sequence
-from typing import Any, Literal, TypeAlias
+from typing import Literal, TypeAlias
 from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.dialects import postgresql
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
 from polar.dispute.repository import DisputeRepository
@@ -16,8 +15,7 @@ from polar.event.system import OrderRefundedMetadata, SystemEvent, build_system_
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -28,7 +26,6 @@ from polar.models import (
     Pledge,
     Transaction,
     User,
-    UserOrganization,
 )
 from polar.models.dispute import DisputeAlertProcessor
 from polar.models.refund import Refund, RefundReason, RefundStatus
@@ -52,6 +49,7 @@ from polar.transaction.service.refund import (
 from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 
+from .repository import RefundRepository
 from .schemas import InternalRefundCreate, RefundCreate
 from .sorting import RefundSortProperty
 
@@ -115,8 +113,8 @@ class MissingRelatedDispute(RefundError):
         super().__init__(message)
 
 
-class RefundService(ResourceServiceReader[Refund]):
-    async def get_list(
+class RefundService:
+    async def list(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -132,7 +130,9 @@ class RefundService(ResourceServiceReader[Refund]):
             (RefundSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Refund], int]:
-        statement = self._get_readable_refund_statement(auth_subject)
+        repository = RefundRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
         if id is not None:
             statement = statement.where(Refund.id.in_(id))
 
@@ -148,19 +148,17 @@ class RefundService(ResourceServiceReader[Refund]):
         if customer_id is not None:
             statement = statement.where(Refund.customer_id.in_(customer_id))
 
-        if succeeded:
-            statement = statement.where(Refund.status == RefundStatus.succeeded)
+        if succeeded is not None:
+            if succeeded:
+                statement = statement.where(Refund.status == RefundStatus.succeeded)
+            else:
+                statement = statement.where(Refund.status != RefundStatus.succeeded)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == RefundSortProperty.created_at:
-                order_by_clauses.append(clause_function(Refund.created_at))
-            elif criterion == RefundSortProperty.amount:
-                order_by_clauses.append(clause_function(Refund.amount))
+        statement = repository.apply_sorting(statement, sorting)
 
-        statement = statement.order_by(*order_by_clauses)
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def user_create(
         self,
@@ -258,7 +256,8 @@ class RefundService(ResourceServiceReader[Refund]):
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_refund: stripe_lib.Refund
     ) -> Refund:
-        refund = await self.get_by(session, processor_id=stripe_refund.id)
+        repository = RefundRepository.from_session(session)
+        refund = await repository.get_by_processor_id(stripe_refund.id)
         if refund:
             return await self.update_from_stripe(session, refund, stripe_refund)
         return await self.create_from_stripe(session, stripe_refund)
@@ -784,31 +783,5 @@ class RefundService(ResourceServiceReader[Refund]):
 
         return (charge_id, payment, None, pledge)
 
-    def _get_readable_refund_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Refund]]:
-        statement = select(Refund).where(
-            Refund.deleted_at.is_(None),
-            # We only care about order refunds in our API
-            Refund.order_id.is_not(None),
-        )
 
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Refund.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Refund.organization_id == auth_subject.subject.id
-            )
-
-        return statement
-
-
-refund = RefundService(Refund)
+refund = RefundService()

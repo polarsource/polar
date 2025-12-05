@@ -229,7 +229,7 @@ class TestListRefunds(StripeRefund):
         json = response.json()
         assert json["pagination"]["total_count"] == 3
 
-        # Get all for organization
+        # Get non-succeeded refunds
         response = await client.get(
             "/v1/refunds/",
             params={
@@ -237,14 +237,13 @@ class TestListRefunds(StripeRefund):
             },
         )
         json = response.json()
-        assert json["pagination"]["total_count"] == 6
+        assert json["pagination"]["total_count"] == 1
 
         # Get all for first order regardless of status
         response = await client.get(
             "/v1/refunds/",
             params={
                 "order_id": str(order.id),
-                "succeeded": False,
             },
         )
         json = response.json()

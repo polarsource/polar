@@ -171,3 +171,66 @@ class UpdateOrganizationSocialsForm(forms.BaseForm):
             description="LinkedIn profile or company page URL",
         ),
     ]
+    x_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://x.com/username"),
+        Field(
+            None,
+            title="X (Twitter)",
+            description="X (Twitter) profile URL",
+        ),
+    ]
+    facebook_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://facebook.com/page"),
+        Field(
+            None,
+            title="Facebook",
+            description="Facebook page URL",
+        ),
+    ]
+    threads_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://threads.net/@username"),
+        Field(
+            None,
+            title="Threads",
+            description="Threads profile URL",
+        ),
+    ]
+    tiktok_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://tiktok.com/@username"),
+        Field(
+            None,
+            title="TikTok",
+            description="TikTok profile URL",
+        ),
+    ]
+    github_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://github.com/username"),
+        Field(
+            None,
+            title="GitHub",
+            description="GitHub profile URL",
+        ),
+    ]
+    discord_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://discord.gg/invite"),
+        Field(
+            None,
+            title="Discord",
+            description="Discord server invite URL",
+        ),
+    ]
+    other_url: Annotated[
+        HttpUrlToStr | None,
+        forms.InputField(type="url", placeholder="https://..."),
+        Field(
+            None,
+            title="Other",
+            description="Other social media or website URL",
+        ),
+    ]

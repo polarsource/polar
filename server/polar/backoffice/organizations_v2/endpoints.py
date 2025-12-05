@@ -1119,6 +1119,13 @@ async def edit_socials(
     PLATFORM_YOUTUBE = "youtube"
     PLATFORM_INSTAGRAM = "instagram"
     PLATFORM_LINKEDIN = "linkedin"
+    PLATFORM_X = "x"
+    PLATFORM_FACEBOOK = "facebook"
+    PLATFORM_THREADS = "threads"
+    PLATFORM_TIKTOK = "tiktok"
+    PLATFORM_GITHUB = "github"
+    PLATFORM_DISCORD = "discord"
+    PLATFORM_OTHER = "other"
 
     repository = OrganizationRepository(session)
 
@@ -1147,6 +1154,30 @@ async def edit_socials(
                 socials.append(
                     {"platform": PLATFORM_LINKEDIN, "url": str(form.linkedin_url)}
                 )
+            if form.x_url:
+                socials.append({"platform": PLATFORM_X, "url": str(form.x_url)})
+            if form.facebook_url:
+                socials.append(
+                    {"platform": PLATFORM_FACEBOOK, "url": str(form.facebook_url)}
+                )
+            if form.threads_url:
+                socials.append(
+                    {"platform": PLATFORM_THREADS, "url": str(form.threads_url)}
+                )
+            if form.tiktok_url:
+                socials.append(
+                    {"platform": PLATFORM_TIKTOK, "url": str(form.tiktok_url)}
+                )
+            if form.github_url:
+                socials.append(
+                    {"platform": PLATFORM_GITHUB, "url": str(form.github_url)}
+                )
+            if form.discord_url:
+                socials.append(
+                    {"platform": PLATFORM_DISCORD, "url": str(form.discord_url)}
+                )
+            if form.other_url:
+                socials.append({"platform": PLATFORM_OTHER, "url": str(form.other_url)})
 
             # Update organization with new socials
             organization = await repository.update(
@@ -1172,6 +1203,13 @@ async def edit_socials(
         "youtube_url": None,
         "instagram_url": None,
         "linkedin_url": None,
+        "x_url": None,
+        "facebook_url": None,
+        "threads_url": None,
+        "tiktok_url": None,
+        "github_url": None,
+        "discord_url": None,
+        "other_url": None,
     }
     for social in existing_socials:
         platform = social.get("platform", "").lower()
@@ -1182,6 +1220,20 @@ async def edit_socials(
             form_data["instagram_url"] = url
         elif platform == PLATFORM_LINKEDIN:
             form_data["linkedin_url"] = url
+        elif platform == PLATFORM_X:
+            form_data["x_url"] = url
+        elif platform == PLATFORM_FACEBOOK:
+            form_data["facebook_url"] = url
+        elif platform == PLATFORM_THREADS:
+            form_data["threads_url"] = url
+        elif platform == PLATFORM_TIKTOK:
+            form_data["tiktok_url"] = url
+        elif platform == PLATFORM_GITHUB:
+            form_data["github_url"] = url
+        elif platform == PLATFORM_DISCORD:
+            form_data["discord_url"] = url
+        elif platform == PLATFORM_OTHER:
+            form_data["other_url"] = url
 
     with modal("Edit Social Media Links", open=True):
         with tag.p(classes="text-sm text-base-content/60 mb-4"):

@@ -102,7 +102,7 @@ class TestGetMetrics:
 
 
 @pytest.mark.asyncio
-class TestFocusMetrics:
+class TestMetricsFiltering:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
@@ -114,27 +114,27 @@ class TestFocusMetrics:
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
                 "interval": "month",
-                "focus_metrics": ["revenue", "invalid_metric", "another_invalid"],
+                "metrics": ["revenue", "invalid_metric", "another_invalid"],
             },
         )
 
         assert response.status_code == 422
         json = response.json()
-        assert "focus_metrics" in str(json)
+        assert "metrics" in str(json)
         assert "invalid_metric" in str(json) or "another_invalid" in str(json)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
-    async def test_valid_focus_metrics(self, client: AsyncClient) -> None:
-        """Test that valid focus_metrics returns only requested metrics."""
+    async def test_valid_metrics(self, client: AsyncClient) -> None:
+        """Test that valid metrics returns only requested metrics."""
         response = await client.get(
             "/v1/metrics/",
             params={
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
                 "interval": "month",
-                "focus_metrics": ["revenue", "orders"],
+                "metrics": ["revenue", "orders"],
             },
         )
 
@@ -149,15 +149,15 @@ class TestFocusMetrics:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
-    async def test_single_focus_metric(self, client: AsyncClient) -> None:
-        """Test that a single focus_metric works correctly."""
+    async def test_single_metric(self, client: AsyncClient) -> None:
+        """Test that a single metric works correctly."""
         response = await client.get(
             "/v1/metrics/",
             params={
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
                 "interval": "month",
-                "focus_metrics": ["active_subscriptions"],
+                "metrics": ["active_subscriptions"],
             },
         )
 
@@ -169,7 +169,7 @@ class TestFocusMetrics:
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
     @pytest.mark.parametrize(
-        "focus_metrics",
+        "metric_slugs",
         [
             ["gross_margin"],
             ["gross_margin_percentage"],
@@ -179,7 +179,7 @@ class TestFocusMetrics:
         ],
     )
     async def test_meta_metrics(
-        self, focus_metrics: list[str], client: AsyncClient
+        self, metric_slugs: list[str], client: AsyncClient
     ) -> None:
         """Test that meta metrics (post-compute metrics) can be requested."""
         response = await client.get(
@@ -188,19 +188,19 @@ class TestFocusMetrics:
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
                 "interval": "month",
-                "focus_metrics": focus_metrics,
+                "metrics": metric_slugs,
             },
         )
 
         assert response.status_code == 200
         json = response.json()
-        assert json["metrics"][focus_metrics[0]] is not None
+        assert json["metrics"][metric_slugs[0]] is not None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
-    async def test_without_focus_metrics_returns_all(self, client: AsyncClient) -> None:
-        """Test that omitting focus_metrics returns all metrics (backward compatible)."""
+    async def test_without_metrics_returns_all(self, client: AsyncClient) -> None:
+        """Test that omitting metrics returns all metrics."""
         response = await client.get(
             "/v1/metrics/",
             params={
@@ -213,11 +213,55 @@ class TestFocusMetrics:
         assert response.status_code == 200
         json = response.json()
 
-        # All metrics should be present when focus_metrics is not specified
+        # All metrics should be present when metrics is not specified
         assert json["metrics"]["revenue"] is not None
         assert json["metrics"]["orders"] is not None
         assert json["metrics"]["active_subscriptions"] is not None
         assert json["metrics"]["gross_margin"] is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_deprecated_focus_metrics_still_works(
+        self, client: AsyncClient
+    ) -> None:
+        """Test that deprecated focus_metrics param still works for backward compat."""
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+                "focus_metrics": ["revenue", "orders"],
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["metrics"]["revenue"] is not None
+        assert json["metrics"]["orders"] is not None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_error_when_both_metrics_and_focus_metrics(
+        self, client: AsyncClient
+    ) -> None:
+        """Test that using both metrics and focus_metrics returns error."""
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+                "metrics": ["revenue"],
+                "focus_metrics": ["orders"],
+            },
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "Cannot use both" in str(json)
 
 
 @pytest.mark.asyncio

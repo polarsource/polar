@@ -46,6 +46,7 @@ class DisputeService:
             PaymentProcessor.stripe, stripe_dispute.id
         )
         # Then try to find by matching payment info, in case we got a ChargebackStop alert first
+        from_alert = False
         if dispute is None:
             dispute = await repository.get_matching_by_dispute_alert(
                 PaymentProcessor.stripe,
@@ -53,6 +54,7 @@ class DisputeService:
                 stripe_dispute.amount,
                 stripe_dispute.currency,
             )
+            from_alert = dispute is not None
 
         if dispute is None:
             payment, order = await self._get_payment_and_order_from_processor_id(
@@ -69,6 +71,7 @@ class DisputeService:
                 )
             )
 
+        was_closed = dispute.closed
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
 
@@ -79,13 +82,14 @@ class DisputeService:
             stripe_dispute
         ):
             dispute.status = DisputeStatus.prevented
-            balance_transaction = get_dispute_balance_transaction(stripe_dispute)
-            assert balance_transaction is not None
-            await session.flush()
-            await refund_service.create_from_dispute(
-                session, dispute, balance_transaction.id
-            )
-        else:
+            if from_alert or not was_closed:  # Make sure we didn't already handle it
+                balance_transaction = get_dispute_balance_transaction(stripe_dispute)
+                assert balance_transaction is not None
+                await session.flush()
+                await refund_service.create_from_dispute(
+                    session, dispute, balance_transaction.id
+                )
+        elif not was_closed:
             dispute.status = DisputeStatus.from_stripe(stripe_dispute.status)
             # If won or lost, record the transactions
             if dispute.resolved:

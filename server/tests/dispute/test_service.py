@@ -14,7 +14,12 @@ from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.transaction.service.dispute import DisputeTransactionService
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_dispute, create_order, create_payment
+from tests.fixtures.random_objects import (
+    create_dispute,
+    create_order,
+    create_payment,
+    create_refund,
+)
 from tests.fixtures.stripe import (
     build_stripe_balance_transaction,
     build_stripe_dispute,
@@ -267,6 +272,93 @@ class TestUpsertFromStripe:
         refund_service_mock.create_from_dispute.assert_awaited_once_with(
             session, dispute, stripe_dispute_balance_transaction.id
         )
+
+    async def test_update_closed_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute_balance_transaction = build_stripe_balance_transaction(
+            amount=-order.due_amount,
+            reporting_category="dispute",
+            fee=1500,
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[stripe_dispute_balance_transaction],
+        )
+        await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.lost,
+            payment_processor=PaymentProcessor.stripe,
+            payment_processor_id=stripe_dispute.id,
+        )
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.status == DisputeStatus.lost
+
+        dispute_transaction_service_mock.create_dispute.assert_not_awaited()
+        refund_service_mock.create_from_dispute.assert_not_awaited()
+
+    async def test_update_closed_rapid_resolution_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute_balance_transaction = build_stripe_balance_transaction(
+            amount=-order.due_amount,
+            reporting_category="dispute",
+            fee=0,  # Our heuristic to detect RDR disputes
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[stripe_dispute_balance_transaction],
+        )
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.prevented,
+            payment_processor=PaymentProcessor.stripe,
+            payment_processor_id=stripe_dispute.id,
+        )
+        await create_refund(save_fixture, order, dispute=dispute)
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.status == DisputeStatus.prevented
+
+        dispute_transaction_service_mock.create_dispute.assert_not_awaited()
+        refund_service_mock.create_from_dispute.assert_not_awaited()
 
 
 @pytest.mark.asyncio

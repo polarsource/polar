@@ -1878,6 +1878,8 @@ export interface components {
       /** Url */
       url: string
       order: components['schemas']['OrderEmail'] | null
+      /** Has Static Prices */
+      has_static_prices: boolean
     }
     /**
      * TrialInterval

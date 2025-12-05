@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import ClientPage from './ClientPage'
+import EndpointsPage from './EndpointsPage'
 
 export default async function Page(props: {
   params: Promise<{ organization: string; id: string }>
@@ -20,7 +20,7 @@ export default async function Page(props: {
   ])
 
   return (
-    <ClientPage
+    <EndpointsPage
       organization={organization}
       pagination={pagination}
       sorting={sorting}

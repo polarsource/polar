@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import IncomePage from './IncomePage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -27,7 +27,7 @@ export default async function Page(props: {
   ])
 
   return (
-    <ClientPage
+    <IncomePage
       pagination={pagination}
       sorting={sorting}
       organization={organization}

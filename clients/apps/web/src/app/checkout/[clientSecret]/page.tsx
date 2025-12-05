@@ -8,7 +8,7 @@ import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
+import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
@@ -81,7 +81,7 @@ export default async function Page(props: {
       serverURL={getServerURL()}
     >
       <CheckoutFormProvider>
-        <ClientPage theme={theme} embed={embed} />
+        <CheckoutPage theme={theme} embed={embed} />
       </CheckoutFormProvider>
     </CheckoutProvider>
   )

@@ -17,11 +17,12 @@ export interface MetricsPageProps {
   endDateISOString?: string
   interval: schemas['TimeInterval']
   productId?: string[]
+  hasRecurringProducts: boolean
+  hasOneTimeProducts: boolean
 }
 
 interface MetricsPageComponentProps extends MetricsPageProps {
   metrics: (keyof schemas['Metrics'])[]
-  title: string
   children?: (
     data: ParsedMetricsResponse,
     interval: schemas['TimeInterval'],
@@ -35,8 +36,9 @@ export function MetricsPage({
   endDateISOString,
   interval,
   productId,
+  hasRecurringProducts,
+  hasOneTimeProducts,
   metrics,
-  title,
   children,
 }: MetricsPageComponentProps) {
   const [startDate, endDate] = useMemo(() => {
@@ -72,7 +74,11 @@ export function MetricsPage({
       }
     >
       <div className="mb-7">
-        <MetricsSubNav />
+        <MetricsSubNav
+          organization={organization}
+          hasRecurringProducts={hasRecurringProducts}
+          hasOneTimeProducts={hasOneTimeProducts}
+        />
       </div>
 
       <div className="flex flex-col gap-12">

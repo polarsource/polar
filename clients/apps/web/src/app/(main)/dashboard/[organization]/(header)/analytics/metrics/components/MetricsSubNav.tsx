@@ -8,10 +8,10 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { schemas } from '@polar-sh/client'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
-import { useMetricsContext } from './MetricsLayoutClient'
 
 interface Tab {
   title: string
@@ -19,9 +19,17 @@ interface Tab {
   visible: boolean
 }
 
-export function MetricsSubNav() {
-  const { organization, hasRecurringProducts, hasOneTimeProducts } =
-    useMetricsContext()
+interface MetricsSubNavProps {
+  organization: schemas['Organization']
+  hasRecurringProducts: boolean
+  hasOneTimeProducts: boolean
+}
+
+export function MetricsSubNav({
+  organization,
+  hasRecurringProducts,
+  hasOneTimeProducts,
+}: MetricsSubNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()

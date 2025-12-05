@@ -6,21 +6,14 @@ import { schemas } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricGroupProps {
-  title: string
   data: ParsedMetricsResponse
   metricKeys: (keyof schemas['Metrics'])[]
   interval: schemas['TimeInterval']
 }
 
-export function MetricGroup({
-  title,
-  metricKeys,
-  data,
-  interval,
-}: MetricGroupProps) {
+export function MetricGroup({ metricKeys, data, interval }: MetricGroupProps) {
   return (
     <div className="flex flex-col gap-y-6">
-      <h3 className="text-2xl">{title}</h3>
       <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
         <div className="grid grid-cols-1 flex-col [clip-path:inset(1px_1px_1px_1px)] md:grid-cols-2 lg:grid-cols-3">
           {metricKeys.map((metricKey, index) => (

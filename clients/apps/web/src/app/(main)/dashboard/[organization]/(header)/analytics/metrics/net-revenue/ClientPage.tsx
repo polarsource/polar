@@ -8,15 +8,10 @@ import { subMonths } from 'date-fns/subMonths'
 import { useMemo } from 'react'
 import { MetricGroup } from '../components/MetricGroup'
 import { MetricsHeader } from '../components/MetricsHeader'
+import { MetricsPageProps } from '../components/MetricsPage'
 import { MetricsSubNav } from '../components/MetricsSubNav'
 
-interface ClientPageProps {
-  organization: schemas['Organization']
-  earliestDateISOString: string
-  startDateISOString?: string
-  endDateISOString?: string
-  interval: schemas['TimeInterval']
-  productId?: string[]
+interface NetRevenuePageProps extends MetricsPageProps {
   hasRecurringProducts: boolean
   hasOneTimeProducts: boolean
 }
@@ -30,7 +25,7 @@ export default function ClientPage({
   productId,
   hasRecurringProducts,
   hasOneTimeProducts,
-}: ClientPageProps) {
+}: NetRevenuePageProps) {
   const [startDate, endDate] = useMemo(() => {
     const today = new Date()
     const startDate = startDateISOString
@@ -73,7 +68,6 @@ export default function ClientPage({
   return (
     <DashboardBody
       wide
-      title={<MetricsSubNav />}
       header={
         <MetricsHeader
           organization={organization}
@@ -85,10 +79,13 @@ export default function ClientPage({
         />
       }
     >
+      <div className="mb-7">
+        <MetricsSubNav />
+      </div>
+
       <div className="flex flex-col gap-12">
         {data && (
           <MetricGroup
-            title="Net Revenue"
             metricKeys={netRevenueMetrics}
             data={data}
             interval={interval}

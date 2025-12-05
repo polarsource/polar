@@ -110,7 +110,7 @@ export function MetricsSubNav() {
 
   return (
     <div className="@container w-full">
-      <div className={`w-full xl:@sm:w-72 ${breakpointHidden}`}>
+      <div className={`w-full ${breakpointHidden}`}>
         <Select value={currentTab?.href} onValueChange={handleSelectChange}>
           <SelectTrigger>
             <SelectValue placeholder="Select metric" />
@@ -126,7 +126,7 @@ export function MetricsSubNav() {
       </div>
 
       <div className={`hidden ${breakpointBlock}`}>
-        <Tabs className="md:-mx-4" value={currentTab?.title}>
+        <Tabs className="-mx-4.5" value={currentTab?.title}>
           <TabsList className="flex flex-row flex-wrap justify-start bg-transparent ring-0 dark:bg-transparent dark:ring-0">
             {tabs.map((tab) => {
               const href = queryString ? `${tab.href}?${queryString}` : tab.href

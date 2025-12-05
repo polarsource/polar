@@ -48,8 +48,8 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RefundSchema]:
-    """List products."""
-    results, count = await refund_service.get_list(
+    """List refunds."""
+    results, count = await refund_service.list(
         session,
         auth_subject,
         id=id,

@@ -189,23 +189,24 @@ module "production" {
   }
 
   backend_secrets = {
-    stripe_publishable_key       = var.stripe_publishable_key_production
-    current_jwk_kid              = var.backend_current_jwk_kid_production
-    discord_bot_token            = var.backend_discord_bot_token_production
-    discord_client_id            = var.backend_discord_client_id_production
-    discord_client_secret        = var.backend_discord_client_secret_production
-    discord_webhook_url          = var.backend_discord_webhook_url_production
-    loops_api_key                = var.backend_loops_api_key_production
-    posthog_project_api_key      = var.backend_posthog_project_api_key_production
-    resend_api_key               = var.backend_resend_api_key_production
-    secret                       = var.backend_secret_production
-    sentry_dsn                   = var.backend_sentry_dsn_production
-    plain_request_signing_secret = var.backend_plain_request_signing_secret_production
-    plain_token                  = var.backend_plain_token_production
-    plain_chat_secret            = var.backend_plain_chat_secret_production
-    jwks                         = var.backend_jwks_production
-    app_review_email             = var.backend_app_review_email
-    app_review_otp_code          = var.backend_app_review_otp_code
+    stripe_publishable_key         = var.stripe_publishable_key_production
+    current_jwk_kid                = var.backend_current_jwk_kid_production
+    discord_bot_token              = var.backend_discord_bot_token_production
+    discord_client_id              = var.backend_discord_client_id_production
+    discord_client_secret          = var.backend_discord_client_secret_production
+    discord_webhook_url            = var.backend_discord_webhook_url_production
+    loops_api_key                  = var.backend_loops_api_key_production
+    posthog_project_api_key        = var.backend_posthog_project_api_key_production
+    resend_api_key                 = var.backend_resend_api_key_production
+    secret                         = var.backend_secret_production
+    sentry_dsn                     = var.backend_sentry_dsn_production
+    plain_request_signing_secret   = var.backend_plain_request_signing_secret_production
+    plain_token                    = var.backend_plain_token_production
+    plain_chat_secret              = var.backend_plain_chat_secret_production
+    jwks                           = var.backend_jwks_production
+    app_review_email               = var.backend_app_review_email
+    app_review_otp_code            = var.backend_app_review_otp_code
+    chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
   }
 
   aws_s3_config = {

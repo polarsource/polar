@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Self, TypedDict
+from urllib.parse import urlparse
 from uuid import UUID
 
 from sqlalchemy import (
@@ -147,10 +148,31 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
-    avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    _avatar_url: Mapped[str | None] = mapped_column(
+        String, name="avatar_url", key="_avatar_url", nullable=True
+    )
 
     email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     website: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+
+    @property
+    def avatar_url(self) -> str | None:
+        if self._avatar_url:
+            return self._avatar_url
+
+        if not self.website or not settings.LOGO_DEV_TOKEN:
+            return None
+
+        parsed = urlparse(self.website)
+        domain = parsed.netloc or parsed.path
+        domain = domain.lower().removeprefix("www.")
+
+        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_TOKEN}&fallback=404"
+
+    @avatar_url.setter
+    def avatar_url(self, value: str | None) -> None:
+        self._avatar_url = value
+
     socials: Mapped[list[OrganizationSocials]] = mapped_column(
         JSONB, nullable=False, default=list
     )

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -34,7 +35,7 @@ export const Hero = ({
   return (
     <motion.div
       className={twMerge(
-        'relative flex flex-col items-center justify-center gap-6 px-4 pt-8 text-center md:pt-12',
+        'relative flex flex-col items-center justify-center gap-4 px-4 pt-8 text-center md:pt-12',
         className,
       )}
       variants={containerVariants}
@@ -42,6 +43,14 @@ export const Hero = ({
       whileInView="visible"
       viewport={{ once: true }}
     >
+      <motion.div variants={itemVariants}>
+        <Image
+          src="/assets/brand/app-icon.png"
+          alt="App Icon"
+          width={140}
+          height={140}
+        />
+      </motion.div>
       <motion.h1
         className="text-5xl leading-tight! tracking-tight text-balance md:px-0 md:text-7xl"
         variants={itemVariants}
@@ -49,7 +58,7 @@ export const Hero = ({
         {title}
       </motion.h1>
       <motion.p
-        className="dark:text-polar-500 max-w-3xl text-center text-xl !leading-relaxed text-balance text-gray-500"
+        className="dark:text-polar-500 max-w-2xl text-center text-2xl !leading-relaxed text-balance text-gray-500"
         variants={itemVariants}
       >
         {description}

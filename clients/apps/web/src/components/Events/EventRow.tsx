@@ -1,5 +1,6 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
+import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import { schemas } from '@polar-sh/client'
@@ -15,9 +16,10 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AnonymousCustomerAvatar } from '../Customer/AnonymousCustomerAvatar'
+import { CostDeviationBar } from './CostDeviationBar'
 import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
-import { useEventCard, useEventCostBadge } from './utils'
+import { useEventCard } from './utils'
 
 const PAGE_SIZE = 10
 
@@ -28,6 +30,8 @@ export const EventRow = ({
   depth = 0,
   renderChildren = true,
   renderEventLink = true,
+  averageCost,
+  p99Cost,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
@@ -35,6 +39,8 @@ export const EventRow = ({
   depth?: number
   renderChildren?: boolean
   renderEventLink?: boolean
+  averageCost?: number
+  p99Cost?: number
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded)
   const hasChildren = event.child_count > 0
@@ -65,28 +71,30 @@ export const EventRow = ({
 
   const formattedTimestamp = useMemo(
     () =>
-      new Date(event.timestamp).toLocaleDateString(
-        'en-US',
-        isExpanded
-          ? {
-              year: 'numeric',
-              month: 'short',
-              day: '2-digit',
-              hour: 'numeric',
-              minute: 'numeric',
-              second: 'numeric',
-            }
-          : {
-              month: 'short',
-              day: '2-digit',
-              year: 'numeric',
-            },
-      ),
-    [event, isExpanded],
+      new Date(event.timestamp).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+      }),
+    [event],
   )
 
   const eventCard = useEventCard(event)
-  const eventCostBadge = useEventCostBadge(event)
+
+  // Extract cost metadata for deviation bar
+  const costMetadata = useMemo(() => {
+    if ('_cost' in event.metadata && event.metadata._cost) {
+      const cost = event.metadata._cost as { amount: string; currency: string }
+      return {
+        cost: Number(cost.amount),
+        currency: cost.currency ?? 'usd',
+      }
+    }
+    return null
+  }, [event.metadata])
 
   const router = useRouter()
 
@@ -152,7 +160,27 @@ export const EventRow = ({
             </span>
           </div>
           <div className="flex flex-row items-center gap-x-6">
-            {isExpanded ? null : eventCostBadge}
+            {isExpanded ? null : (
+              <div className="flex flex-row items-center gap-x-3">
+                {costMetadata && (
+                  <span className="font-mono text-xs">
+                    {formatSubCentCurrency(
+                      costMetadata.cost,
+                      costMetadata.currency,
+                    )}
+                  </span>
+                )}
+                {costMetadata &&
+                  averageCost !== undefined &&
+                  p99Cost !== undefined && (
+                    <CostDeviationBar
+                      eventCost={costMetadata.cost}
+                      averageCost={averageCost}
+                      p99Cost={p99Cost}
+                    />
+                  )}
+              </div>
+            )}
             {isExpanded ? (
               renderEventLink ? (
                 <Link
@@ -247,7 +275,25 @@ export const EventRow = ({
         {isExpanded ? (
           <div className="flex flex-row items-center justify-between gap-x-2 px-3 py-2">
             <EventCustomer event={event} />
-            {eventCostBadge}
+            <div className="flex flex-row items-center gap-x-3">
+              {costMetadata && (
+                <span className="font-mono text-xs">
+                  {formatSubCentCurrency(
+                    costMetadata.cost,
+                    costMetadata.currency,
+                  )}
+                </span>
+              )}
+              {costMetadata &&
+                averageCost !== undefined &&
+                p99Cost !== undefined && (
+                  <CostDeviationBar
+                    eventCost={costMetadata.cost}
+                    averageCost={averageCost}
+                    p99Cost={p99Cost}
+                  />
+                )}
+            </div>
           </div>
         ) : null}
       </div>

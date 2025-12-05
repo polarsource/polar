@@ -9,12 +9,27 @@ import IntervalPicker, {
 } from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
+import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { ParsedMetricsResponse, useMetrics, useProducts } from '@/hooks/queries'
+import { useEventHierarchyStats } from '@/hooks/queries/events'
+import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@polar-sh/ui/components/atoms/Tabs'
 import { subMonths } from 'date-fns/subMonths'
+import {
+  BadgeDollarSignIcon,
+  CircleUserRound,
+  MousePointerClickIcon,
+} from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
@@ -56,7 +71,10 @@ export default function ClientPage({
     ...(productId ? { product_id: productId } : {}),
   })
 
-  const { data: allProducts } = useProducts(organization.id, { limit: 100 })
+  const { data: allProducts, isLoading: isProductsLoading } = useProducts(
+    organization.id,
+    { limit: 100 },
+  )
 
   const relevantProducts = useMemo(() => {
     if (!allProducts?.items) {
@@ -207,6 +225,53 @@ export default function ClientPage({
     ]
   }, [hasRecurringProducts, hasOneTimeProducts])
 
+  // State for active tab - will be set to first available tab
+  const [activeTab, setActiveTab] = useState<string | null>(null)
+
+  // Fetch costs data for the Costs tab
+  const { data: costData, isLoading: isCostsLoading } = useEventHierarchyStats(
+    organization.id,
+    {
+      start_date: toISODate(startDate),
+      end_date: toISODate(endDate),
+      interval,
+      aggregate_fields: ['_cost.amount'],
+      sorting: ['-total'],
+    },
+    organization.feature_settings?.revops_enabled ?? false,
+  )
+
+  // Determine available tabs based on product types
+  const availableTabs = useMemo(() => {
+    const tabs: { value: string; label: string }[] = []
+    if (hasRecurringProducts) {
+      tabs.push({ value: 'subscriptions', label: 'Subscriptions' })
+      tabs.push({ value: 'cancellations', label: 'Cancellations' })
+    }
+    if (hasOneTimeProducts) {
+      tabs.push({ value: 'one-time', label: 'One-time' })
+    }
+    tabs.push({ value: 'orders', label: 'Orders' })
+    tabs.push({ value: 'checkouts', label: 'Checkouts' })
+    tabs.push({ value: 'net-revenue', label: 'Net Revenue' })
+    if (organization.feature_settings?.revops_enabled) {
+      tabs.push({ value: 'costs', label: 'Costs' })
+    }
+    return tabs
+  }, [
+    hasRecurringProducts,
+    hasOneTimeProducts,
+    organization.feature_settings?.revops_enabled,
+  ])
+
+  // Set active tab to first available tab when tabs are determined
+  // Only compute once products are loaded to avoid flash of wrong tab
+  const effectiveActiveTab = useMemo(() => {
+    if (activeTab) return activeTab
+    if (isProductsLoading) return null
+    return availableTabs[0]?.value ?? 'orders'
+  }, [activeTab, isProductsLoading, availableTabs])
+
   return (
     <DashboardBody
       wide
@@ -239,17 +304,42 @@ export default function ClientPage({
         </div>
       }
     >
-      <div className="flex flex-col gap-12">
+      <Tabs
+        value={effectiveActiveTab ?? ''}
+        onValueChange={setActiveTab}
+        className="flex flex-col"
+      >
+        <TabsList className="mb-8 flex-wrap">
+          {availableTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
         {data && (
           <>
+            {/* Subscriptions Tab */}
             {hasRecurringProducts && (
-              <>
+              <TabsContent
+                value="subscriptions"
+                className="flex flex-col gap-12"
+              >
                 <MetricGroup
                   title="Subscriptions"
                   metricKeys={subscriptionEvents}
                   data={data}
                   interval={interval}
                 />
+              </TabsContent>
+            )}
+
+            {/* Cancellations Tab */}
+            {hasRecurringProducts && (
+              <TabsContent
+                value="cancellations"
+                className="flex flex-col gap-12"
+              >
                 <div className="flex flex-col gap-y-6">
                   <h3 className="text-2xl">Cancellations</h3>
                   <div className="dark:border-polar-700 flex flex-col overflow-hidden rounded-2xl border border-gray-200">
@@ -282,49 +372,84 @@ export default function ClientPage({
                     </div>
                   </div>
                 </div>
-              </>
+              </TabsContent>
             )}
 
+            {/* One-time Purchases Tab */}
             {hasOneTimeProducts && (
-              <MetricGroup
-                title="One-time Purchases"
-                metricKeys={oneTimeEvents}
-                data={data}
-                interval={interval}
-              />
+              <TabsContent value="one-time" className="flex flex-col gap-12">
+                <MetricGroup
+                  title="One-time Purchases"
+                  metricKeys={oneTimeEvents}
+                  data={data}
+                  interval={interval}
+                />
+              </TabsContent>
             )}
 
-            <MetricGroup
-              title="Orders"
-              metricKeys={orderEvents}
-              data={data}
-              interval={interval}
-            />
-
-            <MetricGroup
-              title="Checkouts"
-              metricKeys={checkoutEvents}
-              data={data}
-              interval={interval}
-            />
-
-            <MetricGroup
-              title="Net Revenue"
-              metricKeys={netRevenueEvents}
-              data={data}
-              interval={interval}
-            />
-            {organization.feature_settings?.revops_enabled && (
+            {/* Orders Tab */}
+            <TabsContent value="orders" className="flex flex-col gap-12">
               <MetricGroup
-                title="Costs"
-                metricKeys={costEvents}
+                title="Orders"
+                metricKeys={orderEvents}
                 data={data}
                 interval={interval}
               />
+            </TabsContent>
+
+            {/* Checkouts Tab */}
+            <TabsContent value="checkouts" className="flex flex-col gap-12">
+              <MetricGroup
+                title="Checkouts"
+                metricKeys={checkoutEvents}
+                data={data}
+                interval={interval}
+              />
+            </TabsContent>
+
+            {/* Net Revenue Tab */}
+            <TabsContent value="net-revenue" className="flex flex-col gap-12">
+              <MetricGroup
+                title="Net Revenue"
+                metricKeys={netRevenueEvents}
+                data={data}
+                interval={interval}
+              />
+            </TabsContent>
+
+            {/* Costs Tab */}
+            {organization.feature_settings?.revops_enabled && (
+              <TabsContent value="costs" className="flex flex-col gap-y-6">
+                <MetricGroup
+                  title="Cost Metrics"
+                  metricKeys={costEvents}
+                  data={data}
+                  interval={interval}
+                />
+                <div className="flex flex-col gap-y-4">
+                  <h3 className="text-2xl">Event Costs</h3>
+                  {!isCostsLoading && costData?.totals.length === 0 && (
+                    <p className="dark:text-polar-400 dark:bg-polar-800 flex items-center justify-center rounded-2xl bg-gray-50 p-12 text-center text-sm text-gray-500">
+                      No cost data available for the selected date range
+                    </p>
+                  )}
+                  {(costData?.totals ?? []).map((totals) => (
+                    <EventStatisticsCard
+                      key={totals.name}
+                      periods={costData?.periods || []}
+                      eventStatistics={totals}
+                      organization={organization}
+                      startDate={toISODate(startDate)}
+                      endDate={toISODate(endDate)}
+                      interval={interval}
+                    />
+                  ))}
+                </div>
+              </TabsContent>
             )}
           </>
         )}
-      </div>
+      </Tabs>
     </DashboardBody>
   )
 }
@@ -365,5 +490,182 @@ const MetricGroup = ({
         </div>
       </div>
     </div>
+  )
+}
+
+// Helper function to get time series values for cost sparklines
+type TimeSeriesField = 'average' | 'p95' | 'p99'
+
+const getTimeSeriesValues = (
+  periods: schemas['StatisticsPeriod'][],
+  eventName: schemas['EventStatistics']['name'],
+  field: TimeSeriesField,
+): number[] => {
+  return periods.map((period) => {
+    const eventStats = period.stats.find((stat) => stat.name === eventName)
+    if (!eventStats) return 0
+
+    if (field === 'average') {
+      return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
+    } else if (field === 'p95') {
+      return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
+    } else if (field === 'p99') {
+      return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
+    }
+    return 0
+  })
+}
+
+// Helper function to generate search params for costs links
+const getCostsSearchParams = (
+  startDate: string,
+  endDate: string,
+  interval: string,
+): string => {
+  const params = new URLSearchParams()
+  params.set('startDate', startDate)
+  params.set('endDate', endDate)
+  params.set('interval', interval)
+  return params.toString()
+}
+
+// Event Statistics Card component for the Costs tab
+interface EventStatisticsCardProps {
+  periods: schemas['StatisticsPeriod'][]
+  eventStatistics: schemas['EventStatistics']
+  organization: schemas['Organization']
+  startDate: string
+  endDate: string
+  interval: string
+}
+
+const EventStatisticsCard = ({
+  periods,
+  eventStatistics,
+  organization,
+  startDate,
+  endDate,
+  interval,
+}: EventStatisticsCardProps) => {
+  const averageCostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
+  }, [periods, eventStatistics.name])
+
+  const p95CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p95')
+  }, [periods, eventStatistics.name])
+
+  const p99CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
+  }, [periods, eventStatistics.name])
+
+  const searchString = getCostsSearchParams(startDate, endDate, interval)
+
+  return (
+    <Link
+      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
+      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
+    >
+      <div className="flex flex-col justify-between gap-3 @xl:flex-row">
+        <h2 className="text-lg font-medium">
+          {eventStatistics.label ?? eventStatistics.name}
+        </h2>
+        <dl className="dark:text-polar-500 flex max-w-sm flex-1 items-center gap-5 font-mono text-gray-500">
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.occurrences}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            <dt>
+              <CircleUserRound className="size-5" strokeWidth={1.5} />
+            </dt>
+            <dd>{eventStatistics.customers}</dd>
+          </div>
+          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
+            {eventStatistics.totals?._cost_amount !== undefined && (
+              <>
+                <dt>
+                  <BadgeDollarSignIcon className="size-5" strokeWidth={1.5} />
+                </dt>
+                <dd>
+                  {formatSubCentCurrency(
+                    Number(eventStatistics.totals?._cost_amount),
+                    'usd',
+                  )}
+                </dd>
+              </>
+            )}
+          </div>
+        </dl>
+      </div>
+      <div className="flex flex-col gap-5 @3xl:flex-row">
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>Average cost</h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.averages?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={averageCostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              95<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p95?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p95CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              99<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p99?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p99CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }

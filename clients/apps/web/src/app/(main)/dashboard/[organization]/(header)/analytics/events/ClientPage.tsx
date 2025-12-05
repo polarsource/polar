@@ -9,12 +9,22 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
-import { useEventNames, useEvents } from '@/hooks/queries/events'
+import { Sparkline } from '@/components/Sparkline/Sparkline'
+import {
+  useEventHierarchyStats,
+  useEventNames,
+  useEvents,
+} from '@/hooks/queries/events'
+import { api } from '@/utils/client'
+import { formatSubCentCurrency } from '@/utils/formatters'
+import { getTimestampFormatter, toISODate } from '@/utils/metrics'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import ChevronRight from '@mui/icons-material/ChevronRight'
+import ExpandMore from '@mui/icons-material/ExpandMore'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
-import { operations, schemas } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -30,7 +40,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { endOfToday } from 'date-fns'
+import { useQueries } from '@tanstack/react-query'
+import { endOfToday, format } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -44,6 +55,42 @@ import {
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import z from 'zod'
+import { Chart } from '../costs/components/Chart/Chart'
+
+const LOCAL_STORAGE_KEY = 'polar:events:filter-state'
+
+interface FilterState {
+  expandedSources: Record<string, boolean>
+}
+
+const getDefaultFilterState = (): FilterState => ({
+  expandedSources: {
+    user: true,
+    system: false, // System events hidden by default
+  },
+})
+
+const loadFilterState = (): FilterState => {
+  if (typeof window === 'undefined') return getDefaultFilterState()
+  try {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored)
+    }
+  } catch {
+    // Ignore parsing errors
+  }
+  return getDefaultFilterState()
+}
+
+const saveFilterState = (state: FilterState) => {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 const PAGE_SIZE = 100
 
@@ -86,6 +133,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     ),
   )
 
+  // Filter state with local storage persistence - load from localStorage on init
+  const [filterState, setFilterState] = useState<FilterState>(() =>
+    loadFilterState(),
+  )
+
+  const toggleSourceExpanded = useCallback((source: string) => {
+    setFilterState((prev) => {
+      const newState = {
+        ...prev,
+        expandedSources: {
+          ...prev.expandedSources,
+          [source]: !prev.expandedSources[source],
+        },
+      }
+      saveFilterState(newState)
+      return newState
+    })
+  }, [])
+
   const router = useRouter()
 
   const {
@@ -113,6 +179,83 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [data],
   )
 
+  // Get all event names for fetching sparkline data
+  const allEventNames = useMemo(() => {
+    if (!eventTypes) return []
+    return Object.values(eventTypes)
+      .flat()
+      .map((et) => et.name)
+  }, [eventTypes])
+
+  // Create a map from event name to event type ID
+  const eventNameToIdMap = useMemo(() => {
+    const map = new Map<string, string>()
+    if (!eventTypes) return map
+    Object.values(eventTypes)
+      .flat()
+      .forEach((et) => {
+        map.set(et.name, et.id)
+      })
+    return map
+  }, [eventTypes])
+
+  // Get all selected event type IDs for the chart queries
+  const selectedEventTypeIds = useMemo(() => {
+    if (!selectedEventTypes || selectedEventTypes.length === 0) return []
+    return selectedEventTypes
+      .map((name) => ({ name, id: eventNameToIdMap.get(name) }))
+      .filter((item): item is { name: string; id: string } => !!item.id)
+  }, [selectedEventTypes, eventNameToIdMap])
+
+  // Fetch hierarchy stats for all events to get sparkline data
+  const { data: allEventsStats } = useEventHierarchyStats(
+    organization.id,
+    {
+      start_date: toISODate(startDate),
+      end_date: toISODate(endDate),
+      interval: 'day',
+      // @ts-expect-error - event_name filter is valid but not in generated types
+      event_name: allEventNames.length > 0 ? allEventNames : undefined,
+    },
+    allEventNames.length > 0,
+  )
+
+  // Create a map from event name to sparkline values (occurrences over time)
+  const eventSparklineMap = useMemo(() => {
+    const map = new Map<string, number[]>()
+    if (!allEventsStats?.periods) return map
+
+    // For each event, extract its occurrences across all periods
+    const eventNames = new Set<string>()
+    allEventsStats.periods.forEach((period) => {
+      period.stats.forEach((stat) => {
+        eventNames.add(stat.name)
+      })
+    })
+
+    eventNames.forEach((eventName) => {
+      const values = allEventsStats.periods.map((period) => {
+        const stat = period.stats.find((s) => s.name === eventName)
+        return stat?.occurrences || 0
+      })
+      map.set(eventName, values)
+    })
+
+    return map
+  }, [allEventsStats])
+
+  // Create a map from event name to total occurrences (for the selected date range)
+  const eventOccurrencesMap = useMemo(() => {
+    const map = new Map<string, number>()
+    if (!allEventsStats?.totals) return map
+
+    allEventsStats.totals.forEach((stat) => {
+      map.set(stat.name, stat.occurrences || 0)
+    })
+
+    return map
+  }, [allEventsStats])
+
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
 
@@ -132,6 +275,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       end_timestamp: endDate.toISOString(),
       query: debouncedQuery ?? null,
       metadata: debouncedMetadata ?? null,
+      // @ts-expect-error - aggregate_fields populates cost metadata on events
+      aggregate_fields: ['_cost.amount'],
     }
   }, [
     selectedEventTypes,
@@ -145,6 +290,150 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   ])
 
   const { data: events } = useEvents(organization.id, eventParameters)
+
+  // Fetch hierarchy stats for each selected event type
+  // We make separate queries because event_type_id only accepts a single ID
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const hierarchyStatsQueries = useQueries({
+    queries: selectedEventTypeIds.map(({ name, id }) => ({
+      queryKey: [
+        'eventHierarchyStats',
+        organization.id,
+        {
+          timezone,
+          start_date: toISODate(startDate),
+          end_date: toISODate(endDate),
+          interval: 'day',
+          aggregate_fields: ['_cost.amount'],
+          event_type_id: id,
+        },
+      ],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/events/statistics/timeseries', {
+            params: {
+              query: {
+                organization_id: organization.id,
+                timezone: timezone as 'UTC',
+                start_date: toISODate(startDate),
+                end_date: toISODate(endDate),
+                interval: 'day',
+                aggregate_fields: ['_cost.amount'],
+                event_type_id: id,
+              },
+            },
+          }),
+        ),
+      enabled: !!id,
+      meta: { eventName: name },
+    })),
+  })
+
+  const isHierarchyLoading = hierarchyStatsQueries.some((q) => q.isLoading)
+  const hasFilters = selectedEventTypeIds.length > 0
+
+  // Calculate chart data from all hierarchy stats queries
+  const chartData = useMemo(() => {
+    if (!selectedEventTypes || selectedEventTypes.length === 0) return []
+
+    // Get all successful query results with their event names
+    const queryResults = hierarchyStatsQueries
+      .map((query, index) => ({
+        data: query.data,
+        eventName: selectedEventTypeIds[index]?.name,
+      }))
+      .filter(
+        (r): r is { data: NonNullable<typeof r.data>; eventName: string } =>
+          !!r.data && !!r.eventName,
+      )
+
+    if (queryResults.length === 0) return []
+
+    // Use the first query's periods as the base timeline
+    const basePeriods = queryResults[0]?.data?.periods || []
+    if (basePeriods.length === 0) return []
+
+    return basePeriods
+      .map((period, periodIndex) => {
+        const result: Record<string, unknown> = {
+          date: format(new Date(period.timestamp), 'MMM d, yyyy'),
+          timestamp: new Date(period.timestamp),
+        }
+
+        // Add data from each query result
+        queryResults.forEach(({ data, eventName }) => {
+          const stat = data.periods[periodIndex]?.stats[0]
+          const sanitizedName = eventName.replace(/\./g, '_')
+          result[`${sanitizedName}_occurrences`] = stat?.occurrences || 0
+          result[`${sanitizedName}_cost`] = parseFloat(
+            stat?.averages?.['_cost_amount'] || '0',
+          )
+        })
+
+        return result
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+  }, [hierarchyStatsQueries, selectedEventTypes, selectedEventTypeIds])
+
+  // Generate series for charts based on all selected event types
+  const occurrencesSeries = useMemo(() => {
+    if (!selectedEventTypes || selectedEventTypes.length === 0) return []
+    const colors = [
+      '#3b82f6',
+      '#10b981',
+      '#f59e0b',
+      '#ef4444',
+      '#8b5cf6',
+      '#ec4899',
+    ]
+    return selectedEventTypes.map((name, index) => ({
+      key: `${name.replace(/\./g, '_')}_occurrences`,
+      label: name,
+      color: colors[index % colors.length],
+    }))
+  }, [selectedEventTypes])
+
+  const costSeries = useMemo(() => {
+    if (!selectedEventTypes || selectedEventTypes.length === 0) return []
+    const colors = [
+      '#10b981',
+      '#3b82f6',
+      '#f59e0b',
+      '#ef4444',
+      '#8b5cf6',
+      '#ec4899',
+    ]
+    return selectedEventTypes.map((name, index) => ({
+      key: `${name.replace(/\./g, '_')}_cost`,
+      label: name,
+      color: colors[index % colors.length],
+    }))
+  }, [selectedEventTypes])
+
+  // Calculate total cost metrics for the header (combine all selected event types)
+  const costMetrics = useMemo(() => {
+    const queryResults = hierarchyStatsQueries
+      .map((query) => query.data)
+      .filter((data): data is NonNullable<typeof data> => !!data)
+
+    if (queryResults.length === 0) {
+      return { totalOccurrences: 0, totalCost: 0 }
+    }
+
+    return queryResults.reduce(
+      (acc, data) => {
+        const stat = data.totals?.[0]
+        return {
+          totalOccurrences: acc.totalOccurrences + (stat?.occurrences || 0),
+          totalCost:
+            acc.totalCost + parseFloat(stat?.totals?.['_cost_amount'] || '0'),
+        }
+      },
+      { totalOccurrences: 0, totalCost: 0 },
+    )
+  }, [hierarchyStatsQueries])
+
+  const timestampFormatter = useMemo(() => getTimestampFormatter('day'), [])
 
   const searchParams = useSearchParams()
 
@@ -174,9 +463,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     to: endDate,
   }
 
+  // Build the page title with selected event names
+  const pageTitle = useMemo(() => {
+    if (!selectedEventTypes || selectedEventTypes.length === 0) {
+      return 'Events'
+    }
+    if (selectedEventTypes.length === 1) {
+      return `Events: ${selectedEventTypes[0]}`
+    }
+    return `Events: ${selectedEventTypes.length} selected`
+  }, [selectedEventTypes])
+
   return (
     <DashboardBody
-      title="Events"
+      title={pageTitle}
       header={
         <h3 className="dark:text-polar-500 text-xl text-gray-500">
           {events?.pagination.total_count}{' '}
@@ -262,51 +562,107 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
               {Object.entries(eventTypes ?? {})
                 .sort((a) => (a[0] === 'system' ? 1 : -1))
-                .map(([source, eventTypes]) => {
-                  if (eventTypes.length === 0) return null
+                .map(([source, eventTypeList]) => {
+                  if (eventTypeList.length === 0) return null
+
+                  const isExpanded = filterState.expandedSources[source] ?? true
+                  // Use date-range-filtered occurrences if available, otherwise fall back to all-time
+                  const totalOccurrences = eventTypeList.reduce(
+                    (sum, et) =>
+                      sum +
+                      (eventOccurrencesMap.get(et.name) ?? et.occurrences ?? 0),
+                    0,
+                  )
 
                   return (
                     <div className="flex flex-col gap-y-2" key={source}>
-                      <h3 className="text-sm capitalize">{source} Events</h3>
-                      <List size="small" className="rounded-xl">
-                        {eventTypes.map((eventType) => (
-                          <ListItem
-                            key={eventType.name}
-                            size="small"
-                            className="justify-between px-3 font-mono text-xs"
-                            inactiveClassName="text-gray-500 dark:text-polar-500"
-                            selected={selectedEventTypes?.includes(
-                              eventType.name,
-                            )}
-                            onSelect={() =>
-                              setSelectedEventTypes((prev) =>
-                                prev && prev.includes(eventType.name)
-                                  ? prev.filter(
-                                      (name) => name !== eventType.name,
-                                    )
-                                  : ([
-                                      ...(prev ?? []),
-                                      eventType.name,
-                                    ] as string[]),
-                              )
-                            }
-                          >
-                            <span className="w-full truncate">
-                              {eventType.label}
-                            </span>
-                            <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                              {Number(eventType.occurrences).toLocaleString(
-                                'en-US',
-                                {
-                                  style: 'decimal',
-                                  compactDisplay: 'short',
-                                  notation: 'compact',
-                                },
-                              )}
-                            </span>
-                          </ListItem>
-                        ))}
-                      </List>
+                      <button
+                        onClick={() => toggleSourceExpanded(source)}
+                        className="flex flex-row items-center justify-between text-left transition-opacity hover:opacity-80"
+                      >
+                        <div className="flex flex-row items-center gap-x-2">
+                          {isExpanded ? (
+                            <ExpandMore
+                              fontSize="small"
+                              className="dark:text-polar-500 text-gray-400"
+                            />
+                          ) : (
+                            <ChevronRight
+                              fontSize="small"
+                              className="dark:text-polar-500 text-gray-400"
+                            />
+                          )}
+                          <h3 className="text-sm capitalize">
+                            {source} Events
+                          </h3>
+                        </div>
+                        <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                          {Number(totalOccurrences).toLocaleString('en-US', {
+                            style: 'decimal',
+                            compactDisplay: 'short',
+                            notation: 'compact',
+                          })}
+                        </span>
+                      </button>
+                      {isExpanded && (
+                        <List size="small" className="rounded-xl">
+                          {eventTypeList.map((eventType) => {
+                            const sparklineValues =
+                              eventSparklineMap.get(eventType.name) || []
+                            const occurrences =
+                              eventOccurrencesMap.get(eventType.name) ??
+                              eventType.occurrences
+
+                            return (
+                              <ListItem
+                                key={eventType.name}
+                                size="small"
+                                className="justify-between px-3 font-mono text-xs"
+                                inactiveClassName="text-gray-500 dark:text-polar-500"
+                                selected={selectedEventTypes?.includes(
+                                  eventType.name,
+                                )}
+                                onSelect={() =>
+                                  setSelectedEventTypes((prev) =>
+                                    prev && prev.includes(eventType.name)
+                                      ? prev.filter(
+                                          (name) => name !== eventType.name,
+                                        )
+                                      : ([
+                                          ...(prev ?? []),
+                                          eventType.name,
+                                        ] as string[]),
+                                  )
+                                }
+                              >
+                                <span className="max-w-[120px] truncate">
+                                  {eventType.label}
+                                </span>
+                                <div className="flex flex-row items-center gap-x-2">
+                                  {sparklineValues.length > 1 && (
+                                    <Sparkline
+                                      values={sparklineValues}
+                                      width={40}
+                                      height={16}
+                                      className="opacity-60"
+                                    />
+                                  )}
+                                  <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                                    {Number(occurrences).toLocaleString(
+                                      'en-US',
+                                      {
+                                        style: 'decimal',
+                                        compactDisplay: 'short',
+                                        notation: 'compact',
+                                      },
+                                    )}
+                                  </span>
+                                </div>
+                              </ListItem>
+                            )
+                          })}
+                        </List>
+                      )}
                     </div>
                   )
                 })}
@@ -350,6 +706,87 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
     >
       <div className="flex h-full flex-col gap-y-4">
+        {/* Charts section - shown when filters are applied */}
+        {hasFilters && chartData.length > 0 && (
+          <div className="mb-4 flex flex-col gap-y-6">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="col-span-1">
+                <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
+                  <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                    <h3 className="text-lg font-medium">Occurrences</h3>
+                    <span className="tabular-nums">
+                      {costMetrics.totalOccurrences.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <Chart
+                      data={chartData}
+                      series={occurrencesSeries}
+                      xAxisKey="timestamp"
+                      height={200}
+                      xAxisFormatter={(value) =>
+                        value instanceof Date
+                          ? timestampFormatter(value)
+                          : String(value)
+                      }
+                      labelFormatter={(value) =>
+                        value instanceof Date
+                          ? value.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                          : String(value)
+                      }
+                      showYAxis={true}
+                      yAxisFormatter={(value) => value.toLocaleString()}
+                      loading={isHierarchyLoading}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-span-1">
+                <div className="dark:bg-polar-700 rounded-3xl bg-gray-50 p-2">
+                  <div className="flex flex-row items-center justify-between px-3 pt-2 pb-4">
+                    <h3 className="text-lg font-medium">Costs</h3>
+                    <span className="tabular-nums">
+                      {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
+                    </span>
+                  </div>
+                  <div>
+                    <Chart
+                      data={chartData}
+                      series={costSeries}
+                      xAxisKey="timestamp"
+                      height={200}
+                      xAxisFormatter={(value) =>
+                        value instanceof Date
+                          ? timestampFormatter(value)
+                          : String(value)
+                      }
+                      labelFormatter={(value) =>
+                        value instanceof Date
+                          ? value.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: '2-digit',
+                              year: 'numeric',
+                            })
+                          : String(value)
+                      }
+                      showYAxis={true}
+                      yAxisFormatter={(value) =>
+                        formatSubCentCurrency(value, 'usd')
+                      }
+                      loading={isHierarchyLoading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {events?.items.length === 0 ? (
           <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
             <h1 className="text-2xl font-normal">No Events Found</h1>

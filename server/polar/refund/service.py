@@ -36,6 +36,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment.repository import PaymentRepository
 from polar.pledge.service import pledge as pledge_service
 from polar.transaction.repository import PaymentTransactionRepository
 from polar.transaction.service.payment import (
@@ -385,6 +386,15 @@ class RefundService(ResourceServiceReader[Refund]):
         assert dispute.payment_processor is not None
         assert dispute.payment_processor_id is not None
 
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            dispute.order_id, options=order_repository.get_eager_options()
+        )
+        assert order is not None
+        payment_repository = PaymentRepository.from_session(session)
+        payment = await payment_repository.get_by_id(dispute.payment_id)
+        assert payment is not None
+
         internal_create_schema = InternalRefundCreate(
             status=RefundStatus.succeeded,
             reason=RefundReason.dispute_prevention,
@@ -392,10 +402,10 @@ class RefundService(ResourceServiceReader[Refund]):
             tax_amount=dispute.tax_amount,
             currency=dispute.currency,
             failure_reason=None,
-            order_id=dispute.order.id,
+            order_id=order.id,
             subscription_id=None,
-            customer_id=dispute.order.customer_id,
-            organization_id=dispute.order.organization.id,
+            customer_id=order.customer_id,
+            organization_id=order.organization.id,
             pledge_id=None,
             dispute_id=dispute.id,
             processor=dispute.payment_processor,
@@ -416,9 +426,9 @@ class RefundService(ResourceServiceReader[Refund]):
         return await self._create(
             session,
             internal_create_schema,
-            charge_id=dispute.payment.processor_id,
+            charge_id=payment.processor_id,
             payment=payment_transaction,
-            order=dispute.order,
+            order=order,
         )
 
     async def enqueue_benefits_revokation(

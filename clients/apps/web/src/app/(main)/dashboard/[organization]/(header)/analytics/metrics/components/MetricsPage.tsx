@@ -1,22 +1,32 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
-import { fromISODate } from '@/utils/metrics'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { subMonths } from 'date-fns/subMonths'
+import {
+  createParser,
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
 import { ReactNode, useMemo } from 'react'
 import { MetricGroup } from './MetricGroup'
-import { MetricsHeader } from './MetricsHeader'
-import { MetricsSubNav } from './MetricsSubNav'
+
+const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
+
+const parseAsISODate = createParser({
+  parse: (value) => {
+    if (!value) return null
+    const date = fromISODate(value)
+    return isNaN(date.getTime()) ? null : date
+  },
+  serialize: (date) => toISODate(date),
+})
 
 export interface MetricsPageProps {
-  organization: schemas['Organization']
-  earliestDateISOString: string
-  startDateISOString?: string
-  endDateISOString?: string
-  interval: schemas['TimeInterval']
-  productId?: string[]
+  organizationId: string
   hasRecurringProducts: boolean
   hasOneTimeProducts: boolean
 }
@@ -30,65 +40,47 @@ interface MetricsPageComponentProps extends MetricsPageProps {
 }
 
 export function MetricsPage({
-  organization,
-  earliestDateISOString,
-  startDateISOString,
-  endDateISOString,
-  interval,
-  productId,
-  hasRecurringProducts,
-  hasOneTimeProducts,
+  organizationId,
   metrics,
   children,
 }: MetricsPageComponentProps) {
-  const [startDate, endDate] = useMemo(() => {
-    const today = new Date()
-    const startDate = startDateISOString
-      ? fromISODate(startDateISOString)
-      : subMonths(today, 1)
-    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
-    return [startDate, endDate]
-  }, [startDateISOString, endDateISOString])
+  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
+  const defaultEndDate = useMemo(() => new Date(), [])
+
+  const [interval] = useQueryState(
+    'interval',
+    parseAsStringLiteral(TIME_INTERVALS).withDefault('day'),
+  )
+
+  const [startDate] = useQueryState(
+    'start_date',
+    parseAsISODate.withDefault(defaultStartDate),
+  )
+
+  const [endDate] = useQueryState(
+    'end_date',
+    parseAsISODate.withDefault(defaultEndDate),
+  )
+
+  const [productId] = useQueryState('product_id', parseAsArrayOf(parseAsString))
 
   const { data } = useMetrics({
     startDate,
     endDate,
     interval,
-    organization_id: organization.id,
-    ...(productId ? { product_id: productId } : {}),
+    organization_id: organizationId,
+    ...(productId && productId.length > 0 ? { product_id: productId } : {}),
     metrics,
   })
 
   return (
-    <DashboardBody
-      wide
-      header={
-        <MetricsHeader
-          organization={organization}
-          earliestDateISOString={earliestDateISOString}
-          startDateISOString={startDateISOString}
-          endDateISOString={endDateISOString}
-          interval={interval}
-          productId={productId}
-        />
-      }
-    >
-      <div className="mb-7">
-        <MetricsSubNav
-          organization={organization}
-          hasRecurringProducts={hasRecurringProducts}
-          hasOneTimeProducts={hasOneTimeProducts}
-        />
-      </div>
-
-      <div className="flex flex-col gap-12">
-        {data &&
-          (children ? (
-            children(data, interval)
-          ) : (
-            <MetricGroup metricKeys={metrics} data={data} interval={interval} />
-          ))}
-      </div>
-    </DashboardBody>
+    <div className="flex flex-col gap-12">
+      {data &&
+        (children ? (
+          children(data, interval)
+        ) : (
+          <MetricGroup metricKeys={metrics} data={data} interval={interval} />
+        ))}
+    </div>
   )
 }

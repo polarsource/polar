@@ -1,5 +1,5 @@
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getServerSideAPI } from '@/utils/client/serverside'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { RedirectType, redirect } from 'next/navigation'
 
 export default async function Page(props: {

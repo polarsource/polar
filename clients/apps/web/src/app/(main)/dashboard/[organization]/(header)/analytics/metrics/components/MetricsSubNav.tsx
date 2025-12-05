@@ -1,5 +1,6 @@
 'use client'
 
+import { schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -8,7 +9,6 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
-import { schemas } from '@polar-sh/client'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
@@ -144,7 +144,7 @@ export function MetricsSubNav({
                     className="flex flex-row items-center gap-x-2 px-4"
                     value={tab.title}
                   >
-                    <div>{tab.title}</div>
+                    {tab.title}
                   </TabsTrigger>
                 </Link>
               )

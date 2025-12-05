@@ -108,7 +108,9 @@ export function getMetricsForType(
     case 'net-revenue':
       return [
         ...NET_REVENUE_BASE_METRICS,
-        ...(options?.hasRecurringProducts ? NET_REVENUE_SUBSCRIPTION_METRICS : []),
+        ...(options?.hasRecurringProducts
+          ? NET_REVENUE_SUBSCRIPTION_METRICS
+          : []),
         ...(options?.hasOneTimeProducts ? NET_REVENUE_ONE_TIME_METRICS : []),
       ]
     case 'costs':

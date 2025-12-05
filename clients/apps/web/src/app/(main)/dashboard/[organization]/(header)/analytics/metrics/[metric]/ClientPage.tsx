@@ -15,9 +15,9 @@ interface ClientPageProps extends MetricsPageProps {
 
 export default function ClientPage({
   metric,
+  organizationId,
   hasRecurringProducts,
   hasOneTimeProducts,
-  ...props
 }: ClientPageProps) {
   const metrics = useMemo(
     () =>
@@ -31,7 +31,7 @@ export default function ClientPage({
   if (metric === 'cancellations') {
     return (
       <MetricsPage
-        {...props}
+        organizationId={organizationId}
         hasRecurringProducts={hasRecurringProducts}
         hasOneTimeProducts={hasOneTimeProducts}
         metrics={CANCELLATION_METRICS}
@@ -45,7 +45,7 @@ export default function ClientPage({
 
   return (
     <MetricsPage
-      {...props}
+      organizationId={organizationId}
       hasRecurringProducts={hasRecurringProducts}
       hasOneTimeProducts={hasOneTimeProducts}
       metrics={metrics}

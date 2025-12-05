@@ -8,75 +8,74 @@ import ProductSelect from '@/components/Products/ProductSelect'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { subMonths } from 'date-fns/subMonths'
-import { usePathname, useRouter } from 'next/navigation'
+import {
+  createParser,
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
 import { useCallback, useMemo } from 'react'
+
+const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
+
+// Custom parser for YYYY-MM-DD date format
+const parseAsISODate = createParser({
+  parse: (value) => {
+    if (!value) return null
+    const date = fromISODate(value)
+    return isNaN(date.getTime()) ? null : date
+  },
+  serialize: (date) => toISODate(date),
+})
 
 interface MetricsHeaderProps {
   organization: schemas['Organization']
   earliestDateISOString: string
-  startDateISOString?: string
-  endDateISOString?: string
-  interval: schemas['TimeInterval']
-  productId?: string[]
 }
 
 export function MetricsHeader({
   organization,
   earliestDateISOString,
-  startDateISOString,
-  endDateISOString,
-  interval,
-  productId,
 }: MetricsHeaderProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-
   const minDate = useMemo(
     () => fromISODate(earliestDateISOString),
     [earliestDateISOString],
   )
 
-  const [startDate, endDate] = useMemo(() => {
-    const today = new Date()
-    const startDate = startDateISOString
-      ? fromISODate(startDateISOString)
-      : subMonths(today, 1)
-    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
-    return [startDate, endDate]
-  }, [startDateISOString, endDateISOString])
+  const defaultStartDate = useMemo(() => subMonths(new Date(), 1), [])
+  const defaultEndDate = useMemo(() => new Date(), [])
+
+  const [interval, setInterval] = useQueryState(
+    'interval',
+    parseAsStringLiteral(TIME_INTERVALS).withDefault('day'),
+  )
+
+  const [startDate, setStartDate] = useQueryState(
+    'start_date',
+    parseAsISODate.withDefault(defaultStartDate),
+  )
+
+  const [endDate, setEndDate] = useQueryState(
+    'end_date',
+    parseAsISODate.withDefault(defaultEndDate),
+  )
+
+  const [productId, setProductId] = useQueryState(
+    'product_id',
+    parseAsArrayOf(parseAsString),
+  )
 
   const dateRange = useMemo(
     () => ({ from: startDate, to: endDate }),
     [startDate, endDate],
   )
 
-  const getSearchParams = (
-    dateRange: { from: Date; to: Date },
-    interval: schemas['TimeInterval'],
-    productId?: string[],
-  ) => {
-    const params = new URLSearchParams()
-    params.append('start_date', toISODate(dateRange.from))
-    params.append('end_date', toISODate(dateRange.to))
-    params.append('interval', interval)
-
-    if (productId) {
-      productId.forEach((id) => params.append('product_id', id))
-    }
-
-    return params
-  }
-
   const onIntervalChange = useCallback(
     (newInterval: schemas['TimeInterval']) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        newInterval,
-        productId,
-      )
-      router.push(`${pathname}?${params}`)
+      setInterval(newInterval)
     },
-    [router, pathname, startDate, endDate, productId],
+    [setInterval],
   )
 
   const onDateChange = useCallback(
@@ -86,22 +85,18 @@ export function MetricsHeader({
         dateRange.from,
         dateRange.to,
       )
-      const params = getSearchParams(dateRange, validInterval, productId)
-      router.push(`${pathname}?${params}`)
+      setStartDate(dateRange.from)
+      setEndDate(dateRange.to)
+      setInterval(validInterval)
     },
-    [router, pathname, interval, productId],
+    [interval, setStartDate, setEndDate, setInterval],
   )
 
   const onProductSelect = useCallback(
     (value: string[]) => {
-      const params = getSearchParams(
-        { from: startDate, to: endDate },
-        interval,
-        value,
-      )
-      router.push(`${pathname}?${params}`)
+      setProductId(value.length > 0 ? value : null)
     },
-    [router, pathname, interval, startDate, endDate],
+    [setProductId],
   )
 
   return (
@@ -125,7 +120,7 @@ export function MetricsHeader({
       <div className="w-full lg:w-auto">
         <ProductSelect
           organization={organization}
-          value={productId || []}
+          value={productId ?? []}
           onChange={onProductSelect}
           className="w-auto"
         />

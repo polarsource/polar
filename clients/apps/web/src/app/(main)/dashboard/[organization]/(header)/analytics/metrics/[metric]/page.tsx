@@ -20,13 +20,13 @@ export default async function Page(props: {
     notFound()
   }
 
-  const params = await validateMetricsSearchParams(
+  // Validate search params - this will redirect if invalid
+  await validateMetricsSearchParams(
     organizationSlug,
     searchParams,
     `/dashboard/${organizationSlug}/analytics/metrics/${metric}`,
   )
 
-  // Fetch products to determine hasRecurringProducts/hasOneTimeProducts
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
@@ -45,8 +45,16 @@ export default async function Page(props: {
     }),
   )
 
-  const relevantProducts = params.productId
-    ? products.items.filter((p) => params.productId!.includes(p.id))
+  // Filter by product_id if provided in URL
+  const productIdParam = searchParams.product_id
+  const productIds = productIdParam
+    ? Array.isArray(productIdParam)
+      ? productIdParam
+      : [productIdParam]
+    : undefined
+
+  const relevantProducts = productIds
+    ? products.items.filter((p) => productIds.includes(p.id))
     : products.items
 
   const hasRecurringProducts = relevantProducts.some((p) => p.is_recurring)
@@ -54,8 +62,8 @@ export default async function Page(props: {
 
   return (
     <ClientPage
-      {...params}
       metric={metric as MetricType}
+      organizationId={organization.id}
       hasRecurringProducts={hasRecurringProducts}
       hasOneTimeProducts={hasOneTimeProducts}
     />

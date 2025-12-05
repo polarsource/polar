@@ -2225,7 +2225,6 @@ async def create_dispute(
         dispute_alert_processor_id=alert_processor_id,
         order=order,
         payment=payment,
-        refund=None,
     )
     await save_fixture(dispute)
     return dispute

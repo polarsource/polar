@@ -37,6 +37,7 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.pledge.service import pledge as pledge_service
+from polar.transaction.repository import PaymentTransactionRepository
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
@@ -269,12 +270,6 @@ class RefundService(ResourceServiceReader[Refund]):
         resources = await self._get_resources(session, stripe_refund)
         charge_id, payment, order, pledge = resources
 
-        internal_create_schema = self.build_create_schema_from_stripe(
-            stripe_refund,
-            order=order,
-            pledge=pledge,
-        )
-
         # Check if there are disputes to link
         dispute_repository = DisputeRepository.from_session(session)
         dispute: Dispute | None = None
@@ -288,7 +283,14 @@ class RefundService(ResourceServiceReader[Refund]):
             if dispute is None:
                 raise MissingRelatedDispute(stripe_refund.id, alert_id)
 
-        refund = await self._create(
+        internal_create_schema = self.build_create_schema_from_stripe(
+            stripe_refund,
+            order=order,
+            pledge=pledge,
+            dispute=dispute,
+        )
+
+        return await self._create(
             session,
             internal_create_schema,
             charge_id=charge_id,
@@ -296,11 +298,6 @@ class RefundService(ResourceServiceReader[Refund]):
             order=order,
             pledge=pledge,
         )
-
-        if dispute is not None:
-            await dispute_repository.update(dispute, update_dict={"refund": refund})
-
-        return refund
 
     async def update_from_stripe(
         self,
@@ -379,6 +376,51 @@ class RefundService(ResourceServiceReader[Refund]):
             await self._on_succeeded(session, organization, order)
         return refund
 
+    async def create_from_dispute(
+        self,
+        session: AsyncSession,
+        dispute: Dispute,
+        processor_balance_transaction_id: str,
+    ) -> Refund:
+        assert dispute.payment_processor is not None
+        assert dispute.payment_processor_id is not None
+
+        internal_create_schema = InternalRefundCreate(
+            status=RefundStatus.succeeded,
+            reason=RefundReason.dispute_prevention,
+            amount=dispute.amount,
+            tax_amount=dispute.tax_amount,
+            currency=dispute.currency,
+            failure_reason=None,
+            order_id=dispute.order.id,
+            subscription_id=None,
+            customer_id=dispute.order.customer_id,
+            organization_id=dispute.order.organization.id,
+            pledge_id=None,
+            dispute_id=dispute.id,
+            processor=dispute.payment_processor,
+            processor_id=dispute.payment_processor_id,
+            processor_receipt_number=None,
+            processor_reason="other",
+            processor_balance_transaction_id=processor_balance_transaction_id,
+        )
+
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
+        )
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            dispute.payment_id
+        )
+        assert payment_transaction is not None
+
+        return await self._create(
+            session,
+            internal_create_schema,
+            charge_id=dispute.payment.processor_id,
+            payment=payment_transaction,
+            order=dispute.order,
+        )
+
     async def enqueue_benefits_revokation(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -422,6 +464,7 @@ class RefundService(ResourceServiceReader[Refund]):
         *,
         order: Order | None = None,
         pledge: Pledge | None = None,
+        dispute: Dispute | None = None,
     ) -> InternalRefundCreate:
         order_id = None
         subscription_id = None
@@ -449,6 +492,7 @@ class RefundService(ResourceServiceReader[Refund]):
             customer_id=customer_id,
             organization_id=organization_id,
             pledge_id=pledge_id,
+            dispute_id=dispute.id if dispute else None,
         )
         return schema
 

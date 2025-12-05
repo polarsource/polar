@@ -22,6 +22,7 @@ from polar.kit.metadata import MetadataMixin
 if TYPE_CHECKING:
     from polar.models import (
         Customer,
+        Dispute,
         Order,
         Organization,
         Pledge,
@@ -46,6 +47,7 @@ class RefundReason(StrEnum):
     customer_request = "customer_request"
     service_disruption = "service_disruption"
     satisfaction_guarantee = "satisfaction_guarantee"
+    dispute_prevention = "dispute_prevention"
     other = "other"
 
     @classmethod
@@ -182,6 +184,14 @@ class Refund(MetadataMixin, RecordModel):
     @declared_attr
     def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
+
+    dispute_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("disputes.id"), nullable=True
+    )
+
+    @declared_attr
+    def dispute(cls) -> Mapped["Dispute | None"]:
+        return relationship("Dispute", lazy="raise")
 
     # Created refund was set to revoke customer benefits?
     revoke_benefits: Mapped[bool] = mapped_column(

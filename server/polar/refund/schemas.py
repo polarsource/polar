@@ -80,6 +80,7 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
     customer_id: UUID | None
     organization_id: UUID | None
     pledge_id: UUID | None
+    dispute_id: UUID | None
     processor: PaymentProcessor
     processor_id: str
     processor_receipt_number: str | None
@@ -99,6 +100,7 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
         customer_id: UUID | None = None,
         organization_id: UUID | None = None,
         pledge_id: UUID | None = None,
+        dispute_id: UUID | None = None,
     ) -> "InternalRefundCreate":
         failure_reason = getattr(stripe_refund, "failure_reason", None)
         failure_reason = RefundFailureReason.from_stripe(failure_reason)
@@ -131,6 +133,7 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
             customer_id=customer_id,
             organization_id=organization_id,
             pledge_id=pledge_id,
+            dispute_id=dispute_id,
             revoke_benefits=False,
             processor=PaymentProcessor.stripe,
             processor_id=stripe_refund.id,

@@ -41,7 +41,6 @@ class DisputeRepository(
             self.get_base_statement()
             .join(Dispute.payment)
             .where(
-                Dispute.closed.is_(False),
                 Dispute.amount + Dispute.tax_amount == total_amount,
                 Dispute.currency == currency,
                 Payment.processor == processor,

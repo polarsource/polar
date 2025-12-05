@@ -18,7 +18,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import Order, Payment, Refund
+    from polar.models import Order, Payment
 
 
 class DisputeStatus(StrEnum):
@@ -30,8 +30,12 @@ class DisputeStatus(StrEnum):
     won = "won"
 
     @classmethod
-    def closed_statuses(cls) -> set["DisputeStatus"]:
+    def resolved_statuses(cls) -> set["DisputeStatus"]:
         return {cls.lost, cls.won}
+
+    @classmethod
+    def closed_statuses(cls) -> set["DisputeStatus"]:
+        return {cls.prevented, cls.lost, cls.won}
 
     @classmethod
     def from_stripe(
@@ -104,13 +108,14 @@ class Dispute(RecordModel):
     def payment(cls) -> Mapped["Payment"]:
         return relationship("Payment", lazy="raise")
 
-    refund_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("refunds.id"), nullable=True
-    )
+    @hybrid_property
+    def resolved(self) -> bool:
+        return self.status in DisputeStatus.resolved_statuses()
 
-    @declared_attr
-    def refund(cls) -> Mapped["Refund | None"]:
-        return relationship("Refund", lazy="raise")
+    @resolved.inplace.expression
+    @classmethod
+    def _resolved_expression(cls) -> ColumnElement[bool]:
+        return cls.status.in_(DisputeStatus.resolved_statuses())
 
     @hybrid_property
     def closed(self) -> bool:

@@ -82,8 +82,8 @@ export const ProductOverview = ({
         ) : (
           <>
             <MiniMetricChartBox
-              metric={metrics?.metrics.orders}
-              value={metrics?.totals.orders}
+              metric={metrics?.metrics.one_time_products}
+              value={metrics?.totals.one_time_products}
             />
             <MiniMetricChartBox
               title="Today's Revenue"

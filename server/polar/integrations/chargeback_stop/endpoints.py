@@ -62,5 +62,5 @@ async def webhook(
     if event_type in WEBHOOK_EVENTS:
         task_name = f"chargeback_stop.webhook.{event_type}"
         await external_event_service.enqueue(
-            session, ExternalEventSource.chargeback_stop, task_name, event.id, event
+            session, ExternalEventSource.chargeback_stop, task_name, event["id"], event
         )

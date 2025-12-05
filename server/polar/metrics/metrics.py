@@ -879,8 +879,8 @@ class GrossMarginMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.cumulative_revenue
-        costs = period.cumulative_costs
+        revenue = period.cumulative_revenue or 0
+        costs = period.cumulative_costs or 0
         return revenue - costs
 
     @classmethod
@@ -896,8 +896,8 @@ class GrossMarginPercentageMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.cumulative_revenue
-        costs = period.cumulative_costs
+        revenue = period.cumulative_revenue or 0
+        costs = period.cumulative_costs or 0
         return (revenue - costs) / revenue if revenue > 0 else 0.0
 
     @classmethod
@@ -913,8 +913,8 @@ class CashflowMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.revenue
-        costs = period.costs
+        revenue = period.revenue or 0
+        costs = period.costs or 0
         return revenue - costs
 
     @classmethod
@@ -935,10 +935,10 @@ class ChurnRateMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        active_during = period.active_subscriptions
-        new = period.new_subscriptions
-        churned = period.churned_subscriptions
-        canceled = period.canceled_subscriptions
+        active_during = period.active_subscriptions or 0
+        new = period.new_subscriptions or 0
+        churned = period.churned_subscriptions or 0
+        canceled = period.canceled_subscriptions or 0
         active_at_start = active_during - new + churned
         return canceled / active_at_start if active_at_start > 0 else 0.0
 
@@ -959,9 +959,9 @@ class LTVMetric(MetaMetric):
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> int:
-        arpu = period.average_revenue_per_user
-        cost_per_user = period.cost_per_user
-        churn_rate = period.churn_rate
+        arpu = period.average_revenue_per_user or 0
+        cost_per_user = period.cost_per_user or 0
+        churn_rate = period.churn_rate or 0
 
         if churn_rate == 0:
             return 0

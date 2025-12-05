@@ -81,6 +81,7 @@ class DisputeService:
             dispute.status = DisputeStatus.prevented
             balance_transaction = get_dispute_balance_transaction(stripe_dispute)
             assert balance_transaction is not None
+            await session.flush()
             await refund_service.create_from_dispute(
                 session, dispute, balance_transaction.id
             )

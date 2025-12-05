@@ -105,7 +105,10 @@ class InternalRefundCreate(MetadataInputMixin, Schema):
         failure_reason = getattr(stripe_refund, "failure_reason", None)
         failure_reason = RefundFailureReason.from_stripe(failure_reason)
         stripe_reason = stripe_refund.reason if stripe_refund.reason else "other"
-        reason = RefundReason.from_stripe(stripe_refund.reason)
+        if dispute_id is not None:
+            reason = RefundReason.dispute_prevention
+        else:
+            reason = RefundReason.from_stripe(stripe_refund.reason)
 
         destination_details: dict[str, Any] = getattr(
             stripe_refund, "destination_details", {}

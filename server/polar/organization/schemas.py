@@ -30,6 +30,7 @@ from polar.kit.schemas import (
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationNotificationSettings,
+    OrganizationProductSettings as OrganizationProductSettingsTypedDict,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
 )
@@ -74,6 +75,16 @@ class OrganizationFeatureSettings(Schema):
     )
     member_model_enabled: bool = Field(
         False, description="If this organization has the Member model enabled"
+    )
+
+
+SupportedCurrency = Literal["usd", "eur"]
+
+
+class OrganizationProductSettings(Schema):
+    default_currency: SupportedCurrency = Field(
+        "usd",
+        description="Default currency for new products. Currently supports `usd` and `eur`.",
     )
 
 
@@ -309,6 +320,9 @@ class Organization(OrganizationBase):
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
+    product_settings: OrganizationProductSettings = Field(
+        description="Settings related to product configuration",
+    )
 
 
 class OrganizationCreate(Schema):
@@ -331,6 +345,7 @@ class OrganizationCreate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    product_settings: OrganizationProductSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -353,6 +368,7 @@ class OrganizationUpdate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    product_settings: OrganizationProductSettings | None = None
 
 
 class OrganizationPaymentStep(Schema):

@@ -50,10 +50,12 @@ import UnitAmountInput from './UnitAmountInput'
 
 export interface ProductPriceFixedItemProps {
   index: number
+  currency?: string
 }
 
 export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
   index,
+  currency,
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
@@ -80,6 +82,7 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
                         setValue(`prices.${index}.id`, '')
                       }}
                       placeholder={0}
+                      currency={currency}
                     />
                   </div>
                 </FormControl>
@@ -95,10 +98,12 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
 
 export interface ProductPriceCustomItemProps {
   index: number
+  currency?: string
 }
 
 export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
+  currency,
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
@@ -108,7 +113,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.minimum_amount`}
         rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
+          min: { value: 50, message: 'Price must be greater than 0.5' },
         }}
         render={({ field }) => {
           return (
@@ -124,6 +129,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                       setValue(`prices.${index}.id`, '')
                     }}
                     placeholder={1000}
+                    currency={currency}
                   />
                 </div>
               </FormControl>
@@ -136,10 +142,10 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.preset_amount`}
         rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
+          min: { value: 50, message: 'Price must be greater than 0.5' },
           max: {
             value: 1_000_000,
-            message: 'Price cannot be greater than $10,000',
+            message: 'Price cannot be greater than 10,000',
           },
         }}
         render={({ field }) => {
@@ -156,6 +162,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                       setValue(`prices.${index}.id`, '')
                     }}
                     placeholder={5000}
+                    currency={currency}
                   />
                 </div>
               </FormControl>
@@ -170,11 +177,12 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 
 export interface ProductPriceSeatBasedItemProps {
   index: number
+  currency?: string
 }
 
 export const ProductPriceSeatBasedItem: React.FC<
   ProductPriceSeatBasedItemProps
-> = ({ index }) => {
+> = ({ index, currency }) => {
   const { control, setValue, watch } = useFormContext<ProductFormType>()
   const { fields, append, remove } = useFieldArray({
     control,
@@ -401,6 +409,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                             setValue(`prices.${index}.id`, '')
                           }}
                           placeholder={1000}
+                          currency={currency}
                         />
                       </div>
                     </FormControl>
@@ -439,11 +448,12 @@ export const ProductPriceSeatBasedItem: React.FC<
 export interface ProductPriceMeteredUnitItemProps {
   organization: schemas['Organization']
   index: number
+  currency?: string
 }
 
 export const ProductPriceMeteredUnitItem: React.FC<
   ProductPriceMeteredUnitItemProps
-> = ({ organization, index }) => {
+> = ({ organization, index, currency }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
   const { data: meters, refetch } = useMeters(organization.id, {
@@ -604,6 +614,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                         setValue(`prices.${index}.id`, '')
                       }}
                       placeholder={10000}
+                      currency={currency}
                     />
                   </FormControl>
                   <FormDescription>
@@ -638,6 +649,11 @@ interface ProductPriceItemProps {
   remove: UseFieldArrayRemove
 }
 
+const CURRENCIES = [
+  { value: 'usd', label: 'USD' },
+  { value: 'eur', label: 'EUR' },
+] as const
+
 const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   organization,
   index,
@@ -646,7 +662,11 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const { register, control, setValue, watch } =
     useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
+  const priceCurrency = watch(`prices.${index}.price_currency`)
   const recurringInterval = watch('recurring_interval')
+
+  const defaultCurrency =
+    organization.product_settings?.default_currency ?? 'usd'
 
   const prices = watch('prices')
   const staticPriceIndex = prices
@@ -661,13 +681,13 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       if (amountType === 'fixed') {
         replace({
           amount_type: 'fixed',
-          price_currency: 'usd',
+          price_currency: defaultCurrency,
           price_amount: 0,
         })
       } else if (amountType === 'custom') {
         replace({
           amount_type: 'custom',
-          price_currency: 'usd',
+          price_currency: defaultCurrency,
         })
       } else if (amountType === 'free') {
         replace({
@@ -676,7 +696,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       } else if (amountType === 'seat_based') {
         replace({
           amount_type: 'seat_based',
-          price_currency: 'usd',
+          price_currency: defaultCurrency,
           seat_tiers: {
             tiers: [
               {
@@ -690,13 +710,13 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       } else if (amountType === 'metered_unit') {
         replace({
           amount_type: 'metered_unit',
-          price_currency: 'usd',
+          price_currency: defaultCurrency,
           unit_amount: 0,
           meter_id: '',
         })
       }
     },
-    [index, setValue],
+    [index, setValue, defaultCurrency],
   )
 
   return (
@@ -775,16 +795,126 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       />
       {amountType && amountType !== 'free' && (
         <div className="flex flex-col gap-3 p-3">
-          {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
-          {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              {amountType === 'fixed' && (
+                <ProductPriceFixedItem
+                  index={index}
+                  currency={priceCurrency}
+                />
+              )}
+              {amountType === 'custom' && (
+                <ProductPriceCustomItem
+                  index={index}
+                  currency={priceCurrency}
+                />
+              )}
+            </div>
+            {(amountType === 'fixed' || amountType === 'custom') && (
+              <FormField
+                control={control}
+                name={`prices.${index}.price_currency`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CURRENCIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
           {amountType === 'seat_based' && (
-            <ProductPriceSeatBasedItem index={index} />
+            <>
+              <FormField
+                control={control}
+                name={`prices.${index}.price_currency`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CURRENCIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <ProductPriceSeatBasedItem
+                index={index}
+                currency={priceCurrency}
+              />
+            </>
           )}
           {amountType === 'metered_unit' && (
-            <ProductPriceMeteredUnitItem
-              organization={organization}
-              index={index}
-            />
+            <>
+              <FormField
+                control={control}
+                name={`prices.${index}.price_currency`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => {
+                          field.onChange(v)
+                          setValue(`prices.${index}.id`, '')
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CURRENCIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <ProductPriceMeteredUnitItem
+                organization={organization}
+                index={index}
+                currency={priceCurrency}
+              />
+            </>
           )}
         </div>
       )}
@@ -1050,7 +1180,8 @@ export const ProductPricingSection = ({
             onClick={() =>
               append({
                 amount_type: 'metered_unit',
-                price_currency: 'usd',
+                price_currency:
+                  organization.product_settings?.default_currency ?? 'usd',
                 meter_id: '',
                 unit_amount: 0,
               })

@@ -18922,6 +18922,8 @@ export interface components {
       notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
+      /** @description Settings related to product configuration */
+      product_settings: components['schemas']['OrganizationProductSettings']
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -19144,6 +19146,9 @@ export interface components {
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
+      product_settings?:
+        | components['schemas']['OrganizationProductSettings']
+        | null
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -19340,6 +19345,16 @@ export interface components {
        * @description Whether the step is completed
        */
       completed: boolean
+    }
+    /** OrganizationProductSettings */
+    OrganizationProductSettings: {
+      /**
+       * Default Currency
+       * @description Default currency for new products. Currently supports `usd` and `eur`.
+       * @default usd
+       * @enum {string}
+       */
+      default_currency: 'usd' | 'eur'
     }
     /** OrganizationProfileSettings */
     OrganizationProfileSettings: {
@@ -19543,6 +19558,9 @@ export interface components {
         | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
+        | null
+      product_settings?:
+        | components['schemas']['OrganizationProductSettings']
         | null
     }
     /**
@@ -20308,7 +20326,7 @@ export interface components {
       amount_type: 'custom'
       /**
        * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency. Currently, `usd` and `eur` are supported.
        * @default usd
        */
       price_currency: string
@@ -20402,7 +20420,7 @@ export interface components {
       price_amount: number
       /**
        * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency. Currently, `usd` and `eur` are supported.
        * @default usd
        */
       price_currency: string
@@ -20570,7 +20588,7 @@ export interface components {
       meter_id: string
       /**
        * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency. Currently, `usd` and `eur` are supported.
        * @default usd
        */
       price_currency: string
@@ -20651,7 +20669,7 @@ export interface components {
       amount_type: 'seat_based'
       /**
        * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency. Currently, `usd` and `eur` are supported.
        * @default usd
        */
       price_currency: string
@@ -38477,6 +38495,9 @@ export const organizationDeletionBlockedReasonValues: ReadonlyArray<
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<
   components['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
+export const organizationProductSettingsDefault_currencyValues: ReadonlyArray<
+  components['schemas']['OrganizationProductSettings']['default_currency']
+> = ['usd', 'eur']
 export const organizationReviewStatusVerdictValues: ReadonlyArray<
   components['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']

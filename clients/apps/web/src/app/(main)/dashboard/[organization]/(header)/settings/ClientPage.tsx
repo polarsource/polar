@@ -6,6 +6,7 @@ import OrganizationAccessTokensSettings from '@/components/Settings/Organization
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
+import OrganizationProductSettings from '@/components/Settings/OrganizationProductSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -30,6 +31,11 @@ export default function ClientPage({
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
           <OrganizationSubscriptionSettings organization={org} />
+        </Section>
+
+        <Section id="products">
+          <SectionDescription title="Products" />
+          <OrganizationProductSettings organization={org} />
         </Section>
 
         <Section id="customer_emails">

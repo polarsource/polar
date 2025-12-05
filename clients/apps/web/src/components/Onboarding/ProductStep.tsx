@@ -38,6 +38,9 @@ export const ProductStep = () => {
     [benefits],
   )
 
+  const defaultCurrency =
+    organization.product_settings?.default_currency ?? 'usd'
+
   const form = useForm<ProductCreateForm>({
     defaultValues: {
       recurring_interval: 'month',
@@ -46,7 +49,7 @@ export const ProductStep = () => {
           {
             amount_type: 'fixed',
             price_amount: 1000,
-            price_currency: 'usd',
+            price_currency: defaultCurrency,
           },
         ],
       },

@@ -1,4 +1,4 @@
-import { DollarSign } from 'lucide-react'
+import { DollarSign, Euro } from 'lucide-react'
 import {
   ChangeEvent,
   FocusEvent,
@@ -22,6 +22,16 @@ interface Props {
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
   step?: number
+  currency?: string
+}
+
+const getCurrencyIcon = (currency?: string) => {
+  switch (currency) {
+    case 'eur':
+      return <Euro className="h-4 w-4" />
+    default:
+      return <DollarSign className="h-4 w-4" />
+  }
 }
 
 const getCents = (value: string): number => {
@@ -54,6 +64,7 @@ const MoneyInput = (props: Props) => {
     onFocus,
     disabled,
     step = 0.1,
+    currency,
   } = props
   const [previousValue, setPreviousValue] = useState<number | null | undefined>(
     value,
@@ -235,7 +246,7 @@ const MoneyInput = (props: Props) => {
       onChange={onChange}
       onKeyDown={onKeyDown}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
-      preSlot={preSlot ? preSlot : <DollarSign className="h-4 w-4" />}
+      preSlot={preSlot ? preSlot : getCurrencyIcon(currency)}
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}

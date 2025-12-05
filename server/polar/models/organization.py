@@ -109,6 +109,15 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
 }
 
 
+class OrganizationProductSettings(TypedDict):
+    default_currency: str
+
+
+_default_product_settings: OrganizationProductSettings = {
+    "default_currency": "usd",
+}
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
@@ -217,6 +226,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     customer_email_settings: Mapped[OrganizationCustomerEmailSettings] = mapped_column(
         JSONB, nullable=False, default=_default_customer_email_settings
+    )
+
+    product_settings: Mapped[OrganizationProductSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_product_settings
     )
 
     #

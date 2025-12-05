@@ -248,6 +248,11 @@ class OrganizationService:
         if update_schema.notification_settings is not None:
             organization.notification_settings = update_schema.notification_settings
 
+        if update_schema.product_settings is not None:
+            organization.product_settings = {
+                "default_currency": update_schema.product_settings.default_currency
+            }
+
         previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
@@ -256,6 +261,7 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
+                "product_settings",
                 "details",
             },
         )

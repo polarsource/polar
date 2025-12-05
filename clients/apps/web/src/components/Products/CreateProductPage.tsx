@@ -46,13 +46,16 @@ export const CreateProductPage = ({
       return productToCreateForm(sourceProduct)
     }
 
+    const defaultCurrency =
+      organization.product_settings?.default_currency ?? 'usd'
+
     return {
       recurring_interval: null,
       ...{
         prices: [
           {
             price_amount: undefined,
-            price_currency: 'usd',
+            price_currency: defaultCurrency,
           },
         ],
       },

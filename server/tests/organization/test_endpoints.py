@@ -190,6 +190,52 @@ class TestUpdateOrganization:
         error_detail = response.json()["detail"]
         assert any("previous_annual_revenue" in str(error) for error in error_detail)
 
+    @pytest.mark.auth
+    async def test_update_product_settings(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"product_settings": {"default_currency": "eur"}},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["product_settings"]["default_currency"] == "eur"
+
+    @pytest.mark.auth
+    async def test_update_product_settings_invalid_currency(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"product_settings": {"default_currency": "gbp"}},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_get_organization_includes_product_settings(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert "product_settings" in json
+        assert json["product_settings"]["default_currency"] == "usd"
+
 
 @pytest.mark.asyncio
 class TestInviteOrganization:

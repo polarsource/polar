@@ -25,7 +25,12 @@ from polar.organization.ai_validation import (
     OrganizationAIValidationVerdict,
     OrganizationAIValidator,
 )
-from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationFeatureSettings,
+    OrganizationProductSettings,
+    OrganizationUpdate,
+)
 from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -163,6 +168,75 @@ class TestCreate:
         )
 
         assert organization.subscription_settings is not None
+
+    @pytest.mark.auth
+    async def test_valid_with_product_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                product_settings=OrganizationProductSettings(default_currency="eur"),
+            ),
+            auth_subject,
+        )
+
+        assert organization.product_settings == {"default_currency": "eur"}
+
+    @pytest.mark.auth
+    async def test_valid_with_default_product_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+            ),
+            auth_subject,
+        )
+
+        assert organization.product_settings == {"default_currency": "usd"}
+
+
+@pytest.mark.asyncio
+class TestUpdateProductSettings:
+    async def test_update_product_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        assert organization.product_settings == {"default_currency": "usd"}
+
+        updated = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                product_settings=OrganizationProductSettings(default_currency="eur"),
+            ),
+        )
+
+        assert updated.product_settings == {"default_currency": "eur"}
+
+    async def test_update_product_settings_preserves_other_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        original_name = organization.name
+
+        updated = await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                product_settings=OrganizationProductSettings(default_currency="eur"),
+            ),
+        )
+
+        assert updated.product_settings == {"default_currency": "eur"}
+        assert updated.name == original_name
 
 
 @pytest.mark.asyncio

@@ -2095,3 +2095,72 @@ class TestFocusMetrics:
         jan_1 = metrics.periods[0]
         assert jan_1.revenue == 1200_00
         assert jan_1.active_subscriptions == 2
+
+    @pytest.mark.auth
+    async def test_focus_metrics_cumulative_with_none_values(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test that cumulative calculations handle None values from focus_metrics filtering.
+
+        When focus_metrics filters out dependencies, cumulative functions must handle
+        None values gracefully instead of raising TypeError.
+        """
+        # Test cost_per_user which depends on costs and active_subscriptions
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=["cost_per_user"],
+        )
+
+        # Should not raise TypeError and should return valid totals
+        assert metrics.totals.cost_per_user is not None
+
+    @pytest.mark.auth
+    async def test_focus_metrics_average_order_value_cumulative(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test average_order_value cumulative handles None values."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=["average_order_value"],
+        )
+
+        assert metrics.totals.average_order_value is not None
+
+    @pytest.mark.auth
+    async def test_focus_metrics_checkouts_conversion_cumulative(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        """Test checkouts_conversion cumulative handles None values."""
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            focus_metrics=["checkouts_conversion"],
+        )
+
+        assert metrics.totals.checkouts_conversion is not None

@@ -58,7 +58,7 @@ class DisputeTransactionService(BaseTransactionService):
     async def create_dispute(
         self, session: AsyncSession, *, dispute: Dispute
     ) -> tuple[Transaction, Transaction | None]:
-        if not dispute.closed:
+        if not dispute.resolved:
             raise DisputeNotResolved(dispute)
 
         repository = DisputeTransactionRepository.from_session(session)

@@ -10,11 +10,13 @@ from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
+from polar.refund.service import refund as refund_service
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 
 from .repository import DisputeRepository
+from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
 
 
 class DisputeError(PolarError):
@@ -37,15 +39,24 @@ class DisputeService:
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
     ) -> Dispute:
         repository = DisputeRepository.from_session(session)
+        charge_id = get_expandable_id(stripe_dispute.charge)
+
+        # First try to find by Stripe Dispute ID
         dispute = await repository.get_by_payment_processor_dispute_id(
             PaymentProcessor.stripe, stripe_dispute.id
         )
+        # Then try to find by matching payment info, in case we got a ChargebackStop alert first
+        if dispute is None:
+            dispute = await repository.get_matching_by_dispute_alert(
+                PaymentProcessor.stripe,
+                charge_id,
+                stripe_dispute.amount,
+                stripe_dispute.currency,
+            )
 
         if dispute is None:
             payment, order = await self._get_payment_and_order_from_processor_id(
-                session,
-                PaymentProcessor.stripe,
-                get_expandable_id(stripe_dispute.charge),
+                session, PaymentProcessor.stripe, charge_id
             )
             amount, tax_amount = order.calculate_refunded_tax(stripe_dispute.amount)
             dispute = await repository.create(
@@ -53,28 +64,42 @@ class DisputeService:
                     amount=amount,
                     tax_amount=tax_amount,
                     currency=stripe_dispute.currency,
-                    payment_processor=PaymentProcessor.stripe,
-                    payment_processor_id=stripe_dispute.id,
                     order=order,
                     payment=payment,
                 )
             )
 
-        dispute.status = DisputeStatus.from_stripe(stripe_dispute.status)
-        dispute = await repository.update(dispute)
+        dispute.payment_processor = PaymentProcessor.stripe
+        dispute.payment_processor_id = stripe_dispute.id
 
-        # If won or lost, record the transactions
-        if dispute.closed:
-            await dispute_transaction_service.create_dispute(session, dispute=dispute)
+        # ⚠️ If the dispute is handled via Verifi RDR network, Stripe will see
+        # it as a "lost" dispute, even if we issued a refund through ChargebackStop.
+        # Detect this case, keep the dispute as "prevented", and create a refund.
+        if dispute.status == DisputeStatus.prevented or is_rapid_resolution_dispute(
+            stripe_dispute
+        ):
+            dispute.status = DisputeStatus.prevented
+            balance_transaction = get_dispute_balance_transaction(stripe_dispute)
+            assert balance_transaction is not None
+            await refund_service.create_from_dispute(
+                session, dispute, balance_transaction.id
+            )
+        else:
+            dispute.status = DisputeStatus.from_stripe(stripe_dispute.status)
+            # If won or lost, record the transactions
+            if dispute.resolved:
+                await dispute_transaction_service.create_dispute(
+                    session, dispute=dispute
+                )
 
-        return dispute
+        return await repository.update(dispute)
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert
     ) -> Dispute:
         repository = DisputeRepository.from_session(session)
 
-        # Chargeback Stop uses PaymentIntent ID, but we use Charge ID
+        # ChargebackStop uses PaymentIntent ID, but we use Charge ID
         payment_intent_id = alert["integration_transaction_id"]
         payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
         latest_charge = payment_intent.latest_charge
@@ -120,7 +145,7 @@ class DisputeService:
         if alert["transaction_refund_outcome"] == "REFUNDED":
             dispute.status = DisputeStatus.prevented
         # We didn't take action: the dispute will be escalated, we'll get news from Stripe later
-        else:
+        elif not dispute.closed:
             dispute.status = DisputeStatus.early_warning
 
         return await repository.update(dispute)

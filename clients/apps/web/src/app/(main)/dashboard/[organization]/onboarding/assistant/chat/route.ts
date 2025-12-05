@@ -434,7 +434,6 @@ based on the conversation history whether you're done.
   const result = streamText({
     // Gemini 2.5 Flash for quick & cheap responses, Sonnet 4.5 for better tool usage
     model: shouldSetupTools ? sonnet : gemini,
-    system: conversationalSystemPrompt,
     tools: {
       redirectToManualSetup,
       ...(!requiresManualSetup ? { markAsDone } : {}), // only allow done if we can actually create products
@@ -443,8 +442,21 @@ based on the conversation history whether you're done.
     toolChoice: requiresManualSetup
       ? { type: 'tool', toolName: 'redirectToManualSetup' }
       : 'auto',
-    messages: convertToModelMessages(messages),
-    stopWhen: stepCountIs(10),
+    messages: [
+      {
+        role: 'system',
+        content: conversationalSystemPrompt,
+        providerOptions: shouldSetupTools
+          ? {
+              anthropic: {
+                cacheControl: { type: 'ephemeral' },
+              },
+            }
+          : {},
+      },
+      ...convertToModelMessages(messages),
+    ],
+    stopWhen: stepCountIs(15),
     experimental_transform: smoothStream(),
     onChunk: () => {
       if (!streamStarted) {

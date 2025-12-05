@@ -61,7 +61,16 @@ export default function ClientPage({
           />
         )}
 
-        {mode === 'manual' && <ProductStep />}
+        {mode === 'manual' && (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            transition={{ duration: 1, staggerChildren: 0.3 }}
+            className="flex flex-col gap-12"
+          >
+            <ProductStep />
+          </motion.div>
+        )}
 
         <FadeUp
           className={twMerge(

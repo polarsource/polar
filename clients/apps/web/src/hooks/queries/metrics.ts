@@ -11,6 +11,7 @@ interface GetMetricsRequest {
   organization_id?: string
   product_id?: string[]
   customer_id?: string[]
+  focus_metrics?: string[]
 }
 
 export type ParsedMetricPeriod = schemas['MetricPeriod'] & {

@@ -10,7 +10,11 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
-import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
+import {
+  ALL_METRICS,
+  getChartRangeParams,
+  getPreviousParams,
+} from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
 import React from 'react'
@@ -28,46 +32,42 @@ const HeroChart = ({ organization }: HeroChartProps) => {
     [organization.created_at],
   )
 
-  const {
-    data: currentPeriodMetricsData,
-    isLoading: currentPeriodMetricsLoading,
-  } = useMetrics({
-    organization_id: organization.id,
-    startDate: startDate,
-    endDate: endDate,
-    interval: interval,
-  })
+  const { data: currentPeriodData, isLoading: currentPeriodLoading } =
+    useMetrics({
+      organization_id: organization.id,
+      startDate: startDate,
+      endDate: endDate,
+      interval: interval,
+      focus_metrics: [selectedMetric],
+    })
 
   const previousParams = React.useMemo(
     () => getPreviousParams(startDate, '30d'),
     [startDate],
   )
 
-  const {
-    data: previousPeriodMetricsData,
-    isLoading: previousPeriodMetricsLoading,
-  } = useMetrics(
-    {
-      organization_id: organization.id,
-      startDate: previousParams ? previousParams[0] : startDate,
-      endDate: previousParams ? previousParams[1] : endDate,
-      interval: interval,
-    },
-    previousParams !== null,
-  )
-
-  const metricLoading =
-    currentPeriodMetricsLoading || previousPeriodMetricsLoading
+  const { data: previousPeriodData, isLoading: previousPeriodLoading } =
+    useMetrics(
+      {
+        organization_id: organization.id,
+        startDate: previousParams ? previousParams[0] : startDate,
+        endDate: previousParams ? previousParams[1] : endDate,
+        interval: interval,
+        focus_metrics: [selectedMetric],
+      },
+      previousParams !== null,
+    )
 
   return (
     <MetricChartBox
       metric={selectedMetric}
       onMetricChange={setSelectedMetric}
-      data={currentPeriodMetricsData}
-      previousData={previousPeriodMetricsData}
+      data={currentPeriodData}
+      previousData={previousPeriodData}
       interval={interval}
-      loading={metricLoading}
+      loading={currentPeriodLoading || previousPeriodLoading}
       chartType="line"
+      availableMetrics={ALL_METRICS}
     />
   )
 }

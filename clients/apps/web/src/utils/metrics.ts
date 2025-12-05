@@ -192,3 +192,102 @@ export const getPreviousDateRange = (
   const previousStartDate = new Date(startDate.getTime() - delta)
   return [previousStartDate, previousEndDate]
 }
+
+export const ALL_METRICS: {
+  slug: keyof schemas['Metrics']
+  display_name: string
+}[] = [
+  { slug: 'revenue', display_name: 'Revenue' },
+  { slug: 'net_revenue', display_name: 'Net Revenue' },
+  { slug: 'cumulative_revenue', display_name: 'Cumulative Revenue' },
+  { slug: 'net_cumulative_revenue', display_name: 'Net Cumulative Revenue' },
+  { slug: 'average_order_value', display_name: 'Average Order Value' },
+  {
+    slug: 'net_average_order_value',
+    display_name: 'Net Average Order Value',
+  },
+  { slug: 'orders', display_name: 'Orders' },
+  { slug: 'one_time_products', display_name: 'One-Time Products' },
+  {
+    slug: 'one_time_products_revenue',
+    display_name: 'One-Time Products Revenue',
+  },
+  {
+    slug: 'one_time_products_net_revenue',
+    display_name: 'One-Time Products Net Revenue',
+  },
+  { slug: 'new_subscriptions', display_name: 'New Subscriptions' },
+  {
+    slug: 'new_subscriptions_revenue',
+    display_name: 'New Subscriptions Revenue',
+  },
+  {
+    slug: 'new_subscriptions_net_revenue',
+    display_name: 'New Subscriptions Net Revenue',
+  },
+  { slug: 'renewed_subscriptions', display_name: 'Renewed Subscriptions' },
+  {
+    slug: 'renewed_subscriptions_revenue',
+    display_name: 'Renewed Subscriptions Revenue',
+  },
+  {
+    slug: 'renewed_subscriptions_net_revenue',
+    display_name: 'Renewed Subscriptions Net Revenue',
+  },
+  { slug: 'active_subscriptions', display_name: 'Active Subscriptions' },
+  {
+    slug: 'monthly_recurring_revenue',
+    display_name: 'Monthly Recurring Revenue',
+  },
+  {
+    slug: 'committed_monthly_recurring_revenue',
+    display_name: 'Committed MRR',
+  },
+  { slug: 'checkouts', display_name: 'Checkouts' },
+  { slug: 'succeeded_checkouts', display_name: 'Succeeded Checkouts' },
+  { slug: 'checkouts_conversion', display_name: 'Checkouts Conversion' },
+  { slug: 'canceled_subscriptions', display_name: 'Canceled Subscriptions' },
+  {
+    slug: 'canceled_subscriptions_customer_service',
+    display_name: 'Canceled - Customer Service',
+  },
+  {
+    slug: 'canceled_subscriptions_low_quality',
+    display_name: 'Canceled - Low Quality',
+  },
+  {
+    slug: 'canceled_subscriptions_missing_features',
+    display_name: 'Canceled - Missing Features',
+  },
+  {
+    slug: 'canceled_subscriptions_switched_service',
+    display_name: 'Canceled - Switched Service',
+  },
+  {
+    slug: 'canceled_subscriptions_too_complex',
+    display_name: 'Canceled - Too Complex',
+  },
+  {
+    slug: 'canceled_subscriptions_too_expensive',
+    display_name: 'Canceled - Too Expensive',
+  },
+  {
+    slug: 'canceled_subscriptions_unused',
+    display_name: 'Canceled - Unused',
+  },
+  { slug: 'canceled_subscriptions_other', display_name: 'Canceled - Other' },
+  { slug: 'churned_subscriptions', display_name: 'Churned Subscriptions' },
+  {
+    slug: 'average_revenue_per_user',
+    display_name: 'Average Revenue Per User',
+  },
+  { slug: 'churn_rate', display_name: 'Churn Rate' },
+  { slug: 'ltv', display_name: 'Lifetime Value' },
+  { slug: 'costs', display_name: 'Costs' },
+  { slug: 'cumulative_costs', display_name: 'Cumulative Costs' },
+  { slug: 'cost_per_user', display_name: 'Cost Per User' },
+  { slug: 'active_user_by_event', display_name: 'Active Users by Event' },
+  { slug: 'gross_margin', display_name: 'Gross Margin' },
+  { slug: 'gross_margin_percentage', display_name: 'Gross Margin %' },
+  { slug: 'cashflow', display_name: 'Cashflow' },
+]

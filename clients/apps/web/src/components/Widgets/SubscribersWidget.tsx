@@ -29,6 +29,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
     interval: 'month',
     startDate,
     endDate: new Date(),
+    focus_metrics: ['active_subscriptions'],
   })
 
   const maxPeriod =

@@ -29,6 +29,11 @@ import { useModal } from '../Modal/useModal'
 import MetricChart from './MetricChart'
 import { ShareChartModal } from './ShareChartModal'
 
+interface MetricOption {
+  slug: keyof schemas['Metrics']
+  display_name: string
+}
+
 interface MetricChartBoxProps {
   metric: keyof schemas['Metrics']
   onMetricChange?: (metric: keyof schemas['Metrics']) => void
@@ -43,6 +48,8 @@ interface MetricChartBoxProps {
   shareable?: boolean
   simple?: boolean
   chartType?: 'line' | 'bar'
+  /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
+  availableMetrics?: MetricOption[]
 }
 
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
@@ -71,6 +78,7 @@ const MetricChartBox = ({
   shareable = true,
   simple = false,
   chartType = 'line',
+  availableMetrics,
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
@@ -110,6 +118,8 @@ const MetricChartBox = ({
 
   const metricValue = useMemo(() => {
     if (!data) return 0
+    const metricInfo = data.metrics[metric]
+    if (!metricInfo) return 0
 
     const currentPeriod = hoveredPeriod
       ? hoveredPeriod
@@ -117,7 +127,7 @@ const MetricChartBox = ({
 
     const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric]
 
-    return getFormattedMetricValue(data.metrics[metric], value)
+    return getFormattedMetricValue(metricInfo, value)
   }, [hoveredPeriod, data, metric])
 
   const trend = useMemo(() => {
@@ -164,12 +174,23 @@ const MetricChartBox = ({
                   <SelectValue placeholder="Select a metric" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                  {data &&
-                    Object.values(data.metrics).map((metric) => (
-                      <SelectItem key={metric.slug} value={metric.slug}>
-                        {metric.display_name}
-                      </SelectItem>
-                    ))}
+                  {availableMetrics
+                    ? availableMetrics.map((m) => (
+                        <SelectItem key={m.slug} value={m.slug}>
+                          {m.display_name}
+                        </SelectItem>
+                      ))
+                    : data &&
+                      Object.values(data.metrics)
+                        .filter(
+                          (m): m is NonNullable<typeof m> =>
+                            m !== null && m !== undefined,
+                        )
+                        .map((m) => (
+                          <SelectItem key={m.slug} value={m.slug}>
+                            {m.display_name}
+                          </SelectItem>
+                        ))}
                 </SelectContent>
               </Select>
               {metric in EXPERIMENTAL_METRICS && (

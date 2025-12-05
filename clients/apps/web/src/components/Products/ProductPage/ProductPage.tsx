@@ -50,6 +50,30 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     startDate: allTimeStart,
     endDate: allTimeEnd,
     interval: allTimeInterval,
+    focus_metrics: product.is_recurring
+      ? [
+          // Subscription metrics
+          'monthly_recurring_revenue',
+          'committed_monthly_recurring_revenue',
+          'active_subscriptions',
+          'new_subscriptions',
+          'renewed_subscriptions',
+          'new_subscriptions_revenue',
+          'renewed_subscriptions_revenue',
+          // Order metrics
+          'revenue',
+          'orders',
+          'average_order_value',
+          'cumulative_revenue',
+        ]
+      : [
+          // One-time metrics
+          'one_time_products',
+          'one_time_products_revenue',
+          // Order metrics (excluding revenue and orders for one-time)
+          'average_order_value',
+          'cumulative_revenue',
+        ],
   })
   const { data: todayMetrics } = useMetrics({
     organization_id: organization.id,
@@ -57,6 +81,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     endDate: new Date(),
     interval: 'day',
     product_id: [product.id],
+    focus_metrics: ['revenue'],
   })
 
   const updateProduct = useUpdateProduct(organization)

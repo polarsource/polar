@@ -1,9 +1,9 @@
 'use client'
 
-import { EventCustomer } from '@/components/Events/EventCustomer'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import Spinner from '@/components/Shared/Spinner'
 import { useEventTypes } from '@/hooks/queries/event_types'
 import {
   useEventHierarchyStats,
@@ -13,16 +13,8 @@ import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import {
-  eachDayOfInterval,
-  endOfDay,
-  format,
-  startOfDay,
-  subMonths,
-} from 'date-fns'
-import Link from 'next/link'
+import { endOfDay, format, subMonths } from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { Chart } from '../components/Chart/Chart'
@@ -33,86 +25,15 @@ import {
   getDefaultEndDate,
   getDefaultStartDate,
 } from '../utils'
+import { EventRow } from './components/EventRow'
+import {
+  generateDateRange,
+  groupEmptyDates,
+  groupEventsByDay,
+} from './components/utils'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
-
-type DayGroup =
-  | { type: 'empty-range'; startDate: Date; endDate: Date }
-  | { type: 'day'; date: Date; events: schemas['Event'][] }
-
-function groupEventsByDay(
-  events: schemas['Event'][],
-): Map<string, schemas['Event'][]> {
-  const grouped = new Map<string, schemas['Event'][]>()
-
-  events.forEach((event) => {
-    const eventDate = startOfDay(new Date(event.timestamp))
-    const dateKey = eventDate.toISOString().split('T')[0]
-
-    if (!grouped.has(dateKey)) {
-      grouped.set(dateKey, [])
-    }
-    grouped.get(dateKey)!.push(event)
-  })
-
-  return grouped
-}
-
-function generateDateRange(startDate: Date, endDate: Date): Date[] {
-  const dates = eachDayOfInterval({
-    start: startOfDay(startDate),
-    end: startOfDay(endDate),
-  })
-  return dates.reverse()
-}
-
-function groupEmptyDates(
-  dates: Date[],
-  eventsMap: Map<string, schemas['Event'][]>,
-): DayGroup[] {
-  const groups: DayGroup[] = []
-  let emptyRangeStart: Date | null = null
-  let emptyRangeEnd: Date | null = null
-
-  dates.forEach((date, index) => {
-    const dateKey = date.toISOString().split('T')[0]
-    const events = eventsMap.get(dateKey) || []
-
-    if (events.length === 0) {
-      if (emptyRangeStart === null) {
-        emptyRangeStart = date
-      }
-      emptyRangeEnd = date
-
-      if (index === dates.length - 1) {
-        groups.push({
-          type: 'empty-range',
-          startDate: emptyRangeStart,
-          endDate: emptyRangeEnd,
-        })
-      }
-    } else {
-      if (emptyRangeStart !== null && emptyRangeEnd !== null) {
-        groups.push({
-          type: 'empty-range',
-          startDate: emptyRangeStart,
-          endDate: emptyRangeEnd,
-        })
-        emptyRangeStart = null
-        emptyRangeEnd = null
-      }
-
-      groups.push({
-        type: 'day',
-        date,
-        events,
-      })
-    }
-  })
-
-  return groups
-}
 
 interface SpanDetailPageProps {
   organization: schemas['Organization']
@@ -156,6 +77,7 @@ export default function SpanDetailPage({
 
   const {
     data: eventsData,
+    isLoading: isEventsLoading,
     isFetching,
     fetchNextPage,
     hasNextPage,
@@ -169,17 +91,18 @@ export default function SpanDetailPage({
     aggregate_fields: ['_cost.amount'],
   })
 
-  const { data: hierarchyStats } = useEventHierarchyStats(
-    organization.id,
-    {
-      event_type_id: spanId,
-      start_date: startDateISOString,
-      end_date: endDateISOString,
-      interval,
-      aggregate_fields: ['_cost.amount'],
-    },
-    true,
-  )
+  const { data: hierarchyStats, isLoading: isHierarchyLoading } =
+    useEventHierarchyStats(
+      organization.id,
+      {
+        event_type_id: spanId,
+        start_date: startDateISOString,
+        end_date: endDateISOString,
+        interval,
+        aggregate_fields: ['_cost.amount'],
+      },
+      true,
+    )
 
   const { data: eventTypes } = useEventTypes(organization.id, {
     sorting: ['-last_seen'],
@@ -259,6 +182,8 @@ export default function SpanDetailPage({
       .filter((item): item is NonNullable<typeof item> => item !== null)
   }, [hierarchyStats])
 
+  const isLoading = isEventsLoading || isHierarchyLoading || !eventType
+
   const timestampFormatter = useMemo(
     () => getTimestampFormatter(interval),
     [interval],
@@ -302,9 +227,12 @@ export default function SpanDetailPage({
     )
   }
 
-  if (!eventType) {
-    // loader
-    return null
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center">
+        <Spinner />
+      </div>
+    )
   }
 
   return (
@@ -456,7 +384,7 @@ export default function SpanDetailPage({
                 <thead>
                   <tr>
                     <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
-                      Span
+                      Date
                     </th>
                     <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Customer
@@ -464,7 +392,7 @@ export default function SpanDetailPage({
                     <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
                       Timestamp
                     </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
+                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium text-gray-600">
                       Cost
                     </th>
                   </tr>
@@ -587,110 +515,5 @@ export default function SpanDetailPage({
         }
       />
     </DashboardBody>
-  )
-}
-
-function getEventCostDeviation(
-  eventCost: number,
-  averageCost: number,
-  p99Cost: number,
-) {
-  // Calculate percentage deviation from average
-  const deviation = ((eventCost - averageCost) / averageCost) * 100
-
-  // Determine color based on position in range
-  let colorClass: string
-
-  if (eventCost <= averageCost) {
-    colorClass = 'text-gray-500'
-  } else if (eventCost >= p99Cost) {
-    colorClass = 'text-red-500'
-  } else {
-    // Interpolate between average and p99
-    const range = p99Cost - averageCost
-    const position = (eventCost - averageCost) / range
-
-    if (position < 0.5) {
-      // First half: amber-300
-      colorClass = 'text-amber-300'
-    } else if (position < 0.85) {
-      // Second half up to 85%: orange-400
-      colorClass = 'text-orange-400'
-    } else {
-      // Final 15% before p99: red-500
-      colorClass = 'text-red-500'
-    }
-  }
-
-  return {
-    deviation: deviation.toFixed(2), // e.g., "23.5"
-    deviationFormatted: `${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%`,
-    colorClass,
-  }
-}
-
-function EventRow({
-  eventType,
-  event,
-  organization,
-  averageCost,
-  p99Cost,
-}: {
-  eventType: schemas['EventType']
-  event: schemas['Event']
-  organization: schemas['Organization']
-  averageCost: number
-  p99Cost: number
-}) {
-  const costMetadata = (event.metadata as { _cost: { amount: string } })._cost
-  const parsedCost = costMetadata ? Number(costMetadata.amount) : 0
-  const mappedCost = costMetadata
-    ? getEventCostDeviation(parsedCost, averageCost, p99Cost)
-    : null
-
-  return (
-    <tr>
-      <td className="p-2">
-        <Link
-          href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}/${event.id}`}
-          className="text-sm font-medium"
-        >
-          {event.label}
-        </Link>
-      </td>
-
-      <td className="p-2">
-        <EventCustomer event={event} />
-      </td>
-
-      <td className="dark:text-polar-500 p-2 text-sm text-gray-600">
-        <FormattedDateTime datetime={event.timestamp} resolution="time" />
-      </td>
-
-      <td className="p-2 text-right text-sm tabular-nums">
-        {mappedCost && (
-          <div className="ml-auto flex w-40 flex-row items-center justify-between gap-x-2">
-            <span>
-              {(
-                event.metadata as {
-                  _cost: { amount: string; currency: string }
-                }
-              )._cost &&
-                formatSubCentCurrency(
-                  parsedCost,
-                  (
-                    event.metadata as {
-                      _cost: { amount: string; currency: string }
-                    }
-                  )._cost.currency ?? 'usd',
-                )}
-            </span>
-            <span className={mappedCost.colorClass}>
-              {mappedCost.deviationFormatted}
-            </span>
-          </div>
-        )}
-      </td>
-    </tr>
   )
 }

@@ -154,7 +154,10 @@ const CashflowChart = ({
                         }}
                         data-empty={period.costs === 0 ? true : undefined}
                       >
-                        {formatSubCentCurrency(Math.abs(period.costs ?? 0), 'usd')}
+                        {formatSubCentCurrency(
+                          Math.abs(period.costs ?? 0),
+                          'usd',
+                        )}
                       </div>
                     </div>
                     {dayOrders.length > 0 && (

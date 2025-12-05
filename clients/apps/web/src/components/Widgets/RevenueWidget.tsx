@@ -32,7 +32,8 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
   })
 
   const maxRevenue = Math.max(
-    ...(revenueMetrics.data?.periods.map((period) => period.revenue ?? 0) ?? []),
+    ...(revenueMetrics.data?.periods.map((period) => period.revenue ?? 0) ??
+      []),
   )
 
   return (

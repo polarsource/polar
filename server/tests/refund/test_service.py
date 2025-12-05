@@ -686,6 +686,7 @@ class TestCreate(StripeRefund):
 
         refund = await refund_service.create_from_stripe(session, stripe_refund)
 
+        assert refund.reason == RefundReason.dispute_prevention
         assert refund.dispute_id == dispute.id
 
 

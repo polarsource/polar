@@ -282,3 +282,10 @@ variable "prometheus_remote_write_password" {
   type        = string
   sensitive   = true
 }
+
+# ChargebackStop Webhook Secret
+variable "backend_chargebackstop_webhook_secret_production" {
+  description = "ChargebackStop Webhook Secret for production"
+  type        = string
+  sensitive   = true
+}

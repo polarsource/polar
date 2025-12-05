@@ -125,23 +125,24 @@ variable "backend_config" {
 variable "backend_secrets" {
   description = "Backend secrets (sensitive)"
   type = object({
-    stripe_publishable_key       = string
-    current_jwk_kid              = string
-    discord_bot_token            = string
-    discord_client_id            = string
-    discord_client_secret        = string
-    discord_webhook_url          = optional(string, "")
-    loops_api_key                = optional(string, "")
-    posthog_project_api_key      = optional(string, "")
-    resend_api_key               = string
-    secret                       = string
-    sentry_dsn                   = string
-    plain_request_signing_secret = optional(string, "")
-    plain_token                  = optional(string, "")
-    plain_chat_secret            = optional(string, "")
-    jwks                         = string
-    app_review_email             = optional(string, "")
-    app_review_otp_code          = optional(string, "")
+    stripe_publishable_key         = string
+    current_jwk_kid                = string
+    discord_bot_token              = string
+    discord_client_id              = string
+    discord_client_secret          = string
+    discord_webhook_url            = optional(string, "")
+    loops_api_key                  = optional(string, "")
+    posthog_project_api_key        = optional(string, "")
+    resend_api_key                 = string
+    secret                         = string
+    sentry_dsn                     = string
+    plain_request_signing_secret   = optional(string, "")
+    plain_token                    = optional(string, "")
+    plain_chat_secret              = optional(string, "")
+    jwks                           = string
+    app_review_email               = optional(string, "")
+    app_review_otp_code            = optional(string, "")
+    chargeback_stop_webhook_secret = optional(string, "")
   })
   sensitive = true
 }

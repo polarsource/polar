@@ -219,50 +219,6 @@ class TestMetricsFiltering:
         assert json["metrics"]["active_subscriptions"] is not None
         assert json["metrics"]["gross_margin"] is not None
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
-    )
-    async def test_deprecated_focus_metrics_still_works(
-        self, client: AsyncClient
-    ) -> None:
-        """Test that deprecated focus_metrics param still works for backward compat."""
-        response = await client.get(
-            "/v1/metrics/",
-            params={
-                "start_date": "2024-01-01",
-                "end_date": "2024-12-31",
-                "interval": "month",
-                "focus_metrics": ["revenue", "orders"],
-            },
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["metrics"]["revenue"] is not None
-        assert json["metrics"]["orders"] is not None
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
-    )
-    async def test_error_when_both_metrics_and_focus_metrics(
-        self, client: AsyncClient
-    ) -> None:
-        """Test that using both metrics and focus_metrics returns error."""
-        response = await client.get(
-            "/v1/metrics/",
-            params={
-                "start_date": "2024-01-01",
-                "end_date": "2024-12-31",
-                "interval": "month",
-                "metrics": ["revenue"],
-                "focus_metrics": ["orders"],
-            },
-        )
-
-        assert response.status_code == 422
-        json = response.json()
-        assert "Cannot use both" in str(json)
-
 
 @pytest.mark.asyncio
 class TestGetMetricsLimits:

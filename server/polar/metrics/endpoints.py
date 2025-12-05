@@ -75,12 +75,6 @@ async def get(
             "improving performance. If not provided, all metrics are returned."
         ),
     ),
-    focus_metrics: list[str] | None = Query(
-        None,
-        title="Focus Metrics",
-        deprecated=True,
-        description="Deprecated. Use 'metrics' instead.",
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MetricsResponse:
     """
@@ -103,26 +97,9 @@ async def get(
             ]
         )
 
-    if metrics is not None and focus_metrics is not None:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "loc": ("query",),
-                    "msg": (
-                        "Cannot use both 'metrics' and 'focus_metrics'. "
-                        "Use 'metrics' only."
-                    ),
-                    "type": "value_error",
-                    "input": None,
-                }
-            ]
-        )
-
-    effective_metrics = metrics if metrics is not None else focus_metrics
-
-    if effective_metrics is not None:
+    if metrics is not None:
         valid_slugs = {m.slug for m in METRICS}
-        invalid_slugs = set(effective_metrics) - valid_slugs
+        invalid_slugs = set(metrics) - valid_slugs
         if invalid_slugs:
             raise PolarRequestValidationError(
                 [
@@ -130,7 +107,7 @@ async def get(
                         "loc": ("query", "metrics"),
                         "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
                         "type": "value_error",
-                        "input": effective_metrics,
+                        "input": metrics,
                     }
                 ]
             )
@@ -146,7 +123,7 @@ async def get(
         product_id=product_id,
         billing_type=billing_type,
         customer_id=customer_id,
-        metrics=effective_metrics,
+        metrics=metrics,
     )
 
 

@@ -9,6 +9,7 @@ from polar.email import tasks as email
 from polar.email_update import tasks as email_update
 from polar.event import tasks as event
 from polar.eventstream import tasks as eventstream
+from polar.integrations.chargeback_stop import tasks as chargeback_stop
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.meter import tasks as meter
@@ -50,4 +51,5 @@ __all__ = [
     "transaction",
     "user",
     "webhook",
+    "chargeback_stop",
 ]

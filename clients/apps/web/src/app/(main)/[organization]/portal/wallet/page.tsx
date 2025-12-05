@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
+import WalletPage from './WalletPage'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
@@ -78,7 +78,7 @@ export default async function Page(props: {
   }
 
   return (
-    <ClientPage
+    <WalletPage
       organization={organization}
       wallets={wallets.items}
       customerSessionToken={customer_session_token as string}

@@ -1,5 +1,5 @@
-import ClientPage from './ClientPage'
+import IntegratePage from './IntegratePage'
 
 export default function Page() {
-  return <ClientPage />
+  return <IntegratePage />
 }

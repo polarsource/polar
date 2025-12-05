@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import EventDetailPage from './ClientPage'
+import CostsEventPage from './CostsEventPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -19,7 +19,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return (
-    <EventDetailPage organization={organization} eventId={params.eventId} />
-  )
+  return <CostsEventPage organization={organization} eventId={params.eventId} />
 }

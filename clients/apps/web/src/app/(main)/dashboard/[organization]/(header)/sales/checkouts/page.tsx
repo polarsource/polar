@@ -3,7 +3,7 @@ import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import CheckoutsPage from './CheckoutsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -43,7 +43,7 @@ export default async function Page(props: {
     : undefined
 
   return (
-    <ClientPage
+    <CheckoutsPage
       organization={organization}
       pagination={pagination}
       sorting={sorting}

@@ -1,4 +1,4 @@
-import ClientPage from './ClientPage'
+import ProductPage from './ProductPage'
 
 const isAssistantEnabled = Boolean(
   process.env.MCP_OAUTH2_CLIENT_ID &&
@@ -9,5 +9,5 @@ const isAssistantEnabled = Boolean(
 )
 
 export default function Page() {
-  return <ClientPage isAssistantEnabled={isAssistantEnabled} />
+  return <ProductPage isAssistantEnabled={isAssistantEnabled} />
 }

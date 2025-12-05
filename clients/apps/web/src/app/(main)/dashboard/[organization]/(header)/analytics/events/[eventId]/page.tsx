@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import EventDetailPage from './ClientPage'
+import EventDetailPage from './EventsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

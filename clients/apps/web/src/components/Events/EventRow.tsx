@@ -133,11 +133,11 @@ export const EventRow = ({
         <div className="flex flex-row items-center justify-between p-3 select-none">
           <div className="flex flex-row items-center gap-x-4">
             {depth === 0 ? (
-              <div className="dark:bg-polar-700 dark:hover:bg-polar-600 flex flex-row items-center justify-center rounded-sm border border-gray-200 bg-gray-100 p-1 transition-colors duration-150 hover:bg-gray-200 dark:border-white/5">
+              <div className="dark:text-polar-500 flex flex-row items-center justify-center text-gray-400 transition-colors duration-150">
                 {isExpanded ? (
-                  <KeyboardArrowDownOutlined fontSize="inherit" />
+                  <KeyboardArrowDownOutlined fontSize="small" />
                 ) : (
-                  <KeyboardArrowRightOutlined fontSize="inherit" />
+                  <KeyboardArrowRightOutlined fontSize="small" />
                 )}
               </div>
             ) : (

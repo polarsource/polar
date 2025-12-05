@@ -8,9 +8,11 @@ import { EventRow } from './EventRow'
 export const Events = ({
   events,
   organization,
+  showSourceBadge = true,
 }: {
   events: schemas['Event'][]
   organization: schemas['Organization']
+  showSourceBadge?: boolean
 }) => {
   // Get unique event names from the current events
   const eventNames = useMemo(() => {
@@ -61,6 +63,7 @@ export const Events = ({
             organization={organization}
             averageCost={costMetrics?.averageCost}
             p99Cost={costMetrics?.p99Cost}
+            showSourceBadge={showSourceBadge}
           />
         )
       })}

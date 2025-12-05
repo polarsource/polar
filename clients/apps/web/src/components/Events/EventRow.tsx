@@ -32,6 +32,7 @@ export const EventRow = ({
   renderEventLink = true,
   averageCost,
   p99Cost,
+  showSourceBadge = true,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
@@ -41,6 +42,7 @@ export const EventRow = ({
   renderEventLink?: boolean
   averageCost?: number
   p99Cost?: number
+  showSourceBadge?: boolean
 }) => {
   const [isExpanded, setIsExpanded] = useState(expanded)
   const hasChildren = event.child_count > 0
@@ -147,7 +149,7 @@ export const EventRow = ({
             )}
             <div className="flex flex-row items-center gap-x-4">
               <span className="text-xs">{event.label}</span>
-              <EventSourceBadge source={event.source} />
+              {showSourceBadge && <EventSourceBadge source={event.source} />}
               {event.child_count > 0 && (
                 <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
                   {event.child_count}{' '}

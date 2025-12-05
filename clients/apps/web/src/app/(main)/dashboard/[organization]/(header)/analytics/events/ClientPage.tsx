@@ -35,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Tooltip,
   TooltipContent,
@@ -61,13 +62,15 @@ const LOCAL_STORAGE_KEY = 'polar:events:filter-state'
 
 interface FilterState {
   expandedSources: Record<string, boolean>
+  showSystemEvents: boolean
 }
 
 const getDefaultFilterState = (): FilterState => ({
   expandedSources: {
     user: true,
-    system: false, // System events hidden by default
+    system: true,
   },
+  showSystemEvents: false, // System events hidden by default
 })
 
 const loadFilterState = (): FilterState => {
@@ -146,6 +149,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           ...prev.expandedSources,
           [source]: !prev.expandedSources[source],
         },
+      }
+      saveFilterState(newState)
+      return newState
+    })
+  }, [])
+
+  const toggleShowSystemEvents = useCallback(() => {
+    setFilterState((prev) => {
+      const newState = {
+        ...prev,
+        showSystemEvents: !prev.showSystemEvents,
       }
       saveFilterState(newState)
       return newState
@@ -560,13 +574,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 </Select>
               </div>
 
-              {Object.entries(eventTypes ?? {})
-                .sort((a) => (a[0] === 'system' ? 1 : -1))
-                .map(([source, eventTypeList]) => {
-                  if (eventTypeList.length === 0) return null
-
-                  const isExpanded = filterState.expandedSources[source] ?? true
-                  // Use date-range-filtered occurrences if available, otherwise fall back to all-time
+              {/* User Events Section */}
+              {eventTypes?.user &&
+                eventTypes.user.length > 0 &&
+                (() => {
+                  const eventTypeList = eventTypes.user
+                  const isExpanded = filterState.expandedSources['user'] ?? true
                   const totalOccurrences = eventTypeList.reduce(
                     (sum, et) =>
                       sum +
@@ -575,9 +588,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   )
 
                   return (
-                    <div className="flex flex-col gap-y-2" key={source}>
+                    <div className="flex flex-col gap-y-2">
                       <button
-                        onClick={() => toggleSourceExpanded(source)}
+                        onClick={() => toggleSourceExpanded('user')}
                         className="flex flex-row items-center justify-between text-left transition-opacity hover:opacity-80"
                       >
                         <div className="flex flex-row items-center gap-x-2">
@@ -592,9 +605,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                               className="dark:text-polar-500 text-gray-400"
                             />
                           )}
-                          <h3 className="text-sm capitalize">
-                            {source} Events
-                          </h3>
+                          <h3 className="text-sm">User Events</h3>
                         </div>
                         <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
                           {Number(totalOccurrences).toLocaleString('en-US', {
@@ -665,7 +676,136 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                       )}
                     </div>
                   )
-                })}
+                })()}
+
+              {/* System Events Toggle */}
+              <div className="flex flex-col gap-y-2">
+                <div className="flex flex-row items-center justify-between">
+                  <label
+                    htmlFor="show-system-events"
+                    className="dark:text-polar-400 text-sm text-gray-600"
+                  >
+                    Show System Events
+                  </label>
+                  <Switch
+                    id="show-system-events"
+                    checked={filterState.showSystemEvents}
+                    onCheckedChange={toggleShowSystemEvents}
+                    disabled={
+                      !eventTypes?.system || eventTypes.system.length === 0
+                    }
+                  />
+                </div>
+
+                {/* System Events Section */}
+                {filterState.showSystemEvents &&
+                  eventTypes?.system &&
+                  eventTypes.system.length > 0 &&
+                  (() => {
+                    const eventTypeList = eventTypes.system
+                    const isExpanded =
+                      filterState.expandedSources['system'] ?? true
+                    const totalOccurrences = eventTypeList.reduce(
+                      (sum, et) =>
+                        sum +
+                        (eventOccurrencesMap.get(et.name) ??
+                          et.occurrences ??
+                          0),
+                      0,
+                    )
+
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <button
+                          onClick={() => toggleSourceExpanded('system')}
+                          className="flex flex-row items-center justify-between text-left transition-opacity hover:opacity-80"
+                        >
+                          <div className="flex flex-row items-center gap-x-2">
+                            {isExpanded ? (
+                              <ExpandMore
+                                fontSize="small"
+                                className="dark:text-polar-500 text-gray-400"
+                              />
+                            ) : (
+                              <ChevronRight
+                                fontSize="small"
+                                className="dark:text-polar-500 text-gray-400"
+                              />
+                            )}
+                            <h3 className="text-sm">System Events</h3>
+                          </div>
+                          <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                            {Number(totalOccurrences).toLocaleString('en-US', {
+                              style: 'decimal',
+                              compactDisplay: 'short',
+                              notation: 'compact',
+                            })}
+                          </span>
+                        </button>
+                        {isExpanded && (
+                          <List size="small" className="rounded-xl">
+                            {eventTypeList.map((eventType) => {
+                              const sparklineValues =
+                                eventSparklineMap.get(eventType.name) || []
+                              const occurrences =
+                                eventOccurrencesMap.get(eventType.name) ??
+                                eventType.occurrences
+
+                              return (
+                                <ListItem
+                                  key={eventType.name}
+                                  size="small"
+                                  className="justify-between px-3 font-mono text-xs"
+                                  inactiveClassName="text-gray-500 dark:text-polar-500"
+                                  selected={selectedEventTypes?.includes(
+                                    eventType.name,
+                                  )}
+                                  onSelect={() =>
+                                    setSelectedEventTypes((prev) =>
+                                      prev && prev.includes(eventType.name)
+                                        ? prev.filter(
+                                            (name) => name !== eventType.name,
+                                          )
+                                        : ([
+                                            ...(prev ?? []),
+                                            eventType.name,
+                                          ] as string[]),
+                                    )
+                                  }
+                                >
+                                  <span className="max-w-[120px] truncate">
+                                    {eventType.label}
+                                  </span>
+                                  <div className="flex flex-row items-center gap-x-2">
+                                    {sparklineValues.length > 1 && (
+                                      <Sparkline
+                                        values={sparklineValues}
+                                        width={40}
+                                        height={16}
+                                        className="opacity-60"
+                                      />
+                                    )}
+                                    <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                                      {Number(occurrences).toLocaleString(
+                                        'en-US',
+                                        {
+                                          style: 'decimal',
+                                          compactDisplay: 'short',
+                                          notation: 'compact',
+                                        },
+                                      )}
+                                    </span>
+                                  </div>
+                                </ListItem>
+                              )
+                            })}
+                          </List>
+                        )}
+                      </div>
+                    )
+                  })()}
+              </div>
+
               <CustomerSelector
                 organizationId={organization.id}
                 selectedCustomerIds={selectedCustomerIds}
@@ -796,7 +936,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </div>
         ) : (
           <>
-            <Events events={events?.items ?? []} organization={organization} />
+            <Events
+              events={events?.items ?? []}
+              organization={organization}
+              showSourceBadge={filterState.showSystemEvents}
+            />
             <Pagination
               className="self-end"
               totalCount={events?.pagination.total_count ?? 0}

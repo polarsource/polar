@@ -149,7 +149,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
     _avatar_url: Mapped[str | None] = mapped_column(
-        String, name="avatar_url", key="_avatar_url", nullable=True
+        String, name="avatar_url", nullable=True
     )
 
     email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

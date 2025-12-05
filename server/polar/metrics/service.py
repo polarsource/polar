@@ -30,11 +30,11 @@ from .queries import (
 from .schemas import MetricsPeriod, MetricsResponse
 
 
-def _expand_focus_metrics_with_dependencies(
-    focus_metrics: Sequence[str] | None,
+def _expand_metrics_with_dependencies(
+    metrics: Sequence[str] | None,
 ) -> tuple[set[str], set[str]]:
     """
-    Expand focus_metrics to include all dependencies.
+    Expand metrics to include all dependencies.
 
     Returns a tuple of:
     - sql_metric_slugs: Set of SQL metric slugs needed (including dependencies)
@@ -43,7 +43,7 @@ def _expand_focus_metrics_with_dependencies(
     This handles recursive dependencies (e.g., ltv depends on churn_rate which
     depends on other metrics).
     """
-    if focus_metrics is None:
+    if metrics is None:
         return set(), set()
 
     sql_metric_slugs: set[str] = set()
@@ -72,25 +72,25 @@ def _expand_focus_metrics_with_dependencies(
                 resolve_dependencies(dep_slug, visited)
 
     # Resolve dependencies for each requested metric
-    for metric_slug in focus_metrics:
+    for metric_slug in metrics:
         resolve_dependencies(metric_slug, set())
 
     return sql_metric_slugs, meta_metric_slugs
 
 
 def _get_required_queries(
-    focus_metrics: Sequence[str] | None,
+    metrics: Sequence[str] | None,
 ) -> set[MetricQuery] | None:
     """
-    Determine which query types are needed based on the requested focus metrics.
+    Determine which query types are needed based on the requested metrics.
 
     Returns None if all queries should be executed (backward compatible behavior).
     Returns a set of MetricQuery values if only specific queries are needed.
     """
-    if focus_metrics is None:
+    if metrics is None:
         return None
 
-    sql_metric_slugs, _ = _expand_focus_metrics_with_dependencies(focus_metrics)
+    sql_metric_slugs, _ = _expand_metrics_with_dependencies(metrics)
 
     if not sql_metric_slugs:
         return None
@@ -123,7 +123,7 @@ def _get_filtered_queries(
 
 
 def _get_filtered_metrics(
-    focus_metrics: Sequence[str] | None,
+    metrics: Sequence[str] | None,
 ) -> list[type[SQLMetric]]:
     """
     Filter the METRICS_SQL list to only include the metrics needed.
@@ -131,15 +131,15 @@ def _get_filtered_metrics(
     This includes both directly requested metrics and their dependencies
     (e.g., gross_margin depends on cumulative_revenue and cumulative_costs).
     """
-    if focus_metrics is None:
+    if metrics is None:
         return list(METRICS_SQL)
 
-    sql_metric_slugs, _ = _expand_focus_metrics_with_dependencies(focus_metrics)
+    sql_metric_slugs, _ = _expand_metrics_with_dependencies(metrics)
     return [m for m in METRICS_SQL if m.slug in sql_metric_slugs]
 
 
 def _get_filtered_post_compute_metrics(
-    focus_metrics: Sequence[str] | None,
+    metrics: Sequence[str] | None,
 ) -> list[type[MetaMetric]]:
     """
     Filter the METRICS_POST_COMPUTE list to only include the metrics needed.
@@ -150,23 +150,23 @@ def _get_filtered_post_compute_metrics(
     The order is preserved from METRICS_POST_COMPUTE to ensure dependencies
     are computed before dependents.
     """
-    if focus_metrics is None:
+    if metrics is None:
         return list(METRICS_POST_COMPUTE)
 
-    _, meta_metric_slugs = _expand_focus_metrics_with_dependencies(focus_metrics)
+    _, meta_metric_slugs = _expand_metrics_with_dependencies(metrics)
     return [m for m in METRICS_POST_COMPUTE if m.slug in meta_metric_slugs]
 
 
 def _get_filtered_all_metrics(
-    focus_metrics: Sequence[str] | None,
+    metrics: Sequence[str] | None,
 ) -> list[type[Metric]]:
     """
     Filter the METRICS list to only include the metrics needed.
     """
-    if focus_metrics is None:
+    if metrics is None:
         return list(METRICS)
 
-    return [m for m in METRICS if m.slug in focus_metrics]
+    return [m for m in METRICS if m.slug in metrics]
 
 
 class MetricsService:
@@ -183,7 +183,7 @@ class MetricsService:
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
-        focus_metrics: Sequence[str] | None = None,
+        metrics: Sequence[str] | None = None,
         now: datetime | None = None,
     ) -> MetricsResponse:
         await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
@@ -210,16 +210,16 @@ class MetricsService:
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-        # Determine which queries to run based on focus_metrics
-        required_queries = _get_required_queries(focus_metrics)
+        # Determine which queries to run based on metrics
+        required_queries = _get_required_queries(metrics)
         filtered_query_fns = _get_filtered_queries(required_queries)
-        filtered_metrics_sql = _get_filtered_metrics(focus_metrics)
-        filtered_post_compute = _get_filtered_post_compute_metrics(focus_metrics)
-        filtered_all_metrics = _get_filtered_all_metrics(focus_metrics)
+        filtered_metrics_sql = _get_filtered_metrics(metrics)
+        filtered_post_compute = _get_filtered_post_compute_metrics(metrics)
+        filtered_all_metrics = _get_filtered_all_metrics(metrics)
 
         with logfire.span(
             "Build metrics query",
-            focus_metrics=focus_metrics,
+            metrics=metrics,
             required_queries=[q.value for q in required_queries]
             if required_queries
             else None,
@@ -262,7 +262,7 @@ class MetricsService:
             "Stream and process metrics query",
             start_date=str(start_date),
             end_date=str(end_date),
-            focus_metrics=focus_metrics,
+            metrics=metrics,
         ):
             result = await session.stream(
                 statement,
@@ -271,9 +271,7 @@ class MetricsService:
 
             row_count = 0
             # Get the set of explicitly requested metric slugs (not dependencies)
-            requested_slugs = (
-                set(focus_metrics) if focus_metrics else {m.slug for m in METRICS}
-            )
+            requested_slugs = set(metrics) if metrics else {m.slug for m in METRICS}
 
             with logfire.span("Fetch and process rows"):
                 async for row in result:

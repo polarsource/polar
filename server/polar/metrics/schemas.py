@@ -26,7 +26,7 @@ if TYPE_CHECKING:
         def __getattr__(self, name: str) -> Metric | None: ...
 
 else:
-    # Metrics fields are optional to support focus_metrics filtering
+    # Metrics fields are optional to support metrics filtering
     Metrics = create_model(
         "Metrics", **{m.slug: (Metric | None, None) for m in METRICS}, __base__=Schema
     )
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
         def __getattr__(self, name: str) -> int | float | None: ...
 
 else:
-    # Metric fields are nullable to support focus_metrics filtering with exclude_none
+    # Metric fields are nullable to support metrics filtering with exclude_none
     MetricsPeriod = create_model(
         "MetricPeriod",
         **{m.slug: (int | float | None, None) for m in METRICS},
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
 
 
 else:
-    # Metric fields are nullable to support focus_metrics filtering with exclude_none
+    # Metric fields are nullable to support metrics filtering with exclude_none
     MetricsTotals = create_model(
         "MetricsTotals",
         **{m.slug: (int | float | None, None) for m in METRICS},

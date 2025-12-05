@@ -875,11 +875,12 @@ class GrossMarginMetric(MetaMetric):
     slug = "gross_margin"
     display_name = "Gross Margin"
     type = MetricType.currency
+    dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.cumulative_revenue
-        costs = period.cumulative_costs
+        revenue = period.cumulative_revenue or 0
+        costs = period.cumulative_costs or 0
         return revenue - costs
 
     @classmethod
@@ -891,11 +892,12 @@ class GrossMarginPercentageMetric(MetaMetric):
     slug = "gross_margin_percentage"
     display_name = "Gross Margin %"
     type = MetricType.percentage
+    dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.cumulative_revenue
-        costs = period.cumulative_costs
+        revenue = period.cumulative_revenue or 0
+        costs = period.cumulative_costs or 0
         return (revenue - costs) / revenue if revenue > 0 else 0.0
 
     @classmethod
@@ -907,11 +909,12 @@ class CashflowMetric(MetaMetric):
     slug = "cashflow"
     display_name = "Cashflow"
     type = MetricType.currency
+    dependencies: ClassVar[list[str]] = ["revenue", "costs"]
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        revenue = period.revenue
-        costs = period.costs
+        revenue = period.revenue or 0
+        costs = period.costs or 0
         return revenue - costs
 
     @classmethod
@@ -923,13 +926,19 @@ class ChurnRateMetric(MetaMetric):
     slug = "churn_rate"
     display_name = "Churn Rate"
     type = MetricType.percentage
+    dependencies: ClassVar[list[str]] = [
+        "active_subscriptions",
+        "new_subscriptions",
+        "churned_subscriptions",
+        "canceled_subscriptions",
+    ]
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> float:
-        active_during = period.active_subscriptions
-        new = period.new_subscriptions
-        churned = period.churned_subscriptions
-        canceled = period.canceled_subscriptions
+        active_during = period.active_subscriptions or 0
+        new = period.new_subscriptions or 0
+        churned = period.churned_subscriptions or 0
+        canceled = period.canceled_subscriptions or 0
         active_at_start = active_during - new + churned
         return canceled / active_at_start if active_at_start > 0 else 0.0
 
@@ -942,12 +951,17 @@ class LTVMetric(MetaMetric):
     slug = "ltv"
     display_name = "Lifetime Value"
     type = MetricType.currency
+    dependencies: ClassVar[list[str]] = [
+        "average_revenue_per_user",
+        "cost_per_user",
+        "churn_rate",
+    ]
 
     @classmethod
     def compute_from_period(cls, period: "MetricsPeriod") -> int:
-        arpu = period.average_revenue_per_user
-        cost_per_user = period.cost_per_user
-        churn_rate = period.churn_rate
+        arpu = period.average_revenue_per_user or 0
+        cost_per_user = period.cost_per_user or 0
+        churn_rate = period.churn_rate or 0
 
         if churn_rate == 0:
             return 0

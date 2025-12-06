@@ -26,7 +26,10 @@ import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { WebhookStatusFilterValue } from './WebhookStatusFilter'
+import {
+  HTTP_STATUS_CODES,
+  WebhookStatusFilterValue,
+} from './WebhookStatusFilter'
 
 interface DeliveriesTableProps {
   organization: schemas['Organization']
@@ -98,17 +101,28 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
-    ...(statusFilter && statusFilter.length > 0
+    ...(statusFilter &&
+    statusFilter.length > 0 &&
+    statusFilter.length < HTTP_STATUS_CODES.length
       ? { http_code: statusFilter }
       : {}),
     ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
     ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
   })
 
-  const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []
+  const deliveries: DeliveryRow[] =
+    statusFilter && statusFilter.length === 0
+      ? []
+      : deliveriesHook.data?.items || []
 
-  const rowCount = deliveriesHook.data?.pagination.total_count ?? 0
-  const pageCount = deliveriesHook.data?.pagination.max_page ?? 1
+  const rowCount =
+    statusFilter && statusFilter.length === 0
+      ? 0
+      : (deliveriesHook.data?.pagination.total_count ?? 0)
+  const pageCount =
+    statusFilter && statusFilter.length === 0
+      ? 1
+      : (deliveriesHook.data?.pagination.max_page ?? 1)
 
   const columns: DataTableColumnDef<DeliveryRow>[] = [
     {

@@ -1,6 +1,5 @@
 'use client'
 
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -8,9 +7,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
+import { ChevronDown } from 'lucide-react'
 import React, { useMemo } from 'react'
 
-const HTTP_STATUS_CODES = [200, 201, 400, 401, 403, 404, 500, 502, 503] as const
+export const HTTP_STATUS_CODES = [
+  200, 201, 400, 401, 403, 404, 500, 502, 503,
+] as const
 type HttpStatusCode = (typeof HTTP_STATUS_CODES)[number]
 
 export type WebhookStatusFilterValue = HttpStatusCode[]
@@ -33,6 +35,38 @@ const getStatusLabel = (code: HttpStatusCode): string => {
     503: '503 Unavailable',
   }
   return labels[code]
+}
+
+interface StatusCodeGroupProps {
+  title: string
+  codes: HttpStatusCode[]
+  value: WebhookStatusFilterValue
+  onToggle: (code: HttpStatusCode) => void
+}
+
+const StatusCodeGroup: React.FC<StatusCodeGroupProps> = ({
+  title,
+  codes,
+  value,
+  onToggle,
+}) => {
+  return (
+    <div>
+      <div className="px-2 py-1 text-xs font-medium text-gray-400">{title}</div>
+      {codes.map((code) => (
+        <label
+          key={code}
+          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <Checkbox
+            checked={value.includes(code)}
+            onCheckedChange={() => onToggle(code)}
+          />
+          <span className="text-sm">{getStatusLabel(code)}</span>
+        </label>
+      ))}
+    </div>
+  )
 }
 
 const WebhookStatusFilter: React.FC<WebhookStatusFilterProps> = ({
@@ -69,12 +103,12 @@ const WebhookStatusFilter: React.FC<WebhookStatusFilterProps> = ({
       <PopoverTrigger asChild>
         <Button
           size="default"
-          variant="secondary"
-          className="w-[175px]"
+          variant="outline"
+          className="ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 dark:hover:border-polar-700 w-[175px] border-gray-200 bg-white shadow-xs hover:border-gray-300 hover:bg-white focus:outline-none [&>span]:line-clamp-1"
           wrapperClassNames="justify-between w-full"
         >
           <div className="truncate">{buttonLabel}</div>
-          <ExpandMoreOutlined className="ml-2 h-4 w-4 opacity-50" />
+          <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[220px] p-0" align="start">
@@ -84,65 +118,29 @@ const WebhookStatusFilter: React.FC<WebhookStatusFilterProps> = ({
             {!allSelected ? 'Select All' : 'Unselect All'}
           </Button>
         </div>
-        <div className="max-h-[300px] overflow-y-auto p-2">
-          {/* Success codes */}
-          <div className="mb-2">
-            <div className="px-2 py-1 text-xs font-medium text-gray-400">
-              Success
-            </div>
-            {HTTP_STATUS_CODES.filter((code) => code >= 200 && code < 300).map(
-              (code) => (
-                <label
-                  key={code}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <Checkbox
-                    checked={value.includes(code)}
-                    onCheckedChange={() => handleToggle(code)}
-                  />
-                  <span className="text-sm">{getStatusLabel(code)}</span>
-                </label>
-              ),
+        <div className="flex max-h-[300px] flex-col gap-2 overflow-y-auto p-2">
+          <StatusCodeGroup
+            title="Success"
+            codes={HTTP_STATUS_CODES.filter(
+              (code) => code >= 200 && code < 300,
             )}
-          </div>
-          {/* Client error codes */}
-          <div className="mb-2">
-            <div className="px-2 py-1 text-xs font-medium text-gray-400">
-              Client Error
-            </div>
-            {HTTP_STATUS_CODES.filter((code) => code >= 400 && code < 500).map(
-              (code) => (
-                <label
-                  key={code}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  <Checkbox
-                    checked={value.includes(code)}
-                    onCheckedChange={() => handleToggle(code)}
-                  />
-                  <span className="text-sm">{getStatusLabel(code)}</span>
-                </label>
-              ),
+            value={value}
+            onToggle={handleToggle}
+          />
+          <StatusCodeGroup
+            title="Client Error"
+            codes={HTTP_STATUS_CODES.filter(
+              (code) => code >= 400 && code < 500,
             )}
-          </div>
-          {/* Server error codes */}
-          <div>
-            <div className="px-2 py-1 text-xs font-medium text-gray-400">
-              Server Error
-            </div>
-            {HTTP_STATUS_CODES.filter((code) => code >= 500).map((code) => (
-              <label
-                key={code}
-                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <Checkbox
-                  checked={value.includes(code)}
-                  onCheckedChange={() => handleToggle(code)}
-                />
-                <span className="text-sm">{getStatusLabel(code)}</span>
-              </label>
-            ))}
-          </div>
+            value={value}
+            onToggle={handleToggle}
+          />
+          <StatusCodeGroup
+            title="Server Error"
+            codes={HTTP_STATUS_CODES.filter((code) => code >= 500)}
+            value={value}
+            onToggle={handleToggle}
+          />
         </div>
       </PopoverContent>
     </Popover>

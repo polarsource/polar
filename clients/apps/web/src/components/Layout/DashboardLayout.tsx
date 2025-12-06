@@ -201,7 +201,7 @@ export const DashboardBody = ({
             wide ? '' : 'max-w-(--breakpoint-xl)',
           )}
         >
-          <div className="flex flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:gap-x-8 md:py-8">
+          <div className="flex flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:gap-x-4 md:py-8">
             {!title || typeof parsedTitle === 'string' ? (
               <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
                 {title ?? current?.title}

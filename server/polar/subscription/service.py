@@ -37,6 +37,7 @@ from polar.exceptions import (
     ResourceUnavailable,
     ValidationError,
 )
+from polar.file.s3 import S3_SERVICES
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -2337,19 +2338,46 @@ class SubscriptionService:
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         product = subscription.product
+        customer = subscription.customer
+        organization = subscription.organization
+        billing_address = customer.billing_address
 
         if product.organization.notification_settings["new_subscription"]:
+            product_image_url: str | None = None
+            try:
+                if product.product_medias and len(product.product_medias) > 0:
+                    first_media = product.product_medias[0].file
+                    product_image_url = S3_SERVICES[first_media.service].get_public_url(
+                        first_media.path
+                    )
+            except Exception:
+                pass
+
             await notifications_service.send_to_org_members(
                 session,
                 org_id=product.organization_id,
                 notif=PartialNotification(
                     type=NotificationType.maintainer_new_paid_subscription,
                     payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                        subscriber_name=subscription.customer.email,
+                        subscriber_name=customer.name or customer.email,
+                        subscriber_email=customer.email,
                         tier_name=product.name,
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,
-                        tier_organization_name=subscription.organization.name,
+                        tier_organization_name=organization.name,
+                        subscription_id=str(subscription.id),
+                        subscription_date=subscription.created_at.isoformat(),
+                        organization_slug=organization.slug,
+                        billing_address_country=billing_address.country
+                        if billing_address
+                        else None,
+                        billing_address_city=billing_address.city
+                        if billing_address
+                        else None,
+                        billing_address_line1=billing_address.line1
+                        if billing_address
+                        else None,
+                        product_image_url=product_image_url,
                     ),
                 ),
             )

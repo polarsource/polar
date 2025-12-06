@@ -60,17 +60,38 @@ class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
 
 
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
-    subscriber_name: str
     tier_name: str
     tier_price_amount: int | None
     tier_price_recurring_interval: str
     tier_organization_name: str
+    subscriber_name: str = ""
+    subscriber_email: str | None = None
+    subscription_id: str | None = None
+    subscription_date: str | None = None
+    organization_slug: str | None = None
+    billing_address_country: str | None = None
+    billing_address_city: str | None = None
+    billing_address_line1: str | None = None
+    product_image_url: str | None = None
 
     @computed_field
     def formatted_price_amount(self) -> str:
         if self.tier_price_amount is None:
             return ""
         return format_currency(self.tier_price_amount / 100, "USD", locale="en_US")
+
+    @computed_field
+    def formatted_address_country(self) -> str | None:
+        if not self.billing_address_country:
+            return None
+        country = pycountry.countries.get(alpha_2=self.billing_address_country)
+        return country.name if country else self.billing_address_country
+
+    @computed_field
+    def subscription_url(self) -> str | None:
+        if not self.organization_slug or not self.subscription_id:
+            return None
+        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/subscriptions/{self.subscription_id}"
 
     def subject(self) -> str:
         if self.tier_price_amount:

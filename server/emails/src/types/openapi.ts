@@ -816,8 +816,6 @@ export interface components {
     }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {
-      /** Subscriber Name */
-      subscriber_name: string
       /** Tier Name */
       tier_name: string
       /** Tier Price Amount */
@@ -826,8 +824,63 @@ export interface components {
       tier_price_recurring_interval: string
       /** Tier Organization Name */
       tier_organization_name: string
+      /**
+       * Subscriber Name
+       * @default
+       */
+      subscriber_name: string
+      /**
+       * Subscriber Email
+       * @default null
+       */
+      subscriber_email: string | null
+      /**
+       * Subscription Id
+       * @default null
+       */
+      subscription_id: string | null
+      /**
+       * Subscription Date
+       * @default null
+       */
+      subscription_date: string | null
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+      /**
+       * Billing Address Country
+       * @default null
+       */
+      billing_address_country: string | null
+      /**
+       * Billing Address City
+       * @default null
+       */
+      billing_address_city: string | null
+      /**
+       * Billing Address Line1
+       * @default null
+       */
+      billing_address_line1: string | null
+      /**
+       * Product Image Url
+       * @default null
+       */
+      product_image_url: string | null
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
+      /**
+       * Formatted Address Country
+       * @default null
+       */
+      readonly formatted_address_country: string | null
+      /**
+       * Subscription Url
+       * @default null
+       */
+      readonly subscription_url: string | null
     }
     /** MaintainerNewProductSaleNotificationPayload */
     MaintainerNewProductSaleNotificationPayload: {

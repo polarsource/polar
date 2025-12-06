@@ -167,6 +167,9 @@ async def list_webhook_deliveries(
     endpoint_id: MultipleQueryFilter[UUID4] | None = Query(
         None, description="Filter by webhook endpoint ID."
     ),
+    http_code: MultipleQueryFilter[int] | None = Query(
+        None, description="Filter by HTTP status code."
+    ),
     start_timestamp: AwareDatetime | None = Query(
         None, description="Filter deliveries after this timestamp."
     ),
@@ -184,6 +187,7 @@ async def list_webhook_deliveries(
         session,
         auth_subject,
         endpoint_id=endpoint_id,
+        http_code=http_code,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         pagination=pagination,

@@ -1,13 +1,14 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useListWebhooksDeliveries = (variables: {
   webhookEndpointId: string
   limit: number
   page: number
+  http_code?: number[]
   start_timestamp?: Date
   end_timestamp?: Date
 }) =>
@@ -21,6 +22,10 @@ export const useListWebhooksDeliveries = (variables: {
               endpoint_id: variables.webhookEndpointId,
               limit: variables.limit,
               page: variables.page,
+              ...(variables.http_code &&
+                variables.http_code.length > 0 && {
+                  http_code: variables.http_code,
+                }),
               ...(variables.start_timestamp && {
                 start_timestamp: variables.start_timestamp.toISOString(),
               }),
@@ -32,6 +37,7 @@ export const useListWebhooksDeliveries = (variables: {
         }),
       ),
     retry: defaultRetry,
+    placeholderData: keepPreviousData,
   })
 
 export const useListWebhooksEndpoints = (variables: {

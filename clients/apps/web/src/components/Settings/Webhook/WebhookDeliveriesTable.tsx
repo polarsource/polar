@@ -24,7 +24,7 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { WebhookStatusFilterValue } from './WebhookStatusFilter'
 
@@ -98,19 +98,14 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   const deliveriesHook = useListWebhooksDeliveries({
     webhookEndpointId: endpoint.id,
     ...getAPIParams(pagination, sorting),
+    ...(statusFilter && statusFilter.length > 0
+      ? { http_code: statusFilter }
+      : {}),
     ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
     ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
   })
 
-  const deliveries: DeliveryRow[] = useMemo(() => {
-    const items = deliveriesHook.data?.items || []
-    if (!statusFilter || statusFilter === 'all') {
-      return items
-    }
-    return items.filter((delivery) =>
-      statusFilter === 'succeeded' ? delivery.succeeded : !delivery.succeeded,
-    )
-  }, [deliveriesHook.data?.items, statusFilter])
+  const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []
 
   const rowCount = deliveriesHook.data?.pagination.total_count ?? 0
   const pageCount = deliveriesHook.data?.pagination.max_page ?? 1
@@ -264,7 +259,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
             }
             return [{ ...row, isSubRow: true, id: `${row.id}_subrow` }]
           }}
-          isLoading={deliveriesHook}
+          isLoading={deliveriesHook.isLoading}
         />
       ) : null}
     </>

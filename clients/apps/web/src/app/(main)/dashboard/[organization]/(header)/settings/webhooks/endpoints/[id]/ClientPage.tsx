@@ -39,8 +39,7 @@ export default function ClientPage({
   const { id }: { id: string } = useParams()
   const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [statusFilter, setStatusFilter] =
-    useState<WebhookStatusFilterValue>('all')
+  const [statusFilter, setStatusFilter] = useState<WebhookStatusFilterValue>([])
 
   const { data: endpoint } = useWebhookEndpoint(id)
 

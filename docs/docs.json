@@ -69,19 +69,19 @@
                 "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",
-                  "features/benefits/license-keys",
-                  "features/benefits/file-downloads",
-                  "features/benefits/discord-access",
-                  "features/benefits/github-access",
                   "features/benefits/credits",
-                  "features/benefits/custom"
+                  "features/benefits/custom",
+                  "features/benefits/discord-access",
+                  "features/benefits/file-downloads",
+                  "features/benefits/github-access",
+                  "features/benefits/license-keys"
                 ]
               },
               {
                 "group": "Checkout",
                 "pages": [
-                  "features/checkout/links",
                   "features/checkout/embed",
+                  "features/checkout/links",
                   "features/checkout/session"
                 ]
               },
@@ -105,12 +105,12 @@
               {
                 "group": "Integrations",
                 "pages": [
-                  "features/integrations/raycast",
-                  "features/integrations/framer",
-                  "features/integrations/zapier",
-                  "features/integrations/paritydeals",
                   "features/integrations/affonso",
-                  "features/integrations/fernand"
+                  "features/integrations/fernand",
+                  "features/integrations/framer",
+                  "features/integrations/paritydeals",
+                  "features/integrations/raycast",
+                  "features/integrations/zapier"
                 ]
               }
             ]
@@ -125,10 +125,10 @@
               {
                 "group": "SDKs",
                 "pages": [
-                  "integrate/sdk/typescript",
-                  "integrate/sdk/python",
+                  "integrate/sdk/golang",
                   "integrate/sdk/php",
-                  "integrate/sdk/golang"
+                  "integrate/sdk/python",
+                  "integrate/sdk/typescript"
                 ]
               },
               {

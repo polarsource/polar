@@ -236,6 +236,25 @@ class Settings(BaseSettings):
     # Loops
     LOOPS_API_KEY: str | None = None
 
+    # Logo.dev (for company logo avatars)
+    LOGO_DEV_PUBLISHABLE_KEY: str | None = None
+    PERSONAL_EMAIL_DOMAINS: set[str] = {
+        "gmail.com",
+        "yahoo.com",
+        "hotmail.com",
+        "outlook.com",
+        "aol.com",
+        "icloud.com",
+        "mail.com",
+        "protonmail.com",
+        "zoho.com",
+        "gmx.com",
+        "yandex.com",
+        "msn.com",
+        "live.com",
+        "qq.com",
+    }
+
     # Logfire
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_IGNORED_ACTORS: set[str] = {

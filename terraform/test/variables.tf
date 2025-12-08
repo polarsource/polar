@@ -55,9 +55,14 @@ variable "backend_discord_client_secret" {
   sensitive   = true
 }
 
-
 variable "backend_resend_api_key" {
   description = "Resend API Key for production"
+  type        = string
+  sensitive   = true
+}
+
+variable "backend_logo_dev_publishable_key" {
+  description = "Logo.dev Publishable Key for production"
   type        = string
   sensitive   = true
 }

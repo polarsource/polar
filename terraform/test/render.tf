@@ -165,15 +165,16 @@ module "test" {
   }
 
   backend_secrets = {
-    stripe_publishable_key = var.stripe_publishable_key
-    current_jwk_kid        = var.backend_current_jwk_kid
-    discord_bot_token      = var.backend_discord_bot_token
-    discord_client_id      = var.backend_discord_client_id
-    discord_client_secret  = var.backend_discord_client_secret
-    resend_api_key         = var.backend_resend_api_key
-    secret                 = var.backend_secret
-    sentry_dsn             = var.backend_sentry_dsn
-    jwks                   = var.backend_jwks
+    stripe_publishable_key   = var.stripe_publishable_key
+    current_jwk_kid          = var.backend_current_jwk_kid
+    discord_bot_token        = var.backend_discord_bot_token
+    discord_client_id        = var.backend_discord_client_id
+    discord_client_secret    = var.backend_discord_client_secret
+    resend_api_key           = var.backend_resend_api_key
+    logo_dev_publishable_key = var.backend_logo_dev_publishable_key
+    secret                   = var.backend_secret
+    sentry_dsn               = var.backend_sentry_dsn
+    jwks                     = var.backend_jwks
   }
 
   aws_s3_config = {

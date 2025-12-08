@@ -100,6 +100,14 @@ resource "tfe_variable" "backend_resend_api_key_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "backend_logo_dev_publishable_key_production" {
+  key             = "backend_logo_dev_publishable_key_production"
+  category        = "terraform"
+  description     = "Logo.dev Publishable Key for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "backend_secret_production" {
   key             = "backend_secret_production"
   category        = "terraform"

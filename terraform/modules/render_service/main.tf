@@ -50,6 +50,7 @@ resource "render_env_group" "backend" {
       POLAR_DISCORD_CLIENT_ID                    = { value = var.backend_secrets.discord_client_id }
       POLAR_DISCORD_CLIENT_SECRET                = { value = var.backend_secrets.discord_client_secret }
       POLAR_RESEND_API_KEY                       = { value = var.backend_secrets.resend_api_key }
+      POLAR_LOGO_DEV_PUBLISHABLE_KEY             = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                               = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                           = { value = var.backend_secrets.sentry_dsn }
     },

@@ -121,7 +121,9 @@ export const OrganizationStep = ({
       return
     }
 
-    await revalidate(`users:${currentUser?.id}:organizations`)
+    await revalidate(`users:${currentUser?.id}:organizations`, {
+      expire: 0,
+    })
     setUserOrganizations((orgs) => [...orgs, organization])
 
     let queryParams = ''

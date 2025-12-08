@@ -68,11 +68,18 @@ resource "tfe_variable" "backend_discord_client_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
-
 resource "tfe_variable" "backend_resend_api_key_test" {
   key             = "backend_resend_api_key"
   category        = "terraform"
   description     = "Resend API Key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backend_logo_dev_publishable_key_test" {
+  key             = "backend_logo_dev_publishable_key"
+  category        = "terraform"
+  description     = "Logo.dev Publishable Key for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }

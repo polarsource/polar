@@ -59,6 +59,15 @@ SlugInput = Annotated[
 ]
 
 
+def _discard_logo_dev_url(url: HttpUrl) -> HttpUrl | None:
+    if url.host and url.host.endswith("logo.dev"):
+        return None
+    return url
+
+
+AvatarUrl = Annotated[HttpUrlToStr, AfterValidator(_discard_logo_dev_url)]
+
+
 class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
@@ -314,7 +323,7 @@ class Organization(OrganizationBase):
 class OrganizationCreate(Schema):
     name: NameInput
     slug: SlugInput
-    avatar_url: HttpUrlToStr | None = None
+    avatar_url: AvatarUrl | None = None
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
@@ -335,7 +344,7 @@ class OrganizationCreate(Schema):
 
 class OrganizationUpdate(Schema):
     name: NameInput | None = None
-    avatar_url: HttpUrlToStr | None = None
+    avatar_url: AvatarUrl | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(

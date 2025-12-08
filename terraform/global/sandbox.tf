@@ -76,6 +76,14 @@ resource "tfe_variable" "backend_resend_api_key_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
+resource "tfe_variable" "backend_logo_dev_publishable_key_sandbox" {
+  key             = "backend_logo_dev_publishable_key_sandbox"
+  category        = "terraform"
+  description     = "Logo.dev Publishable Key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
 resource "tfe_variable" "backend_secret_sandbox" {
   key             = "backend_secret_sandbox"
   category        = "terraform"

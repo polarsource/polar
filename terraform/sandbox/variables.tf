@@ -63,6 +63,12 @@ variable "backend_resend_api_key_sandbox" {
   sensitive   = true
 }
 
+variable "backend_logo_dev_publishable_key_sandbox" {
+  description = "Logo.dev Publishable Key for sandbox"
+  type        = string
+  sensitive   = true
+}
+
 variable "backend_secret_sandbox" {
   description = "Backend Secret for sandbox"
   type        = string

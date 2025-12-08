@@ -198,6 +198,7 @@ module "production" {
     loops_api_key                  = var.backend_loops_api_key_production
     posthog_project_api_key        = var.backend_posthog_project_api_key_production
     resend_api_key                 = var.backend_resend_api_key_production
+    logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_production
     secret                         = var.backend_secret_production
     sentry_dsn                     = var.backend_sentry_dsn_production
     plain_request_signing_secret   = var.backend_plain_request_signing_secret_production

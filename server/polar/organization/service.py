@@ -299,7 +299,7 @@ class OrganizationService:
         if organization.email:
             update_dict["email"] = anonymize_email_for_deletion(organization.email)
 
-        if organization.avatar_url:
+        if organization._avatar_url:
             # Anonymize by setting to Polar logo
             update_dict["avatar_url"] = (
                 "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
@@ -451,7 +451,7 @@ class OrganizationService:
         if organization.email:
             update_dict["email"] = anonymize_email_for_deletion(organization.email)
 
-        if organization.avatar_url:
+        if organization._avatar_url:
             # Anonymize by setting to Polar logo
             update_dict["avatar_url"] = (
                 "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"

@@ -84,6 +84,12 @@ variable "backend_resend_api_key_production" {
   sensitive   = true
 }
 
+variable "backend_logo_dev_publishable_key_production" {
+  description = "Logo.dev Publishable Key for production"
+  type        = string
+  sensitive   = true
+}
+
 variable "backend_secret_production" {
   description = "Backend Secret for production"
   type        = string

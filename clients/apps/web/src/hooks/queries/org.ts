@@ -66,13 +66,14 @@ export const useUpdateOrganization = () =>
     mutationFn: (variables: {
       id: string
       body: schemas['OrganizationUpdate']
+      userId?: string
     }) => {
       return api.PATCH('/v1/organizations/{id}', {
         params: { path: { id: variables.id } },
         body: variables.body,
       })
     },
-    onSuccess: async (result, _variables, _ctx) => {
+    onSuccess: async (result, variables) => {
       const { data, error } = result
       if (error) {
         return
@@ -82,6 +83,12 @@ export const useUpdateOrganization = () =>
       })
       await revalidate(`organizations:${data.id}`)
       await revalidate(`organizations:${data.slug}`)
+
+      if (variables.userId) {
+        await revalidate(`users:${variables.userId}:organizations`, {
+          expire: 0,
+        })
+      }
     },
   })
 

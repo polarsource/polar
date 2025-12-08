@@ -6,6 +6,7 @@ from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
+from polar.config import settings
 from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
@@ -127,8 +128,16 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
-        email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+        domain = self.email.split("@")[-1].lower()
+
+        if (
+            not settings.LOGO_DEV_PUBLISHABLE_KEY
+            or domain in settings.PERSONAL_EMAIL_DOMAINS
+        ):
+            email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
+            return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
+
+        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
 
 
 class Customer(CustomerBase):

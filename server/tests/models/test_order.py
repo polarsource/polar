@@ -23,6 +23,9 @@ from tests.fixtures.random_objects import create_order
         pytest.param(
             1000, 250, -500, 750, 500, 250, id="full refund with negative balance"
         ),
+        pytest.param(
+            1000, 250, 0, 1300, 1040, 260, id="refund exceeding original amount"
+        ),
     ],
 )
 @pytest.mark.asyncio

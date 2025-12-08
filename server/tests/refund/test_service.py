@@ -738,6 +738,58 @@ class TestCreateFromDispute:
 
         assert refund_transaction_service_mock.create.call_count == 1
 
+    async def test_valid_exceeding_refund(
+        self,
+        session: AsyncSession,
+        refund_transaction_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment_transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=250,
+        )
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            processor_id=payment_transaction.charge_id,
+        )
+        dispute = await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            amount=1050,
+            tax_amount=300,
+        )
+
+        refund = await refund_service.create_from_dispute(
+            session, dispute, "DISPUTE_BALANCE_TRANSACTION_ID"
+        )
+        assert refund
+        assert refund.status == RefundStatus.succeeded
+        assert refund.reason == RefundReason.dispute_prevention
+        assert refund.amount == dispute.amount
+        assert refund.currency == dispute.currency
+        assert refund.tax_amount == dispute.tax_amount
+        assert refund.dispute_id == dispute.id
+        assert refund.order_id == order.id
+        assert refund.processor == dispute.payment_processor
+        assert refund.processor_id == dispute.payment_processor_id
+
+        assert order.status == OrderStatus.refunded
+        assert order.refundable_amount == 0
+        assert order.refundable_tax_amount == 0
+        assert order.refunded_amount == 1050
+        assert order.refunded_tax_amount == 300
+
+        assert refund_transaction_service_mock.create.call_count == 1
+
 
 @pytest.mark.asyncio
 class TestUpdatedWebhooks(StripeRefund):

@@ -1,4 +1,3 @@
-import inspect
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
@@ -21,7 +20,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
@@ -65,22 +63,6 @@ class OrderStatus(StrEnum):
     paid = "paid"
     refunded = "refunded"
     partially_refunded = "partially_refunded"
-
-
-class OrderRefundExceedsBalance(PolarError):
-    def __init__(
-        self, order: "Order", attempted_amount: int, attempted_tax_amount: int
-    ) -> None:
-        self.type = type
-        super().__init__(
-            inspect.cleandoc(
-                f"""
-            Order({order.id}) with remaining amount {order.refundable_amount}
-            and tax {order.refundable_tax_amount} attempted to be refunded with
-            {attempted_amount} and {attempted_tax_amount} in taxes.
-            """
-            )
-        )
 
 
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
@@ -301,11 +283,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def refundable_amount(self) -> int:
-        return self.net_amount + self.applied_balance_amount - self.refunded_amount
+        return max(
+            0, self.net_amount + self.applied_balance_amount - self.refunded_amount
+        )
 
     @property
     def refundable_tax_amount(self) -> int:
-        return self.tax_amount - self.refunded_tax_amount
+        return max(0, self.tax_amount - self.refunded_tax_amount)
 
     @property
     def remaining_balance(self) -> int:
@@ -314,18 +298,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def update_refunds(self, refunded_amount: int, refunded_tax_amount: int) -> None:
         new_amount = self.refunded_amount + refunded_amount
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
-        exceeds_original_amount = (
-            new_amount < 0
-            or new_amount > (self.net_amount + self.applied_balance_amount)
-            or new_tax_amount < 0
-            or new_tax_amount > self.tax_amount
-        )
-        if exceeds_original_amount:
-            raise OrderRefundExceedsBalance(self, refunded_amount, refunded_tax_amount)
 
         if new_amount == 0:
             new_status = OrderStatus.paid
-        elif new_amount == (self.net_amount + self.applied_balance_amount):
+        elif new_amount >= (self.net_amount + self.applied_balance_amount):
             new_status = OrderStatus.refunded
         else:
             new_status = OrderStatus.partially_refunded

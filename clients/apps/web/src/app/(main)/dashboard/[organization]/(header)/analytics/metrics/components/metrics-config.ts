@@ -21,6 +21,7 @@ export const SUBSCRIPTION_METRICS: (keyof schemas['Metrics'])[] = [
   'committed_monthly_recurring_revenue',
   'active_subscriptions',
   'new_subscriptions',
+  'committed_subscriptions',
   'renewed_subscriptions',
   'average_revenue_per_user',
   'ltv',
@@ -32,6 +33,8 @@ export const CANCELLATION_CHART_METRICS: (keyof schemas['Metrics'])[] = [
   'canceled_subscriptions',
   'churned_subscriptions',
   'churn_rate',
+  'active_subscriptions',
+  'committed_subscriptions',
 ]
 
 export const CANCELLATION_METRICS: (keyof schemas['Metrics'])[] = [

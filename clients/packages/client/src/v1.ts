@@ -17526,6 +17526,8 @@ export interface components {
       renewed_subscriptions_net_revenue?: number | null
       /** Active Subscriptions */
       active_subscriptions?: number | null
+      /** Committed Subscriptions */
+      committed_subscriptions?: number | null
       /** Monthly Recurring Revenue */
       monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */
@@ -17596,6 +17598,7 @@ export interface components {
       renewed_subscriptions_revenue?: components['schemas']['Metric'] | null
       renewed_subscriptions_net_revenue?: components['schemas']['Metric'] | null
       active_subscriptions?: components['schemas']['Metric'] | null
+      committed_subscriptions?: components['schemas']['Metric'] | null
       monthly_recurring_revenue?: components['schemas']['Metric'] | null
       committed_monthly_recurring_revenue?:
         | components['schemas']['Metric']
@@ -17738,6 +17741,8 @@ export interface components {
       renewed_subscriptions_net_revenue?: number | null
       /** Active Subscriptions */
       active_subscriptions?: number | null
+      /** Committed Subscriptions */
+      committed_subscriptions?: number | null
       /** Monthly Recurring Revenue */
       monthly_recurring_revenue?: number | null
       /** Committed Monthly Recurring Revenue */

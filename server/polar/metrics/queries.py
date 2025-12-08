@@ -631,6 +631,7 @@ def get_events_metrics_cte(
     be faster for organizations with many events, avoiding expensive
     disk-based sorts.
     """
+    start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     day_column = interval.sql_date_trunc(Event.timestamp)
@@ -651,6 +652,8 @@ def get_events_metrics_cte(
         .where(
             Event.timestamp >= day_start,
             Event.timestamp < day_end,
+            Event.timestamp >= start_timestamp,
+            Event.timestamp <= end_timestamp,
         )
     )
 

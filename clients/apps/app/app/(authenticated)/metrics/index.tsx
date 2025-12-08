@@ -103,7 +103,6 @@ export default function Index() {
         <FlatList
           style={MetricsStyles.container}
           contentContainerStyle={MetricsStyles.contentContainer}
-          contentInset={{ bottom: 48 }}
           data={
             Object.entries(metrics.data?.metrics ?? {}).map(
               ([metric, value]) => ({

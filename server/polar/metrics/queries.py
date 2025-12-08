@@ -623,14 +623,22 @@ def get_events_metrics_cte(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
 ) -> CTE:
-    start_timestamp, end_timestamp = bounds
+    """
+    Events metrics using LATERAL join.
+
+    This approach runs separate index scans per time period, which forces PostgreSQL
+    to use the composite index (organization_id, timestamp) efficiently. This should
+    be faster for organizations with many events, avoiding expensive
+    disk-based sorts.
+    """
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
     day_column = interval.sql_date_trunc(Event.timestamp)
+    day_start = timestamp_column
+    day_end = timestamp_column + interval.sql_interval()
 
-    statement = (
+    lateral_subquery = (
         select(
-            day_column.label("day"),
             *[
                 func.coalesce(
                     metric.get_sql_expression(day_column, interval, now), 0
@@ -641,22 +649,27 @@ def get_events_metrics_cte(
         )
         .select_from(Event)
         .where(
-            Event.timestamp >= start_timestamp,
-            Event.timestamp <= end_timestamp,
+            Event.timestamp >= day_start,
+            Event.timestamp < day_end,
         )
-        .group_by(day_column)
     )
 
-    if bounds is not None:
-        start_timestamp, end_timestamp = bounds
-        statement = statement.where(
-            Event.timestamp >= start_timestamp,
-            Event.timestamp <= end_timestamp,
+    # Apply organization filter
+    if organization_id is not None:
+        if len(organization_id) == 1:
+            lateral_subquery = lateral_subquery.where(
+                Event.organization_id == organization_id[0]
+            )
+        else:
+            lateral_subquery = lateral_subquery.where(
+                Event.organization_id.in_(organization_id)
+            )
+    elif is_organization(auth_subject):
+        lateral_subquery = lateral_subquery.where(
+            Event.organization_id == auth_subject.subject.id
         )
-    # _get_readable_events_statement
-
-    if is_user(auth_subject):
-        statement = statement.where(
+    elif is_user(auth_subject):
+        lateral_subquery = lateral_subquery.where(
             Event.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
@@ -664,14 +677,10 @@ def get_events_metrics_cte(
                 )
             )
         )
-    elif is_organization(auth_subject):
-        statement = statement.where(Event.organization_id == auth_subject.subject.id)
 
-    if organization_id is not None:
-        statement = statement.where(Event.organization_id.in_(organization_id))
-
+    # Apply customer filter
     if customer_id is not None:
-        statement = statement.join(
+        lateral_subquery = lateral_subquery.join(
             Customer,
             onclause=or_(
                 Event.customer_id == Customer.id,
@@ -683,31 +692,27 @@ def get_events_metrics_cte(
             ),
         ).where(Customer.id.in_(customer_id))
 
-    daily_metrics = cte(statement)
+    lateral_cte = lateral_subquery.lateral("event_stats")
 
     return cte(
         select(
             timestamp_column.label("timestamp"),
             *[
-                func.coalesce(
-                    func.sum(getattr(daily_metrics.c, metric.slug)).over(
-                        order_by=timestamp_column
+                (
+                    func.coalesce(
+                        func.sum(getattr(lateral_cte.c, metric.slug)).over(
+                            order_by=timestamp_column
+                        ),
+                        0,
                     )
-                    if metric.slug in ["cumulative_costs"]
-                    else getattr(daily_metrics.c, metric.slug),
-                    0,
+                    if metric.slug == "cumulative_costs"
+                    else func.coalesce(getattr(lateral_cte.c, metric.slug), 0)
                 ).label(metric.slug)
                 for metric in metrics
                 if metric.query == MetricQuery.events
             ],
         )
-        .select_from(
-            timestamp_series.join(
-                daily_metrics,
-                onclause=daily_metrics.c.day == timestamp_column,
-                isouter=True,
-            )
-        )
+        .select_from(timestamp_series.join(lateral_cte, onclause=literal(True)))
         .order_by(timestamp_column.asc())
     )
 

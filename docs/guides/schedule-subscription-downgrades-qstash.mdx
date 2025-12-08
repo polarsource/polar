@@ -21,14 +21,17 @@ Store your API credentials securely in environment variables.
 
 ```bash
 # Polar API credentials
+POLAR_MODE="sandbox" # can be "production"
 POLAR_ACCESS_TOKEN="polar_pat_..."
 
 # Upstash QStash credentials
-QSTASH_URL="https://qstash.upstash.io/v2/publish"
-QSTASH_TOKEN="your_qstash_token"
+QSTASH_URL="https://qstash.upstash.io"
+QSTASH_TOKEN="ey...="
+QSTASH_CURRENT_SIGNING_KEY="sig_..."
+QSTASH_NEXT_SIGNING_KEY="sig_..."
 
 # Your application URL
-APP_URL="https://yourdomain.com"
+APP_URL="https://localhost:3000"
 ```
 
 <Info>
@@ -42,7 +45,7 @@ Use the Polar API to get the subscription's current period end date. This determ
 
 ### Get Subscription by ID
 
-```typescript
+```tsx
 import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
@@ -63,7 +66,7 @@ Use Upstash QStash to schedule an HTTP request to your downgrade endpoint at the
 
 ### Create the Scheduling Function
 
-```typescript
+```tsx
 import { Client } from "@upstash/qstash";
 
 const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
@@ -92,17 +95,18 @@ async function scheduleDowngrade(
 
 Here's a complete Next.js API route that schedules a downgrade:
 
-```typescript title="app/api/schedule-downgrade/route.ts"
+```tsx title="app/api/schedule-downgrade/route.ts"
 import { Polar } from "@polar-sh/sdk";
 import { Client } from "@upstash/qstash";
 import { NextRequest, NextResponse } from "next/server";
 
 const polar = new Polar({
+  server: process.env.POLAR_MODE,
   accessToken: process.env.POLAR_ACCESS_TOKEN,
 });
 
 const qstash = new Client({
-  token: process.env.QSTASH_TOKEN!,
+  token: process.env.QSTASH_TOKEN,
 });
 
 export async function POST(req: NextRequest) {
@@ -132,8 +136,8 @@ export async function POST(req: NextRequest) {
         newProductId,
         customerId: subscription.customerId,
       },
-      notBefore: Math.floor(executeAt.getTime() / 1000),
       url: `${process.env.APP_URL}/api/execute-downgrade`,
+      delay: Math.floor((executeAt.getTime() - (new Date()).getTime()) / 1000),
     });
 
     // Step 4: Optionally store the scheduled task
@@ -168,12 +172,14 @@ Create an endpoint that QStash will call at the scheduled time to execute the do
 
 Here's a completed Next.js API route for downgrade:
 
-```typescript title="app/api/execute-downgrade/route.ts"
+```tsx title="app/api/execute-downgrade/route.ts"
 import { Polar } from "@polar-sh/sdk";
-import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextRequest, NextResponse } from "next/server";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { SubscriptionProrationBehavior } from "@polar-sh/sdk/models/components/subscriptionprorationbehavior.js";
 
 const polar = new Polar({
+  server: process.env.POLAR_MODE,
   accessToken: process.env.POLAR_ACCESS_TOKEN,
 });
 
@@ -209,9 +215,9 @@ async function handler(req: NextRequest) {
     // Execute the downgrade
     const updatedSubscription = await polar.subscriptions.update({
       id: subscriptionId,
-      subscriptionUpdateProduct: {
+      subscriptionUpdate: {
         productId: newProductId,
-        prorationBehavior: "invoice",
+        prorationBehavior: SubscriptionProrationBehavior.Invoice,
       },
     });
 
@@ -260,7 +266,7 @@ Test the complete flow to ensure downgrades are scheduled and executed correctly
     ```tsx
     const polar = new Polar({
       // Use sandbox for testing
-      server: "sandbox",
+      server: process.env.POLAR_MODE,
       accessToken: process.env.POLAR_ACCESS_TOKEN,
     });
     ```

@@ -98,8 +98,8 @@ export default function Index() {
         contentContainerStyle={{
           flexDirection: 'column',
           gap: 24,
+          paddingBottom: 48,
         }}
-        contentInset={{ bottom: 48 }}
       >
         <View style={styles.hero}>
           <Avatar

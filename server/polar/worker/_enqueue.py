@@ -221,6 +221,6 @@ def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
         delay_per_item = target_delay_ms
     else:
         # Compress to fit, but enforce minimum floor
-        delay_per_item = max(min_delay_ms, max_spread_ms / total_count)
+        delay_per_item = max(min_delay_ms, int(max_spread_ms / total_count))
 
     return int(index * delay_per_item)

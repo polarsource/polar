@@ -991,6 +991,7 @@ class TestCycle:
             customer_id=customer.id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=None,
         )
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order",
@@ -1505,6 +1506,7 @@ class TestUpdateFromStripe:
                     customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
+                    delay=None,
                 )
             ]
         )
@@ -1561,6 +1563,7 @@ class TestUpdateFromStripe:
                     customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
+                    delay=None,
                 )
             ]
         )
@@ -1776,6 +1779,7 @@ class TestEnqueueBenefitsGrants:
                     customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
+                    delay=None,
                 )
             ]
         )
@@ -1820,6 +1824,7 @@ class TestEnqueueBenefitsGrants:
                     customer_id=subscription.customer_id,
                     product_id=product.id,
                     subscription_id=subscription.id,
+                    delay=None,
                 )
             ]
         )
@@ -1891,6 +1896,7 @@ class TestEnqueueBenefitsGrants:
             customer_id=customer.id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=None,
         )
 
 
@@ -2502,6 +2508,7 @@ class TestMarkPastDue:
             customer_id=subscription.customer.id,
             product_id=subscription.product.id,
             subscription_id=subscription.id,
+            delay=None,
         )
 
     @freeze_time("2024-01-01 12:00:00")
@@ -3462,6 +3469,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer_id=customer.id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=None,
         )
 
     async def test_grace_period_immediate_revocation(
@@ -3495,6 +3503,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer_id=customer.id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=None,
         )
 
     async def test_grace_period_only_applies_to_past_due_unpaid(
@@ -3526,4 +3535,5 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             customer_id=customer.id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=None,
         )

@@ -260,6 +260,7 @@ module "production" {
     url      = var.prometheus_remote_write_url
     username = var.prometheus_remote_write_username
     password = var.prometheus_remote_write_password
+    interval = var.prometheus_remote_write_interval
   }
 
 

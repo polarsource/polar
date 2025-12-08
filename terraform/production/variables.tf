@@ -289,6 +289,12 @@ variable "prometheus_remote_write_password" {
   sensitive   = true
 }
 
+variable "prometheus_remote_write_interval" {
+  description = "Prometheus Remote Write Interval"
+  type        = number
+  sensitive   = false
+}
+
 # ChargebackStop Webhook Secret
 variable "backend_chargebackstop_webhook_secret_production" {
   description = "ChargebackStop Webhook Secret for production"

@@ -260,12 +260,6 @@ class OrganizationService:
             },
         )
 
-        # Ignore logo.dev URLs for avatar_url - these are computed values
-        # that the frontend may inadvertently send back
-        if avatar_url := update_dict.get("avatar_url"):
-            if "logo.dev" in avatar_url:
-                del update_dict["avatar_url"]
-
         # Only store details once to avoid API overrides later w/o review
         if not previous_details and update_schema.details:
             organization.details = update_schema.details.model_dump()

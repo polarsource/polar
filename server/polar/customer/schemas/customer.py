@@ -41,23 +41,6 @@ _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
 
-_personal_email_domains: set[str] = {
-    "gmail.com",
-    "yahoo.com",
-    "hotmail.com",
-    "outlook.com",
-    "aol.com",
-    "icloud.com",
-    "mail.com",
-    "protonmail.com",
-    "zoho.com",
-    "gmx.com",
-    "yandex.com",
-    "msn.com",
-    "live.com",
-    "qq.com",
-}
-
 CustomerNameInput = Annotated[
     str,
     MaxLen(256),
@@ -147,7 +130,7 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     def avatar_url(self) -> str:
         domain = self.email.split("@")[-1].lower()
 
-        if not settings.LOGO_DEV_TOKEN or domain in _personal_email_domains:
+        if not settings.LOGO_DEV_TOKEN or domain in settings.PERSONAL_EMAIL_DOMAINS:
             email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
             return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 

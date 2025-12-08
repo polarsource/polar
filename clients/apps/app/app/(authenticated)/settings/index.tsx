@@ -52,7 +52,7 @@ export default function Index() {
     >
       <Stack.Screen options={{ title: 'Settings' }} />
       <SafeAreaView style={SettingsStyle.container}>
-        <View style={{ gap: 24 }}>
+        <View style={{ gap: 32 }}>
           <View style={{ gap: 16 }}>
             <View
               style={{
@@ -102,15 +102,13 @@ export default function Index() {
                       {organization?.name}
                     </ThemedText>
                   </View>
-                  <MaterialIcons
-                    name="check"
-                    size={20}
-                    color={
-                      selectedOrganization?.id === organization?.id
-                        ? colors.monochromeInverted
-                        : 'transparent'
-                    }
-                  />
+                  {selectedOrganization?.id === organization?.id ? (
+                    <MaterialIcons
+                      name="check"
+                      size={20}
+                      color={colors.monochromeInverted}
+                    />
+                  ) : null}
                 </TouchableOpacity>
               ))}
             </View>
@@ -141,16 +139,21 @@ export default function Index() {
                 </ThemedText>
               </View>
               <Button
-                variant="secondary"
+                variant="destructive"
                 onPress={handleDeleteAccount}
                 disabled={isDeletingAccount}
               >
                 <View
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
                 >
                   <ThemedText
                     style={{
                       color: colors.error,
+
                       fontSize: 16,
                       fontWeight: '500',
                     }}

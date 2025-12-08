@@ -11,7 +11,7 @@ import { ThemedText } from './ThemedText'
 
 export interface ButtonProps {
   children: React.ReactNode
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'destructive'
   onPress?: () => void
   disabled?: boolean
   loading?: boolean
@@ -30,6 +30,17 @@ export const Button = ({
 }: ButtonProps) => {
   const { colors } = useTheme()
 
+  const getTouchableColor = () => {
+    switch (variant) {
+      case 'primary':
+        return colors.monochromeInverted
+      case 'secondary':
+        return colors.card
+      case 'destructive':
+        return colors.errorSubtle
+    }
+  }
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -39,11 +50,7 @@ export const Button = ({
         styles.button,
         {
           backgroundColor:
-            disabled || loading
-              ? colors.card
-              : variant === 'primary'
-                ? colors.monochromeInverted
-                : colors.card,
+            disabled || loading ? colors.card : getTouchableColor(),
         },
         {
           opacity: disabled || loading ? 0.5 : 1,

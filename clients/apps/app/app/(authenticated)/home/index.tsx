@@ -29,12 +29,13 @@ import {
 } from 'expo-updates'
 import React, { useCallback, useContext, useEffect, useMemo } from 'react'
 import {
+  Platform,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -129,25 +130,34 @@ export default function Index() {
     }
   }
 
+  const safeAreaInsets = useSafeAreaInsets()
+
   return (
     <ScrollView
-      contentContainerStyle={{ backgroundColor: colors.background, gap: 32 }}
+      contentContainerStyle={{
+        paddingBottom: 48,
+        backgroundColor: colors.background,
+        gap: 32,
+      }}
       refreshControl={
         <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
       }
-      contentInset={{ bottom: 48 }}
     >
       <Stack.Screen
         options={{
           header: () => (
-            <SafeAreaView
+            <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 backgroundColor: colors.background,
-                height: 100,
-                marginHorizontal: 32,
+                paddingTop: Platform.select({
+                  ios: safeAreaInsets.top,
+                  android: safeAreaInsets.top + 12,
+                }),
+                paddingBottom: 12,
+                paddingHorizontal: 32,
               }}
             >
               <PolarLogo size={36} />
@@ -159,7 +169,7 @@ export default function Index() {
                   </TouchableOpacity>
                 </Link>
               </View>
-            </SafeAreaView>
+            </View>
           ),
           headerTitle: 'Home',
         }}

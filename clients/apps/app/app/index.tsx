@@ -7,13 +7,8 @@ import { useTheme } from '@/hooks/theme'
 import { useSession } from '@/providers/SessionProvider'
 import { Image } from 'expo-image'
 import { Redirect } from 'expo-router'
-import {
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from 'react-native'
+import { StatusBar, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function App() {
   const { session } = useSession()

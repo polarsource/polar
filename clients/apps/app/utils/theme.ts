@@ -9,7 +9,8 @@ export const themes = {
     card: '#F2F2F7',
     monochrome: '#FFFFFF',
     monochromeInverted: '#000000',
-    error: '#FF3B30',
+    error: '#dc2626',
+    errorSubtle: '#450a0a',
   },
   dark: {
     background: '#0D0E10',
@@ -21,6 +22,7 @@ export const themes = {
     card: '#141518',
     monochrome: '#000000',
     monochromeInverted: '#FFFFFF',
-    error: '#FF3B30',
+    error: '#dc2626',
+    errorSubtle: '#450a0a',
   },
 }

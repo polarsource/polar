@@ -222,7 +222,10 @@ class PaymentMethodService:
                 raise PaymentMethodInUseByActiveSubscription(billable_subscription_ids)
 
         if payment_method.processor == PaymentProcessor.stripe:
-            await stripe_service.delete_payment_method(payment_method.processor_id)
+            try:
+                await stripe_service.delete_payment_method(payment_method.processor_id)
+            except stripe_lib.InvalidRequestError as e:
+                pass
 
         repository = PaymentMethodRepository.from_session(session)
         await repository.soft_delete(payment_method)

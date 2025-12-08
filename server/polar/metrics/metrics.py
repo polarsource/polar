@@ -391,6 +391,34 @@ class ActiveSubscriptionsMetric(SQLMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class CommittedSubscriptionsMetric(SQLMetric):
+    slug = "committed_subscriptions"
+    display_name = "Committed Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.active_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id).filter(
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                i.sql_date_trunc(
+                    cast(
+                        SQLColumnExpression[datetime],
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                    )
+                )
+                < i.sql_date_trunc(now),
+            )
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class MonthlyRecurringRevenueMetric(SQLMetric):
     slug = "monthly_recurring_revenue"
     display_name = "Monthly Recurring Revenue"
@@ -1019,6 +1047,7 @@ METRICS_SQL: list[type[SQLMetric]] = [
     RenewedSubscriptionsRevenueMetric,
     RenewedSubscriptionsNetRevenueMetric,
     ActiveSubscriptionsMetric,
+    CommittedSubscriptionsMetric,
     MonthlyRecurringRevenueMetric,
     CommittedMonthlyRecurringRevenueMetric,
     CheckoutsMetric,

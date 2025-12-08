@@ -235,6 +235,7 @@ export const ALL_METRICS: {
     display_name: 'Renewed Subscriptions Net Revenue',
   },
   { slug: 'active_subscriptions', display_name: 'Active Subscriptions' },
+  { slug: 'committed_subscriptions', display_name: 'Committed Subscriptions' },
   {
     slug: 'monthly_recurring_revenue',
     display_name: 'Monthly Recurring Revenue',

@@ -105,6 +105,8 @@ class SearchService:
         orders = await order_repository.get_all(order_statement)
 
         for order in orders:
+            if order.product is None or order.customer is None:
+                continue
             results.append(
                 SearchResultOrder(
                     id=order.id,
@@ -137,6 +139,8 @@ class SearchService:
         subscriptions = await subscription_repository.get_all(subscription_statement)
 
         for subscription in subscriptions:
+            if subscription.product is None or subscription.customer is None:
+                continue
             results.append(
                 SearchResultSubscription(
                     id=subscription.id,

@@ -13,7 +13,7 @@ import {
   CommandItem,
   CommandList,
 } from '@polar-sh/ui/components/ui/command'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
+import * as Dialog from '@radix-ui/react-dialog'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -101,7 +101,7 @@ export const OmniSearch = ({
         return
       }
 
-      setLoading(true)
+      const loadingTimer = setTimeout(() => setLoading(true), 150)
       try {
         const url = new URL(`${getServerURL()}/search`)
         url.searchParams.set('organization_id', organization.id)
@@ -124,6 +124,7 @@ export const OmniSearch = ({
         setResults([])
         setHasSearched(true)
       } finally {
+        clearTimeout(loadingTimer)
         setLoading(false)
       }
     },
@@ -253,13 +254,11 @@ export const OmniSearch = ({
     !query || (!loading && !hasSearched && combinedResults.length === 0)
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
-        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 fixed top-[10%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-lg border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-800">
-          <DialogPrimitive.DialogTitle className="sr-only">
-            Search
-          </DialogPrimitive.DialogTitle>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
+        <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 fixed top-[10%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-lg border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-800">
+          <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
           <Command
             className="[&_[cmdk-group-heading]]:text-muted-foreground rounded-lg border-none shadow-md [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
             shouldFilter={false}
@@ -292,43 +291,51 @@ export const OmniSearch = ({
                 </div>
               ) : (
                 <>
-                  {Object.entries(groupedResults).map(([type, typeResults], index) => {
-                    const isLastGroup = index === Object.entries(groupedResults).length - 1
-                    return (
-                      <CommandGroup
-                        key={type}
-                        heading={getTypeLabel(type)}
-                        className={isLastGroup ? 'mb-0' : 'mb-2'}
-                      >
-                        {typeResults.map((result, resultIndex) => {
-                          const key = `${result.type}-${result.id}`
-                          const isFirst = index === 0 && resultIndex === 0
-                          const isLastItem = isLastGroup && resultIndex === typeResults.length - 1
-                          return (
-                            <CommandItem
-                              key={key}
-                              value={key}
-                              onSelect={() => handleSelect(result)}
-                              className={twMerge(
-                                'group cursor-pointer rounded-md px-3 py-3 data-[selected=\'true\']:bg-gray-100 data-[selected=\'true\']:text-inherit dark:data-[selected=\'true\']:bg-gray-800',
-                                resultIndex < typeResults.length - 1 ? 'mb-1' : '',
-                                isFirst ? 'scroll-mt-12' : '',
-                                isLastItem ? 'mb-3 scroll-mb-6' : '',
-                              )}
-                            >
-                              {renderResult(result)}
-                            </CommandItem>
-                          )
-                        })}
-                      </CommandGroup>
-                    )
-                  })}
+                  {Object.entries(groupedResults).map(
+                    ([type, typeResults], index) => {
+                      const isLastGroup =
+                        index === Object.entries(groupedResults).length - 1
+                      return (
+                        <CommandGroup
+                          key={type}
+                          heading={getTypeLabel(type)}
+                          className={isLastGroup ? 'mb-0' : 'mb-2'}
+                        >
+                          {typeResults.map((result, resultIndex) => {
+                            const key = `${result.type}-${result.id}`
+                            const isFirst = index === 0 && resultIndex === 0
+                            const isLastItem =
+                              isLastGroup &&
+                              resultIndex === typeResults.length - 1
+                            return (
+                              <CommandItem
+                                key={key}
+                                value={key}
+                                onSelect={() => handleSelect(result)}
+                                className={twMerge(
+                                  'group cursor-pointer rounded-md px-3 py-3 data-[selected=true]:bg-gray-100 data-[selected=true]:text-inherit dark:data-[selected=true]:bg-gray-800',
+                                  isFirst ? 'scroll-mt-12' : '',
+                                  isLastItem
+                                    ? 'mb-3 scroll-mb-12'
+                                    : resultIndex < typeResults.length - 1
+                                      ? 'mb-1'
+                                      : '',
+                                )}
+                              >
+                                {renderResult(result)}
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      )
+                    },
+                  )}
                 </>
               )}
             </CommandList>
           </Command>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

@@ -87,6 +87,7 @@ class JobQueueManager:
             )
 
             # Handle delay: convert to eta and use delayed queue
+            # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116
             if delay is not None and delay > 0:
                 current_millis = int(time.time() * 1000)
                 eta = current_millis + delay

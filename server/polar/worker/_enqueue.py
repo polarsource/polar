@@ -190,8 +190,14 @@ def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
     of a product), this function calculates the appropriate delay for each job
     to spread them out over time and prevent queue saturation.
 
-    The delay uses a minimum per-item delay until the total would exceed the
-    maximum spread time, then compresses to fit within the maximum.
+    The delay logic:
+    1. If count <= threshold: no delay
+    2. If count * target_delay <= max_spread: use target_delay (200ms)
+    3. If calculated delay >= min_delay: compress to fit in max_spread
+    4. If calculated delay < min_delay: use min_delay (50ms floor)
+
+    For very large batches (>6000 items), we accept exceeding max_spread
+    rather than using sub-50ms delays which would be meaningless.
 
     Args:
         index: The 0-based index of the current item in the batch.
@@ -206,12 +212,15 @@ def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
     if index == 0:
         return None
 
+    target_delay_ms = settings.BULK_JOBS_SPREAD_TARGET_DELAY_MS
     min_delay_ms = settings.BULK_JOBS_SPREAD_MIN_DELAY_MS
     max_spread_ms = settings.BULK_JOBS_SPREAD_MAX_MS
 
-    if total_count * min_delay_ms > max_spread_ms:
-        delay_per_item = max_spread_ms / total_count
+    if total_count * target_delay_ms <= max_spread_ms:
+        # Use target delay - we fit within max spread
+        delay_per_item = target_delay_ms
     else:
-        delay_per_item = min_delay_ms
+        # Compress to fit, but enforce minimum floor
+        delay_per_item = max(min_delay_ms, max_spread_ms / total_count)
 
     return int(index * delay_per_item)

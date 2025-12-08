@@ -65,7 +65,8 @@ class Settings(BaseSettings):
 
     # Bulk jobs spread settings (for staggering large batch job enqueueing)
     BULK_JOBS_SPREAD_THRESHOLD: int = 50  # Only spread if count exceeds this
-    BULK_JOBS_SPREAD_MIN_DELAY_MS: int = 200  # Minimum delay between jobs
+    BULK_JOBS_SPREAD_TARGET_DELAY_MS: int = 200  # Target delay between jobs
+    BULK_JOBS_SPREAD_MIN_DELAY_MS: int = 50  # Minimum delay (floor for very large batches)
     BULK_JOBS_SPREAD_MAX_MS: int = 300_000  # Maximum total spread time (5 minutes)
 
     # Prometheus Remote Write (for pushing metrics to Prometheus or Grafana Cloud)

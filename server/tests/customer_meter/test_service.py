@@ -710,7 +710,7 @@ class TestGetRolloverUnits:
     )
     async def test_rollover_calculation(
         self,
-        credits: list[dict],
+        credits: list[dict[str, int | bool]],
         usage_tokens: int,
         expected_rollover: int,
         save_fixture: SaveFixture,

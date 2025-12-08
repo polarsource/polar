@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -106,7 +106,7 @@ from polar.transaction.service.platform_fee import (
 from polar.wallet.repository import WalletTransactionRepository
 from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import calculate_bulk_job_delay, enqueue_job
 
 from .repository import OrderRepository
 from .schemas import OrderInvoice, OrderUpdate
@@ -1771,27 +1771,34 @@ class OrderService:
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:
-        statement = select(Order).where(
+        # Skip seat-based orders - benefits are granted when seats are claimed
+        base_statement = select(Order).where(
             Order.product_id == product.id,
             Order.deleted_at.is_(None),
             Order.subscription_id.is_(None),
+            Order.seats.is_(None),
         )
+
+        count_result = await session.execute(
+            base_statement.with_only_columns(func.count())
+        )
+        total_count = count_result.scalar_one()
+
         orders = await session.stream_scalars(
-            statement,
+            base_statement,
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
+        index = 0
         async for order in orders:
-            # Skip seat-based orders - benefits are granted when seats are claimed
-            if order.seats is not None:
-                continue
-
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
                 customer_id=order.customer_id,
                 product_id=product.id,
                 order_id=order.id,
+                delay=calculate_bulk_job_delay(index, total_count),
             )
+            index += 1
 
     async def update_refunds(
         self,

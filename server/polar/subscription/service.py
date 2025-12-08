@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject
@@ -89,7 +89,7 @@ from polar.product.guard import (
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import calculate_bulk_job_delay, enqueue_job
 
 from .repository import SubscriptionRepository
 from .schemas import (
@@ -2427,7 +2427,11 @@ class SubscriptionService:
         return False
 
     async def enqueue_benefits_grants(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        delay: int | None = None,
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(subscription.product_id)
@@ -2470,20 +2474,33 @@ class SubscriptionService:
             customer_id=subscription.customer_id,
             product_id=product.id,
             subscription_id=subscription.id,
+            delay=delay,
         )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:
-        statement = select(Subscription).where(
+        base_statement = select(Subscription).where(
             Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
         )
+
+        count_result = await session.execute(
+            base_statement.with_only_columns(func.count())
+        )
+        total_count = count_result.scalar_one()
+
         subscriptions = await session.stream_scalars(
-            statement,
+            base_statement,
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
         )
+        index = 0
         async for subscription in subscriptions:
-            await self.enqueue_benefits_grants(session, subscription)
+            await self.enqueue_benefits_grants(
+                session,
+                subscription,
+                delay=calculate_bulk_job_delay(index, total_count),
+            )
+            index += 1
 
     async def send_uncanceled_email(
         self, session: AsyncSession, subscription: Subscription

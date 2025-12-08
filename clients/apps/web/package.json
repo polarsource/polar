@@ -45,6 +45,7 @@
     "@polar-sh/ui": "workspace:*",
     "@posthog/ai": "^7.2.0",
     "@posthog/core": "^1.6.0",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-toast": "^1.2.15",
     "@sentry/nextjs": "^10.28.0",

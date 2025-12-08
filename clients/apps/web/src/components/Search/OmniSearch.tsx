@@ -1,0 +1,334 @@
+'use client'
+
+import {
+  useGeneralRoutes,
+  useOrganizationRoutes,
+} from '@/components/Dashboard/navigation'
+import { getServerURL } from '@/utils/api'
+import { schemas } from '@polar-sh/client'
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@polar-sh/ui/components/ui/command'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { Result } from './components/Result'
+import { getQuickActions } from './quickActions'
+import type { SearchResult, SearchResultPage } from './types'
+
+interface OmniSearchProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  organization: schemas['Organization']
+}
+
+export const OmniSearch = ({
+  open,
+  onOpenChange,
+  organization,
+}: OmniSearchProps) => {
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
+
+  const generalRoutes = useGeneralRoutes(organization)
+  const orgRoutes = useOrganizationRoutes(organization)
+  const allRoutes = useMemo(
+    () => [...generalRoutes, ...orgRoutes],
+    [generalRoutes, orgRoutes],
+  )
+
+  const quickActions = useMemo(
+    () => getQuickActions(organization.slug),
+    [organization.slug],
+  )
+
+  const actionResults = useMemo(() => {
+    if (!query.trim()) return []
+    const searchLower = query.toLowerCase()
+    return quickActions
+      .filter((action) => action.title.toLowerCase().includes(searchLower))
+      .map((action) => ({ ...action, type: 'action' as const }))
+      .slice(0, 3)
+  }, [query, quickActions])
+
+  const pageResults = useMemo(() => {
+    if (!query.trim()) return []
+
+    const searchLower = query.toLowerCase()
+    const pages: SearchResultPage[] = []
+
+    allRoutes.forEach((route) => {
+      if (route.title.toLowerCase().includes(searchLower)) {
+        pages.push({
+          id: route.id,
+          type: 'page',
+          title: route.title,
+          url: route.link,
+          icon: route.icon,
+        })
+      }
+
+      route.subs?.forEach((sub) => {
+        if (sub.title.toLowerCase().includes(searchLower)) {
+          pages.push({
+            id: `${route.id}-${sub.title}`,
+            type: 'page',
+            title: `${route.title} → ${sub.title}`,
+            url: sub.link,
+            icon: sub.icon || route.icon,
+          })
+        }
+      })
+    })
+
+    return pages.slice(0, 5)
+  }, [query, allRoutes])
+
+  const performSearch = useCallback(
+    async (searchQuery: string) => {
+      if (!searchQuery.trim()) {
+        setResults([])
+        setHasSearched(false)
+        return
+      }
+
+      setLoading(true)
+      try {
+        const url = new URL(`${getServerURL()}/search`)
+        url.searchParams.set('organization_id', organization.id)
+        url.searchParams.set('query', searchQuery)
+        url.searchParams.set('limit', '20')
+
+        const response = await fetch(url.toString(), {
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error('Search failed')
+        }
+
+        const data = await response.json()
+        setResults(data.results as SearchResult[])
+        setHasSearched(true)
+      } catch (error) {
+        console.error('Search error:', error)
+        setResults([])
+        setHasSearched(true)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [organization.id],
+  )
+
+  const combinedResults = useMemo(() => {
+    return [...actionResults, ...pageResults, ...results]
+  }, [actionResults, pageResults, results])
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      performSearch(query)
+    }, 300)
+
+    return () => clearTimeout(debounce)
+  }, [query, performSearch])
+
+  const handleSelect = (result: SearchResult) => {
+    let path = ''
+
+    switch (result.type) {
+      case 'action':
+      case 'page':
+        path = result.url
+        break
+      case 'product':
+        path = `/dashboard/${organization.slug}/products/${result.id}`
+        break
+      case 'customer':
+        path = `/dashboard/${organization.slug}/customers/${result.id}`
+        break
+      case 'order':
+        path = `/dashboard/${organization.slug}/sales/${result.id}`
+        break
+      case 'subscription':
+        path = `/dashboard/${organization.slug}/sales/subscriptions/${result.id}`
+        break
+    }
+
+    if (path) {
+      router.push(path)
+      onOpenChange(false)
+      setQuery('')
+    }
+  }
+
+  const formatCurrency = (amount: number, currency: string = 'usd') => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amount / 100)
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'action':
+        return 'Quick Action'
+      case 'page':
+        return 'Go to'
+      case 'product':
+        return 'Product'
+      case 'customer':
+        return 'Customer'
+      case 'order':
+        return 'Order'
+      case 'subscription':
+        return 'Subscription'
+      default:
+        return type
+    }
+  }
+
+  const groupedResults: Record<string, SearchResult[]> = useMemo(
+    () =>
+      combinedResults.reduce(
+        (acc, result) => {
+          if (!acc[result.type]) {
+            acc[result.type] = []
+          }
+          acc[result.type].push(result)
+          return acc
+        },
+        {} as Record<string, SearchResult[]>,
+      ),
+    [combinedResults],
+  )
+
+  const renderResult = (result: SearchResult) => {
+    switch (result.type) {
+      case 'action':
+        return <Result icon={result.icon} title={result.title} />
+      case 'page':
+        return <Result icon={result.icon} title={result.title} />
+      case 'product':
+        return (
+          <Result
+            title={result.name}
+            description={result.description || undefined}
+          />
+        )
+      case 'customer':
+        return (
+          <Result
+            title={result.name || result.email}
+            description={result.name ? result.email : undefined}
+          />
+        )
+      case 'order':
+        return (
+          <Result
+            title={result.product_name}
+            description={`${result.customer_name || result.customer_email} • ${formatCurrency(result.amount)}`}
+          />
+        )
+      case 'subscription':
+        return (
+          <Result
+            title={result.product_name}
+            description={`${result.customer_name || result.customer_email} • ${result.status}`}
+          />
+        )
+    }
+  }
+
+  const cleanState =
+    !query || (!loading && !hasSearched && combinedResults.length === 0)
+
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
+        <DialogPrimitive.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 fixed top-[10%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-lg border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-800">
+          <DialogPrimitive.DialogTitle className="sr-only">
+            Search
+          </DialogPrimitive.DialogTitle>
+          <Command
+            className="[&_[cmdk-group-heading]]:text-muted-foreground rounded-lg border-none shadow-md [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+            shouldFilter={false}
+          >
+            <div className="flex grow items-center">
+              <CommandInput
+                placeholder="Search for anything..."
+                value={query}
+                onValueChange={setQuery}
+                className="flex w-full grow border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
+
+            <CommandList
+              className={twMerge(
+                'max-h-[450px] overflow-y-auto px-2 pb-2',
+                cleanState ? 'hidden' : '',
+              )}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : !loading &&
+                hasSearched &&
+                query &&
+                combinedResults.length === 0 ? (
+                <div className="py-12 text-center text-sm text-gray-500">
+                  No results found for "{query}"
+                </div>
+              ) : (
+                <>
+                  {Object.entries(groupedResults).map(([type, typeResults], index) => {
+                    const isLastGroup = index === Object.entries(groupedResults).length - 1
+                    return (
+                      <CommandGroup
+                        key={type}
+                        heading={getTypeLabel(type)}
+                        className={isLastGroup ? 'mb-0' : 'mb-2'}
+                      >
+                        {typeResults.map((result, resultIndex) => {
+                          const key = `${result.type}-${result.id}`
+                          const isFirst = index === 0 && resultIndex === 0
+                          const isLastItem = isLastGroup && resultIndex === typeResults.length - 1
+                          return (
+                            <CommandItem
+                              key={key}
+                              value={key}
+                              onSelect={() => handleSelect(result)}
+                              className={twMerge(
+                                'group cursor-pointer rounded-md px-3 py-3 data-[selected=\'true\']:bg-gray-100 data-[selected=\'true\']:text-inherit dark:data-[selected=\'true\']:bg-gray-800',
+                                resultIndex < typeResults.length - 1 ? 'mb-1' : '',
+                                isFirst ? 'scroll-mt-12' : '',
+                                isLastItem ? 'mb-3 scroll-mb-6' : '',
+                              )}
+                            >
+                              {renderResult(result)}
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    )
+                  })}
+                </>
+              )}
+            </CommandList>
+          </Command>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  )
+}

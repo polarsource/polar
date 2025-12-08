@@ -134,19 +134,20 @@
               {
                 "group": "Framework Adapters",
                 "pages": [
-                  "integrate/sdk/adapters/nextjs",
-                  "integrate/sdk/adapters/better-auth",
-                  "integrate/sdk/adapters/nuxt",
                   "integrate/sdk/adapters/astro",
-                  "integrate/sdk/adapters/remix",
-                  "integrate/sdk/adapters/tanstack-start",
-                  "integrate/sdk/adapters/sveltekit",
+                  "integrate/sdk/adapters/better-auth",
                   "integrate/sdk/adapters/deno",
                   "integrate/sdk/adapters/elysia",
                   "integrate/sdk/adapters/express",
                   "integrate/sdk/adapters/fastify",
                   "integrate/sdk/adapters/hono",
-                  "integrate/sdk/adapters/laravel"
+                  "integrate/sdk/adapters/laravel",
+                  "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/nuxt",
+                  "integrate/sdk/adapters/remix",
+                  "integrate/sdk/adapters/supabase",
+                  "integrate/sdk/adapters/sveltekit",
+                  "integrate/sdk/adapters/tanstack-start"
                 ]
               },
               {

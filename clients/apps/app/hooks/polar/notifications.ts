@@ -213,9 +213,10 @@ export const useNotificationsMarkRead = () => {
       return response.json()
     },
     onSuccess: (result, _variables, _ctx) => {
-      if (result.error) {
+      if (result && 'error' in result && result.error) {
         return
       }
+
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
   })

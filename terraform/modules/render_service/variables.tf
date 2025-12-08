@@ -223,6 +223,7 @@ variable "prometheus_config" {
     url      = string
     username = string
     password = string
+    interval = number
   })
   sensitive = true
 }

@@ -227,6 +227,7 @@ module "test" {
     url      = var.prometheus_remote_write_url
     username = var.prometheus_remote_write_username
     password = var.prometheus_remote_write_password
+    interval = var.prometheus_remote_write_interval
   }
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]

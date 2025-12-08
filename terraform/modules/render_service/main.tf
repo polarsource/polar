@@ -169,6 +169,7 @@ resource "render_env_group" "prometheus" {
     POLAR_PROMETHEUS_REMOTE_WRITE_URL      = { value = var.prometheus_config.url }
     POLAR_PROMETHEUS_REMOTE_WRITE_USERNAME = { value = var.prometheus_config.username }
     POLAR_PROMETHEUS_REMOTE_WRITE_PASSWORD = { value = var.prometheus_config.password }
+    POLAR_PROMETHEUS_REMOTE_WRITE_INTERVAL = { value = var.prometheus_config.itnerval }
   }
 }
 

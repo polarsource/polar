@@ -223,6 +223,12 @@ variable "prometheus_remote_write_password" {
   sensitive   = true
 }
 
+variable "prometheus_remote_write_interval" {
+  description = "Prometheus Remote Write Interval"
+  type        = number
+  sensitive   = false
+}
+
 # Logfire
 variable "logfire_token_server" {
   description = "Logfire Token for server"

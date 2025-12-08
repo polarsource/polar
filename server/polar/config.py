@@ -237,7 +237,7 @@ class Settings(BaseSettings):
     LOOPS_API_KEY: str | None = None
 
     # Logo.dev (for company logo avatars)
-    LOGO_DEV_TOKEN: str | None = None
+    LOGO_DEV_PUBLISHABLE_KEY: str | None = None
     PERSONAL_EMAIL_DOMAINS: set[str] = {
         "gmail.com",
         "yahoo.com",

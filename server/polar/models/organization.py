@@ -160,14 +160,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
         if self._avatar_url:
             return self._avatar_url
 
-        if not self.website or not settings.LOGO_DEV_TOKEN:
+        if not self.website or not settings.LOGO_DEV_PUBLISHABLE_KEY:
             return None
 
         parsed = urlparse(self.website)
         domain = parsed.netloc or parsed.path
         domain = domain.lower().removeprefix("www.")
 
-        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_TOKEN}&fallback=404"
+        return f"https://img.logo.dev/{domain}?size=64&retina=true&token={settings.LOGO_DEV_PUBLISHABLE_KEY}&fallback=404"
 
     @avatar_url.setter
     def avatar_url(self, value: str | None) -> None:

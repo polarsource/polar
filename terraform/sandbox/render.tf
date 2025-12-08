@@ -124,15 +124,16 @@ module "sandbox" {
   }
 
   backend_secrets = {
-    stripe_publishable_key = var.stripe_publishable_key_sandbox
-    current_jwk_kid        = var.backend_current_jwk_kid_sandbox
-    discord_bot_token      = var.backend_discord_bot_token_sandbox
-    discord_client_id      = var.backend_discord_client_id_sandbox
-    discord_client_secret  = var.backend_discord_client_secret_sandbox
-    resend_api_key         = var.backend_resend_api_key_sandbox
-    secret                 = var.backend_secret_sandbox
-    sentry_dsn             = var.backend_sentry_dsn_sandbox
-    jwks                   = var.backend_jwks_sandbox
+    stripe_publishable_key   = var.stripe_publishable_key_sandbox
+    current_jwk_kid          = var.backend_current_jwk_kid_sandbox
+    discord_bot_token        = var.backend_discord_bot_token_sandbox
+    discord_client_id        = var.backend_discord_client_id_sandbox
+    discord_client_secret    = var.backend_discord_client_secret_sandbox
+    resend_api_key           = var.backend_resend_api_key_sandbox
+    logo_dev_publishable_key = var.backend_logo_dev_publishable_key_sandbox
+    secret                   = var.backend_secret_sandbox
+    sentry_dsn               = var.backend_sentry_dsn_sandbox
+    jwks                     = var.backend_jwks_sandbox
   }
 
   aws_s3_config = {

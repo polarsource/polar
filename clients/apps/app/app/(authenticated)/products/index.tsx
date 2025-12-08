@@ -36,6 +36,7 @@ export default function Index() {
           backgroundColor: colors.background,
           gap: 4,
           flexGrow: 1,
+          paddingBottom: 32,
         }}
         ListEmptyComponent={
           isLoading ? null : (
@@ -62,7 +63,6 @@ export default function Index() {
             fetchNextPage()
           }
         }}
-        contentInset={{ bottom: 32 }}
         onEndReachedThreshold={0.8}
       />
     </>

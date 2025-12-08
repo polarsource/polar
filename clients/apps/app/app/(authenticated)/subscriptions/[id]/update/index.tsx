@@ -116,11 +116,14 @@ export default function Index() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ flexDirection: 'column', gap: 16 }}
+      contentContainerStyle={{
+        paddingBottom: 48,
+        flexDirection: 'column',
+        gap: 16,
+      }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
       }
-      contentInset={{ bottom: 48 }}
     >
       <Stack.Screen
         options={{

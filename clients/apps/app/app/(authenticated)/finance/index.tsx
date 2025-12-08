@@ -60,7 +60,6 @@ export default function Finance() {
       refreshControl={
         <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
       }
-      contentInset={{ bottom: 48 }}
     >
       <Stack.Screen options={{ title: 'Finance' }} />
       {!account?.is_payouts_enabled && (
@@ -107,6 +106,7 @@ const styles = StyleSheet.create({
   container: {
     gap: 32,
     padding: 16,
+    paddingBottom: 48,
   },
   balanceContainer: {
     flexDirection: 'column',

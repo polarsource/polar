@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
   const {
@@ -40,6 +41,8 @@ export default function Index() {
     userEmail: user?.email,
   })
 
+  const safeAreaInsets = useSafeAreaInsets()
+
   const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
     useState(false)
 
@@ -49,8 +52,10 @@ export default function Index() {
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
         }
-        contentInset={{ bottom: 16 }}
-        contentContainerStyle={SettingsStyle.container}
+        contentContainerStyle={[
+          SettingsStyle.container,
+          { paddingBottom: safeAreaInsets.bottom },
+        ]}
       >
         <Stack.Screen options={{ title: 'Settings' }} />
         <View style={{ gap: 32 }}>

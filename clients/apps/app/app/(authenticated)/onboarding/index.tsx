@@ -99,8 +99,10 @@ export default function Onboarding() {
 
   return (
     <ScrollView
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      contentInset={{ bottom: 16 }}
+      contentContainerStyle={{
+        backgroundColor: colors.background,
+        paddingBottom: 16,
+      }}
     >
       <Stack.Screen
         options={{

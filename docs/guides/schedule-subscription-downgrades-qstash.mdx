@@ -1,0 +1,302 @@
+---
+title: "How to schedule subscription downgrades with Upstash QStash"
+sidebarTitle: "Schedule downgrades with QStash"
+description: "Learn how to automatically schedule subscription downgrades at the end of the current billing period using the Polar API and Upstash QStash."
+---
+
+## Overview
+
+When managing subscriptions, you may want to schedule downgrades to take effect at the end of the current billing period rather than immediately. This ensures customers receive the full value of their current subscription while automatically transitioning to another tier when their billing period ends.
+
+## Prerequisites
+
+- A [Polar API access token](/integrate/authentication)
+- An [Upstash QStash](https://upstash.com/qstash) account
+- A server endpoint that can receive HTTP requests
+  - [Node.js](https://nodejs.org/en/blog/announcements/v20-release-announce) or your preferred backend language installed
+
+## Step 1: Set Up Environment Variables
+
+Store your API credentials securely in environment variables.
+
+```bash
+# Polar API credentials
+POLAR_ACCESS_TOKEN="polar_pat_..."
+
+# Upstash QStash credentials
+QSTASH_URL="https://qstash.upstash.io/v2/publish"
+QSTASH_TOKEN="your_qstash_token"
+
+# Your application URL
+APP_URL="https://yourdomain.com"
+```
+
+<Info>
+  You can find your QStash token in the [Upstash Console](https://console.upstash.com/qstash) under the **QStash** section.
+</Info>
+
+
+## Step 2: Fetch Subscription Details
+
+Use the Polar API to get the subscription's current period end date. This determines when the downgrade should be scheduled.
+
+### Get Subscription by ID
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
+
+// Fetch subscription details
+const subscription = await polar.subscriptions.get({
+  id: "sub_xxxxxxxxxxxxx",
+});
+
+console.log("Current period ends at:", subscription.currentPeriodEnd);
+console.log("Subscription status:", subscription.status);
+console.log("Current product:", subscription.product.name);
+```
+
+## Step 3: Schedule the Downgrade with QStash
+
+Use Upstash QStash to schedule an HTTP request to your downgrade endpoint at the end of the billing period.
+
+### Create the Scheduling Function
+
+```typescript
+import { Client } from "@upstash/qstash";
+
+const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
+
+async function scheduleDowngrade(
+  subscriptionId: string,
+  newProductId: string,
+  executeAt: Date
+) {
+  // Schedule the downgrade request
+  const result = await qstash.publishJSON({
+    // Add retries in case of failures
+    retries: 1,
+    body: { subscriptionId, newProductId },
+    // Schedule for the end of the current period
+    notBefore: Math.floor(executeAt.getTime() / 1000),
+    url: `${process.env.APP_URL}/api/execute-downgrade`,
+  });
+
+  console.log("Downgrade scheduled:", result.messageId);
+  return result.messageId;
+}
+```
+
+### Complete Example: Schedule Downgrade Endpoint
+
+Here's a complete Next.js API route that schedules a downgrade:
+
+```typescript title="app/api/schedule-downgrade/route.ts"
+import { Polar } from "@polar-sh/sdk";
+import { Client } from "@upstash/qstash";
+import { NextRequest, NextResponse } from "next/server";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+const qstash = new Client({
+  token: process.env.QSTASH_TOKEN!,
+});
+
+export async function POST(req: NextRequest) {
+  try {
+    const { subscriptionId, newProductId } = await req.json();
+
+    // Step 1: Fetch current subscription details
+    const subscription = await polar.subscriptions.get({
+      id: subscriptionId,
+    });
+
+    if (!subscription.currentPeriodEnd) {
+      return NextResponse.json(
+        { error: "Subscription has no current period end date" },
+        { status: 400 }
+      );
+    }
+
+    // Step 2: Calculate when to execute the downgrade
+    const executeAt = new Date(subscription.currentPeriodEnd);
+
+    // Step 3: Schedule the downgrade with QStash
+    const result = await qstash.publishJSON({
+      retries: 1,
+      body: {
+        subscriptionId,
+        newProductId,
+        customerId: subscription.customerId,
+      },
+      notBefore: Math.floor(executeAt.getTime() / 1000),
+      url: `${process.env.APP_URL}/api/execute-downgrade`,
+    });
+
+    // Step 4: Optionally store the scheduled task
+    // You might want to store this in your database
+    console.log(`Scheduled downgrade for subscription ${subscriptionId}`);
+    console.log(`Will execute at: ${executeAt.toISOString()}`);
+    console.log(`QStash message ID: ${result.messageId}`);
+
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
+      scheduledFor: executeAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("Failed to schedule downgrade:", error);
+    return NextResponse.json(
+      { error: "Failed to schedule downgrade" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+<Tip>
+  Store the QStash `messageId` in your database along with the subscription ID. This allows you to track or cancel scheduled downgrades if needed.
+</Tip>
+
+
+## Step 4: Create the Downgrade Execution Endpoint
+
+Create an endpoint that QStash will call at the scheduled time to execute the downgrade.
+
+Here's a completed Next.js API route for downgrade:
+
+```typescript title="app/api/execute-downgrade/route.ts"
+import { Polar } from "@polar-sh/sdk";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { NextRequest, NextResponse } from "next/server";
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+});
+
+async function handler(req: NextRequest) {
+  try {
+    const { subscriptionId, newProductId, customerId } = await req.json();
+
+    console.log(`Executing downgrade for subscription ${subscriptionId}`);
+
+    // Fetch the subscription to verify it's still active
+    const subscription = await polar.subscriptions.get({
+      id: subscriptionId,
+    });
+
+    // Verify subscription is still active
+    if (subscription.status !== "active" && subscription.status !== "trialing") {
+      console.log(`Subscription ${subscriptionId} is not active, skipping downgrade`);
+      return NextResponse.json({
+        success: false,
+        reason: "Subscription is not active",
+      });
+    }
+
+    // Check if already on the target product
+    if (subscription.productId === newProductId) {
+      console.log(`Subscription already on product ${newProductId}`);
+      return NextResponse.json({
+        success: true,
+        reason: "Already on target product",
+      });
+    }
+
+    // Execute the downgrade
+    const updatedSubscription = await polar.subscriptions.update({
+      id: subscriptionId,
+      subscriptionUpdateProduct: {
+        productId: newProductId,
+        prorationBehavior: "invoice",
+      },
+    });
+
+    console.log(`Successfully downgraded subscription ${subscriptionId}`);
+    console.log(`New product: ${updatedSubscription.product.name}`);
+
+    return NextResponse.json({
+      success: true,
+      subscription: updatedSubscription,
+    });
+  } catch (error) {
+    console.error("Failed to execute downgrade:", error);
+    
+    // Return 200 to prevent QStash retries for certain errors
+    if (error instanceof Error && error.message.includes("not found")) {
+      return NextResponse.json(
+        { success: false, error: "Subscription not found" },
+        { status: 200 }
+      );
+    }
+
+    // Let QStash retry for other errors
+    return NextResponse.json(
+      { error: "Failed to execute downgrade" },
+      { status: 500 }
+    );
+  }
+}
+
+// Verify QStash signature to ensure requests come from QStash
+export const POST = verifySignatureAppRouter(handler);
+```
+
+<Warning>
+  **Security**: Always verify QStash signatures to ensure requests are coming from QStash and not malicious actors. The `verifySignatureAppRouter` function handles this automatically.
+</Warning>
+
+## Step 5: Test Your Integration
+
+Test the complete flow to ensure downgrades are scheduled and executed correctly.
+
+<Steps>
+  <Step title="Test in Sandbox Environment">
+    Use Polar's [sandbox environment](/integrate/sandbox) to test without affecting production data.
+    
+    ```tsx
+    const polar = new Polar({
+      // Use sandbox for testing
+      server: "sandbox",
+      accessToken: process.env.POLAR_ACCESS_TOKEN,
+    });
+    ```
+  </Step>
+
+  <Step title="Schedule a Test Downgrade">
+    Create a test subscription and schedule a downgrade for a few minutes in the future.
+    
+    ```tsx
+    // Schedule downgrade 5 minutes from now for testing
+    const executeAt = new Date(Date.now() + 5 * 60 * 1000);
+    
+    const result = await fetch("/api/schedule-downgrade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscriptionId: "sub_test_xxxxx",
+        newProductId: "prod_basic_xxxxx",
+      }),
+    });
+    ```
+  </Step>
+
+  <Step title="Monitor QStash Logs">
+    Check the [Upstash Console](https://console.upstash.com/qstash) to see scheduled messages and their status.
+  </Step>
+
+  <Step title="Verify the Downgrade">
+    After the scheduled time, verify the subscription was downgraded:
+    
+    ```tsx
+    const subscription = await polar.subscriptions.get({
+      id: "sub_test_xxxxx",
+    });
+    
+    console.log("Current product:", subscription.product.name);
+    ```
+  </Step>
+</Steps>

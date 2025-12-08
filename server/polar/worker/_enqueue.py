@@ -1,6 +1,7 @@
 import contextlib
 import contextvars
 import itertools
+import time
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncIterator, Iterable, Mapping
@@ -8,6 +9,7 @@ from typing import Any, Self, TypeAlias
 
 import dramatiq
 import structlog
+from dramatiq.common import dq_name
 
 from polar.config import settings
 from polar.logging import Logger
@@ -76,12 +78,23 @@ class JobQueueManager:
         for actor_name, args, kwargs, delay in self._enqueued_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
+
+            # Build base message without delay
             message = fn.message_with_options(
                 args=args,
                 kwargs=kwargs,
                 redis_message_id=redis_message_id,
-                delay=delay,
             )
+
+            # Handle delay: convert to eta and use delayed queue
+            if delay is not None and delay > 0:
+                current_millis = int(time.time() * 1000)
+                eta = current_millis + delay
+                message = message.copy(
+                    queue_name=dq_name(message.queue_name),
+                    options={**message.options, "eta": eta},
+                )
+
             encoded_message = message.encode()
             queue_messages[message.queue_name].append(
                 (redis_message_id, encoded_message)

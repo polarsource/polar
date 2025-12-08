@@ -148,6 +148,15 @@ resource "tfe_variable" "prometheus_remote_write_password" {
   variable_set_id = tfe_variable_set.global.id
 }
 
+resource "tfe_variable" "prometheus_remote_write_interval" {
+  key             = "prometheus_remote_write_interval"
+  category        = "terraform"
+  description     = "How often to write metrics to Prometheus"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.global.id
+  value           = 60
+}
+
 resource "tfe_variable" "cloudflare_api_token" {
   key             = "CLOUDFLARE_API_TOKEN"
   category        = "env"

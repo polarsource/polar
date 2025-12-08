@@ -229,3 +229,9 @@ variable "prometheus_remote_write_password" {
   type        = string
   sensitive   = true
 }
+
+variable "prometheus_remote_write_interval" {
+  description = "Prometheus Remote Write Interval"
+  type        = number
+  sensitive   = false
+}

@@ -39,9 +39,15 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
 const CommandInput = ({
   ref,
   className,
+  wrapperClassName,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) => (
-  <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  wrapperClassName?: string
+}) => (
+  <div
+    className={cn('flex items-center border-b px-3', wrapperClassName)}
+    cmdk-input-wrapper=""
+  >
     <Search className="h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}

@@ -155,11 +155,6 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def enqueue_job_mock_billing_entry(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.billing_entry.service.enqueue_job")
-
-
-@pytest.fixture
 def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.order.service.enqueue_email", autospec=True)
 
@@ -835,6 +830,10 @@ class TestCreateSubscriptionOrder:
         assert order.tax_rate is None
         assert order.tax_transaction_processor_id is None
 
+        await session.refresh(billing_entry)
+        assert billing_entry.order_item is not None
+        assert billing_entry.order_item.order_id == order.id
+
         enqueue_job_mock.assert_any_call(
             "order.trigger_payment",
             order_id=order.id,
@@ -871,7 +870,7 @@ class TestCreateSubscriptionOrder:
         )
         price = product.prices[0]
         assert is_fixed_price(price)
-        await create_billing_entry(
+        billing_entry = await create_billing_entry(
             save_fixture,
             type=BillingEntryType.cycle,
             customer=subscription.customer,
@@ -899,6 +898,10 @@ class TestCreateSubscriptionOrder:
             False,
         )
 
+        await session.refresh(billing_entry)
+        assert billing_entry.order_item is not None
+        assert billing_entry.order_item.order_id == order.id
+
     async def test_cycle_free_order(
         self,
         enqueue_job_mock: MagicMock,
@@ -925,7 +928,7 @@ class TestCreateSubscriptionOrder:
         )
         price = product.prices[0]
         assert is_fixed_price(price)
-        await create_billing_entry(
+        billing_entry = await create_billing_entry(
             save_fixture,
             type=BillingEntryType.cycle,
             customer=subscription.customer,
@@ -946,6 +949,10 @@ class TestCreateSubscriptionOrder:
         assert "order.trigger_payment" not in enqueued_jobs
 
         calculate_tax_mock.assert_not_called()
+
+        await session.refresh(billing_entry)
+        assert billing_entry.order_item is not None
+        assert billing_entry.order_item.order_id == order.id
 
     async def test_cycle_tax_exempted(
         self,
@@ -1040,7 +1047,6 @@ class TestCreateSubscriptionOrder:
         self,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
-        enqueue_job_mock_billing_entry: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1134,15 +1140,11 @@ class TestCreateSubscriptionOrder:
         assert order.taxability_reason == TaxabilityReason.standard_rated
         assert order.tax_transaction_processor_id is None
 
-        assert_set_order_item_ids(
-            enqueue_job_mock_billing_entry,
-            [
-                billing_entry_credit.id,
-                billing_entry_debit.id,
-                billing_entry_cycle.id,
-            ],
-            [o.id for o in order_items],
-        )
+        for entry in [billing_entry_credit, billing_entry_debit, billing_entry_cycle]:
+            await session.refresh(entry)
+            assert entry is not None
+            assert entry.order_item is not None
+            assert entry.order_item.order_id == order.id
 
         enqueue_job_mock.assert_any_call(
             "order.trigger_payment",
@@ -1303,7 +1305,6 @@ class TestCreateSubscriptionOrder:
         self,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
-        enqueue_job_mock_billing_entry: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1401,11 +1402,11 @@ class TestCreateSubscriptionOrder:
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
 
-        assert_set_order_item_ids(
-            enqueue_job_mock_billing_entry,
-            [e.id for e in entries],
-            [oi.id for oi in order.items],
-        )
+        for entry in entries:
+            await session.refresh(entry)
+            assert entry is not None
+            assert entry.order_item is not None
+            assert entry.order_item.order_id == order.id
 
         customer_balance = await wallet_service.get_billing_wallet_balance(
             session, customer, subscription.currency

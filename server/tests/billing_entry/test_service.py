@@ -52,11 +52,6 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.billing_entry.service.enqueue_job")
-
-
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
@@ -252,7 +247,6 @@ class TestCreateOrderItemsFromPending:
     async def test_one_metered_price(
         self,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         customer: Customer,
@@ -293,24 +287,28 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        order_items = await billing_entry_service.create_order_items_from_pending(
+        async with billing_entry_service.create_order_items_from_pending(
             session,
             metered_subscription,
             stripe_invoice_id="STRIPE_INVOICE_ID",
             stripe_customer_id="STRIPE_CUSTOMER_ID",
-        )
+        ) as order_items:
+            assert len(order_items) == 1
 
-        assert len(order_items) == 1
+            order_item = order_items[0]
+            assert meter.name in order_item.label
+            assert order_item.amount == 50_00
 
-        order_item = order_items[0]
-        assert meter.name in order_item.label
-        assert order_item.amount == 50_00
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+                stripe_invoice_id=None,
+            )
 
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[1:]],
-            order_item.id,
-        )
+        for entry in entries[1:]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
 
         stripe_service_mock.create_invoice_item.assert_awaited_once_with(
             customer="STRIPE_CUSTOMER_ID",
@@ -324,7 +322,6 @@ class TestCreateOrderItemsFromPending:
     async def test_several_metered_prices(
         self,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         customer: Customer,
@@ -377,36 +374,40 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        order_items = await billing_entry_service.create_order_items_from_pending(
+        async with billing_entry_service.create_order_items_from_pending(
             session,
             metered_subscription,
             stripe_invoice_id="STRIPE_INVOICE_ID",
             stripe_customer_id="STRIPE_CUSTOMER_ID",
-        )
+        ) as order_items:
+            assert len(order_items) == 2
 
-        assert len(order_items) == 2
+            order_item_old_price = next(
+                item for item in order_items if item.product_price == old_price
+            )
+            assert meter.name in order_item_old_price.label
+            assert order_item_old_price.amount == 75_00
 
-        order_item_old_price = next(
-            item for item in order_items if item.product_price == old_price
-        )
-        assert meter.name in order_item_old_price.label
-        assert order_item_old_price.amount == 75_00
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[:2]],
-            order_item_old_price.id,
-        )
+            order_item_current_price = next(
+                item for item in order_items if item.product_price == current_price
+            )
+            assert meter.name in order_item_current_price.label
+            assert order_item_current_price.amount == 70_00
 
-        order_item_current_price = next(
-            item for item in order_items if item.product_price == current_price
-        )
-        assert meter.name in order_item_current_price.label
-        assert order_item_current_price.amount == 70_00
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[2:]],
-            order_item_current_price.id,
-        )
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+                stripe_invoice_id=None,
+            )
+
+        for entry in entries[:2]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item_old_price.id
+
+        for entry in entries[2:]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item_current_price.id
 
         stripe_service_mock.create_invoice_item.assert_has_calls(
             [
@@ -433,7 +434,6 @@ class TestCreateOrderItemsFromPending:
     async def test_credit_events(
         self,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         customer: Customer,
@@ -482,24 +482,28 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        order_items = await billing_entry_service.create_order_items_from_pending(
+        async with billing_entry_service.create_order_items_from_pending(
             session,
             metered_subscription,
             stripe_invoice_id="STRIPE_INVOICE_ID",
             stripe_customer_id="STRIPE_CUSTOMER_ID",
-        )
+        ) as order_items:
+            assert len(order_items) == 1
 
-        assert len(order_items) == 1
+            order_item = order_items[0]
+            assert meter.name in order_item.label
+            assert order_item.amount == 40_00
 
-        order_item = order_items[0]
-        assert meter.name in order_item.label
-        assert order_item.amount == 40_00
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+                stripe_invoice_id=None,
+            )
 
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[1:]],
-            order_item.id,
-        )
+        for entry in entries[1:]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
 
         stripe_service_mock.create_invoice_item.assert_awaited_once_with(
             customer="STRIPE_CUSTOMER_ID",
@@ -513,7 +517,6 @@ class TestCreateOrderItemsFromPending:
     async def test_static_price(
         self,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         customer: Customer,
         meter: Meter,
@@ -552,35 +555,35 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        order_items = await billing_entry_service.create_order_items_from_pending(
+        async with billing_entry_service.create_order_items_from_pending(
             session, subscription
-        )
+        ) as order_items:
+            assert len(order_items) == 2
 
-        assert len(order_items) == 2
+            order_item_1 = order_items[0]
+            assert product.name in order_item_1.label
+            assert order_item_1.proration is False
 
-        order_item_1 = order_items[0]
-        assert product.name in order_item_1.label
-        assert order_item_1.proration is False
+            order_item_2 = order_items[1]
+            assert product.name in order_item_2.label
+            assert order_item_2.proration is True
 
-        order_item_2 = order_items[1]
-        assert product.name in order_item_2.label
-        assert order_item_2.proration is True
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+                stripe_invoice_id=None,
+            )
 
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[1:2]],
-            order_item_1.id,
-        )
-        enqueue_job_mock.assert_any_call(
-            "billing_entry.set_order_item",
-            [entry.id for entry in entries[2:3]],
-            order_item_2.id,
-        )
+        await session.refresh(entries[1])
+        assert entries[1].order_item_id == order_item_1.id
+
+        await session.refresh(entries[2])
+        assert entries[2].order_item_id == order_item_2.id
 
     async def test_max_aggregation_across_product_prices(
         self,
         save_fixture: SaveFixture,
-        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         customer: Customer,
@@ -678,23 +681,27 @@ class TestCreateOrderItemsFromPending:
         )
 
         # When computing order items, MAX should be 3 (not 3 + 2 = 5)
-        order_items = await billing_entry_service.create_order_items_from_pending(
+        async with billing_entry_service.create_order_items_from_pending(
             session,
             subscription,
-        )
+        ) as order_items:
+            # Should create ONE line item (grouped by meter, not by price)
+            assert len(order_items) == 1
 
-        # Should create ONE line item (grouped by meter, not by price)
-        assert len(order_items) == 1
+            order_item = order_items[0]
+            assert meter_max.name in order_item.label
+            # MAX of all events is 3, billed at the most recent price ($15)
+            assert order_item.amount == 45_00
+            assert order_item.product_price == price_b  # Uses most recent price
 
-        order_item = order_items[0]
-        assert meter_max.name in order_item.label
-        # MAX of all events is 3, billed at the most recent price ($15)
-        assert order_item.amount == 45_00
-        assert order_item.product_price == price_b  # Uses most recent price
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+                stripe_invoice_id=None,
+            )
 
         # All billing entries should be linked to this single order item
-        enqueue_job_mock.assert_called_once()
-        call_args = enqueue_job_mock.call_args[0]
-        assert call_args[0] == "billing_entry.set_order_item"
-        assert set(call_args[1]) == {entry.id for entry in entries}
-        assert call_args[2] == order_item.id
+        for entry in entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id

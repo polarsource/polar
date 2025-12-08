@@ -1,3 +1,4 @@
+import contextlib
 import dataclasses
 import uuid
 from collections.abc import Sequence
@@ -23,7 +24,6 @@ from polar.product.guard import (
     is_metered_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
-from polar.worker._enqueue import enqueue_job
 
 from .repository import BillingEntryRepository
 
@@ -53,6 +53,7 @@ class MeteredLineItem:
 
 
 class BillingEntryService:
+    @contextlib.asynccontextmanager
     async def create_order_items_from_pending(
         self,
         session: AsyncSession,
@@ -60,8 +61,8 @@ class BillingEntryService:
         *,
         stripe_invoice_id: str | None = None,
         stripe_customer_id: str | None = None,
-    ) -> Sequence[OrderItem]:
-        items: list[OrderItem] = []
+    ) -> AsyncGenerator[Sequence[OrderItem]]:
+        item_entries_map: dict[OrderItem, Sequence[uuid.UUID]] = {}
         async for line_item, entries in self.compute_pending_subscription_line_items(
             session, subscription
         ):
@@ -96,13 +97,13 @@ class BillingEntryService:
                 proration=line_item.proration,
                 product_price=line_item.price,
             )
-            items.append(order_item)
+            item_entries_map[order_item] = entries
 
-            # Do it asynchronously to avoid issues with DB flush, since we're
-            # generating OrderItem without attached to an Order yet.
-            enqueue_job("billing_entry.set_order_item", entries, order_item.id)
+        yield list(item_entries_map.keys())
 
-        return items
+        repository = BillingEntryRepository.from_session(session)
+        for order_item, entries in item_entries_map.items():
+            await repository.update_order_item_id(entries, order_item.id)
 
     async def compute_pending_subscription_line_items(
         self, session: AsyncSession, subscription: Subscription

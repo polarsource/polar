@@ -11,6 +11,7 @@ import { Slot, useNavigationContainerRef } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import React, { useCallback } from 'react'
 import { View } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 Sentry.init({
   dsn: 'https://3119a20edbb1d03021076301c21ea658@o4505046560538624.ingest.us.sentry.io/4510311296073728',
@@ -75,13 +76,15 @@ export default Sentry.wrap(function RootLayout() {
   }
 
   return (
-    <SessionProvider>
-      <View
-        style={{ flex: 1, backgroundColor: themes.dark.background }}
-        onLayout={onLayoutRootView}
-      >
-        <Slot />
-      </View>
-    </SessionProvider>
+    <SafeAreaProvider>
+      <SessionProvider>
+        <View
+          style={{ flex: 1, backgroundColor: themes.dark.background }}
+          onLayout={onLayoutRootView}
+        >
+          <Slot />
+        </View>
+      </SessionProvider>
+    </SafeAreaProvider>
   )
 })

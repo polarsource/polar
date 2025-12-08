@@ -70,7 +70,7 @@ class RefundTransactionService(BaseTransactionService):
             )
             settlement_amount = balance_transaction.amount
             settlement_currency = balance_transaction.currency
-            exchange_rate = balance_transaction.exchange_rate or 1.0
+            exchange_rate = -settlement_amount / (refund.amount + refund.tax_amount)
             settlement_tax_amount = -polar_round(refund.tax_amount * exchange_rate)
         else:
             raise NotImplementedError()

@@ -41,6 +41,21 @@ export const Button = ({
     }
   }
 
+  const getTextColor = () => {
+    if (disabled) {
+      return colors.subtext
+    }
+
+    switch (variant) {
+      case 'primary':
+        return colors.monochrome
+      case 'secondary':
+        return colors.monochromeInverted
+      case 'destructive':
+        return colors.error
+    }
+  }
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -50,7 +65,7 @@ export const Button = ({
         styles.button,
         {
           backgroundColor:
-            disabled || loading ? colors.card : getTouchableColor(),
+            disabled || loading ? '#ffffff11' : getTouchableColor(),
         },
         {
           opacity: disabled || loading ? 0.5 : 1,
@@ -62,10 +77,7 @@ export const Button = ({
         style={[
           styles.text,
           {
-            color:
-              variant === 'primary' && !disabled
-                ? colors.monochrome
-                : colors.text,
+            color: getTextColor(),
           },
           textStyle,
         ]}

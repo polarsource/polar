@@ -20,7 +20,6 @@ export const useSettingsActions = ({
   organizations,
   setOrganization,
   refetch,
-  userEmail,
 }: UseSettingsActionsOptions) => {
   const logout = useLogout()
   const deleteOrganization = useDeleteOrganization()
@@ -119,45 +118,8 @@ export const useSettingsActions = ({
     refetch,
   ])
 
-  const handleDeleteAccount = useCallback(() => {
-    const orgCount = organizations.length
-    const orgText =
-      orgCount > 0
-        ? ` and ${orgCount} organization${orgCount > 1 ? 's' : ''}`
-        : ''
-
-    if (!userEmail) {
-      return
-    }
-
-    Alert.prompt(
-      'Delete Account',
-      `Type your email "${userEmail}" to confirm deletion of your account${orgText}. This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: (input?: string) => {
-            if (input?.toLowerCase() === userEmail?.toLowerCase()) {
-              performDeleteAccount()
-            } else {
-              Alert.alert(
-                'Incorrect email',
-                'The email you entered does not match your account.',
-              )
-            }
-          },
-        },
-      ],
-      'plain-text',
-      '',
-      'email-address',
-    )
-  }, [organizations, userEmail, performDeleteAccount])
-
   return {
-    handleDeleteAccount,
+    performDeleteAccount,
     isDeletingAccount,
     logout,
   }

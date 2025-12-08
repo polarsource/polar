@@ -224,7 +224,7 @@ export default function Index() {
               Recent Subscriptions
             </ThemedText>
             <Link href="/subscriptions" asChild>
-              <MiniButton secondary>View All</MiniButton>
+              <MiniButton variant="secondary">View All</MiniButton>
             </Link>
           </View>
           {flatSubscriptions.length > 0 ? (
@@ -255,7 +255,7 @@ export default function Index() {
           >
             <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
             <Link href="/orders" asChild>
-              <MiniButton secondary>View All</MiniButton>
+              <MiniButton variant="secondary">View All</MiniButton>
             </Link>
           </View>
           {flatOrders.length > 0 ? (
@@ -290,7 +290,7 @@ export default function Index() {
         >
           <ThemedText style={{ fontSize: 20 }}>Recent Customers</ThemedText>
           <Link href="/customers" asChild>
-            <MiniButton secondary>View All</MiniButton>
+            <MiniButton variant="secondary">View All</MiniButton>
           </Link>
         </View>
 

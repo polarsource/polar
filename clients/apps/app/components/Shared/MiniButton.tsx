@@ -9,7 +9,7 @@ import { ThemedText } from './ThemedText'
 
 interface MiniButtonProps extends TouchableOpacityProps {
   icon?: React.ReactNode
-  secondary?: boolean
+  variant?: 'primary' | 'secondary' | 'destructive'
 }
 
 export const MiniButton = ({
@@ -17,11 +17,37 @@ export const MiniButton = ({
   onPress,
   style,
   icon,
-  secondary,
   disabled,
+  variant = 'primary',
   ...props
 }: MiniButtonProps) => {
   const { colors } = useTheme()
+
+  const getTouchableColor = () => {
+    switch (variant) {
+      case 'primary':
+        return colors.monochromeInverted
+      case 'secondary':
+        return colors.card
+      case 'destructive':
+        return colors.errorSubtle
+    }
+  }
+
+  const getTextColor = () => {
+    if (disabled) {
+      return colors.subtext
+    }
+
+    switch (variant) {
+      case 'primary':
+        return colors.monochrome
+      case 'secondary':
+        return colors.monochromeInverted
+      case 'destructive':
+        return colors.error
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -29,11 +55,7 @@ export const MiniButton = ({
       style={[
         styles.button,
         {
-          backgroundColor: disabled
-            ? colors.secondary
-            : secondary
-              ? colors.secondary
-              : colors.primary,
+          backgroundColor: disabled ? colors.secondary : getTouchableColor(),
         },
         style,
       ]}
@@ -43,8 +65,7 @@ export const MiniButton = ({
     >
       {icon && <View style={{ marginRight: 4 }}>{icon}</View>}
       <ThemedText
-        style={{ fontSize: 14, fontWeight: '500' }}
-        secondary={disabled}
+        style={{ fontSize: 14, fontWeight: '500', color: getTextColor() }}
       >
         {children}
       </ThemedText>

@@ -187,6 +187,7 @@ class MetricsService:
         now: datetime | None = None,
     ) -> MetricsResponse:
         await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
+        await session.execute(text("SET LOCAL plan_cache_mode = 'force_custom_plan'"))
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
         )

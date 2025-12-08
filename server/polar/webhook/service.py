@@ -182,6 +182,7 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         *,
         endpoint_id: Sequence[UUID] | None = None,
+        http_code: Sequence[int] | None = None,
         start_timestamp: datetime.datetime | None = None,
         end_timestamp: datetime.datetime | None = None,
         pagination: PaginationParams,
@@ -206,6 +207,9 @@ class WebhookService:
             statement = statement.where(
                 WebhookDelivery.webhook_endpoint_id.in_(endpoint_id)
             )
+
+        if http_code is not None:
+            statement = statement.where(WebhookDelivery.http_code.in_(http_code))
 
         if start_timestamp is not None:
             statement = statement.where(WebhookDelivery.created_at > start_timestamp)

@@ -7,6 +7,10 @@ import { useModal } from '@/components/Modal/useModal'
 import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView'
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
 import { WebhookFilter } from '@/components/Settings/Webhook/WebhookFilter'
+import {
+  HTTP_STATUS_CODES,
+  WebhookStatusFilterValue,
+} from '@/components/Settings/Webhook/WebhookStatusFilter'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
 import {
@@ -38,6 +42,9 @@ export default function ClientPage({
   const { id }: { id: string } = useParams()
   const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [statusFilter, setStatusFilter] = useState<WebhookStatusFilterValue>([
+    ...HTTP_STATUS_CODES,
+  ])
 
   const { data: endpoint } = useWebhookEndpoint(id)
 
@@ -173,6 +180,8 @@ export default function ClientPage({
           <WebhookFilter
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
           />
         </div>
         <DeliveriesTable
@@ -181,6 +190,7 @@ export default function ClientPage({
           sorting={sorting}
           organization={organization}
           dateRange={dateRange}
+          statusFilter={statusFilter}
         />
       </div>
 

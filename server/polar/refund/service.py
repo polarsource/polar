@@ -83,15 +83,6 @@ class RefundedAlready(RefundError):
         super().__init__(message, 403)
 
 
-class RefundAmountTooHigh(RefundError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = (
-            f"Refund amount exceeds remaining order balance: {order.refundable_amount}"
-        )
-        super().__init__(message, 400)
-
-
 class RevokeSubscriptionBenefitsProhibited(RefundError):
     def __init__(self) -> None:
         message = "Subscription benefits can only be revoked upon cancellation"
@@ -203,7 +194,9 @@ class RefundService:
             raise RevokeSubscriptionBenefitsProhibited()
 
         refund_amount = create_schema.amount
-        refund_tax_amount = self.calculate_tax(order, create_schema.amount)
+        refund_tax_amount = order.calculate_refunded_tax_from_subtotal(
+            create_schema.amount
+        )
         payment = await payment_transaction_service.get_by_order_id(session, order.id)
         if not (payment and payment.charge_id):
             raise RefundUnknownPayment(order.id, payment_type="order")
@@ -451,22 +444,6 @@ class RefundService:
             order=order,
         )
 
-    def calculate_tax(
-        self,
-        order: Order,
-        refund_amount: int,
-    ) -> int:
-        if refund_amount > order.refundable_amount:
-            raise RefundAmountTooHigh(order)
-
-        # Trigger full refund of remaining balance
-        if refund_amount == order.refundable_amount:
-            return order.refundable_tax_amount
-
-        ratio = order.tax_amount / order.net_amount
-        tax_amount = round(refund_amount * ratio)
-        return tax_amount
-
     def build_create_schema_from_stripe(
         self,
         stripe_refund: stripe_lib.Refund,
@@ -488,8 +465,8 @@ class RefundService:
             subscription_id = order.subscription_id
             customer_id = order.customer_id
             organization_id = order.organization.id
-            refunded_amount, refunded_tax_amount = order.calculate_refunded_tax(
-                stripe_refund.amount
+            refunded_amount, refunded_tax_amount = (
+                order.calculate_refunded_tax_from_total(stripe_refund.amount)
             )
 
         schema = InternalRefundCreate.from_stripe(

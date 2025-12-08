@@ -1,3 +1,4 @@
+import { DeleteAccountSheet } from '@/components/Errors/Accouns/DeleteAccountSheet'
 import { Avatar } from '@/components/Shared/Avatar'
 import { Button } from '@/components/Shared/Button'
 import { MiniButton } from '@/components/Shared/MiniButton'
@@ -9,16 +10,16 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Stack, useRouter } from 'expo-router'
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import {
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 export default function Index() {
   const {
@@ -42,16 +43,19 @@ export default function Index() {
     },
   )
 
+  const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
+    useState(false)
+
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-      }
-      contentInset={{ bottom: 16 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
-      <Stack.Screen options={{ title: 'Settings' }} />
-      <SafeAreaView style={SettingsStyle.container}>
+    <GestureHandlerRootView style={SettingsStyle.gestureRoot}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+        }
+        contentInset={{ bottom: 16 }}
+        contentContainerStyle={SettingsStyle.container}
+      >
+        <Stack.Screen options={{ title: 'Settings' }} />
         <View style={{ gap: 32 }}>
           <View style={{ gap: 16 }}>
             <View
@@ -140,7 +144,7 @@ export default function Index() {
               </View>
               <Button
                 variant="destructive"
-                onPress={handleDeleteAccount}
+                onPress={() => setShowAccountDeletionSheet(true)}
                 disabled={isDeletingAccount}
               >
                 <View
@@ -172,12 +176,22 @@ export default function Index() {
         <View style={SettingsStyle.buttonsContainer}>
           <Button onPress={logout}>Logout</Button>
         </View>
-      </SafeAreaView>
-    </ScrollView>
+      </ScrollView>
+
+      {showAccountDeletionSheet ? (
+        <DeleteAccountSheet
+          onDelete={console.log}
+          onDismiss={() => setShowAccountDeletionSheet(false)}
+        />
+      ) : null}
+    </GestureHandlerRootView>
   )
 }
 
 const SettingsStyle = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     margin: 16,

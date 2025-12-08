@@ -288,8 +288,11 @@ export default function Index() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ flexDirection: 'row', gap: 16 }}
-            contentInset={{ left: 16, right: 16 }}
+            contentContainerStyle={{
+              flexDirection: 'row',
+              gap: 16,
+              paddingHorizontal: 16,
+            }}
             contentOffset={{ x: -16, y: 0 }}
           >
             {flatCustomers.map((customer) => (

@@ -9,7 +9,6 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "owner": "polar-sh",
-
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.polarsource.Polar",
@@ -26,7 +25,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0D0E10"
       },
-      "package": "com.polarsource.Polar"
+      "package": "com.polarsource.Polar",
+      "scheme": "polar"
     },
     "web": {
       "bundler": "metro",

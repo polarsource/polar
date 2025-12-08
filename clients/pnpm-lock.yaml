@@ -146,8 +146,8 @@ importers:
         specifier: ~3.0.8
         version: 3.0.8(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))(react@19.1.0)
       expo-store-review:
-        specifier: ^9.0.8
-        version: 9.0.8(expo@54.0.23)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))
+        specifier: ^9.0.9
+        version: 9.0.9(expo@54.0.23)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))
       expo-symbols:
         specifier: ~1.0.7
         version: 1.0.7(expo@54.0.23)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))
@@ -6431,8 +6431,8 @@ packages:
       react: '*'
       react-native: '*'
 
-  expo-store-review@9.0.8:
-    resolution: {integrity: sha512-S8ExQRqQBHHmZOX2gabEeRJDrgeAhzBf5FOtnhp5fMinpwT7umNOMHy+PwrTYJ/+AjnnKHgLoM1o/MDgcL3qCw==}
+  expo-store-review@9.0.9:
+    resolution: {integrity: sha512-99vS7edXlKzPcdjrzVlMQWc4zOyq4khQfFjhNqJgpGP+AgRn4U0LaZkHIrVjmzolryD3rcHJSiUQH9Vi0sD0MQ==}
     peerDependencies:
       expo: '*'
       react-native: '*'
@@ -17848,7 +17848,7 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0)
       react-native-is-edge-to-edge: 1.2.1(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))(react@19.1.0)
 
-  expo-store-review@9.0.8(expo@54.0.23)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0)):
+  expo-store-review@9.0.9(expo@54.0.23)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0)):
     dependencies:
       expo: 54.0.23(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(@modelcontextprotocol/sdk@1.22.0(@cfworker/json-schema@4.1.1))(expo-router@6.0.14)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))(react@19.1.0)
       react-native: 0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0)

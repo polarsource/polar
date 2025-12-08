@@ -20,7 +20,12 @@ from polar.logfire import instrument_httpx
 from polar.observability import metrics as _prometheus_metrics
 
 from ._encoder import JSONEncoder
-from ._enqueue import JobQueueManager, enqueue_events, enqueue_job
+from ._enqueue import (
+    JobQueueManager,
+    calculate_bulk_job_delay,
+    enqueue_events,
+    enqueue_job,
+)
 from ._health import HealthMiddleware
 from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
@@ -258,6 +263,7 @@ def actor[**P, R](
 
 __all__ = [
     "actor",
+    "calculate_bulk_job_delay",
     "CronTrigger",
     "AsyncSessionMaker",
     "RedisMiddleware",

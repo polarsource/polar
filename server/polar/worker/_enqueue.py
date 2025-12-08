@@ -9,6 +9,7 @@ from typing import Any, Self, TypeAlias
 import dramatiq
 import structlog
 
+from polar.config import settings
 from polar.logging import Logger
 from polar.redis import Redis
 
@@ -39,15 +40,24 @@ class JobQueueManager:
 
     def __init__(self) -> None:
         self._enqueued_jobs: list[
-            tuple[str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]]
+            tuple[
+                str,
+                tuple[JSONSerializable, ...],
+                dict[str, JSONSerializable],
+                int | None,
+            ]
         ] = []
         self._ingested_events: list[uuid.UUID] = []
 
     def enqueue_job(
-        self, actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+        self,
+        actor: str,
+        *args: JSONSerializable,
+        delay: int | None = None,
+        **kwargs: JSONSerializable,
     ) -> None:
-        self._enqueued_jobs.append((actor, args, kwargs))
-        log.debug("polar.worker.job_enqueued", actor=actor)
+        self._enqueued_jobs.append((actor, args, kwargs, delay))
+        log.debug("polar.worker.job_enqueued", actor=actor, delay=delay)
 
     def enqueue_events(self, *event_ids: uuid.UUID) -> None:
         self._ingested_events.extend(event_ids)
@@ -63,11 +73,14 @@ class JobQueueManager:
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, Any]] = []
 
-        for actor_name, args, kwargs in self._enqueued_jobs:
+        for actor_name, args, kwargs, delay in self._enqueued_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
             message = fn.message_with_options(
-                args=args, kwargs=kwargs, redis_message_id=redis_message_id
+                args=args,
+                kwargs=kwargs,
+                redis_message_id=redis_message_id,
+                delay=delay,
             )
             encoded_message = message.encode()
             queue_messages[message.queue_name].append(
@@ -147,14 +160,67 @@ class JobQueueManager:
 
 
 def enqueue_job(
-    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+    actor: str,
+    *args: JSONSerializable,
+    delay: int | None = None,
+    **kwargs: JSONSerializable,
 ) -> None:
-    """Enqueue a job by actor name."""
+    """Enqueue a job by actor name.
+
+    Args:
+        actor: The name of the actor to enqueue.
+        *args: Positional arguments to pass to the actor.
+        delay: Optional delay in milliseconds before the job is processed.
+        **kwargs: Keyword arguments to pass to the actor.
+    """
     job_queue_manager = JobQueueManager.get()
-    job_queue_manager.enqueue_job(actor, *args, **kwargs)
+    job_queue_manager.enqueue_job(actor, *args, delay=delay, **kwargs)
 
 
 def enqueue_events(*event_ids: uuid.UUID) -> None:
     """Enqueue events to be ingested."""
     job_queue_manager = JobQueueManager.get()
     job_queue_manager.enqueue_events(*event_ids)
+
+
+def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
+    """Calculate delay in milliseconds for bulk job spreading.
+
+    When enqueueing many jobs at once (e.g., granting benefits to all customers
+    of a product), this function calculates the appropriate delay for each job
+    to spread them out over time and prevent queue saturation.
+
+    The delay logic:
+    1. If count <= threshold: no delay
+    2. If count * target_delay <= max_spread: use target_delay (200ms)
+    3. If calculated delay >= min_delay: compress to fit in max_spread
+    4. If calculated delay < min_delay: use min_delay (50ms floor)
+
+    For very large batches (>6000 items), we accept exceeding max_spread
+    rather than using sub-50ms delays which would be meaningless.
+
+    Args:
+        index: The 0-based index of the current item in the batch.
+        total_count: The total number of items in the batch.
+
+    Returns:
+        The delay in milliseconds, or None if no delay is needed
+        (below threshold or first item).
+    """
+    if total_count <= settings.BULK_JOBS_SPREAD_THRESHOLD:
+        return None
+    if index == 0:
+        return None
+
+    target_delay_ms = settings.BULK_JOBS_SPREAD_TARGET_DELAY_MS
+    min_delay_ms = settings.BULK_JOBS_SPREAD_MIN_DELAY_MS
+    max_spread_ms = settings.BULK_JOBS_SPREAD_MAX_MS
+
+    if total_count * target_delay_ms <= max_spread_ms:
+        # Use target delay - we fit within max spread
+        delay_per_item = target_delay_ms
+    else:
+        # Compress to fit, but enforce minimum floor
+        delay_per_item = max(min_delay_ms, int(max_spread_ms / total_count))
+
+    return int(index * delay_per_item)

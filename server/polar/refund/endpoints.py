@@ -14,7 +14,7 @@ from polar.subscription.schemas import SubscriptionID
 from . import auth
 from .schemas import Refund as RefundSchema
 from .schemas import RefundCreate, RefundID
-from .service import RefundAmountTooHigh, RefundedAlready
+from .service import RefundedAlready
 from .service import refund as refund_service
 from .sorting import RefundListSorting
 
@@ -75,10 +75,6 @@ async def list(
     response_model=RefundSchema,
     responses={
         201: {"description": "Refund created."},
-        400: {
-            "description": "Refund amount exceeds remaining order balance.",
-            "model": RefundAmountTooHigh.schema(),
-        },
         403: {
             "description": "Order is already fully refunded.",
             "model": RefundedAlready.schema(),

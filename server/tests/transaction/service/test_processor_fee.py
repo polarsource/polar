@@ -147,10 +147,8 @@ class TestCreateRefundFees:
             product=product,
             customer=customer,
         )
-        refund = await create_refund(
-            save_fixture,
-            order,
-        )
+        payment = await create_payment(save_fixture, customer.organization, order=order)
+        refund = await create_refund(save_fixture, order, payment)
         refund_transaction = await create_refund_transaction(
             save_fixture, processor=Processor.open_collective
         )
@@ -176,10 +174,8 @@ class TestCreateRefundFees:
             product=product,
             customer=customer,
         )
-        refund = await create_refund(
-            save_fixture,
-            order,
-        )
+        payment = await create_payment(save_fixture, customer.organization, order=order)
+        refund = await create_refund(save_fixture, order, payment)
         refund_transaction = await create_refund_transaction(save_fixture)
         stripe_service_mock.get_balance_transaction.return_value = (
             stripe_lib.BalanceTransaction.construct_from(

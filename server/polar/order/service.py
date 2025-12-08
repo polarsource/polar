@@ -1818,8 +1818,10 @@ class OrderService:
         refunded_amount: int,
         refunded_tax_amount: int,
     ) -> Order:
-        order.update_refunds(refunded_amount, refunded_tax_amount=refunded_tax_amount)
-        session.add(order)
+        repository = OrderRepository.from_session(session)
+        order.update_refunds(refunded_amount, refunded_tax_amount)
+        order = await repository.update(order)
+        await self.send_webhook(session, order, WebhookEventType.order_updated)
         return order
 
     async def create_order_balance(

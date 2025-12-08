@@ -878,7 +878,7 @@ async def create_order_and_payment(
     subtotal_amount: int,
     tax_amount: int,
     applied_balance_amount: int = 0,
-) -> tuple[Order, Transaction]:
+) -> tuple[Order, Payment, Transaction]:
     order = await create_order(
         save_fixture,
         product=product,
@@ -887,13 +887,20 @@ async def create_order_and_payment(
         tax_amount=tax_amount,
         applied_balance_amount=applied_balance_amount,
     )
-    payment = await create_payment_transaction(
+    payment = await create_payment(
+        save_fixture,
+        customer.organization,
+        amount=subtotal_amount + tax_amount + applied_balance_amount,
+        order=order,
+    )
+    transaction = await create_payment_transaction(
         save_fixture,
         amount=subtotal_amount + applied_balance_amount,
         tax_amount=tax_amount,
         order=order,
+        charge_id=payment.processor_id,
     )
-    return order, payment
+    return order, payment, transaction
 
 
 async def create_order_with_seats(
@@ -1589,24 +1596,27 @@ async def create_benefit_grant(
 async def create_refund(
     save_fixture: SaveFixture,
     order: Order,
+    payment: Payment,
     *,
-    dispute: Dispute | None = None,
     status: str = "succeeded",
     processor: PaymentProcessor = PaymentProcessor.stripe,
     amount: int = 1000,
     tax_amount: int = 0,
+    currency: str = "usd",
     reason: str = "customer_request",
     processor_id: str = "STRIPE_REFUND_ID",
     processor_reason: str = "requested_by_customer",
     processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
+    dispute: Dispute | None = None,
 ) -> Refund:
     refund = Refund(
         status=status,
         reason=reason,
         amount=amount,
         tax_amount=tax_amount,
-        currency="usd",
-        order_id=order.id,
+        currency=currency,
+        payment=payment,
+        order=order,
         subscription=order.subscription,
         customer=order.customer,
         organization=order.organization,

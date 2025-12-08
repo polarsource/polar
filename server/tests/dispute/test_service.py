@@ -349,7 +349,7 @@ class TestUpsertFromStripe:
             payment_processor=PaymentProcessor.stripe,
             payment_processor_id=stripe_dispute.id,
         )
-        await create_refund(save_fixture, order, dispute=dispute)
+        await create_refund(save_fixture, order, payment, dispute=dispute)
 
         updated_dispute = await dispute_service.upsert_from_stripe(
             session, stripe_dispute

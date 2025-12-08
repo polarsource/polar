@@ -6,11 +6,19 @@ from sqlalchemy.orm import joinedload
 
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
-from polar.models import Account, Customer, Product, Transaction, User
+from polar.models import (
+    Account,
+    Customer,
+    Order,
+    Payment,
+    Product,
+    Refund,
+    Transaction,
+    User,
+)
 from polar.models.refund import RefundStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
-from polar.refund.service import refund as refund_service
 from polar.transaction.repository import BalanceTransactionRepository
 from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.balance import (
@@ -28,11 +36,10 @@ from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order
+from tests.fixtures.random_objects import create_order, create_payment, create_refund
 from tests.fixtures.stripe import (
     build_stripe_balance_transaction,
     build_stripe_charge,
-    build_stripe_refund,
 )
 from tests.transaction.conftest import create_transaction
 
@@ -64,50 +71,74 @@ def create_refund_fees_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
+async def create_order_and_refund(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    *,
+    processor_id: str = "STRIPE_CHARGE_ID",
+    status: RefundStatus = RefundStatus.succeeded,
+    subtotal_amount: int = 1000,
+    tax_amount: int = 0,
+    currency: str = "usd",
+    refund_subtotal_amount: int | None = None,
+    refund_tax_amount: int | None = None,
+) -> tuple[Refund, Order, Payment]:
+    order = await create_order(
+        save_fixture,
+        customer=customer,
+        subtotal_amount=subtotal_amount,
+        tax_amount=tax_amount,
+        currency=currency,
+    )
+    payment = await create_payment(
+        save_fixture,
+        customer.organization,
+        amount=subtotal_amount + tax_amount,
+        currency=currency,
+        order=order,
+        processor_id=processor_id,
+    )
+    refund = await create_refund(
+        save_fixture,
+        order,
+        payment,
+        status=status,
+        amount=subtotal_amount
+        if refund_subtotal_amount is None
+        else refund_subtotal_amount,
+        tax_amount=tax_amount if refund_tax_amount is None else refund_tax_amount,
+        currency=currency,
+    )
+    return refund, order, payment
+
+
 @pytest.mark.asyncio
 class TestCreate:
-    @pytest.mark.parametrize("status", ["pending", "failed"])
+    @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.failed])
     async def test_not_succeeded_refund(
-        self, status: str, session: AsyncSession
+        self,
+        status: RefundStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
     ) -> None:
-        pending_refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="PENDING_REFUND",
-                status=status,
-                charge_id="CHARGE_ID",
-                balance_transaction="BALANCE_TRANSACTION_ID",
-            ),
+        refund, _, _ = await create_order_and_refund(
+            save_fixture, customer, status=status
         )
 
         with pytest.raises(NotSucceededRefundError):
-            await refund_transaction_service.create(
-                session,
-                charge_id="CHARGE_ID",
-                payment_transaction=Transaction(),
-                refund=pending_refund,
-            )
+            await refund_transaction_service.create(session, refund)
 
     async def test_existing_transaction(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
     ) -> None:
-        refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="REFUND_ID",
-                charge_id="CHARGE_ID",
-                balance_transaction="BALANCE_TRANSACTION_ID",
-            ),
-        )
-        refund_transaction = await create_transaction(
+        refund, _, _ = await create_order_and_refund(save_fixture, customer)
+        await create_transaction(
             save_fixture, type=TransactionType.refund, refund=refund
         )
 
         with pytest.raises(RefundTransactionAlreadyExistsError):
-            await refund_transaction_service.create(
-                session,
-                charge_id="CHARGE_ID",
-                payment_transaction=Transaction(),
-                refund=refund,
-            )
+            await refund_transaction_service.create(session, refund)
 
     async def test_valid(
         self,
@@ -121,11 +152,8 @@ class TestCreate:
         create_refund_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge()
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subtotal_amount=charge.amount,
+        refund, order, _ = await create_order_and_refund(
+            save_fixture, customer, subtotal_amount=charge.amount
         )
         balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
@@ -215,25 +243,11 @@ class TestCreate:
         await save_fixture(outgoing_balance_2)
         await save_fixture(incoming_balance_2)
 
-        new_refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="NEW_REFUND",
-                charge_id=charge.id,
-                balance_transaction=balance_transaction.id,
-            ),
-            order=order,
-        )
-
-        refund_transaction = await refund_transaction_service.create(
-            session,
-            charge_id=charge.id,
-            payment_transaction=payment_transaction,
-            refund=new_refund,
-        )
+        refund_transaction = await refund_transaction_service.create(session, refund)
 
         assert refund_transaction.type == TransactionType.refund
         assert refund_transaction.processor == Processor.stripe
-        assert refund_transaction.amount == -new_refund.amount
+        assert refund_transaction.amount == -refund.amount
 
         assert balance_transaction_service_mock.create_reversal_balance.call_count == 2
 
@@ -244,7 +258,7 @@ class TestCreate:
             outgoing_balance_1.id,
             incoming_balance_1.id,
         ]
-        assert first_call[1]["amount"] == new_refund.amount * 0.75
+        assert first_call[1]["amount"] == refund.amount * 0.75
 
         second_call = (
             balance_transaction_service_mock.create_reversal_balance.call_args_list[1]
@@ -253,7 +267,7 @@ class TestCreate:
             outgoing_balance_2.id,
             incoming_balance_2.id,
         ]
-        assert second_call[1]["amount"] == new_refund.amount * 0.25
+        assert second_call[1]["amount"] == refund.amount * 0.25
 
         create_refund_fees_mock.assert_awaited_once()
 
@@ -269,10 +283,9 @@ class TestCreate:
         create_refund_fees_mock: AsyncMock,
     ) -> None:
         charge = build_stripe_charge(amount=1200, currency="eur")
-        order = await create_order(
+        refund, order, _ = await create_order_and_refund(
             save_fixture,
-            product=product,
-            customer=customer,
+            customer,
             subtotal_amount=1000,
             tax_amount=200,
             currency="eur",
@@ -370,23 +383,8 @@ class TestCreate:
             amount=-1800, currency="usd", exchange_rate=1.5
         )
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
-        new_refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="NEW_REFUND",
-                charge_id=charge.id,
-                amount=1200,
-                currency="eur",
-                balance_transaction=balance_transaction.id,
-            ),
-            order=order,
-        )
 
-        refund_transaction = await refund_transaction_service.create(
-            session,
-            charge_id=charge.id,
-            payment_transaction=payment_transaction,
-            refund=new_refund,
-        )
+        refund_transaction = await refund_transaction_service.create(session, refund)
 
         assert refund_transaction.type == TransactionType.refund
         assert refund_transaction.processor == Processor.stripe
@@ -422,46 +420,30 @@ class TestCreate:
 
 @pytest.mark.asyncio
 class TestRevert:
-    @pytest.mark.parametrize("status", ["pending", "succeeded"])
+    @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.succeeded])
     async def test_not_canceled_refund(
-        self, status: str, session: AsyncSession
+        self,
+        status: RefundStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
     ) -> None:
-        pending_refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="PENDING_REFUND",
-                status=status,
-                charge_id="CHARGE_ID",
-                balance_transaction="BALANCE_TRANSACTION_ID",
-            ),
+        pending_refund, _, _ = await create_order_and_refund(
+            save_fixture, customer, status=status
         )
 
         with pytest.raises(NotCanceledRefundError):
-            await refund_transaction_service.revert(
-                session,
-                charge_id="CHARGE_ID",
-                payment_transaction=Transaction(),
-                refund=pending_refund,
-            )
+            await refund_transaction_service.revert(session, pending_refund)
 
     async def test_not_existing_transaction(
-        self, save_fixture: SaveFixture, session: AsyncSession
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
     ) -> None:
-        refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="REFUND_ID",
-                status="canceled",
-                charge_id="CHARGE_ID",
-                balance_transaction="BALANCE_TRANSACTION_ID",
-            ),
+        refund, _, _ = await create_order_and_refund(
+            save_fixture, customer, status=RefundStatus.canceled
         )
 
         with pytest.raises(RefundTransactionDoesNotExistError):
-            await refund_transaction_service.revert(
-                session,
-                charge_id="CHARGE_ID",
-                payment_transaction=Transaction(),
-                refund=refund,
-            )
+            await refund_transaction_service.revert(session, refund)
 
     async def test_valid(
         self,
@@ -486,10 +468,10 @@ class TestRevert:
 
         # Create a charge and order
         charge = build_stripe_charge()
-        order = await create_order(
+        refund, order, payment = await create_order_and_refund(
             save_fixture,
-            product=product,
-            customer=customer,
+            customer,
+            status=RefundStatus.succeeded,
             subtotal_amount=charge.amount,
         )
         balance_transaction = build_stripe_balance_transaction(amount=-charge.amount)
@@ -541,17 +523,6 @@ class TestRevert:
         await save_fixture(incoming_balance)
 
         # Refund this transaction
-
-        refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="REFUND_ID",
-                status="succeeded",
-                amount=charge.amount,
-                charge_id=charge.id,
-                balance_transaction=balance_transaction.id,
-            ),
-            order=order,
-        )
         refund_transaction = await create_transaction(
             save_fixture,
             type=TransactionType.refund,
@@ -589,10 +560,7 @@ class TestRevert:
 
         refund.status = RefundStatus.canceled
         refund_reversal_transaction = await refund_transaction_service.revert(
-            session,
-            charge_id=charge.id,
-            payment_transaction=payment_transaction,
-            refund=refund,
+            session, refund
         )
 
         assert refund_reversal_transaction.type == TransactionType.refund_reversal
@@ -664,10 +632,10 @@ class TestRevert:
 
         # Create a charge and order
         charge = build_stripe_charge(amount=1200, currency="eur")
-        order = await create_order(
+        refund, order, _ = await create_order_and_refund(
             save_fixture,
-            product=product,
-            customer=customer,
+            customer,
+            status=RefundStatus.succeeded,
             subtotal_amount=1000,
             tax_amount=200,
             currency="eur",
@@ -726,17 +694,6 @@ class TestRevert:
             amount=-1800, currency="usd", exchange_rate=1.5
         )
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction
-
-        refund = refund_service.build_instance_from_stripe(
-            build_stripe_refund(
-                id="REFUND_ID",
-                charge_id=charge.id,
-                amount=1200,
-                currency="eur",
-                balance_transaction=balance_transaction.id,
-            ),
-            order=order,
-        )
         refund_transaction = await create_transaction(
             save_fixture,
             type=TransactionType.refund,
@@ -779,10 +736,7 @@ class TestRevert:
 
         refund.status = RefundStatus.canceled
         refund_reversal_transaction = await refund_transaction_service.revert(
-            session,
-            charge_id=charge.id,
-            payment_transaction=payment_transaction,
-            refund=refund,
+            session, refund
         )
 
         assert refund_reversal_transaction.type == TransactionType.refund_reversal

@@ -1,0 +1,94 @@
+---
+title: "Supabase"
+description: "Payments and Checkouts made dead simple with Supabase"
+---
+
+```bash
+npm install zod @polar-sh/supabase
+```
+
+## Checkout
+
+Create a Checkout handler which takes care of redirections.
+
+```typescript
+import { Checkout } from "@polar-sh/supabase";
+
+export const GET = Checkout({
+  accessToken: POLAR_ACCESS_TOKEN,
+  successUrl: POLAR_SUCCESS_URL,
+  returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Checkout
+  server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
+});
+```
+
+### Query Params
+
+Pass query params to this route.
+
+- products `?products=123`
+- customerId (optional) `?products=123&customerId=xxx`
+- customerExternalId (optional) `?products=123&customerExternalId=xxx`
+- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
+- customerName (optional) `?products=123&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
+
+## Customer Portal
+
+Create a customer portal where your customer can view orders and subscriptions.
+
+```typescript
+import { CustomerPortal } from "@polar-sh/supabase";
+
+export const GET = CustomerPortal({
+  accessToken: POLAR_ACCESS_TOKEN,
+  getCustomerId: (event) => "", // Function to resolve a Polar Customer ID
+  returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Customer Portal
+  server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+});
+```
+
+## Webhooks
+
+A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
+
+```typescript
+import { Webhooks } from '@polar-sh/supabase';
+
+export const POST = Webhooks({
+  webhookSecret: POLAR_WEBHOOK_SECRET,
+  onPayload: async (payload) => /** Handle payload */,
+})
+```
+
+### Payload Handlers
+
+The Webhook handler also supports granular handlers for easy integration.
+
+- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutUpdated` - Triggered when a checkout is updated
+- `onOrderCreated` - Triggered when an order is created
+- `onOrderPaid` - Triggered when an order is paid
+- `onOrderRefunded` - Triggered when an order is refunded
+- `onRefundCreated` - Triggered when a refund is created
+- `onRefundUpdated` - Triggered when a refund is updated
+- `onSubscriptionCreated` - Triggered when a subscription is created
+- `onSubscriptionUpdated` - Triggered when a subscription is updated
+- `onSubscriptionActive` - Triggered when a subscription becomes active
+- `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionRevoked` - Triggered when a subscription is revoked
+- `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
+- `onProductCreated` - Triggered when a product is created
+- `onProductUpdated` - Triggered when a product is updated
+- `onOrganizationUpdated` - Triggered when an organization is updated
+- `onBenefitCreated` - Triggered when a benefit is created
+- `onBenefitUpdated` - Triggered when a benefit is updated
+- `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
+- `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+- `onCustomerCreated` - Triggered when a customer is created
+- `onCustomerUpdated` - Triggered when a customer is updated
+- `onCustomerDeleted` - Triggered when a customer is deleted
+- `onCustomerStateChanged` - Triggered when a customer state changes

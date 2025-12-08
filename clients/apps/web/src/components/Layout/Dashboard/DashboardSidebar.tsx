@@ -109,7 +109,7 @@ export const DashboardSidebar = ({
               onClick={() => setSearchOpen(true)}
               className={twMerge(
                 'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
-                'dark:bg-polar-950 border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900',
+                'dark:bg-polar-950 dark:border-polar-800 dark:hover:bg-polar-900 border-gray-200 bg-white hover:bg-gray-50',
                 isCollapsed && 'justify-center px-2',
               )}
             >
@@ -119,7 +119,7 @@ export const DashboardSidebar = ({
                   <span className="flex-1 text-left text-gray-500">
                     Search...
                   </span>
-                  <kbd className="pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[8px] text-gray-600 select-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[8px] text-gray-600 select-none">
                     <span className="text-xs">⌘</span>K
                   </kbd>
                 </>

@@ -186,13 +186,13 @@ export const OmniSearch = ({
       case 'page':
         return 'Go to'
       case 'product':
-        return 'Product'
+        return 'Products'
       case 'customer':
-        return 'Customer'
+        return 'Customers'
       case 'order':
-        return 'Order'
+        return 'Orders'
       case 'subscription':
-        return 'Subscription'
+        return 'Subscriptions'
       default:
         return type
     }
@@ -257,24 +257,25 @@ export const OmniSearch = ({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50" />
-        <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 fixed top-[10%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-lg border border-gray-200 bg-white p-0 shadow-lg dark:border-gray-800">
+        <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4 dark:bg-polar-950 dark:border-polar-800/80 fixed top-[15%] left-[50%] z-50 w-full max-w-2xl translate-x-[-50%] overflow-hidden rounded-xl border border-gray-200/80 bg-white p-0 shadow-2xl ring-1 ring-black/5 dark:ring-white/5">
           <Dialog.DialogTitle className="sr-only">Search</Dialog.DialogTitle>
           <Command
-            className="[&_[cmdk-group-heading]]:text-muted-foreground rounded-lg border-none shadow-md [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
+            className="rounded-xl border-none [&_[cmdk-group-heading]]:px-0 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-900 [&_[cmdk-group-heading]]:uppercase dark:[&_[cmdk-group-heading]]:text-white [&_[cmdk-group]]:px-3 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-14 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
             shouldFilter={false}
           >
-            <div className="flex grow items-center">
+            <div className="dark:border-polar-800 flex grow items-center border-b border-gray-100 px-4">
               <CommandInput
-                placeholder="Search for anything..."
+                placeholder="Search products, customers, orders..."
                 value={query}
                 onValueChange={setQuery}
-                className="flex w-full grow border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                wrapperClassName="border-none grow"
+                className="flex w-full grow border-0 text-base placeholder:text-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
             <CommandList
               className={twMerge(
-                'max-h-[450px] overflow-y-auto px-2 pb-2',
+                'max-h-[420px] overflow-y-auto px-3 pt-2 pb-3',
                 cleanState ? 'hidden' : '',
               )}
             >
@@ -299,7 +300,10 @@ export const OmniSearch = ({
                         <CommandGroup
                           key={type}
                           heading={getTypeLabel(type)}
-                          className={isLastGroup ? 'mb-0' : 'mb-2'}
+                          className={twMerge(
+                            'p-0',
+                            isLastGroup ? 'mb-0' : 'mb-2',
+                          )}
                         >
                           {typeResults.map((result, resultIndex) => {
                             const key = `${result.type}-${result.id}`
@@ -313,7 +317,7 @@ export const OmniSearch = ({
                                 value={key}
                                 onSelect={() => handleSelect(result)}
                                 className={twMerge(
-                                  'group cursor-pointer rounded-md px-3 py-3 data-[selected=true]:bg-gray-100 data-[selected=true]:text-inherit dark:data-[selected=true]:bg-gray-800',
+                                  'group dark:data-[selected=true]:bg-polar-800 cursor-pointer rounded-md px-3 py-3 data-[selected=true]:bg-gray-100 data-[selected=true]:text-inherit',
                                   isFirst ? 'scroll-mt-12' : '',
                                   isLastItem
                                     ? 'mb-3 scroll-mb-12'

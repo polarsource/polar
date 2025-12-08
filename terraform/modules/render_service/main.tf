@@ -245,7 +245,7 @@ resource "render_web_service" "worker" {
 
   environment_id    = var.render_environment_id
   name              = each.key
-  plan              = "pro"
+  plan              = each.value.plan
   region            = "ohio"
   health_check_path = "/"
   start_command     = each.value.start_command

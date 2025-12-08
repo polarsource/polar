@@ -20,6 +20,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
+from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
@@ -63,6 +64,18 @@ class OrderStatus(StrEnum):
     paid = "paid"
     refunded = "refunded"
     partially_refunded = "partially_refunded"
+
+
+class OrderError(PolarError): ...
+
+
+class RefundAmountTooHigh(OrderError):
+    def __init__(self, order: "Order") -> None:
+        self.order = order
+        message = (
+            f"Refund amount exceeds remaining order balance: {order.refundable_amount}"
+        )
+        super().__init__(message)
 
 
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
@@ -333,7 +346,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
             return self.product.name
         return self.items[0].label
 
-    def calculate_refunded_tax(self, total_refund_amount: int) -> tuple[int, int]:
+    def calculate_refunded_tax_from_total(
+        self, total_refund_amount: int
+    ) -> tuple[int, int]:
         if total_refund_amount == self.remaining_balance:
             return self.refundable_amount, self.refundable_tax_amount
 
@@ -346,3 +361,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
         refunded_amount = total_refund_amount - refunded_tax_amount
         return refunded_amount, refunded_tax_amount
+
+    def calculate_refunded_tax_from_subtotal(self, refund_amount: int) -> int:
+        if refund_amount > self.refundable_amount:
+            raise RefundAmountTooHigh(self)
+
+        # Trigger full refund of remaining balance
+        if refund_amount == self.refundable_amount:
+            return self.refundable_tax_amount
+
+        ratio = self.tax_amount / self.net_amount
+        tax_amount = round(refund_amount * ratio)
+        return tax_amount

@@ -25,8 +25,14 @@ class RefundRepository(
 ):
     model = Refund
 
-    async def get_by_processor_id(self, processor_id: str) -> Refund | None:
-        statement = self.get_base_statement().where(Refund.processor_id == processor_id)
+    async def get_by_processor_id(
+        self, processor_id: str, *, options: Options = ()
+    ) -> Refund | None:
+        statement = (
+            self.get_base_statement()
+            .where(Refund.processor_id == processor_id)
+            .options(*options)
+        )
         return await self.get_one_or_none(statement)
 
     def get_readable_statement(
@@ -54,7 +60,10 @@ class RefundRepository(
         return statement
 
     def get_eager_options(self) -> Options:
-        return (joinedload(Refund.dispute),)
+        return (
+            joinedload(Refund.organization),
+            joinedload(Refund.dispute),
+        )
 
     def get_sorting_clause(self, property: RefundSortProperty) -> SortingClause:
         match property:

@@ -60,7 +60,9 @@ class DisputeService:
             payment, order = await self._get_payment_and_order_from_processor_id(
                 session, PaymentProcessor.stripe, charge_id
             )
-            amount, tax_amount = order.calculate_refunded_tax(stripe_dispute.amount)
+            amount, tax_amount = order.calculate_refunded_tax_from_total(
+                stripe_dispute.amount
+            )
             dispute = await repository.create(
                 Dispute(
                     amount=amount,
@@ -128,7 +130,7 @@ class DisputeService:
             payment, order = await self._get_payment_and_order_from_processor_id(
                 session, PaymentProcessor.stripe, charge_id
             )
-            amount, tax_amount = order.calculate_refunded_tax(
+            amount, tax_amount = order.calculate_refunded_tax_from_total(
                 alert["transaction_amount_in_cents"]
             )
             dispute = await repository.create(

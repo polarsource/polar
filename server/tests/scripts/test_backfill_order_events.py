@@ -12,6 +12,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_order,
+    create_payment,
     create_refund,
 )
 
@@ -62,10 +63,14 @@ class TestBackfillOrderEvents:
         order.refunded_amount = order.net_amount
         order.refunded_tax_amount = order.tax_amount
         await save_fixture(order)
+        payment = await create_payment(
+            save_fixture, organization=organization, order=order
+        )
 
         refund = await create_refund(
             save_fixture,
-            order=order,
+            order,
+            payment,
             status=RefundStatus.succeeded,
             amount=order.net_amount,
             tax_amount=order.tax_amount,
@@ -100,10 +105,14 @@ class TestBackfillOrderEvents:
         order.refunded_amount = order.net_amount // 2
         order.refunded_tax_amount = order.tax_amount // 2
         await save_fixture(order)
+        payment = await create_payment(
+            save_fixture, organization=organization, order=order
+        )
 
         refund_1 = await create_refund(
             save_fixture,
-            order=order,
+            order,
+            payment,
             status=RefundStatus.succeeded,
             amount=order.net_amount // 4,
             tax_amount=order.tax_amount // 4,
@@ -112,7 +121,8 @@ class TestBackfillOrderEvents:
 
         refund_2 = await create_refund(
             save_fixture,
-            order=order,
+            order,
+            payment,
             status=RefundStatus.succeeded,
             amount=order.net_amount // 4,
             tax_amount=order.tax_amount // 4,

@@ -11,7 +11,10 @@ from polar.models import Refund, Transaction
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.repository import RefundTransactionRepository
+from polar.transaction.repository import (
+    PaymentTransactionRepository,
+    RefundTransactionRepository,
+)
 
 from .balance import balance_transaction as balance_transaction_service
 from .base import BaseTransactionService, BaseTransactionServiceError
@@ -48,14 +51,7 @@ class RefundTransactionDoesNotExistError(RefundTransactionError):
 
 
 class RefundTransactionService(BaseTransactionService):
-    async def create(
-        self,
-        session: AsyncSession,
-        *,
-        charge_id: str,
-        payment_transaction: Transaction,
-        refund: Refund,
-    ) -> Transaction:
+    async def create(self, session: AsyncSession, refund: Refund) -> Transaction:
         if not refund.succeeded:
             raise NotSucceededRefundError(refund)
 
@@ -75,6 +71,14 @@ class RefundTransactionService(BaseTransactionService):
         else:
             raise NotImplementedError()
 
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
+        )
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            refund.payment_id
+        )
+        assert payment_transaction is not None
+
         refund_transaction = Transaction(
             type=TransactionType.refund,
             processor=refund.processor,
@@ -90,7 +94,7 @@ class RefundTransactionService(BaseTransactionService):
             presentment_tax_amount=-refund.tax_amount,
             refund=refund,
             customer_id=payment_transaction.customer_id,
-            charge_id=charge_id,
+            charge_id=payment_transaction.charge_id,
             payment_customer_id=payment_transaction.payment_customer_id,
             payment_organization_id=payment_transaction.payment_organization_id,
             payment_user_id=payment_transaction.payment_user_id,
@@ -114,14 +118,7 @@ class RefundTransactionService(BaseTransactionService):
         )
         return refund_transaction
 
-    async def revert(
-        self,
-        session: AsyncSession,
-        *,
-        charge_id: str,
-        payment_transaction: Transaction,
-        refund: Refund,
-    ) -> Transaction:
+    async def revert(self, session: AsyncSession, refund: Refund) -> Transaction:
         if refund.status not in {RefundStatus.canceled, RefundStatus.failed}:
             raise NotCanceledRefundError(refund)
 
@@ -129,6 +126,14 @@ class RefundTransactionService(BaseTransactionService):
         refund_transaction = await repository.get_by_refund_id(refund.id)
         if refund_transaction is None:
             raise RefundTransactionDoesNotExistError(refund)
+
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
+        )
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            refund.payment_id
+        )
+        assert payment_transaction is not None
 
         refund_reversal_transaction = Transaction(
             type=TransactionType.refund_reversal,
@@ -148,7 +153,7 @@ class RefundTransactionService(BaseTransactionService):
             if refund_transaction.presentment_tax_amount is not None
             else None,
             customer_id=payment_transaction.customer_id,
-            charge_id=charge_id,
+            charge_id=payment_transaction.charge_id,
             refund=refund,
             payment_customer_id=payment_transaction.payment_customer_id,
             payment_organization_id=payment_transaction.payment_organization_id,

@@ -361,6 +361,7 @@ def build_stripe_refund(
             "balance_transaction": balance_transaction,
             "receipt_number": None,
             "payment_intent": payment_intent,
+            "failure_reason": None,
             "metadata": metadata or {},
         },
         None,

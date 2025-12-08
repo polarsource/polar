@@ -39,6 +39,19 @@ class PaymentRepository(
             statement = statement.where(Payment.status == status)
         return await self.get_all(statement)
 
+    async def get_succeeded_by_order(
+        self, order_id: UUID, *, options: Options = ()
+    ) -> Payment | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payment.order_id == order_id,
+                Payment.status == PaymentStatus.succeeded,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_processor_id(
         self, processor: PaymentProcessor, processor_id: str, *, options: Options = ()
     ) -> Payment | None:

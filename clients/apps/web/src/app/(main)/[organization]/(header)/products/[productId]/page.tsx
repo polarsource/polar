@@ -10,7 +10,7 @@ import { unwrap } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import ClientPage from './ClientPage'
+import ProductPage from './ProductPage'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; productId: string }>
@@ -95,7 +95,7 @@ export default async function Page(props: {
       serverURL={getServerURL()}
     >
       <CheckoutFormProvider>
-        <ClientPage />
+        <ProductPage />
       </CheckoutFormProvider>
     </CheckoutProvider>
   )

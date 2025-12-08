@@ -5,7 +5,7 @@ import {
 } from '@/utils/organization'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import ClientPage from './ClientPage'
+import CustomersPage from './CustomersPage'
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; customerId: string }>
@@ -59,5 +59,5 @@ export default async function Page(props: {
     notFound()
   }
 
-  return <ClientPage organization={organization} customer={customer} />
+  return <CustomersPage organization={organization} customer={customer} />
 }

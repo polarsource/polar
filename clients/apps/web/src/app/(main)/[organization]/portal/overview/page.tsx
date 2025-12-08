@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
+import OverviewPage from './OverviewPage'
 
 const cacheConfig = {
   cache: 'no-store' as RequestCache,
@@ -128,7 +128,7 @@ export default async function Page(props: {
   }
 
   return (
-    <ClientPage
+    <OverviewPage
       organization={organization}
       products={products}
       subscriptions={subscriptions}

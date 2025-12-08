@@ -23,7 +23,7 @@ def enqueue_update_customer(customer_id: uuid.UUID) -> None:
 
 
 ORG_ID = "b3caa8b6-a64b-4c7c-94ad-03f70cc06841"
-ORG_TIMEDELTA = datetime.timedelta(seconds=30)
+ORG_TIMEDELTA = datetime.timedelta(minutes=2)
 
 
 class CustomerMeterJobStore(BaseJobStore):

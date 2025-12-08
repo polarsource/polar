@@ -12,7 +12,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -33,15 +32,13 @@ export default function Index() {
   const { data: organizationData, refetch, isRefetching } = useOrganizations()
   const { user } = useUser()
 
-  const { handleDeleteAccount, logout, isDeletingAccount } = useSettingsActions(
-    {
-      selectedOrganization,
-      organizations,
-      setOrganization,
-      refetch,
-      userEmail: user?.email,
-    },
-  )
+  const { logout } = useSettingsActions({
+    selectedOrganization,
+    organizations,
+    setOrganization,
+    refetch,
+    userEmail: user?.email,
+  })
 
   const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
     useState(false)
@@ -73,7 +70,7 @@ export default function Index() {
                   <MaterialIcons
                     name="add"
                     size={16}
-                    color={colors.monochromeInverted}
+                    color={colors.monochrome}
                   />
                 }
               >
@@ -127,48 +124,28 @@ export default function Index() {
             <View
               style={{
                 padding: 16,
-                borderRadius: 12,
+                borderRadius: 24,
                 borderWidth: 1,
-                borderColor: colors.border,
                 gap: 12,
+                backgroundColor: colors.card,
               }}
             >
-              <View>
+              <View style={{ gap: 4 }}>
                 <ThemedText style={[SettingsStyle.subTitle]}>
-                  Delete account
+                  Account Deletion
                 </ThemedText>
-                <ThemedText style={{ color: colors.subtext }}>
+                <ThemedText secondary>
                   Permanently delete this account, all organizations, and all
                   associated data. This action cannot be undone.
                 </ThemedText>
               </View>
-              <Button
+              <MiniButton
                 variant="destructive"
                 onPress={() => setShowAccountDeletionSheet(true)}
-                disabled={isDeletingAccount}
+                style={{ alignSelf: 'flex-start' }}
               >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <ThemedText
-                    style={{
-                      color: colors.error,
-
-                      fontSize: 16,
-                      fontWeight: '500',
-                    }}
-                  >
-                    {isDeletingAccount ? 'Deleting account' : 'Delete Account'}
-                  </ThemedText>
-                  {isDeletingAccount && (
-                    <ActivityIndicator size="small" color={colors.error} />
-                  )}
-                </View>
-              </Button>
+                Delete Account
+              </MiniButton>
             </View>
           </View>
         </View>
@@ -180,7 +157,6 @@ export default function Index() {
 
       {showAccountDeletionSheet ? (
         <DeleteAccountSheet
-          onDelete={console.log}
           onDismiss={() => setShowAccountDeletionSheet(false)}
         />
       ) : null}

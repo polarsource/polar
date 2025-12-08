@@ -1,5 +1,8 @@
-import { MiniButton } from '@/components/Shared/MiniButton'
+import { Button } from '@/components/Shared/Button'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useOrganizations } from '@/hooks/polar/organizations'
+import { useSettingsActions } from '@/hooks/useSettingsActions'
+import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import { themes } from '@/utils/theme'
 import BottomSheet, {
@@ -7,34 +10,40 @@ import BottomSheet, {
   BottomSheetTextInput,
   BottomSheetView,
 } from '@gorhom/bottom-sheet'
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useContext, useRef, useState } from 'react'
 import { StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export interface DeleteAccountSheetProps {
-  onDelete: () => void
   onDismiss: () => void
 }
 
-export const DeleteAccountSheet = ({
-  onDelete,
-  onDismiss,
-}: DeleteAccountSheetProps) => {
+export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
   const bottomSheetRef = useRef<BottomSheet>(null)
 
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log('handleSheetChanges', index)
-  }, [])
-
-  const { user } = useUser()
   const safeViewInsets = useSafeAreaInsets()
 
   const [email, setEmail] = useState('')
 
+  const {
+    setOrganization,
+    organization: selectedOrganization,
+    organizations,
+  } = useContext(OrganizationContext)
+  const { refetch } = useOrganizations()
+  const { user } = useUser()
+
+  const { performDeleteAccount, isDeletingAccount } = useSettingsActions({
+    selectedOrganization,
+    organizations,
+    setOrganization,
+    refetch,
+    userEmail: user?.email,
+  })
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      onChange={handleSheetChanges}
       onClose={onDismiss}
       enablePanDownToClose
       backgroundStyle={styles.background}
@@ -65,13 +74,14 @@ export const DeleteAccountSheet = ({
           onChangeText={setEmail}
           value={email}
         />
-        <MiniButton
-          style={{ alignSelf: 'flex-start' }}
-          onPress={console.log}
-          disabled={email !== user?.email}
+        <Button
+          disabled={email !== user?.email || isDeletingAccount}
+          loading={isDeletingAccount}
+          variant="destructive"
+          onPress={performDeleteAccount}
         >
           Delete Account
-        </MiniButton>
+        </Button>
       </BottomSheetView>
     </BottomSheet>
   )
@@ -80,7 +90,7 @@ export const DeleteAccountSheet = ({
 const styles = StyleSheet.create({
   dimmer: {
     flex: 1,
-    backgroundColor: '#00000088',
+    backgroundColor: '#000000aa',
   },
   background: {
     backgroundColor: themes.dark.card,

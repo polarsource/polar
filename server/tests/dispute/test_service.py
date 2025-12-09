@@ -4,17 +4,19 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.service import DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
-from polar.models import Customer, Organization
+from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.transaction.service.dispute import DisputeTransactionService
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_dispute,
     create_order,
     create_payment,
@@ -38,6 +40,13 @@ def dispute_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def refund_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.dispute.service.refund_service", spec=RefundService)
+
+
+@pytest.fixture
+def benefit_grant_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.dispute.service.benefit_grant_service", spec=BenefitGrantService
+    )
 
 
 def build_chargeback_stop_alert(
@@ -359,6 +368,75 @@ class TestUpsertFromStripe:
 
         dispute_transaction_service_mock.create_dispute.assert_not_awaited()
         refund_service_mock.create_from_dispute.assert_not_awaited()
+
+    async def test_revoke_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product_one_time: Product,
+        benefit_grant_service_mock: MagicMock,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(
+            save_fixture, customer=customer, product=product_one_time
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        dispute_transaction_service_mock.create_dispute.assert_awaited_once()
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once_with(
+            session,
+            task="revoke",
+            customer=customer,
+            product=product_one_time,
+            order=order,
+        )
+
+    async def test_revoke_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        order = await create_order(
+            save_fixture, customer=customer, product=product, subscription=subscription
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        dispute_transaction_service_mock.create_dispute.assert_awaited_once()
+        assert subscription.status == "canceled"
 
 
 @pytest.mark.asyncio

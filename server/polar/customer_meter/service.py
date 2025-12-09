@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import Select, or_, select, union_all
+from sqlalchemy import Float, Select, func, or_, select, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -13,8 +14,12 @@ from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.locker import Locker
+from polar.meter.aggregation import (
+    AggregationFunction,
+    PropertyAggregation,
+    UniqueAggregation,
+)
 from polar.meter.repository import MeterRepository
-from polar.meter.service import meter as meter_service
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
 from polar.models.webhook_endpoint import WebhookEventType
@@ -135,18 +140,12 @@ class CustomerMeterService:
             if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False
 
-            # Get chainable statement for filtering
             event_repository = EventRepository.from_session(session)
             events_statement = await self._get_current_window_events_statement(
                 session, customer, meter
             )
 
-            usage_events_statement = events_statement.where(
-                Event.source == EventSource.user
-            )
-            usage_units = await meter_service.get_quantity(
-                session, meter, usage_events_statement
-            )
+            usage_units = await self._get_usage_quantity(session, customer, meter)
             customer_meter.consumed_units = Decimal(usage_units)
 
             credit_events_statement = events_statement.where(
@@ -174,18 +173,12 @@ class CustomerMeterService:
         if last_event is None:
             return 0
 
-        # Get chainable statement for filtering
         event_repository = EventRepository.from_session(session)
         events_statement = await self._get_current_window_events_statement(
             session, customer, meter
         )
 
-        usage_events_statement = events_statement.where(
-            Event.source == EventSource.user
-        )
-        usage_units = await meter_service.get_quantity(
-            session, meter, usage_events_statement
-        )
+        usage_units = await self._get_usage_quantity(session, customer, meter)
 
         credit_events_statement = events_statement.where(
             Event.is_meter_credit.is_(True)
@@ -330,6 +323,86 @@ class CustomerMeterService:
             .order_by(Event.ingested_at.desc())
             .limit(1)
         )
+
+    async def _get_usage_quantity(
+        self, session: AsyncSession, customer: Customer, meter: Meter
+    ) -> float:
+        """
+        Get the aggregated usage quantity for a customer's meter.
+
+        This method avoids the expensive nested loop that occurs when fetching
+        IDs first and then re-querying to aggregate. For summable aggregations
+        (COUNT, SUM), we aggregate each branch and sum the results. For
+        non-summable aggregations (MAX, MIN, AVG, UNIQUE), we aggregate over
+        the raw values from the union.
+        """
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
+
+        by_customer_id = self._build_events_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=False
+        ).where(Event.source == EventSource.user)
+
+        if customer.external_id is None:
+            result = await session.scalar(by_customer_id.with_only_columns(agg_column))
+            return result or 0.0
+
+        by_external_id = self._build_events_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id=True
+        ).where(Event.source == EventSource.user)
+
+        if meter.aggregation.is_summable():
+            union_subquery = union_all(
+                by_customer_id.with_only_columns(
+                    meter.aggregation.get_sql_column(Event).label("value")
+                ),
+                by_external_id.with_only_columns(
+                    meter.aggregation.get_sql_column(Event).label("value")
+                ),
+            ).subquery()
+
+            result = await session.scalar(
+                select(func.coalesce(func.sum(union_subquery.c.value), 0))
+            )
+            return result or 0.0
+
+        raw_value_column = self._get_raw_aggregation_column(meter)
+        union_subquery = union_all(
+            by_customer_id.with_only_columns(raw_value_column.label("value")),
+            by_external_id.with_only_columns(raw_value_column.label("value")),
+        ).subquery()
+
+        outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
+        result = await session.scalar(select(func.coalesce(outer_agg, 0)))
+        return result or 0.0
+
+    def _get_raw_aggregation_column(self, meter: Meter) -> Any:
+        if isinstance(meter.aggregation, PropertyAggregation):
+            prop = meter.aggregation.property
+            if prop in Event._filterable_fields:
+                _, attr = Event._filterable_fields[prop]
+                return func.cast(attr, Float)
+            return Event.user_metadata[prop].as_float()
+        elif isinstance(meter.aggregation, UniqueAggregation):
+            return Event.user_metadata[meter.aggregation.property]
+        return Event.id
+
+    def _get_outer_aggregation(self, meter: Meter, column: Any) -> Any:
+        if isinstance(meter.aggregation, PropertyAggregation):
+            match meter.aggregation.func:
+                case AggregationFunction.max:
+                    return func.max(column)
+                case AggregationFunction.min:
+                    return func.min(column)
+                case AggregationFunction.avg:
+                    return func.avg(column)
+        elif isinstance(meter.aggregation, UniqueAggregation):
+            return func.count(func.distinct(column))
+        return func.sum(column)
 
 
 customer_meter = CustomerMeterService()

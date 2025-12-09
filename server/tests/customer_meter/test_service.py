@@ -653,6 +653,135 @@ class TestUpdateCustomerMeter:
         assert customer_meter.balance == Decimal(10)
         assert updated is True
 
+    async def test_unique_aggregation_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        from polar.meter.aggregation import UniqueAggregation
+
+        meter = await create_meter(
+            save_fixture,
+            name="Unique Users",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="action", operator=FilterOperator.eq, value="login"
+                    )
+                ],
+            ),
+            aggregation=UniqueAggregation(property="user_id"),
+            organization=organization,
+        )
+
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"action": "login", "user_id": "user_a"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"action": "login", "user_id": "user_b"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"action": "login", "user_id": "user_a"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=4),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"action": "login", "user_id": "user_c"},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        # Should count 3 unique users: user_a, user_b, user_c
+        assert customer_meter.consumed_units == Decimal(3)
+        assert updated is True
+
+    async def test_max_aggregation_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            name="Max Score",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="type", operator=FilterOperator.eq, value="score"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="value"
+            ),
+            organization=organization,
+        )
+
+        timestamp = utc_now()
+        # Events via customer_id
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"type": "score", "value": 50},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"type": "score", "value": 30},
+        )
+        # Events via external_customer_id
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"type": "score", "value": 80},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=4),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"type": "score", "value": 20},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(80)
+        assert updated is True
+
 
 @pytest.mark.asyncio
 class TestGetRolloverUnits:

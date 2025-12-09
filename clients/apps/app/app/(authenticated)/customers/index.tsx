@@ -4,12 +4,14 @@ import { useCustomers } from '@/hooks/polar/customers'
 import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { Stack } from 'expo-router'
 import React, { useContext, useMemo, useState } from 'react'
 import { FlatList, RefreshControl, View } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const { colors } = useTheme()
+
   const [search, setSearch] = useState('')
 
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage } =
@@ -21,6 +23,11 @@ export default function Index() {
 
   return (
     <>
+      <Stack.Screen
+        options={{
+          title: 'Customers',
+        }}
+      />
       <View style={{ padding: 16, backgroundColor: colors.background }}>
         <Input
           placeholder="Search Customers"

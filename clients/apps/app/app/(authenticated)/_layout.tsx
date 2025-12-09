@@ -41,6 +41,7 @@ const RootLayout = () => {
       <StatusBar
         barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
       />
+
       <Tabs>
         <TabSlot />
         <TabList asChild>
@@ -48,9 +49,12 @@ const RootLayout = () => {
             <TabTrigger name="home" href="/(authenticated)/home" asChild>
               <TabButton icon="space-dashboard" />
             </TabTrigger>
+            <TabTrigger name="orders" href="/(authenticated)/orders" asChild>
+              <TabButton icon="short-text" />
+            </TabTrigger>
             <TabTrigger
               name="customers"
-              href="/(authenticated)/(old)/customers"
+              href="/(authenticated)/customers"
               asChild
             >
               <TabButton icon="people" />

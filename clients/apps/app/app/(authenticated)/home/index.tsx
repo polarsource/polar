@@ -133,16 +133,7 @@ export default function Index() {
   const safeAreaInsets = useSafeAreaInsets()
 
   return (
-    <ScrollView
-      contentContainerStyle={{
-        paddingBottom: 48,
-        backgroundColor: colors.background,
-        gap: 32,
-      }}
-      refreshControl={
-        <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
-      }
-    >
+    <>
       <View
         style={{
           flexDirection: 'row',
@@ -167,150 +158,161 @@ export default function Index() {
           </Link>
         </View>
       </View>
-      <View
-        style={{
-          padding: 16,
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: 48,
+          backgroundColor: colors.background,
           gap: 32,
-          flex: 1,
-          flexDirection: 'column',
         }}
-      >
-        {isUpdateAvailable && (
-          <Banner
-            title="New Update Available"
-            description="Update to the latest version to get the latest features and bug fixes"
-            button={{
-              onPress: onFetchUpdateAsync,
-              children: 'Update',
-              loading: isDownloading || isRestarting,
-            }}
-          />
-        )}
-        <View style={{ gap: 16 }}>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={{ flex: 1 }}>
-              <OrganizationTile />
-            </View>
-            <View style={{ flex: 1 }}>
-              <RevenueTile />
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={{ flex: 1 }}>
-              <CatalogueTile />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FinanceTile />
-            </View>
-          </View>
-        </View>
-
-        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <ThemedText style={{ fontSize: 20 }}>
-              Recent Subscriptions
-            </ThemedText>
-            <Link href="/subscriptions" asChild>
-              <MiniButton variant="secondary">View All</MiniButton>
-            </Link>
-          </View>
-          {flatSubscriptions.length > 0 ? (
-            <View style={{ gap: 8 }}>
-              {flatSubscriptions.map((subscription) => (
-                <SubscriptionRow
-                  key={subscription.id}
-                  subscription={subscription}
-                  showCustomer
-                />
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              title="No Subscriptions"
-              description="No active subscriptions found for this organization"
-            />
-          )}
-        </View>
-
-        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
-            <Link href="/orders" asChild>
-              <MiniButton variant="secondary">View All</MiniButton>
-            </Link>
-          </View>
-          {flatOrders.length > 0 ? (
-            <View style={{ gap: 8 }}>
-              {flatOrders.map((order) => (
-                <OrderRow key={order.id} order={order} showTimestamp />
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              title="No Orders"
-              description="No orders found for this organization"
-            />
-          )}
-        </View>
-      </View>
-
-      <View
-        style={{
-          gap: 24,
-          flexDirection: 'column',
-          flex: 1,
-        }}
+        refreshControl={
+          <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
+        }
       >
         <View
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
+            padding: 16,
+            gap: 32,
+            flex: 1,
+            flexDirection: 'column',
           }}
         >
-          <ThemedText style={{ fontSize: 20 }}>Recent Customers</ThemedText>
-          <Link href="/customers" asChild>
-            <MiniButton variant="secondary">View All</MiniButton>
-          </Link>
+          {isUpdateAvailable && (
+            <Banner
+              title="New Update Available"
+              description="Update to the latest version to get the latest features and bug fixes"
+              button={{
+                onPress: onFetchUpdateAsync,
+                children: 'Update',
+                loading: isDownloading || isRestarting,
+              }}
+            />
+          )}
+          <View style={{ gap: 16 }}>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View style={{ flex: 1 }}>
+                <OrganizationTile />
+              </View>
+              <View style={{ flex: 1 }}>
+                <RevenueTile />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <View style={{ flex: 1 }}>
+                <CatalogueTile />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FinanceTile />
+              </View>
+            </View>
+          </View>
+
+          <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <ThemedText style={{ fontSize: 20 }}>
+                Recent Subscriptions
+              </ThemedText>
+              <Link href="/subscriptions" asChild>
+                <MiniButton variant="secondary">View All</MiniButton>
+              </Link>
+            </View>
+            {flatSubscriptions.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {flatSubscriptions.map((subscription) => (
+                  <SubscriptionRow
+                    key={subscription.id}
+                    subscription={subscription}
+                    showCustomer
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                title="No Subscriptions"
+                description="No active subscriptions found for this organization"
+              />
+            )}
+          </View>
+
+          <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
+              <Link href="/orders" asChild>
+                <MiniButton variant="secondary">View All</MiniButton>
+              </Link>
+            </View>
+            {flatOrders.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {flatOrders.map((order) => (
+                  <OrderRow key={order.id} order={order} showTimestamp />
+                ))}
+              </View>
+            ) : (
+              <EmptyState
+                title="No Orders"
+                description="No orders found for this organization"
+              />
+            )}
+          </View>
         </View>
 
-        {flatCustomers && flatCustomers.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
+        <View
+          style={{
+            gap: 24,
+            flexDirection: 'column',
+            flex: 1,
+          }}
+        >
+          <View
+            style={{
               flexDirection: 'row',
-              gap: 16,
+              alignItems: 'center',
+              justifyContent: 'space-between',
               paddingHorizontal: 16,
             }}
-            contentOffset={{ x: -16, y: 0 }}
           >
-            {flatCustomers.map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} />
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1, paddingHorizontal: 16 }}>
-            <EmptyState
-              title="No Customers"
-              description="No customers found for this organization"
-            />
+            <ThemedText style={{ fontSize: 20 }}>Recent Customers</ThemedText>
+            <Link href="/customers" asChild>
+              <MiniButton variant="secondary">View All</MiniButton>
+            </Link>
           </View>
-        )}
-      </View>
-    </ScrollView>
+
+          {flatCustomers && flatCustomers.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                flexDirection: 'row',
+                gap: 16,
+                paddingHorizontal: 16,
+              }}
+              contentOffset={{ x: -16, y: 0 }}
+            >
+              {flatCustomers.map((customer) => (
+                <CustomerCard key={customer.id} customer={customer} />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1, paddingHorizontal: 16 }}>
+              <EmptyState
+                title="No Customers"
+                description="No customers found for this organization"
+              />
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </>
   )
 }

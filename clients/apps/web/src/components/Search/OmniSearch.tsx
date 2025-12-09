@@ -94,7 +94,7 @@ export const OmniSearch = ({
   }, [query, allRoutes])
 
   const performSearch = useCallback(
-    async (searchQuery: string) => {
+    async (searchQuery: string, signal: AbortSignal) => {
       if (!searchQuery.trim()) {
         setResults([])
         setHasSearched(false)
@@ -106,10 +106,11 @@ export const OmniSearch = ({
         const url = new URL(`${getServerURL()}/search`)
         url.searchParams.set('organization_id', organization.id)
         url.searchParams.set('query', searchQuery)
-        url.searchParams.set('limit', '20')
+        url.searchParams.set('limit', '5')
 
         const response = await fetch(url.toString(), {
           credentials: 'include',
+          signal,
         })
 
         if (!response.ok) {
@@ -120,6 +121,9 @@ export const OmniSearch = ({
         setResults(data.results as SearchResult[])
         setHasSearched(true)
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return
+        }
         console.error('Search error:', error)
         setResults([])
         setHasSearched(true)
@@ -136,11 +140,15 @@ export const OmniSearch = ({
   }, [actionResults, pageResults, results])
 
   useEffect(() => {
+    const controller = new AbortController()
     const debounce = setTimeout(() => {
-      performSearch(query)
-    }, 300)
+      performSearch(query, controller.signal)
+    }, 400)
 
-    return () => clearTimeout(debounce)
+    return () => {
+      clearTimeout(debounce)
+      controller.abort()
+    }
   }, [query, performSearch])
 
   const handleSelect = (result: SearchResult) => {

@@ -15,24 +15,24 @@
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {
-    "@react-email/components": "^0.5.7",
-    "@react-email/render": "^1.4.0",
+    "@react-email/components": "^1.0.1",
+    "@react-email/render": "^2.0.0",
     "commander": "^14.0.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
   },
   "devDependencies": {
-    "@react-email/preview-server": "^4.3.2",
-    "@types/node": "^22.19.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@react-email/preview-server": "^5.0.6",
+    "@types/node": "^22.19.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.10.1",
     "openapi-typescript": "^7.10.1",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-tailwindcss": "^0.7.1",
-    "react-email": "^4.3.2",
-    "tsup": "^8.5.0",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "react-email": "^5.0.6",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   },
   "pkg": {

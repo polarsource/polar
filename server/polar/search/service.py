@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from sqlalchemy import String, cast, or_
@@ -33,12 +34,37 @@ class SearchService:
         *,
         organization_id: uuid.UUID,
         query: str,
-        limit: int = 20,
+        limit: int = 5,
     ) -> list[SearchResult]:
-        results: list[SearchResult] = []
-
         search_term = f"%{query}%"
 
+        products_task = self._search_products(
+            session, auth_subject, organization_id, search_term, limit
+        )
+        customers_task = self._search_customers(
+            session, auth_subject, organization_id, search_term, limit
+        )
+        orders_task = self._search_orders(
+            session, auth_subject, organization_id, search_term, limit
+        )
+        subscriptions_task = self._search_subscriptions(
+            session, auth_subject, organization_id, search_term, limit
+        )
+
+        products, customers, orders, subscriptions = await asyncio.gather(
+            products_task, customers_task, orders_task, subscriptions_task
+        )
+
+        return [*products, *customers, *orders, *subscriptions]
+
+    async def _search_products(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User],
+        organization_id: uuid.UUID,
+        search_term: str,
+        limit: int,
+    ) -> list[SearchResultProduct]:
         product_repository = ProductRepository.from_session(session)
         product_statement = product_repository.get_readable_statement(auth_subject)
         product_statement = product_statement.where(
@@ -51,15 +77,23 @@ class SearchService:
 
         products = await product_repository.get_all(product_statement)
 
-        for product in products:
-            results.append(
-                SearchResultProduct(
-                    id=product.id,
-                    name=product.name,
-                    description=product.description,
-                )
+        return [
+            SearchResultProduct(
+                id=product.id,
+                name=product.name,
+                description=product.description,
             )
+            for product in products
+        ]
 
+    async def _search_customers(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User],
+        organization_id: uuid.UUID,
+        search_term: str,
+        limit: int,
+    ) -> list[SearchResultCustomer]:
         customer_repository = CustomerRepository.from_session(session)
         customer_statement = customer_repository.get_readable_statement(auth_subject)
         customer_statement = customer_statement.where(
@@ -72,15 +106,23 @@ class SearchService:
 
         customers = await customer_repository.get_all(customer_statement)
 
-        for customer in customers:
-            results.append(
-                SearchResultCustomer(
-                    id=customer.id,
-                    name=customer.name,
-                    email=customer.email,
-                )
+        return [
+            SearchResultCustomer(
+                id=customer.id,
+                name=customer.name,
+                email=customer.email,
             )
+            for customer in customers
+        ]
 
+    async def _search_orders(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User],
+        organization_id: uuid.UUID,
+        search_term: str,
+        limit: int,
+    ) -> list[SearchResultOrder]:
         order_repository = OrderRepository.from_session(session)
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
@@ -104,19 +146,26 @@ class SearchService:
 
         orders = await order_repository.get_all(order_statement)
 
-        for order in orders:
-            if order.product is None or order.customer is None:
-                continue
-            results.append(
-                SearchResultOrder(
-                    id=order.id,
-                    customer_name=order.customer.name,
-                    customer_email=order.customer.email,
-                    product_name=order.product.name,
-                    amount=order.total_amount,
-                )
+        return [
+            SearchResultOrder(
+                id=order.id,
+                customer_name=order.customer.name,
+                customer_email=order.customer.email,
+                product_name=order.product.name,
+                amount=order.total_amount,
             )
+            for order in orders
+            if order.product is not None and order.customer is not None
+        ]
 
+    async def _search_subscriptions(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User],
+        organization_id: uuid.UUID,
+        search_term: str,
+        limit: int,
+    ) -> list[SearchResultSubscription]:
         subscription_repository = SubscriptionRepository.from_session(session)
         subscription_statement = (
             subscription_repository.get_readable_statement(auth_subject)
@@ -138,21 +187,18 @@ class SearchService:
 
         subscriptions = await subscription_repository.get_all(subscription_statement)
 
-        for subscription in subscriptions:
-            if subscription.product is None or subscription.customer is None:
-                continue
-            results.append(
-                SearchResultSubscription(
-                    id=subscription.id,
-                    customer_name=subscription.customer.name,
-                    customer_email=subscription.customer.email,
-                    product_name=subscription.product.name,
-                    status=subscription.status,
-                    amount=subscription.amount,
-                )
+        return [
+            SearchResultSubscription(
+                id=subscription.id,
+                customer_name=subscription.customer.name,
+                customer_email=subscription.customer.email,
+                product_name=subscription.product.name,
+                status=subscription.status,
+                amount=subscription.amount,
             )
-
-        return results
+            for subscription in subscriptions
+            if subscription.product is not None and subscription.customer is not None
+        ]
 
 
 search = SearchService()

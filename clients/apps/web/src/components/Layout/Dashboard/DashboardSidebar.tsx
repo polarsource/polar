@@ -1,4 +1,6 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
+import { OmniSearch } from '@/components/Search/OmniSearch'
+
 import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
@@ -26,7 +28,8 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Search } from 'lucide-react'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -52,6 +55,7 @@ export const DashboardSidebar = ({
   const { currentUser } = useAuth()
 
   const isCollapsed = state === 'collapsed'
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const navigateToOrganization = (org: schemas['Organization']) => {
     router.push(`/dashboard/${org.slug}`)
@@ -63,6 +67,18 @@ export const DashboardSidebar = ({
     setIsImpersonating(isImpersonating())
   }, [])
   const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -89,6 +105,35 @@ export const DashboardSidebar = ({
       </SidebarHeader>
 
       <SidebarContent className="gap-4 px-2 py-4">
+        {type === 'organization' && (
+          <>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className={twMerge(
+                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                'dark:bg-polar-950 dark:border-polar-800 dark:hover:bg-polar-900 border-gray-200 bg-white hover:bg-gray-50',
+                isCollapsed && 'justify-center px-2',
+              )}
+            >
+              <Search className="h-4 w-4 text-gray-500" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left text-gray-500">
+                    Search...
+                  </span>
+                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[8px] text-gray-600 select-none">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </>
+              )}
+            </button>
+            <OmniSearch
+              open={searchOpen}
+              onOpenChange={setSearchOpen}
+              organization={organization}
+            />
+          </>
+        )}
         <motion.div
           key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
           className="flex flex-col items-center gap-2"

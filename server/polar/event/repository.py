@@ -109,7 +109,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         statement = (
             self.get_base_statement()
             .where(
-                Event.customer == customer,
+                Event.customer_id == customer.id,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_reset,
                 Event.user_metadata["meter_id"].as_string() == str(meter_id),

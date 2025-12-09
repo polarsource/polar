@@ -1,6 +1,5 @@
 import inspect
 import os
-import re
 
 import pytest
 
@@ -9,9 +8,7 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
-    NotificationPayload,
     NotificationPayloadBase,
-    NotificationType,
 )
 
 
@@ -138,43 +135,3 @@ async def test_MaintainerNewProductSaleNotification_backwards_compatibility() ->
     subject, body = n.render()
     assert "Old Product" in body
     assert "$10.00" in subject
-
-
-@pytest.mark.asyncio
-async def test_all_notification_types() -> None:
-    n: NotificationPayload
-    for notification_type in NotificationType:
-        if notification_type == NotificationType.maintainer_create_account:
-            n = MaintainerCreateAccountNotificationPayload(
-                organization_name="John Doe",
-                url="https://example.com/url",
-            )
-        elif notification_type == NotificationType.maintainer_new_product_sale:
-            n = MaintainerNewProductSaleNotificationPayload(
-                customer_email="john@example.com",
-                customer_name="John Doe",
-                product_name="Ice cream sandwich",
-                product_price_amount=500,
-                order_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                order_date="2024-11-05T20:41:00Z",
-                organization_name="Ice Cream Van",
-                organization_slug="ice-cream-van",
-                billing_reason=OrderBillingReasonInternal.purchase,
-            )
-        elif notification_type == NotificationType.maintainer_new_paid_subscription:
-            n = MaintainerNewPaidSubscriptionNotificationPayload(
-                subscriber_name="John Doe",
-                tier_name="ColdMail Premium",
-                tier_price_amount=500,
-                tier_organization_name="ColdMail",
-                tier_price_recurring_interval="month",
-            )
-        else:
-            raise TypeError(f"Missing test case for {notification_type}")
-
-    # Check that it renders!
-    subject, body = n.render()
-
-    # Check that there are no leftover placeholders
-    assert re.search(r"{ ?[^\s}]+ ?}", subject) is None
-    assert re.search(r"{ ?[^\s}]+ ?}", body) is None

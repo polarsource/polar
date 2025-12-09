@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from sqlalchemy import String, cast, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, User
@@ -27,6 +27,12 @@ from .schemas import (
 
 
 class SearchService:
+    def _try_parse_uuid(self, query: str) -> uuid.UUID | None:
+        try:
+            return uuid.UUID(query.strip())
+        except (ValueError, AttributeError):
+            return None
+
     async def search(
         self,
         session: AsyncReadSession,
@@ -36,19 +42,33 @@ class SearchService:
         query: str,
         limit: int = 5,
     ) -> list[SearchResult]:
-        search_term = f"%{query}%"
+        prefix_term = f"{query}%"
+        substring_term = f"%{query}%"
+        query_uuid = self._try_parse_uuid(query)
 
         products_task = self._search_products(
-            session, auth_subject, organization_id, search_term, limit
+            session, auth_subject, organization_id, substring_term, query_uuid, limit
         )
         customers_task = self._search_customers(
-            session, auth_subject, organization_id, search_term, limit
+            session, auth_subject, organization_id, prefix_term, query_uuid, limit
         )
         orders_task = self._search_orders(
-            session, auth_subject, organization_id, search_term, limit
+            session,
+            auth_subject,
+            organization_id,
+            prefix_term,
+            substring_term,
+            query_uuid,
+            limit,
         )
         subscriptions_task = self._search_subscriptions(
-            session, auth_subject, organization_id, search_term, limit
+            session,
+            auth_subject,
+            organization_id,
+            prefix_term,
+            substring_term,
+            query_uuid,
+            limit,
         )
 
         products, customers, orders, subscriptions = await asyncio.gather(
@@ -63,6 +83,7 @@ class SearchService:
         auth_subject: AuthSubject[User],
         organization_id: uuid.UUID,
         search_term: str,
+        query_uuid: uuid.UUID | None,
         limit: int,
     ) -> list[SearchResultProduct]:
         product_repository = ProductRepository.from_session(session)
@@ -70,6 +91,7 @@ class SearchService:
         product_statement = product_statement.where(
             Product.organization_id == organization_id,
             or_(
+                Product.id == query_uuid if query_uuid else False,
                 Product.name.ilike(search_term),
                 Product.description.ilike(search_term),
             ),
@@ -92,6 +114,7 @@ class SearchService:
         auth_subject: AuthSubject[User],
         organization_id: uuid.UUID,
         search_term: str,
+        query_uuid: uuid.UUID | None,
         limit: int,
     ) -> list[SearchResultCustomer]:
         customer_repository = CustomerRepository.from_session(session)
@@ -99,6 +122,7 @@ class SearchService:
         customer_statement = customer_statement.where(
             Customer.organization_id == organization_id,
             or_(
+                Customer.id == query_uuid if query_uuid else False,
                 Customer.email.ilike(search_term),
                 Customer.name.ilike(search_term),
             ),
@@ -120,7 +144,9 @@ class SearchService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User],
         organization_id: uuid.UUID,
-        search_term: str,
+        prefix_term: str,
+        substring_term: str,
+        query_uuid: uuid.UUID | None,
         limit: int,
     ) -> list[SearchResultOrder]:
         order_repository = OrderRepository.from_session(session)
@@ -133,12 +159,12 @@ class SearchService:
             .where(
                 Product.organization_id == organization_id,
                 or_(
-                    Customer.email.ilike(search_term),
-                    Customer.name.ilike(search_term),
-                    Product.name.ilike(search_term),
-                    Order.invoice_number.ilike(search_term),
-                    Order.stripe_invoice_id.ilike(search_term),
-                    cast(Order.id, String).ilike(search_term),
+                    Order.id == query_uuid if query_uuid else False,
+                    Customer.email.ilike(prefix_term),
+                    Customer.name.ilike(prefix_term),
+                    Product.name.ilike(substring_term),
+                    Order.invoice_number.ilike(substring_term),
+                    Order.stripe_invoice_id.ilike(substring_term),
                 ),
             )
             .limit(limit)
@@ -163,7 +189,9 @@ class SearchService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User],
         organization_id: uuid.UUID,
-        search_term: str,
+        prefix_term: str,
+        substring_term: str,
+        query_uuid: uuid.UUID | None,
         limit: int,
     ) -> list[SearchResultSubscription]:
         subscription_repository = SubscriptionRepository.from_session(session)
@@ -176,10 +204,10 @@ class SearchService:
             .where(
                 Product.organization_id == organization_id,
                 or_(
-                    Customer.email.ilike(search_term),
-                    Customer.name.ilike(search_term),
-                    Product.name.ilike(search_term),
-                    cast(Subscription.id, String).ilike(search_term),
+                    Subscription.id == query_uuid if query_uuid else False,
+                    Customer.email.ilike(prefix_term),
+                    Customer.name.ilike(prefix_term),
+                    Product.name.ilike(substring_term),
                 ),
             )
             .limit(limit)

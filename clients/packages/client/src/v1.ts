@@ -10794,6 +10794,11 @@ export interface components {
       | 'ZA'
       | 'ZM'
       | 'ZW'
+    /** CursorPagination */
+    CursorPagination: {
+      /** Has Next Page */
+      has_next_page: boolean
+    }
     CustomField:
       | components['schemas']['CustomFieldText']
       | components['schemas']['CustomFieldNumber']
@@ -16875,6 +16880,12 @@ export interface components {
       expires_at: string | null
       /** Activations */
       activations: components['schemas']['LicenseKeyActivationBase'][]
+    }
+    /** ListResourceWithCursorPagination[Event] */
+    ListResourceWithCursorPagination_Event_: {
+      /** Items */
+      items: components['schemas']['Event'][]
+      pagination: components['schemas']['CursorPagination']
     }
     /** ListResource[Account] */
     ListResource_Account_: {
@@ -33348,7 +33359,9 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_Event_']
+          'application/json':
+            | components['schemas']['ListResource_Event_']
+            | components['schemas']['ListResourceWithCursorPagination_Event_']
         }
       }
       /** @description Validation Error */

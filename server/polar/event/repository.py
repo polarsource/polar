@@ -246,6 +246,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         aggregate_fields: Sequence[str] = (),
         depth: int | None = None,
         parent_id: UUID | None = None,
+        cursor_pagination: bool = False,
     ) -> tuple[Sequence[Event], int]:
         """
         List events using closure table to get a correct children_count.
@@ -261,6 +262,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         - If parent_id is None: root events (parent_id IS NULL) are anchors (included in results)
 
         When depth is None, no hierarchy filtering is applied (returns all matching events).
+
+        If cursor_pagination is True, returns (events, 1 if has_next_page else 0).
+        Otherwise returns (events, total_count).
         """
         # Apply depth filtering using closure table only when depth is specified
         if depth is not None:
@@ -289,15 +293,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         descendant_event = aliased(Event, name="descendant_event")
 
-        # Run count query separately for better performance
-        count_statement = statement.with_only_columns(func.count()).order_by(None)
-        count_result = await self.session.execute(count_statement)
-        total_count = count_result.scalar() or 0
-
+        # Step 1: Get paginated event IDs (with total count for legacy pagination)
         offset = (page - 1) * limit
-        paginated_events_subquery = (statement.limit(limit).offset(offset)).subquery(
-            "paginated_events"
-        )
+        query_limit = limit + 1 if cursor_pagination else limit
+
+        paginated_events_subquery = (
+            statement.limit(query_limit).offset(offset)
+        ).subquery("paginated_events")
 
         aggregation_columns: list[Any] = [
             EventClosure.ancestor_id,
@@ -374,7 +376,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         text("true"),
                     )
 
-        # Join back to Event table to get full ORM objects with relationships
         final_query = (
             select(Event)
             .select_from(paginated_events_subquery)
@@ -416,6 +417,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.session.expunge(event)
 
             events.append(event)
+
+        if cursor_pagination:
+            has_next_page = 1 if len(events) > limit else 0
+            return events[:limit], has_next_page
+
+        # Run count query separately for better performance
+        total_count = 0
+        if len(events) > 0:
+            count_statement = statement.with_only_columns(func.count()).order_by(None)
+            count_result = await self.session.execute(count_statement)
+            total_count = count_result.scalar() or 0
 
         return events, total_count
 

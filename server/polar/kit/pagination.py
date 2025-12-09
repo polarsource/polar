@@ -104,6 +104,10 @@ class Pagination(Schema):
     max_page: int
 
 
+class CursorPagination(Schema):
+    has_next_page: bool
+
+
 class ListResource[T: Any](BaseModel):
     items: list[T]
     pagination: Pagination
@@ -146,6 +150,44 @@ class ListResource[T: Any](BaseModel):
         """
         Override the schema to set the `ref` field to the overridden class name.
         """
+        result = handler(source)
+        result["ref"] = cls.__name__  # type: ignore
+        return result
+
+
+class ListResourceWithCursorPagination[T: Any](BaseModel):
+    items: list[T]
+    pagination: CursorPagination
+
+    @classmethod
+    def from_results(
+        cls,
+        items: Sequence[T],
+        has_next_page: bool,
+    ) -> Self:
+        return cls(
+            items=list(items),
+            pagination=CursorPagination(has_next_page=has_next_page),
+        )
+
+    @classmethod
+    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+        param_names = []
+        for param in params:
+            if hasattr(param, "__metadata__"):
+                for metadata in param.__metadata__:
+                    if isinstance(metadata, ClassName):
+                        param_names.append(metadata.name)
+            else:
+                param_names.append(display_as_type(param))
+
+        params_component = ", ".join(param_names)
+        return f"{cls.__name__}[{params_component}]"
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /
+    ) -> CoreSchema:
         result = handler(source)
         result["ref"] = cls.__name__  # type: ignore
         return result

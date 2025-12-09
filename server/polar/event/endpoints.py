@@ -10,7 +10,11 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
-from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.pagination import (
+    ListResource,
+    ListResourceWithCursorPagination,
+    PaginationParamsQuery,
+)
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.meter.filter import Filter
@@ -43,7 +47,8 @@ EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.sc
 @router.get(
     "/",
     summary="List Events",
-    response_model=ListResource[EventSchema],
+    response_model=ListResource[EventSchema]
+    | ListResourceWithCursorPagination[EventSchema],
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
@@ -108,8 +113,14 @@ async def list(
         description="Metadata field paths to aggregate from descendants into ancestors (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
         include_in_schema=False,
     ),
+    cursor_pagination: bool = Query(
+        False,
+        title="Use cursor pagination",
+        description="Use cursor-based pagination (has_next_page) instead of offset pagination. Faster for large datasets.",
+        include_in_schema=False,
+    ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[EventSchema]:
+) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:
     """List events."""
 
     # Manually parse the filter string to a Filter object as FastAPI does not
@@ -131,7 +142,7 @@ async def list(
             ]
         )
 
-    results, count = await event_service.list(
+    result = await event_service.list(
         session,
         auth_subject,
         filter=parsed_filter,
@@ -151,10 +162,19 @@ async def list(
         parent_id=parent_id,
         depth=depth,
         aggregate_fields=aggregate_fields,
+        cursor_pagination=cursor_pagination,
     )
 
+    results, count = result
+
+    if cursor_pagination:
+        return ListResourceWithCursorPagination.from_results(
+            [EventTypeAdapter.validate_python(r) for r in results],
+            count > 0,
+        )
+
     return ListResource.from_paginated_results(
-        [EventTypeAdapter.validate_python(result) for result in results],
+        [EventTypeAdapter.validate_python(r) for r in results],
         count,
         pagination,
     )

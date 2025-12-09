@@ -141,17 +141,13 @@ class CustomerMeterService:
                 return customer_meter, False
 
             event_repository = EventRepository.from_session(session)
-            events_statement = await self._get_current_window_events_statement(
-                session, customer, meter
-            )
 
             usage_units = await self._get_usage_quantity(session, customer, meter)
             customer_meter.consumed_units = Decimal(usage_units)
 
-            credit_events_statement = events_statement.where(
-                Event.is_meter_credit.is_(True)
+            credit_events = await self._get_credit_events(
+                customer, meter, event_repository
             )
-            credit_events = await event_repository.get_all(credit_events_statement)
             credited_units = non_negative_running_sum(
                 event.user_metadata["units"] for event in credit_events
             )
@@ -174,16 +170,10 @@ class CustomerMeterService:
             return 0
 
         event_repository = EventRepository.from_session(session)
-        events_statement = await self._get_current_window_events_statement(
-            session, customer, meter
-        )
 
         usage_units = await self._get_usage_quantity(session, customer, meter)
 
-        credit_events_statement = events_statement.where(
-            Event.is_meter_credit.is_(True)
-        )
-        credit_events = await event_repository.get_all(credit_events_statement)
+        credit_events = await self._get_credit_events(customer, meter, event_repository)
         non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
             for event in credit_events
@@ -403,6 +393,36 @@ class CustomerMeterService:
         elif isinstance(meter.aggregation, UniqueAggregation):
             return func.count(func.distinct(column))
         return func.sum(column)
+
+    async def _get_credit_events(
+        self,
+        customer: Customer,
+        meter: Meter,
+        event_repository: EventRepository,
+    ) -> Sequence[Event]:
+        """
+        Get credit events for a customer's meter.
+
+        System events (meter.credited, meter.reset) are always created with
+        customer_id, never external_customer_id, so no UNION is needed.
+        """
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        statement = (
+            self._build_events_statement(
+                event_repository,
+                customer,
+                meter,
+                meter_reset_event,
+                by_external_id=False,
+            )
+            .where(Event.is_meter_credit.is_(True))
+            .order_by(Event.timestamp.asc())
+        )
+
+        return await event_repository.get_all(statement)
 
 
 customer_meter = CustomerMeterService()

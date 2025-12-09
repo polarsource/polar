@@ -18,10 +18,15 @@ import {
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useCustomFields, useProduct } from '@/hooks/queries'
+import { useDisputes } from '@/hooks/queries/disputes'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
+import {
+  DisputeStatusDisplayColor,
+  DisputeStatusDisplayTitle,
+} from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -66,6 +71,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     { order_id: _order.id },
   )
   const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
+  const { data: disputes, isLoading: disputesLoading } = useDisputes(
+    organization.id,
+    { order_id: _order.id },
+  )
 
   const {
     isShown: isRefundModalShown,
@@ -415,6 +424,51 @@ const ClientPage: React.FC<ClientPageProps> = ({
               },
             ]}
             data={refunds?.items ?? []}
+          />
+        </div>
+      )}
+
+      {disputes && disputes.items.length > 0 && (
+        <div className="flex flex-col gap-6">
+          <h3 className="text-lg">Disputes</h3>
+
+          <DataTable
+            isLoading={disputesLoading}
+            columns={[
+              {
+                accessorKey: 'created_at',
+                header: 'Created At',
+                cell: ({ row }) => (
+                  <FormattedDateTime
+                    dateStyle="long"
+                    datetime={row.original.created_at}
+                  />
+                ),
+              },
+              {
+                accessorKey: 'amount',
+                header: 'Amount',
+                cell: ({ row }) =>
+                  formatCurrencyAndAmount(
+                    row.original.amount,
+                    row.original.currency,
+                  ),
+              },
+              {
+                accessorKey: 'status',
+                header: 'Status',
+                cell: ({ row }) => (
+                  <Status
+                    className={twMerge(
+                      DisputeStatusDisplayColor[row.original.status],
+                      'w-fit',
+                    )}
+                    status={DisputeStatusDisplayTitle[row.original.status]}
+                  />
+                ),
+              },
+            ]}
+            data={disputes?.items ?? []}
           />
         </div>
       )}

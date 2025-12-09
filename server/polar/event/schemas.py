@@ -479,12 +479,12 @@ class EventStatistics(Schema):
         description="Average of per-hierarchy totals (i.e., average cost per trace).",
         default_factory=dict,
     )
-    p50: dict[str, Decimal] = Field(
-        description="Median (50th percentile) of per-hierarchy totals.",
+    p10: dict[str, Decimal] = Field(
+        description="10th percentile of per-hierarchy totals.",
         default_factory=dict,
     )
-    p95: dict[str, Decimal] = Field(
-        description="95th percentile of per-hierarchy totals.",
+    p90: dict[str, Decimal] = Field(
+        description="90th percentile of per-hierarchy totals.",
         default_factory=dict,
     )
     p99: dict[str, Decimal] = Field(

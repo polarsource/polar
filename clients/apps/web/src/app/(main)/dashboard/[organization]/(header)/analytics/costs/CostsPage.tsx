@@ -24,7 +24,7 @@ import {
   getDefaultStartDate,
 } from './utils'
 
-type TimeSeriesField = 'average' | 'p95' | 'p99'
+type TimeSeriesField = 'average' | 'p10' | 'p90' | 'p99'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -41,8 +41,10 @@ const getTimeSeriesValues = (
 
     if (field === 'average') {
       return parseFloat(eventStats.averages?.['_cost_amount'] || '0')
-    } else if (field === 'p95') {
-      return parseFloat(eventStats.p95?.['_cost_amount'] || '0')
+    } else if (field === 'p10') {
+      return parseFloat(eventStats.p10?.['_cost_amount'] || '0')
+    } else if (field === 'p90') {
+      return parseFloat(eventStats.p90?.['_cost_amount'] || '0')
     } else if (field === 'p99') {
       return parseFloat(eventStats.p99?.['_cost_amount'] || '0')
     }
@@ -166,8 +168,12 @@ function EventStatisticsCard({
     return getTimeSeriesValues(periods, eventStatistics.name, 'average')
   }, [periods, eventStatistics.name])
 
-  const p95CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p95')
+  const p10CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p10')
+  }, [periods, eventStatistics.name])
+
+  const p90CostValues = useMemo(() => {
+    return getTimeSeriesValues(periods, eventStatistics.name, 'p90')
   }, [periods, eventStatistics.name])
 
   const p99CostValues = useMemo(() => {
@@ -237,21 +243,44 @@ function EventStatisticsCard({
         <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
           <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
             <h3>
-              95<sup>th</sup> percentile{' '}
+              10<sup>th</sup> percentile{' '}
               <span className="hidden sm:inline @3xl:hidden @5xl:inline">
                 cost
               </span>
             </h3>
             <span className="font-mono">
               {formatSubCentCurrency(
-                Number(eventStatistics.p95?._cost_amount),
+                Number(eventStatistics.p10?._cost_amount),
                 'usd',
               )}
             </span>
           </div>
           <div>
             <Sparkline
-              values={p95CostValues}
+              values={p10CostValues}
+              trendUpIsBad={true}
+              className="pointer-events-none"
+            />
+          </div>
+        </div>
+        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
+          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
+            <h3>
+              90<sup>th</sup> percentile{' '}
+              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
+                cost
+              </span>
+            </h3>
+            <span className="font-mono">
+              {formatSubCentCurrency(
+                Number(eventStatistics.p90?._cost_amount),
+                'usd',
+              )}
+            </span>
+          </div>
+          <div>
+            <Sparkline
+              values={p90CostValues}
               trendUpIsBad={true}
               className="pointer-events-none"
             />

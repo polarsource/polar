@@ -18,6 +18,7 @@ import { endOfDay, format, subMonths } from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { Chart } from '../components/Chart/Chart'
+import { CostsBandedChart } from '../components/CostsBandedChart'
 import { SpansHeader } from '../components/SpansHeader'
 import { SpansTitle } from '../components/SpansTitle'
 import {
@@ -164,8 +165,8 @@ export default function SpanDetailPage({
         if (!stat) return null
 
         const average = parseFloat(stat.averages?.['_cost_amount'] || '0')
-        const p50 = parseFloat(stat.p50?.['_cost_amount'] || '0')
-        const p95 = parseFloat(stat.p95?.['_cost_amount'] || '0')
+        const p10 = parseFloat(stat.p10?.['_cost_amount'] || '0')
+        const p90 = parseFloat(stat.p90?.['_cost_amount'] || '0')
         const p99 = parseFloat(stat.p99?.['_cost_amount'] || '0')
         const occurrences = stat.occurrences || 0
 
@@ -173,8 +174,8 @@ export default function SpanDetailPage({
           date: format(new Date(period.timestamp), 'MMM d, yyyy'),
           timestamp: new Date(period.timestamp),
           average,
-          p50,
-          p95,
+          p10,
+          p90,
           p99,
           occurrences,
         }
@@ -324,48 +325,18 @@ export default function SpanDetailPage({
                   </dl>
                 </div>
                 <div>
-                  <Chart
+                  <CostsBandedChart
                     data={chartData}
-                    series={[
-                      {
-                        key: 'average',
-                        label: 'Avg',
-                        color: '#10b981',
-                      },
-                      {
-                        key: 'p50',
-                        label: 'P50',
-                        color: '#3b82f6',
-                      },
-                      {
-                        key: 'p95',
-                        label: 'P95',
-                        color: '#eab308',
-                      },
-                      {
-                        key: 'p99',
-                        label: 'P99',
-                        color: '#ef4444',
-                      },
-                    ]}
-                    xAxisKey="timestamp"
-                    xAxisFormatter={(value) =>
-                      value instanceof Date
-                        ? timestampFormatter(value)
-                        : String(value)
-                    }
-                    labelFormatter={(value) =>
-                      value instanceof Date
-                        ? value.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: '2-digit',
-                            year: 'numeric',
-                          })
-                        : String(value)
-                    }
-                    showYAxis={true}
+                    xAxisFormatter={(value) => timestampFormatter(value)}
                     yAxisFormatter={(value) =>
                       formatSubCentCurrency(value, 'usd')
+                    }
+                    labelFormatter={(value) =>
+                      value.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                        year: 'numeric',
+                      })
                     }
                     loading={isFetching}
                   />

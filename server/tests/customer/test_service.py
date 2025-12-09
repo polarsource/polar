@@ -8,6 +8,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.address import AddressInput, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
@@ -510,6 +511,32 @@ class TestUpdate:
         await session.flush()
 
         assert updated_customer.email == customer.email
+
+    async def test_valid_billing_address(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(
+                billing_address=AddressInput(
+                    line1="123 Main St",
+                    city="San Francisco",
+                    state="CA",
+                    postal_code="94102",
+                    country=CountryAlpha2Input("US"),
+                )
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_customer)
+
+        assert updated_customer.billing_address is not None
+        assert updated_customer.billing_address.line1 == "123 Main St"
+        assert updated_customer.billing_address.city == "San Francisco"
+        assert updated_customer.billing_address.state == "US-CA"
+        assert updated_customer.billing_address.postal_code == "94102"
+        assert updated_customer.billing_address.country == "US"
 
 
 @pytest.mark.asyncio

@@ -20,7 +20,7 @@ import { useStoreReview } from '@/hooks/useStoreReview'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { Link } from 'expo-router'
+import { Link, Stack } from 'expo-router'
 import {
   checkForUpdateAsync,
   fetchUpdateAsync,
@@ -92,7 +92,8 @@ export default function Index() {
       refetchOrders(),
       refetchCustomers(),
       refetchSubscriptions(),
-      checkForUpdateAsync(),
+      // We don't want to check for updates in development mode
+      !__DEV__ ? checkForUpdateAsync() : Promise.resolve(),
     ])
   }, [refetchOrders, refetchCustomers, refetchSubscriptions])
 
@@ -134,30 +135,39 @@ export default function Index() {
 
   return (
     <>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: colors.background,
-          paddingTop: Platform.select({
-            ios: safeAreaInsets.top,
-            android: safeAreaInsets.top + 12,
-          }),
-          paddingBottom: 12,
-          paddingHorizontal: 32,
+      <Stack.Screen
+        options={{
+          contentStyle: {
+            backgroundColor: colors.background,
+          },
+          header: () => (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: colors.background,
+                paddingTop: Platform.select({
+                  ios: safeAreaInsets.top,
+                  android: safeAreaInsets.top + 12,
+                }),
+                paddingBottom: 12,
+                paddingHorizontal: 32,
+              }}
+            >
+              <PolarLogo size={36} />
+              <View style={{ flexDirection: 'row', gap: 20 }}>
+                <NotificationBadge />
+                <Link href="/(authenticated)/home/settings" asChild>
+                  <TouchableOpacity activeOpacity={0.6}>
+                    <MaterialIcons name="tune" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                </Link>
+              </View>
+            </View>
+          ),
         }}
-      >
-        <PolarLogo size={36} />
-        <View style={{ flexDirection: 'row', gap: 20 }}>
-          <NotificationBadge />
-          <Link href="/settings" asChild>
-            <TouchableOpacity activeOpacity={0.6}>
-              <MaterialIcons name="tune" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
+      />
       <ScrollView
         contentContainerStyle={{
           paddingBottom: 48,
@@ -217,7 +227,7 @@ export default function Index() {
               <ThemedText style={{ fontSize: 20 }}>
                 Recent Subscriptions
               </ThemedText>
-              <Link href="/subscriptions" asChild>
+              <Link href="/(authenticated)/subscriptions" asChild>
                 <MiniButton variant="secondary">View All</MiniButton>
               </Link>
             </View>

@@ -1,8 +1,7 @@
 import { useTheme } from '@/hooks/theme'
-import { themes } from '@/utils/theme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { LinearGradient } from 'expo-linear-gradient'
-import { TabTriggerSlotProps } from 'expo-router/ui'
+import { TabTrigger, TabTriggerSlotProps } from 'expo-router/ui'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import Animated, {
@@ -21,8 +20,8 @@ export const TabsNavigator = ({ children }: PropsWithChildren) => {
       style={[
         styles.navigatorContainer,
         {
-          paddingBottom: safeAreaInsets.bottom,
-          paddingHorizontal: safeAreaInsets.left + 16,
+          paddingBottom: safeAreaInsets.bottom + 8,
+          paddingHorizontal: safeAreaInsets.left + 24,
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -31,14 +30,16 @@ export const TabsNavigator = ({ children }: PropsWithChildren) => {
       ]}
     >
       <LinearGradient
-        // Background Linear Gradient
-        colors={['rgba(0,0,0,0.8)', 'transparent']}
+        colors={['transparent', '#08080A']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
       />
       <TabsBar>{children}</TabsBar>
       <TabsBar>
-        <TabButton icon="search" />
+        <TabTrigger name="search" href="/(authenticated)/search" asChild>
+          <TabButton icon="search" />
+        </TabTrigger>
       </TabsBar>
     </View>
   )
@@ -55,14 +56,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   tabsBarContainer: {
-    backgroundColor: themes.dark.card,
+    backgroundColor: '#141418',
     flexDirection: 'row',
     padding: 4,
     gap: 4,
     borderRadius: 100,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: themes.dark.border,
   },
 })
 
@@ -105,8 +104,8 @@ export function TabButton({
             alignItems: 'center',
             flexDirection: 'column',
             justifyContent: 'center',
-            paddingVertical: 12,
-            paddingHorizontal: 24,
+            paddingVertical: 8,
+            paddingHorizontal: 16,
             borderRadius: 100,
             backgroundColor: isFocused ? colors.secondary : undefined,
           },
@@ -116,7 +115,7 @@ export function TabButton({
         <MaterialIcons
           name={icon}
           style={[
-            { fontSize: 16, color: isFocused ? 'white' : colors.subtext },
+            { fontSize: 24, color: isFocused ? 'white' : colors.subtext },
           ]}
         />
       </Animated.View>

@@ -1,4 +1,5 @@
-import { useInfiniteEvents } from '@/hooks/queries/events'
+'use client'
+
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
@@ -6,14 +7,9 @@ import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOu
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AnonymousCustomerAvatar } from '../Customer/AnonymousCustomerAvatar'
 import { CostDeviationBar } from './CostDeviationBar'
@@ -21,72 +17,24 @@ import { EventCustomer } from './EventCustomer'
 import { EventSourceBadge } from './EventSourceBadge'
 import { useEventCard } from './utils'
 
-const PAGE_SIZE = 10
-
 export const EventRow = ({
   event,
   organization,
-  expanded = false,
-  depth = 0,
-  renderChildren = true,
-  renderEventLink = true,
   averageCost,
   p99Cost,
   showSourceBadge = true,
 }: {
   event: schemas['Event']
   organization: schemas['Organization']
-  expanded?: boolean
-  depth?: number
-  renderChildren?: boolean
-  renderEventLink?: boolean
   averageCost?: number
   p99Cost?: number
   showSourceBadge?: boolean
 }) => {
-  const [isExpanded, setIsExpanded] = useState(expanded)
-  const hasChildren = event.child_count > 0
-
-  const {
-    data: childrenData,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-  } = useInfiniteEvents(
-    organization.id,
-    {
-      parent_id: event.id,
-      depth: 1,
-      limit: PAGE_SIZE,
-    },
-    isExpanded && hasChildren && depth < 1 && renderChildren,
-  )
-
-  const children = useMemo(() => {
-    if (!childrenData) return []
-    return childrenData.pages.flatMap((page) => page.items)
-  }, [childrenData])
-
-  const handleToggleExpand = () => {
-    setIsExpanded(!isExpanded)
-  }
-
-  const formattedTimestamp = useMemo(
-    () =>
-      new Date(event.timestamp).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-      }),
-    [event],
-  )
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const eventCard = useEventCard(event)
 
-  // Extract cost metadata for deviation bar
+  // Extract cost metadata
   const costMetadata = useMemo(() => {
     if ('_cost' in event.metadata && event.metadata._cost) {
       const cost = event.metadata._cost as { amount: string; currency: string }
@@ -98,235 +46,112 @@ export const EventRow = ({
     return null
   }, [event.metadata])
 
-  const router = useRouter()
-
-  const handleNavigateToEvent = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      e.stopPropagation()
-      e.preventDefault()
-      router.push(
-        `/dashboard/${organization.slug}/analytics/events/${event.id}`,
-      )
-    },
-    [organization, event.id, router],
-  )
-
   return (
-    <div
-      className={twMerge(
-        'group flex cursor-pointer flex-col',
-        isExpanded && 'mb-4',
-      )}
-      onClick={depth === 0 ? handleToggleExpand : handleNavigateToEvent}
-    >
-      <div
+    <>
+      <tr
         className={twMerge(
-          'dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex flex-col rounded-xl border border-gray-200 bg-white font-mono text-sm transition-colors duration-150 hover:bg-gray-50',
-          isExpanded &&
-            hasChildren &&
-            renderChildren &&
-            'rounded-b-none! border-b-4',
-          depth > 0 && !isExpanded && renderChildren
-            ? 'rounded-t-none! rounded-b-none! group-last:rounded-b-xl!'
-            : '',
-          depth > 0 && isExpanded && renderChildren ? 'rounded-t-none!' : '',
+          'dark:hover:bg-polar-700 cursor-pointer hover:bg-gray-50',
+          isExpanded && 'dark:bg-polar-700 bg-gray-50',
         )}
+        onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex flex-row items-center justify-between p-3 select-none">
-          <div className="flex flex-row items-center gap-x-4">
-            {depth === 0 ? (
-              <div className="dark:text-polar-500 flex flex-row items-center justify-center text-gray-400 transition-colors duration-150">
-                {isExpanded ? (
-                  <KeyboardArrowDownOutlined fontSize="small" />
-                ) : (
-                  <KeyboardArrowRightOutlined fontSize="small" />
-                )}
-              </div>
-            ) : (
-              <div className="flex w-6 flex-col items-center justify-center">
-                <div className="dark:bg-polar-600 size-1.5 rounded-full bg-gray-200" />
-              </div>
-            )}
-            <div className="flex flex-row items-center gap-x-4">
-              <span className="text-xs">{event.label}</span>
-              {showSourceBadge && <EventSourceBadge source={event.source} />}
-              {event.child_count > 0 && (
-                <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
-                  {event.child_count}{' '}
-                  {event.child_count === 1 ? 'child' : 'children'}
-                </span>
+        <td className="p-2">
+          <div className="flex flex-row items-center gap-x-2">
+            <div className="dark:text-polar-500 text-gray-400">
+              {isExpanded ? (
+                <KeyboardArrowDownOutlined fontSize="small" />
+              ) : (
+                <KeyboardArrowRightOutlined fontSize="small" />
               )}
             </div>
-            <span className="dark:text-polar-500 text-xs text-gray-500 capitalize">
-              {formattedTimestamp}
-            </span>
+            <span className="text-sm font-medium">{event.label}</span>
+            {showSourceBadge && <EventSourceBadge source={event.source} />}
           </div>
-          <div className="flex flex-row items-center gap-x-6">
-            {isExpanded ? null : (
-              <div className="flex flex-row items-center gap-x-3">
-                {costMetadata && (
-                  <span className="font-mono text-xs">
-                    {formatSubCentCurrency(
-                      costMetadata.cost,
-                      costMetadata.currency,
-                    )}
-                  </span>
+        </td>
+
+        <td className="p-2">
+          {event.customer ? (
+            <Link
+              href={`/dashboard/${organization.slug}/customers/${event.customer.id}?query=${event.customer.email}`}
+              className="flex items-center gap-x-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Avatar
+                className="text-xxs size-5"
+                name={event.customer.name ?? event.customer.email ?? '—'}
+                avatar_url={event.customer.avatar_url ?? null}
+              />
+              <span className="dark:text-polar-400 text-xs text-gray-600">
+                {event.customer.name ?? event.customer.email ?? '—'}
+              </span>
+            </Link>
+          ) : event.external_customer_id ? (
+            <div className="flex items-center gap-x-2">
+              <AnonymousCustomerAvatar
+                externalId={event.external_customer_id}
+                className="size-5"
+              />
+              <span className="dark:text-polar-400 text-xs text-gray-600">
+                {getAnonymousCustomerName(event.external_customer_id)[0]}
+              </span>
+            </div>
+          ) : (
+            <span className="dark:text-polar-500 text-xs text-gray-400">—</span>
+          )}
+        </td>
+
+        <td className="dark:text-polar-500 p-2 text-sm text-gray-600">
+          <FormattedDateTime datetime={event.timestamp} resolution="time" />
+        </td>
+
+        <td className="p-2 text-right text-sm tabular-nums">
+          {costMetadata ? (
+            <div className="flex flex-row items-center justify-end gap-x-3">
+              {averageCost !== undefined && p99Cost !== undefined && (
+                <CostDeviationBar
+                  eventCost={costMetadata.cost}
+                  averageCost={averageCost}
+                  p99Cost={p99Cost}
+                />
+              )}
+              <span className="font-mono">
+                {formatSubCentCurrency(
+                  costMetadata.cost,
+                  costMetadata.currency,
                 )}
-                {costMetadata &&
-                  averageCost !== undefined &&
-                  p99Cost !== undefined && (
-                    <CostDeviationBar
-                      eventCost={costMetadata.cost}
-                      averageCost={averageCost}
-                      p99Cost={p99Cost}
-                    />
-                  )}
-              </div>
-            )}
-            {isExpanded ? (
-              renderEventLink ? (
+              </span>
+            </div>
+          ) : (
+            <span className="dark:text-polar-500 text-gray-400">—</span>
+          )}
+        </td>
+      </tr>
+
+      {/* Expanded content */}
+      {isExpanded && (
+        <tr className="dark:bg-polar-800 bg-gray-50">
+          <td colSpan={4} className="p-0">
+            <div className="dark:border-polar-700 border-t border-gray-200 px-4 py-3">
+              {eventCard}
+              <div className="dark:border-polar-700 mt-3 flex flex-row items-center justify-between border-t border-gray-200 pt-3">
+                <EventCustomer event={event} />
                 <Link
                   href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
-                  className="flex flex-col"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                  }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
-                    wrapperClassNames="gap-x-1"
-                    className="text-xxs h-6 rounded-sm px-2 font-mono"
+                    className="h-7 px-2 text-xs"
                   >
-                    <span className="text-xxs font-mono">View Event</span>
+                    View Details
                   </Button>
                 </Link>
-              ) : null
-            ) : event.customer ? (
-              <Tooltip>
-                <TooltipTrigger>
-                  <Link
-                    href={`/dashboard/${organization.slug}/customers/${event.customer?.id}?query=${event.customer?.email}`}
-                    className="flex items-center gap-x-3"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                    }}
-                  >
-                    <Avatar
-                      className="text-xxs size-6"
-                      name={
-                        event.customer?.name ?? event.customer?.email ?? '—'
-                      }
-                      avatar_url={event.customer?.avatar_url ?? null}
-                    />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end">
-                  <div className="flex flex-row items-center gap-x-2 font-sans">
-                    <Avatar
-                      className="text-xxs size-8"
-                      name={
-                        event.customer?.name ?? event.customer?.email ?? '—'
-                      }
-                      avatar_url={event.customer?.avatar_url ?? null}
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-xs">
-                        {event.customer?.name ?? '—'}
-                      </span>
-                      <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
-                        {event.customer?.email}
-                      </span>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            ) : event.external_customer_id ? (
-              <Tooltip>
-                <TooltipTrigger>
-                  <AnonymousCustomerAvatar
-                    externalId={event.external_customer_id}
-                    className="size-6"
-                  />
-                </TooltipTrigger>
-                <TooltipContent side="top" align="end">
-                  <div className="flex flex-row items-center gap-x-2 font-sans">
-                    <AnonymousCustomerAvatar
-                      className="text-xxs size-8"
-                      externalId={event.external_customer_id}
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-xs">
-                        {
-                          getAnonymousCustomerName(
-                            event.external_customer_id,
-                          )[0]
-                        }
-                      </span>
-                      <span className="dark:text-polar-500 text-xxs font-mono text-gray-500">
-                        {event.external_customer_id}
-                      </span>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
-        </div>
-        {isExpanded ? eventCard : null}
-        {isExpanded ? (
-          <div className="flex flex-row items-center justify-between gap-x-2 px-3 py-2">
-            <EventCustomer event={event} />
-            <div className="flex flex-row items-center gap-x-3">
-              {costMetadata && (
-                <span className="font-mono text-xs">
-                  {formatSubCentCurrency(
-                    costMetadata.cost,
-                    costMetadata.currency,
-                  )}
-                </span>
-              )}
-              {costMetadata &&
-                averageCost !== undefined &&
-                p99Cost !== undefined && (
-                  <CostDeviationBar
-                    eventCost={costMetadata.cost}
-                    averageCost={averageCost}
-                    p99Cost={p99Cost}
-                  />
-                )}
+              </div>
             </div>
-          </div>
-        ) : null}
-      </div>
-      {isExpanded && hasChildren && renderChildren && (
-        <div className="flex flex-col">
-          {children.map((child) => (
-            <EventRow
-              key={child.id}
-              event={child}
-              organization={organization}
-              depth={depth + 1}
-              renderEventLink={false}
-            />
-          ))}
-          {hasNextPage && (
-            <Button
-              className="dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 w-full rounded-none rounded-b-xl! border border-t-0! border-gray-200 bg-gray-50 text-xs"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation()
-                e.preventDefault()
-                fetchNextPage()
-              }}
-              loading={isFetching}
-              disabled={isFetching}
-            >
-              Load More
-            </Button>
-          )}
-        </div>
+          </td>
+        </tr>
       )}
-    </div>
+    </>
   )
 }

@@ -149,20 +149,23 @@ export const GenericChart = <T extends Record<string, unknown>>({
   )
 
   const primarySeries = series[0]
-  const gradientOffset = useMemo(() => {
-    if (!primarySeries) return 1
+  const gradientInfo = useMemo(() => {
+    if (!primarySeries) return { type: 'positive' as const, zeroOffset: 1 }
     const values = data.map((i) => (i[primarySeries.key] as number) || 0)
     const dataMax = Math.max(...values)
     const dataMin = Math.min(...values)
 
     if (dataMax <= 0) {
-      return 0
+      return { type: 'negative' as const, zeroOffset: 0 }
     }
     if (dataMin >= 0) {
-      return 1
+      return { type: 'positive' as const, zeroOffset: 1 }
     }
 
-    return dataMax / (dataMax - dataMin)
+    return {
+      type: 'mixed' as const,
+      zeroOffset: dataMax / (dataMax - dataMin),
+    }
   }, [data, primarySeries])
 
   const chartContent = useMemo(() => {
@@ -330,20 +333,43 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
     if (!primarySeries) return null
 
+    const gradientStops = (() => {
+      const color = `var(--color-${primarySeries.key})`
+      if (gradientInfo.type === 'positive') {
+        return (
+          <>
+            <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.025} />
+          </>
+        )
+      }
+      if (gradientInfo.type === 'negative') {
+        return (
+          <>
+            <stop offset="0%" stopColor={color} stopOpacity={0.025} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+          </>
+        )
+      }
+      // Mixed: 0.5 at edges, 0.025 at zero line
+      return (
+        <>
+          <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+          <stop
+            offset={`${gradientInfo.zeroOffset * 100}%`}
+            stopColor={color}
+            stopOpacity={0.025}
+          />
+          <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+        </>
+      )
+    })()
+
     return (
       <AreaChart {...commonProps}>
         <defs>
           <linearGradient id={`areaGradient-${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop
-              offset="0%"
-              stopColor={`var(--color-${primarySeries.key})`}
-              stopOpacity={0.5}
-            />
-            <stop
-              offset={`${gradientOffset * 100}%`}
-              stopColor={`var(--color-${primarySeries.key})`}
-              stopOpacity={0.025}
-            />
+            {gradientStops}
           </linearGradient>
         </defs>
         {grid}
@@ -376,7 +402,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     showYAxis,
     showLegend,
     hasDecimalValues,
-    gradientOffset,
+    gradientInfo,
     activeSeries,
     handleLegendClick,
     id,

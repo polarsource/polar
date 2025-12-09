@@ -26,7 +26,8 @@
         "backgroundColor": "#0D0E10"
       },
       "package": "com.polarsource.Polar",
-      "scheme": "polar"
+      "scheme": "polar",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

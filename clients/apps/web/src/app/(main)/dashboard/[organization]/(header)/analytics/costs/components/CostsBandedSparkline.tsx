@@ -120,18 +120,30 @@ export const CostsBandedSparkline = ({
     const colors = {
       [TrendColor.Green]: {
         line: '#10b981',
-        bandLight: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.2)',
-        bandDark: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.35)',
+        bandLight: isDark
+          ? 'rgba(16, 185, 129, 0.15)'
+          : 'rgba(16, 185, 129, 0.2)',
+        bandDark: isDark
+          ? 'rgba(16, 185, 129, 0.25)'
+          : 'rgba(16, 185, 129, 0.35)',
       },
       [TrendColor.Red]: {
         line: '#ef4444',
-        bandLight: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.2)',
-        bandDark: isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.35)',
+        bandLight: isDark
+          ? 'rgba(239, 68, 68, 0.15)'
+          : 'rgba(239, 68, 68, 0.2)',
+        bandDark: isDark
+          ? 'rgba(239, 68, 68, 0.25)'
+          : 'rgba(239, 68, 68, 0.35)',
       },
       [TrendColor.Gray]: {
         line: isDark ? 'hsl(233, 5%, 46%)' : '#6b7280',
-        bandLight: isDark ? 'rgba(107, 114, 128, 0.15)' : 'rgba(107, 114, 128, 0.2)',
-        bandDark: isDark ? 'rgba(107, 114, 128, 0.25)' : 'rgba(107, 114, 128, 0.35)',
+        bandLight: isDark
+          ? 'rgba(107, 114, 128, 0.15)'
+          : 'rgba(107, 114, 128, 0.2)',
+        bandDark: isDark
+          ? 'rgba(107, 114, 128, 0.25)'
+          : 'rgba(107, 114, 128, 0.35)',
       },
     }
     return colors[trendColor]
@@ -176,7 +188,11 @@ export const CostsBandedSparkline = ({
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={colorConfig.bandDark} stopOpacity={1} />
+            <stop
+              offset="0%"
+              stopColor={colorConfig.bandDark}
+              stopOpacity={1}
+            />
             <stop
               offset="100%"
               stopColor={colorConfig.bandLight}
@@ -185,7 +201,7 @@ export const CostsBandedSparkline = ({
           </linearGradient>
         </defs>
         <Area
-          type="monotone"
+          type="linear"
           dataKey="band"
           stroke="none"
           fill={`url(#${gradientId})`}
@@ -195,7 +211,7 @@ export const CostsBandedSparkline = ({
           isAnimationActive={false}
         />
         <Line
-          type="monotone"
+          type="linear"
           dataKey="average"
           stroke={colorConfig.line}
           strokeWidth={1.5}
@@ -204,7 +220,7 @@ export const CostsBandedSparkline = ({
           isAnimationActive={false}
         />
         <Line
-          type="monotone"
+          type="linear"
           dataKey="p99"
           stroke={colorConfig.line}
           strokeWidth={1}

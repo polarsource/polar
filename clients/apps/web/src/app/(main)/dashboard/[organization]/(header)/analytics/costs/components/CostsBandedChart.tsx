@@ -237,7 +237,7 @@ export const CostsBandedChart = ({
               }
             />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="band"
               stroke="none"
               fill={isDark ? '#374151' : '#e5e7eb'}
@@ -246,7 +246,7 @@ export const CostsBandedChart = ({
               activeDot={false}
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="average"
               stroke="#2563eb"
               strokeWidth={1.5}
@@ -254,7 +254,7 @@ export const CostsBandedChart = ({
               connectNulls
             />
             <Line
-              type="monotone"
+              type="linear"
               dataKey="p99"
               stroke="#ef4444"
               strokeWidth={1.5}

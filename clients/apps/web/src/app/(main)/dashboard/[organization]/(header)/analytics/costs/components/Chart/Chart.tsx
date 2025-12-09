@@ -1,16 +1,8 @@
-import Spinner from '@/components/Shared/Spinner'
 import {
-  CartesianGrid,
-  ChartContainer,
-  ChartLegend,
-  ChartTooltip,
-  Line,
-  LineChart,
-  XAxis,
-  YAxis,
-} from '@polar-sh/ui/components/ui/chart'
-import { useTheme } from 'next-themes'
-import { useMemo, useState } from 'react'
+  GenericChart,
+  GenericChartSeries,
+} from '@/components/Charts/GenericChart'
+import Spinner from '@/components/Shared/Spinner'
 
 export interface ChartSeries {
   key: string
@@ -41,43 +33,16 @@ export const Chart = <T extends Record<string, unknown>>({
   xAxisKey,
   xAxisFormatter,
   yAxisFormatter,
-  labelFormatter,
   showGrid = true,
   showLegend = true,
   showYAxis = false,
   loading = false,
 }: ChartProps<T>) => {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
-  const [activeSeries, setActiveSeries] = useState<string | null>(null)
-
-  const handleLegendClick = (key: string) => {
-    setActiveSeries(activeSeries === key ? null : key)
-  }
-
-  const config = useMemo(
-    () =>
-      series.reduce(
-        (acc, s) => ({
-          ...acc,
-          [s.key]: {
-            label: s.label,
-            color: s.color,
-          },
-        }),
-        {} as Record<string, { label: string; color: string }>,
-      ),
-    [series],
-  )
-
-  const hasDecimalValues = useMemo(() => {
-    return data.some((item) =>
-      series.some((s) => {
-        const value = item[s.key]
-        return typeof value === 'number' && value % 1 !== 0
-      }),
-    )
-  }, [data, series])
+  const genericSeries: GenericChartSeries[] = series.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+  }))
 
   return (
     <div className="dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-2xl bg-white px-4 pt-4">
@@ -89,141 +54,22 @@ export const Chart = <T extends Record<string, unknown>>({
           <Spinner />
         </div>
       ) : (
-        <ChartContainer
-          style={{ height: height || 400, width: width || '100%' }}
-          config={config}
-        >
-          <LineChart
-            accessibilityLayer
-            data={data}
-            margin={{
-              left: showYAxis ? 4 : 24,
-              right: 24,
-              top: 24,
-              bottom: showLegend ? 12 : 24,
-            }}
-          >
-            {showGrid && (
-              <CartesianGrid
-                horizontal={false}
-                vertical={true}
-                stroke={
-                  isDark ? 'var(--color-polar-700)' : 'var(--color-gray-200)'
-                }
-                strokeDasharray="6 6"
-              />
-            )}
-            <XAxis
-              dataKey={xAxisKey as string}
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              interval="equidistantPreserveStart"
-              tickFormatter={
-                xAxisFormatter
-                  ? (value) => xAxisFormatter(value as T[keyof T])
-                  : undefined
-              }
-            />
-            {showYAxis && (
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={hasDecimalValues}
-                tickMargin={4}
-                width="auto"
-                tickFormatter={yAxisFormatter}
-              />
-            )}
-            <ChartTooltip
-              cursor={true}
-              content={(props) => {
-                if (!props.active || !props.payload?.length) return null
-
-                const formattedLabel = labelFormatter
-                  ? labelFormatter(props.label as T[keyof T])
-                  : String(props.label)
-
-                return (
-                  <div className="border-border/50 bg-background rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
-                    <div className="mb-1 font-medium">{formattedLabel}</div>
-                    <div className="grid gap-1.5">
-                      {props.payload.map((item) => {
-                        const itemConfig = config[item.dataKey as string]
-                        const label = itemConfig?.label || item.name
-                        const formattedValue = yAxisFormatter
-                          ? yAxisFormatter(item.value as number)
-                          : String(item.value)
-
-                        return (
-                          <div
-                            key={item.dataKey}
-                            className="flex items-center gap-2"
-                          >
-                            <div
-                              className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                              style={{ backgroundColor: item.color }}
-                            />
-                            <span className="text-muted-foreground">
-                              {label}
-                            </span>
-                            <span className="text-foreground ml-auto font-mono font-medium tabular-nums">
-                              {formattedValue}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              }}
-            />
-            {showLegend && (
-              <ChartLegend
-                content={
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
-                    {series.map((s) => (
-                      <div
-                        key={s.key}
-                        className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${series.length > 1 ? 'cursor-pointer' : ''}`}
-                        style={{
-                          opacity:
-                            activeSeries === null || activeSeries === s.key
-                              ? 1
-                              : 0.3,
-                        }}
-                        onClick={
-                          series.length > 1
-                            ? () => handleLegendClick(s.key)
-                            : undefined
-                        }
-                      >
-                        <div
-                          className="h-2 w-2 shrink-0 rounded-[2px]"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        {s.label}
-                      </div>
-                    ))}
-                  </div>
-                }
-              />
-            )}
-            {series.map((s) => (
-              <Line
-                key={s.key}
-                dataKey={s.key}
-                stroke={`var(--color-${s.key})`}
-                type="linear"
-                dot={false}
-                strokeWidth={1.5}
-                strokeOpacity={
-                  activeSeries === null || activeSeries === s.key ? 1 : 0.3
-                }
-              />
-            ))}
-          </LineChart>
-        </ChartContainer>
+        <GenericChart
+          data={data}
+          series={genericSeries}
+          xAxisKey={xAxisKey as string}
+          xAxisFormatter={
+            xAxisFormatter
+              ? (value) => xAxisFormatter(value as T[keyof T])
+              : undefined
+          }
+          valueFormatter={yAxisFormatter}
+          height={height || 400}
+          width={width}
+          showGrid={showGrid}
+          showYAxis={showYAxis}
+          showLegend={showLegend}
+        />
       )}
     </div>
   )

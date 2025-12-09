@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Sparkline } from '@/components/Sparkline/Sparkline'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, toISODate } from '@/utils/metrics'
@@ -15,6 +14,7 @@ import {
 import Link from 'next/link'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
+import { CostsBandedSparkline } from './components/CostsBandedSparkline'
 import { SpansHeader } from './components/SpansHeader'
 import { SpansTitle } from './components/SpansTitle'
 import {
@@ -185,13 +185,13 @@ function EventStatisticsCard({
   return (
     <Link
       href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
-      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200"
+      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col justify-between gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200 md:flex-row"
     >
-      <div className="flex flex-col justify-between gap-3 @xl:flex-row">
-        <h2 className="text-lg font-medium">
+      <div className="flex flex-col justify-between gap-1.5">
+        <h2 className="text-lg/5 font-medium">
           {eventStatistics.label ?? eventStatistics.name}
         </h2>
-        <dl className="dark:text-polar-500 flex max-w-sm flex-1 items-center gap-5 font-mono text-gray-500">
+        <dl className="dark:text-polar-500 flex max-w-sm items-center gap-5 font-mono text-gray-500">
           <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
             <dt>
               <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
@@ -221,94 +221,16 @@ function EventStatisticsCard({
           </div>
         </dl>
       </div>
-      <div className="flex flex-col gap-5 @3xl:flex-row">
-        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
-          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
-            <h3>Average cost</h3>
-            <span className="font-mono">
-              {formatSubCentCurrency(
-                Number(eventStatistics.averages?._cost_amount),
-                'usd',
-              )}
-            </span>
-          </div>
-          <div>
-            <Sparkline
-              values={averageCostValues}
-              trendUpIsBad={true}
-              className="pointer-events-none"
-            />
-          </div>
-        </div>
-        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
-          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
-            <h3>
-              10<sup>th</sup> percentile{' '}
-              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
-                cost
-              </span>
-            </h3>
-            <span className="font-mono">
-              {formatSubCentCurrency(
-                Number(eventStatistics.p10?._cost_amount),
-                'usd',
-              )}
-            </span>
-          </div>
-          <div>
-            <Sparkline
-              values={p10CostValues}
-              trendUpIsBad={true}
-              className="pointer-events-none"
-            />
-          </div>
-        </div>
-        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
-          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
-            <h3>
-              90<sup>th</sup> percentile{' '}
-              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
-                cost
-              </span>
-            </h3>
-            <span className="font-mono">
-              {formatSubCentCurrency(
-                Number(eventStatistics.p90?._cost_amount),
-                'usd',
-              )}
-            </span>
-          </div>
-          <div>
-            <Sparkline
-              values={p90CostValues}
-              trendUpIsBad={true}
-              className="pointer-events-none"
-            />
-          </div>
-        </div>
-        <div className="dark:bg-polar-800 flex-1 space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
-          <div className="dark:text-polar-300 flex justify-between gap-3 p-1 text-gray-700">
-            <h3>
-              99<sup>th</sup> percentile{' '}
-              <span className="hidden sm:inline @3xl:hidden @5xl:inline">
-                cost
-              </span>
-            </h3>
-            <span className="font-mono">
-              {formatSubCentCurrency(
-                Number(eventStatistics.p99?._cost_amount),
-                'usd',
-              )}
-            </span>
-          </div>
-          <div>
-            <Sparkline
-              values={p99CostValues}
-              trendUpIsBad={true}
-              className="pointer-events-none"
-            />
-          </div>
-        </div>
+      <div className="dark:bg-polar-800 -m-2 flex max-w-80 flex-1 flex-col rounded-lg bg-gray-50 p-1">
+        <CostsBandedSparkline
+          average={averageCostValues}
+          p10={p10CostValues}
+          p90={p90CostValues}
+          p99={p99CostValues}
+          trendUpIsBad={true}
+          height={60}
+          className="pointer-events-none"
+        />
       </div>
     </Link>
   )

@@ -447,7 +447,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Uses root_id for efficient rollup and joins with event_types for labels:
         1. Filter root events based on statement
         2. Roll up costs from all events in each hierarchy (via root_id)
-        3. Calculate avg, p95, p99 on those rolled-up totals across root events with same name
+        3. Calculate avg, p10, p90, p99 on those rolled-up totals across root events with same name
         4. Join with event_types to include labels
 
         Args:
@@ -583,12 +583,12 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         func.avg(func.coalesce(total_col, 0)).label(
                             f"{safe_field_name}_avg"
                         ),
-                        func.percentile_cont(0.5)
+                        func.percentile_cont(0.10)
                         .within_group(func.coalesce(total_col, 0))
-                        .label(f"{safe_field_name}_p50"),
-                        func.percentile_cont(0.95)
+                        .label(f"{safe_field_name}_p10"),
+                        func.percentile_cont(0.90)
                         .within_group(func.coalesce(total_col, 0))
-                        .label(f"{safe_field_name}_p95"),
+                        .label(f"{safe_field_name}_p90"),
                         func.percentile_cont(0.99)
                         .within_group(func.coalesce(total_col, 0))
                         .label(f"{safe_field_name}_p99"),
@@ -649,12 +649,12 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         func.avg(func.coalesce(total_col_ref, 0)).label(
                             f"{safe_field_name}_avg"
                         ),
-                        func.percentile_cont(0.5)
+                        func.percentile_cont(0.10)
                         .within_group(func.coalesce(total_col_ref, 0))
-                        .label(f"{safe_field_name}_p50"),
-                        func.percentile_cont(0.95)
+                        .label(f"{safe_field_name}_p10"),
+                        func.percentile_cont(0.90)
                         .within_group(func.coalesce(total_col_ref, 0))
-                        .label(f"{safe_field_name}_p95"),
+                        .label(f"{safe_field_name}_p90"),
                         func.percentile_cont(0.99)
                         .within_group(func.coalesce(total_col_ref, 0))
                         .label(f"{safe_field_name}_p99"),
@@ -704,13 +704,14 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 order_by_clauses.append(clause_function(text("name")))
             elif criterion == "occurrences":
                 order_by_clauses.append(clause_function(text("occurrences")))
-            elif criterion in ("total", "average", "p95", "p99"):
+            elif criterion in ("total", "average", "p10", "p90", "p99"):
                 if aggregate_fields:
                     safe_field_name = aggregate_fields[0].replace(".", "_")
                     suffix_map = {
                         "total": "sum",
                         "average": "avg",
-                        "p95": "p95",
+                        "p10": "p10",
+                        "p90": "p90",
                         "p99": "p99",
                     }
                     suffix = suffix_map[criterion]
@@ -746,16 +747,16 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     or 0
                     for field in aggregate_fields
                 },
-                "p50": {
+                "p10": {
                     field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_p50"
+                        row, f"{field.replace('.', '_')}_p10"
                     )
                     or 0
                     for field in aggregate_fields
                 },
-                "p95": {
+                "p90": {
                     field.replace(".", "_"): getattr(
-                        row, f"{field.replace('.', '_')}_p95"
+                        row, f"{field.replace('.', '_')}_p90"
                     )
                     or 0
                     for field in aggregate_fields

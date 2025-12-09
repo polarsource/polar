@@ -877,11 +877,11 @@ class TestListStatisticsTimeseries:
         assert period_0_stats[0].customers == 1
         assert period_0_stats[0].totals["_cost_amount"] == p0_total_cost
         assert period_0_stats[0].averages["_cost_amount"] == p0_total_cost / 2
-        assert float(period_0_stats[0].p50["_cost_amount"]) == pytest.approx(
-            p0_event1_cost + 0.5 * (p0_event2_cost - p0_event1_cost)
+        assert float(period_0_stats[0].p10["_cost_amount"]) == pytest.approx(
+            p0_event1_cost + 0.10 * (p0_event2_cost - p0_event1_cost)
         )
-        assert float(period_0_stats[0].p95["_cost_amount"]) == pytest.approx(
-            p0_event1_cost + 0.95 * (p0_event2_cost - p0_event1_cost)
+        assert float(period_0_stats[0].p90["_cost_amount"]) == pytest.approx(
+            p0_event1_cost + 0.90 * (p0_event2_cost - p0_event1_cost)
         )
         assert float(period_0_stats[0].p99["_cost_amount"]) == pytest.approx(
             p0_event1_cost + 0.99 * (p0_event2_cost - p0_event1_cost)
@@ -894,11 +894,11 @@ class TestListStatisticsTimeseries:
         assert period_1_stats[0].customers == 1
         assert period_1_stats[0].totals["_cost_amount"] == p1_total_cost
         assert period_1_stats[0].averages["_cost_amount"] == p1_total_cost / 2
-        assert float(period_1_stats[0].p50["_cost_amount"]) == pytest.approx(
-            p1_event1_cost + 0.5 * (p1_event2_cost - p1_event1_cost)
+        assert float(period_1_stats[0].p10["_cost_amount"]) == pytest.approx(
+            p1_event1_cost + 0.10 * (p1_event2_cost - p1_event1_cost)
         )
-        assert float(period_1_stats[0].p95["_cost_amount"]) == pytest.approx(
-            p1_event1_cost + 0.95 * (p1_event2_cost - p1_event1_cost)
+        assert float(period_1_stats[0].p90["_cost_amount"]) == pytest.approx(
+            p1_event1_cost + 0.90 * (p1_event2_cost - p1_event1_cost)
         )
         assert float(period_1_stats[0].p99["_cost_amount"]) == pytest.approx(
             p1_event1_cost + 0.99 * (p1_event2_cost - p1_event1_cost)
@@ -919,11 +919,11 @@ class TestListStatisticsTimeseries:
         assert result.totals[0].totals["_cost_amount"] == total_cost
         assert result.totals[0].averages["_cost_amount"] == total_cost / 4
         sorted_costs = sorted(all_costs)
-        assert float(result.totals[0].p50["_cost_amount"]) == pytest.approx(
-            sorted_costs[1] + 0.5 * (sorted_costs[2] - sorted_costs[1])
+        assert float(result.totals[0].p10["_cost_amount"]) == pytest.approx(
+            sorted_costs[0] + 0.10 * (sorted_costs[3] - sorted_costs[0])
         )
-        assert float(result.totals[0].p95["_cost_amount"]) == pytest.approx(
-            sorted_costs[0] + 0.95 * (sorted_costs[3] - sorted_costs[0])
+        assert float(result.totals[0].p90["_cost_amount"]) == pytest.approx(
+            sorted_costs[0] + 0.90 * (sorted_costs[3] - sorted_costs[0])
         )
         assert float(result.totals[0].p99["_cost_amount"]) == pytest.approx(
             sorted_costs[0] + 0.99 * (sorted_costs[3] - sorted_costs[0])

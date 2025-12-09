@@ -124,8 +124,8 @@ export const formatSubCentCurrency = (() => {
       currencyFormatterCache[currency] = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency,
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 8,
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4,
       })
     }
     return stripTrailingZeros(

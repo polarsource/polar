@@ -15716,17 +15716,17 @@ export interface components {
         [key: string]: string
       }
       /**
-       * P50
-       * @description Median (50th percentile) of per-hierarchy totals.
+       * P10
+       * @description 10th percentile of per-hierarchy totals.
        */
-      p50?: {
+      p10?: {
         [key: string]: string
       }
       /**
-       * P95
-       * @description 95th percentile of per-hierarchy totals.
+       * P90
+       * @description 90th percentile of per-hierarchy totals.
        */
-      p95?: {
+      p90?: {
         [key: string]: string
       }
       /**

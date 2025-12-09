@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  '/search': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Search
+     * @description Internal search endpoint for dashboard.
+     */
+    get: operations['search:search']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/users/me': {
     parameters: {
       query?: never
@@ -1588,7 +1608,7 @@ export interface paths {
     }
     /**
      * List Refunds
-     * @description List products.
+     * @description List refunds.
      *
      *     **Scopes**: `refunds:read` `refunds:write`
      */
@@ -1601,6 +1621,50 @@ export interface paths {
      *     **Scopes**: `refunds:write`
      */
     post: operations['refunds:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/disputes/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Disputes
+     * @description List disputes.
+     *
+     *     **Scopes**: `disputes:read`
+     */
+    get: operations['disputes:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/disputes/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Dispute
+     * @description Get a dispute by ID.
+     *
+     *     **Scopes**: `disputes:read`
+     */
+    get: operations['disputes:get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -5461,6 +5525,7 @@ export interface components {
       | 'members:write'
       | 'wallets:read'
       | 'wallets:write'
+      | 'disputes:read'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -15252,6 +15317,97 @@ export interface components {
       products?: string[] | null
     }
     /**
+     * Dispute
+     * @description Schema representing a dispute.
+     *
+     *     A dispute is a challenge raised by a customer or their bank regarding a payment.
+     */
+    Dispute: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees.
+       * @example needs_response
+       * @example prevented
+       */
+      status: components['schemas']['DisputeStatus']
+      /**
+       * Resolved
+       * @description Whether the dispute has been resolved (won or lost).
+       * @example false
+       */
+      resolved: boolean
+      /**
+       * Closed
+       * @description Whether the dispute is closed (prevented, won, or lost).
+       * @example false
+       */
+      closed: boolean
+      /**
+       * Amount
+       * @description Amount in cents disputed.
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents disputed.
+       * @example 200
+       */
+      tax_amount: number
+      /**
+       * Currency
+       * @description Currency code of the dispute.
+       * @example usd
+       */
+      currency: string
+      /**
+       * Order Id
+       * Format: uuid4
+       * @description The ID of the order associated with the dispute.
+       * @example 57107b74-8400-4d80-a2fc-54c2b4239cb3
+       */
+      order_id: string
+      /**
+       * Payment Id
+       * Format: uuid4
+       * @description The ID of the payment associated with the dispute.
+       * @example 42b94870-36b9-4573-96b6-b90b1c99a353
+       */
+      payment_id: string
+    }
+    /**
+     * DisputeSortProperty
+     * @enum {string}
+     */
+    DisputeSortProperty: 'created_at' | '-created_at' | 'amount' | '-amount'
+    /**
+     * DisputeStatus
+     * @enum {string}
+     */
+    DisputeStatus:
+      | 'prevented'
+      | 'early_warning'
+      | 'needs_response'
+      | 'under_review'
+      | 'lost'
+      | 'won'
+    /**
      * DownloadableFileCreate
      * @description Schema to create a file to be associated with the downloadables benefit.
      */
@@ -16788,6 +16944,12 @@ export interface components {
       items: components['schemas']['Discount'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Dispute] */
+    ListResource_Dispute_: {
+      /** Items */
+      items: components['schemas']['Dispute'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[DownloadableRead] */
     ListResource_DownloadableRead_: {
       /** Items */
@@ -17935,7 +18097,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -18000,7 +18162,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -18046,7 +18208,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -20937,17 +21099,7 @@ export interface components {
       customer_id: string
       /** Revoke Benefits */
       revoke_benefits: boolean
-    }
-    /** RefundAmountTooHigh */
-    RefundAmountTooHigh: {
-      /**
-       * Error
-       * @example RefundAmountTooHigh
-       * @constant
-       */
-      error: 'RefundAmountTooHigh'
-      /** Detail */
-      detail: string
+      dispute: components['schemas']['RefundDispute'] | null
     }
     /** RefundCreate */
     RefundCreate: {
@@ -20995,6 +21147,80 @@ export interface components {
        * @default false
        */
       revoke_benefits: boolean
+    }
+    /**
+     * RefundDispute
+     * @description Dispute associated with a refund,
+     *     in case we prevented a dispute by issuing a refund.
+     */
+    RefundDispute: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description Status of the dispute. `prevented` means we issued a refund before the dispute was escalated, avoiding any fees.
+       * @example needs_response
+       * @example prevented
+       */
+      status: components['schemas']['DisputeStatus']
+      /**
+       * Resolved
+       * @description Whether the dispute has been resolved (won or lost).
+       * @example false
+       */
+      resolved: boolean
+      /**
+       * Closed
+       * @description Whether the dispute is closed (prevented, won, or lost).
+       * @example false
+       */
+      closed: boolean
+      /**
+       * Amount
+       * @description Amount in cents disputed.
+       * @example 1000
+       */
+      amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents disputed.
+       * @example 200
+       */
+      tax_amount: number
+      /**
+       * Currency
+       * @description Currency code of the dispute.
+       * @example usd
+       */
+      currency: string
+      /**
+       * Order Id
+       * Format: uuid4
+       * @description The ID of the order associated with the dispute.
+       * @example 57107b74-8400-4d80-a2fc-54c2b4239cb3
+       */
+      order_id: string
+      /**
+       * Payment Id
+       * Format: uuid4
+       * @description The ID of the payment associated with the dispute.
+       * @example 42b94870-36b9-4573-96b6-b90b1c99a353
+       */
+      payment_id: string
     }
     /**
      * RefundReason
@@ -21162,6 +21388,7 @@ export interface components {
       | 'members:write'
       | 'wallets:read'
       | 'wallets:write'
+      | 'disputes:read'
       | 'customer_meters:read'
       | 'customer_sessions:write'
       | 'customer_seats:read'
@@ -21187,6 +21414,98 @@ export interface components {
       | 'notifications:write'
       | 'notification_recipients:read'
       | 'notification_recipients:write'
+    /** SearchResultCustomer */
+    SearchResultCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string | null
+      /** Email */
+      email: string
+      /**
+       * Type
+       * @default customer
+       * @constant
+       */
+      type: 'customer'
+    }
+    /** SearchResultOrder */
+    SearchResultOrder: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer Email */
+      customer_email: string
+      /** Product Name */
+      product_name: string
+      /** Amount */
+      amount: number
+      /**
+       * Type
+       * @default order
+       * @constant
+       */
+      type: 'order'
+    }
+    /** SearchResultProduct */
+    SearchResultProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      /**
+       * Type
+       * @default product
+       * @constant
+       */
+      type: 'product'
+      /** Description */
+      description?: string | null
+    }
+    /** SearchResultSubscription */
+    SearchResultSubscription: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Customer Name */
+      customer_name: string | null
+      /** Customer Email */
+      customer_email: string
+      /** Product Name */
+      product_name: string
+      /** Status */
+      status: string
+      /** Amount */
+      amount: number
+      /**
+       * Type
+       * @default subscription
+       * @constant
+       */
+      type: 'subscription'
+    }
+    /** SearchResults */
+    SearchResults: {
+      /** Results */
+      results: (
+        | components['schemas']['SearchResultProduct']
+        | components['schemas']['SearchResultCustomer']
+        | components['schemas']['SearchResultOrder']
+        | components['schemas']['SearchResultSubscription']
+      )[]
+    }
     /** SeatAssign */
     SeatAssign: {
       /**
@@ -24194,6 +24513,42 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
+  'search:search': {
+    parameters: {
+      query: {
+        /** @description Organization ID to search within */
+        organization_id: string
+        /** @description Search query string */
+        query: string
+        /** @description Maximum number of results */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SearchResults']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'users:get_authenticated': {
     parameters: {
       query?: never
@@ -27603,15 +27958,6 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Refund amount exceeds remaining order balance. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RefundAmountTooHigh']
-        }
-      }
       /** @description Order is already fully refunded. */
       403: {
         headers: {
@@ -27619,6 +27965,92 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['RefundedAlready']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'disputes:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by order ID. */
+        order_id?: string | string[] | null
+        /** @description Filter by dispute status. */
+        status?:
+          | components['schemas']['DisputeStatus']
+          | components['schemas']['DisputeStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['DisputeSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Dispute_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'disputes:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The dispute ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Dispute']
+        }
+      }
+      /** @description Dispute not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -28866,7 +29298,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -33476,7 +33907,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -36266,7 +36696,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -36869,7 +37298,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']
@@ -37427,6 +37855,7 @@ export const availableScopeValues: ReadonlyArray<
   'members:write',
   'wallets:read',
   'wallets:write',
+  'disputes:read',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',
@@ -38275,6 +38704,19 @@ export const discountSortPropertyValues: ReadonlyArray<
 export const discountTypeValues: ReadonlyArray<
   components['schemas']['DiscountType']
 > = ['fixed', 'percentage']
+export const disputeSortPropertyValues: ReadonlyArray<
+  components['schemas']['DisputeSortProperty']
+> = ['created_at', '-created_at', 'amount', '-amount']
+export const disputeStatusValues: ReadonlyArray<
+  components['schemas']['DisputeStatus']
+> = [
+  'prevented',
+  'early_warning',
+  'needs_response',
+  'under_review',
+  'lost',
+  'won',
+]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
   components['schemas']['DownloadableFileCreate']['service']
 > = ['downloadable']
@@ -38702,6 +39144,7 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'members:write',
   'wallets:read',
   'wallets:write',
+  'disputes:read',
   'customer_meters:read',
   'customer_sessions:write',
   'customer_seats:read',

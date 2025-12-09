@@ -1,10 +1,11 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
-
 import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
+import Search from '@mui/icons-material/Search'
 import SupportIcon from '@mui/icons-material/Support'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -28,8 +29,6 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { motion } from 'framer-motion'
-import { ChevronDown, Search } from 'lucide-react'
-
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -110,19 +109,22 @@ export const DashboardSidebar = ({
             <button
               onClick={() => setSearchOpen(true)}
               className={twMerge(
-                'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                'flex cursor-pointer items-center gap-4 rounded-lg border px-2 py-2 text-sm transition-colors',
                 'dark:bg-polar-950 dark:border-polar-800 dark:hover:bg-polar-900 border-gray-200 bg-white hover:bg-gray-50',
                 isCollapsed && 'justify-center px-2',
               )}
             >
-              <Search className="h-4 w-4 text-gray-500" />
+              <Search
+                className="dark:text-polar-500 text-gray-500"
+                fontSize="inherit"
+              />
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-left text-gray-500">
+                  <span className="dark:text-polar-500 flex-1 text-left text-gray-500">
                     Search...
                   </span>
-                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[8px] text-gray-600 select-none">
-                    <span className="text-xs">⌘</span>K
+                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[11px] text-gray-600 select-none">
+                    <span className="text-sm">⌘</span>K
                   </kbd>
                 </>
               )}
@@ -190,7 +192,10 @@ export const DashboardSidebar = ({
                         <span className="min-w-0 truncate">
                           {organization?.name}
                         </span>
-                        <ChevronDown className="ml-auto" />
+                        <KeyboardArrowDown
+                          className="ml-auto"
+                          fontSize="small"
+                        />
                       </>
                     )}
                   </SidebarMenuButton>

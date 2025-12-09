@@ -20,8 +20,6 @@ import { formatSubCentCurrency } from '@/utils/formatters'
 import { getTimestampFormatter, toISODate } from '@/utils/metrics'
 import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import ChevronRight from '@mui/icons-material/ChevronRight'
-import ExpandMore from '@mui/icons-material/ExpandMore'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
 import { operations, schemas, unwrap } from '@polar-sh/client'
@@ -35,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -60,9 +58,11 @@ import { Chart } from '../costs/components/Chart/Chart'
 
 const LOCAL_STORAGE_KEY = 'polar:events:filter-state'
 
+type EventSourceType = 'user' | 'system'
+
 interface FilterState {
   expandedSources: Record<string, boolean>
-  showSystemEvents: boolean
+  eventSource: EventSourceType
 }
 
 const getDefaultFilterState = (): FilterState => ({
@@ -70,7 +70,7 @@ const getDefaultFilterState = (): FilterState => ({
     user: true,
     system: true,
   },
-  showSystemEvents: false, // System events hidden by default
+  eventSource: 'user', // User events selected by default
 })
 
 const loadFilterState = (): FilterState => {
@@ -141,25 +141,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     loadFilterState(),
   )
 
-  const toggleSourceExpanded = useCallback((source: string) => {
+  const setEventSource = useCallback((source: EventSourceType) => {
     setFilterState((prev) => {
       const newState = {
         ...prev,
-        expandedSources: {
-          ...prev.expandedSources,
-          [source]: !prev.expandedSources[source],
-        },
-      }
-      saveFilterState(newState)
-      return newState
-    })
-  }, [])
-
-  const toggleShowSystemEvents = useCallback(() => {
-    setFilterState((prev) => {
-      const newState = {
-        ...prev,
-        showSystemEvents: !prev.showSystemEvents,
+        eventSource: source,
       }
       saveFilterState(newState)
       return newState
@@ -281,6 +267,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         selectedEventTypes && selectedEventTypes.length > 0
           ? selectedEventTypes
           : null,
+      source: filterState.eventSource,
       page: currentPage,
       customer_id: selectedCustomerIds ?? null,
       limit: PAGE_SIZE,
@@ -293,6 +280,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       aggregate_fields: ['_cost.amount'],
     }
   }, [
+    filterState.eventSource,
     selectedEventTypes,
     currentPage,
     startDate,
@@ -574,237 +562,67 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 </Select>
               </div>
 
-              {/* User Events Section */}
-              {eventTypes?.user &&
-                eventTypes.user.length > 0 &&
-                (() => {
-                  const eventTypeList = eventTypes.user
-                  const isExpanded = filterState.expandedSources['user'] ?? true
-                  const totalOccurrences = eventTypeList.reduce(
-                    (sum, et) =>
-                      sum +
-                      (eventOccurrencesMap.get(et.name) ?? et.occurrences ?? 0),
-                    0,
-                  )
+              {/* Events List */}
+              {(() => {
+                const eventTypeList =
+                  eventTypes?.[filterState.eventSource] ?? []
+                if (eventTypeList.length === 0) return null
 
-                  return (
-                    <div className="flex flex-col gap-y-2">
-                      <button
-                        onClick={() => toggleSourceExpanded('user')}
-                        className="flex flex-row items-center justify-between text-left transition-opacity hover:opacity-80"
-                      >
-                        <div className="flex flex-row items-center gap-x-2">
-                          {isExpanded ? (
-                            <ExpandMore
-                              fontSize="small"
-                              className="dark:text-polar-500 text-gray-400"
-                            />
-                          ) : (
-                            <ChevronRight
-                              fontSize="small"
-                              className="dark:text-polar-500 text-gray-400"
-                            />
+                return (
+                  <List size="small" className="rounded-xl">
+                    {eventTypeList.map((eventType) => {
+                      const sparklineValues =
+                        eventSparklineMap.get(eventType.name) || []
+                      const occurrences =
+                        eventOccurrencesMap.get(eventType.name) ??
+                        eventType.occurrences
+
+                      return (
+                        <ListItem
+                          key={eventType.name}
+                          size="small"
+                          className="justify-between px-3 font-mono text-xs"
+                          inactiveClassName="text-gray-500 dark:text-polar-500"
+                          selected={selectedEventTypes?.includes(
+                            eventType.name,
                           )}
-                          <h3 className="text-sm">User Events</h3>
-                        </div>
-                        <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                          {Number(totalOccurrences).toLocaleString('en-US', {
-                            style: 'decimal',
-                            compactDisplay: 'short',
-                            notation: 'compact',
-                          })}
-                        </span>
-                      </button>
-                      {isExpanded && (
-                        <List size="small" className="rounded-xl">
-                          {eventTypeList.map((eventType) => {
-                            const sparklineValues =
-                              eventSparklineMap.get(eventType.name) || []
-                            const occurrences =
-                              eventOccurrencesMap.get(eventType.name) ??
-                              eventType.occurrences
-
-                            return (
-                              <ListItem
-                                key={eventType.name}
-                                size="small"
-                                className="justify-between px-3 font-mono text-xs"
-                                inactiveClassName="text-gray-500 dark:text-polar-500"
-                                selected={selectedEventTypes?.includes(
-                                  eventType.name,
-                                )}
-                                onSelect={() =>
-                                  setSelectedEventTypes((prev) =>
-                                    prev && prev.includes(eventType.name)
-                                      ? prev.filter(
-                                          (name) => name !== eventType.name,
-                                        )
-                                      : ([
-                                          ...(prev ?? []),
-                                          eventType.name,
-                                        ] as string[]),
-                                  )
-                                }
-                              >
-                                <span className="max-w-[120px] truncate">
-                                  {eventType.label}
-                                </span>
-                                <div className="flex flex-row items-center gap-x-2">
-                                  {sparklineValues.length > 1 && (
-                                    <Sparkline
-                                      values={sparklineValues}
-                                      width={40}
-                                      height={16}
-                                      className="opacity-60"
-                                    />
-                                  )}
-                                  <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                                    {Number(occurrences).toLocaleString(
-                                      'en-US',
-                                      {
-                                        style: 'decimal',
-                                        compactDisplay: 'short',
-                                        notation: 'compact',
-                                      },
-                                    )}
-                                  </span>
-                                </div>
-                              </ListItem>
+                          onSelect={() =>
+                            setSelectedEventTypes((prev) =>
+                              prev && prev.includes(eventType.name)
+                                ? prev.filter((name) => name !== eventType.name)
+                                : ([
+                                    ...(prev ?? []),
+                                    eventType.name,
+                                  ] as string[]),
                             )
-                          })}
-                        </List>
-                      )}
-                    </div>
-                  )
-                })()}
-
-              {/* System Events Toggle */}
-              <div className="flex flex-col gap-y-2">
-                <div className="flex flex-row items-center justify-between">
-                  <label
-                    htmlFor="show-system-events"
-                    className="dark:text-polar-400 text-sm text-gray-600"
-                  >
-                    Show System Events
-                  </label>
-                  <Switch
-                    id="show-system-events"
-                    checked={filterState.showSystemEvents}
-                    onCheckedChange={toggleShowSystemEvents}
-                    disabled={
-                      !eventTypes?.system || eventTypes.system.length === 0
-                    }
-                  />
-                </div>
-
-                {/* System Events Section */}
-                {filterState.showSystemEvents &&
-                  eventTypes?.system &&
-                  eventTypes.system.length > 0 &&
-                  (() => {
-                    const eventTypeList = eventTypes.system
-                    const isExpanded =
-                      filterState.expandedSources['system'] ?? true
-                    const totalOccurrences = eventTypeList.reduce(
-                      (sum, et) =>
-                        sum +
-                        (eventOccurrencesMap.get(et.name) ??
-                          et.occurrences ??
-                          0),
-                      0,
-                    )
-
-                    return (
-                      <div className="flex flex-col gap-y-2">
-                        <button
-                          onClick={() => toggleSourceExpanded('system')}
-                          className="flex flex-row items-center justify-between text-left transition-opacity hover:opacity-80"
+                          }
                         >
+                          <span className="max-w-[120px] truncate">
+                            {eventType.label}
+                          </span>
                           <div className="flex flex-row items-center gap-x-2">
-                            {isExpanded ? (
-                              <ExpandMore
-                                fontSize="small"
-                                className="dark:text-polar-500 text-gray-400"
-                              />
-                            ) : (
-                              <ChevronRight
-                                fontSize="small"
-                                className="dark:text-polar-500 text-gray-400"
+                            {sparklineValues.length > 1 && (
+                              <Sparkline
+                                values={sparklineValues}
+                                width={40}
+                                height={16}
+                                className="opacity-60"
                               />
                             )}
-                            <h3 className="text-sm">System Events</h3>
+                            <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
+                              {Number(occurrences).toLocaleString('en-US', {
+                                style: 'decimal',
+                                compactDisplay: 'short',
+                                notation: 'compact',
+                              })}
+                            </span>
                           </div>
-                          <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                            {Number(totalOccurrences).toLocaleString('en-US', {
-                              style: 'decimal',
-                              compactDisplay: 'short',
-                              notation: 'compact',
-                            })}
-                          </span>
-                        </button>
-                        {isExpanded && (
-                          <List size="small" className="rounded-xl">
-                            {eventTypeList.map((eventType) => {
-                              const sparklineValues =
-                                eventSparklineMap.get(eventType.name) || []
-                              const occurrences =
-                                eventOccurrencesMap.get(eventType.name) ??
-                                eventType.occurrences
-
-                              return (
-                                <ListItem
-                                  key={eventType.name}
-                                  size="small"
-                                  className="justify-between px-3 font-mono text-xs"
-                                  inactiveClassName="text-gray-500 dark:text-polar-500"
-                                  selected={selectedEventTypes?.includes(
-                                    eventType.name,
-                                  )}
-                                  onSelect={() =>
-                                    setSelectedEventTypes((prev) =>
-                                      prev && prev.includes(eventType.name)
-                                        ? prev.filter(
-                                            (name) => name !== eventType.name,
-                                          )
-                                        : ([
-                                            ...(prev ?? []),
-                                            eventType.name,
-                                          ] as string[]),
-                                    )
-                                  }
-                                >
-                                  <span className="max-w-[120px] truncate">
-                                    {eventType.label}
-                                  </span>
-                                  <div className="flex flex-row items-center gap-x-2">
-                                    {sparklineValues.length > 1 && (
-                                      <Sparkline
-                                        values={sparklineValues}
-                                        width={40}
-                                        height={16}
-                                        className="opacity-60"
-                                      />
-                                    )}
-                                    <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                                      {Number(occurrences).toLocaleString(
-                                        'en-US',
-                                        {
-                                          style: 'decimal',
-                                          compactDisplay: 'short',
-                                          notation: 'compact',
-                                        },
-                                      )}
-                                    </span>
-                                  </div>
-                                </ListItem>
-                              )
-                            })}
-                          </List>
-                        )}
-                      </div>
-                    )
-                  })()}
-              </div>
+                        </ListItem>
+                      )
+                    })}
+                  </List>
+                )
+              })()}
 
               <CustomerSelector
                 organizationId={organization.id}
@@ -846,6 +664,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
     >
       <div className="flex h-full flex-col gap-y-4">
+        {/* Event Source Toggle */}
+        <Tabs
+          value={filterState.eventSource}
+          onValueChange={(value) => setEventSource(value as EventSourceType)}
+        >
+          <TabsList>
+            <TabsTrigger value="user">User Events</TabsTrigger>
+            <TabsTrigger value="system">System Events</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* Charts section - shown when filters are applied */}
         {hasFilters && chartData.length > 0 && (
           <div className="mb-4 flex flex-col gap-y-6">
@@ -939,7 +768,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <Events
               events={events?.items ?? []}
               organization={organization}
-              showSourceBadge={filterState.showSystemEvents}
+              showSourceBadge={false}
             />
             <Pagination
               className="self-end"

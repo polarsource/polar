@@ -1,7 +1,7 @@
 """add ai_onboarding_completed_at to organization
 
 Revision ID: 1b73becdc178
-Revises: c4b8b4d63805
+Revises: ba238afd79a5
 Create Date: 2025-12-08 16:09:38.036390
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "1b73becdc178"
-down_revision = "c4b8b4d63805"
+down_revision = "ba238afd79a5"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -6,8 +6,8 @@ import pytest
 import pytest_asyncio
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.event.system import SystemEvent
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.utils import generate_uuid, utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import (

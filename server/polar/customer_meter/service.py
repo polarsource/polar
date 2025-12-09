@@ -3,7 +3,8 @@ from collections.abc import Sequence
 from decimal import Decimal
 
 from sqlalchemy import Select, any_, cast, or_, select, union_all
-from sqlalchemy.dialects.postgresql import ARRAY, UUID as PgUUID
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 

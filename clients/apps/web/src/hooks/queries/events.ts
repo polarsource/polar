@@ -27,10 +27,14 @@ export const useInfiniteEvents = (
       ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, _allPages, lastPageParam) => {
-      if (
-        lastPageParam === lastPage.pagination.max_page ||
-        lastPage.items.length === 0
-      ) {
+      const pagination = lastPage.pagination
+      if (lastPage.items.length === 0) {
+        return null
+      }
+      if ('max_page' in pagination && lastPageParam === pagination.max_page) {
+        return null
+      }
+      if ('has_next_page' in pagination && !pagination.has_next_page) {
         return null
       }
 
@@ -62,6 +66,14 @@ export const useEvents = (
     retry: defaultRetry,
     enabled,
   })
+}
+
+export const isCursorPagination = (
+  pagination:
+    | { total_count: number; max_page: number }
+    | { has_next_page: boolean },
+): pagination is { has_next_page: boolean } => {
+  return 'has_next_page' in pagination
 }
 
 export const useEvent = (

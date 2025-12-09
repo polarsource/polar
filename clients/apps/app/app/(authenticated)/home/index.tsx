@@ -212,6 +212,10 @@ export default function Index() {
           </View>
         </View>
 
+        <Link href="/(authenticated)/(tabs)/test">
+          <ThemedText>Test</ThemedText>
+        </Link>
+
         <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
           <View
             style={{

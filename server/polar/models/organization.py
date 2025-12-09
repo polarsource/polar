@@ -214,7 +214,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     ai_onboarding_completed_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None
+        TIMESTAMP(timezone=True), nullable=True, default=None, include_in_schema=False
     )
 
     # Time of blocking traffic/activity to given organization

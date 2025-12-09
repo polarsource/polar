@@ -2,7 +2,8 @@ import uuid
 from collections.abc import Sequence
 from decimal import Decimal
 
-from sqlalchemy import Select, or_, select, union_all
+from sqlalchemy import Select, any_, cast, or_, select, union_all
+from sqlalchemy.dialects.postgresql import ARRAY, UUID as PgUUID
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -254,7 +255,10 @@ class CustomerMeterService:
             return select(Event).where(Event.id.in_([]))
 
         event_repository = EventRepository.from_session(session)
-        return event_repository.get_base_statement().where(Event.id.in_(event_ids))
+        # Use ANY with array to avoid 32k parameter limit
+        return event_repository.get_base_statement().where(
+            Event.id == any_(cast(list(event_ids), ARRAY(PgUUID)))
+        )
 
     async def _get_current_window_event_ids(
         self, session: AsyncSession, customer: Customer, meter: Meter

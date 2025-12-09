@@ -7,7 +7,8 @@ import pytest_asyncio
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.system import SystemEvent
-from polar.kit.utils import utc_now
+from polar.event.repository import EventRepository
+from polar.kit.utils import generate_uuid, utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
@@ -25,6 +26,7 @@ from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
     create_event,
     create_meter,
 )
@@ -958,3 +960,48 @@ class TestGetRolloverUnits:
         )
 
         assert rollover_units == 100
+
+
+@pytest.mark.asyncio
+class TestBulkEventProcessing:
+    async def test_process_50k_events(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        """Test bulk event processing with 50k events."""
+        event_repository = EventRepository.from_session(session)
+
+        timestamp = utc_now()
+        event_count = 50_000
+        tokens_per_event = 10
+
+        events = [
+            {
+                "id": generate_uuid(),
+                "organization_id": organization.id,
+                "customer_id": customer.id,
+                "timestamp": timestamp + timedelta(microseconds=i),
+                "ingested_at": timestamp + timedelta(microseconds=i),
+                "source": EventSource.user,
+                "name": METER_TEST_EVENT,
+                "user_metadata": {"tokens": tokens_per_event, "model": "lite"},
+            }
+            for i in range(event_count)
+        ]
+
+        inserted_ids, duplicates = await event_repository.insert_batch(events)
+        assert len(inserted_ids) == event_count
+        assert duplicates == 0
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert updated is True
+        assert customer_meter.consumed_units == Decimal(event_count * tokens_per_event)
+        assert customer_meter.balance == Decimal(-event_count * tokens_per_event)

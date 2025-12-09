@@ -106,18 +106,34 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     async def get_latest_meter_reset(
         self, customer: Customer, meter_id: UUID
     ) -> Event | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                Event.customer == customer,
-                Event.source == EventSource.system,
-                Event.name == SystemEvent.meter_reset,
-                Event.user_metadata["meter_id"].as_string() == str(meter_id),
-            )
-            .order_by(Event.timestamp.desc())
-            .limit(1)
+        common_filters = (
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
         )
-        return await self.get_one_or_none(statement)
+
+        by_customer_id = self.get_base_statement().where(
+            Event.customer_id == customer.id,
+            *common_filters,
+        )
+
+        if customer.external_id is not None:
+            by_external_id = self.get_base_statement().where(
+                Event.external_customer_id == customer.external_id,
+                Event.organization_id == customer.organization_id,
+                *common_filters,
+            )
+            union_statement = (
+                by_customer_id.union_all(by_external_id)
+                .order_by(Event.timestamp.desc())
+                .limit(1)
+            )
+            result = await self.session.execute(union_statement)
+        else:
+            statement = by_customer_id.order_by(Event.timestamp.desc()).limit(1)
+            result = await self.session.execute(statement)
+
+        return result.unique().scalar_one_or_none()
 
     def get_event_names_statement(
         self, auth_subject: AuthSubject[User | Organization]

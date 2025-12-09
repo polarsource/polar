@@ -87,20 +87,21 @@ class SearchService:
         limit: int,
     ) -> list[SearchResultProduct]:
         product_repository = ProductRepository.from_session(session)
-        product_statement = product_repository.get_readable_statement(auth_subject)
+        product_statement = product_repository.get_readable_statement(
+            auth_subject
+        ).where(Product.organization_id == organization_id)
 
-        conditions = [
-            Product.name.ilike(search_term),
-            Product.description.ilike(search_term),
-        ]
         if query_uuid:
-            conditions.insert(0, Product.id == query_uuid)  # type: ignore[arg-type]
+            product_statement = product_statement.where(Product.id == query_uuid)
+        else:
+            product_statement = product_statement.where(
+                or_(
+                    Product.name.ilike(search_term),
+                    Product.description.ilike(search_term),
+                )
+            )
 
-        product_statement = product_statement.where(
-            Product.organization_id == organization_id,
-            or_(*conditions),
-        ).limit(limit)
-
+        product_statement = product_statement.limit(limit)
         products = await product_repository.get_all(product_statement)
 
         return [
@@ -122,20 +123,21 @@ class SearchService:
         limit: int,
     ) -> list[SearchResultCustomer]:
         customer_repository = CustomerRepository.from_session(session)
-        customer_statement = customer_repository.get_readable_statement(auth_subject)
+        customer_statement = customer_repository.get_readable_statement(
+            auth_subject
+        ).where(Customer.organization_id == organization_id)
 
-        conditions = [
-            Customer.email.ilike(search_term),
-            Customer.name.ilike(search_term),
-        ]
         if query_uuid:
-            conditions.insert(0, Customer.id == query_uuid)  # type: ignore[arg-type]
+            customer_statement = customer_statement.where(Customer.id == query_uuid)
+        else:
+            customer_statement = customer_statement.where(
+                or_(
+                    Customer.email.ilike(search_term),
+                    Customer.name.ilike(search_term),
+                )
+            )
 
-        customer_statement = customer_statement.where(
-            Customer.organization_id == organization_id,
-            or_(*conditions),
-        ).limit(limit)
-
+        customer_statement = customer_statement.limit(limit)
         customers = await customer_repository.get_all(customer_statement)
 
         return [
@@ -159,29 +161,29 @@ class SearchService:
     ) -> list[SearchResultOrder]:
         order_repository = OrderRepository.from_session(session)
 
-        conditions = [
-            Customer.email.ilike(prefix_term),
-            Customer.name.ilike(prefix_term),
-            Product.name.ilike(substring_term),
-            Order.invoice_number.ilike(substring_term),
-            Order.stripe_invoice_id.ilike(substring_term),
-        ]
-        if query_uuid:
-            conditions.insert(0, Order.id == query_uuid)  # type: ignore[arg-type]
-
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(
                 joinedload(Order.customer),
                 joinedload(Order.product),
             )
-            .where(
-                Product.organization_id == organization_id,
-                or_(*conditions),
-            )
-            .limit(limit)
+            .where(Product.organization_id == organization_id)
         )
 
+        if query_uuid:
+            order_statement = order_statement.where(Order.id == query_uuid)
+        else:
+            order_statement = order_statement.where(
+                or_(
+                    Customer.email.ilike(prefix_term),
+                    Customer.name.ilike(prefix_term),
+                    Product.name.ilike(substring_term),
+                    Order.invoice_number.ilike(substring_term),
+                    Order.stripe_invoice_id.ilike(substring_term),
+                )
+            )
+
+        order_statement = order_statement.limit(limit)
         orders = await order_repository.get_all(order_statement)
 
         return [
@@ -208,27 +210,29 @@ class SearchService:
     ) -> list[SearchResultSubscription]:
         subscription_repository = SubscriptionRepository.from_session(session)
 
-        conditions = [
-            Customer.email.ilike(prefix_term),
-            Customer.name.ilike(prefix_term),
-            Product.name.ilike(substring_term),
-        ]
-        if query_uuid:
-            conditions.insert(0, Subscription.id == query_uuid)  # type: ignore[arg-type]
-
         subscription_statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(
                 joinedload(Subscription.customer),
                 joinedload(Subscription.product),
             )
-            .where(
-                Product.organization_id == organization_id,
-                or_(*conditions),
-            )
-            .limit(limit)
+            .where(Product.organization_id == organization_id)
         )
 
+        if query_uuid:
+            subscription_statement = subscription_statement.where(
+                Subscription.id == query_uuid
+            )
+        else:
+            subscription_statement = subscription_statement.where(
+                or_(
+                    Customer.email.ilike(prefix_term),
+                    Customer.name.ilike(prefix_term),
+                    Product.name.ilike(substring_term),
+                )
+            )
+
+        subscription_statement = subscription_statement.limit(limit)
         subscriptions = await subscription_repository.get_all(subscription_statement)
 
         return [

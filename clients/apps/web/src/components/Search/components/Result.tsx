@@ -16,7 +16,9 @@ export const Result = ({ icon, title, description }: Props) => {
               {icon}
             </span>
           )}
-          <div className="font-medium text-black dark:text-white">{title}</div>
+          <div className="font-medium text-gray-700 dark:text-white">
+            {title}
+          </div>
         </div>
         {description && (
           <div className="dark:text-polar-400 text-sm text-gray-500">
@@ -24,7 +26,7 @@ export const Result = ({ icon, title, description }: Props) => {
           </div>
         )}
       </div>
-      <div className="dark:bg-polar-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-200 px-1.5 py-0.5 opacity-0 group-data-[selected='true']:opacity-100">
+      <div className="dark:bg-polar-700 -mr-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white px-1.5 py-0.5 opacity-0 group-data-[selected='true']:opacity-100">
         <KeyboardReturnOutlined
           className="dark:text-polar-500 text-gray-500"
           fontSize="inherit"

@@ -1,21 +1,28 @@
+import uuid
+from collections.abc import Sequence
+
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, Organization, User
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.payment.repository import PaymentRepository
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.refund.service import refund as refund_service
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 
 from .repository import DisputeRepository
+from .sorting import DisputeSortProperty
 from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
 
 
@@ -35,6 +42,49 @@ class DisputePaymentNotFoundError(DisputeError):
 
 
 class DisputeService:
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        order_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[DisputeStatus] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[DisputeSortProperty]] = [
+            (DisputeSortProperty.created_at, True)
+        ],
+    ) -> tuple[Sequence[Dispute], int]:
+        repository = DisputeRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(Payment.organization_id.in_(organization_id))
+
+        if order_id is not None:
+            statement = statement.where(Dispute.order_id.in_(order_id))
+
+        if status is not None:
+            statement = statement.where(Dispute.status.in_(status))
+
+        statement = repository.apply_sorting(statement, sorting)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Dispute | None:
+        repository = DisputeRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Dispute.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
     ) -> Dispute:

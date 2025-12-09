@@ -5,6 +5,8 @@ import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
+from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
@@ -16,7 +18,10 @@ from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.repository import ProductRepository
 from polar.refund.service import refund as refund_service
+from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
@@ -141,6 +146,7 @@ class DisputeService:
                 await refund_service.create_from_dispute(
                     session, dispute, balance_transaction.id
                 )
+                await self._revoke(session, dispute)
         elif not was_closed:
             dispute.status = DisputeStatus.from_stripe(stripe_dispute.status)
             # If won or lost, record the transactions
@@ -148,6 +154,7 @@ class DisputeService:
                 await dispute_transaction_service.create_dispute(
                     session, dispute=dispute
                 )
+                await self._revoke(session, dispute)
 
         return await repository.update(dispute)
 
@@ -165,7 +172,9 @@ class DisputeService:
 
         # First try to find by alert processor ID
         dispute = await repository.get_by_alert_processor_id(
-            DisputeAlertProcessor.chargeback_stop, alert["id"]
+            DisputeAlertProcessor.chargeback_stop,
+            alert["id"],
+            options=repository.get_eager_options(),
         )
         # Then try to find by matching payment info, in case Stripe already pinged us about the dispute
         if dispute is None:
@@ -174,6 +183,7 @@ class DisputeService:
                 charge_id,
                 alert["transaction_amount_in_cents"],
                 alert["transaction_currency_code"].lower(),
+                options=repository.get_eager_options(),
             )
 
         if dispute is None:
@@ -217,6 +227,36 @@ class DisputeService:
         if payment is None or payment.order is None:
             raise DisputePaymentNotFoundError(processor, processor_id)
         return payment, payment.order
+
+    async def _revoke(self, session: AsyncSession, dispute: Dispute) -> None:
+        # Immediately cancel the subscription if applicable
+        if dispute.order.subscription_id is not None:
+            subscription_repository = SubscriptionRepository.from_session(session)
+            subscription = await subscription_repository.get_by_id(
+                dispute.order.subscription_id,
+                options=subscription_repository.get_eager_options(),
+            )
+            assert subscription is not None
+            if subscription.can_cancel(immediately=True):
+                await subscription_service.revoke(session, subscription)
+        # Revoke the order benefits
+        elif dispute.order.product_id is not None:
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id(
+                dispute.order.product_id,
+                options=product_repository.get_eager_options(),
+            )
+            assert product is not None
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_id(dispute.order.customer_id)
+            assert customer is not None
+            await benefit_grant_service.enqueue_benefits_grants(
+                session,
+                task="revoke",
+                customer=customer,
+                product=product,
+                order=dispute.order,
+            )
 
 
 dispute = DisputeService()

@@ -1,4 +1,5 @@
 import { ErrorFallback } from '@/components/Errors/Fallback'
+import { TabButton, TabsNavigator } from '@/components/Shared/TabsNavigator'
 import { useTheme } from '@/hooks/theme'
 import { useAppOpenTracking } from '@/hooks/useAppOpenTracking'
 import NotificationsProvider from '@/providers/NotificationsProvider'
@@ -9,13 +10,14 @@ import { useSession } from '@/providers/SessionProvider'
 import { UserProvider } from '@/providers/UserProvider'
 import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
-import { Redirect, Stack, useRouter } from 'expo-router'
+import { Redirect, useRouter } from 'expo-router'
+import { TabList, Tabs, TabSlot, TabTrigger } from 'expo-router/ui'
 import React from 'react'
 import { ErrorBoundary as ErrorBoundaryComponent } from 'react-error-boundary'
 import { StatusBar } from 'react-native'
 
 const RootLayout = () => {
-  const { colors, theme } = useTheme()
+  const { theme } = useTheme()
   const { session } = useSession()
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -36,24 +38,26 @@ const RootLayout = () => {
         <ErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
       )}
     >
-      <>
-        <StatusBar
-          barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
-        />
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.background,
-            },
-            headerTitleStyle: {
-              color: colors.text,
-              fontSize: 18,
-            },
-            contentStyle: { backgroundColor: colors.background },
-            headerShadowVisible: false,
-          }}
-        />
-      </>
+      <StatusBar
+        barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
+      />
+      <Tabs>
+        <TabSlot />
+        <TabList asChild>
+          <TabsNavigator>
+            <TabTrigger name="home" href="/(authenticated)/home" asChild>
+              <TabButton icon="space-dashboard" />
+            </TabTrigger>
+            <TabTrigger
+              name="customers"
+              href="/(authenticated)/(old)/customers"
+              asChild
+            >
+              <TabButton icon="people" />
+            </TabTrigger>
+          </TabsNavigator>
+        </TabList>
+      </Tabs>
     </ErrorBoundaryComponent>
   )
 }

@@ -20,7 +20,7 @@ import { useStoreReview } from '@/hooks/useStoreReview'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { Link, Stack } from 'expo-router'
+import { Link } from 'expo-router'
 import {
   checkForUpdateAsync,
   fetchUpdateAsync,
@@ -143,37 +143,30 @@ export default function Index() {
         <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
       }
     >
-      <Stack.Screen
-        options={{
-          header: () => (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: colors.background,
-                paddingTop: Platform.select({
-                  ios: safeAreaInsets.top,
-                  android: safeAreaInsets.top + 12,
-                }),
-                paddingBottom: 12,
-                paddingHorizontal: 32,
-              }}
-            >
-              <PolarLogo size={36} />
-              <View style={{ flexDirection: 'row', gap: 20 }}>
-                <NotificationBadge />
-                <Link href="/settings" asChild>
-                  <TouchableOpacity activeOpacity={0.6}>
-                    <MaterialIcons name="tune" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                </Link>
-              </View>
-            </View>
-          ),
-          headerTitle: 'Home',
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.background,
+          paddingTop: Platform.select({
+            ios: safeAreaInsets.top,
+            android: safeAreaInsets.top + 12,
+          }),
+          paddingBottom: 12,
+          paddingHorizontal: 32,
         }}
-      />
+      >
+        <PolarLogo size={36} />
+        <View style={{ flexDirection: 'row', gap: 20 }}>
+          <NotificationBadge />
+          <Link href="/settings" asChild>
+            <TouchableOpacity activeOpacity={0.6}>
+              <MaterialIcons name="tune" size={24} color={colors.text} />
+            </TouchableOpacity>
+          </Link>
+        </View>
+      </View>
       <View
         style={{
           padding: 16,
@@ -211,10 +204,6 @@ export default function Index() {
             </View>
           </View>
         </View>
-
-        <Link href="/(authenticated)/(tabs)/test">
-          <ThemedText>Test</ThemedText>
-        </Link>
 
         <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
           <View

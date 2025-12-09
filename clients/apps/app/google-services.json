@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1038237907932",
+    "project_id": "polar-770de",
+    "storage_bucket": "polar-770de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038237907932:android:d4a9a14bcd3bb52be52d19",
+        "android_client_info": {
+          "package_name": "com.polarsource.Polar"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpVECWwcewa_COM15uAyOEM1hpNyvztRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

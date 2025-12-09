@@ -17,7 +17,6 @@ from sqlalchemy import (
     func,
     literal_column,
     or_,
-    over,
     select,
     text,
 )
@@ -290,14 +289,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         descendant_event = aliased(Event, name="descendant_event")
 
-        # Step 1: Get paginated event IDs with total count
-        offset = (page - 1) * limit
+        # Run count query separately for better performance
+        count_statement = statement.with_only_columns(func.count()).order_by(None)
+        count_result = await self.session.execute(count_statement)
+        total_count = count_result.scalar() or 0
 
-        paginated_events_subquery = (
-            statement.add_columns(over(func.count()).label("total_count"))
-            .limit(limit)
-            .offset(offset)
-        ).subquery("paginated_events")
+        offset = (page - 1) * limit
+        paginated_events_subquery = (statement.limit(limit).offset(offset)).subquery(
+            "paginated_events"
+        )
 
         aggregation_columns: list[Any] = [
             EventClosure.ancestor_id,
@@ -374,9 +374,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         text("true"),
                     )
 
-        # Step 2: Join back to Event table to get full ORM objects with relationships
+        # Join back to Event table to get full ORM objects with relationships
         final_query = (
-            select(Event, paginated_events_subquery.c.total_count)
+            select(Event)
             .select_from(paginated_events_subquery)
             .join(Event, Event.id == paginated_events_subquery.c.id)
             .add_columns(
@@ -393,7 +393,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         rows = result.all()
 
         events = []
-        total_count = 0
         for row in rows:
             event = row[0]
             event.child_count = row.child_count
@@ -417,7 +416,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.session.expunge(event)
 
             events.append(event)
-            total_count = row.total_count
 
         return events, total_count
 

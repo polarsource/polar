@@ -10,18 +10,40 @@ description: Stay up to date with the latest changes and improvements to Polar.
 
 <img src="/assets/changelog/2025-10-10/launched-merchant-support.jpg" />
 
-We're excited to introduce a chat widget to the Polar dashboard, making it easier than ever for merchants to get help directly within the product.
+We're excited to introduce a **chat widget** directly in the Polar dashboard, making it easier than ever for merchants to get help without leaving the product.
+
+Whether you have questions about setting up products, configuring benefits, or troubleshooting checkout issues, our support team is now just a click away. The chat widget provides:
+
+- **Instant access to support** - No need to switch to email or search for contact information
+- **Contextual help** - Get assistance while you're working on specific features
+- **Faster response times** - Direct communication with our team for quicker issue resolution
+
+This is part of our ongoing commitment to providing exceptional support for merchants building their business on Polar.
 
   ## Improved Checkout Flow for Invalid Discount Code
 
-Previously, if you entered an invalid discount code during checkout, you couldn't continue even after removing the code. Now, clearing the discount input lets you proceed smoothly with the checkout process.
+We've fixed a critical UX issue in the [checkout flow](/features/checkout/session) that was preventing customers from completing their purchases.
+
+**The Problem:** When a customer entered an invalid [discount code](/features/discounts) during checkout, the form would get stuck in an error state. Even after clearing the invalid code from the input field, the checkout button remained disabled, forcing customers to abandon their purchase or refresh the page.
+
+**The Solution:** The checkout flow now properly resets when you clear an invalid discount code, allowing you to:
+- Remove the invalid code and proceed with checkout at full price
+- Try a different discount code without page refresh
+- Complete your purchase smoothly without interruption
+
+This fix significantly improves the customer experience and helps reduce cart abandonment from discount code confusion.
 
   ## Improved Customer Portal Rate Limits
 
-We've made several improvements to the Customer Portal to handle authentication rate limits more gracefully:
+We've enhanced error handling in the [Customer Portal](/api-reference/customer-portal/get-customer) to provide better feedback when authentication rate limits are reached.
 
-- The portal now clearly shows 401 and 429 errors on the OTP (one-time password) page.
-- If you hit a 429 (too many requests), you'll be redirected to a clear `/too-many-requests` page.
+**What's New:**
+
+- **Clear error messaging** - 401 (unauthorized) and 429 (rate limit exceeded) errors are now displayed directly on the OTP (one-time password) entry page, so customers understand exactly what went wrong
+- **Dedicated rate limit page** - When you hit a 429 error from too many authentication attempts, you're redirected to a user-friendly `/too-many-requests` page with clear guidance on next steps
+- **Better user experience** - Instead of generic error messages or silent failures, customers now receive actionable feedback to resolve authentication issues
+
+These improvements help prevent customer frustration and reduce support inquiries related to portal access issues.
 
 </Update>
 

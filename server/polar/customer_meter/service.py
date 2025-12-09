@@ -2,9 +2,7 @@ import uuid
 from collections.abc import Sequence
 from decimal import Decimal
 
-from sqlalchemy import Select, any_, cast, or_, select, union_all
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.dialects.postgresql import UUID as PgUUID
+from sqlalchemy import Select, or_, select, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -245,26 +243,15 @@ class CustomerMeterService:
         """
         Get a chainable statement for all events in the current meter window.
 
-        Uses UNION optimization to get event IDs, then returns a Select
-        that filters by those IDs. This avoids slow BitmapOr scans while
-        returning a proper Select that supports .where() chaining.
+        Uses a subquery with UNION optimization to filter events. This avoids:
+        1. Slow BitmapOr scans from OR clauses on different indexed columns
+        2. Round-trips to fetch IDs into Python then back to PostgreSQL
+        3. The 32k parameter limit in asyncpg
+
+
+        Events are ordered by timestamp to ensure correct ordering for running
+        sum calculations (e.g., non_negative_running_sum for credits).
         """
-        event_ids = await self._get_current_window_event_ids(session, customer, meter)
-
-        if not event_ids:
-            # Return empty result
-            return select(Event).where(Event.id.in_([]))
-
-        event_repository = EventRepository.from_session(session)
-        # Use ANY with array to avoid 32k parameter limit
-        return event_repository.get_base_statement().where(
-            Event.id == any_(cast(list(event_ids), ARRAY(PgUUID)))
-        )
-
-    async def _get_current_window_event_ids(
-        self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> Sequence[uuid.UUID]:
-        """Get IDs of all events in the current window using UNION optimization."""
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
             customer, meter.id
@@ -275,21 +262,23 @@ class CustomerMeterService:
         )
 
         if customer.external_id is None:
-            result = await session.execute(by_customer_id.with_only_columns(Event.id))
-            return [row[0] for row in result.all()]
+            return by_customer_id.order_by(Event.timestamp.asc())
 
         by_external_id = self._build_events_statement(
             event_repository, customer, meter, meter_reset_event, by_external_id=True
         )
 
         # UNION to avoid BitmapOr
-        union_statement = union_all(
+        event_ids_subquery = union_all(
             by_customer_id.with_only_columns(Event.id),
             by_external_id.with_only_columns(Event.id),
-        )
+        ).subquery()
 
-        result = await session.execute(union_statement)
-        return list(set(row[0] for row in result.all()))  # Dedupe
+        return (
+            event_repository.get_base_statement()
+            .where(Event.id.in_(select(event_ids_subquery.c.id)))
+            .order_by(Event.timestamp.asc())
+        )
 
     def _build_events_statement(
         self,

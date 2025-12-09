@@ -1,9 +1,23 @@
 from typing import Annotated
 
-from pydantic import Field
+from fastapi import Path
+from pydantic import UUID4, Field
 
-from polar.kit.schemas import IDSchema, TimestampedSchema
+from polar.exceptions import ResourceNotFound
+from polar.kit.schemas import (
+    ORDER_ID_EXAMPLE,
+    PAYMENT_ID_EXAMPLE,
+    IDSchema,
+    TimestampedSchema,
+)
 from polar.models.dispute import DisputeStatus
+
+DisputeID = Annotated[UUID4, Path(description="The dispute ID.")]
+
+DisputeNotFound = {
+    "description": "Dispute not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 class DisputeBase(IDSchema, TimestampedSchema):
@@ -40,6 +54,20 @@ class DisputeBase(IDSchema, TimestampedSchema):
     ]
     currency: Annotated[
         str, Field(description="Currency code of the dispute.", examples=["usd"])
+    ]
+    order_id: Annotated[
+        UUID4,
+        Field(
+            description="The ID of the order associated with the dispute.",
+            examples=[ORDER_ID_EXAMPLE],
+        ),
+    ]
+    payment_id: Annotated[
+        UUID4,
+        Field(
+            description="The ID of the payment associated with the dispute.",
+            examples=[PAYMENT_ID_EXAMPLE],
+        ),
     ]
 
 

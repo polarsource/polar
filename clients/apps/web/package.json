@@ -84,7 +84,7 @@
     "react-dom": "19.2.1",
     "react-dropzone": "^14.3.8",
     "react-focus-lock": "^2.13.7",
-    "react-hook-form": "^7.68.0",
+    "react-hook-form": "~7.65.0",
     "react-timeago": "^8.3.0",
     "react-use": "^17.6.0",
     "recharts": "^3.5.1",

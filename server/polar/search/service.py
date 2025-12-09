@@ -88,13 +88,17 @@ class SearchService:
     ) -> list[SearchResultProduct]:
         product_repository = ProductRepository.from_session(session)
         product_statement = product_repository.get_readable_statement(auth_subject)
+
+        conditions = [
+            Product.name.ilike(search_term),
+            Product.description.ilike(search_term),
+        ]
+        if query_uuid:
+            conditions.insert(0, Product.id == query_uuid)  # type: ignore[arg-type]
+
         product_statement = product_statement.where(
             Product.organization_id == organization_id,
-            or_(
-                Product.id == query_uuid if query_uuid else False,
-                Product.name.ilike(search_term),
-                Product.description.ilike(search_term),
-            ),
+            or_(*conditions),
         ).limit(limit)
 
         products = await product_repository.get_all(product_statement)
@@ -119,13 +123,17 @@ class SearchService:
     ) -> list[SearchResultCustomer]:
         customer_repository = CustomerRepository.from_session(session)
         customer_statement = customer_repository.get_readable_statement(auth_subject)
+
+        conditions = [
+            Customer.email.ilike(search_term),
+            Customer.name.ilike(search_term),
+        ]
+        if query_uuid:
+            conditions.insert(0, Customer.id == query_uuid)  # type: ignore[arg-type]
+
         customer_statement = customer_statement.where(
             Customer.organization_id == organization_id,
-            or_(
-                Customer.id == query_uuid if query_uuid else False,
-                Customer.email.ilike(search_term),
-                Customer.name.ilike(search_term),
-            ),
+            or_(*conditions),
         ).limit(limit)
 
         customers = await customer_repository.get_all(customer_statement)
@@ -150,6 +158,17 @@ class SearchService:
         limit: int,
     ) -> list[SearchResultOrder]:
         order_repository = OrderRepository.from_session(session)
+
+        conditions = [
+            Customer.email.ilike(prefix_term),
+            Customer.name.ilike(prefix_term),
+            Product.name.ilike(substring_term),
+            Order.invoice_number.ilike(substring_term),
+            Order.stripe_invoice_id.ilike(substring_term),
+        ]
+        if query_uuid:
+            conditions.insert(0, Order.id == query_uuid)  # type: ignore[arg-type]
+
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(
@@ -158,14 +177,7 @@ class SearchService:
             )
             .where(
                 Product.organization_id == organization_id,
-                or_(
-                    Order.id == query_uuid if query_uuid else False,
-                    Customer.email.ilike(prefix_term),
-                    Customer.name.ilike(prefix_term),
-                    Product.name.ilike(substring_term),
-                    Order.invoice_number.ilike(substring_term),
-                    Order.stripe_invoice_id.ilike(substring_term),
-                ),
+                or_(*conditions),
             )
             .limit(limit)
         )
@@ -195,6 +207,15 @@ class SearchService:
         limit: int,
     ) -> list[SearchResultSubscription]:
         subscription_repository = SubscriptionRepository.from_session(session)
+
+        conditions = [
+            Customer.email.ilike(prefix_term),
+            Customer.name.ilike(prefix_term),
+            Product.name.ilike(substring_term),
+        ]
+        if query_uuid:
+            conditions.insert(0, Subscription.id == query_uuid)  # type: ignore[arg-type]
+
         subscription_statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(
@@ -203,12 +224,7 @@ class SearchService:
             )
             .where(
                 Product.organization_id == organization_id,
-                or_(
-                    Subscription.id == query_uuid if query_uuid else False,
-                    Customer.email.ilike(prefix_term),
-                    Customer.name.ilike(prefix_term),
-                    Product.name.ilike(substring_term),
-                ),
+                or_(*conditions),
             )
             .limit(limit)
         )

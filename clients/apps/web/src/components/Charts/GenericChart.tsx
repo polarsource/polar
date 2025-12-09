@@ -319,7 +319,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
               key={s.key}
               dataKey={s.key}
               stroke={`var(--color-${s.key})`}
-              type="linear"
+              type="monotone"
               dot={false}
               strokeWidth={1.5}
               strokeOpacity={
@@ -381,7 +381,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
           fill={`url(#areaGradient-${id})`}
-          type="linear"
+          type="monotone"
           strokeWidth={1.5}
         />
       </AreaChart>

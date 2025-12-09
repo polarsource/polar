@@ -1047,5 +1047,25 @@ class OrganizationService:
 
         return review
 
+    async def mark_ai_onboarding_complete(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Mark the AI onboarding as completed for this organization.
+
+        Only sets the timestamp if it hasn't been set before, to capture the first completion.
+        """
+        if organization.ai_onboarding_completed_at is not None:
+            return organization
+
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization,
+            update_dict={
+                "onboarded_at": datetime.now(UTC),
+                "ai_onboarding_completed_at": datetime.now(UTC),
+            },
+        )
+        return organization
+
 
 organization = OrganizationService()

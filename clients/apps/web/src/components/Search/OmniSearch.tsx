@@ -271,31 +271,31 @@ export const OmniSearch = ({
             className="rounded-xl border-none [&_[cmdk-group-heading]]:px-0 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-gray-900 [&_[cmdk-group-heading]]:uppercase dark:[&_[cmdk-group-heading]]:text-white [&_[cmdk-group]]:px-3 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-14 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5"
             shouldFilter={false}
           >
-            <div className="dark:border-polar-800 flex grow items-center border-b border-gray-100 px-4">
+            <div className="flex grow items-center px-4">
               <CommandInput
                 placeholder="Search products, customers, orders..."
                 value={query}
                 onValueChange={setQuery}
                 wrapperClassName="border-none grow"
-                className="flex w-full grow border-0 text-base placeholder:text-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="dark:placeholder:text-polar-500 flex w-full grow border-0 text-base placeholder:text-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
             <CommandList
               className={twMerge(
-                'max-h-[420px] overflow-y-auto px-3 pt-2 pb-3',
+                'dark:border-polar-700 max-h-[420px] overflow-y-auto border-t border-gray-200 px-3 pt-2 pb-3',
                 cleanState ? 'hidden' : '',
               )}
             >
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  <Loader2 className="dark:text-polar-500 h-6 w-6 animate-spin text-gray-500" />
                 </div>
               ) : !loading &&
                 hasSearched &&
                 query &&
                 combinedResults.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-500">
+                <div className="dark:text-polar-500 py-12 text-center text-sm text-gray-500">
                   No results found for "{query}"
                 </div>
               ) : (
@@ -325,7 +325,7 @@ export const OmniSearch = ({
                                 value={key}
                                 onSelect={() => handleSelect(result)}
                                 className={twMerge(
-                                  'group dark:data-[selected=true]:bg-polar-800 cursor-pointer rounded-md px-3 py-3 data-[selected=true]:bg-gray-100 data-[selected=true]:text-inherit',
+                                  'group dark:data-[selected=true]:bg-polar-800 cursor-pointer rounded-xl px-3 py-3 data-[selected=true]:bg-gray-100 data-[selected=true]:text-inherit',
                                   isFirst ? 'scroll-mt-12' : '',
                                   isLastItem
                                     ? 'mb-3 scroll-mb-12'

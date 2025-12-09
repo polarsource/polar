@@ -38,60 +38,9 @@ APP_URL="https://localhost:3000"
   You can find your QStash token in the [Upstash Console](https://console.upstash.com/qstash) under the **QStash** section.
 </Info>
 
-
-## Step 2: Fetch Subscription Details
-
-Use the Polar API to get the subscription's current period end date. This determines when the downgrade should be scheduled.
-
-### Get Subscription by ID
-
-```tsx
-import { Polar } from "@polar-sh/sdk";
-
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
-
-// Fetch subscription details
-const subscription = await polar.subscriptions.get({
-  id: "sub_xxxxxxxxxxxxx",
-});
-
-console.log("Current period ends at:", subscription.currentPeriodEnd);
-console.log("Subscription status:", subscription.status);
-console.log("Current product:", subscription.product.name);
-```
-
-## Step 3: Schedule the Downgrade with QStash
+## Step 2: Schedule the Downgrade with QStash
 
 Use Upstash QStash to schedule an HTTP request to your downgrade endpoint at the end of the billing period.
-
-### Create the Scheduling Function
-
-```tsx
-import { Client } from "@upstash/qstash";
-
-const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
-
-async function scheduleDowngrade(
-  subscriptionId: string,
-  newProductId: string,
-  executeAt: Date
-) {
-  // Schedule the downgrade request
-  const result = await qstash.publishJSON({
-    // Add retries in case of failures
-    retries: 1,
-    body: { subscriptionId, newProductId },
-    // Schedule for the end of the current period
-    notBefore: Math.floor(executeAt.getTime() / 1000),
-    url: `${process.env.APP_URL}/api/execute-downgrade`,
-  });
-
-  console.log("Downgrade scheduled:", result.messageId);
-  return result.messageId;
-}
-```
-
-### Complete Example: Schedule Downgrade Endpoint
 
 Here's a complete Next.js API route that schedules a downgrade:
 
@@ -166,7 +115,7 @@ export async function POST(req: NextRequest) {
 </Tip>
 
 
-## Step 4: Create the Downgrade Execution Endpoint
+## Step 3: Create the Downgrade Execution Endpoint
 
 Create an endpoint that QStash will call at the scheduled time to execute the downgrade.
 
@@ -255,7 +204,7 @@ export const POST = verifySignatureAppRouter(handler);
   **Security**: Always verify QStash signatures to ensure requests are coming from QStash and not malicious actors. The `verifySignatureAppRouter` function handles this automatically.
 </Warning>
 
-## Step 5: Test Your Integration
+## Step 4: Test Your Integration
 
 Test the complete flow to ensure downgrades are scheduled and executed correctly.
 

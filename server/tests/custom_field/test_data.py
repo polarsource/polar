@@ -60,6 +60,9 @@ async def custom_field_data_schema(
     (
         pytest.param({"text1": "abc", "number1": "abc"}, id="invalid number"),
         pytest.param({"text1": "abc", "number1": -1}, id="invalid number constraint"),
+        pytest.param(
+            {"text1": "abc", "number1": 2**32}, id="invalid number constraint"
+        ),
         pytest.param({"text1": "abc", "select1": "c"}, id="invalid select"),
         pytest.param({"number1": 123, "select1": "c"}, id="missing required"),
     ),

@@ -416,7 +416,7 @@ export async function POST(req: Request) {
 
   const markAsDone = tool({
     description: `Mark the onboarding as done call, this tool once products (and their related benefits) have been fully created.
-    
+
 You can call this tool only once as it will end the onboarding flow, so make sure your work is done.
 However, don't specifically ask if the user wants anything else before calling this tool. Use your own judgement
 based on the conversation history whether you're done.
@@ -427,6 +427,13 @@ based on the conversation history whether you're done.
         .array(z.string())
         .describe('The UUIDs of the created products'),
     }),
+    execute: async ({ productIds }) => {
+      const api = await getServerSideAPI()
+      await api.POST('/v1/organizations/{id}/ai-onboarding-complete', {
+        params: { path: { id: organizationId } },
+      })
+      return { success: true, productIds }
+    },
   })
 
   let streamStarted = false

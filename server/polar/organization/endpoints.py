@@ -469,6 +469,30 @@ async def submit_appeal(
         )
 
 
+@router.post(
+    "/{id}/ai-onboarding-complete",
+    response_model=OrganizationSchema,
+    summary="Mark AI Onboarding Complete",
+    responses={
+        200: {"description": "AI onboarding marked as complete."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def mark_ai_onboarding_complete(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Mark the AI onboarding as completed for this organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    return await organization_service.mark_ai_onboarding_complete(session, organization)
+
+
 @router.get(
     "/{id}/review-status",
     response_model=OrganizationReviewStatus,

@@ -251,16 +251,43 @@ class MeterService:
         repository = MeterRepository.from_session(session)
         meter = await repository.update(meter, update_dict={"archived_at": None})
 
-        # Queue customer meter updates for all customers in the organization
+        # Queue customer meter updates for customers with events matching this meter
         from polar.customer.repository import CustomerRepository
 
+        event_repository = EventRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
-        statement = customer_repository.get_base_statement().where(
-            Customer.organization_id == meter.organization_id
+
+        # Find customers by customer_id on matching events
+        customer_ids_statement = (
+            event_repository.get_meter_statement(meter)
+            .with_only_columns(Event.customer_id)
+            .where(Event.customer_id.is_not(None))
+            .distinct()
         )
-        customers = await customer_repository.get_all(statement)
-        if customers:
-            await customer_repository.touch_meters(customers)
+        customer_ids = list(await session.scalars(customer_ids_statement))
+
+        # Find customers by external_customer_id on matching events
+        external_ids_statement = (
+            event_repository.get_meter_statement(meter)
+            .with_only_columns(Event.external_customer_id)
+            .where(Event.external_customer_id.is_not(None))
+            .distinct()
+        )
+        external_customer_ids = list(await session.scalars(external_ids_statement))
+
+        # Get all affected customers and touch their meters
+        if customer_ids or external_customer_ids:
+            statement = customer_repository.get_base_statement().where(
+                or_(
+                    Customer.id.in_(customer_ids) if customer_ids else False,
+                    Customer.external_id.in_(external_customer_ids)
+                    if external_customer_ids
+                    else False,
+                )
+            )
+            customers = await customer_repository.get_all(statement)
+            if customers:
+                await customer_repository.touch_meters(customers)
 
         return meter
 

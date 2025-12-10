@@ -390,6 +390,7 @@ class RefundService:
                 processor_receipt_number=None,
                 processor_reason="other",
                 processor_balance_transaction_id=processor_balance_transaction_id,
+                revoke_benefits=True,
             ),
             flush=True,
         )

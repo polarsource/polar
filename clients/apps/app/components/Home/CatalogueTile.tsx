@@ -5,7 +5,7 @@ import { useProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { subDays } from 'date-fns'
 import { useContext, useMemo } from 'react'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export const CatalogueTile = () => {
@@ -32,13 +32,13 @@ export const CatalogueTile = () => {
     <Tile href="/products">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
-          <ThemedText style={{ fontSize: 16 }} secondary>
+          <Text variant="body" color="subtext">
             Catalogue
-          </ThemedText>
-          <ThemedText style={{ fontSize: 16 }}>
+          </Text>
+          <Text variant="body">
             {products?.items.length}{' '}
             {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
-          </ThemedText>
+          </Text>
         </Box>
         <Box flexDirection="column" gap="spacing-8">
           <Box
@@ -46,9 +46,9 @@ export const CatalogueTile = () => {
             justifyContent="space-between"
             gap="spacing-4"
           >
-            <ThemedText style={{ fontSize: 16 }} secondary>
+            <Text variant="body" color="subtext">
               Order Streak
-            </ThemedText>
+            </Text>
           </Box>
           <Box
             flexDirection="row"

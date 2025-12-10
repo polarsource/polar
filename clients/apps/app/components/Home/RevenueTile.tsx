@@ -7,7 +7,7 @@ import { formatCurrencyAndAmount } from '@/utils/money'
 import { subMonths } from 'date-fns'
 import { useContext, useMemo, useState } from 'react'
 import Svg, { Path } from 'react-native-svg'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export const RevenueTile = () => {
@@ -77,11 +77,11 @@ export const RevenueTile = () => {
             justifyContent="space-between"
             gap="spacing-4"
           >
-            <ThemedText style={{ fontSize: 16 }} secondary>
+            <Text variant="body" color="subtext">
               Revenue
-            </ThemedText>
+            </Text>
           </Box>
-          <ThemedText style={{ fontSize: 16 }}>30 Days</ThemedText>
+          <Text variant="body">30 Days</Text>
         </Box>
         {cumulativeRevenueData && (
           <Box
@@ -123,7 +123,7 @@ export const RevenueTile = () => {
             </Svg>
           </Box>
         )}
-        <ThemedText style={{ fontSize: 22 }} numberOfLines={1}>
+        <Text variant="headline" numberOfLines={1}>
           {formatCurrencyAndAmount(
             metrics.data?.totals.revenue ?? 0,
             'usd',
@@ -131,7 +131,7 @@ export const RevenueTile = () => {
             undefined,
             0,
           )}
-        </ThemedText>
+        </Text>
       </Box>
     </Tile>
   )

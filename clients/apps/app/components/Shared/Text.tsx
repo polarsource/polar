@@ -10,6 +10,6 @@ type Props = TextProps<Theme> &
     variant?: TextVariantKey
   }
 
-export const Text = ({ variant, ...rest }: Props) => {
+export const Text = ({ variant = 'body', ...rest }: Props) => {
   return <RestyleText variant={variant} {...rest} />
 }

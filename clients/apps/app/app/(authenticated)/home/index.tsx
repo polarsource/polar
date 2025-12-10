@@ -10,7 +10,7 @@ import { Box } from '@/components/Shared/Box'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { MiniButton } from '@/components/Shared/MiniButton'
 import PolarLogo from '@/components/Shared/PolarLogo'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
@@ -219,9 +219,7 @@ export default function Index() {
             alignItems="center"
             justifyContent="space-between"
           >
-            <ThemedText style={{ fontSize: 20 }}>
-              Recent Subscriptions
-            </ThemedText>
+            <Text variant="title">Recent Subscriptions</Text>
             <Link href="/subscriptions" asChild>
               <MiniButton variant="secondary">View All</MiniButton>
             </Link>
@@ -250,7 +248,7 @@ export default function Index() {
             alignItems="center"
             justifyContent="space-between"
           >
-            <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
+            <Text variant="title">Recent Orders</Text>
             <Link href="/orders" asChild>
               <MiniButton variant="secondary">View All</MiniButton>
             </Link>
@@ -277,7 +275,7 @@ export default function Index() {
           justifyContent="space-between"
           paddingHorizontal="spacing-16"
         >
-          <ThemedText style={{ fontSize: 20 }}>Recent Customers</ThemedText>
+          <Text variant="title">Recent Customers</Text>
           <Link href="/customers" asChild>
             <MiniButton variant="secondary">View All</MiniButton>
           </Link>

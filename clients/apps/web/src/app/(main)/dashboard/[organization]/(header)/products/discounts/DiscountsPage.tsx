@@ -22,6 +22,7 @@ import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import  FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   DataTable,
   DataTableColumnDef,
@@ -232,6 +233,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <>
             {redemptions}
             {discount.max_redemptions ? `/${discount.max_redemptions}` : ''}
+          </>
+        )
+      },
+    },
+    {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Created At" />
+      ),
+      cell: ({ row: { original: discount } }) => {
+        return (
+          <>
+           <FormattedDateTime datetime={discount.created_at} resolution="day" />
           </>
         )
       },

@@ -3,7 +3,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useContext } from 'react'
 import { Avatar } from '../Shared/Avatar'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export const OrganizationTile = () => {
@@ -25,18 +25,12 @@ export const OrganizationTile = () => {
           }
         />
         <Box flexDirection="column" gap="spacing-4">
-          <ThemedText
-            style={{
-              fontSize: 18,
-              fontWeight: '600',
-              marginTop: 4,
-            }}
-          >
+          <Text variant="subtitle" style={{ fontWeight: '600', marginTop: 4 }}>
             {organization.name}
-          </ThemedText>
-          <ThemedText style={{ fontSize: 16 }} numberOfLines={1} secondary>
+          </Text>
+          <Text variant="body" color="subtext" numberOfLines={1}>
             {organization.slug}
-          </ThemedText>
+          </Text>
         </Box>
       </Box>
     </Tile>

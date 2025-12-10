@@ -8,7 +8,7 @@ import { formatCurrencyAndAmount } from '@/utils/money'
 import { Link } from 'expo-router'
 import { useContext } from 'react'
 import { MiniButton } from '../Shared/MiniButton'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export const FinanceTile = () => {
@@ -25,10 +25,10 @@ export const FinanceTile = () => {
     <Tile href="/finance">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
-          <ThemedText style={{ fontSize: 16 }} secondary>
+          <Text variant="body" color="subtext">
             Account Balance
-          </ThemedText>
-          <ThemedText style={{ fontSize: 22 }} numberOfLines={1}>
+          </Text>
+          <Text variant="headline" numberOfLines={1}>
             {formatCurrencyAndAmount(
               summary?.balance.amount ?? 0,
               'USD',
@@ -36,7 +36,7 @@ export const FinanceTile = () => {
               undefined,
               0,
             )}
-          </ThemedText>
+          </Text>
         </Box>
         <Box flexDirection="column" gap="spacing-4">
           <Link href="/finance/withdraw" asChild>

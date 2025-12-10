@@ -59,7 +59,7 @@ const RootLayout = () => {
             >
               <TabButton icon="people" />
             </TabTrigger>
-            <TabButton icon="unfold-more" />
+            <TabTrigger name="search" href="/(authenticated)/search" asChild />
           </TabsNavigator>
         </TabList>
       </Tabs>

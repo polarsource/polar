@@ -1,11 +1,12 @@
-import { CustomerRow } from '@/components/Customers/CustomerRow'
 import { Input } from '@/components/Shared/Input'
-import { useCustomers } from '@/hooks/polar/customers'
+import { ThemedText } from '@/components/Shared/ThemedText'
+import { useSearch } from '@/hooks/polar/search'
 import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
-import React, { useContext, useMemo, useState } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { Stack } from 'expo-router'
+import React, { useContext, useState } from 'react'
+import { FlatList, View } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -13,15 +14,15 @@ export default function Index() {
 
   const [search, setSearch] = useState('')
 
-  const { data, refetch, isRefetching, fetchNextPage, hasNextPage } =
-    useCustomers(organization?.id, { query: search })
+  const { data, refetch, isRefetching } = useSearch(organization?.id, {
+    query: search,
+  })
 
-  const customersData = useMemo(() => {
-    return data?.pages.flatMap((page) => page.items) ?? []
-  }, [data])
+  console.log(data)
 
   return (
     <>
+      <Stack.Screen options={{ title: 'Search' }} />
       <View style={{ padding: 16, backgroundColor: colors.background }}>
         <Input
           placeholder="Search"
@@ -30,25 +31,18 @@ export default function Index() {
         />
       </View>
       <FlatList
-        data={customersData}
-        renderItem={({ item }: { item: schemas['Customer'] }) => {
-          return <CustomerRow customer={item} />
+        data={data?.results ?? []}
+        renderItem={({
+          item,
+        }: {
+          item:
+            | schemas['SearchResultProduct']
+            | schemas['SearchResultCustomer']
+            | schemas['SearchResultOrder']
+            | schemas['SearchResultSubscription']
+        }) => {
+          return <ThemedText>{item.type}</ThemedText>
         }}
-        contentContainerStyle={{
-          padding: 16,
-          backgroundColor: colors.background,
-        }}
-        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
-        }
-        onEndReached={() => {
-          if (hasNextPage) {
-            fetchNextPage()
-          }
-        }}
-        onEndReachedThreshold={0.8}
       />
     </>
   )

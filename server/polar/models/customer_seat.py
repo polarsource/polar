@@ -12,6 +12,7 @@ from polar.product.guard import is_metered_price
 
 if TYPE_CHECKING:
     from .customer import Customer
+    from .member import Member
     from .order import Order
     from .subscription import Subscription
 
@@ -76,6 +77,13 @@ class CustomerSeat(RecordModel):
         index=True,
     )
 
+    member_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("members.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+
     invitation_token: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, index=True
     )
@@ -107,6 +115,10 @@ class CustomerSeat(RecordModel):
     @declared_attr
     def customer(cls) -> Mapped["Customer | None"]:
         return relationship("Customer", lazy="raise")
+
+    @declared_attr
+    def member(cls) -> Mapped["Member | None"]:
+        return relationship("Member", lazy="raise")
 
     def is_pending(self) -> bool:
         return self.status == SeatStatus.pending

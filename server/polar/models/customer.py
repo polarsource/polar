@@ -13,7 +13,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     ColumnElement,
-    Computed,
     ForeignKey,
     Index,
     Integer,
@@ -22,7 +21,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -110,22 +109,8 @@ class Customer(MetadataMixin, RecordModel):
             unique=True,
             postgresql_nulls_not_distinct=True,
         ),
-        Index(
-            "ix_customers_search_vector",
-            "search_vector",
-            postgresql_using="gin",
-        ),
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
-    )
-
-    search_vector: Mapped[str] = mapped_column(
-        TSVECTOR,
-        Computed(
-            "to_tsvector('simple', coalesce(name, ''))",
-            persisted=True,
-        ),
-        nullable=False,
     )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

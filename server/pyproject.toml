@@ -54,6 +54,7 @@ dependencies = [
   "pydantic-ai-slim[openai]>=0.7.1",
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.0",
+  "alembic-utils>=0.8.8",
 ]
 
 [dependency-groups]

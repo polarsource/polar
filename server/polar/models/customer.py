@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import sqlalchemy as sa
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
@@ -112,6 +114,7 @@ class Customer(MetadataMixin, RecordModel):
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
     )
+    short_id_sequence = sa.Sequence("customer_short_id_seq", start=1)
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     short_id: Mapped[int] = mapped_column(
@@ -304,3 +307,36 @@ class Customer(MetadataMixin, RecordModel):
 
     def touch_meters_dirtied_at(self) -> None:
         self.meters_dirtied_at = utc_now()
+
+
+# ID generation algorithm based on https://instagram-engineering.com/sharding-ids-at-instagram-1cf5a71e5a5c
+generate_customer_short_id_function = PGFunction(
+    schema="public",
+    signature="generate_customer_short_id(creation_timestamp TIMESTAMP WITH TIME ZONE DEFAULT clock_timestamp())",
+    definition="""
+    RETURNS bigint AS $$
+    DECLARE
+        our_epoch bigint := 1672531200000; -- 2023-01-01 in milliseconds
+        seq_id bigint;
+        now_millis bigint;
+        result bigint;
+    BEGIN
+        -- Get sequence number modulo 1024 (10 bits)
+        SELECT nextval('customer_short_id_seq') % 1024 INTO seq_id;
+
+        -- Use provided timestamp (defaults to clock_timestamp())
+        SELECT FLOOR(EXTRACT(EPOCH FROM creation_timestamp) * 1000) INTO now_millis;
+
+        -- 42 bits timestamp (milliseconds) | 10 bits sequence = 52 bits total
+        -- Capacity: 1,024 IDs per millisecond (over 1 million per second)
+        -- Combine: (timestamp - epoch) << 10 | sequence
+        result := (now_millis - our_epoch) << 10;
+        result := result | seq_id;
+
+        RETURN result;
+    END;
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+register_entities((generate_customer_short_id_function,))

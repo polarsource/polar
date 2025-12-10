@@ -8,12 +8,11 @@ Create Date: 2025-10-24 11:39:54.946342
 
 import sqlalchemy as sa
 from alembic import op
+from alembic_utils.pg_function import PGFunction
+from sqlalchemy.schema import CreateSequence
 
 # Polar Custom Imports
-from migrations.functions import (
-    FUNCTION_GENERATE_CUSTOMER_SHORT_ID,
-    SEQUENCE_CREATE_CUSTOMER_SHORT_ID,
-)
+from polar.models import Customer
 
 # revision identifiers, used by Alembic.
 revision = "aee75623c4bb"
@@ -23,11 +22,13 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute(SEQUENCE_CREATE_CUSTOMER_SHORT_ID)
-
-    # Create Instagram-style ID generator
-    # Combines timestamp (milliseconds since epoch) + sequence number
-    op.execute(FUNCTION_GENERATE_CUSTOMER_SHORT_ID)
+    op.execute("CREATE SEQUENCE customer_short_id_seq START 1;")
+    public_generate_customer_short_id = PGFunction(
+        schema="public",
+        signature="generate_customer_short_id(creation_timestamp timestamp with time zone DEFAULT clock_timestamp())",
+        definition="returns bigint\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    our_epoch bigint := 1672531200000; -- 2023-01-01 in milliseconds\n    seq_id bigint;\n    now_millis bigint;\n    result bigint;\nBEGIN\n    -- Get sequence number modulo 1024 (10 bits)\n    SELECT nextval('customer_short_id_seq') % 1024 INTO seq_id;\n\n    -- Use provided timestamp (defaults to clock_timestamp())\n    SELECT FLOOR(EXTRACT(EPOCH FROM creation_timestamp) * 1000) INTO now_millis;\n\n    -- 42 bits timestamp (milliseconds) | 10 bits sequence = 52 bits total\n    -- Capacity\\: 1,024 IDs per millisecond (over 1 million per second)\n    -- Combine\\: (timestamp - epoch) << 10 | sequence\n    result := (now_millis - our_epoch) << 10;\n    result := result | seq_id;\n\n    RETURN result;\nEND;\n$function$",
+    )
+    op.create_entity(public_generate_customer_short_id)
 
     op.add_column(
         "customers",

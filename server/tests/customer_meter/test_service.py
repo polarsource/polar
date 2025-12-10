@@ -1092,6 +1092,61 @@ class TestGetRolloverUnits:
 
 
 @pytest.mark.asyncio
+class TestUpdateCustomer:
+    async def test_archived_meter_excluded(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        """Test that archived meters are excluded from update_customer."""
+        # Archive the meter
+        meter.archived_at = utc_now()
+        await save_fixture(meter)
+
+        # Run update_customer - should not create customer_meter for archived meter
+        await customer_meter_service.update_customer(session, locker, customer)
+
+        # Check that no customer meter was created
+        from polar.customer_meter.repository import CustomerMeterRepository
+
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is None
+
+    async def test_non_archived_meter_included(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        """Test that non-archived meters are included in update_customer."""
+        # Meter is not archived by default
+        assert meter.archived_at is None
+
+        # Run update_customer - should create customer_meter
+        await customer_meter_service.update_customer(session, locker, customer)
+
+        # Check that customer meter was created
+        from polar.customer_meter.repository import CustomerMeterRepository
+
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.consumed_units > 0
+
+
+@pytest.mark.asyncio
 class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,

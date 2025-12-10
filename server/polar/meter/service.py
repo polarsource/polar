@@ -249,7 +249,20 @@ class MeterService:
 
     async def unarchive(self, session: AsyncSession, meter: Meter) -> Meter:
         repository = MeterRepository.from_session(session)
-        return await repository.update(meter, update_dict={"archived_at": None})
+        meter = await repository.update(meter, update_dict={"archived_at": None})
+
+        # Queue customer meter updates for all customers in the organization
+        from polar.customer.repository import CustomerRepository
+
+        customer_repository = CustomerRepository.from_session(session)
+        statement = customer_repository.get_base_statement().where(
+            Customer.organization_id == meter.organization_id
+        )
+        customers = await customer_repository.get_all(statement)
+        if customers:
+            await customer_repository.touch_meters(customers)
+
+        return meter
 
     async def events(
         self,

@@ -131,3 +131,29 @@ class TestMeterArchive:
 
         assert result.archived_at is None
         assert meter.archived_at is None
+
+    async def test_unarchive_queues_customer_meter_updates(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        customer: Customer,
+        organization: Organization,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        # First archive the meter
+        await meter_service.archive(session, meter)
+        assert meter.archived_at is not None
+
+        # Clear any existing meters_dirtied_at
+        customer.meters_dirtied_at = None
+        await save_fixture(customer)
+
+        # Unarchive the meter - should queue customer meter updates
+        await meter_service.unarchive(session, meter)
+
+        # Refresh the customer to see the updated value
+        await session.refresh(customer)
+
+        # Customer should now have meters_dirtied_at set
+        assert customer.meters_dirtied_at is not None

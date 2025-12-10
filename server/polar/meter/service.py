@@ -21,6 +21,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
@@ -249,7 +250,43 @@ class MeterService:
 
     async def unarchive(self, session: AsyncSession, meter: Meter) -> Meter:
         repository = MeterRepository.from_session(session)
-        return await repository.update(meter, update_dict={"archived_at": None})
+        meter = await repository.update(meter, update_dict={"archived_at": None})
+
+        event_repository = EventRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
+
+        # Find customers by customer_id on matching events
+        customer_ids_statement = (
+            event_repository.get_meter_statement(meter)
+            .with_only_columns(Event.customer_id)
+            .where(Event.customer_id.is_not(None))
+            .distinct()
+        )
+        customer_ids = list(await session.scalars(customer_ids_statement))
+
+        # Find customers by external_customer_id on matching events
+        external_ids_statement = (
+            event_repository.get_meter_statement(meter)
+            .with_only_columns(Event.external_customer_id)
+            .where(Event.external_customer_id.is_not(None))
+            .distinct()
+        )
+        external_customer_ids = list(await session.scalars(external_ids_statement))
+
+        # Get all affected customers and touch their meters
+        clauses = []
+        if customer_ids:
+            clauses.append(Customer.id.in_(customer_ids))
+        if external_customer_ids:
+            clauses.append(Customer.external_id.in_(external_customer_ids))
+
+        if clauses:
+            statement = customer_repository.get_base_statement().where(or_(*clauses))
+            customers = await customer_repository.get_all(statement)
+            if customers:
+                await customer_repository.touch_meters(customers)
+
+        return meter
 
     async def events(
         self,

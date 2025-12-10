@@ -94,7 +94,10 @@ class CustomerMeterService:
         repository = MeterRepository.from_session(session)
         statement = (
             repository.get_base_statement()
-            .where(Meter.organization_id == customer.organization_id)
+            .where(
+                Meter.organization_id == customer.organization_id,
+                Meter.archived_at.is_(None),
+            )
             .order_by(Meter.created_at.asc())
         )
 

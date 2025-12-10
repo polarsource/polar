@@ -131,3 +131,66 @@ class TestMeterArchive:
 
         assert result.archived_at is None
         assert meter.archived_at is None
+
+    async def test_unarchive_queues_customer_meter_updates(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        customer: Customer,
+        organization: Organization,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        from tests.fixtures.random_objects import create_event
+
+        # Create an event that matches the meter for this customer
+        # (default name="TEST_EVENT" matches the default meter filter)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+        )
+
+        # First archive the meter
+        await meter_service.archive(session, meter)
+        assert meter.archived_at is not None
+
+        # Clear any existing meters_dirtied_at
+        customer.meters_dirtied_at = None
+        await save_fixture(customer)
+
+        # Unarchive the meter - should queue customer meter updates
+        await meter_service.unarchive(session, meter)
+
+        # Refresh the customer to see the updated value
+        await session.refresh(customer)
+
+        # Customer should now have meters_dirtied_at set
+        assert customer.meters_dirtied_at is not None
+
+    async def test_unarchive_does_not_touch_unrelated_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        customer: Customer,
+        organization: Organization,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        # Don't create any events for this customer
+        # First archive the meter
+        await meter_service.archive(session, meter)
+        assert meter.archived_at is not None
+
+        # Clear any existing meters_dirtied_at
+        customer.meters_dirtied_at = None
+        await save_fixture(customer)
+
+        # Unarchive the meter - should NOT touch customers without matching events
+        await meter_service.unarchive(session, meter)
+
+        # Refresh the customer to see the updated value
+        await session.refresh(customer)
+
+        # Customer should NOT have meters_dirtied_at set (no events for this meter)
+        assert customer.meters_dirtied_at is None

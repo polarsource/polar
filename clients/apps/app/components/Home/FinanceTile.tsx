@@ -1,3 +1,4 @@
+import { Box } from '@/components/Shared/Box'
 import {
   useOrganizationAccount,
   useTransactionsSummary,
@@ -6,7 +7,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Link } from 'expo-router'
 import { useContext } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { MiniButton } from '../Shared/MiniButton'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
@@ -23,14 +24,8 @@ export const FinanceTile = () => {
 
   return (
     <Tile href="/finance">
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ flexDirection: 'column', gap: 4 }}>
+      <Box flex={1} flexDirection="column" justifyContent="space-between">
+        <Box flexDirection="column" gap="spacing-4">
           <ThemedText style={[styles.subtitle]} secondary>
             Account Balance
           </ThemedText>
@@ -43,8 +38,8 @@ export const FinanceTile = () => {
               0,
             )}
           </ThemedText>
-        </View>
-        <View style={{ flexDirection: 'column', gap: 4 }}>
+        </Box>
+        <Box flexDirection="column" gap="spacing-4">
           <Link href="/finance/withdraw" asChild>
             <MiniButton
               style={{ alignSelf: 'flex-start' }}
@@ -53,8 +48,8 @@ export const FinanceTile = () => {
               Withdraw
             </MiniButton>
           </Link>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </Tile>
   )
 }

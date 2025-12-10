@@ -1,11 +1,12 @@
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
-import { useTheme } from '@/hooks/theme'
 import { useRevenueTrend } from '@/hooks/trend'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { subMonths } from 'date-fns'
 import { useContext, useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
@@ -15,7 +16,7 @@ export const RevenueTile = () => {
   const [height, setHeight] = useState(0)
 
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const metricParameters = useMemo(
     () => ({
@@ -65,24 +66,29 @@ export const RevenueTile = () => {
 
   return (
     <Tile href="/metrics">
-      <View style={styles.container}>
-        <View style={{ flexDirection: 'column', gap: 4 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: 4,
-            }}
+      <Box
+        flex={1}
+        flexDirection="column"
+        justifyContent="space-between"
+        gap="spacing-4"
+      >
+        <Box flexDirection="column" gap="spacing-4">
+          <Box
+            flexDirection="row"
+            justifyContent="space-between"
+            gap="spacing-4"
           >
             <ThemedText style={[styles.subtitle]} secondary>
               Revenue
             </ThemedText>
-          </View>
+          </Box>
           <ThemedText style={[styles.title]}>30 Days</ThemedText>
-        </View>
+        </Box>
         {cumulativeRevenueData && (
-          <View
-            style={{ flex: 1, flexGrow: 1, width: '100%' }}
+          <Box
+            flex={1}
+            flexGrow={1}
+            width="100%"
             onLayout={(event) => {
               setHeight(event.nativeEvent.layout.height)
               setWidth(event.nativeEvent.layout.width)
@@ -94,30 +100,29 @@ export const RevenueTile = () => {
                   .map((period, index) => {
                     const x =
                       index === 0
-                        ? 1 // Start 1px in to avoid clipping
+                        ? 1
                         : (index / (cumulativeRevenueData.length - 1)) *
-                          (width - 2) // Subtract 2 to avoid clipping
+                          (width - 2)
 
                     const values = cumulativeRevenueData.map((d) => d.value)
                     const maxValue = Math.max(...values)
                     const minValue = Math.min(...values)
-                    const valueRange = Math.abs(maxValue - minValue) || 1 // Prevent division by zero
+                    const valueRange = Math.abs(maxValue - minValue) || 1
 
-                    // Scale y value between top and bottom padding
                     const y =
                       height -
-                      2 - // Bottom padding
-                      ((period.value - minValue) / valueRange) * (height - 4) // Scale to available height
+                      2 -
+                      ((period.value - minValue) / valueRange) * (height - 4)
 
                     return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
                   })
                   .join(' ')}
-                stroke={colors.primary}
+                stroke={theme.colors.primary}
                 strokeWidth="2"
                 fill="none"
               />
             </Svg>
-          </View>
+          </Box>
         )}
         <ThemedText style={[styles.revenueValue]} numberOfLines={1}>
           {formatCurrencyAndAmount(
@@ -128,18 +133,12 @@ export const RevenueTile = () => {
             0,
           )}
         </ThemedText>
-      </View>
+      </Box>
     </Tile>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    gap: 4,
-  },
   title: {
     fontSize: 16,
   },

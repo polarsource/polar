@@ -1,15 +1,16 @@
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useProducts } from '@/hooks/polar/products'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { subDays } from 'date-fns'
 import { useContext, useMemo } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
 
 export const CatalogueTile = () => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const { organization } = useContext(OrganizationContext)
   const { data: products } = useProducts(organization?.id, {
@@ -30,14 +31,8 @@ export const CatalogueTile = () => {
 
   return (
     <Tile href="/products">
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ flexDirection: 'column', gap: 4 }}>
+      <Box flex={1} flexDirection="column" justifyContent="space-between">
+        <Box flexDirection="column" gap="spacing-4">
           <ThemedText style={[styles.subtitle]} secondary>
             Catalogue
           </ThemedText>
@@ -45,41 +40,39 @@ export const CatalogueTile = () => {
             {products?.items.length}{' '}
             {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
           </ThemedText>
-        </View>
-        <View style={{ flexDirection: 'column', gap: 8 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: 4,
-            }}
+        </Box>
+        <Box flexDirection="column" gap="spacing-8">
+          <Box
+            flexDirection="row"
+            justifyContent="space-between"
+            gap="spacing-4"
           >
             <ThemedText style={[styles.subtitle]} secondary>
               Order Streak
             </ThemedText>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: 4,
-            }}
+          </Box>
+          <Box
+            flexDirection="row"
+            justifyContent="space-between"
+            gap="spacing-4"
           >
             {metrics.data?.periods.map((period) => (
-              <View
+              <Box
                 key={period.timestamp.toISOString()}
                 style={{
                   height: 10,
                   width: 10,
                   backgroundColor:
-                    (period.orders ?? 0) > 0 ? colors.primary : colors.border,
+                    (period.orders ?? 0) > 0
+                      ? theme.colors.primary
+                      : theme.colors.border,
                   borderRadius: 10,
                 }}
               />
             ))}
-          </View>
-        </View>
-      </View>
+          </Box>
+        </Box>
+      </Box>
     </Tile>
   )
 }

@@ -1,21 +1,23 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Dimensions, StyleSheet, TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { ThemedText } from '../Shared/ThemedText'
+
 export interface CustomerCardProps {
   customer: schemas['Customer']
 }
 
 export const CustomerCard = ({ customer }: CustomerCardProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
     <Link
       href={`/customers/${customer.id}`}
-      style={[styles.container, { backgroundColor: colors.card }]}
+      style={[styles.container, { backgroundColor: theme.colors.card }]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
@@ -24,7 +26,7 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
           name={customer.name ?? customer.email}
           image={customer.avatar_url ?? undefined}
         />
-        <View style={styles.content}>
+        <Box flexDirection="column" alignItems="center" gap="spacing-8">
           <ThemedText style={[styles.name]}>{customer.name ?? '—'}</ThemedText>
           <ThemedText
             style={[styles.email]}
@@ -34,7 +36,7 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
           >
             {customer.email}
           </ThemedText>
-        </View>
+        </Box>
       </TouchableOpacity>
     </Link>
   )
@@ -49,11 +51,6 @@ const styles = StyleSheet.create({
     gap: 32,
     borderRadius: 16,
     width: Dimensions.get('screen').width * 0.66,
-  },
-  content: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 8,
   },
   name: {
     fontSize: 16,

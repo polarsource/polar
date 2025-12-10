@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react'
-import { TouchableOpacity, View } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 
+import { Box } from '@/components/Shared/Box'
 import PolarLogo from '@/components/Shared/PolarLogo'
+import { useTheme } from '@/design-system/useTheme'
 import { useLogout } from '@/hooks/auth'
 import { useOAuth } from '@/hooks/oauth'
-import { useTheme } from '@/hooks/theme'
 import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
 import { ThemedText } from '../Shared/ThemedText'
 export interface ErrorFallbackProps {
@@ -16,7 +17,7 @@ export const ErrorFallback = ({
   error,
   resetErrorBoundary,
 }: ErrorFallbackProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const logout = useLogout()
   const { authenticate } = useOAuth()
   const permissionError =
@@ -53,18 +54,16 @@ export const ErrorFallback = ({
   }, [permissionError, logout, authenticate])
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: colors.background,
-        gap: 32,
-        paddingHorizontal: 24,
-      }}
+    <Box
+      flex={1}
+      justifyContent="center"
+      alignItems="center"
+      backgroundColor="background"
+      gap="spacing-32"
+      paddingHorizontal="spacing-24"
     >
       <PolarLogo size={80} />
-      <View style={{ gap: 12 }}>
+      <Box gap="spacing-12">
         <ThemedText
           style={{
             fontSize: 24,
@@ -83,18 +82,16 @@ export const ErrorFallback = ({
         >
           {message}
         </ThemedText>
-      </View>
+      </Box>
       <TouchableOpacity
         activeOpacity={0.6}
-        style={[
-          {
-            backgroundColor: '#fff',
-            borderRadius: 100,
-            width: 'auto',
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-          },
-        ]}
+        style={{
+          backgroundColor: '#fff',
+          borderRadius: 100,
+          width: 'auto',
+          paddingVertical: 12,
+          paddingHorizontal: 24,
+        }}
         onPress={async () => {
           await action()
           resetErrorBoundary()
@@ -104,6 +101,6 @@ export const ErrorFallback = ({
           {actionText}
         </ThemedText>
       </TouchableOpacity>
-    </View>
+    </Box>
   )
 }

@@ -1,7 +1,8 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useState } from 'react'
-import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, TouchableOpacity } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 export interface AccordionProps {
@@ -16,12 +17,12 @@ export const Accordion = ({
   defaultOpen = false,
 }: AccordionProps) => {
   const [open, setOpen] = useState(defaultOpen)
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
-    <View style={styles.container}>
+    <Box flex={1} flexDirection="column" gap="spacing-12">
       <TouchableOpacity
-        style={[styles.header, { backgroundColor: colors.card }]}
+        style={[styles.header, { backgroundColor: theme.colors.card }]}
         onPress={() => setOpen(!open)}
         activeOpacity={0.6}
       >
@@ -29,20 +30,15 @@ export const Accordion = ({
         <MaterialIcons
           name={open ? 'expand-less' : 'expand-more'}
           size={24}
-          color={colors.monochromeInverted}
+          color={theme.colors.monochromeInverted}
         />
       </TouchableOpacity>
       {open && children}
-    </View>
+    </Box>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 12,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,4 +1,3 @@
-import { useTheme } from '@/hooks/theme'
 import { isLegacyRecurringPrice } from '@/utils/price'
 import { schemas } from '@polar-sh/client'
 import { ThemedText } from '../Shared/ThemedText'
@@ -9,8 +8,6 @@ interface ProductPriceLabelProps {
 }
 
 export const ProductPriceLabel = ({ product }: ProductPriceLabelProps) => {
-  const { colors } = useTheme()
-
   const staticPrice = product.prices.find(({ amount_type }) =>
     ['fixed', 'custom', 'free'].includes(amount_type),
   )

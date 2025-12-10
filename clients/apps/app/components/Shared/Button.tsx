@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import {
   ActivityIndicator,
   StyleProp,
@@ -28,31 +28,31 @@ export const Button = ({
   textStyle,
   variant = 'primary',
 }: ButtonProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const getTouchableColor = () => {
     switch (variant) {
       case 'primary':
-        return colors.monochromeInverted
+        return theme.colors.monochromeInverted
       case 'secondary':
-        return colors.card
+        return theme.colors.card
       case 'destructive':
-        return colors.errorSubtle
+        return theme.colors.errorSubtle
     }
   }
 
   const getTextColor = () => {
     if (disabled) {
-      return colors.subtext
+      return theme.colors.subtext
     }
 
     switch (variant) {
       case 'primary':
-        return colors.monochrome
+        return theme.colors.monochrome
       case 'secondary':
-        return colors.monochromeInverted
+        return theme.colors.monochromeInverted
       case 'destructive':
-        return colors.error
+        return theme.colors.error
     }
   }
 
@@ -83,7 +83,7 @@ export const Button = ({
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={colors.monochrome} />
+          <ActivityIndicator size="small" color={theme.colors.monochrome} />
         ) : (
           children
         )}

@@ -1,3 +1,4 @@
+import { useTheme } from '@/design-system/useTheme'
 import {
   MaintainerAccountReviewedNotificationPayload,
   MaintainerAccountUnderReviewNotificationPayload,
@@ -5,7 +6,6 @@ import {
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
 } from '@/hooks/polar/notifications'
-import { useTheme } from '@/hooks/theme'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useMemo } from 'react'
@@ -30,40 +30,60 @@ export const Notification = ({
   style,
   createdAt,
 }: NotificationProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const icon = useMemo(() => {
     switch (type) {
       case 'MaintainerNewPaidSubscriptionNotification':
         return (
-          <MaterialIcons name="all-inclusive" size={20} color={colors.text} />
+          <MaterialIcons
+            name="all-inclusive"
+            size={20}
+            color={theme.colors.text}
+          />
         )
       case 'MaintainerNewProductSaleNotification':
         return (
           <MaterialIcons
             name="lightbulb-outline"
             size={20}
-            color={colors.text}
+            color={theme.colors.text}
           />
         )
       case 'MaintainerAccountUnderReviewNotification':
         return (
-          <MaterialIcons name="person-outline" size={20} color={colors.text} />
+          <MaterialIcons
+            name="person-outline"
+            size={20}
+            color={theme.colors.text}
+          />
         )
       case 'MaintainerAccountReviewedNotification':
         return (
-          <MaterialIcons name="person-outline" size={20} color={colors.text} />
+          <MaterialIcons
+            name="person-outline"
+            size={20}
+            color={theme.colors.text}
+          />
         )
       case 'MaintainerCreateAccountNotification':
         return (
-          <MaterialIcons name="person-outline" size={20} color={colors.text} />
+          <MaterialIcons
+            name="person-outline"
+            size={20}
+            color={theme.colors.text}
+          />
         )
       default:
         return (
-          <MaterialIcons name="notifications" size={20} color={colors.text} />
+          <MaterialIcons
+            name="notifications"
+            size={20}
+            color={theme.colors.text}
+          />
         )
     }
-  }, [type])
+  }, [type, theme.colors.text])
 
   const title = useMemo(() => {
     switch (type) {
@@ -107,7 +127,7 @@ export const Notification = ({
 
   return (
     <View style={[styles.container, style]}>
-      <View style={[styles.icon, { backgroundColor: colors.card }]}>
+      <View style={[styles.icon, { backgroundColor: theme.colors.card }]}>
         <ThemedText>{icon}</ThemedText>
       </View>
       <View style={styles.content}>

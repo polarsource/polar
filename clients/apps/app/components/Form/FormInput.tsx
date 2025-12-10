@@ -1,12 +1,13 @@
+import { Box } from '@/components/Shared/Box'
 import { Input } from '@/components/Shared/Input'
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import {
   Control,
   FieldValues,
   useController,
   UseControllerProps,
 } from 'react-hook-form'
-import { TextInputProps, View } from 'react-native'
+import { TextInputProps } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
 export type FormInputProps<T extends FieldValues> = TextInputProps & {
@@ -26,18 +27,12 @@ export const FormInput = <T extends FieldValues>({
   ...props
 }: FormInputProps<T>) => {
   const { field } = useController({ control, name, defaultValue })
-  const { colors, theme } = useTheme()
+  const theme = useTheme()
 
   if (label) {
     return (
-      <View style={{ flexDirection: 'column', gap: 8 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 8,
-            justifyContent: 'space-between',
-          }}
-        >
+      <Box flexDirection="column" gap="spacing-8">
+        <Box flexDirection="row" gap="spacing-8" justifyContent="space-between">
           <ThemedText style={{ fontSize: 16 }} secondary>
             {label}
           </ThemedText>
@@ -46,9 +41,9 @@ export const FormInput = <T extends FieldValues>({
               {secondaryLabel}
             </ThemedText>
           )}
-        </View>
+        </Box>
         <Input value={field.value} onChangeText={field.onChange} {...props} />
-      </View>
+      </Box>
     )
   }
 
@@ -56,7 +51,7 @@ export const FormInput = <T extends FieldValues>({
     <Input
       value={field.value}
       onChangeText={field.onChange}
-      placeholderTextColor={colors.subtext}
+      placeholderTextColor={theme.colors.subtext}
       {...props}
     />
   )

@@ -53,6 +53,7 @@ dependencies = [
   "fpdf2>=2.8.3",
   "pydantic-ai-slim[openai]>=0.7.1",
   "asgi-ratelimit>=0.10.0",
+  "aiocsv>=1.4.0",
 ]
 
 [dependency-groups]

@@ -7,6 +7,33 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "aiocsv"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e7/4c/07c7baeb5bf3e9c4f64d4d31430d41fc00c301fa0f43644f64b09127b7f7/aiocsv-1.4.0.tar.gz", hash = "sha256:f3877e5ef493616a1e0c1365744bbff89184b6f84e9a70859fe319d92060079a", size = 25872, upload-time = "2025-09-22T12:04:26.024Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/fc/0bd4bf6d3a60800afd6dbbdbfd972e8b8d92e95458491a8dff79c8b0b15a/aiocsv-1.4.0-cp314-cp314-macosx_10_13_x86_64.whl", hash = "sha256:03a91aa96c3341277956b95248e818628d36f7218cebcba36262a1bc014a183d", size = 27248, upload-time = "2025-09-22T12:12:49.562Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/fc/93bd48f3c390bdbe973e5ec497ce81b32046208fdeb6c54632f85074c3fc/aiocsv-1.4.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:b2b95faa180a8e7563a44545a9fb7a0ab535f827729183a7d595c69337f604a5", size = 27722, upload-time = "2025-09-22T12:12:50.26Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/4b/0b298d72ca1dc0126a447f0ffb9c5be55ba9c0dd6f9604376aa140a1fce6/aiocsv-1.4.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:e4ee48ddf88e63a27caf6f3a797cc2107113a6cd4a2579a90a0ce7066ecf29fd", size = 51328, upload-time = "2025-09-22T12:12:51.004Z" },
+    { url = "https://files.pythonhosted.org/packages/71/82/b3b461e929cdd8dd92637c683f81ea885234aecd8c9d1058c79b07a2959f/aiocsv-1.4.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:fe2462c5da8387fe594d2905cab096abf2982c6d44c1eb1ee03ccca183ea5338", size = 51862, upload-time = "2025-09-22T12:12:51.755Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/4d/c40e1b2f509cc1ea763edc7f6e8fb77d55a75b03b7107bb39848177e2ac6/aiocsv-1.4.0-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:c3147be681208231d53367794cbcde557c461ec2cc6e240f68ce637176bcf172", size = 50854, upload-time = "2025-09-22T12:12:52.494Z" },
+    { url = "https://files.pythonhosted.org/packages/de/aa/4289e51a3ade85feffd90cd8f343bf622c89d30327e02fe8cea5d0cca842/aiocsv-1.4.0-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:ce1cca5da676c55ddda624a4afcb1db9874897cac0d029e680cf114779daef19", size = 51022, upload-time = "2025-09-22T12:12:53.236Z" },
+    { url = "https://files.pythonhosted.org/packages/77/65/660f7683716c790034ea04e90eafb0e6ce8419a58e8b991b66a9825e8a2c/aiocsv-1.4.0-cp314-cp314-win32.whl", hash = "sha256:c926ac5dd442bd390a2fbae20c5207aabf275374de15359f37bcddaa60bfaedc", size = 29421, upload-time = "2025-09-22T12:12:53.977Z" },
+    { url = "https://files.pythonhosted.org/packages/79/ae/9054d92876a35e8a48fcd7164dd75577410b8080d25790b3bf47766674be/aiocsv-1.4.0-cp314-cp314-win_amd64.whl", hash = "sha256:e7a703643191b742d67d4e047dcc4b2314d2914f03879732a81139c62784f278", size = 30247, upload-time = "2025-09-22T12:12:54.74Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/58/67a8de91e8b2f08dbdadfb8fd9b1bf84530780c6f94db548b925993d37d1/aiocsv-1.4.0-cp314-cp314t-macosx_10_13_x86_64.whl", hash = "sha256:b78c992cf58ca1808182490b928261a11028d6b0cf6940a641ddd74ba8acccf2", size = 27773, upload-time = "2025-09-22T12:12:55.501Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/0a/4d6cc89dcc3812525e63ccd1451e047de20328c7db58b05b3e3f36b3cab5/aiocsv-1.4.0-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:4199dc97fbfcc6757c7de3e300f1c9de3736adf7700b009bd8795c6e708f855f", size = 28184, upload-time = "2025-09-22T12:12:56.542Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/aa/f5467a1352f1d92391078724da333361481e9cfb400338d27e17665d03d8/aiocsv-1.4.0-cp314-cp314t-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl", hash = "sha256:84c7cf52ec30b7a78beec457c234defb837c970b4fbbcac113ddc769e533891c", size = 57063, upload-time = "2025-09-22T12:12:57.234Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/2b/338acbc82536d79630614eda16b5605cea7287c2af49fcf172cdadb1d645/aiocsv-1.4.0-cp314-cp314t-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c9b3075b482c7f419262b994f25827da5d917fb974b725d75f84b885eb634832", size = 58453, upload-time = "2025-09-22T12:12:57.981Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/91/6c3b1907f7bf1faac67c4de07b336ce4e4be35e904431afa909b7f66701d/aiocsv-1.4.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:71756714498cae7775bd2f58b44d66d20d59be99b3c6231ba880282fe0bf0524", size = 56605, upload-time = "2025-09-22T12:12:58.749Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/f0/1cf5a1a51157238e44e3ffa314d3b7d71e990adc9c94363bd63e833026b9/aiocsv-1.4.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:5c72822d9e405bef16a6c9aa06940c8671fc76bea67d13dad8d5766c5d2033dd", size = 56174, upload-time = "2025-09-22T12:12:59.52Z" },
+    { url = "https://files.pythonhosted.org/packages/65/7f/e3bff58fcb1636ae49822c56c460463e11965837662ee9d1f092d51ba230/aiocsv-1.4.0-cp314-cp314t-win32.whl", hash = "sha256:036433ef0e512921c265d5ace346748a60d8bfdd0b09bac558b8682f654f5018", size = 30000, upload-time = "2025-09-22T12:13:00.301Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/b7/cc8ae7c1d3fe815078368d03f73019ae92c55b5f20614fa4e5e469dc8d8a/aiocsv-1.4.0-cp314-cp314t-win_amd64.whl", hash = "sha256:e5f655da021fb32303f676f22c643d7348788619120e864e22de92c9421c7eaa", size = 30938, upload-time = "2025-09-22T12:13:01.027Z" },
+]
+
+[[package]]
 name = "alembic"
 version = "1.17.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1784,6 +1811,7 @@ name = "polar"
 version = "0.0.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiocsv" },
     { name = "alembic" },
     { name = "apscheduler" },
     { name = "asgi-ratelimit" },
@@ -1864,6 +1892,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiocsv", specifier = ">=1.4.0" },
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "asgi-ratelimit", specifier = ">=0.10.0" },

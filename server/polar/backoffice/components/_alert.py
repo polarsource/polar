@@ -3,7 +3,8 @@ from collections.abc import Generator
 from typing import Any
 
 from sqlalchemy.util.typing import Literal
-from tagflow import classes, tag
+from tagflow import classes as _classes
+from tagflow import tag
 
 Variant = Literal["info", "success", "warning", "error"]
 
@@ -13,6 +14,8 @@ def alert(
     variant: Variant | None = None,
     dash: bool = False,
     soft: bool = False,
+    *,
+    classes: str | None = None,
     **kwargs: Any,
 ) -> Generator[None]:
     """Create a styled alert component using DaisyUI classes.
@@ -40,11 +43,13 @@ def alert(
     }
     with tag.div(classes="alert", role="alert", **kwargs):
         if variant:
-            classes(variants[variant])
+            _classes(variants[variant])
         if dash:
-            classes("alert-dash")
+            _classes("alert-dash")
         if soft:
-            classes("alert-soft")
+            _classes("alert-soft")
+        if classes:
+            _classes(classes)
         yield
 
 

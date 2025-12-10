@@ -98,7 +98,9 @@ class DisputeService:
 
         # First try to find by Stripe Dispute ID
         dispute = await repository.get_by_payment_processor_dispute_id(
-            PaymentProcessor.stripe, stripe_dispute.id
+            PaymentProcessor.stripe,
+            stripe_dispute.id,
+            options=repository.get_eager_options(),
         )
         # Then try to find by matching payment info, in case we got a ChargebackStop alert first
         from_alert = False
@@ -108,6 +110,7 @@ class DisputeService:
                 charge_id,
                 stripe_dispute.amount,
                 stripe_dispute.currency,
+                options=repository.get_eager_options(),
             )
             from_alert = dispute is not None
 

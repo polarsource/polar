@@ -612,6 +612,7 @@ class TestCreateFromDispute:
         assert refund.order_id == order.id
         assert refund.processor == dispute.payment_processor
         assert refund.processor_id == dispute.payment_processor_id
+        assert refund.revoke_benefits is True
 
         assert refund_transaction_service_mock.create.call_count == 1
 
@@ -650,6 +651,7 @@ class TestCreateFromDispute:
         assert refund.order_id == order.id
         assert refund.processor == dispute.payment_processor
         assert refund.processor_id == dispute.payment_processor_id
+        assert refund.revoke_benefits is True
 
         assert order.status == OrderStatus.refunded
         assert order.refundable_amount == 0

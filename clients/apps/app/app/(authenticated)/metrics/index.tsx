@@ -6,6 +6,7 @@ import {
 } from '@/components/Metrics/utils'
 import { Box } from '@/components/Shared/Box'
 import { Tabs, TabsList, TabsTrigger } from '@/components/Shared/Tabs'
+import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
@@ -16,11 +17,11 @@ import {
   FlatList,
   RefreshControl,
   SafeAreaView,
-  StyleSheet,
 } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
+  const theme = useTheme()
   const [selectedTimeInterval, setSelectedTimeInterval] =
     useState<keyof ReturnType<typeof timeRange>>('30d')
 
@@ -75,7 +76,7 @@ export default function Index() {
           title: 'Metrics',
         }}
       />
-      <SafeAreaView style={MetricsStyles.tabsStyle}>
+      <SafeAreaView style={{ margin: theme.spacing['spacing-16'] }}>
         <Tabs
           defaultValue={selectedTimeInterval}
           onValueChange={(value) =>
@@ -101,8 +102,12 @@ export default function Index() {
         </Box>
       ) : (
         <FlatList
-          style={MetricsStyles.container}
-          contentContainerStyle={MetricsStyles.contentContainer}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexDirection: 'column',
+            padding: theme.spacing['spacing-16'],
+            gap: theme.spacing['spacing-16'],
+          }}
           data={
             Object.entries(metrics.data?.metrics ?? {}).map(
               ([metric, value]) => ({
@@ -145,22 +150,3 @@ export default function Index() {
     </>
   )
 }
-
-const MetricsStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  tabsStyle: {
-    margin: 16,
-  },
-  contentContainer: {
-    flexDirection: 'column',
-    padding: 16,
-    gap: 16,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-})

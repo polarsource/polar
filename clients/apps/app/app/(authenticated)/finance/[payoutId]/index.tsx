@@ -1,13 +1,14 @@
 import { DetailRow, Details } from '@/components/Shared/Details'
+import { useTheme } from '@/design-system/useTheme'
 import { usePayout } from '@/hooks/polar/finance'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import React from 'react'
-import { SafeAreaView, StyleSheet } from 'react-native'
+import { SafeAreaView } from 'react-native'
 
 export default function Index() {
   const { payoutId } = useLocalSearchParams<{ payoutId: string }>()
-
+  const theme = useTheme()
   const { data: payout } = usePayout(payoutId)
 
   return (
@@ -17,9 +18,9 @@ export default function Index() {
         style={{
           flex: 1,
           flexDirection: 'column',
-          gap: 16,
+          gap: theme.spacing['spacing-16'],
           justifyContent: 'space-between',
-          margin: 16,
+          margin: theme.spacing['spacing-16'],
         }}
       >
         <Details>
@@ -34,17 +35,17 @@ export default function Index() {
                   })
                 : undefined
             }
-            valueStyle={PayoutStyles.valueStyle}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Status"
             value={payout?.status.split('_').join(' ')}
-            valueStyle={PayoutStyles.valueStyle}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Processor"
             value={payout?.processor}
-            valueStyle={PayoutStyles.valueStyle}
+            valueStyle={{ textTransform: 'capitalize' }}
           />
           <DetailRow
             label="Gross"
@@ -65,18 +66,3 @@ export default function Index() {
     </>
   )
 }
-
-const PayoutStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    padding: 16,
-    gap: 16,
-  },
-  title: {
-    fontSize: 24,
-  },
-  valueStyle: {
-    textTransform: 'capitalize',
-  },
-})

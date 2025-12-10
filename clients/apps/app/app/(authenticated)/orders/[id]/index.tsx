@@ -8,12 +8,7 @@ import { useOrder } from '@/hooks/polar/orders'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native'
+import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
 
 const statusColors = {
   pending: 'yellow',
@@ -40,11 +35,15 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={{
+        flex: 1,
+        padding: theme.spacing['spacing-16'],
+        backgroundColor: theme.colors.background,
+      }}
       contentContainerStyle={{
         flexDirection: 'column',
-        gap: 16,
-        paddingBottom: 48,
+        gap: theme.spacing['spacing-16'],
+        paddingBottom: theme.spacing['spacing-48'],
       }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
@@ -58,45 +57,47 @@ export default function Index() {
 
       <Box flexDirection="row" gap="spacing-12">
         <TouchableOpacity
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.colors.card,
-              flex: 1,
-              gap: 4,
-              width: '50%',
-            },
-          ]}
+          style={{
+            flexDirection: 'column',
+            gap: theme.spacing['spacing-4'],
+            borderRadius: theme.borderRadii['border-radius-12'],
+            padding: theme.spacing['spacing-12'],
+            backgroundColor: theme.colors.card,
+            flex: 1,
+            width: '50%',
+          }}
           onPress={() => {
             Clipboard.setStringAsync(order.id)
           }}
           activeOpacity={0.6}
         >
-          <ThemedText style={[styles.label, { fontSize: 18 }]} secondary>
+          <ThemedText style={{ fontSize: 18 }} secondary>
             #
           </ThemedText>
           <ThemedText
-            style={[styles.value, { textTransform: 'uppercase', fontSize: 18 }]}
+            style={{
+              fontSize: 18,
+              fontWeight: '500',
+              textTransform: 'uppercase',
+            }}
             numberOfLines={1}
           >
             {order.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
         <Box
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.colors.card,
-              flex: 1,
-              gap: 4,
-              width: '50%',
-            },
-          ]}
+          flexDirection="column"
+          gap="spacing-4"
+          borderRadius="border-radius-12"
+          padding="spacing-12"
+          backgroundColor="card"
+          flex={1}
+          width="50%"
         >
-          <ThemedText style={[styles.label]} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             Date
           </ThemedText>
-          <ThemedText style={[styles.value]}>
+          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
             {new Date(order.created_at).toLocaleDateString('en-US', {
               dateStyle: 'medium',
             })}
@@ -108,25 +109,22 @@ export default function Index() {
 
       <Box>
         <Box
-          style={[
-            styles.card,
-            { backgroundColor: theme.colors.card, gap: 0, paddingVertical: 0 },
-          ]}
+          padding="spacing-16"
+          borderRadius="border-radius-12"
+          backgroundColor="card"
         >
           {order.items.map((item, index, arr) => (
             <Box
               key={item.id}
-              style={{
-                borderBottomWidth: index === arr.length - 1 ? 0 : 1,
-                borderColor: theme.colors.border,
-                gap: 4,
-                paddingVertical: 16,
-              }}
+              borderBottomWidth={index === arr.length - 1 ? 0 : 1}
+              borderColor="border"
+              gap="spacing-4"
+              paddingVertical="spacing-16"
             >
-              <ThemedText style={[styles.label]} numberOfLines={1}>
+              <ThemedText style={{ fontSize: 16 }} numberOfLines={1}>
                 {item.label}
               </ThemedText>
-              <ThemedText style={[styles.value]}>
+              <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
                 {formatCurrencyAndAmount(item.amount)}
               </ThemedText>
             </Box>
@@ -213,71 +211,3 @@ export default function Index() {
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    gap: 12,
-    flexDirection: 'column',
-  },
-  image: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  imageFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fallbackText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  section: {},
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  box: {
-    flexDirection: 'column',
-    gap: 4,
-    borderRadius: 12,
-    padding: 12,
-  },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-})

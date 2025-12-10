@@ -1,5 +1,6 @@
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { SlideToAction } from '@/components/Shared/SlideToAction'
+import { useTheme } from '@/design-system/useTheme'
 import {
   useCreatePayout,
   useOrganizationAccount,
@@ -12,7 +13,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useMemo, useRef } from 'react'
-import { SafeAreaView, ScrollView, StyleSheet } from 'react-native'
+import { SafeAreaView, ScrollView } from 'react-native'
 
 export default function Index() {
   const scrollRef = useRef<ScrollView>(null)
@@ -21,7 +22,7 @@ export default function Index() {
   const { data: estimate } = usePayoutEstimate(account?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
   const { data: orders } = useOrders(organization?.id, { limit: 1 })
-
+  const theme = useTheme()
   const router = useRouter()
 
   const { mutateAsync: withdrawFunds, isPending } = useCreatePayout(account?.id)
@@ -38,9 +39,9 @@ export default function Index() {
         style={{
           flex: 1,
           flexDirection: 'column',
-          gap: 16,
+          gap: theme.spacing['spacing-16'],
           justifyContent: 'space-between',
-          margin: 16,
+          margin: theme.spacing['spacing-16'],
         }}
       >
         <Details>
@@ -91,15 +92,3 @@ export default function Index() {
     </>
   )
 }
-
-const PayoutStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'column',
-    padding: 16,
-    gap: 16,
-  },
-  title: {
-    fontSize: 24,
-  },
-})

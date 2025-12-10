@@ -12,12 +12,7 @@ import { useUser } from '@/providers/UserProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native'
+import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -47,23 +42,24 @@ export default function Index() {
     useState(false)
 
   return (
-    <GestureHandlerRootView style={SettingsStyle.gestureRoot}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <ScrollView
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
         }
-        contentContainerStyle={[
-          SettingsStyle.container,
-          { paddingBottom: safeAreaInsets.bottom },
-        ]}
+        contentContainerStyle={{
+          flex: 1,
+          margin: theme.spacing['spacing-16'],
+          gap: theme.spacing['spacing-24'],
+          justifyContent: 'space-between',
+          paddingBottom: safeAreaInsets.bottom,
+        }}
       >
         <Stack.Screen options={{ title: 'Settings' }} />
         <Box gap="spacing-32">
           <Box gap="spacing-16">
             <Box flexDirection="row" justifyContent="space-between">
-              <ThemedText style={[SettingsStyle.title]}>
-                Organizations
-              </ThemedText>
+              <ThemedText style={{ fontSize: 20 }}>Organizations</ThemedText>
               <MiniButton
                 onPress={() => router.push('/onboarding')}
                 icon={
@@ -81,12 +77,17 @@ export default function Index() {
               {organizationData?.items.map((organization) => (
                 <TouchableOpacity
                   key={organization?.id}
-                  style={[
-                    SettingsStyle.organization,
-                    {
-                      backgroundColor: theme.colors.card,
-                    },
-                  ]}
+                  style={{
+                    paddingVertical: theme.spacing['spacing-16'],
+                    paddingLeft: theme.spacing['spacing-16'],
+                    paddingRight: theme.spacing['spacing-24'],
+                    borderRadius: theme.borderRadii['border-radius-12'],
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: theme.spacing['spacing-12'],
+                    justifyContent: 'space-between',
+                    backgroundColor: theme.colors.card,
+                  }}
                   onPress={() => {
                     setOrganization(organization)
                     router.back()
@@ -99,7 +100,7 @@ export default function Index() {
                       image={organization?.avatar_url}
                       name={organization?.name}
                     />
-                    <ThemedText style={[SettingsStyle.organizationName]}>
+                    <ThemedText style={{ fontSize: 16 }}>
                       {organization?.name}
                     </ThemedText>
                   </Box>
@@ -116,7 +117,7 @@ export default function Index() {
           </Box>
           <Box gap="spacing-16">
             <Box>
-              <ThemedText style={[SettingsStyle.title]}>Danger zone</ThemedText>
+              <ThemedText style={{ fontSize: 20 }}>Danger zone</ThemedText>
               <ThemedText style={{ color: theme.colors.subtext }}>
                 Irreversible actions for this account
               </ThemedText>
@@ -129,7 +130,7 @@ export default function Index() {
               backgroundColor="card"
             >
               <Box gap="spacing-4">
-                <ThemedText style={[SettingsStyle.subTitle]}>
+                <ThemedText style={{ fontSize: 18 }}>
                   Account Deletion
                 </ThemedText>
                 <ThemedText secondary>
@@ -161,51 +162,3 @@ export default function Index() {
     </GestureHandlerRootView>
   )
 }
-
-const SettingsStyle = StyleSheet.create({
-  gestureRoot: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    margin: 16,
-    gap: 24,
-    justifyContent: 'space-between',
-  },
-  organizationsContainer: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-  title: {
-    fontSize: 20,
-  },
-  subTitle: {
-    fontSize: 18,
-  },
-  organization: {
-    paddingVertical: 16,
-    paddingLeft: 16,
-    paddingRight: 24,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  organizationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  organizationName: {
-    fontSize: 16,
-  },
-  logoutButtonText: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonsContainer: {
-    gap: 12,
-  },
-})

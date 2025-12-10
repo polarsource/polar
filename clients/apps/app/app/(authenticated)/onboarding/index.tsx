@@ -15,7 +15,6 @@ import {
   Linking,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
 } from 'react-native'
 import slugify from 'slugify'
@@ -100,7 +99,7 @@ export default function Onboarding() {
     <ScrollView
       contentContainerStyle={{
         backgroundColor: theme.colors.background,
-        paddingBottom: 16,
+        paddingBottom: theme.spacing['spacing-16'],
       }}
     >
       <Stack.Screen
@@ -108,9 +107,23 @@ export default function Onboarding() {
           header: () => null,
         }}
       />
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={{
+          margin: theme.spacing['spacing-16'],
+          gap: theme.spacing['spacing-32'],
+        }}
+      >
         <Box gap="spacing-16">
-          <ThemedText style={styles.title}>Create your organization</ThemedText>
+          <ThemedText
+            style={{
+              fontSize: 56,
+              lineHeight: 56,
+              paddingVertical: theme.spacing['spacing-32'],
+              fontFamily: 'InstrumentSerif_400Regular',
+            }}
+          >
+            Create your organization
+          </ThemedText>
           {errors.root && <ThemedText error>{errors.root.message}</ThemedText>}
           <FormInput
             label="Organization Name"
@@ -213,19 +226,3 @@ export default function Onboarding() {
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    margin: 16,
-    gap: 32,
-  },
-  title: {
-    fontSize: 56,
-    lineHeight: 56,
-    paddingVertical: 32,
-    fontFamily: 'InstrumentSerif_400Regular',
-  },
-  form: {
-    gap: 16,
-  },
-})

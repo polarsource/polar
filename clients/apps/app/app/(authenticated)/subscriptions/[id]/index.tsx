@@ -1,14 +1,15 @@
 import { CustomerRow } from '@/components/Customers/CustomerRow'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { ProductRow } from '@/components/Products/ProductRow'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Pill } from '@/components/Shared/Pill'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscription } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import * as Clipboard from 'expo-clipboard'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
@@ -18,7 +19,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 
 const statusColors = {
@@ -34,7 +34,7 @@ const statusColors = {
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const { id } = useLocalSearchParams()
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const {
     data: subscription,
@@ -64,7 +64,7 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={{
         flexDirection: 'column',
         gap: 16,
@@ -80,11 +80,16 @@ export default function Index() {
         }}
       />
 
-      <View style={[styles.section, { gap: 12, flexDirection: 'row' }]}>
+      <Box flexDirection="row" gap="spacing-12">
         <TouchableOpacity
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
+            {
+              backgroundColor: theme.colors.card,
+              flex: 1,
+              gap: 4,
+              width: '50%',
+            },
           ]}
           onPress={() => {
             Clipboard.setStringAsync(subscription.id)
@@ -101,10 +106,15 @@ export default function Index() {
             {subscription.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
-        <View
+        <Box
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
+            {
+              backgroundColor: theme.colors.card,
+              flex: 1,
+              gap: 4,
+              width: '50%',
+            },
           ]}
         >
           <ThemedText style={[styles.label, { fontSize: 16 }]} secondary>
@@ -115,14 +125,14 @@ export default function Index() {
               dateStyle: 'medium',
             })}
           </ThemedText>
-        </View>
-      </View>
+        </Box>
+      </Box>
 
       <CustomerRow customer={subscription.customer} />
 
       <ProductRow product={subscription.product} />
 
-      <View style={styles.section}>
+      <Box>
         <Details>
           <DetailRow
             label="Status"
@@ -195,38 +205,36 @@ export default function Index() {
             />
           )}
         </Details>
-      </View>
+      </Box>
 
       {subscription.metadata &&
         Object.keys(subscription.metadata).length > 0 && (
-          <View style={styles.section}>
+          <Box>
             <Details>
               {Object.entries(subscription.metadata).map(([key, value]) => (
                 <DetailRow key={key} label={key} value={String(value)} />
               ))}
             </Details>
-          </View>
+          </Box>
         )}
 
       {subscription.status === 'active' && (
-        <View style={{ flexDirection: 'column', gap: 8 }}>
+        <Box flexDirection="column" gap="spacing-8">
           <Link key={'update'} href={`/subscriptions/${id}/update`} asChild>
             <Button>Update Subscription</Button>
           </Link>
           <Link key={'cancel'} href={`/subscriptions/${id}/cancel`} asChild>
             <Button variant="secondary">Cancel Subscription</Button>
           </Link>
-        </View>
+        </Box>
       )}
 
-      <View style={[styles.section, { gap: 16, paddingVertical: 12 }]}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            justifyContent: 'space-between',
-          }}
+      <Box gap="spacing-16" paddingVertical="spacing-12">
+        <Box
+          flexDirection="row"
+          alignItems="center"
+          gap="spacing-8"
+          justifyContent="space-between"
         >
           <ThemedText style={[styles.label, { fontSize: 20 }]}>
             Subscription Orders
@@ -234,7 +242,7 @@ export default function Index() {
           <ThemedText style={[styles.label, { fontSize: 20 }]} secondary>
             {flatSubscriptionOrders.length}
           </ThemedText>
-        </View>
+        </Box>
 
         {flatSubscriptionOrders.length > 0 ? (
           <>
@@ -248,7 +256,7 @@ export default function Index() {
             description="This Subscription has no associated orders"
           />
         )}
-      </View>
+      </Box>
     </ScrollView>
   )
 }

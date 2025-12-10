@@ -3,7 +3,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { Dimensions, StyleSheet, TouchableOpacity } from 'react-native'
+import { Dimensions, TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { ThemedText } from '../Shared/ThemedText'
 
@@ -17,7 +17,16 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
   return (
     <Link
       href={`/customers/${customer.id}`}
-      style={[styles.container, { backgroundColor: theme.colors.card }]}
+      style={{
+        paddingVertical: theme.spacing['spacing-32'],
+        paddingHorizontal: theme.spacing['spacing-16'],
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: theme.spacing['spacing-32'],
+        borderRadius: theme.borderRadii['border-radius-16'],
+        width: Dimensions.get('screen').width * 0.66,
+        backgroundColor: theme.colors.card,
+      }}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
@@ -27,9 +36,13 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
           image={customer.avatar_url ?? undefined}
         />
         <Box flexDirection="column" alignItems="center" gap="spacing-8">
-          <ThemedText style={[styles.name]}>{customer.name ?? '—'}</ThemedText>
           <ThemedText
-            style={[styles.email]}
+            style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}
+          >
+            {customer.name ?? '—'}
+          </ThemedText>
+          <ThemedText
+            style={{ fontSize: 14, textAlign: 'center' }}
             numberOfLines={1}
             ellipsizeMode="tail"
             secondary
@@ -41,24 +54,3 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
     </Link>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 32,
-    paddingHorizontal: 16,
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 32,
-    borderRadius: 16,
-    width: Dimensions.get('screen').width * 0.66,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  email: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-})

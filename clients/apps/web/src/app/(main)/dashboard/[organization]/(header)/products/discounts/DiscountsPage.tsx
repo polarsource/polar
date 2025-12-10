@@ -22,12 +22,12 @@ import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import  FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   DropdownMenu,
@@ -246,7 +246,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
       cell: ({ row: { original: discount } }) => {
         return (
           <>
-           <FormattedDateTime datetime={discount.created_at} resolution="day" />
+            <FormattedDateTime
+              datetime={discount.created_at}
+              resolution="day"
+            />
           </>
         )
       },

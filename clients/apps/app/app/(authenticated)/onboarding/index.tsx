@@ -1,12 +1,12 @@
 import { FormInput } from '@/components/Form/FormInput'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { Checkbox } from '@/components/Shared/Checkbox'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useCreateOrganization } from '@/hooks/polar/organizations'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { queryClient } from '@/utils/query'
-import { themes } from '@/utils/theme'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
@@ -17,12 +17,11 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import slugify from 'slugify'
 
 export default function Onboarding() {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const router = useRouter()
   const { organizations, setOrganization } = useContext(OrganizationContext)
 
@@ -100,7 +99,7 @@ export default function Onboarding() {
   return (
     <ScrollView
       contentContainerStyle={{
-        backgroundColor: colors.background,
+        backgroundColor: theme.colors.background,
         paddingBottom: 16,
       }}
     >
@@ -110,7 +109,7 @@ export default function Onboarding() {
         }}
       />
       <SafeAreaView style={styles.container}>
-        <View style={styles.form}>
+        <Box gap="spacing-16">
           <ThemedText style={styles.title}>Create your organization</ThemedText>
           {errors.root && <ThemedText error>{errors.root.message}</ThemedText>}
           <FormInput
@@ -131,10 +130,10 @@ export default function Onboarding() {
             checked={watch('terms')}
             onChange={(checked) => setValue('terms', checked)}
           />
-          <View>
-            <View style={{ marginLeft: 4, gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <View>
+          <Box>
+            <Box style={{ marginLeft: 4 }} gap="spacing-8">
+              <Box flexDirection="row" alignItems="flex-start">
+                <Box>
                   <TouchableOpacity
                     onPress={() =>
                       Linking.openURL(
@@ -142,7 +141,7 @@ export default function Onboarding() {
                       )
                     }
                   >
-                    <ThemedText style={styles.link}>
+                    <ThemedText style={{ color: theme.colors.primary }}>
                       Acceptable Use Policy
                     </ThemedText>
                   </TouchableOpacity>
@@ -150,9 +149,9 @@ export default function Onboarding() {
                     I&apos;ll only sell digital products and SaaS that complies
                     with it or risk suspension.
                   </ThemedText>
-                </View>
-              </View>
-              <View>
+                </Box>
+              </Box>
+              <Box>
                 <TouchableOpacity
                   onPress={() =>
                     Linking.openURL(
@@ -160,50 +159,56 @@ export default function Onboarding() {
                     )
                   }
                 >
-                  <ThemedText style={styles.link}>Account Reviews</ThemedText>
+                  <ThemedText style={{ color: theme.colors.primary }}>
+                    Account Reviews
+                  </ThemedText>
                 </TouchableOpacity>
                 <ThemedText secondary>
                   I&apos;ll comply with all reviews and requests for compliance
                   materials (KYC/AML).
                 </ThemedText>
-              </View>
-              <View>
+              </Box>
+              <Box>
                 <TouchableOpacity
                   onPress={() =>
                     Linking.openURL('https://polar.sh/legal/terms')
                   }
                 >
-                  <ThemedText style={styles.link}>Terms of Service</ThemedText>
+                  <ThemedText style={{ color: theme.colors.primary }}>
+                    Terms of Service
+                  </ThemedText>
                 </TouchableOpacity>
-              </View>
+              </Box>
 
-              <View>
+              <Box>
                 <TouchableOpacity
                   onPress={() =>
                     Linking.openURL('https://polar.sh/legal/privacy')
                   }
                 >
-                  <ThemedText style={styles.link}>Privacy Policy</ThemedText>
+                  <ThemedText style={{ color: theme.colors.primary }}>
+                    Privacy Policy
+                  </ThemedText>
                 </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
 
-        <View style={{ gap: 8 }}>
-          <View>
+        <Box gap="spacing-8">
+          <Box>
             <Button onPress={handleSubmit(onSubmit)} disabled={!isValid}>
               Create Organization
             </Button>
-          </View>
+          </Box>
           {organizations.length > 0 && (
-            <View>
+            <Box>
               <Button onPress={() => router.replace('/')} variant="secondary">
                 Back to Dashboard
               </Button>
-            </View>
+            </Box>
           )}
-        </View>
+        </Box>
       </SafeAreaView>
     </ScrollView>
   )
@@ -222,8 +227,5 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
-  },
-  link: {
-    color: themes.dark.primary,
   },
 })

@@ -7,7 +7,6 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Link } from 'expo-router'
 import { useContext } from 'react'
-import { StyleSheet } from 'react-native'
 import { MiniButton } from '../Shared/MiniButton'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
@@ -26,10 +25,10 @@ export const FinanceTile = () => {
     <Tile href="/finance">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
-          <ThemedText style={[styles.subtitle]} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             Account Balance
           </ThemedText>
-          <ThemedText style={[styles.title]} numberOfLines={1}>
+          <ThemedText style={{ fontSize: 22 }} numberOfLines={1}>
             {formatCurrencyAndAmount(
               summary?.balance.amount ?? 0,
               'USD',
@@ -53,15 +52,3 @@ export const FinanceTile = () => {
     </Tile>
   )
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 22,
-  },
-  subtitle: {
-    fontSize: 16,
-  },
-  revenueValue: {
-    fontSize: 26,
-  },
-})

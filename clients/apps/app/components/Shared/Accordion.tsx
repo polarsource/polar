@@ -2,7 +2,7 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useState } from 'react'
-import { StyleSheet, TouchableOpacity } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 export interface AccordionProps {
@@ -22,11 +22,20 @@ export const Accordion = ({
   return (
     <Box flex={1} flexDirection="column" gap="spacing-12">
       <TouchableOpacity
-        style={[styles.header, { backgroundColor: theme.colors.card }]}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing['spacing-8'],
+          justifyContent: 'space-between',
+          paddingVertical: theme.spacing['spacing-12'],
+          paddingHorizontal: theme.spacing['spacing-16'],
+          borderRadius: theme.borderRadii['border-radius-12'],
+          backgroundColor: theme.colors.card,
+        }}
         onPress={() => setOpen(!open)}
         activeOpacity={0.6}
       >
-        <ThemedText style={styles.title}>{title}</ThemedText>
+        <ThemedText style={{ fontSize: 16 }}>{title}</ThemedText>
         <MaterialIcons
           name={open ? 'expand-less' : 'expand-more'}
           size={24}
@@ -37,21 +46,3 @@ export const Accordion = ({
     </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-  },
-  title: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    fontSize: 16,
-  },
-})

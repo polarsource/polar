@@ -1,15 +1,16 @@
 import { Notification } from '@/components/Notifications/Notification'
+import { Box } from '@/components/Shared/Box'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import {
   Notification as PolarNotification,
   useListNotifications,
   useNotificationsMarkRead,
 } from '@/hooks/polar/notifications'
-import { useTheme } from '@/hooks/theme'
 import { setBadgeCountAsync } from 'expo-notifications'
 import { Stack } from 'expo-router'
 import React, { useEffect } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 
 const groupNotificationsByDate = (notifications: PolarNotification[]) => {
   if (!notifications?.length) return []
@@ -39,7 +40,7 @@ const groupNotificationsByDate = (notifications: PolarNotification[]) => {
 }
 
 export default function Notifications() {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const {
     data: notifications,
     refetch: refetchNotifications,
@@ -65,17 +66,11 @@ export default function Notifications() {
         data={groupNotificationsByDate(notifications?.notifications ?? [])}
         ListEmptyComponent={
           isLoading ? null : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+            <Box flex={1} justifyContent="center" alignItems="center">
               <ThemedText style={{ fontSize: 16 }} secondary>
                 No Notifications
               </ThemedText>
-            </View>
+            </Box>
           )
         }
         renderItem={({ item }: { item: PolarNotification | string }) => {
@@ -105,10 +100,10 @@ export default function Notifications() {
         }}
         contentContainerStyle={{
           padding: 16,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
-        ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl

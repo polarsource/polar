@@ -1,3 +1,4 @@
+import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
   createContext,
@@ -6,7 +7,7 @@ import {
   useContext,
   useState,
 } from 'react'
-import { StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native'
+import { StyleProp, TouchableOpacity, ViewStyle } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 const TabsContext = createContext({
@@ -61,24 +62,20 @@ export const TabsContent = ({
 
   if (activeValue !== value) return null
 
-  return <View style={style}>{children}</View>
+  return <Box style={style}>{children}</Box>
 }
 
 export const TabsList = ({ children }: PropsWithChildren) => {
-  const theme = useTheme()
-
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        gap: 8,
-        backgroundColor: theme.colors.card,
-        padding: 4,
-        borderRadius: 16,
-      }}
+    <Box
+      flexDirection="row"
+      gap="spacing-8"
+      backgroundColor="card"
+      padding="spacing-4"
+      borderRadius="border-radius-16"
     >
       {children}
-    </View>
+    </Box>
   )
 }
 

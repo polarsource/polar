@@ -6,13 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React, { useContext } from 'react'
-import {
-  Image,
-  StyleProp,
-  StyleSheet,
-  TextStyle,
-  TouchableOpacity,
-} from 'react-native'
+import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
 export interface OrderRowProps {
@@ -29,20 +23,38 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
   return (
     <Link
       href={`/orders/${order.id}`}
-      style={[styles.container, { backgroundColor: theme.colors.card }, style]}
+      style={[
+        {
+          padding: theme.spacing['spacing-16'],
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderRadius: theme.borderRadii['border-radius-12'],
+          gap: theme.spacing['spacing-12'],
+          backgroundColor: theme.colors.card,
+        },
+        style,
+      ]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
-        <Box style={styles.imageContainer}>
+        <Box
+          width={48}
+          height={48}
+          borderRadius="border-radius-8"
+          overflow="hidden"
+        >
           {product?.medias?.[0]?.public_url ? (
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
-              style={styles.image}
+              style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
             />
           ) : (
             <Box
-              style={styles.imageFallback}
+              width="100%"
+              height="100%"
+              justifyContent="center"
+              alignItems="center"
               borderColor="border"
               borderWidth={1}
               borderRadius="border-radius-8"
@@ -56,13 +68,13 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
           )}
         </Box>
         <Box flex={1} flexDirection="column" gap="spacing-4">
-          <ThemedText style={styles.productName}>
+          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
             {order.product?.name}
           </ThemedText>
           <Box flex={1} flexDirection="row" gap="spacing-6">
             {showTimestamp && (
               <>
-                <ThemedText style={[styles.amount]} secondary>
+                <ThemedText style={{ fontSize: 16 }} secondary>
                   {new Date(order.created_at).toLocaleDateString('en-US', {
                     dateStyle: 'medium',
                   })}
@@ -72,7 +84,7 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
             )}
             <ThemedText
               numberOfLines={1}
-              style={[styles.email, { flexWrap: 'wrap' }]}
+              style={{ fontSize: 16, flexShrink: 1, flexWrap: 'wrap' }}
               secondary
             >
               {order.customer.email}
@@ -83,40 +95,3 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
     </Link>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    gap: 12,
-  },
-  imageContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imageFallback: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  amount: {
-    fontSize: 16,
-  },
-  email: {
-    fontSize: 16,
-    flexShrink: 1,
-  },
-})

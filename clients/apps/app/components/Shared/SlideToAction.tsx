@@ -6,7 +6,6 @@ import {
   Animated,
   PanResponder,
   StyleProp,
-  StyleSheet,
   ViewStyle,
 } from 'react-native'
 
@@ -123,13 +122,17 @@ export const SlideToAction = ({
   return (
     <Animated.View
       style={[
-        SlideToActionStyles.container,
         {
+          height: 80,
+          width: '100%',
+          borderRadius: theme.borderRadii['border-radius-full'],
+          overflow: 'hidden',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
           backgroundColor: interpolatedBackgroundColor,
         },
-        disabled && {
-          opacity: 0.5,
-        },
+        disabled && { opacity: 0.5 },
         style,
       ]}
       onLayout={handleLayoutSlider}
@@ -140,20 +143,23 @@ export const SlideToAction = ({
           color={theme.colors.monochromeInverted}
         />
       ) : (
-        <Animated.Text
-          style={[SlideToActionStyles.label, { color: interpolatedTextColor }]}
-        >
+        <Animated.Text style={{ fontSize: 16, color: interpolatedTextColor }}>
           {label}
         </Animated.Text>
       )}
       <Animated.View
-        style={[
-          SlideToActionStyles.thumb,
-          {
-            transform: [{ translateX: slideAnimation.x }],
-            backgroundColor: interpolatedThumbBackgroundColor,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          height: 64,
+          width: 64,
+          left: 8,
+          top: 8,
+          borderRadius: theme.borderRadii['border-radius-full'],
+          justifyContent: 'center',
+          alignItems: 'center',
+          transform: [{ translateX: slideAnimation.x }],
+          backgroundColor: interpolatedThumbBackgroundColor,
+        }}
         onLayout={handleLayoutThumb}
         {...panResponder.panHandlers}
       >
@@ -166,28 +172,3 @@ export const SlideToAction = ({
     </Animated.View>
   )
 }
-
-const SlideToActionStyles = StyleSheet.create({
-  container: {
-    height: 80,
-    width: '100%',
-    borderRadius: 9999,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumb: {
-    position: 'absolute',
-    height: 64,
-    width: 64,
-    left: 8,
-    top: 8,
-    borderRadius: 9999,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  label: {
-    fontSize: 16,
-  },
-})

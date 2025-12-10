@@ -1,10 +1,10 @@
+import { Box } from '@/components/Shared/Box'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { useTheme } from '@/design-system/useTheme'
 import { toValueDataPoints, useMetrics } from '@/hooks/polar/metrics'
 import { schemas } from '@polar-sh/client'
 import { format } from 'date-fns'
 import { useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
 import Svg from 'react-native-svg'
 import { ChartPath } from './ChartPath'
 import { getFormattedMetricValue } from './utils'
@@ -77,23 +77,28 @@ export const Chart = ({
   const maxValue = Math.max(...values)
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.card }]}>
-      <View style={styles.header}>
-        {title && <ThemedText style={styles.title}>{title}</ThemedText>}
-      </View>
+    <Box
+      backgroundColor="card"
+      padding="spacing-24"
+      borderRadius="border-radius-24"
+      gap="spacing-12"
+    >
+      <Box flexDirection="row" justifyContent="space-between">
+        {title && <ThemedText style={{ fontSize: 18 }}>{title}</ThemedText>}
+      </Box>
 
-      <View style={styles.totalValueContainer}>
-        <ThemedText style={styles.totalValue}>{formattedTotal}</ThemedText>
+      <Box flexDirection="row" alignItems="baseline" gap="spacing-8">
+        <ThemedText style={{ fontSize: 36 }}>{formattedTotal}</ThemedText>
         {showPreviousPeriodTotal &&
         typeof previousPeriodFormattedTotal !== 'undefined' ? (
-          <ThemedText style={styles.previousPeriodTotalValue} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             {`vs. ${previousPeriodFormattedTotal}`}
           </ThemedText>
         ) : null}
-      </View>
+      </Box>
 
-      <View
-        style={[styles.chartView, { height }]}
+      <Box
+        style={{ width: '100%', height }}
         onLayout={(event) => {
           setChartHeight(event.nativeEvent.layout.height)
           setWidth(event.nativeEvent.layout.width)
@@ -119,57 +124,15 @@ export const Chart = ({
             maxValue={maxValue}
           />
         </Svg>
-      </View>
-      <View style={styles.chartTimeline}>
-        <ThemedText style={styles.chartTimelineText} secondary>
+      </Box>
+      <Box flexDirection="row" justifyContent="space-between">
+        <ThemedText style={{ fontSize: 12 }} secondary>
           {format(currentPeriod.startDate, 'MMM d')}
         </ThemedText>
-        <ThemedText
-          style={[styles.chartTimelineText, { textAlign: 'right' }]}
-          secondary
-        >
+        <ThemedText style={{ fontSize: 12, textAlign: 'right' }} secondary>
           {format(currentPeriod.endDate, 'MMM d')}
         </ThemedText>
-      </View>
-    </View>
+      </Box>
+    </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    borderRadius: 24,
-    gap: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  title: {
-    fontSize: 18,
-  },
-  subtitle: {
-    fontSize: 18,
-  },
-  totalValue: {
-    fontSize: 36,
-  },
-  totalValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  previousPeriodTotalValue: {
-    fontSize: 16,
-  },
-  chartView: {
-    width: '100%',
-  },
-  chartTimeline: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  chartTimelineText: {
-    fontSize: 12,
-  },
-})

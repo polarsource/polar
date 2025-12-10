@@ -1,4 +1,5 @@
 import { buttonVariants } from '@/design-system/buttonVariants'
+import { textVariants } from '@/design-system/textVariants'
 
 import { createTheme } from '@shopify/restyle'
 
@@ -105,17 +106,7 @@ const theme = createTheme({
   colors,
   spacing,
   borderRadii,
-  textVariants: {
-    header: {
-      fontWeight: 'bold',
-      fontSize: 34,
-    },
-    body: {
-      fontSize: 16,
-      lineHeight: 24,
-    },
-    defaults: {},
-  },
+  textVariants,
   buttonVariants,
 })
 

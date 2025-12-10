@@ -1,4 +1,15 @@
+import { TextVariantKey } from '@/design-system/textVariants'
 import { Theme } from '@/design-system/theme'
-import { createText } from '@shopify/restyle'
+import { createText, TextProps } from '@shopify/restyle'
+import { Text as RNText } from 'react-native'
 
-export const Text = createText<Theme>()
+const RestyleText = createText<Theme>()
+
+type Props = TextProps<Theme> &
+  React.ComponentProps<typeof RNText> & {
+    variant?: TextVariantKey
+  }
+
+export const Text = ({ variant, ...rest }: Props) => {
+  return <RestyleText variant={variant} {...rest} />
+}

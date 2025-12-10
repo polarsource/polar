@@ -21,6 +21,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
@@ -251,9 +252,6 @@ class MeterService:
         repository = MeterRepository.from_session(session)
         meter = await repository.update(meter, update_dict={"archived_at": None})
 
-        # Queue customer meter updates for customers with events matching this meter
-        from polar.customer.repository import CustomerRepository
-
         event_repository = EventRepository.from_session(session)
         customer_repository = CustomerRepository.from_session(session)
 
@@ -276,15 +274,14 @@ class MeterService:
         external_customer_ids = list(await session.scalars(external_ids_statement))
 
         # Get all affected customers and touch their meters
-        if customer_ids or external_customer_ids:
-            statement = customer_repository.get_base_statement().where(
-                or_(
-                    Customer.id.in_(customer_ids) if customer_ids else False,
-                    Customer.external_id.in_(external_customer_ids)
-                    if external_customer_ids
-                    else False,
-                )
-            )
+        clauses = []
+        if customer_ids:
+            clauses.append(Customer.id.in_(customer_ids))
+        if external_customer_ids:
+            clauses.append(Customer.external_id.in_(external_customer_ids))
+
+        if clauses:
+            statement = customer_repository.get_base_statement().where(or_(*clauses))
             customers = await customer_repository.get_all(statement)
             if customers:
                 await customer_repository.touch_meters(customers)

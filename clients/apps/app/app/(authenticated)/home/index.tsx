@@ -6,16 +6,17 @@ import { RevenueTile } from '@/components/Home/RevenueTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { Banner } from '@/components/Shared/Banner'
+import { Box } from '@/components/Shared/Box'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { MiniButton } from '@/components/Shared/MiniButton'
 import PolarLogo from '@/components/Shared/PolarLogo'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import { useStoreReview } from '@/hooks/useStoreReview'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -33,13 +34,12 @@ import {
   RefreshControl,
   ScrollView,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const { isDownloading, isRestarting, isUpdateAvailable } = useUpdates()
 
@@ -125,7 +125,6 @@ export default function Index() {
         await reloadAsync()
       }
     } catch (error) {
-      // You can also add an alert() to see the error message in case of an error when fetching updates.
       alert(`Error fetching latest update: ${error}`)
     }
   }
@@ -135,9 +134,9 @@ export default function Index() {
   return (
     <ScrollView
       contentContainerStyle={{
-        paddingBottom: 48,
-        backgroundColor: colors.background,
-        gap: 32,
+        paddingBottom: theme.spacing['spacing-48'],
+        backgroundColor: theme.colors['background-regular'],
+        gap: theme.spacing['spacing-32'],
       }}
       refreshControl={
         <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
@@ -146,41 +145,43 @@ export default function Index() {
       <Stack.Screen
         options={{
           header: () => (
-            <View
+            <Box
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="space-between"
+              backgroundColor="background-regular"
+              paddingBottom="spacing-12"
+              paddingHorizontal="spacing-32"
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: colors.background,
                 paddingTop: Platform.select({
                   ios: safeAreaInsets.top,
-                  android: safeAreaInsets.top + 12,
+                  android: safeAreaInsets.top + theme.spacing['spacing-12'],
                 }),
-                paddingBottom: 12,
-                paddingHorizontal: 32,
               }}
             >
               <PolarLogo size={36} />
-              <View style={{ flexDirection: 'row', gap: 20 }}>
+              <Box flexDirection="row" gap="spacing-20">
                 <NotificationBadge />
                 <Link href="/settings" asChild>
                   <TouchableOpacity activeOpacity={0.6}>
-                    <MaterialIcons name="tune" size={24} color={colors.text} />
+                    <MaterialIcons
+                      name="tune"
+                      size={24}
+                      color={theme.colors['foreground-regular']}
+                    />
                   </TouchableOpacity>
                 </Link>
-              </View>
-            </View>
+              </Box>
+            </Box>
           ),
           headerTitle: 'Home',
         }}
       />
-      <View
-        style={{
-          padding: 16,
-          gap: 32,
-          flex: 1,
-          flexDirection: 'column',
-        }}
+      <Box
+        padding="spacing-16"
+        gap="spacing-32"
+        flex={1}
+        flexDirection="column"
       >
         {isUpdateAvailable && (
           <Banner
@@ -193,32 +194,30 @@ export default function Index() {
             }}
           />
         )}
-        <View style={{ gap: 16 }}>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={{ flex: 1 }}>
+        <Box gap="spacing-16">
+          <Box flexDirection="row" gap="spacing-16">
+            <Box flex={1}>
               <OrganizationTile />
-            </View>
-            <View style={{ flex: 1 }}>
+            </Box>
+            <Box flex={1}>
               <RevenueTile />
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <View style={{ flex: 1 }}>
+            </Box>
+          </Box>
+          <Box flexDirection="row" gap="spacing-16">
+            <Box flex={1}>
               <CatalogueTile />
-            </View>
-            <View style={{ flex: 1 }}>
+            </Box>
+            <Box flex={1}>
               <FinanceTile />
-            </View>
-          </View>
-        </View>
+            </Box>
+          </Box>
+        </Box>
 
-        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+        <Box gap="spacing-24" flexDirection="column" flex={1}>
+          <Box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
             <ThemedText style={{ fontSize: 20 }}>
               Recent Subscriptions
@@ -226,9 +225,9 @@ export default function Index() {
             <Link href="/subscriptions" asChild>
               <MiniButton variant="secondary">View All</MiniButton>
             </Link>
-          </View>
+          </Box>
           {flatSubscriptions.length > 0 ? (
-            <View style={{ gap: 8 }}>
+            <Box gap="spacing-8">
               {flatSubscriptions.map((subscription) => (
                 <SubscriptionRow
                   key={subscription.id}
@@ -236,63 +235,53 @@ export default function Index() {
                   showCustomer
                 />
               ))}
-            </View>
+            </Box>
           ) : (
             <EmptyState
               title="No Subscriptions"
               description="No active subscriptions found for this organization"
             />
           )}
-        </View>
+        </Box>
 
-        <View style={{ gap: 24, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+        <Box gap="spacing-24" flexDirection="column" flex={1}>
+          <Box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
             <ThemedText style={{ fontSize: 20 }}>Recent Orders</ThemedText>
             <Link href="/orders" asChild>
               <MiniButton variant="secondary">View All</MiniButton>
             </Link>
-          </View>
+          </Box>
           {flatOrders.length > 0 ? (
-            <View style={{ gap: 8 }}>
+            <Box gap="spacing-8">
               {flatOrders.map((order) => (
                 <OrderRow key={order.id} order={order} showTimestamp />
               ))}
-            </View>
+            </Box>
           ) : (
             <EmptyState
               title="No Orders"
               description="No orders found for this organization"
             />
           )}
-        </View>
-      </View>
+        </Box>
+      </Box>
 
-      <View
-        style={{
-          gap: 24,
-          flexDirection: 'column',
-          flex: 1,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 16,
-          }}
+      <Box gap="spacing-24" flexDirection="column" flex={1}>
+        <Box
+          flexDirection="row"
+          alignItems="center"
+          justifyContent="space-between"
+          paddingHorizontal="spacing-16"
         >
           <ThemedText style={{ fontSize: 20 }}>Recent Customers</ThemedText>
           <Link href="/customers" asChild>
             <MiniButton variant="secondary">View All</MiniButton>
           </Link>
-        </View>
+        </Box>
 
         {flatCustomers && flatCustomers.length > 0 ? (
           <ScrollView
@@ -300,24 +289,24 @@ export default function Index() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               flexDirection: 'row',
-              gap: 16,
-              paddingHorizontal: 16,
+              gap: theme.spacing['spacing-16'],
+              paddingHorizontal: theme.spacing['spacing-16'],
             }}
-            contentOffset={{ x: -16, y: 0 }}
+            contentOffset={{ x: -theme.spacing['spacing-16'], y: 0 }}
           >
             {flatCustomers.map((customer) => (
               <CustomerCard key={customer.id} customer={customer} />
             ))}
           </ScrollView>
         ) : (
-          <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <Box flex={1} paddingHorizontal="spacing-16">
             <EmptyState
               title="No Customers"
               description="No customers found for this organization"
             />
-          </View>
+          </Box>
         )}
-      </View>
+      </Box>
     </ScrollView>
   )
 }

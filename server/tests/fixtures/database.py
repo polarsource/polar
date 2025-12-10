@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine
 
 import pytest
 import pytest_asyncio
+from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
 from pydantic_core import Url
 from pytest_mock import MockerFixture
@@ -47,8 +48,14 @@ async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.execute(CreateSequence(Customer.short_id_sequence))
         for entity in entities_registry.entities():
+            if isinstance(entity, PGTrigger):
+                continue
             await conn.execute(entity.to_sql_statement_create())
         await conn.run_sync(Model.metadata.create_all)
+        for entity in entities_registry.entities():
+            if not isinstance(entity, PGTrigger):
+                continue
+            await conn.execute(entity.to_sql_statement_create())
     await engine.dispose()
 
     yield

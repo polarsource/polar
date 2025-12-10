@@ -9,6 +9,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
@@ -23,7 +24,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -111,10 +112,17 @@ class Customer(MetadataMixin, RecordModel):
             unique=True,
             postgresql_nulls_not_distinct=True,
         ),
+        Index(
+            "ix_customers_search_vector",
+            "search_vector",
+            postgresql_using="gin",
+        ),
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
     )
     short_id_sequence = sa.Sequence("customer_short_id_seq", start=1)
+
+    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     short_id: Mapped[int] = mapped_column(
@@ -339,4 +347,34 @@ generate_customer_short_id_function = PGFunction(
     """,
 )
 
-register_entities((generate_customer_short_id_function,))
+
+customers_search_vector_update_function = PGFunction(
+    schema="public",
+    signature="customers_search_vector_update()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        NEW.search_vector := to_tsvector('simple', coalesce(NEW.name, ''));
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+customers_search_vector_trigger = PGTrigger(
+    schema="public",
+    signature="customers_search_vector_trigger",
+    on_entity="customers",
+    definition="""
+    BEFORE INSERT OR UPDATE ON customers
+    FOR EACH ROW EXECUTE FUNCTION customers_search_vector_update();
+    """,
+)
+
+register_entities(
+    (
+        generate_customer_short_id_function,
+        customers_search_vector_update_function,
+        customers_search_vector_trigger,
+    )
+)

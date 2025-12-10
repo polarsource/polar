@@ -8,7 +8,7 @@ import {
   UseControllerProps,
 } from 'react-hook-form'
 import { TextInputProps } from 'react-native'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export type FormInputProps<T extends FieldValues> = TextInputProps & {
   control: Control<T>
@@ -33,14 +33,8 @@ export const FormInput = <T extends FieldValues>({
     return (
       <Box flexDirection="column" gap="spacing-8">
         <Box flexDirection="row" gap="spacing-8" justifyContent="space-between">
-          <ThemedText style={{ fontSize: 16 }} secondary>
-            {label}
-          </ThemedText>
-          {secondaryLabel && (
-            <ThemedText style={{ fontSize: 16 }} secondary>
-              {secondaryLabel}
-            </ThemedText>
-          )}
+          <Text color="subtext">{label}</Text>
+          {secondaryLabel && <Text color="subtext">{secondaryLabel}</Text>}
         </Box>
         <Input value={field.value} onChangeText={field.onChange} {...props} />
       </Box>

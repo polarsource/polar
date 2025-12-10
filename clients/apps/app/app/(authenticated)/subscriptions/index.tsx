@@ -1,5 +1,5 @@
 import { Box } from '@/components/Shared/Box'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
@@ -56,14 +56,9 @@ export default function Index() {
         renderItem={({ item }: { item: schemas['Subscription'] | string }) => {
           if (typeof item === 'string') {
             return (
-              <ThemedText
-                style={{
-                  paddingVertical: 12,
-                  fontSize: 18,
-                }}
-              >
+              <Text variant="subtitle" style={{ paddingVertical: 12 }}>
                 {item}
-              </ThemedText>
+              </Text>
             )
           }
 
@@ -83,9 +78,7 @@ export default function Index() {
         ListEmptyComponent={
           isLoading ? null : (
             <Box flex={1} justifyContent="center" alignItems="center">
-              <ThemedText style={{ fontSize: 16 }} secondary>
-                No Subscriptions
-              </ThemedText>
+              <Text color="subtext">No Subscriptions</Text>
             </Box>
           )
         }

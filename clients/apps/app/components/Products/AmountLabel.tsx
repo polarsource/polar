@@ -2,7 +2,7 @@ import { Box } from '@/components/Shared/Box'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 interface AmountLabelProps {
   amount: number
@@ -33,10 +33,10 @@ const AmountLabel = ({
 
   return (
     <Box flexDirection="row" alignItems="baseline">
-      <ThemedText style={{ fontSize: 14 }}>
+      <Text variant="bodySmall">
         {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
-      </ThemedText>
-      <ThemedText style={{ fontSize: 8 }}>{intervalDisplay}</ThemedText>
+      </Text>
+      <Text variant="captionSmall">{intervalDisplay}</Text>
     </Box>
   )
 }

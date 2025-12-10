@@ -3,7 +3,7 @@ import { Avatar } from '@/components/Shared/Avatar'
 import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomer } from '@/hooks/polar/customers'
@@ -109,12 +109,10 @@ export default function Index() {
             size={120}
           />
           <Box alignItems="center" flexDirection="column" gap="spacing-6">
-            <ThemedText style={{ fontSize: 24, fontWeight: '600' }}>
+            <Text variant="titleLarge" style={{ fontWeight: '600' }}>
               {customer?.name ?? '—'}
-            </ThemedText>
-            <ThemedText style={{ fontSize: 16 }} secondary>
-              {customer?.email}
-            </ThemedText>
+            </Text>
+            <Text color="subtext">{customer?.email}</Text>
           </Box>
         </Box>
 
@@ -126,15 +124,13 @@ export default function Index() {
             flex={1}
             gap="spacing-8"
           >
-            <ThemedText style={{ fontSize: 16 }} secondary>
-              Revenue
-            </ThemedText>
-            <ThemedText style={{ fontSize: 16 }}>
+            <Text color="subtext">Revenue</Text>
+            <Text>
               {formatCurrencyAndAmount(
                 metrics?.periods[metrics?.periods.length - 1]
                   .cumulative_revenue ?? 0,
               )}
-            </ThemedText>
+            </Text>
           </Box>
           <Box
             backgroundColor="card"
@@ -143,10 +139,8 @@ export default function Index() {
             flex={1}
             gap="spacing-8"
           >
-            <ThemedText style={{ fontSize: 16 }} secondary>
-              First Seen
-            </ThemedText>
-            <ThemedText style={{ fontSize: 16 }}>
+            <Text color="subtext">First Seen</Text>
+            <Text>
               {new Date(customer?.created_at ?? '').toLocaleDateString(
                 'en-US',
                 {
@@ -155,7 +149,7 @@ export default function Index() {
                   day: 'numeric',
                 },
               )}
-            </ThemedText>
+            </Text>
           </Box>
         </Box>
 
@@ -198,7 +192,7 @@ export default function Index() {
             alignItems="center"
             justifyContent="space-between"
           >
-            <ThemedText style={{ fontSize: 24 }}>Subscriptions</ThemedText>
+            <Text variant="titleLarge">Subscriptions</Text>
           </Box>
           {flatSubscriptions.length > 0 ? (
             <Box gap="spacing-8">
@@ -223,7 +217,7 @@ export default function Index() {
             alignItems="center"
             justifyContent="space-between"
           >
-            <ThemedText style={{ fontSize: 24 }}>Orders</ThemedText>
+            <Text variant="titleLarge">Orders</Text>
           </Box>
           {flatOrders.length > 0 ? (
             <Box gap="spacing-8">

@@ -2,7 +2,7 @@ import { FormInput } from '@/components/Form/FormInput'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { Checkbox } from '@/components/Shared/Checkbox'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -114,17 +114,15 @@ export default function Onboarding() {
         }}
       >
         <Box gap="spacing-16">
-          <ThemedText
+          <Text
+            variant="display"
             style={{
-              fontSize: 56,
-              lineHeight: 56,
               paddingVertical: theme.spacing['spacing-32'],
-              fontFamily: 'InstrumentSerif_400Regular',
             }}
           >
             Create your organization
-          </ThemedText>
-          {errors.root && <ThemedText error>{errors.root.message}</ThemedText>}
+          </Text>
+          {errors.root && <Text color="error">{errors.root.message}</Text>}
           <FormInput
             label="Organization Name"
             placeholder="Acme Inc."
@@ -154,14 +152,12 @@ export default function Onboarding() {
                       )
                     }
                   >
-                    <ThemedText style={{ color: theme.colors.primary }}>
-                      Acceptable Use Policy
-                    </ThemedText>
+                    <Text color="primary">Acceptable Use Policy</Text>
                   </TouchableOpacity>
-                  <ThemedText secondary>
+                  <Text color="subtext">
                     I&apos;ll only sell digital products and SaaS that complies
                     with it or risk suspension.
-                  </ThemedText>
+                  </Text>
                 </Box>
               </Box>
               <Box>
@@ -172,14 +168,12 @@ export default function Onboarding() {
                     )
                   }
                 >
-                  <ThemedText style={{ color: theme.colors.primary }}>
-                    Account Reviews
-                  </ThemedText>
+                  <Text color="primary">Account Reviews</Text>
                 </TouchableOpacity>
-                <ThemedText secondary>
+                <Text color="subtext">
                   I&apos;ll comply with all reviews and requests for compliance
                   materials (KYC/AML).
-                </ThemedText>
+                </Text>
               </Box>
               <Box>
                 <TouchableOpacity
@@ -187,9 +181,7 @@ export default function Onboarding() {
                     Linking.openURL('https://polar.sh/legal/terms')
                   }
                 >
-                  <ThemedText style={{ color: theme.colors.primary }}>
-                    Terms of Service
-                  </ThemedText>
+                  <Text color="primary">Terms of Service</Text>
                 </TouchableOpacity>
               </Box>
 
@@ -199,9 +191,7 @@ export default function Onboarding() {
                     Linking.openURL('https://polar.sh/legal/privacy')
                   }
                 >
-                  <ThemedText style={{ color: theme.colors.primary }}>
-                    Privacy Policy
-                  </ThemedText>
+                  <Text color="primary">Privacy Policy</Text>
                 </TouchableOpacity>
               </Box>
             </Box>

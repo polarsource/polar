@@ -5,7 +5,7 @@ import { Link } from 'expo-router'
 import React from 'react'
 import { Dimensions, TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface CustomerCardProps {
   customer: schemas['Customer']
@@ -36,19 +36,16 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
           image={customer.avatar_url ?? undefined}
         />
         <Box flexDirection="column" alignItems="center" gap="spacing-8">
-          <ThemedText
-            style={{ fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}
-          >
-            {customer.name ?? '—'}
-          </ThemedText>
-          <ThemedText
-            style={{ fontSize: 14, textAlign: 'center' }}
+          <Text textAlign="center">{customer.name ?? '—'}</Text>
+          <Text
+            variant="bodySmall"
+            textAlign="center"
             numberOfLines={1}
             ellipsizeMode="tail"
-            secondary
+            color="subtext"
           >
             {customer.email}
-          </ThemedText>
+          </Text>
         </Box>
       </TouchableOpacity>
     </Link>

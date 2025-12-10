@@ -3,7 +3,7 @@ import { Avatar } from '@/components/Shared/Avatar'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { MiniButton } from '@/components/Shared/MiniButton'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
@@ -59,7 +59,7 @@ export default function Index() {
         <Box gap="spacing-32">
           <Box gap="spacing-16">
             <Box flexDirection="row" justifyContent="space-between">
-              <ThemedText style={{ fontSize: 20 }}>Organizations</ThemedText>
+              <Text variant="title">Organizations</Text>
               <MiniButton
                 onPress={() => router.push('/onboarding')}
                 icon={
@@ -100,9 +100,7 @@ export default function Index() {
                       image={organization?.avatar_url}
                       name={organization?.name}
                     />
-                    <ThemedText style={{ fontSize: 16 }}>
-                      {organization?.name}
-                    </ThemedText>
+                    <Text>{organization?.name}</Text>
                   </Box>
                   {selectedOrganization?.id === organization?.id ? (
                     <MaterialIcons
@@ -117,10 +115,8 @@ export default function Index() {
           </Box>
           <Box gap="spacing-16">
             <Box>
-              <ThemedText style={{ fontSize: 20 }}>Danger zone</ThemedText>
-              <ThemedText style={{ color: theme.colors.subtext }}>
-                Irreversible actions for this account
-              </ThemedText>
+              <Text variant="title">Danger zone</Text>
+              <Text color="subtext">Irreversible actions for this account</Text>
             </Box>
             <Box
               padding="spacing-16"
@@ -130,13 +126,11 @@ export default function Index() {
               backgroundColor="card"
             >
               <Box gap="spacing-4">
-                <ThemedText style={{ fontSize: 18 }}>
-                  Account Deletion
-                </ThemedText>
-                <ThemedText secondary>
+                <Text variant="subtitle">Account Deletion</Text>
+                <Text color="subtext">
                   Permanently delete this account, all organizations, and all
                   associated data. This action cannot be undone.
-                </ThemedText>
+                </Text>
               </Box>
               <MiniButton
                 variant="destructive"

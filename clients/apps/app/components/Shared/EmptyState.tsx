@@ -1,5 +1,5 @@
 import { Box } from '@/components/Shared/Box'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 export interface EmptyStateProps {
   title: string
@@ -19,12 +19,10 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
       gap="spacing-8"
       borderRadius="border-radius-16"
     >
-      <ThemedText style={{ fontSize: 16, textAlign: 'center' }}>
-        {title}
-      </ThemedText>
-      <ThemedText style={{ fontSize: 16, textAlign: 'center' }} secondary>
+      <Text textAlign="center">{title}</Text>
+      <Text color="subtext" textAlign="center">
         {description}
-      </ThemedText>
+      </Text>
     </Box>
   )
 }

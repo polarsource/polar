@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
-import { StyleProp, Text, TextStyle, ViewStyle } from 'react-native'
+import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 
 type PillColor = 'green' | 'yellow' | 'red' | 'blue'
 
@@ -39,10 +40,10 @@ export const Pill = ({
       style={[{ backgroundColor: theme.colors[colorTokens.bg] }, style]}
     >
       <Text
+        variant="caption"
+        textTransform="capitalize"
         style={[
           {
-            textTransform: 'capitalize',
-            fontSize: 12,
             color: theme.colors[colorTokens.text],
           },
           textStyle,

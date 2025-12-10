@@ -2,7 +2,7 @@ import { PayoutRow } from '@/components/Payouts/PayoutRow'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
   useOrganizationAccount,
@@ -78,12 +78,10 @@ export default function Finance() {
         padding="spacing-16"
         backgroundColor="card"
       >
-        <ThemedText style={{ fontSize: 16 }} secondary>
-          Account Balance
-        </ThemedText>
-        <ThemedText style={{ fontSize: 32 }}>
+        <Text color="subtext">Account Balance</Text>
+        <Text variant="headlineLarge">
           {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
-        </ThemedText>
+        </Text>
       </Box>
       <Box flexDirection="column" alignItems="center" gap="spacing-16">
         <Link
@@ -94,13 +92,11 @@ export default function Finance() {
         >
           <Button>Withdraw</Button>
         </Link>
-        <ThemedText secondary>
-          You may only withdraw amounts above $10.
-        </ThemedText>
+        <Text color="subtext">You may only withdraw amounts above $10.</Text>
       </Box>
 
       <Box flexDirection="column" gap="spacing-16">
-        <ThemedText style={{ fontSize: 20 }}>Payouts</ThemedText>
+        <Text variant="title">Payouts</Text>
         <Box flexDirection="column" gap="spacing-4">
           {payouts?.items?.map((payout) => (
             <PayoutRow key={payout.id} payout={payout} />

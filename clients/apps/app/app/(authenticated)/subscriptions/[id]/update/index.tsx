@@ -2,7 +2,7 @@ import { ProductPriceLabel } from '@/components/Products/ProductPriceLabel'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useProducts } from '@/hooks/polar/products'
@@ -163,7 +163,7 @@ export default function Index() {
                   setValue('product_id', product.id, { shouldDirty: true })
                 }}
               >
-                <ThemedText>{product.name}</ThemedText>
+                <Text>{product.name}</Text>
                 <Box flexDirection="row" alignItems="center" gap="spacing-12">
                   <ProductPriceLabel product={product} />
                   <MaterialIcons
@@ -191,10 +191,10 @@ export default function Index() {
           padding="spacing-16"
           borderRadius="border-radius-8"
         >
-          <ThemedText>
+          <Text>
             The customer will get access to {selectedProduct.name} benefits, and
             lose access to {subscription.product.name} benefits.
-          </ThemedText>
+          </Text>
         </Box>
       )}
       <Button
@@ -262,13 +262,14 @@ const ProrationBehaviorSelector = ({
             )
           }}
         >
-          <ThemedText
+          <Text
             numberOfLines={1}
             ellipsizeMode="tail"
-            style={{ width: '100%', textAlign: 'center' }}
+            textAlign="center"
+            width="100%"
           >
             {label}
-          </ThemedText>
+          </Text>
         </TouchableOpacity>
       ))}
     </Box>

@@ -6,7 +6,7 @@ import { Link } from 'expo-router'
 import React from 'react'
 import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 import { Pill } from '../Shared/Pill'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface PayoutRowProps {
   payout: Payout
@@ -42,19 +42,19 @@ export const PayoutRow = ({ payout, style }: PayoutRowProps) => {
       <TouchableOpacity activeOpacity={0.6}>
         <Box flex={1} flexDirection="column" gap="spacing-4">
           <Box flexDirection="row" justifyContent="space-between">
-            <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
+            <Text variant="bodyMedium">
               {formatCurrencyAndAmount(payout.amount, payout.currency)}
-            </ThemedText>
+            </Text>
             <Pill color={statusColors[payout.status]}>
               {payout.status.split('_').join(' ')}
             </Pill>
           </Box>
           <Box flex={1} flexDirection="row" gap="spacing-6">
-            <ThemedText style={{ fontSize: 14 }} secondary>
+            <Text variant="bodySmall" color="subtext">
               {new Date(payout.created_at).toLocaleDateString('en-US', {
                 dateStyle: 'medium',
               })}
-            </ThemedText>
+            </Text>
           </Box>
         </Box>
       </TouchableOpacity>

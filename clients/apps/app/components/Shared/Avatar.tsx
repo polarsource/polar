@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { Image } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 const getInitials = (fullName: string) => {
   const allNames = fullName.trim().split(' ')
@@ -60,7 +60,7 @@ export const Avatar = ({
           alignItems="center"
           justifyContent="center"
         >
-          <ThemedText style={{ fontSize: size / 3 }}>{initials}</ThemedText>
+          <Text style={{ fontSize: size / 3 }}>{initials}</Text>
         </Box>
       )}
       {image && (

@@ -1,5 +1,5 @@
 import { Button } from '@/components/Shared/Button'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
@@ -72,10 +72,10 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
           paddingBottom: safeViewInsets.bottom + 12,
         }}
       >
-        <ThemedText style={{ fontSize: 20 }}>Delete Account</ThemedText>
-        <ThemedText style={{ fontSize: 16 }} secondary>
+        <Text variant="title">Delete Account</Text>
+        <Text color="subtext">
           Deleting your organizations & account is an irreversible action.
-        </ThemedText>
+        </Text>
         <BottomSheetTextInput
           style={{
             backgroundColor: theme.colors.inputBackground,

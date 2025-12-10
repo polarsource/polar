@@ -5,7 +5,7 @@ import { Link } from 'expo-router'
 import React from 'react'
 import { TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface CustomerRowProps {
   customer: schemas['Customer']
@@ -30,13 +30,9 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       <TouchableOpacity activeOpacity={0.6}>
         <Avatar image={customer.avatar_url} name={customer.email} size={40} />
         <Box flex={1} flexDirection="column" gap="spacing-2">
-          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
-            {customer.name ?? '—'}
-          </ThemedText>
+          <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
           <Box flexDirection="row" gap="spacing-4">
-            <ThemedText style={{ fontSize: 16 }} secondary>
-              {customer.email}
-            </ThemedText>
+            <Text color="subtext">{customer.email}</Text>
           </Box>
         </Box>
       </TouchableOpacity>

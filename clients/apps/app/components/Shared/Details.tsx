@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { StyleProp, Text, TextStyle, ViewStyle } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { StyleProp, TextStyle, ViewStyle } from 'react-native'
+import { Text } from './Text'
 
 export const Details = ({
   children,
@@ -38,21 +38,15 @@ export const DetailRow = ({
 
   return (
     <Box flexDirection="row" justifyContent="space-between" gap="spacing-8">
-      <ThemedText style={[{ fontSize: 16 }, labelStyle]} secondary>
+      <Text color="subtext" style={labelStyle}>
         {label}
-      </ThemedText>
+      </Text>
       <Text
         numberOfLines={1}
         ellipsizeMode="tail"
-        style={[
-          {
-            fontSize: 16,
-            width: 'auto',
-            textAlign: 'right',
-            color: value ? theme.colors.text : theme.colors.subtext,
-          },
-          valueStyle,
-        ]}
+        color={value ? 'text' : 'subtext'}
+        textAlign="right"
+        style={valueStyle}
       >
         {value ? value : '—'}
       </Text>

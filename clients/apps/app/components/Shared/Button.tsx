@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ViewStyle,
 } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 export interface ButtonProps {
   children: React.ReactNode
@@ -74,22 +74,13 @@ export const Button = ({
         style,
       ]}
     >
-      <ThemedText
-        style={[
-          {
-            fontSize: 16,
-            fontWeight: '500',
-            color: getTextColor(),
-          },
-          textStyle,
-        ]}
-      >
+      <Text variant="bodyMedium" style={[{ color: getTextColor() }, textStyle]}>
         {loading ? (
           <ActivityIndicator size="small" color={theme.colors.monochrome} />
         ) : (
           children
         )}
-      </ThemedText>
+      </Text>
     </TouchableOpacity>
   )
 }

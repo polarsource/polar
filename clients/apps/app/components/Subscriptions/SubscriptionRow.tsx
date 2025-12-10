@@ -7,7 +7,7 @@ import React from 'react'
 import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 import { ProductPriceLabel } from '../Products/ProductPriceLabel'
 import { Pill } from '../Shared/Pill'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 const subscriptionStatusColors: Record<
   schemas['SubscriptionStatus'],
@@ -89,13 +89,9 @@ export const SubscriptionRow = ({
             justifyContent="space-between"
             gap="spacing-8"
           >
-            <ThemedText
-              style={{ fontSize: 16, fontWeight: '500' }}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
+            <Text variant="bodyMedium" numberOfLines={1} ellipsizeMode="tail">
               {subscription.product.name}
-            </ThemedText>
+            </Text>
             <Pill color={subscriptionStatusColors[subscription.status]}>
               {subscription.status.split('_').join(' ')}
             </Pill>
@@ -104,16 +100,16 @@ export const SubscriptionRow = ({
             <ProductPriceLabel product={subscription.product} />
             {showCustomer && (
               <>
-                <ThemedText style={{ fontSize: 16, flexShrink: 1 }} secondary>
+                <Text style={{ flexShrink: 1 }} color="subtext">
                   •
-                </ThemedText>
-                <ThemedText
+                </Text>
+                <Text
                   numberOfLines={1}
-                  style={{ fontSize: 16, flexShrink: 1, flexWrap: 'wrap' }}
-                  secondary
+                  style={{ flexShrink: 1, flexWrap: 'wrap' }}
+                  color="subtext"
                 >
                   {subscription.customer.email}
-                </ThemedText>
+                </Text>
               </>
             )}
           </Box>

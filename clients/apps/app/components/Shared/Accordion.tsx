@@ -3,7 +3,7 @@ import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useState } from 'react'
 import { TouchableOpacity } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 export interface AccordionProps {
   title: string
@@ -35,7 +35,7 @@ export const Accordion = ({
         onPress={() => setOpen(!open)}
         activeOpacity={0.6}
       >
-        <ThemedText style={{ fontSize: 16 }}>{title}</ThemedText>
+        <Text>{title}</Text>
         <MaterialIcons
           name={open ? 'expand-less' : 'expand-more'}
           size={24}

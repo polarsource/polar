@@ -42,7 +42,7 @@ description: "Learn how to customize the order in which products appear in check
             Make sure your token has the **`checkout_links:write`** scope enabled to use [Create Checkout Link API](/api-reference/checkout-links/create). 
         </Note>
         - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs in the order you want them to appear in the checkout.
-        ```bash
+        ```bash Terminal
         curl --request POST \
             --url https://api.polar.sh/v1/checkout-links/ \
             --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
@@ -71,7 +71,7 @@ description: "Learn how to customize the order in which products appear in check
     </Step>  
     <Step title = "Change the order of products">
         If you want to change the order and make Product 2 appear before Product 1, place Product 2's ID first, followed by Product 1's ID in the API call.  
-        ```bash
+        ```bash Terminal
         curl --request POST \
             --url https://api.polar.sh/v1/checkouts/ \
             --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
@@ -99,7 +99,7 @@ description: "Learn how to customize the order in which products appear in check
             Make sure your token has the **`checkouts:write`** scope enabled to use [Create Checkout Session API](/api-reference/checkouts/create-session).
         </Note>
         - \<PRODUCT_ID_1\>, \<PRODUCT_ID_2\>, etc., with the product IDs in the order you want them to appear in the checkout.
-        ```bash
+        ```bash Terminal
         curl --request POST \
             --url https://api.polar.sh/v1/checkouts/ \
             --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \
@@ -129,7 +129,7 @@ description: "Learn how to customize the order in which products appear in check
     </Step>  
     <Step title = "Change the order of products">
         If you want to change the order and make Product 2 appear before Product 1, place Product 2's ID first, followed by Product 1's ID in the API call.  
-        ```bash
+        ```bash Terminal
         curl --request POST \
             --url https://api.polar.sh/v1/checkouts/ \
             --header 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \

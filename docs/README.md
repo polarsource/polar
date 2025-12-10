@@ -8,12 +8,12 @@ Using Mintlify.
 ## Development
 
 **Installation**
-```bash
+```bash Terminal
 pnpm install
 ```
 
 **Development Server**
-```bash
+```bash Terminal
 pnpm dev
 ```
 
@@ -26,7 +26,7 @@ We have a script that takes care of:
     * By default, new pages are added at the bottom of the `Webhooks Events` navigation section, but you can move them to a specific group if needed.
     * Existing pages are not updated, so you can safely edit them without losing your changes.
 
-```bash
+```bash Terminal
 ./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 ```
 

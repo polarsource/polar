@@ -11,7 +11,7 @@ Cost Insights works by allowing you to add a special `_cost` property to any eve
 
 To track costs, add a `_cost` property to your event's metadata when ingesting events.
 
-```typescript TypeScript (SDK)
+```typescript icon="square-js" TypeScript (SDK)
 import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
@@ -80,7 +80,7 @@ The `_cost` property has the following structure:
 
 Track the cost of LLM API calls per customer:
 
-```typescript TypeScript
+```typescript icon="square-js" TypeScript
 import { Polar } from "@polar-sh/sdk";
 import OpenAI from "openai";
 
@@ -179,7 +179,7 @@ Track costs from external services:
 
 Ingest cost events as they occur to maintain accurate, up-to-date metrics:
 
-```typescript TypeScript
+```typescript icon="square-js" TypeScript
 import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({

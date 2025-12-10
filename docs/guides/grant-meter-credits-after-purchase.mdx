@@ -150,7 +150,7 @@ Configure webhooks to receive notifications when users make purchases.
   <Step title="Save webhook secret">
     Store your webhook secret securely in your environment variables.
     
-    ```bash
+    ```bash Terminal
     POLAR_ACCESS_TOKEN="polar_pat_..."
     POLAR_WEBHOOK_SECRET="whsec_..."
     PRODUCT_ID="prod_..." # The product ID to grant credits for
@@ -164,7 +164,7 @@ Create a webhook handler that listens for `order.paid` events and grants initial
 
 #### Next.js Example
 
-```typescript title="app/api/webhook/polar/route.ts"
+```typescript icon="square-js" title="app/api/webhook/polar/route.ts"
 import { Polar } from "@polar-sh/sdk";
 import { Webhooks } from "@polar-sh/nextjs";
 

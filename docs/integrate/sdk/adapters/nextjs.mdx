@@ -15,17 +15,17 @@ Install the required Polar packages using the following command:
 
 <Tabs>
   <Tab title="npm">
-    ```bash
+    ```bash Terminal
     npm install zod @polar-sh/nextjs
     ```
   </Tab>
   <Tab title="yarn">
-    ```bash
+    ```bash Terminal
     yarn add zod @polar-sh/nextjs
     ```
   </Tab>
   <Tab title="pnpm">
-    ```bash
+    ```bash Terminal
     pnpm add zod @polar-sh/nextjs
     ```
   </Tab>
@@ -36,8 +36,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript
-// checkout/route.ts
+```typescript icon="square-js" checkout/route.ts
 import { Checkout } from "@polar-sh/nextjs";
 
 export const GET = Checkout({
@@ -64,8 +63,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript
-// portal/route.ts
+```typescript icon="square-js" portal/route.ts
 import { CustomerPortal } from "@polar-sh/nextjs";
 
 export const GET = CustomerPortal({
@@ -80,8 +78,7 @@ export const GET = CustomerPortal({
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript
-// api/webhook/polar/route.ts
+```typescript icon="square-js" api/webhook/polar/route.ts
 import { Webhooks } from "@polar-sh/nextjs";
 
 export const POST = Webhooks({

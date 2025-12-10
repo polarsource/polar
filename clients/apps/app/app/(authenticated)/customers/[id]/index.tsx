@@ -14,12 +14,12 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import React, { useCallback, useContext, useMemo } from 'react'
-import { RefreshControl, ScrollView, StyleSheet } from 'react-native'
+import { RefreshControl, ScrollView } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const theme = useTheme()
   const { id } = useLocalSearchParams()
+  const theme = useTheme()
 
   const {
     data: customer,
@@ -92,14 +92,14 @@ export default function Index() {
         }}
       />
       <ScrollView
-        style={[styles.container]}
+        style={{ flex: 1, padding: theme.spacing['spacing-16'] }}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
         }
         contentContainerStyle={{
           flexDirection: 'column',
-          gap: 24,
-          paddingBottom: 48,
+          gap: theme.spacing['spacing-24'],
+          paddingBottom: theme.spacing['spacing-48'],
         }}
       >
         <Box flexDirection="column" alignItems="center" gap="spacing-24">
@@ -109,10 +109,10 @@ export default function Index() {
             size={120}
           />
           <Box alignItems="center" flexDirection="column" gap="spacing-6">
-            <ThemedText style={styles.customerName}>
+            <ThemedText style={{ fontSize: 24, fontWeight: '600' }}>
               {customer?.name ?? '—'}
             </ThemedText>
-            <ThemedText style={styles.customerEmail} secondary>
+            <ThemedText style={{ fontSize: 16 }} secondary>
               {customer?.email}
             </ThemedText>
           </Box>
@@ -126,10 +126,10 @@ export default function Index() {
             flex={1}
             gap="spacing-8"
           >
-            <ThemedText style={styles.label} secondary>
+            <ThemedText style={{ fontSize: 16 }} secondary>
               Revenue
             </ThemedText>
-            <ThemedText style={styles.value}>
+            <ThemedText style={{ fontSize: 16 }}>
               {formatCurrencyAndAmount(
                 metrics?.periods[metrics?.periods.length - 1]
                   .cumulative_revenue ?? 0,
@@ -143,10 +143,10 @@ export default function Index() {
             flex={1}
             gap="spacing-8"
           >
-            <ThemedText style={styles.label} secondary>
+            <ThemedText style={{ fontSize: 16 }} secondary>
               First Seen
             </ThemedText>
-            <ThemedText style={styles.value}>
+            <ThemedText style={{ fontSize: 16 }}>
               {new Date(customer?.created_at ?? '').toLocaleDateString(
                 'en-US',
                 {
@@ -242,106 +242,3 @@ export default function Index() {
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    gap: 12,
-    flexDirection: 'column',
-  },
-  hero: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 24,
-  },
-  heroInfo: {
-    alignItems: 'center',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  customerName: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  customerEmail: {
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  image: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  imageFallback: {
-    width: 120,
-    height: 120,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fallbackText: {
-    fontSize: 36,
-    fontWeight: '600',
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  section: {},
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-  },
-  customerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  avatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarFallbackText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  customerInfo: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-})

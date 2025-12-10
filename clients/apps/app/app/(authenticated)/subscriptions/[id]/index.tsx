@@ -14,12 +14,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import * as Clipboard from 'expo-clipboard'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native'
+import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
 
 const statusColors = {
   active: 'green',
@@ -64,11 +59,15 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={{
+        flex: 1,
+        padding: theme.spacing['spacing-16'],
+        backgroundColor: theme.colors.background,
+      }}
       contentContainerStyle={{
         flexDirection: 'column',
-        gap: 16,
-        paddingBottom: 48,
+        gap: theme.spacing['spacing-16'],
+        paddingBottom: theme.spacing['spacing-48'],
       }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
@@ -82,45 +81,47 @@ export default function Index() {
 
       <Box flexDirection="row" gap="spacing-12">
         <TouchableOpacity
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.colors.card,
-              flex: 1,
-              gap: 4,
-              width: '50%',
-            },
-          ]}
+          style={{
+            flexDirection: 'column',
+            gap: theme.spacing['spacing-4'],
+            borderRadius: theme.borderRadii['border-radius-12'],
+            padding: theme.spacing['spacing-12'],
+            backgroundColor: theme.colors.card,
+            flex: 1,
+            width: '50%',
+          }}
           onPress={() => {
             Clipboard.setStringAsync(subscription.id)
           }}
           activeOpacity={0.6}
         >
-          <ThemedText style={[styles.label, { fontSize: 16 }]} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             #
           </ThemedText>
           <ThemedText
-            style={[styles.value, { textTransform: 'uppercase', fontSize: 16 }]}
+            style={{
+              fontSize: 16,
+              fontWeight: '500',
+              textTransform: 'uppercase',
+            }}
             numberOfLines={1}
           >
             {subscription.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
         <Box
-          style={[
-            styles.box,
-            {
-              backgroundColor: theme.colors.card,
-              flex: 1,
-              gap: 4,
-              width: '50%',
-            },
-          ]}
+          flexDirection="column"
+          gap="spacing-4"
+          borderRadius="border-radius-12"
+          padding="spacing-12"
+          backgroundColor="card"
+          flex={1}
+          width="50%"
         >
-          <ThemedText style={[styles.label, { fontSize: 16 }]} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             Date
           </ThemedText>
-          <ThemedText style={[styles.value, { fontSize: 16 }]}>
+          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
             {new Date(subscription.created_at).toLocaleDateString('en-US', {
               dateStyle: 'medium',
             })}
@@ -236,10 +237,8 @@ export default function Index() {
           gap="spacing-8"
           justifyContent="space-between"
         >
-          <ThemedText style={[styles.label, { fontSize: 20 }]}>
-            Subscription Orders
-          </ThemedText>
-          <ThemedText style={[styles.label, { fontSize: 20 }]} secondary>
+          <ThemedText style={{ fontSize: 20 }}>Subscription Orders</ThemedText>
+          <ThemedText style={{ fontSize: 20 }} secondary>
             {flatSubscriptionOrders.length}
           </ThemedText>
         </Box>
@@ -260,36 +259,3 @@ export default function Index() {
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    gap: 12,
-    flexDirection: 'column',
-  },
-  section: {},
-  box: {
-    flexDirection: 'column',
-    gap: 4,
-    borderRadius: 12,
-    padding: 12,
-  },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-})

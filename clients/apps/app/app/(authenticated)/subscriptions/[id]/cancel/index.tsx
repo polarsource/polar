@@ -16,7 +16,6 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
 } from 'react-native'
 
@@ -131,11 +130,15 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={{
+        flex: 1,
+        padding: theme.spacing['spacing-16'],
+        backgroundColor: theme.colors.background,
+      }}
       contentContainerStyle={{
         flexDirection: 'column',
-        paddingBottom: 48,
-        gap: 16,
+        paddingBottom: theme.spacing['spacing-48'],
+        gap: theme.spacing['spacing-16'],
       }}
       refreshControl={
         <RefreshControl onRefresh={refetch} refreshing={isRefetching} />
@@ -169,9 +172,9 @@ export default function Index() {
                 {
                   justifyContent: 'center',
                   alignItems: 'center',
-                  paddingVertical: 10,
-                  paddingHorizontal: 8,
-                  borderRadius: 8,
+                  paddingVertical: theme.spacing['spacing-10'],
+                  paddingHorizontal: theme.spacing['spacing-8'],
+                  borderRadius: theme.borderRadii['border-radius-8'],
                   flex: 1,
                 },
                 cancellationAction ===
@@ -203,11 +206,11 @@ export default function Index() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 8,
+                  gap: theme.spacing['spacing-8'],
                   backgroundColor: theme.colors.card,
                   height: 48,
-                  paddingHorizontal: 16,
-                  borderRadius: 8,
+                  paddingHorizontal: theme.spacing['spacing-16'],
+                  borderRadius: theme.borderRadii['border-radius-8'],
                 }}
                 onPress={() => {
                   setValue('customer_cancellation_reason', reason)
@@ -238,10 +241,3 @@ export default function Index() {
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-})

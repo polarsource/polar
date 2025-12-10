@@ -298,12 +298,15 @@ class CustomerMeterService:
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
 
-        statement = statement.where(
-            or_(
-                event_repository.get_meter_clause(meter),
-                event_repository.get_meter_system_clause(meter),
-            ),
-        )
+        if by_external_id:
+            statement = statement.where(event_repository.get_meter_clause(meter))
+        else:
+            statement = statement.where(
+                or_(
+                    event_repository.get_meter_clause(meter),
+                    event_repository.get_meter_system_clause(meter),
+                ),
+            )
 
         return statement
 

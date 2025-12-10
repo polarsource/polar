@@ -46,6 +46,15 @@ export interface SearchResultAction extends SearchResultBase {
   icon?: React.ReactNode
 }
 
+export interface SearchResultDocs extends SearchResultBase {
+  type: 'docs'
+  title: string
+  content: string
+  path: string
+  url: string
+  breadcrumbs: string
+}
+
 export type SearchResult =
   | SearchResultProduct
   | SearchResultCustomer
@@ -53,3 +62,4 @@ export type SearchResult =
   | SearchResultSubscription
   | SearchResultPage
   | SearchResultAction
+  | SearchResultDocs

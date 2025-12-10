@@ -159,6 +159,11 @@ export const OmniSearch = ({
       case 'page':
         path = result.url
         break
+      case 'docs':
+        window.open(result.url, '_blank')
+        onOpenChange(false)
+        setQuery('')
+        return
       case 'product':
         path = `/dashboard/${organization.slug}/products/${result.id}`
         break
@@ -201,6 +206,8 @@ export const OmniSearch = ({
         return 'Orders'
       case 'subscription':
         return 'Subscriptions'
+      case 'docs':
+        return 'Documentation'
       default:
         return type
     }
@@ -227,6 +234,13 @@ export const OmniSearch = ({
         return <Result icon={result.icon} title={result.title} />
       case 'page':
         return <Result icon={result.icon} title={result.title} />
+      case 'docs':
+        return (
+          <Result
+            title={result.breadcrumbs}
+            description={result.content || undefined}
+          />
+        )
       case 'product':
         return (
           <Result
@@ -273,7 +287,7 @@ export const OmniSearch = ({
           >
             <div className="flex grow items-center px-4">
               <CommandInput
-                placeholder="Search products, customers, orders..."
+                placeholder="Search products, customers, orders, docs..."
                 value={query}
                 onValueChange={setQuery}
                 wrapperClassName="border-none grow"

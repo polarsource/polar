@@ -1,8 +1,17 @@
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import UUID4
 
 from polar.kit.schemas import Schema
+
+
+class SearchResultType(StrEnum):
+    product = "product"
+    customer = "customer"
+    order = "order"
+    subscription = "subscription"
+    docs = "docs"
 
 
 class SearchResultProduct(Schema):
@@ -38,11 +47,22 @@ class SearchResultSubscription(Schema):
     type: Literal["subscription"] = "subscription"
 
 
+class SearchResultDocs(Schema):
+    id: str
+    title: str
+    content: str
+    path: str
+    url: str
+    breadcrumbs: str
+    type: Literal["docs"] = "docs"
+
+
 SearchResult = (
     SearchResultProduct
     | SearchResultCustomer
     | SearchResultOrder
     | SearchResultSubscription
+    | SearchResultDocs
 )
 
 

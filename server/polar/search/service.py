@@ -1,10 +1,14 @@
 import asyncio
+import re
 import uuid
 
+import httpx
+import structlog
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, User
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import (
@@ -20,9 +24,11 @@ from polar.subscription.repository import SubscriptionRepository
 from .schemas import (
     SearchResult,
     SearchResultCustomer,
+    SearchResultDocs,
     SearchResultOrder,
     SearchResultProduct,
     SearchResultSubscription,
+    SearchResultType,
 )
 
 
@@ -33,6 +39,30 @@ class SearchService:
         except (ValueError, AttributeError):
             return None
 
+    def _is_email(self, query: str) -> bool:
+        return "@" in query and "." in query.split("@")[-1]
+
+    def _strip_markdown(self, text: str) -> str:
+        text = re.sub(r"<[^>]+>", "", text)
+        text = re.sub(r"!\[([^\]]*)\]\([^\)]+\)", "", text)
+        text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
+        text = re.sub(r"[*_]{1,3}([^*_]+)[*_]{1,3}", r"\1", text)
+        text = re.sub(r"`{1,3}([^`]+)`{1,3}", r"\1", text)
+        text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    def _generate_breadcrumbs(self, path: str) -> str:
+        segments = path.strip("/").split("/")
+
+        breadcrumbs = ["Docs"]
+
+        for segment in segments:
+            formatted = segment.replace("-", " ").title()
+            breadcrumbs.append(formatted)
+
+        return " > ".join(breadcrumbs)
+
     async def search(
         self,
         session: AsyncReadSession,
@@ -41,41 +71,88 @@ class SearchService:
         organization_id: uuid.UUID,
         query: str,
         limit: int = 5,
+        exclude: list[SearchResultType] | None = None,
     ) -> list[SearchResult]:
+        exclude = exclude or []
+        exclude_set = set(exclude)
+
         prefix_term = f"{query}%"
         substring_term = f"%{query}%"
         query_uuid = self._try_parse_uuid(query)
+        is_email = self._is_email(query)
 
-        products_task = self._search_products(
-            session, auth_subject, organization_id, substring_term, query_uuid, limit
-        )
-        customers_task = self._search_customers(
-            session, auth_subject, organization_id, prefix_term, query_uuid, limit
-        )
-        orders_task = self._search_orders(
-            session,
-            auth_subject,
-            organization_id,
-            prefix_term,
-            substring_term,
-            query_uuid,
-            limit,
-        )
-        subscriptions_task = self._search_subscriptions(
-            session,
-            auth_subject,
-            organization_id,
-            prefix_term,
-            substring_term,
-            query_uuid,
-            limit,
-        )
+        tasks: list = []
 
-        products, customers, orders, subscriptions = await asyncio.gather(
-            products_task, customers_task, orders_task, subscriptions_task
-        )
+        if SearchResultType.product not in exclude_set:
+            tasks.append(
+                self._search_products(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        else:
+            tasks.append(asyncio.create_task(asyncio.sleep(0, result=[])))
 
-        return [*products, *customers, *orders, *subscriptions]
+        if SearchResultType.customer not in exclude_set:
+            tasks.append(
+                self._search_customers(
+                    session, auth_subject, organization_id, prefix_term, query_uuid, limit
+                )
+            )
+        else:
+            tasks.append(asyncio.create_task(asyncio.sleep(0, result=[])))
+
+        if SearchResultType.order not in exclude_set:
+            tasks.append(
+                self._search_orders(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    prefix_term,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        else:
+            tasks.append(asyncio.create_task(asyncio.sleep(0, result=[])))
+
+        if SearchResultType.subscription not in exclude_set:
+            tasks.append(
+                self._search_subscriptions(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    prefix_term,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        else:
+            tasks.append(asyncio.create_task(asyncio.sleep(0, result=[])))
+
+        if (
+            SearchResultType.docs not in exclude_set
+            and query_uuid is None
+            and not is_email
+        ):
+            tasks.append(self._search_docs(query, 8))
+        else:
+            tasks.append(asyncio.create_task(asyncio.sleep(0, result=[])))
+
+        products, customers, orders, subscriptions, docs = await asyncio.gather(*tasks)
+
+        # If docs are the only results, return up to 8. Otherwise, limit to 3.
+        has_other_results = bool(products or customers or orders or subscriptions)
+        if has_other_results and docs:
+            docs = docs[:3]
+
+        return [*products, *customers, *orders, *subscriptions, *docs]
 
     async def _search_products(
         self,
@@ -247,6 +324,58 @@ class SearchService:
             for subscription in subscriptions
             if subscription.product is not None and subscription.customer is not None
         ]
+
+    async def _search_docs(
+        self,
+        query: str,
+        limit: int,
+    ) -> list[SearchResultDocs]:
+        if not settings.MINTLIFY_DOMAIN or not settings.MINTLIFY_API_KEY:
+            return []
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"https://api-dsc.mintlify.com/v1/search/{settings.MINTLIFY_DOMAIN}",
+                    headers={
+                        "Authorization": f"Bearer {settings.MINTLIFY_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "query": query,
+                        "pageSize": limit,
+                    },
+                    timeout=5.0,
+                )
+
+                if response.status_code != 200:
+                    return []
+
+                data = response.json()
+
+                return [
+                    SearchResultDocs(
+                        id=f"docs-{idx}",
+                        title=result.get("metadata", {}).get("title")
+                        or result["path"].split("/")[-1].replace("-", " ").title(),
+                        content=self._strip_markdown(
+                            result.get("metadata", {}).get("description")
+                            or result.get("content", "")
+                        )[:200],
+                        path=result["path"],
+                        url=f"https://polar.sh/docs{result['path']}"
+                        if result["path"].startswith("/")
+                        else f"https://polar.sh/docs/{result['path']}",
+                        breadcrumbs=self._generate_breadcrumbs(result["path"]),
+                    )
+                    for idx, result in enumerate(data)
+                ]
+
+        except Exception as e:
+            structlog.get_logger().error(
+                "mintlify_search_error", error=str(e), error_type=type(e).__name__
+            )
+            return []
 
 
 search = SearchService()

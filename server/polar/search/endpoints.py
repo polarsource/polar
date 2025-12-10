@@ -6,7 +6,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth
-from .schemas import SearchResults
+from .schemas import SearchResultType, SearchResults
 from .service import search as search_service
 
 router = APIRouter(tags=["search", APITag.private])
@@ -18,6 +18,10 @@ async def search(
     organization_id: UUID4 = Query(..., description="Organization ID to search within"),
     query: str = Query(..., description="Search query string"),
     limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
+    exclude: list[SearchResultType] = Query(
+        default=[],
+        description="Result types to exclude",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SearchResults:
     """
@@ -29,6 +33,7 @@ async def search(
         organization_id=organization_id,
         query=query,
         limit=limit,
+        exclude=exclude,
     )
 
     return SearchResults(results=results)

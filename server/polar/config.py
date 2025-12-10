@@ -262,6 +262,10 @@ class Settings(BaseSettings):
         "personal_access_token.record_usage",
     }
 
+    # Mintlify (Documentation Search)
+    MINTLIFY_DOMAIN: str | None = None
+    MINTLIFY_API_KEY: str | None = None
+
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None
     PLAIN_TOKEN: str | None = None

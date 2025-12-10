@@ -2033,9 +2033,6 @@ packages:
       react-native:
         optional: true
 
-  '@expo/env@2.0.7':
-    resolution: {integrity: sha512-BNETbLEohk3HQ2LxwwezpG8pq+h7Fs7/vAMP3eAtFT1BCpprLYoBBFZH7gW4aqGfqOcVP4Lc91j014verrYNGg==}
-
   '@expo/env@2.0.8':
     resolution: {integrity: sha512-5VQD6GT8HIMRaSaB5JFtOXuvfDVU80YtZIuUT/GDhUF782usIXY13Tn3IdDz1Tm/lqA9qnRZQ1BF4t7LlvdJPA==}
 
@@ -2045,9 +2042,6 @@ packages:
 
   '@expo/image-utils@0.8.8':
     resolution: {integrity: sha512-HHHaG4J4nKjTtVa1GG9PCh763xlETScfEyNxxOvfTRr8IKPJckjTyqSLEtdJoFNJ1vqiABEjW7tqGhqGibZLeA==}
-
-  '@expo/json-file@10.0.7':
-    resolution: {integrity: sha512-z2OTC0XNO6riZu98EjdNHC05l51ySeTto6GP7oSQrCvQgG9ARBwD1YvMQaVZ9wU7p/4LzSf1O7tckL3B45fPpw==}
 
   '@expo/json-file@10.0.8':
     resolution: {integrity: sha512-9LOTh1PgKizD1VXfGQ88LtDH0lRwq9lsTb4aichWTWSWqy3Ugfkhfm3BhzBIkJJfQQ5iJu3m/BoRlEIjoCGcnQ==}
@@ -12439,7 +12433,7 @@ snapshots:
   '@expo/config-plugins@54.0.3':
     dependencies:
       '@expo/config-types': 54.0.9
-      '@expo/json-file': 10.0.7
+      '@expo/json-file': 10.0.8
       '@expo/plist': 0.4.8
       '@expo/sdk-runtime-versions': 1.0.0
       chalk: 4.1.2
@@ -12462,7 +12456,7 @@ snapshots:
       '@babel/code-frame': 7.10.4
       '@expo/config-plugins': 54.0.3
       '@expo/config-types': 54.0.9
-      '@expo/json-file': 10.0.7
+      '@expo/json-file': 10.0.8
       deepmerge: 4.3.1
       getenv: 2.0.0
       glob: 13.0.0
@@ -12488,16 +12482,6 @@ snapshots:
     optionalDependencies:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.2(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0)
-
-  '@expo/env@2.0.7':
-    dependencies:
-      chalk: 4.1.2
-      debug: 4.4.3(supports-color@10.2.2)
-      dotenv: 16.4.7
-      dotenv-expand: 11.0.7
-      getenv: 2.0.0
-    transitivePeerDependencies:
-      - supports-color
 
   '@expo/env@2.0.8':
     dependencies:
@@ -12538,11 +12522,6 @@ snapshots:
       temp-dir: 2.0.0
       unique-string: 2.0.0
 
-  '@expo/json-file@10.0.7':
-    dependencies:
-      '@babel/code-frame': 7.10.4
-      json5: 2.2.3
-
   '@expo/json-file@10.0.8':
     dependencies:
       '@babel/code-frame': 7.10.4
@@ -12554,8 +12533,8 @@ snapshots:
       '@babel/core': 7.28.5
       '@babel/generator': 7.28.5
       '@expo/config': 12.0.11
-      '@expo/env': 2.0.7
-      '@expo/json-file': 10.0.7
+      '@expo/env': 2.0.8
+      '@expo/json-file': 10.0.8
       '@expo/metro': 54.1.0
       '@expo/spawn-async': 1.7.2
       browserslist: 4.28.1

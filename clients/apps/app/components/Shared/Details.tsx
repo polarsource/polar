@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import {
   StyleProp,
   StyleSheet,
@@ -16,10 +16,10 @@ export const Details = ({
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
 }) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card }, style]}>
+    <View style={[styles.card, { backgroundColor: theme.colors.card }, style]}>
       {children}
     </View>
   )
@@ -36,7 +36,7 @@ export const DetailRow = ({
   value?: React.ReactNode
   valueStyle?: StyleProp<TextStyle>
 }) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
     <View style={styles.row}>
@@ -48,7 +48,7 @@ export const DetailRow = ({
         ellipsizeMode="tail"
         style={[
           styles.value,
-          { color: value ? colors.text : colors.subtext },
+          { color: value ? theme.colors.text : theme.colors.subtext },
           valueStyle,
         ]}
       >

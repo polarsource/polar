@@ -1,4 +1,5 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
@@ -10,7 +11,6 @@ import {
   StyleSheet,
   TextStyle,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { ThemedText } from '../Shared/ThemedText'
@@ -22,17 +22,17 @@ export interface ProductRowProps {
 }
 
 export const ProductRow = ({ product, style }: ProductRowProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
 
   return (
     <Link
       href={`/products/${product.id}`}
-      style={[styles.container, { backgroundColor: colors.card }, style]}
+      style={[styles.container, { backgroundColor: theme.colors.card }, style]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
-        <View style={[styles.imageContainer]}>
+        <Box style={styles.imageContainer}>
           {product?.medias?.[0]?.public_url ? (
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
@@ -40,27 +40,25 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
               resizeMode="cover"
             />
           ) : (
-            <View
-              style={[
-                styles.imageFallback,
-                {
-                  borderColor: colors.border,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                },
-              ]}
+            <Box
+              style={styles.imageFallback}
+              borderColor="border"
+              borderWidth={1}
+              borderRadius="border-radius-8"
             >
-              <MaterialIcons name="texture" size={24} color={colors.subtext} />
-            </View>
+              <MaterialIcons
+                name="texture"
+                size={24}
+                color={theme.colors.subtext}
+              />
+            </Box>
           )}
-        </View>
-        <View style={styles.contentContainer}>
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 4,
-              justifyContent: 'space-between',
-            }}
+        </Box>
+        <Box flex={1} flexDirection="column" gap="spacing-4">
+          <Box
+            flexDirection="row"
+            gap="spacing-4"
+            justifyContent="space-between"
           >
             <ThemedText
               style={styles.productName}
@@ -70,9 +68,9 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
               {product.name}
             </ThemedText>
             {product.is_archived && <Pill color="red">Archived</Pill>}
-          </View>
+          </Box>
           <ProductPriceLabel product={product} />
-        </View>
+        </Box>
       </TouchableOpacity>
     </Link>
   )
@@ -102,30 +100,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  fallbackText: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 4,
-  },
   productName: {
     fontSize: 16,
     fontWeight: '500',
     flexShrink: 1,
-  },
-  amount: {
-    fontSize: 16,
-  },
-  email: {
-    fontSize: 16,
-    flexShrink: 1,
-  },
-  metadataContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
   },
 })

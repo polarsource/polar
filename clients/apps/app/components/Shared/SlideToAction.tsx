@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -31,7 +31,7 @@ export const SlideToAction = ({
   onSlideStart,
   onSlideEnd,
 }: SlideToActionProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const [label, setLabel] = useState(text)
   const [sliderWidth, setSliderWidth] = useState(0)
@@ -92,19 +92,19 @@ export const SlideToAction = ({
 
   const interpolatedBackgroundColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
-    outputRange: [colors.card, colors.monochromeInverted],
+    outputRange: [theme.colors.card, theme.colors.monochromeInverted],
     extrapolate: 'clamp',
   })
 
   const interpolatedThumbBackgroundColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
-    outputRange: [colors.secondary, colors.primary],
+    outputRange: [theme.colors.secondary, theme.colors.primary],
     extrapolate: 'clamp',
   })
 
   const interpolatedTextColor = slideAnimation.x.interpolate({
     inputRange: [0, maxSlide],
-    outputRange: [colors.monochromeInverted, colors.monochrome],
+    outputRange: [theme.colors.monochromeInverted, theme.colors.monochrome],
     extrapolate: 'clamp',
   })
 
@@ -135,7 +135,10 @@ export const SlideToAction = ({
       onLayout={handleLayoutSlider}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={colors.monochromeInverted} />
+        <ActivityIndicator
+          size="small"
+          color={theme.colors.monochromeInverted}
+        />
       ) : (
         <Animated.Text
           style={[SlideToActionStyles.label, { color: interpolatedTextColor }]}
@@ -157,7 +160,7 @@ export const SlideToAction = ({
         <MaterialIcons
           name="arrow-forward-ios"
           size={16}
-          color={colors.monochromeInverted}
+          color={theme.colors.monochromeInverted}
         />
       </Animated.View>
     </Animated.View>

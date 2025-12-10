@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { toValueDataPoints, useMetrics } from '@/hooks/polar/metrics'
-import { useTheme } from '@/hooks/theme'
 import { schemas } from '@polar-sh/client'
 import { format } from 'date-fns'
 import { useMemo, useState } from 'react'
@@ -37,7 +37,7 @@ export const Chart = ({
   metric,
   currentPeriod,
 }: ChartProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const [width, setWidth] = useState(0)
   const [chartHeight, setChartHeight] = useState(0)
 
@@ -77,7 +77,7 @@ export const Chart = ({
   const maxValue = Math.max(...values)
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.card }]}>
       <View style={styles.header}>
         {title && <ThemedText style={styles.title}>{title}</ThemedText>}
       </View>
@@ -105,7 +105,7 @@ export const Chart = ({
             width={width}
             chartHeight={chartHeight}
             strokeWidth={strokeWidth}
-            strokeColor={colors.secondary}
+            strokeColor={theme.colors.secondary}
             minValue={minValue}
             maxValue={maxValue}
           />
@@ -114,7 +114,7 @@ export const Chart = ({
             width={width}
             chartHeight={chartHeight}
             strokeWidth={strokeWidth}
-            strokeColor={colors.primary}
+            strokeColor={theme.colors.primary}
             minValue={minValue}
             maxValue={maxValue}
           />

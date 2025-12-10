@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import { ComponentProps } from 'react'
 import { StyleSheet, Text } from 'react-native'
 
@@ -13,7 +13,7 @@ export const ThemedText = ({
   style,
   ...props
 }: ThemedTextProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const lineHeight = (fontSize: number) => {
     const multiplier = fontSize > 20 ? 1.5 : 1.4
@@ -28,10 +28,10 @@ export const ThemedText = ({
       style={[
         {
           color: error
-            ? colors.error
+            ? theme.colors.error
             : secondary
-              ? colors.subtext
-              : colors.text,
+              ? theme.colors.subtext
+              : theme.colors.text,
           lineHeight: lineHeight(styles?.fontSize ?? 14),
         },
         styles,

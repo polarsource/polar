@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { ThemedText } from './ThemedText'
 
@@ -9,7 +9,7 @@ export interface CheckboxProps {
 }
 
 export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
     <TouchableOpacity
@@ -21,7 +21,7 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
         style={[
           styles.checkbox,
           {
-            borderColor: colors.border,
+            borderColor: theme.colors.border,
           },
         ]}
       >
@@ -30,7 +30,7 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
             style={[
               styles.checkboxChecked,
               {
-                backgroundColor: colors.monochromeInverted,
+                backgroundColor: theme.colors.monochromeInverted,
               },
             ]}
           />

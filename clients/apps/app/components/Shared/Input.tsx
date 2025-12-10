@@ -1,20 +1,20 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import { StyleSheet, TextInput, TextInputProps } from 'react-native'
 
 export const Input = (props: TextInputProps) => {
-  const { colors, theme } = useTheme()
+  const theme = useTheme()
 
   return (
     <TextInput
       {...props}
-      placeholderTextColor={colors.subtext}
-      keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
+      placeholderTextColor={theme.colors.subtext}
+      keyboardAppearance="dark"
       style={[
         styles.input,
         {
-          backgroundColor: colors.card,
-          color: colors.text,
-          borderColor: colors.border,
+          backgroundColor: theme.colors.card,
+          color: theme.colors.text,
+          borderColor: theme.colors.border,
         },
         props.style,
       ]}

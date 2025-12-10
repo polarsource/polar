@@ -38,6 +38,7 @@ export const colors = {
 } as const
 
 export const spacing = {
+  'spacing-2': 2,
   'spacing-4': 4,
   'spacing-6': 6,
   'spacing-8': 8,

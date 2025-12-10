@@ -1,5 +1,5 @@
-import { useTheme } from '@/hooks/theme'
-import { StyleSheet, View } from 'react-native'
+import { Box as RestyleBox } from '@/components/Shared/Box'
+import { StyleSheet } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
 export interface BoxProps {
@@ -8,25 +8,23 @@ export interface BoxProps {
 }
 
 export const Box = ({ label, value }: BoxProps) => {
-  const { colors } = useTheme()
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
+    <RestyleBox
+      flex={1}
+      padding="spacing-12"
+      borderRadius="border-radius-12"
+      gap="spacing-8"
+      backgroundColor="card"
+    >
       <ThemedText style={styles.label} secondary>
         {label}
       </ThemedText>
       <ThemedText style={styles.value}>{value}</ThemedText>
-    </View>
+    </RestyleBox>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 12,
-    borderRadius: 12,
-    flex: 1,
-    gap: 8,
-  },
   label: {
     fontSize: 16,
   },

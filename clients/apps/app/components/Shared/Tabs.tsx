@@ -1,4 +1,4 @@
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import {
   createContext,
   PropsWithChildren,
@@ -65,14 +65,14 @@ export const TabsContent = ({
 }
 
 export const TabsList = ({ children }: PropsWithChildren) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   return (
     <View
       style={{
         flexDirection: 'row',
         gap: 8,
-        backgroundColor: colors.card,
+        backgroundColor: theme.colors.card,
         padding: 4,
         borderRadius: 16,
       }}
@@ -88,7 +88,7 @@ export interface TabsTriggerProps {
 }
 
 export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const { activeValue, setActiveValue } = useContext(TabsContext)
 
@@ -105,7 +105,7 @@ export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
           flex: 1,
         },
         activeValue === value && {
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
         },
       ]}
       onPress={() => {

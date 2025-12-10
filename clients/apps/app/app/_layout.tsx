@@ -1,3 +1,4 @@
+import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
 import { themes } from '@/utils/theme'
 import { useReactNavigationDevTools } from '@dev-plugins/react-navigation'
@@ -6,6 +7,7 @@ import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument
 import { useFonts } from '@expo-google-fonts/instrument-serif/useFonts'
 import NetInfo from '@react-native-community/netinfo'
 import * as Sentry from '@sentry/react-native'
+import { ThemeProvider } from '@shopify/restyle'
 import { onlineManager } from '@tanstack/react-query'
 import { Slot, useNavigationContainerRef } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
@@ -77,14 +79,16 @@ export default Sentry.wrap(function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <SessionProvider>
-        <View
-          style={{ flex: 1, backgroundColor: themes.dark.background }}
-          onLayout={onLayoutRootView}
-        >
-          <Slot />
-        </View>
-      </SessionProvider>
+      <ThemeProvider theme={theme}>
+        <SessionProvider>
+          <View
+            style={{ flex: 1, backgroundColor: themes.dark.background }}
+            onLayout={onLayoutRootView}
+          >
+            <Slot />
+          </View>
+        </SessionProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 })

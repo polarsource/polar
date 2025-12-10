@@ -38,6 +38,7 @@
     "@sentry/react-native": "^7.2.0",
     "@shopify/flash-list": "2.0.2",
     "@shopify/react-native-skia": "2.2.12",
+    "@shopify/restyle": "^2.4.5",
     "@tanstack/react-query": "^5.69.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.23",

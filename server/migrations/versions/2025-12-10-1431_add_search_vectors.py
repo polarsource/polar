@@ -54,31 +54,31 @@ def upgrade() -> None:
             nullable=False,
         ),
     )
-    with op.get_context().autocommit_block():
-        op.create_index(
-            "ix_products_search_vector",
-            "products",
-            ["search_vector"],
-            unique=False,
-            postgresql_using="gin",
-            postgresql_concurrently=True,
-        )
-        op.create_index(
-            "ix_customers_search_vector",
-            "customers",
-            ["search_vector"],
-            unique=False,
-            postgresql_using="gin",
-            postgresql_concurrently=True,
-        )
-        op.create_index(
-            "ix_orders_search_vector",
-            "orders",
-            ["search_vector"],
-            unique=False,
-            postgresql_using="gin",
-            postgresql_concurrently=True,
-        )
+    # with op.get_context().autocommit_block():
+    #     op.create_index(
+    #         "ix_products_search_vector",
+    #         "products",
+    #         ["search_vector"],
+    #         unique=False,
+    #         postgresql_using="gin",
+    #         postgresql_concurrently=True,
+    #     )
+    #     op.create_index(
+    #         "ix_customers_search_vector",
+    #         "customers",
+    #         ["search_vector"],
+    #         unique=False,
+    #         postgresql_using="gin",
+    #         postgresql_concurrently=True,
+    #     )
+    #     op.create_index(
+    #         "ix_orders_search_vector",
+    #         "orders",
+    #         ["search_vector"],
+    #         unique=False,
+    #         postgresql_using="gin",
+    #         postgresql_concurrently=True,
+    #     )
     # ### end Alembic commands ###
 
 

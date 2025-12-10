@@ -19,6 +19,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
@@ -752,6 +753,7 @@ class EventService:
         statement = (
             customer_meter_repository.get_base_statement()
             .join(CustomerMeter.meter)
+            .options(contains_eager(CustomerMeter.meter))
             .where(
                 CustomerMeter.customer_id.in_(customer_ids),
                 CustomerMeter.activated_at.is_(None),

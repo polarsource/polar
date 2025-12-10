@@ -63,7 +63,7 @@ In case you've setup license keys to have a maximum amount of activation instanc
 
 **No activation limit?** You can skip this step.
 
-```bash
+```bash Terminal
 curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/activate
 -H "Content-Type: application/json"
 -d '{
@@ -129,7 +129,7 @@ curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/activate
 For each session of your premium app, library or API, we recommend you validate the users license key via the 
 [`/v1/customer-portal/license-keys/validate`](/api-reference/customer-portal/license-keys/validate) endpoint.
 
-```bash
+```bash Terminal
 curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/validate
 -H "Content-Type: application/json"
 -d '{

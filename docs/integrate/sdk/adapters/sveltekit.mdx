@@ -3,16 +3,37 @@ title: "Sveltekit"
 description: "Payments and Checkouts made dead simple with Sveltekit"
 ---
 
-```bash
-pnpm install @polar-sh/sveltekit zod
-```
+## Examples
+
+- [With SvelteKit](https://github.com/polarsource/examples/tree/main/with-sveltekit)
+
+## Installation
+
+Install the required Polar packages using the following command:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash Terminal
+    npm install zod @polar-sh/sveltekit
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash Terminal
+    yarn add zod @polar-sh/sveltekit
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash Terminal
+    pnpm add zod @polar-sh/sveltekit
+    ```
+  </Tab>
+</Tabs>
 
 ## Checkout
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript
-// /api/checkout/+server.ts
+```typescript icon="square-js" src/routes/checkout/+server.ts
 import { Checkout } from "@polar-sh/sveltekit";
 
 export const GET = Checkout({
@@ -39,15 +60,14 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript
-// /api/portal/+server.ts
+```typescript icon="square-js" src/routes/portal/+server.ts
 import { CustomerPortal } from "@polar-sh/sveltekit";
 
 export const GET = CustomerPortal({
+  server: process.env.POLAR_MODE, // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  getCustomerId: (event) => "", // Function to resolve a Polar Customer ID
   returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Customer Portal
-  server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  getCustomerId: (event) => "", // Function to resolve a Polar Customer ID
 });
 ```
 
@@ -55,14 +75,14 @@ export const GET = CustomerPortal({
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript
-// api/webhook/polar/+server.ts
+```typescript icon="square-js" src/routes/api/webhooks/polar/+server.ts
 import { Webhooks } from "@polar-sh/sveltekit";
 
 export const POST = Webhooks({
-  webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+  webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
   onPayload: async (payload) => {
     // Handle the payload
+    console.log(payload)
   },
 });
 ```

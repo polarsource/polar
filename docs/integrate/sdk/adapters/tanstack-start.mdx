@@ -13,17 +13,17 @@ Install the required Polar packages using the following command:
 
 <Tabs>
   <Tab title="npm">
-    ```bash
+    ```bash Terminal
     npm install zod @polar-sh/tanstack-start
     ```
   </Tab>
   <Tab title="yarn">
-    ```bash
+    ```bash Terminal
     yarn add zod @polar-sh/tanstack-start
     ```
   </Tab>
   <Tab title="pnpm">
-    ```bash
+    ```bash Terminal
     pnpm add zod @polar-sh/tanstack-start
     ```
   </Tab>
@@ -33,8 +33,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript
-// routes/api/checkout.ts
+```typescript icon="square-js" routes/api/checkout.ts
 import { Checkout } from "@polar-sh/tanstack-start";
 import { createFileRoute } from "@tanstack/react-start";
 
@@ -68,8 +67,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript
-// routes/api/portal.ts
+```typescript icon="square-js" routes/api/portal.ts
 import { CustomerPortal } from "@polar-sh/tanstack-start";
 import { createFileRoute } from "@tanstack/react-start";
 import { getSupabaseServerClient } from "~/servers/supabase-server";
@@ -92,8 +90,7 @@ export const Route = createFileRoute("/api/portal")({
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript
-// routes/api/webhook/polar.ts
+```typescript icon="square-js" routes/api/webhook/polar.ts
 import { Webhooks } from "@polar-sh/tanstack-start";
 import { createFileRoute } from "@tanstack/react-router";
 

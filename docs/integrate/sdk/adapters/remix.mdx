@@ -13,17 +13,17 @@ Install the required Polar packages using the following command:
 
 <Tabs>
   <Tab title="npm">
-    ```bash
+    ```bash Terminal
     npm install zod @polar-sh/remix
     ```
   </Tab>
   <Tab title="yarn">
-    ```bash
+    ```bash Terminal
     yarn add zod @polar-sh/remix
     ```
   </Tab>
   <Tab title="pnpm">
-    ```bash
+    ```bash Terminal
     pnpm add zod @polar-sh/remix
     ```
   </Tab>
@@ -34,7 +34,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript
+```typescript icon="square-js" app/routes/checkout.tsx
 import { Checkout } from "@polar-sh/remix";
 
 export const loader = Checkout({
@@ -61,7 +61,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript
+```typescript icon="square-js" app/routes/customer-portal.tsx
 import { CustomerPortal } from "@polar-sh/remix";
 
 export const loader = CustomerPortal({
@@ -76,7 +76,7 @@ export const loader = CustomerPortal({
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript
+```typescript icon="square-js" app/routes/webhook.tsx
 import { Webhooks } from "@polar-sh/remix";
 
 export const action = Webhooks({

@@ -13,17 +13,17 @@ Install the required Polar packages using the following command:
 
 <Tabs>
   <Tab title="npm">
-    ```bash
+    ```bash Terminal
     npm install zod @polar-sh/elysia
     ```
   </Tab>
   <Tab title="yarn">
-    ```bash
+    ```bash Terminal
     yarn add zod @polar-sh/elysia
     ```
   </Tab>
   <Tab title="pnpm">
-    ```bash
+    ```bash Terminal
     pnpm add zod @polar-sh/elysia
     ```
   </Tab>
@@ -33,7 +33,7 @@ Install the required Polar packages using the following command:
 
 Create a Checkout handler which takes care of redirections.
 
-```typescript
+```typescript icon="square-js" 
 import { Elysia } from "elysia";
 import { Checkout } from "@polar-sh/elysia";
 
@@ -66,7 +66,7 @@ Pass query params to this route.
 
 Create a customer portal where your customer can view orders and subscriptions.
 
-```typescript
+```typescript icon="square-js" 
 import { Elysia } from "elysia";
 import { CustomerPortal } from "@polar-sh/elysia";
 
@@ -87,7 +87,7 @@ app.get(
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
-```typescript
+```typescript icon="square-js" 
 import { Elysia } from 'elysia'
 import { Webhooks } from "@polar-sh/elysia";
 

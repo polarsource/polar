@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import {
@@ -189,15 +189,13 @@ export default function Index() {
                 )
               }}
             >
-              <ThemedText>{option}</ThemedText>
+              <Text>{option}</Text>
             </TouchableOpacity>
           ))}
         </Box>
 
         <Box flex={1} gap="spacing-12">
-          <ThemedText style={{ fontSize: 16 }}>
-            Customer Cancellation Reason
-          </ThemedText>
+          <Text>Customer Cancellation Reason</Text>
           <Box flex={1} gap="spacing-4">
             {reasons.map((reason) => (
               <TouchableOpacity
@@ -216,7 +214,7 @@ export default function Index() {
                   setValue('customer_cancellation_reason', reason)
                 }}
               >
-                <ThemedText>{getHumanCancellationReason(reason)}</ThemedText>
+                <Text>{getHumanCancellationReason(reason)}</Text>
                 {cancellationReason === reason && (
                   <Box>
                     <MaterialIcons

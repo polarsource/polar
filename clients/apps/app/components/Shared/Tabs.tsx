@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react'
 import { StyleProp, TouchableOpacity, ViewStyle } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 const TabsContext = createContext({
   activeValue: '',
@@ -109,7 +109,7 @@ export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
         setActiveValue(value)
       }}
     >
-      <ThemedText>{children}</ThemedText>
+      <Text>{children}</Text>
     </TouchableOpacity>
   )
 }

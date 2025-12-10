@@ -6,7 +6,7 @@ import { Button } from '@/components/Shared/Button'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Pill } from '@/components/Shared/Pill'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscription } from '@/hooks/polar/subscriptions'
@@ -95,19 +95,14 @@ export default function Index() {
           }}
           activeOpacity={0.6}
         >
-          <ThemedText style={{ fontSize: 16 }} secondary>
-            #
-          </ThemedText>
-          <ThemedText
-            style={{
-              fontSize: 16,
-              fontWeight: '500',
-              textTransform: 'uppercase',
-            }}
+          <Text color="subtext">#</Text>
+          <Text
+            variant="bodyMedium"
+            style={{ textTransform: 'uppercase' }}
             numberOfLines={1}
           >
             {subscription.id.split('-').pop()?.slice(-6, -1)}
-          </ThemedText>
+          </Text>
         </TouchableOpacity>
         <Box
           flexDirection="column"
@@ -118,14 +113,12 @@ export default function Index() {
           flex={1}
           width="50%"
         >
-          <ThemedText style={{ fontSize: 16 }} secondary>
-            Date
-          </ThemedText>
-          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
+          <Text color="subtext">Date</Text>
+          <Text variant="bodyMedium">
             {new Date(subscription.created_at).toLocaleDateString('en-US', {
               dateStyle: 'medium',
             })}
-          </ThemedText>
+          </Text>
         </Box>
       </Box>
 
@@ -237,10 +230,10 @@ export default function Index() {
           gap="spacing-8"
           justifyContent="space-between"
         >
-          <ThemedText style={{ fontSize: 20 }}>Subscription Orders</ThemedText>
-          <ThemedText style={{ fontSize: 20 }} secondary>
+          <Text variant="title">Subscription Orders</Text>
+          <Text variant="title" color="subtext">
             {flatSubscriptionOrders.length}
-          </ThemedText>
+          </Text>
         </Box>
 
         {flatSubscriptionOrders.length > 0 ? (

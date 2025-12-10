@@ -2,7 +2,7 @@ import { CustomerRow } from '@/components/Customers/CustomerRow'
 import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { Pill } from '@/components/Shared/Pill'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrder } from '@/hooks/polar/orders'
 import { formatCurrencyAndAmount } from '@/utils/money'
@@ -71,19 +71,19 @@ export default function Index() {
           }}
           activeOpacity={0.6}
         >
-          <ThemedText style={{ fontSize: 18 }} secondary>
+          <Text variant="subtitle" color="subtext">
             #
-          </ThemedText>
-          <ThemedText
+          </Text>
+          <Text
+            variant="subtitle"
             style={{
-              fontSize: 18,
               fontWeight: '500',
               textTransform: 'uppercase',
             }}
             numberOfLines={1}
           >
             {order.id.split('-').pop()?.slice(-6, -1)}
-          </ThemedText>
+          </Text>
         </TouchableOpacity>
         <Box
           flexDirection="column"
@@ -94,14 +94,12 @@ export default function Index() {
           flex={1}
           width="50%"
         >
-          <ThemedText style={{ fontSize: 16 }} secondary>
-            Date
-          </ThemedText>
-          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
+          <Text color="subtext">Date</Text>
+          <Text variant="bodyMedium">
             {new Date(order.created_at).toLocaleDateString('en-US', {
               dateStyle: 'medium',
             })}
-          </ThemedText>
+          </Text>
         </Box>
       </Box>
 
@@ -121,12 +119,10 @@ export default function Index() {
               gap="spacing-4"
               paddingVertical="spacing-16"
             >
-              <ThemedText style={{ fontSize: 16 }} numberOfLines={1}>
-                {item.label}
-              </ThemedText>
-              <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
+              <Text numberOfLines={1}>{item.label}</Text>
+              <Text variant="bodyMedium">
                 {formatCurrencyAndAmount(item.amount)}
-              </ThemedText>
+              </Text>
             </Box>
           ))}
         </Box>

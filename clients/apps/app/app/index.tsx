@@ -1,13 +1,13 @@
 import { FadeInAndUp } from '@/components/Animations/FadeInAndUp'
 import { KenBurns } from '@/components/Animations/KenBurns'
 import LogoIcon from '@/components/Shared/PolarLogo'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOAuth } from '@/hooks/oauth'
 import { useSession } from '@/providers/SessionProvider'
 import { Image } from 'expo-image'
 import { Redirect } from 'expo-router'
-import { StatusBar, Text, TouchableOpacity } from 'react-native'
+import { StatusBar, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function App() {
@@ -43,18 +43,15 @@ export default function App() {
       </FadeInAndUp>
 
       <FadeInAndUp delay={600}>
-        <ThemedText
+        <Text
+          textAlign="center"
+          variant="display"
           style={{
-            fontSize: 58,
-            textAlign: 'center',
-            fontWeight: '500',
-            lineHeight: 64,
             marginHorizontal: theme.spacing['spacing-32'],
-            fontFamily: 'InstrumentSerif_400Regular',
           }}
         >
           Monetize your software
-        </ThemedText>
+        </Text>
       </FadeInAndUp>
 
       <FadeInAndUp delay={900}>
@@ -70,15 +67,7 @@ export default function App() {
           }}
           onPress={authenticate}
         >
-          <Text
-            style={{
-              fontSize: 16,
-              textAlign: 'center',
-              fontWeight: '500',
-              lineHeight: 24,
-              color: theme.colors.monochrome,
-            }}
-          >
+          <Text variant="bodyMedium" color="monochrome" textAlign="center">
             Get Started
           </Text>
         </TouchableOpacity>

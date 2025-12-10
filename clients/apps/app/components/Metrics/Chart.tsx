@@ -1,5 +1,5 @@
 import { Box } from '@/components/Shared/Box'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { toValueDataPoints, useMetrics } from '@/hooks/polar/metrics'
 import { schemas } from '@polar-sh/client'
@@ -84,16 +84,14 @@ export const Chart = ({
       gap="spacing-12"
     >
       <Box flexDirection="row" justifyContent="space-between">
-        {title && <ThemedText style={{ fontSize: 18 }}>{title}</ThemedText>}
+        {title && <Text variant="subtitle">{title}</Text>}
       </Box>
 
       <Box flexDirection="row" alignItems="baseline" gap="spacing-8">
-        <ThemedText style={{ fontSize: 36 }}>{formattedTotal}</ThemedText>
+        <Text variant="headlineXLarge">{formattedTotal}</Text>
         {showPreviousPeriodTotal &&
         typeof previousPeriodFormattedTotal !== 'undefined' ? (
-          <ThemedText style={{ fontSize: 16 }} secondary>
-            {`vs. ${previousPeriodFormattedTotal}`}
-          </ThemedText>
+          <Text color="subtext">{`vs. ${previousPeriodFormattedTotal}`}</Text>
         ) : null}
       </Box>
 
@@ -126,12 +124,12 @@ export const Chart = ({
         </Svg>
       </Box>
       <Box flexDirection="row" justifyContent="space-between">
-        <ThemedText style={{ fontSize: 12 }} secondary>
+        <Text variant="caption" color="subtext">
           {format(currentPeriod.startDate, 'MMM d')}
-        </ThemedText>
-        <ThemedText style={{ fontSize: 12, textAlign: 'right' }} secondary>
+        </Text>
+        <Text variant="caption" color="subtext" textAlign="right">
           {format(currentPeriod.endDate, 'MMM d')}
-        </ThemedText>
+        </Text>
       </Box>
     </Box>
   )

@@ -1,6 +1,6 @@
 import { Notification } from '@/components/Notifications/Notification'
 import { Box } from '@/components/Shared/Box'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
   Notification as PolarNotification,
@@ -67,24 +67,14 @@ export default function Notifications() {
         ListEmptyComponent={
           isLoading ? null : (
             <Box flex={1} justifyContent="center" alignItems="center">
-              <ThemedText style={{ fontSize: 16 }} secondary>
-                No Notifications
-              </ThemedText>
+              <Text color="subtext">No Notifications</Text>
             </Box>
           )
         }
         renderItem={({ item }: { item: PolarNotification | string }) => {
           if (typeof item === 'string') {
             return (
-              <ThemedText
-                style={{
-                  paddingTop: 12,
-                  paddingBottom: 24,
-                  fontSize: 16,
-                }}
-              >
-                {item}
-              </ThemedText>
+              <Text style={{ paddingTop: 12, paddingBottom: 24 }}>{item}</Text>
             )
           }
 

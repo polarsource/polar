@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { Button, ButtonProps } from './Button'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 export interface BannerProps {
   title: string
@@ -20,10 +20,10 @@ export const Banner = ({ title, description, button }: BannerProps) => {
       backgroundColor="card"
     >
       <Box flex={1} gap="spacing-6">
-        <ThemedText style={{ fontSize: 14 }}>{title}</ThemedText>
-        <ThemedText style={{ fontSize: 14 }} secondary>
+        <Text variant="bodySmall">{title}</Text>
+        <Text variant="bodySmall" color="subtext">
           {description}
-        </ThemedText>
+        </Text>
       </Box>
       {button && (
         <Button

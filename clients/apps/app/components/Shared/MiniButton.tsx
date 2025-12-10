@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 interface MiniButtonProps extends TouchableOpacityProps {
   icon?: React.ReactNode
@@ -68,11 +68,12 @@ export const MiniButton = ({
       {...props}
     >
       {icon && <Box marginRight="spacing-4">{icon}</Box>}
-      <ThemedText
-        style={{ fontSize: 14, fontWeight: '500', color: getTextColor() }}
+      <Text
+        variant="bodySmall"
+        style={{ fontWeight: '500', color: getTextColor() }}
       >
         {children}
-      </ThemedText>
+      </Text>
     </TouchableOpacity>
   )
 }

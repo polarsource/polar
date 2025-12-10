@@ -1,6 +1,6 @@
 import { isLegacyRecurringPrice } from '@/utils/price'
 import { schemas } from '@polar-sh/client'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import AmountLabel from './AmountLabel'
 
 interface ProductPriceLabelProps {
@@ -29,8 +29,8 @@ export const ProductPriceLabel = ({ product }: ProductPriceLabelProps) => {
       />
     )
   } else if (staticPrice.amount_type === 'custom') {
-    return <ThemedText>Pay what you want</ThemedText>
+    return <Text>Pay what you want</Text>
   } else {
-    return <ThemedText>Free</ThemedText>
+    return <Text>Free</Text>
   }
 }

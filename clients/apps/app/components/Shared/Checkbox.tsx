@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { TouchableOpacity } from 'react-native'
-import { ThemedText } from './ThemedText'
+import { Text } from './Text'
 
 export interface CheckboxProps {
   label: string
@@ -40,9 +40,7 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
           />
         )}
       </Box>
-      <ThemedText style={{ fontSize: 16 }} secondary={!checked}>
-        {label}
-      </ThemedText>
+      <Text color={checked ? 'text' : 'subtext'}>{label}</Text>
     </TouchableOpacity>
   )
 }

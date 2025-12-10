@@ -7,7 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React, { useContext } from 'react'
 import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface OrderRowProps {
   order: schemas['Order']
@@ -68,27 +68,25 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
           )}
         </Box>
         <Box flex={1} flexDirection="column" gap="spacing-4">
-          <ThemedText style={{ fontSize: 16, fontWeight: '500' }}>
-            {order.product?.name}
-          </ThemedText>
+          <Text variant="bodyMedium">{order.product?.name}</Text>
           <Box flex={1} flexDirection="row" gap="spacing-6">
             {showTimestamp && (
               <>
-                <ThemedText style={{ fontSize: 16 }} secondary>
+                <Text color="subtext">
                   {new Date(order.created_at).toLocaleDateString('en-US', {
                     dateStyle: 'medium',
                   })}
-                </ThemedText>
-                <ThemedText secondary>•</ThemedText>
+                </Text>
+                <Text color="subtext">•</Text>
               </>
             )}
-            <ThemedText
+            <Text
               numberOfLines={1}
-              style={{ fontSize: 16, flexShrink: 1, flexWrap: 'wrap' }}
-              secondary
+              style={{ flexShrink: 1, flexWrap: 'wrap' }}
+              color="subtext"
             >
               {order.customer.email}
-            </ThemedText>
+            </Text>
           </Box>
         </Box>
       </TouchableOpacity>

@@ -7,7 +7,7 @@ import { Link } from 'expo-router'
 import React, { useContext } from 'react'
 import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 import { Pill } from '../Shared/Pill'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 import { ProductPriceLabel } from './ProductPriceLabel'
 
 export interface ProductRowProps {
@@ -72,13 +72,14 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
             gap="spacing-4"
             justifyContent="space-between"
           >
-            <ThemedText
-              style={{ fontSize: 16, fontWeight: '500', flexShrink: 1 }}
+            <Text
+              variant="bodyMedium"
+              style={{ flexShrink: 1 }}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {product.name}
-            </ThemedText>
+            </Text>
             {product.is_archived && <Pill color="red">Archived</Pill>}
           </Box>
           <ProductPriceLabel product={product} />

@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/Shared/Tabs'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
@@ -177,7 +177,7 @@ export default function Index() {
           </Box>
 
           <Box flexDirection="column" gap="spacing-16">
-            <ThemedText style={{ fontSize: 20 }}>Latest orders</ThemedText>
+            <Text variant="title">Latest orders</Text>
             <Box flexDirection="column" gap="spacing-8">
               {(flatLatestProductOrders?.length ?? 0) > 0 ? (
                 flatLatestProductOrders?.map((order) => (

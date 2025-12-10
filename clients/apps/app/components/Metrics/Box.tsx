@@ -1,5 +1,5 @@
 import { Box as RestyleBox } from '@/components/Shared/Box'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface BoxProps {
   label: string
@@ -15,10 +15,8 @@ export const Box = ({ label, value }: BoxProps) => {
       gap="spacing-8"
       backgroundColor="card"
     >
-      <ThemedText style={{ fontSize: 16 }} secondary>
-        {label}
-      </ThemedText>
-      <ThemedText style={{ fontSize: 16 }}>{value}</ThemedText>
+      <Text color="subtext">{label}</Text>
+      <Text>{value}</Text>
     </RestyleBox>
   )
 }

@@ -1,6 +1,6 @@
 import { ProductRow } from '@/components/Products/ProductRow'
 import { Box } from '@/components/Shared/Box'
-import { ThemedText } from '@/components/Shared/ThemedText'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -42,9 +42,7 @@ export default function Index() {
         ListEmptyComponent={
           isLoading ? null : (
             <Box flex={1} justifyContent="center" alignItems="center">
-              <ThemedText style={{ fontSize: 16 }} secondary>
-                No Products
-              </ThemedText>
+              <Text color="subtext">No Products</Text>
             </Box>
           )
         }

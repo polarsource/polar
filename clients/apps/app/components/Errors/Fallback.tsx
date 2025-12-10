@@ -7,7 +7,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { useLogout } from '@/hooks/auth'
 import { useOAuth } from '@/hooks/oauth'
 import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 export interface ErrorFallbackProps {
   error: Error
   resetErrorBoundary: () => void
@@ -64,24 +64,12 @@ export const ErrorFallback = ({
     >
       <PolarLogo size={80} />
       <Box gap="spacing-12">
-        <ThemedText
-          style={{
-            fontSize: 24,
-            textAlign: 'center',
-          }}
-        >
+        <Text variant="titleLarge" textAlign="center">
           {title}
-        </ThemedText>
-        <ThemedText
-          style={{
-            fontSize: 16,
-            lineHeight: 24,
-            textAlign: 'center',
-          }}
-          secondary
-        >
+        </Text>
+        <Text color="subtext" textAlign="center">
           {message}
-        </ThemedText>
+        </Text>
       </Box>
       <TouchableOpacity
         activeOpacity={0.6}
@@ -97,9 +85,9 @@ export const ErrorFallback = ({
           resetErrorBoundary()
         }}
       >
-        <ThemedText style={{ color: '#000', fontSize: 16, fontWeight: '500' }}>
+        <Text variant="bodyMedium" style={{ color: '#000' }}>
           {actionText}
-        </ThemedText>
+        </Text>
       </TouchableOpacity>
     </Box>
   )

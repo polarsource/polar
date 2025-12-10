@@ -11,7 +11,7 @@ import { formatCurrencyAndAmount } from '@/utils/money'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useMemo } from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
-import { ThemedText } from '../Shared/ThemedText'
+import { Text } from '../Shared/Text'
 
 export interface NotificationProps {
   style?: StyleProp<ViewStyle>
@@ -136,19 +136,19 @@ export const Notification = ({
         alignItems="center"
         justifyContent="center"
       >
-        <ThemedText>{icon}</ThemedText>
+        <Text>{icon}</Text>
       </Box>
       <Box flex={1} flexDirection="column" gap="spacing-4">
         <Box flexDirection="row" gap="spacing-12">
-          <ThemedText>{title}</ThemedText>
-          <ThemedText secondary>
+          <Text>{title}</Text>
+          <Text color="subtext">
             {new Date(createdAt).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: 'numeric',
             })}
-          </ThemedText>
+          </Text>
         </Box>
-        <ThemedText secondary>{description}</ThemedText>
+        <Text color="subtext">{description}</Text>
       </Box>
     </Box>
   )

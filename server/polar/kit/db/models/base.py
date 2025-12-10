@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import UUID
 
+from alembic_utils.pg_extension import PGExtension
+from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import TIMESTAMP, MetaData, Uuid, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -84,3 +86,8 @@ class RateLimitGroupMixin:
         nullable=False,
         default=RateLimitGroup.default,
     )
+
+
+uuid_ossp = PGExtension(schema="public", signature="uuid-ossp")
+citext = PGExtension(schema="public", signature="citext")
+register_entities((uuid_ossp, citext))

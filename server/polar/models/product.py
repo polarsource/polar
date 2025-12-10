@@ -5,9 +5,7 @@ from uuid import UUID
 from sqlalchemy import (
     Boolean,
     ColumnElement,
-    Computed,
     ForeignKey,
-    Index,
     Integer,
     String,
     Text,
@@ -16,7 +14,7 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
+from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -49,22 +47,6 @@ class ProductBillingType(StrEnum):
 
 class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
-    __table_args__ = (
-        Index(
-            "ix_products_search_vector",
-            "search_vector",
-            postgresql_using="gin",
-        ),
-    )
-
-    search_vector: Mapped[str] = mapped_column(
-        TSVECTOR,
-        Computed(
-            "to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, ''))",
-            persisted=True,
-        ),
-        nullable=False,
-    )
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

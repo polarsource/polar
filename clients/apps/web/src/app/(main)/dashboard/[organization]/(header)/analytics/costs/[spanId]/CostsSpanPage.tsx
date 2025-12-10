@@ -1,6 +1,5 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
@@ -19,8 +18,6 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useCallback, useMemo } from 'react'
 import { Chart } from '../components/Chart/Chart'
 import { CostsBandedChart } from '../components/CostsBandedChart'
-import { SpansHeader } from '../components/SpansHeader'
-import { SpansTitle } from '../components/SpansTitle'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,
@@ -216,18 +213,6 @@ export default function SpanDetailPage({
     hide: hideEditEventTypeModal,
   } = useModal()
 
-  if (!spanId) {
-    return (
-      <DashboardBody title="Span">
-        <div className="flex flex-col gap-y-4">
-          <p className="dark:text-polar-500 text-gray-500">
-            No span ID provided
-          </p>
-        </div>
-      </DashboardBody>
-    )
-  }
-
   if (isLoading) {
     return (
       <div className="flex h-full flex-col items-center justify-center">
@@ -237,19 +222,7 @@ export default function SpanDetailPage({
   }
 
   return (
-    <DashboardBody
-      title={<SpansTitle organization={organization} />}
-      header={
-        <SpansHeader
-          dateRange={dateRange}
-          interval={interval}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          onIntervalChange={onIntervalChange}
-        />
-      }
-    >
+    <div>
       <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
         <h3 className="text-4xl">{eventType?.label ?? ''}</h3>
         <Button variant="secondary" onClick={showEditEventTypeModal}>
@@ -485,6 +458,6 @@ export default function SpanDetailPage({
           )
         }
       />
-    </DashboardBody>
+    </div>
   )
 }

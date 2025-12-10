@@ -1,14 +1,15 @@
 import { ProductPriceLabel } from '@/components/Products/ProductPriceLabel'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useTheme } from '@/design-system/useTheme'
 import { useProducts } from '@/hooks/polar/products'
 import {
   useSubscription,
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { hasLegacyRecurringPrices } from '@/utils/price'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -22,13 +23,12 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const { id } = useLocalSearchParams()
-  const { colors } = useTheme()
+  const theme = useTheme()
   const router = useRouter()
 
   const {
@@ -115,7 +115,7 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={{
         paddingBottom: 48,
         flexDirection: 'column',
@@ -130,18 +130,18 @@ export default function Index() {
           title: 'Update Subscription',
         }}
       />
-      <View style={{ gap: 24 }}>
+      <Box gap="spacing-24">
         <SubscriptionRow
           subscription={subscription}
           showCustomer
           style={{
-            backgroundColor: colors.card,
+            backgroundColor: theme.colors.card,
           }}
         />
 
         <ProrationBehaviorSelector form={form} />
 
-        <View style={{ flex: 1, gap: 4 }}>
+        <Box flex={1} gap="spacing-4">
           {productCandidates.length > 0 ? (
             productCandidates.map((product) => (
               <TouchableOpacity
@@ -151,7 +151,7 @@ export default function Index() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 8,
-                  backgroundColor: colors.card,
+                  backgroundColor: theme.colors.card,
                   height: 48,
                   paddingHorizontal: 16,
                   borderRadius: 8,
@@ -161,23 +161,17 @@ export default function Index() {
                 }}
               >
                 <ThemedText>{product.name}</ThemedText>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                  }}
-                >
+                <Box flexDirection="row" alignItems="center" gap="spacing-12">
                   <ProductPriceLabel product={product} />
                   <MaterialIcons
                     name="check"
                     size={16}
-                    color={colors.text}
+                    color={theme.colors.text}
                     style={{
                       opacity: product.id === selectedProductId ? 1 : 0,
                     }}
                   />
-                </View>
+                </Box>
               </TouchableOpacity>
             ))
           ) : (
@@ -186,21 +180,19 @@ export default function Index() {
               description="You have no other products to update to."
             />
           )}
-        </View>
-      </View>
+        </Box>
+      </Box>
       {selectedProduct && selectedProduct.id !== subscription.product.id && (
-        <View
-          style={{
-            backgroundColor: colors.card,
-            padding: 16,
-            borderRadius: 8,
-          }}
+        <Box
+          backgroundColor="card"
+          padding="spacing-16"
+          borderRadius="border-radius-8"
         >
           <ThemedText>
             The customer will get access to {selectedProduct.name} benefits, and
             lose access to {subscription.product.name} benefits.
           </ThemedText>
-        </View>
+        </Box>
       )}
       <Button
         loading={updateSubscription.isPending}
@@ -233,21 +225,19 @@ const ProrationBehaviorSelector = ({
 }: {
   form: UseFormReturn<schemas['SubscriptionUpdateProduct']>
 }) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const { watch, setValue } = form
 
   const prorationBehavior = watch('proration_behavior')
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        gap: 8,
-        backgroundColor: colors.card,
-        padding: 4,
-        borderRadius: 12,
-      }}
+    <Box
+      flexDirection="row"
+      gap="spacing-8"
+      backgroundColor="card"
+      padding="spacing-4"
+      borderRadius="border-radius-12"
     >
       {Object.entries(PRORATION_BEHAVIOR_LABELS).map(([key, label]) => (
         <TouchableOpacity
@@ -263,7 +253,7 @@ const ProrationBehaviorSelector = ({
               flex: 1,
             },
             prorationBehavior === key && {
-              backgroundColor: colors.background,
+              backgroundColor: theme.colors.background,
             },
           ]}
           onPress={() => {
@@ -285,6 +275,6 @@ const ProrationBehaviorSelector = ({
           </ThemedText>
         </TouchableOpacity>
       ))}
-    </View>
+    </Box>
   )
 }

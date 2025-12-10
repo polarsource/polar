@@ -2,7 +2,6 @@ import { useTheme } from '@/design-system/useTheme'
 import {
   ActivityIndicator,
   StyleProp,
-  StyleSheet,
   TextStyle,
   TouchableOpacity,
   ViewStyle,
@@ -62,12 +61,14 @@ export const Button = ({
       disabled={disabled || loading}
       activeOpacity={0.6}
       style={[
-        styles.button,
         {
+          padding: theme.spacing['spacing-10'],
+          borderRadius: theme.borderRadii['border-radius-999'],
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 50,
           backgroundColor:
-            disabled || loading ? '#ffffff11' : getTouchableColor(),
-        },
-        {
+            disabled || loading ? theme.colors.disabled : getTouchableColor(),
           opacity: disabled || loading ? 0.5 : 1,
         },
         style,
@@ -75,8 +76,9 @@ export const Button = ({
     >
       <ThemedText
         style={[
-          styles.text,
           {
+            fontSize: 16,
+            fontWeight: '500',
             color: getTextColor(),
           },
           textStyle,
@@ -91,17 +93,3 @@ export const Button = ({
     </TouchableOpacity>
   )
 }
-
-const styles = StyleSheet.create({
-  button: {
-    padding: 10,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 50,
-  },
-  text: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-})

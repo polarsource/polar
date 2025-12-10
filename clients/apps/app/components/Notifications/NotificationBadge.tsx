@@ -3,7 +3,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { useNotificationsBadge } from '@/hooks/notifications'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Link } from 'expo-router'
-import { StyleSheet, TouchableOpacity } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 
 export const NotificationBadge = () => {
   const theme = useTheme()
@@ -11,24 +11,22 @@ export const NotificationBadge = () => {
 
   return (
     <Link href="/notifications" asChild>
-      <TouchableOpacity activeOpacity={0.6} style={styles.container}>
+      <TouchableOpacity activeOpacity={0.6} style={{ position: 'relative' }}>
         <MaterialIcons name="bolt" size={24} color={theme.colors.text} />
-        {showBadge && <Box style={styles.badge} backgroundColor="primary" />}
+        {showBadge && (
+          <Box
+            backgroundColor="primary"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 4,
+              height: 4,
+              borderRadius: theme.borderRadii['border-radius-2'],
+            }}
+          />
+        )}
       </TouchableOpacity>
     </Link>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-  },
-})

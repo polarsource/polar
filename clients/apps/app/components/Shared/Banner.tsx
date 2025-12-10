@@ -1,5 +1,5 @@
 import { Box } from '@/components/Shared/Box'
-import { StyleSheet } from 'react-native'
+import { useTheme } from '@/design-system/useTheme'
 import { Button, ButtonProps } from './Button'
 import { ThemedText } from './ThemedText'
 
@@ -10,6 +10,7 @@ export interface BannerProps {
 }
 
 export const Banner = ({ title, description, button }: BannerProps) => {
+  const theme = useTheme()
   return (
     <Box
       flexDirection="column"
@@ -19,38 +20,24 @@ export const Banner = ({ title, description, button }: BannerProps) => {
       backgroundColor="card"
     >
       <Box flex={1} gap="spacing-6">
-        <ThemedText style={[styles.title]}>{title}</ThemedText>
-        <ThemedText style={[styles.description]} secondary>
+        <ThemedText style={{ fontSize: 14 }}>{title}</ThemedText>
+        <ThemedText style={{ fontSize: 14 }} secondary>
           {description}
         </ThemedText>
       </Box>
       {button && (
         <Button
           {...button}
-          style={styles.button}
-          textStyle={styles.buttonText}
+          style={{
+            paddingVertical: theme.spacing['spacing-8'],
+            paddingHorizontal: theme.spacing['spacing-12'],
+            borderRadius: theme.borderRadii['border-radius-100'],
+            height: 32,
+            alignSelf: 'flex-start',
+          }}
+          textStyle={{ fontSize: 12, fontWeight: 'normal' }}
         />
       )}
     </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 14,
-  },
-  description: {
-    fontSize: 14,
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 100,
-    height: 32,
-    alignSelf: 'flex-start',
-  },
-  buttonText: {
-    fontSize: 12,
-    fontWeight: 'normal',
-  },
-})

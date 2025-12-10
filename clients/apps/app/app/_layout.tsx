@@ -1,6 +1,6 @@
+import { Box } from '@/components/Shared/Box'
 import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
-import { themes } from '@/utils/theme'
 import { useReactNavigationDevTools } from '@dev-plugins/react-navigation'
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
 import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic'
@@ -12,7 +12,6 @@ import { onlineManager } from '@tanstack/react-query'
 import { Slot, useNavigationContainerRef } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import React, { useCallback } from 'react'
-import { View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 Sentry.init({
@@ -81,12 +80,13 @@ export default Sentry.wrap(function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider theme={theme}>
         <SessionProvider>
-          <View
-            style={{ flex: 1, backgroundColor: themes.dark.background }}
+          <Box
+            flex={1}
+            backgroundColor="background"
             onLayout={onLayoutRootView}
           >
             <Slot />
-          </View>
+          </Box>
         </SessionProvider>
       </ThemeProvider>
     </SafeAreaProvider>

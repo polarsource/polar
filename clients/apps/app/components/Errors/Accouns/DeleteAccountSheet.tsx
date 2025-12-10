@@ -1,10 +1,10 @@
 import { Button } from '@/components/Shared/Button'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
-import { themes } from '@/utils/theme'
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetTextInput,
@@ -20,6 +20,7 @@ export interface DeleteAccountSheetProps {
 
 export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
   const bottomSheetRef = useRef<BottomSheet>(null)
+  const theme = useTheme()
 
   const safeViewInsets = useSafeAreaInsets()
 
@@ -46,30 +47,46 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
       ref={bottomSheetRef}
       onClose={onDismiss}
       enablePanDownToClose
-      backgroundStyle={styles.background}
+      backgroundStyle={{
+        backgroundColor: theme.colors.card,
+        borderRadius: theme.borderRadii['border-radius-32'],
+      }}
       backdropComponent={(props) => (
         <BottomSheetBackdrop
           {...props}
           enableTouchThrough={false}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          style={[styles.dimmer, StyleSheet.absoluteFillObject]}
+          style={[
+            { flex: 1, backgroundColor: theme.colors.overlay },
+            StyleSheet.absoluteFillObject,
+          ]}
         />
       )}
     >
       <BottomSheetView
-        style={[
-          styles.contentContainer,
-          { paddingBottom: safeViewInsets.bottom + 12 },
-        ]}
+        style={{
+          flex: 1,
+          padding: theme.spacing['spacing-24'],
+          gap: theme.spacing['spacing-12'],
+          paddingBottom: safeViewInsets.bottom + 12,
+        }}
       >
-        <ThemedText style={styles.title}>Delete Account</ThemedText>
-        <ThemedText style={styles.description} secondary>
+        <ThemedText style={{ fontSize: 20 }}>Delete Account</ThemedText>
+        <ThemedText style={{ fontSize: 16 }} secondary>
           Deleting your organizations & account is an irreversible action.
         </ThemedText>
         <BottomSheetTextInput
-          style={styles.input}
-          placeholderTextColor={'rgba(255, 255, 255, .5)'}
+          style={{
+            backgroundColor: theme.colors.inputBackground,
+            borderRadius: theme.borderRadii['border-radius-12'],
+            paddingHorizontal: theme.spacing['spacing-12'],
+            paddingVertical: theme.spacing['spacing-10'],
+            marginVertical: theme.spacing['spacing-12'],
+            fontSize: 16,
+            color: theme.colors.monochromeInverted,
+          }}
+          placeholderTextColor={theme.colors.inputPlaceholder}
           placeholder={user?.email}
           onChangeText={setEmail}
           value={email}
@@ -86,34 +103,3 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
     </BottomSheet>
   )
 }
-
-const styles = StyleSheet.create({
-  dimmer: {
-    flex: 1,
-    backgroundColor: '#000000aa',
-  },
-  background: {
-    backgroundColor: themes.dark.card,
-    borderRadius: 32,
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 24,
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-  },
-  description: {
-    fontSize: 16,
-  },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, .05)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginVertical: 12,
-    fontSize: 16,
-    color: themes.dark.monochromeInverted,
-  },
-})

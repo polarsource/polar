@@ -4,6 +4,7 @@ import {
   getPreviousParams,
   timeRange,
 } from '@/components/Metrics/utils'
+import { Box } from '@/components/Shared/Box'
 import { Tabs, TabsList, TabsTrigger } from '@/components/Shared/Tabs'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -16,7 +17,6 @@ import {
   RefreshControl,
   SafeAreaView,
   StyleSheet,
-  View,
 } from 'react-native'
 
 export default function Index() {
@@ -96,9 +96,9 @@ export default function Index() {
         </Tabs>
       </SafeAreaView>
       {metrics.isLoading ? (
-        <View style={MetricsStyles.emptyContainer}>
+        <Box flex={1} justifyContent="center" alignItems="center">
           <ActivityIndicator />
-        </View>
+        </Box>
       ) : (
         <FlatList
           style={MetricsStyles.container}

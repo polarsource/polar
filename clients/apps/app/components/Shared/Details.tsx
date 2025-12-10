@@ -1,12 +1,6 @@
+import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import {
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { StyleProp, Text, TextStyle, ViewStyle } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 export const Details = ({
@@ -16,12 +10,16 @@ export const Details = ({
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
 }) => {
-  const theme = useTheme()
-
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.card }, style]}>
+    <Box
+      backgroundColor="card"
+      padding="spacing-16"
+      borderRadius="border-radius-12"
+      gap="spacing-8"
+      style={style}
+    >
       {children}
-    </View>
+    </Box>
   )
 }
 
@@ -39,42 +37,25 @@ export const DetailRow = ({
   const theme = useTheme()
 
   return (
-    <View style={styles.row}>
-      <ThemedText style={[styles.label, labelStyle]} secondary>
+    <Box flexDirection="row" justifyContent="space-between" gap="spacing-8">
+      <ThemedText style={[{ fontSize: 16 }, labelStyle]} secondary>
         {label}
       </ThemedText>
       <Text
         numberOfLines={1}
         ellipsizeMode="tail"
         style={[
-          styles.value,
-          { color: value ? theme.colors.text : theme.colors.subtext },
+          {
+            fontSize: 16,
+            width: 'auto',
+            textAlign: 'right',
+            color: value ? theme.colors.text : theme.colors.subtext,
+          },
           valueStyle,
         ]}
       >
         {value ? value : '—'}
       </Text>
-    </View>
+    </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-    width: 'auto',
-    textAlign: 'right',
-  },
-})

@@ -1,5 +1,4 @@
 import { Box } from '@/components/Shared/Box'
-import { StyleSheet } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 export interface EmptyStateProps {
@@ -20,21 +19,12 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
       gap="spacing-8"
       borderRadius="border-radius-16"
     >
-      <ThemedText style={[styles.title]}>{title}</ThemedText>
-      <ThemedText style={[styles.description]} secondary>
+      <ThemedText style={{ fontSize: 16, textAlign: 'center' }}>
+        {title}
+      </ThemedText>
+      <ThemedText style={{ fontSize: 16, textAlign: 'center' }} secondary>
         {description}
       </ThemedText>
     </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-})

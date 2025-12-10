@@ -1,3 +1,4 @@
+import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
   MaintainerAccountReviewedNotificationPayload,
@@ -9,7 +10,7 @@ import {
 import { formatCurrencyAndAmount } from '@/utils/money'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useMemo } from 'react'
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { StyleProp, ViewStyle } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
 export interface NotificationProps {
@@ -126,12 +127,19 @@ export const Notification = ({
   }, [type])
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={[styles.icon, { backgroundColor: theme.colors.card }]}>
+    <Box flexDirection="row" gap="spacing-16" style={style}>
+      <Box
+        backgroundColor="card"
+        width={40}
+        height={40}
+        borderRadius="border-radius-8"
+        alignItems="center"
+        justifyContent="center"
+      >
         <ThemedText>{icon}</ThemedText>
-      </View>
-      <View style={styles.content}>
-        <View style={styles.header}>
+      </Box>
+      <Box flex={1} flexDirection="column" gap="spacing-4">
+        <Box flexDirection="row" gap="spacing-12">
           <ThemedText>{title}</ThemedText>
           <ThemedText secondary>
             {new Date(createdAt).toLocaleTimeString('en-US', {
@@ -139,32 +147,9 @@ export const Notification = ({
               minute: 'numeric',
             })}
           </ThemedText>
-        </View>
+        </Box>
         <ThemedText secondary>{description}</ThemedText>
-      </View>
-    </View>
+      </Box>
+    </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 4,
-  },
-  header: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-})

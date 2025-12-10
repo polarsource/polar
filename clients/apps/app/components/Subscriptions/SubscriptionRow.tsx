@@ -4,13 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import {
-  Image,
-  StyleProp,
-  StyleSheet,
-  TextStyle,
-  TouchableOpacity,
-} from 'react-native'
+import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 import { ProductPriceLabel } from '../Products/ProductPriceLabel'
 import { Pill } from '../Shared/Pill'
 import { ThemedText } from '../Shared/ThemedText'
@@ -45,20 +39,38 @@ export const SubscriptionRow = ({
   return (
     <Link
       href={`/subscriptions/${subscription.id}`}
-      style={[styles.container, { backgroundColor: theme.colors.card }, style]}
+      style={[
+        {
+          padding: theme.spacing['spacing-16'],
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderRadius: theme.borderRadii['border-radius-12'],
+          gap: theme.spacing['spacing-12'],
+          backgroundColor: theme.colors.card,
+        },
+        style,
+      ]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
-        <Box style={styles.imageContainer}>
+        <Box
+          width={48}
+          height={48}
+          borderRadius="border-radius-8"
+          overflow="hidden"
+        >
           {product?.medias?.[0]?.public_url ? (
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
-              style={styles.image}
+              style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
             />
           ) : (
             <Box
-              style={styles.imageFallback}
+              width="100%"
+              height="100%"
+              justifyContent="center"
+              alignItems="center"
               borderColor="border"
               borderWidth={1}
               borderRadius="border-radius-8"
@@ -78,7 +90,7 @@ export const SubscriptionRow = ({
             gap="spacing-8"
           >
             <ThemedText
-              style={styles.productName}
+              style={{ fontSize: 16, fontWeight: '500' }}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -92,12 +104,12 @@ export const SubscriptionRow = ({
             <ProductPriceLabel product={subscription.product} />
             {showCustomer && (
               <>
-                <ThemedText style={styles.meta} secondary>
+                <ThemedText style={{ fontSize: 16, flexShrink: 1 }} secondary>
                   •
                 </ThemedText>
                 <ThemedText
                   numberOfLines={1}
-                  style={[styles.meta, { flexWrap: 'wrap' }]}
+                  style={{ fontSize: 16, flexShrink: 1, flexWrap: 'wrap' }}
                   secondary
                 >
                   {subscription.customer.email}
@@ -110,41 +122,3 @@ export const SubscriptionRow = ({
     </Link>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    gap: 12,
-  },
-  imageContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imageFallback: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  status: {
-    fontSize: 16,
-    textTransform: 'capitalize',
-  },
-  meta: {
-    fontSize: 16,
-    flexShrink: 1,
-  },
-})

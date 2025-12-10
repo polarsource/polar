@@ -1,5 +1,4 @@
 import { Box as RestyleBox } from '@/components/Shared/Box'
-import { StyleSheet } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
 export interface BoxProps {
@@ -16,19 +15,10 @@ export const Box = ({ label, value }: BoxProps) => {
       gap="spacing-8"
       backgroundColor="card"
     >
-      <ThemedText style={styles.label} secondary>
+      <ThemedText style={{ fontSize: 16 }} secondary>
         {label}
       </ThemedText>
-      <ThemedText style={styles.value}>{value}</ThemedText>
+      <ThemedText style={{ fontSize: 16 }}>{value}</ThemedText>
     </RestyleBox>
   )
 }
-
-const styles = StyleSheet.create({
-  label: {
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-  },
-})

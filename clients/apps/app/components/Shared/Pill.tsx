@@ -1,11 +1,21 @@
-import {
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
+import { StyleProp, Text, TextStyle, ViewStyle } from 'react-native'
+
+type PillColor = 'green' | 'yellow' | 'red' | 'blue'
+
+const getColorTokens = (color: PillColor) => {
+  switch (color) {
+    case 'green':
+      return { text: 'statusGreen', bg: 'statusGreenBg' } as const
+    case 'yellow':
+      return { text: 'statusYellow', bg: 'statusYellowBg' } as const
+    case 'red':
+      return { text: 'statusRed', bg: 'statusRedBg' } as const
+    case 'blue':
+      return { text: 'statusBlue', bg: 'statusBlueBg' } as const
+  }
+}
 
 export const Pill = ({
   color,
@@ -13,42 +23,33 @@ export const Pill = ({
   style,
   textStyle,
 }: {
-  color: 'green' | 'yellow' | 'red' | 'blue'
+  color: PillColor
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
   textStyle?: StyleProp<TextStyle>
 }) => {
+  const theme = useTheme()
+  const colorTokens = getColorTokens(color)
+
   return (
-    <View style={[styles.pill, styles[color], style]}>
-      <Text style={[styles.text, styles[color], textStyle]}>{children}</Text>
-    </View>
+    <Box
+      paddingHorizontal="spacing-6"
+      paddingVertical="spacing-4"
+      borderRadius="border-radius-6"
+      style={[{ backgroundColor: theme.colors[colorTokens.bg] }, style]}
+    >
+      <Text
+        style={[
+          {
+            textTransform: 'capitalize',
+            fontSize: 12,
+            color: theme.colors[colorTokens.text],
+          },
+          textStyle,
+        ]}
+      >
+        {children}
+      </Text>
+    </Box>
   )
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  text: {
-    textTransform: 'capitalize',
-    fontSize: 12,
-  },
-  green: {
-    color: '#10b981',
-    backgroundColor: '#022c22',
-  },
-  yellow: {
-    color: '#eab308',
-    backgroundColor: '#422006',
-  },
-  red: {
-    color: '#ef4444',
-    backgroundColor: '#450a0a',
-  },
-  blue: {
-    color: '#6366f1',
-    backgroundColor: '#1e1b4b',
-  },
-})

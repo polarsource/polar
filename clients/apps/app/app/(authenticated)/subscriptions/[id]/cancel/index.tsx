@@ -1,11 +1,12 @@
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useTheme } from '@/design-system/useTheme'
 import {
   useSubscription,
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
@@ -17,7 +18,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 
 const CANCELLATION_REASONS = {
@@ -46,7 +46,7 @@ type SubscriptionCancelForm = schemas['SubscriptionCancel'] & {
 
 export default function Index() {
   const { id } = useLocalSearchParams()
-  const { colors } = useTheme()
+  const theme = useTheme()
   const router = useRouter()
 
   const {
@@ -131,7 +131,7 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={{
         flexDirection: 'column',
         paddingBottom: 48,
@@ -146,22 +146,20 @@ export default function Index() {
           title: 'Cancel Subscription',
         }}
       />
-      <View style={{ gap: 24 }}>
+      <Box gap="spacing-24">
         <SubscriptionRow
           subscription={subscription}
           showCustomer
           style={{
-            backgroundColor: colors.card,
+            backgroundColor: theme.colors.card,
           }}
         />
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 8,
-            backgroundColor: colors.card,
-            padding: 4,
-            borderRadius: 12,
-          }}
+        <Box
+          flexDirection="row"
+          gap="spacing-8"
+          backgroundColor="card"
+          padding="spacing-4"
+          borderRadius="border-radius-12"
         >
           {['Immediately', 'End of Period'].map((option, index) => (
             <TouchableOpacity
@@ -178,7 +176,7 @@ export default function Index() {
                 },
                 cancellationAction ===
                   (index === 0 ? 'revoke' : 'cancel_at_period_end') && {
-                  backgroundColor: colors.background,
+                  backgroundColor: theme.colors.background,
                 },
               ]}
               onPress={() => {
@@ -191,13 +189,13 @@ export default function Index() {
               <ThemedText>{option}</ThemedText>
             </TouchableOpacity>
           ))}
-        </View>
+        </Box>
 
-        <View style={{ flex: 1, gap: 12 }}>
+        <Box flex={1} gap="spacing-12">
           <ThemedText style={{ fontSize: 16 }}>
             Customer Cancellation Reason
           </ThemedText>
-          <View style={{ flex: 1, gap: 4 }}>
+          <Box flex={1} gap="spacing-4">
             {reasons.map((reason) => (
               <TouchableOpacity
                 key={reason}
@@ -206,7 +204,7 @@ export default function Index() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 8,
-                  backgroundColor: colors.card,
+                  backgroundColor: theme.colors.card,
                   height: 48,
                   paddingHorizontal: 16,
                   borderRadius: 8,
@@ -217,15 +215,19 @@ export default function Index() {
               >
                 <ThemedText>{getHumanCancellationReason(reason)}</ThemedText>
                 {cancellationReason === reason && (
-                  <View>
-                    <MaterialIcons name="check" size={20} color={colors.text} />
-                  </View>
+                  <Box>
+                    <MaterialIcons
+                      name="check"
+                      size={20}
+                      color={theme.colors.text}
+                    />
+                  </Box>
                 )}
               </TouchableOpacity>
             ))}
-          </View>
-        </View>
-      </View>
+          </Box>
+        </Box>
+      </Box>
       <Button
         loading={cancelSubscription.isPending}
         disabled={cancelSubscription.isPending}

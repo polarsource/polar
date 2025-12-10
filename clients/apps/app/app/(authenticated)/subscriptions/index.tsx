@@ -1,12 +1,13 @@
+import { Box } from '@/components/Shared/Box'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useTheme } from '@/design-system/useTheme'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 
 const groupSubscriptionsByDate = (subscriptions: schemas['Subscription'][]) => {
   if (!subscriptions?.length) return []
@@ -37,7 +38,7 @@ const groupSubscriptionsByDate = (subscriptions: schemas['Subscription'][]) => {
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
     useSubscriptions(organization?.id, {
       sorting: ['-started_at'],
@@ -76,25 +77,19 @@ export default function Index() {
         }}
         contentContainerStyle={{
           padding: 16,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
         ListEmptyComponent={
           isLoading ? null : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+            <Box flex={1} justifyContent="center" alignItems="center">
               <ThemedText style={{ fontSize: 16 }} secondary>
                 No Subscriptions
               </ThemedText>
-            </View>
+            </Box>
           )
         }
-        ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

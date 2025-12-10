@@ -1,10 +1,11 @@
 import { DeleteAccountSheet } from '@/components/Errors/Accouns/DeleteAccountSheet'
 import { Avatar } from '@/components/Shared/Avatar'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { MiniButton } from '@/components/Shared/MiniButton'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
-import { useTheme } from '@/hooks/theme'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
@@ -16,7 +17,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -29,7 +29,7 @@ export default function Index() {
   } = useContext(OrganizationContext)
   const router = useRouter()
 
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { data: organizationData, refetch, isRefetching } = useOrganizations()
   const { user } = useUser()
 
@@ -58,14 +58,9 @@ export default function Index() {
         ]}
       >
         <Stack.Screen options={{ title: 'Settings' }} />
-        <View style={{ gap: 32 }}>
-          <View style={{ gap: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-              }}
-            >
+        <Box gap="spacing-32">
+          <Box gap="spacing-16">
+            <Box flexDirection="row" justifyContent="space-between">
               <ThemedText style={[SettingsStyle.title]}>
                 Organizations
               </ThemedText>
@@ -75,21 +70,21 @@ export default function Index() {
                   <MaterialIcons
                     name="add"
                     size={16}
-                    color={colors.monochrome}
+                    color={theme.colors.monochrome}
                   />
                 }
               >
                 New
               </MiniButton>
-            </View>
-            <View style={SettingsStyle.organizationsContainer}>
+            </Box>
+            <Box flexDirection="column" gap="spacing-4">
               {organizationData?.items.map((organization) => (
                 <TouchableOpacity
                   key={organization?.id}
                   style={[
                     SettingsStyle.organization,
                     {
-                      backgroundColor: colors.card,
+                      backgroundColor: theme.colors.card,
                     },
                   ]}
                   onPress={() => {
@@ -98,7 +93,7 @@ export default function Index() {
                   }}
                   activeOpacity={0.6}
                 >
-                  <View style={SettingsStyle.organizationContent}>
+                  <Box flexDirection="row" alignItems="center" gap="spacing-12">
                     <Avatar
                       size={32}
                       image={organization?.avatar_url}
@@ -107,35 +102,33 @@ export default function Index() {
                     <ThemedText style={[SettingsStyle.organizationName]}>
                       {organization?.name}
                     </ThemedText>
-                  </View>
+                  </Box>
                   {selectedOrganization?.id === organization?.id ? (
                     <MaterialIcons
                       name="check"
                       size={20}
-                      color={colors.monochromeInverted}
+                      color={theme.colors.monochromeInverted}
                     />
                   ) : null}
                 </TouchableOpacity>
               ))}
-            </View>
-          </View>
-          <View style={{ gap: 16 }}>
-            <View>
+            </Box>
+          </Box>
+          <Box gap="spacing-16">
+            <Box>
               <ThemedText style={[SettingsStyle.title]}>Danger zone</ThemedText>
-              <ThemedText style={{ color: colors.subtext }}>
+              <ThemedText style={{ color: theme.colors.subtext }}>
                 Irreversible actions for this account
               </ThemedText>
-            </View>
-            <View
-              style={{
-                padding: 16,
-                borderRadius: 24,
-                borderWidth: 1,
-                gap: 12,
-                backgroundColor: colors.card,
-              }}
+            </Box>
+            <Box
+              padding="spacing-16"
+              borderRadius="border-radius-24"
+              borderWidth={1}
+              gap="spacing-12"
+              backgroundColor="card"
             >
-              <View style={{ gap: 4 }}>
+              <Box gap="spacing-4">
                 <ThemedText style={[SettingsStyle.subTitle]}>
                   Account Deletion
                 </ThemedText>
@@ -143,7 +136,7 @@ export default function Index() {
                   Permanently delete this account, all organizations, and all
                   associated data. This action cannot be undone.
                 </ThemedText>
-              </View>
+              </Box>
               <MiniButton
                 variant="destructive"
                 onPress={() => setShowAccountDeletionSheet(true)}
@@ -151,13 +144,13 @@ export default function Index() {
               >
                 Delete Account
               </MiniButton>
-            </View>
-          </View>
-        </View>
+            </Box>
+          </Box>
+        </Box>
 
-        <View style={SettingsStyle.buttonsContainer}>
+        <Box gap="spacing-12">
           <Button onPress={logout}>Logout</Button>
-        </View>
+        </Box>
       </ScrollView>
 
       {showAccountDeletionSheet ? (

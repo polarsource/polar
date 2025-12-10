@@ -1,10 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import {
-  StyleSheet,
-  TouchableOpacity,
-  TouchableOpacityProps,
-} from 'react-native'
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 interface MiniButtonProps extends TouchableOpacityProps {
@@ -53,8 +49,14 @@ export const MiniButton = ({
     <TouchableOpacity
       activeOpacity={0.6}
       style={[
-        styles.button,
         {
+          width: 'auto',
+          borderRadius: theme.borderRadii['border-radius-100'],
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          paddingHorizontal: theme.spacing['spacing-12'],
+          paddingVertical: theme.spacing['spacing-6'],
           backgroundColor: disabled
             ? theme.colors.secondary
             : getTouchableColor(),
@@ -74,15 +76,3 @@ export const MiniButton = ({
     </TouchableOpacity>
   )
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 'auto',
-    borderRadius: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-})

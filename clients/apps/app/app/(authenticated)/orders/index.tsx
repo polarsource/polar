@@ -1,12 +1,13 @@
 import { OrderRow } from '@/components/Orders/OrderRow'
+import { Box } from '@/components/Shared/Box'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 
 const groupOrdersByDate = (orders: schemas['Order'][]) => {
   if (!orders?.length) return []
@@ -36,7 +37,7 @@ const groupOrdersByDate = (orders: schemas['Order'][]) => {
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
     useOrders(organization?.id)
 
@@ -67,25 +68,19 @@ export default function Index() {
         }}
         ListEmptyComponent={
           isLoading ? null : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+            <Box flex={1} justifyContent="center" alignItems="center">
               <ThemedText style={{ fontSize: 16 }} secondary>
                 No Orders
               </ThemedText>
-            </View>
+            </Box>
           )
         }
         contentContainerStyle={{
           padding: 16,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
-        ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

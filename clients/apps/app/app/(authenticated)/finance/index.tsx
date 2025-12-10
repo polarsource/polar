@@ -1,21 +1,22 @@
 import { PayoutRow } from '@/components/Payouts/PayoutRow'
 import { Banner } from '@/components/Shared/Banner'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import {
   useOrganizationAccount,
   usePayouts,
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Link, Stack } from 'expo-router'
 import { useCallback, useContext } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
+import { RefreshControl, ScrollView } from 'react-native'
 
 export default function Finance() {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
   const {
     data: account,
@@ -53,10 +54,12 @@ export default function Finance() {
 
   return (
     <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { backgroundColor: colors.background },
-      ]}
+      contentContainerStyle={{
+        gap: theme.spacing['spacing-32'],
+        padding: theme.spacing['spacing-16'],
+        paddingBottom: theme.spacing['spacing-48'],
+        backgroundColor: theme.colors.background,
+      }}
       refreshControl={
         <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
       }
@@ -68,15 +71,21 @@ export default function Finance() {
           description="This organization does not have a payout account connected."
         />
       )}
-      <View style={[styles.balanceContainer, { backgroundColor: colors.card }]}>
-        <ThemedText style={styles.balanceLabel} secondary>
+      <Box
+        flexDirection="column"
+        gap="spacing-8"
+        borderRadius="border-radius-16"
+        padding="spacing-16"
+        backgroundColor="card"
+      >
+        <ThemedText style={{ fontSize: 16 }} secondary>
           Account Balance
         </ThemedText>
-        <ThemedText style={styles.balance}>
+        <ThemedText style={{ fontSize: 32 }}>
           {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
         </ThemedText>
-      </View>
-      <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+      </Box>
+      <Box flexDirection="column" alignItems="center" gap="spacing-16">
         <Link
           style={{ width: '100%' }}
           href="/finance/withdraw"
@@ -88,36 +97,16 @@ export default function Finance() {
         <ThemedText secondary>
           You may only withdraw amounts above $10.
         </ThemedText>
-      </View>
+      </Box>
 
-      <View style={{ flexDirection: 'column', gap: 16 }}>
+      <Box flexDirection="column" gap="spacing-16">
         <ThemedText style={{ fontSize: 20 }}>Payouts</ThemedText>
-        <View style={{ flexDirection: 'column', gap: 4 }}>
+        <Box flexDirection="column" gap="spacing-4">
           {payouts?.items?.map((payout) => (
             <PayoutRow key={payout.id} payout={payout} />
           ))}
-        </View>
-      </View>
+        </Box>
+      </Box>
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 32,
-    padding: 16,
-    paddingBottom: 48,
-  },
-  balanceContainer: {
-    flexDirection: 'column',
-    gap: 8,
-    borderRadius: 16,
-    padding: 16,
-  },
-  balanceLabel: {
-    fontSize: 16,
-  },
-  balance: {
-    fontSize: 32,
-  },
-})

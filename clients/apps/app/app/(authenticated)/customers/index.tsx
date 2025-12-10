@@ -1,16 +1,17 @@
 import { CustomerRow } from '@/components/Customers/CustomerRow'
+import { Box } from '@/components/Shared/Box'
 import { Input } from '@/components/Shared/Input'
+import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo, useState } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
   const [search, setSearch] = useState('')
 
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage } =
@@ -27,13 +28,13 @@ export default function Index() {
           title: 'Customers',
         }}
       />
-      <View style={{ padding: 16, backgroundColor: colors.background }}>
+      <Box padding="spacing-16" backgroundColor="background">
         <Input
           placeholder="Search Customers"
           onChangeText={setSearch}
-          placeholderTextColor={colors.subtext}
+          placeholderTextColor={theme.colors.subtext}
         />
-      </View>
+      </Box>
       <FlatList
         data={customersData}
         renderItem={({ item }: { item: schemas['Customer'] }) => {
@@ -41,9 +42,9 @@ export default function Index() {
         }}
         contentContainerStyle={{
           padding: 16,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
         }}
-        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+        ItemSeparatorComponent={() => <Box style={{ height: 6 }} />}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

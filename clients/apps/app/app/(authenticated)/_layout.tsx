@@ -1,5 +1,5 @@
 import { ErrorFallback } from '@/components/Errors/Fallback'
-import { useTheme } from '@/hooks/theme'
+import { useTheme } from '@/design-system/useTheme'
 import { useAppOpenTracking } from '@/hooks/useAppOpenTracking'
 import NotificationsProvider from '@/providers/NotificationsProvider'
 import { PolarOrganizationProvider } from '@/providers/OrganizationProvider'
@@ -15,7 +15,7 @@ import { ErrorBoundary as ErrorBoundaryComponent } from 'react-error-boundary'
 import { StatusBar } from 'react-native'
 
 const RootLayout = () => {
-  const { colors, theme } = useTheme()
+  const theme = useTheme()
   const { session } = useSession()
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -37,19 +37,17 @@ const RootLayout = () => {
       )}
     >
       <>
-        <StatusBar
-          barStyle={theme === 'dark' ? 'light-content' : 'dark-content'}
-        />
+        <StatusBar barStyle="light-content" />
         <Stack
           screenOptions={{
             headerStyle: {
-              backgroundColor: colors.background,
+              backgroundColor: theme.colors.background,
             },
             headerTitleStyle: {
-              color: colors.text,
+              color: theme.colors.text,
               fontSize: 18,
             },
-            contentStyle: { backgroundColor: colors.background },
+            contentStyle: { backgroundColor: theme.colors.background },
             headerShadowVisible: false,
           }}
         />

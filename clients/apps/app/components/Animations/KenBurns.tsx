@@ -1,5 +1,5 @@
 import { PropsWithChildren, useEffect } from 'react'
-import { StyleSheet, ViewStyle } from 'react-native'
+import { ViewStyle } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -58,18 +58,20 @@ export function KenBurns({
   }))
 
   return (
-    <Animated.View style={[styles.container, style, animatedStyle]}>
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        },
+        style,
+        animatedStyle,
+      ]}
+    >
       {children}
     </Animated.View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-})

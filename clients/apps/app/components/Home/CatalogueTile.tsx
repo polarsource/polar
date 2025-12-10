@@ -5,7 +5,6 @@ import { useProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { subDays } from 'date-fns'
 import { useContext, useMemo } from 'react'
-import { StyleSheet } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
 
@@ -33,10 +32,10 @@ export const CatalogueTile = () => {
     <Tile href="/products">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
-          <ThemedText style={[styles.subtitle]} secondary>
+          <ThemedText style={{ fontSize: 16 }} secondary>
             Catalogue
           </ThemedText>
-          <ThemedText style={[styles.title]}>
+          <ThemedText style={{ fontSize: 16 }}>
             {products?.items.length}{' '}
             {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
           </ThemedText>
@@ -47,7 +46,7 @@ export const CatalogueTile = () => {
             justifyContent="space-between"
             gap="spacing-4"
           >
-            <ThemedText style={[styles.subtitle]} secondary>
+            <ThemedText style={{ fontSize: 16 }} secondary>
               Order Streak
             </ThemedText>
           </Box>
@@ -66,7 +65,7 @@ export const CatalogueTile = () => {
                     (period.orders ?? 0) > 0
                       ? theme.colors.primary
                       : theme.colors.border,
-                  borderRadius: 10,
+                  borderRadius: theme.borderRadii['border-radius-10'],
                 }}
               />
             ))}
@@ -76,15 +75,3 @@ export const CatalogueTile = () => {
     </Tile>
   )
 }
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 16,
-  },
-  subtitle: {
-    fontSize: 16,
-  },
-  revenueValue: {
-    fontSize: 26,
-  },
-})

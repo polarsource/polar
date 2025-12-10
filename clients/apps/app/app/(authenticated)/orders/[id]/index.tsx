@@ -1,9 +1,10 @@
 import { CustomerRow } from '@/components/Customers/CustomerRow'
+import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { Pill } from '@/components/Shared/Pill'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useOrder } from '@/hooks/polar/orders'
-import { useTheme } from '@/hooks/theme'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
@@ -12,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
 } from 'react-native'
 
 const statusColors = {
@@ -24,7 +24,7 @@ const statusColors = {
 
 export default function Index() {
   const { id } = useLocalSearchParams()
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const { data: order, refetch, isRefetching } = useOrder(id as string)
 
@@ -40,7 +40,7 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={{
         flexDirection: 'column',
         gap: 16,
@@ -56,11 +56,16 @@ export default function Index() {
         }}
       />
 
-      <View style={[styles.section, { gap: 12, flexDirection: 'row' }]}>
+      <Box flexDirection="row" gap="spacing-12">
         <TouchableOpacity
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
+            {
+              backgroundColor: theme.colors.card,
+              flex: 1,
+              gap: 4,
+              width: '50%',
+            },
           ]}
           onPress={() => {
             Clipboard.setStringAsync(order.id)
@@ -77,10 +82,15 @@ export default function Index() {
             {order.id.split('-').pop()?.slice(-6, -1)}
           </ThemedText>
         </TouchableOpacity>
-        <View
+        <Box
           style={[
             styles.box,
-            { backgroundColor: colors.card, flex: 1, gap: 4, width: '50%' },
+            {
+              backgroundColor: theme.colors.card,
+              flex: 1,
+              gap: 4,
+              width: '50%',
+            },
           ]}
         >
           <ThemedText style={[styles.label]} secondary>
@@ -91,24 +101,24 @@ export default function Index() {
               dateStyle: 'medium',
             })}
           </ThemedText>
-        </View>
-      </View>
+        </Box>
+      </Box>
 
       <CustomerRow customer={order.customer} />
 
-      <View style={styles.section}>
-        <View
+      <Box>
+        <Box
           style={[
             styles.card,
-            { backgroundColor: colors.card, gap: 0, paddingVertical: 0 },
+            { backgroundColor: theme.colors.card, gap: 0, paddingVertical: 0 },
           ]}
         >
           {order.items.map((item, index, arr) => (
-            <View
+            <Box
               key={item.id}
               style={{
                 borderBottomWidth: index === arr.length - 1 ? 0 : 1,
-                borderColor: colors.border,
+                borderColor: theme.colors.border,
                 gap: 4,
                 paddingVertical: 16,
               }}
@@ -119,13 +129,13 @@ export default function Index() {
               <ThemedText style={[styles.value]}>
                 {formatCurrencyAndAmount(item.amount)}
               </ThemedText>
-            </View>
+            </Box>
           ))}
-        </View>
-      </View>
+        </Box>
+      </Box>
 
-      <View style={styles.section}>
-        <Details style={{ backgroundColor: colors.card }}>
+      <Box>
+        <Details style={{ backgroundColor: theme.colors.card }}>
           <DetailRow
             label="Status"
             value={
@@ -160,14 +170,14 @@ export default function Index() {
             value={formatCurrencyAndAmount(order.tax_amount)}
           />
           <DetailRow
-            labelStyle={{ color: colors.text }}
+            labelStyle={{ color: theme.colors.text }}
             label="Total"
             value={formatCurrencyAndAmount(order.total_amount)}
           />
         </Details>
-      </View>
+      </Box>
 
-      <Details style={{ backgroundColor: colors.card }}>
+      <Details style={{ backgroundColor: theme.colors.card }}>
         <DetailRow
           label="Address"
           value={order.customer.billing_address?.line1}
@@ -192,13 +202,13 @@ export default function Index() {
       </Details>
 
       {order.metadata && Object.keys(order.metadata).length > 0 && (
-        <View style={styles.section}>
+        <Box>
           <Details>
             {Object.entries(order.metadata).map(([key, value]) => (
               <DetailRow key={key} label={key} value={String(value)} />
             ))}
           </Details>
-        </View>
+        </Box>
       )}
     </ScrollView>
   )

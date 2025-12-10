@@ -1,10 +1,11 @@
+import { Box } from '@/components/Shared/Box'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useStorageState } from '@/hooks/storage'
 import { schemas } from '@polar-sh/client'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, usePathname } from 'expo-router'
 import { createContext, PropsWithChildren, useEffect, useMemo } from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator } from 'react-native'
 import { useSession } from './SessionProvider'
 
 export interface OrganizationContextValue {
@@ -71,9 +72,9 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Box flex={1} justifyContent="center" alignItems="center">
         <ActivityIndicator size="large" />
-      </View>
+      </Box>
     )
   }
 

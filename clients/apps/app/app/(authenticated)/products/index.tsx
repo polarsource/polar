@@ -1,16 +1,17 @@
 import { ProductRow } from '@/components/Products/ProductRow'
+import { Box } from '@/components/Shared/Box'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useInfiniteProducts } from '@/hooks/polar/products'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
     useInfiniteProducts(organization?.id)
 
@@ -33,27 +34,21 @@ export default function Index() {
         )}
         contentContainerStyle={{
           padding: 16,
-          backgroundColor: colors.background,
+          backgroundColor: theme.colors.background,
           gap: 4,
           flexGrow: 1,
           paddingBottom: 32,
         }}
         ListEmptyComponent={
           isLoading ? null : (
-            <View
-              style={{
-                flex: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+            <Box flex={1} justifyContent="center" alignItems="center">
               <ThemedText style={{ fontSize: 16 }} secondary>
                 No Products
               </ThemedText>
-            </View>
+            </Box>
           )
         }
-        ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

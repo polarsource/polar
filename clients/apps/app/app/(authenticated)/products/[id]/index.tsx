@@ -1,7 +1,8 @@
 import { FormInput } from '@/components/Form/FormInput'
-import { Box } from '@/components/Metrics/Box'
+import { Box as MetricsBox } from '@/components/Metrics/Box'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { Banner } from '@/components/Shared/Banner'
+import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import {
@@ -11,17 +12,17 @@ import {
   TabsTrigger,
 } from '@/components/Shared/Tabs'
 import { ThemedText } from '@/components/Shared/ThemedText'
+import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
 import { useProduct, useProductUpdate } from '@/hooks/polar/products'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useCallback, useContext, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native'
 
 export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
@@ -34,7 +35,7 @@ type ProductUpdateForm = Omit<schemas['ProductUpdate'], 'metadata'> &
 
 export default function Index() {
   const { id } = useLocalSearchParams()
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
 
   const {
@@ -120,7 +121,7 @@ export default function Index() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={{
         flexDirection: 'column',
         gap: 32,
@@ -152,8 +153,8 @@ export default function Index() {
           value="overview"
           style={{ flexDirection: 'column', gap: 32 }}
         >
-          <View style={{ flexDirection: 'row', gap: 16 }}>
-            <Box
+          <Box flexDirection="row" gap="spacing-16">
+            <MetricsBox
               label="Orders"
               value={(
                 metrics?.periods.reduce(
@@ -162,18 +163,18 @@ export default function Index() {
                 ) ?? 0
               ).toString()}
             />
-            <Box
+            <MetricsBox
               label="Revenue"
               value={formatCurrencyAndAmount(
                 metrics?.periods[metrics?.periods.length - 1]
                   .cumulative_revenue ?? 0,
               )}
             />
-          </View>
+          </Box>
 
-          <View style={{ flexDirection: 'column', gap: 16 }}>
+          <Box flexDirection="column" gap="spacing-16">
             <ThemedText style={{ fontSize: 20 }}>Latest orders</ThemedText>
-            <View style={{ flexDirection: 'column', gap: 8 }}>
+            <Box flexDirection="column" gap="spacing-8">
               {(flatLatestProductOrders?.length ?? 0) > 0 ? (
                 flatLatestProductOrders?.map((order) => (
                   <OrderRow key={order.id} order={order} />
@@ -184,11 +185,11 @@ export default function Index() {
                   description="No orders found for this product"
                 />
               )}
-            </View>
-          </View>
+            </Box>
+          </Box>
         </TabsContent>
         <TabsContent value="edit" style={{ flexDirection: 'column', gap: 32 }}>
-          <View style={{ flexDirection: 'column', gap: 16 }}>
+          <Box flexDirection="column" gap="spacing-16">
             <FormInput control={control} name="name" label="Name" />
             <FormInput
               multiline
@@ -198,7 +199,7 @@ export default function Index() {
               label="Description"
               secondaryLabel="Markdown"
             />
-          </View>
+          </Box>
           <Button
             onPress={handleSubmit(saveProduct)}
             loading={updateProduct.isPending}

@@ -1,23 +1,24 @@
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { Avatar } from '@/components/Shared/Avatar'
+import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { ThemedText } from '@/components/Shared/ThemedText'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
+import { useTheme } from '@/design-system/useTheme'
 import { useCustomer } from '@/hooks/polar/customers'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import React, { useCallback, useContext, useMemo } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { id } = useLocalSearchParams()
 
   const {
@@ -101,31 +102,29 @@ export default function Index() {
           paddingBottom: 48,
         }}
       >
-        <View style={styles.hero}>
+        <Box flexDirection="column" alignItems="center" gap="spacing-24">
           <Avatar
             image={customer?.avatar_url}
             name={customer?.name ?? customer?.email ?? ''}
             size={120}
           />
-          <View style={styles.heroInfo}>
+          <Box alignItems="center" flexDirection="column" gap="spacing-6">
             <ThemedText style={styles.customerName}>
               {customer?.name ?? '—'}
             </ThemedText>
             <ThemedText style={styles.customerEmail} secondary>
               {customer?.email}
             </ThemedText>
-          </View>
-        </View>
+          </Box>
+        </Box>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <View
-            style={{
-              backgroundColor: colors.card,
-              padding: 12,
-              borderRadius: 12,
-              flex: 1,
-              gap: 8,
-            }}
+        <Box flexDirection="row" gap="spacing-12">
+          <Box
+            backgroundColor="card"
+            padding="spacing-12"
+            borderRadius="border-radius-12"
+            flex={1}
+            gap="spacing-8"
           >
             <ThemedText style={styles.label} secondary>
               Revenue
@@ -136,15 +135,13 @@ export default function Index() {
                   .cumulative_revenue ?? 0,
               )}
             </ThemedText>
-          </View>
-          <View
-            style={{
-              backgroundColor: colors.card,
-              padding: 12,
-              borderRadius: 12,
-              flex: 1,
-              gap: 8,
-            }}
+          </Box>
+          <Box
+            backgroundColor="card"
+            padding="spacing-12"
+            borderRadius="border-radius-12"
+            flex={1}
+            gap="spacing-8"
           >
             <ThemedText style={styles.label} secondary>
               First Seen
@@ -159,10 +156,10 @@ export default function Index() {
                 },
               )}
             </ThemedText>
-          </View>
-        </View>
+          </Box>
+        </Box>
 
-        <View style={styles.section}>
+        <Box>
           <Details>
             <DetailRow
               label="Address"
@@ -183,68 +180,64 @@ export default function Index() {
               value={customer?.billing_address?.country}
             />
           </Details>
-        </View>
+        </Box>
 
         {customer?.metadata && Object.keys(customer.metadata).length > 0 && (
-          <View style={styles.section}>
+          <Box>
             <Details>
               {Object.entries(customer.metadata).map(([key, value]) => (
                 <DetailRow key={key} label={key} value={String(value)} />
               ))}
             </Details>
-          </View>
+          </Box>
         )}
 
-        <View style={{ gap: 16, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+        <Box gap="spacing-16" flexDirection="column" flex={1}>
+          <Box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
             <ThemedText style={{ fontSize: 24 }}>Subscriptions</ThemedText>
-          </View>
+          </Box>
           {flatSubscriptions.length > 0 ? (
-            <View style={{ gap: 8 }}>
+            <Box gap="spacing-8">
               {flatSubscriptions.map((subscription) => (
                 <SubscriptionRow
                   key={subscription.id}
                   subscription={subscription}
                 />
               ))}
-            </View>
+            </Box>
           ) : (
             <EmptyState
               title="No Subscriptions"
               description="No subscriptions found for this customer"
             />
           )}
-        </View>
+        </Box>
 
-        <View style={{ gap: 16, flexDirection: 'column', flex: 1 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
+        <Box gap="spacing-16" flexDirection="column" flex={1}>
+          <Box
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
             <ThemedText style={{ fontSize: 24 }}>Orders</ThemedText>
-          </View>
+          </Box>
           {flatOrders.length > 0 ? (
-            <View style={{ gap: 8 }}>
+            <Box gap="spacing-8">
               {flatOrders.map((order) => (
                 <OrderRow key={order.id} order={order} showTimestamp />
               ))}
-            </View>
+            </Box>
           ) : (
             <EmptyState
               title="No Orders"
               description="No orders found for this customer"
             />
           )}
-        </View>
+        </Box>
       </ScrollView>
     </>
   )

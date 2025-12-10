@@ -2,9 +2,11 @@ import asyncio
 import csv
 import logging.config
 import pathlib
+import random
+import string
 from datetime import UTC, datetime
 from functools import wraps
-from typing import Annotated, Any
+from typing import Annotated, Any, overload
 
 import dramatiq
 import structlog
@@ -62,6 +64,29 @@ async def get_product_by_name(
     return await repository.get_one_or_none(statement)
 
 
+@overload
+def getter(
+    obj: dict[str, str], key: str, *fallback_keys: str, default: None = None
+) -> str | None: ...
+
+
+@overload
+def getter(obj: dict[str, str], key: str, *fallback_keys: str, default: str) -> str: ...
+
+
+def getter(
+    obj: dict[str, str], key: str, *fallback_keys: str, default: str | None = None
+) -> str | None:
+    for k in (key, *fallback_keys):
+        try:
+            value = obj[k]
+            if value != "":
+                return value
+        except KeyError:
+            continue
+    return default
+
+
 @cli.command()
 @typer_async
 async def orders_import(
@@ -109,10 +134,15 @@ async def orders_import(
                         "[green]Importing orders...", total=total_rows
                     )
 
-                    not_found_products: set[str] = set()
-                    for row in reader:
+                    errors: list[tuple[int, str]] = []
+                    for i, row in enumerate(reader):
                         # Customer
-                        email = row.get("email", row["user_email"])
+                        email = getter(row, "email", "user_email")
+                        if email is None:
+                            errors.append((i + 1, "Missing email"))
+                            progress.advance(task)
+                            continue
+
                         customer = customer_map.get(
                             email,
                             await customer_repository.get_by_email_and_organization(
@@ -120,15 +150,17 @@ async def orders_import(
                             ),
                         )
                         if customer is None:
-                            name = row.get("name", row["user_name"]) or None
-                            country = row["country"].upper() or None
+                            name = getter(row, "name", "user_name")
+                            raw_country = getter(row, "country")
+                            country = raw_country.upper() if raw_country else None
                             if country is None or country not in SUPPORTED_COUNTRIES:
-                                country = "US"
-                            billing_address = Address(
-                                postal_code=row["postal_code"] or None,
-                                city=row["city"] or None,
-                                country=CountryAlpha2(country),
-                            )
+                                billing_address = None
+                            else:
+                                billing_address = Address(
+                                    postal_code=getter(row, "postal_code"),
+                                    city=getter(row, "city"),
+                                    country=CountryAlpha2(country),
+                                )
                             customer = await customer_repository.create(
                                 Customer(
                                     email=email,
@@ -141,9 +173,15 @@ async def orders_import(
                         customer_map[email] = customer
 
                         # Product
-                        product_name = row.get(
-                            "product_name_on_polar", row["product_name"]
+                        product_name = getter(
+                            row,
+                            "product_name",
+                            "product_name_on_polar",
                         )
+                        if product_name is None:
+                            errors.append((i + 1, "Missing product name"))
+                            progress.advance(task)
+                            continue
                         product = product_map.get(
                             product_name,
                             await get_product_by_name(
@@ -151,33 +189,44 @@ async def orders_import(
                             ),
                         )
                         if product is None:
-                            not_found_products.add(product_name)
+                            errors.append((i + 1, f"Product not found: {product_name}"))
                             progress.advance(task)
                             continue
 
                         product_map[product_name] = product
 
                         # Create Order
-                        lemon_squeezy_id = row.get("id", row["identifier"])
-                        existing_order_statement = (
-                            order_repository.get_base_statement().where(
-                                Order.user_metadata["lemon_squeezy_id"].astext
-                                == lemon_squeezy_id,
+                        lemon_squeezy_id = getter(row, "id", "identifier")
+                        if lemon_squeezy_id is not None:
+                            existing_order_statement = (
+                                order_repository.get_base_statement().where(
+                                    Order.user_metadata["lemon_squeezy_id"].astext
+                                    == lemon_squeezy_id,
+                                )
                             )
-                        )
-                        existing_order = await order_repository.get_one_or_none(
-                            existing_order_statement
-                        )
-                        if existing_order is not None:
-                            progress.advance(task)
-                            continue
+                            existing_order = await order_repository.get_one_or_none(
+                                existing_order_statement
+                            )
+                            if existing_order is not None:
+                                progress.advance(task)
+                                continue
 
-                        created_at = datetime.strptime(
-                            row["date_utc"], "%Y-%m-%d %H:%M:%S"
-                        ).replace(tzinfo=UTC)
-                        subtotal_amount = int(row["subtotal"]) if row["subtotal"] else 0
-                        discount_amount = (
-                            int(row["discount_total"]) if row["discount_total"] else 0
+                        raw_created_at = getter(row, "date_utc")
+                        created_at = (
+                            datetime.strptime(
+                                raw_created_at, "%Y-%m-%d %H:%M:%S"
+                            ).replace(tzinfo=UTC)
+                            if raw_created_at
+                            else datetime.now(UTC)
+                        )
+
+                        subtotal_amount = int(getter(row, "subtotal", default="0"))
+                        order_number = getter(
+                            row,
+                            "order_number",
+                            default="".join(
+                                random.choices(string.ascii_uppercase, k=6)
+                            ),
                         )
                         order = await order_repository.create(
                             Order(
@@ -195,7 +244,7 @@ async def orders_import(
                                 tax_id=None,
                                 tax_rate=None,
                                 tax_calculation_processor_id=None,
-                                invoice_number=f"{invoice_number_prefix}{organization.slug.upper()}-{row['order_number']}",
+                                invoice_number=f"{invoice_number_prefix}{organization.slug.upper()}-{order_number}",
                                 customer=customer,
                                 product=product,
                                 discount=None,
@@ -203,7 +252,7 @@ async def orders_import(
                                 checkout=None,
                                 items=[
                                     OrderItem(
-                                        label="Imported from Lemon Squeezy",
+                                        label="Imported",
                                         amount=subtotal_amount,
                                         tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                                         proration=False,
@@ -211,7 +260,9 @@ async def orders_import(
                                 ],
                                 user_metadata={
                                     "lemon_squeezy_id": lemon_squeezy_id,
-                                },
+                                }
+                                if lemon_squeezy_id
+                                else {},
                                 custom_field_data={},
                             ),
                             flush=True,
@@ -227,10 +278,10 @@ async def orders_import(
 
                         progress.advance(task)
 
-            if not_found_products:
-                print("The following products were not found:")
-                for product_name in not_found_products:
-                    print(f"- {product_name}")
+            if errors:
+                print("Errors encountered during import:")
+                for row_number, message in errors:
+                    print(f"  Row {row_number}: {message}")
                 raise typer.Exit(code=1)
             else:
                 await session.commit()

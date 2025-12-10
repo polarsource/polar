@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from annotated_types import Ge
+from fastapi import UploadFile
 from pydantic import (
     Discriminator,
     Field,
@@ -232,5 +233,28 @@ class UpdateOrganizationSocialsForm(forms.BaseForm):
             None,
             title="Other",
             description="Other social media or website URL",
+        ),
+    ]
+
+
+class OrganizationOrdersImportForm(forms.BaseForm):
+    invoice_number_prefix: Annotated[
+        str,
+        StringConstraints(min_length=3, pattern=r"^[a-zA-Z0-9\-]+\-"),
+        Field(
+            title="Invoice Number Prefix",
+            description="Prefix to use for imported orders' invoice numbers",
+            default="IMPORTED-",
+        ),
+    ]
+    file: Annotated[
+        UploadFile,
+        forms.InputField(type="file"),
+        Field(
+            title="CSV File",
+            description=(
+                "CSV file containing orders to import. "
+                "`email` and `product_name` columns are required."
+            ),
         ),
     ]

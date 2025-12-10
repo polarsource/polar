@@ -54,6 +54,13 @@ class CountAggregation(BaseModel):
         """
         return True
 
+    def is_incremental(self) -> bool:
+        """
+        Whether this aggregation can be computed incrementally by combining
+        the previous result with new data. COUNT is incremental (additive).
+        """
+        return True
+
 
 def _strip_metadata_prefix(value: str) -> str:
     prefix = "metadata."
@@ -92,6 +99,18 @@ class PropertyAggregation(BaseModel):
         """
         return self.func == AggregationFunction.sum
 
+    def is_incremental(self) -> bool:
+        """
+        Whether this aggregation can be computed incrementally by combining
+        the previous result with new data. SUM, MAX, MIN are incremental.
+        AVG is not (would need to track count separately).
+        """
+        return self.func in (
+            AggregationFunction.sum,
+            AggregationFunction.max,
+            AggregationFunction.min,
+        )
+
 
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
@@ -109,6 +128,14 @@ class UniqueAggregation(BaseModel):
         Whether this aggregation can be computed separately across different groups
         and then summed together. Unique count is not summable (same unique value
         could appear in multiple groups).
+        """
+        return False
+
+    def is_incremental(self) -> bool:
+        """
+        Whether this aggregation can be computed incrementally by combining
+        the previous result with new data. UNIQUE is not incremental (same value
+        could appear in old and new data).
         """
         return False
 

@@ -13,6 +13,7 @@ from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
+from sse_starlette.sse import EventSourceResponse
 from tagflow import classes, document, tag, text
 
 from polar.account.service import (
@@ -72,11 +73,13 @@ from .analytics import (
     PaymentAnalyticsService,
 )
 from .forms import (
+    OrganizationOrdersImportForm,
     OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
     UpdateOrganizationInternalNotesForm,
 )
+from .orders_import import orders_import_sse
 from .schemas import PaymentStatistics, SetupVerdictData
 
 router = APIRouter()
@@ -1413,6 +1416,19 @@ async def get(
                         with tag.div(classes="icon-message-square-more"):
                             pass
                         text("Create Thread")
+                    with tag.button(
+                        classes="btn",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:import_orders", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                        title="Import Orders",
+                    ):
+                        with tag.div(classes="icon-upload"):
+                            pass
+                        text("Import Orders")
                     with button(
                         variant="primary",
                         hx_get=str(
@@ -1916,3 +1932,55 @@ async def get_create_thread_modal(
 async def clear_modal(id: UUID4) -> Any:
     """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
+
+
+@router.api_route(
+    "/{id}/import-orders", name="organizations:import_orders", methods=["GET", "POST"]
+)
+async def import_orders(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = OrganizationOrdersImportForm.model_validate_form(data)
+            return EventSourceResponse(
+                orders_import_sse(
+                    session,
+                    organization,
+                    form.file,
+                    invoice_number_prefix=form.invoice_number_prefix,
+                )
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Import Orders", open=True):
+        with OrganizationOrdersImportForm.render(
+            {"invoice_number_prefix": "IMPORTED-"},
+            action=str(request.url),
+            method="POST",
+            classes="flex flex-col",
+            validation_error=validation_error,
+            _="on submit halt the event then call formPostSSE(me, '#import-progress')",
+        ):
+            with tag.div(id="import-progress"):
+                pass
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Import")

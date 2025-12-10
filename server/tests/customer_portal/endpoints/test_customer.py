@@ -3,12 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
+from polar.auth.scope import Scope
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import Customer, Product
+from polar.models import Customer, Member, MemberRole, Product
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import AuthSubjectFixture, CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -22,6 +23,68 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.payment_method.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.mark.asyncio
+class TestListMembers:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/members")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="customer", scopes={Scope.customer_portal_write}
+        )
+    )
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/members")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="customer",
+            scopes={Scope.customer_portal_write, Scope.customer_members_manage},
+        )
+    )
+    async def test_success(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        customer.organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(customer.organization)
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=customer.organization_id,
+            email="owner@example.com",
+            name="Owner",
+            external_id="owner_ext",
+            role=MemberRole.owner,
+        )
+        billing_manager = Member(
+            customer_id=customer.id,
+            organization_id=customer.organization_id,
+            email="billing@example.com",
+            name="Billing Manager",
+            external_id="billing_ext",
+            role=MemberRole.billing_manager,
+        )
+        await save_fixture(owner)
+        await save_fixture(billing_manager)
+
+        response = await client.get("/v1/customer-portal/customers/me/members")
+
+        assert response.status_code == 200
+        json = response.json()
+        emails = {member["email"] for member in json}
+        assert emails == {"owner@example.com", "billing@example.com"}
 
 
 @pytest.mark.asyncio

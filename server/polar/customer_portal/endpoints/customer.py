@@ -7,6 +7,7 @@ from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
+from polar.member import Member, member_service
 from polar.openapi import APITag
 from polar.payment_method.service import PaymentMethodInUseByActiveSubscription
 from polar.postgres import AsyncSession, get_db_session
@@ -45,6 +46,20 @@ async def stream(
 async def get(auth_subject: auth.CustomerPortalRead) -> Customer:
     """Get authenticated customer."""
     return auth_subject.subject
+
+
+@router.get(
+    "/me/members",
+    summary="List Customer Members",
+    response_model=list[Member],
+)
+async def list_members(
+    auth_subject: auth.CustomerPortalMembersManage,
+    session: AsyncSession = Depends(get_db_session),
+) -> list[Member]:
+    """List members for the authenticated customer."""
+    members = await member_service.list_by_customer(session, auth_subject.subject.id)
+    return [Member.model_validate(member) for member in members]
 
 
 @router.patch(

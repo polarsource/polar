@@ -97,6 +97,7 @@ class Scope(StrEnum):
 
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
+    customer_members_manage = "customer_members:manage"
 
     notifications_read = "notifications:read"
     notifications_write = "notifications:write"
@@ -176,6 +177,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.license_keys_write: "Modify license keys",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
+    Scope.customer_members_manage: "Manage members of your customer account",
     Scope.notifications_read: "Read notifications",
     Scope.notifications_write: "Mark notifications as read",
     Scope.notification_recipients_read: "Read notification recipients",

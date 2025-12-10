@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, User
+from polar.auth.scope import Scope
 from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import (
@@ -46,36 +47,69 @@ class SearchService:
         substring_term = f"%{query}%"
         query_uuid = self._try_parse_uuid(query)
 
-        products_task = self._search_products(
-            session, auth_subject, organization_id, substring_term, query_uuid, limit
-        )
-        customers_task = self._search_customers(
-            session, auth_subject, organization_id, prefix_term, query_uuid, limit
-        )
-        orders_task = self._search_orders(
-            session,
-            auth_subject,
-            organization_id,
-            prefix_term,
-            substring_term,
-            query_uuid,
-            limit,
-        )
-        subscriptions_task = self._search_subscriptions(
-            session,
-            auth_subject,
-            organization_id,
-            prefix_term,
-            substring_term,
-            query_uuid,
-            limit,
-        )
+        has_products_scope = Scope.products_read in auth_subject.scopes
+        has_customers_scope = Scope.customers_read in auth_subject.scopes
+        has_orders_scope = Scope.orders_read in auth_subject.scopes
+        has_subscriptions_scope = Scope.subscriptions_read in auth_subject.scopes
 
-        products, customers, orders, subscriptions = await asyncio.gather(
-            products_task, customers_task, orders_task, subscriptions_task
-        )
+        tasks = []
+        if has_products_scope:
+            tasks.append(
+                self._search_products(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        if has_customers_scope:
+            tasks.append(
+                self._search_customers(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    prefix_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        if has_orders_scope:
+            tasks.append(
+                self._search_orders(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    prefix_term,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
+        if has_subscriptions_scope:
+            tasks.append(
+                self._search_subscriptions(
+                    session,
+                    auth_subject,
+                    organization_id,
+                    prefix_term,
+                    substring_term,
+                    query_uuid,
+                    limit,
+                )
+            )
 
-        return [*products, *customers, *orders, *subscriptions]
+        if not tasks:
+            return []
+
+        results = await asyncio.gather(*tasks)
+
+        all_results: list[SearchResult] = []
+        for result_list in results:
+            all_results.extend(result_list)
+
+        return all_results
 
     async def _search_products(
         self,

@@ -4,6 +4,43 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-10-17">
+  ## Ability to update subscription to an updated price of the product
+
+  Merchants can now [update existing subscriptions](https://polar.sh/docs/api-reference/subscriptions/update#subscriptionupdateproduct) from archived pricing schemes to current ones within the same product.
+  - Enables migration from grandfathered pricing to current pricing schemes
+  - Prorations calculated using active subscription prices
+  - In the dashboard, a small badge **Upgrade pricing** will indicate that you can update to the same product, but with the new pricing scheme.
+  <img class="rounded" src="/assets/changelog/2025-10-17/update-subscription.png" />
+
+  ## New IP ranges
+
+  From **October 27th, 2025**, [new IP ranges](https://polar.sh/docs/integrate/webhooks/delivery#ip-allowlist) will be added.
+
+  ## Improved Subscription Cancellation Flow
+
+  [Benefits](https://polar.sh/docs/features/benefits/introduction) attached to the subscription [are now automatically revoked](https://github.com/polarsource/polar/pull/7271) when the subscription is canceled.
+
+  ## Ability to specify External ID
+
+  [External ID can now be specified](https://github.com/polarsource/polar/pull/7275) during creation of a customer via the dashboard.
+  <img class="border rounded" src="/assets/changelog/2025-10-17/create-customer.png" />
+
+  ## Ability to set Return URL for Checkouts and Customer Portal
+
+  A Return URL can now be set while generating a [checkout session](https://polar.sh/docs/api-reference/checkouts/create-session#body-return-url-one-of-0) or a [customer portal session](https://polar.sh/docs/api-reference/customer-portal/sessions/create#body-one-of-0-return-url-one-of-0). This allows you to preserve the context for the end users who visit either if they wish to go back to the application.
+
+  ## Ability to search Customers via their External ID
+
+  The [List Customers API](https://polar.sh/docs/api-reference/customers/list) now accepts Customer's External ID [in the **query** parameter](https://polar.sh/docs/api-reference/customers/list#parameter-one-of-0).
+
+  ## Ability to disable automatic customer emails
+
+  Via the organization settings, you can now disable the emails we automatically send to customers on certain events. This gives you the ability to own the communications with the customers.
+
+  <img class="border rounded" src="/assets/changelog/2025-10-17/email-settings.png" />
+</Update>
+
 <Update label="2025-10-10">
 
   ## Launched In-Product Chat Support for Merchants

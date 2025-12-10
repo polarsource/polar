@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     ColumnElement,
+    Computed,
     ForeignKey,
     Index,
     Integer,
@@ -14,7 +15,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -85,6 +86,20 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Index(
             "ix_total_amount", text("(subtotal_amount - discount_amount + tax_amount)")
         ),
+        Index(
+            "ix_orders_search_vector",
+            "search_vector",
+            postgresql_using="gin",
+        ),
+    )
+
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('simple', coalesce(invoice_number, '') || ' ' || coalesce(stripe_invoice_id, ''))",
+            persisted=True,
+        ),
+        nullable=False,
     )
 
     status: Mapped[OrderStatus] = mapped_column(

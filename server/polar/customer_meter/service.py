@@ -13,6 +13,7 @@ from polar.event.repository import EventRepository
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
@@ -125,17 +126,23 @@ class CustomerMeterService:
                 customer.id, meter.id
             )
 
+            if customer_meter is not None and customer_meter.activated_at is None:
+                return customer_meter, False
+
             last_event = await self._get_latest_current_window_event(
                 session, customer, meter
             )
 
+            if customer_meter is None:
+                activated_at = None if last_event is None else utc_now()
+                customer_meter = await repository.create(
+                    CustomerMeter(
+                        customer=customer, meter=meter, activated_at=activated_at
+                    )
+                )
+
             if last_event is None:
                 return customer_meter, False
-
-            if customer_meter is None:
-                customer_meter = await repository.create(
-                    CustomerMeter(customer=customer, meter=meter)
-                )
 
             if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False

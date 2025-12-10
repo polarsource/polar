@@ -4,9 +4,11 @@ import { textVariants } from '@/design-system/textVariants'
 import { createTheme } from '@shopify/restyle'
 
 export const palette = {
+  gray950: '#070708',
   gray900: '#0D0E10',
   gray800: '#141518',
   gray700: '#222328',
+  gray600: '#3A3B40',
   gray500: '#6c6e7f',
   gray100: '#F2F2F7',
   gray50: '#E5E5EA',
@@ -65,6 +67,26 @@ export const colors = {
   statusBlueBg: palette.indigoDark,
 } as const
 
+export const dimension = {
+  'dimension-1': 1,
+  'dimension-2': 2,
+  'dimension-4': 4,
+  'dimension-6': 6,
+  'dimension-8': 8,
+  'dimension-10': 10,
+  'dimension-12': 12,
+  'dimension-16': 16,
+  'dimension-24': 24,
+  'dimension-32': 32,
+  'dimension-40': 40,
+  'dimension-48': 48,
+  'dimension-54': 54,
+  'dimension-56': 56,
+  'dimension-64': 64,
+  'dimension-80': 80,
+  'dimension-120': 120,
+} as const
+
 export const spacing = {
   'spacing-1': 1,
   'spacing-2': 2,
@@ -104,6 +126,7 @@ export const borderRadii = {
 
 const theme = createTheme({
   colors,
+  dimension,
   spacing,
   borderRadii,
   textVariants,

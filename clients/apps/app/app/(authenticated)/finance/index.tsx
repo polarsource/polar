@@ -2,6 +2,7 @@ import { PayoutRow } from '@/components/Payouts/PayoutRow'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
+import { EmptyState } from '@/components/Shared/EmptyState'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
@@ -48,8 +49,46 @@ export default function Finance() {
     summary?.balance?.amount &&
     summary.balance.amount >= 1000
 
-  if (!account || !summary) {
-    return <Stack.Screen options={{ title: 'Finance' }} />
+  if (!account) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Finance' }} />
+        <ScrollView
+          contentContainerStyle={{
+            gap: theme.spacing['spacing-32'],
+            padding: theme.spacing['spacing-16'],
+            paddingBottom: theme.spacing['spacing-48'],
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          <EmptyState
+            title="No Payout Account"
+            description="This organization does not have a payout account connected."
+          />
+        </ScrollView>
+      </>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Finance' }} />
+        <ScrollView
+          contentContainerStyle={{
+            gap: theme.spacing['spacing-32'],
+            padding: theme.spacing['spacing-16'],
+            paddingBottom: theme.spacing['spacing-48'],
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          <EmptyState
+            title="No Financial Balance"
+            description="Could not find a financial balance for this organization."
+          />
+        </ScrollView>
+      </>
+    )
   }
 
   return (

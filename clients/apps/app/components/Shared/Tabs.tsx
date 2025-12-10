@@ -67,13 +67,7 @@ export const TabsContent = ({
 
 export const TabsList = ({ children }: PropsWithChildren) => {
   return (
-    <Box
-      flexDirection="row"
-      gap="spacing-8"
-      backgroundColor="card"
-      padding="spacing-4"
-      borderRadius="border-radius-16"
-    >
+    <Box flexDirection="row" gap="spacing-8" alignSelf="flex-start">
       {children}
     </Box>
   )
@@ -94,22 +88,19 @@ export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
       activeOpacity={0.6}
       style={[
         {
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingVertical: 10,
-          paddingHorizontal: 8,
-          borderRadius: 12,
-          flex: 1,
+          paddingVertical: theme.dimension['dimension-8'],
+          paddingHorizontal: theme.dimension['dimension-16'],
+          borderRadius: theme.borderRadii['border-radius-full'],
         },
         activeValue === value && {
-          backgroundColor: theme.colors.background,
+          backgroundColor: theme.colors.card,
         },
       ]}
       onPress={() => {
         setActiveValue(value)
       }}
     >
-      <Text>{children}</Text>
+      <Text color={activeValue === value ? 'text' : 'subtext'}>{children}</Text>
     </TouchableOpacity>
   )
 }

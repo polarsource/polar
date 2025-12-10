@@ -519,6 +519,7 @@ class TestAssignSeat:
                 task="grant",
                 customer_id=customer.id,
                 product_id=subscription_with_seats.product.id,
+                member_id=seat.member_id,
                 subscription_id=subscription_with_seats.id,
             )
 
@@ -1206,6 +1207,7 @@ class TestBenefitGranting:
                 task="grant",
                 customer_id=customer.id,
                 product_id=claimed_seat.subscription.product_id,
+                member_id=claimed_seat.member_id,
                 subscription_id=claimed_seat.subscription_id,
             )
 
@@ -1215,6 +1217,7 @@ class TestBenefitGranting:
     ) -> None:
         """Test that revoking a seat enqueues benefit revocation."""
         original_customer_id = customer_seat_claimed.customer_id
+        original_member_id = customer_seat_claimed.member_id
         assert original_customer_id is not None
 
         with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
@@ -1226,6 +1229,7 @@ class TestBenefitGranting:
                 task="revoke",
                 customer_id=original_customer_id,
                 product_id=seat.subscription.product_id,
+                member_id=original_member_id,
                 subscription_id=seat.subscription_id,
             )
 

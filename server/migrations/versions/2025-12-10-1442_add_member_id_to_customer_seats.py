@@ -1,7 +1,7 @@
 """add_member_id_to_customer_seats
 
 Revision ID: cf31af43f14a
-Revises: ba238afd79a5
+Revises: 44c10a1f55db
 Create Date: 2025-12-10 14:42:08.397016
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "cf31af43f14a"
-down_revision = "ba238afd79a5"
+down_revision = "44c10a1f55db"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

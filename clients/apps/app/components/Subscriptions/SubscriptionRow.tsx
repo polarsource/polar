@@ -1,4 +1,5 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
@@ -9,7 +10,6 @@ import {
   StyleSheet,
   TextStyle,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { ProductPriceLabel } from '../Products/ProductPriceLabel'
 import { Pill } from '../Shared/Pill'
@@ -39,17 +39,17 @@ export const SubscriptionRow = ({
   style,
   showCustomer,
 }: SubscriptionRowProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const product = subscription.product
 
   return (
     <Link
       href={`/subscriptions/${subscription.id}`}
-      style={[styles.container, { backgroundColor: colors.card }, style]}
+      style={[styles.container, { backgroundColor: theme.colors.card }, style]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
-        <View style={[styles.imageContainer]}>
+        <Box style={styles.imageContainer}>
           {product?.medias?.[0]?.public_url ? (
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
@@ -57,27 +57,25 @@ export const SubscriptionRow = ({
               resizeMode="cover"
             />
           ) : (
-            <View
-              style={[
-                styles.imageFallback,
-                {
-                  borderColor: colors.border,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                },
-              ]}
+            <Box
+              style={styles.imageFallback}
+              borderColor="border"
+              borderWidth={1}
+              borderRadius="border-radius-8"
             >
-              <MaterialIcons name="texture" size={24} color={colors.subtext} />
-            </View>
+              <MaterialIcons
+                name="texture"
+                size={24}
+                color={theme.colors.subtext}
+              />
+            </Box>
           )}
-        </View>
-        <View style={styles.contentContainer}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}
+        </Box>
+        <Box flex={1} flexDirection="column" gap="spacing-4">
+          <Box
+            flexDirection="row"
+            justifyContent="space-between"
+            gap="spacing-8"
           >
             <ThemedText
               style={styles.productName}
@@ -89,8 +87,8 @@ export const SubscriptionRow = ({
             <Pill color={subscriptionStatusColors[subscription.status]}>
               {subscription.status.split('_').join(' ')}
             </Pill>
-          </View>
-          <View style={styles.metadataContainer}>
+          </Box>
+          <Box flex={1} flexDirection="row" alignItems="center" gap="spacing-8">
             <ProductPriceLabel product={subscription.product} />
             {showCustomer && (
               <>
@@ -106,8 +104,8 @@ export const SubscriptionRow = ({
                 </ThemedText>
               </>
             )}
-          </View>
-        </View>
+          </Box>
+        </Box>
       </TouchableOpacity>
     </Link>
   )
@@ -137,11 +135,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 4,
-  },
   productName: {
     fontSize: 16,
     fontWeight: '500',
@@ -149,12 +142,6 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 16,
     textTransform: 'capitalize',
-  },
-  metadataContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   meta: {
     fontSize: 16,

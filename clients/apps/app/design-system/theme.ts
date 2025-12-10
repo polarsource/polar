@@ -22,10 +22,24 @@ export const palette = {
 export const colors = {
   'background-regular': palette.gray900,
   'foreground-regular': palette.pureWhite,
+
+  // Semantic colors (migrated from old useTheme)
+  background: palette.gray900,
+  text: palette.pureWhite,
+  subtext: palette.gray500,
+  primary: palette.blue,
+  secondary: palette.gray700,
+  border: palette.gray700,
+  card: palette.gray800,
+  monochrome: palette.pureBlack,
+  monochromeInverted: palette.pureWhite,
+  error: palette.red,
+  errorSubtle: palette.redDark,
 } as const
 
 export const spacing = {
   'spacing-4': 4,
+  'spacing-6': 6,
   'spacing-8': 8,
   'spacing-12': 12,
   'spacing-16': 16,
@@ -40,6 +54,7 @@ export const borderRadii = {
   none: 0,
   'border-radius-4': 4,
   'border-radius-8': 8,
+  'border-radius-12': 12,
   'border-radius-16': 16,
   'border-radius-24': 24,
   'border-radius-full': 9999,

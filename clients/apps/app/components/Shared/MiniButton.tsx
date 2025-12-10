@@ -1,9 +1,9 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import {
   StyleSheet,
   TouchableOpacity,
   TouchableOpacityProps,
-  View,
 } from 'react-native'
 import { ThemedText } from './ThemedText'
 
@@ -21,31 +21,31 @@ export const MiniButton = ({
   variant = 'primary',
   ...props
 }: MiniButtonProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const getTouchableColor = () => {
     switch (variant) {
       case 'primary':
-        return colors.monochromeInverted
+        return theme.colors.monochromeInverted
       case 'secondary':
-        return colors.card
+        return theme.colors.card
       case 'destructive':
-        return colors.errorSubtle
+        return theme.colors.errorSubtle
     }
   }
 
   const getTextColor = () => {
     if (disabled) {
-      return colors.subtext
+      return theme.colors.subtext
     }
 
     switch (variant) {
       case 'primary':
-        return colors.monochrome
+        return theme.colors.monochrome
       case 'secondary':
-        return colors.monochromeInverted
+        return theme.colors.monochromeInverted
       case 'destructive':
-        return colors.error
+        return theme.colors.error
     }
   }
 
@@ -55,7 +55,9 @@ export const MiniButton = ({
       style={[
         styles.button,
         {
-          backgroundColor: disabled ? colors.secondary : getTouchableColor(),
+          backgroundColor: disabled
+            ? theme.colors.secondary
+            : getTouchableColor(),
         },
         style,
       ]}
@@ -63,7 +65,7 @@ export const MiniButton = ({
       disabled={disabled}
       {...props}
     >
-      {icon && <View style={{ marginRight: 4 }}>{icon}</View>}
+      {icon && <Box marginRight="spacing-4">{icon}</Box>}
       <ThemedText
         style={{ fontSize: 14, fontWeight: '500', color: getTextColor() }}
       >

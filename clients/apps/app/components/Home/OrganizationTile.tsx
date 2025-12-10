@@ -1,14 +1,14 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useContext } from 'react'
-import { View } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { ThemedText } from '../Shared/ThemedText'
 import { Tile } from './Tile'
 
 export const OrganizationTile = () => {
   const { organization } = useContext(OrganizationContext)
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   if (!organization) {
     return null
@@ -16,19 +16,15 @@ export const OrganizationTile = () => {
 
   return (
     <Tile href="/settings">
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-        }}
-      >
+      <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Avatar
           name={organization.name}
           image={organization.avatar_url}
-          backgroundColor={organization.avatar_url ? undefined : colors.primary}
+          backgroundColor={
+            organization.avatar_url ? undefined : theme.colors.primary
+          }
         />
-        <View style={{ flexDirection: 'column', gap: 4 }}>
+        <Box flexDirection="column" gap="spacing-4">
           <ThemedText
             style={{
               fontSize: 18,
@@ -41,8 +37,8 @@ export const OrganizationTile = () => {
           <ThemedText style={{ fontSize: 16 }} numberOfLines={1} secondary>
             {organization.slug}
           </ThemedText>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </Tile>
   )
 }

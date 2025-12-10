@@ -1,5 +1,6 @@
-import { useTheme } from '@/hooks/theme'
-import { Image, View } from 'react-native'
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
+import { Image } from 'react-native'
 import { ThemedText } from './ThemedText'
 
 const getInitials = (fullName: string) => {
@@ -26,44 +27,41 @@ export const Avatar = ({
   image,
   backgroundColor,
 }: AvatarProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
 
   const initials = getInitials(name ?? '')
 
   let showInitials = true
   if (image) {
-    // Skip rendering initials in case of `avatar_url`
-    // Unless from Gravatar since they offer a transparent image in case of no avatar
-    // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
     const avatarHost = image.startsWith('http') ? new URL(image).host : null
     showInitials = avatarHost === 'www.gravatar.com'
   }
 
   return (
-    <View
+    <Box
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: backgroundColor ?? colors.monochrome,
-        alignItems: 'center',
-        justifyContent: 'center',
+        backgroundColor: backgroundColor ?? theme.colors.monochrome,
       }}
+      alignItems="center"
+      justifyContent="center"
     >
       {showInitials && (
-        <View
+        <Box
           style={{
             width: size,
             height: size,
             borderRadius: size / 2,
-            alignItems: 'center',
-            justifyContent: 'center',
             position: 'absolute',
             inset: 0,
           }}
+          alignItems="center"
+          justifyContent="center"
         >
           <ThemedText style={{ fontSize: size / 3 }}>{initials}</ThemedText>
-        </View>
+        </Box>
       )}
       {image && (
         <Image
@@ -80,6 +78,6 @@ export const Avatar = ({
           source={{ uri: image }}
         />
       )}
-    </View>
+    </Box>
   )
 }

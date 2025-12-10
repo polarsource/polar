@@ -1,5 +1,6 @@
+import { Box } from '@/components/Shared/Box'
+import { useTheme } from '@/design-system/useTheme'
 import { useProduct } from '@/hooks/polar/products'
-import { useTheme } from '@/hooks/theme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
@@ -11,7 +12,6 @@ import {
   StyleSheet,
   TextStyle,
   TouchableOpacity,
-  View,
 } from 'react-native'
 import { ThemedText } from '../Shared/ThemedText'
 
@@ -22,18 +22,18 @@ export interface OrderRowProps {
 }
 
 export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
-  const { colors } = useTheme()
+  const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
   const { data: product } = useProduct(organization?.id, order.product?.id)
 
   return (
     <Link
       href={`/orders/${order.id}`}
-      style={[styles.container, { backgroundColor: colors.card }, style]}
+      style={[styles.container, { backgroundColor: theme.colors.card }, style]}
       asChild
     >
       <TouchableOpacity activeOpacity={0.6}>
-        <View style={[styles.imageContainer]}>
+        <Box style={styles.imageContainer}>
           {product?.medias?.[0]?.public_url ? (
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
@@ -41,25 +41,25 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
               resizeMode="cover"
             />
           ) : (
-            <View
-              style={[
-                styles.imageFallback,
-                {
-                  borderColor: colors.border,
-                  borderWidth: 1,
-                  borderRadius: 8,
-                },
-              ]}
+            <Box
+              style={styles.imageFallback}
+              borderColor="border"
+              borderWidth={1}
+              borderRadius="border-radius-8"
             >
-              <MaterialIcons name="texture" size={24} color={colors.subtext} />
-            </View>
+              <MaterialIcons
+                name="texture"
+                size={24}
+                color={theme.colors.subtext}
+              />
+            </Box>
           )}
-        </View>
-        <View style={styles.contentContainer}>
+        </Box>
+        <Box flex={1} flexDirection="column" gap="spacing-4">
           <ThemedText style={styles.productName}>
             {order.product?.name}
           </ThemedText>
-          <View style={styles.metadataContainer}>
+          <Box flex={1} flexDirection="row" gap="spacing-6">
             {showTimestamp && (
               <>
                 <ThemedText style={[styles.amount]} secondary>
@@ -77,8 +77,8 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
             >
               {order.customer.email}
             </ThemedText>
-          </View>
-        </View>
+          </Box>
+        </Box>
       </TouchableOpacity>
     </Link>
   )
@@ -108,11 +108,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  contentContainer: {
-    flex: 1,
-    flexDirection: 'column',
-    gap: 4,
-  },
   productName: {
     fontSize: 16,
     fontWeight: '500',
@@ -123,10 +118,5 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 16,
     flexShrink: 1,
-  },
-  metadataContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 6,
   },
 })

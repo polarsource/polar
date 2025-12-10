@@ -1,32 +1,26 @@
-import { useTheme } from '@/hooks/theme'
+import { Box } from '@/components/Shared/Box'
 import { Href, Link } from 'expo-router'
 import { PropsWithChildren } from 'react'
-import { StyleSheet, TouchableOpacity } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 
 export interface TileProps extends PropsWithChildren {
   href: Href
 }
 
 export const Tile = ({ href, children }: TileProps) => {
-  const { colors } = useTheme()
-
   return (
-    <Link
-      href={href}
-      style={[TileStyle.container, { backgroundColor: colors.card }]}
-      asChild
-    >
-      <TouchableOpacity activeOpacity={0.6}>{children}</TouchableOpacity>
+    <Link href={href} asChild>
+      <TouchableOpacity activeOpacity={0.6}>
+        <Box
+          backgroundColor="card"
+          padding="spacing-20"
+          borderRadius="border-radius-24"
+          flex={1}
+          style={{ aspectRatio: 1 }}
+        >
+          {children}
+        </Box>
+      </TouchableOpacity>
     </Link>
   )
 }
-
-const TileStyle = StyleSheet.create({
-  container: {
-    backgroundColor: '#1c1c1e',
-    padding: 20,
-    borderRadius: 24,
-    flex: 1,
-    aspectRatio: 1,
-  },
-})

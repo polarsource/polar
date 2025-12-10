@@ -1,5 +1,5 @@
-import { useTheme } from '@/hooks/theme'
-import { StyleSheet, View } from 'react-native'
+import { Box } from '@/components/Shared/Box'
+import { StyleSheet } from 'react-native'
 import { Button, ButtonProps } from './Button'
 import { ThemedText } from './ThemedText'
 
@@ -10,16 +10,20 @@ export interface BannerProps {
 }
 
 export const Banner = ({ title, description, button }: BannerProps) => {
-  const { colors } = useTheme()
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <View style={styles.content}>
+    <Box
+      flexDirection="column"
+      padding="spacing-16"
+      borderRadius="border-radius-16"
+      gap="spacing-16"
+      backgroundColor="card"
+    >
+      <Box flex={1} gap="spacing-6">
         <ThemedText style={[styles.title]}>{title}</ThemedText>
         <ThemedText style={[styles.description]} secondary>
           {description}
         </ThemedText>
-      </View>
+      </Box>
       {button && (
         <Button
           {...button}
@@ -27,21 +31,11 @@ export const Banner = ({ title, description, button }: BannerProps) => {
           textStyle={styles.buttonText}
         />
       )}
-    </View>
+    </Box>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'column',
-    padding: 16,
-    borderRadius: 16,
-    gap: 16,
-  },
-  content: {
-    flex: 1,
-    gap: 6,
-  },
   title: {
     fontSize: 14,
   },

@@ -106,6 +106,11 @@ const CustomFieldComparableProperties = () => {
               if (isNaN(num) || !Number.isInteger(num)) {
                 return 'Value must be a valid integer'
               }
+              const INT32_MIN = -(2 ** 31)
+              const INT32_MAX = 2 ** 31 - 1
+              if (num < INT32_MIN || num > INT32_MAX) {
+                return 'Value is out of range'
+              }
               return true
             },
             leThanLe: (value) => {
@@ -144,6 +149,11 @@ const CustomFieldComparableProperties = () => {
               const num = Number(value)
               if (isNaN(num) || !Number.isInteger(num)) {
                 return 'Value must be a valid integer'
+              }
+              const INT32_MIN = -(2 ** 31)
+              const INT32_MAX = 2 ** 31 - 1
+              if (num < INT32_MIN || num > INT32_MAX) {
+                return 'Value is out of range'
               }
               return true
             },

@@ -26,8 +26,6 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
-from polar.member.repository import MemberRepository
-from polar.models.member import MemberRole
 from polar.sentry import set_sentry_user
 from polar.worker._enqueue import enqueue_job
 
@@ -94,21 +92,6 @@ async def get_customer_session(
     return await customer_session_service.get_by_token(session, value)
 
 
-async def get_customer_session_scopes(
-    session: AsyncSession, customer_session: CustomerSession
-) -> set[Scope]:
-    scopes: set[Scope] = {Scope.customer_portal_write}
-
-    repository = MemberRepository.from_session(session)
-    member = await repository.get_by_customer_and_email(
-        session, customer_session.customer, email=customer_session.customer.email
-    )
-    if member and member.role in {MemberRole.owner, MemberRole.billing_manager}:
-        scopes.add(Scope.customer_members_manage)
-
-    return scopes
-
-
 async def get_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
@@ -121,7 +104,7 @@ async def get_auth_subject(
         if customer_session:
             return AuthSubject(
                 customer_session.customer,
-                await get_customer_session_scopes(session, customer_session),
+                {Scope.customer_portal_write},
                 customer_session,
             )
 

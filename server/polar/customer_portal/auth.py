@@ -21,14 +21,6 @@ _CustomerPortalWrite = Authenticator(
 )
 CustomerPortalWrite = Annotated[AuthSubject[Customer], Depends(_CustomerPortalWrite)]
 
-_CustomerPortalMembersManage = Authenticator(
-    required_scopes={Scope.customer_members_manage},
-    allowed_subjects={Customer},
-)
-CustomerPortalMembersManage = Annotated[
-    AuthSubject[Customer], Depends(_CustomerPortalMembersManage)
-]
-
 _CustomerPortalOAuthAccount = Authenticator(
     required_scopes={Scope.customer_portal_write},
     allowed_subjects={Customer, Anonymous},

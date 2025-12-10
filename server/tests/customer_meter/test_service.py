@@ -183,7 +183,8 @@ class TestUpdateCustomerMeter:
             session, locker, customer, meter
         )
 
-        assert customer_meter is None
+        assert customer_meter is not None
+        assert customer_meter.activated_at is None
         assert updated is False
 
     async def test_no_matching_event_existing_customer_meter(
@@ -226,13 +227,17 @@ class TestUpdateCustomerMeter:
         events: list[Event],
         meter: Meter,
     ) -> None:
+        before = utc_now()
         customer_meter, updated = await customer_meter_service.update_customer_meter(
             session, locker, customer, meter
         )
+        after = utc_now()
 
         assert customer_meter is not None
         assert customer_meter.customer == customer
         assert customer_meter.meter == meter
+        assert customer_meter.activated_at is not None
+        assert before <= customer_meter.activated_at <= after
         assert customer_meter.consumed_units == Decimal(20)
         assert customer_meter.credited_units == Decimal(10)
         assert customer_meter.balance == Decimal(-10)
@@ -256,6 +261,7 @@ class TestUpdateCustomerMeter:
             consumed_units=Decimal(10),
             credited_units=0,
             balance=Decimal(-10),
+            activated_at=utc_now(),
         )
         await save_fixture(customer_meter)
 
@@ -342,6 +348,7 @@ class TestUpdateCustomerMeter:
             consumed_units=Decimal(20),
             credited_units=10,
             balance=Decimal(-10),
+            activated_at=utc_now(),
         )
         await save_fixture(customer_meter)
 

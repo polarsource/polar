@@ -1,8 +1,16 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, Numeric, UniqueConstraint, Uuid
+from sqlalchemy import (
+    TIMESTAMP,
+    BigInteger,
+    ForeignKey,
+    Numeric,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -27,6 +35,9 @@ class CustomerMeter(RecordModel):
     )
     last_balanced_event_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True, default=None
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
     consumed_units: Mapped[Decimal] = mapped_column(
         Numeric, nullable=False, default=0, index=True

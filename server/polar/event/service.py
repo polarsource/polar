@@ -22,17 +22,20 @@ from sqlalchemy.dialects.postgresql import insert
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Customer,
+    CustomerMeter,
     Event,
     EventClosure,
     Organization,
@@ -722,12 +725,53 @@ class EventService:
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
 
+        await self._activate_matching_customer_meters(
+            session, repository, event_ids, customers
+        )
+
         customer_repository = CustomerRepository.from_session(session)
         await customer_repository.touch_meters(customers)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)
             await organization_repository.enable_revops(organization_ids_for_revops)
+
+    async def _activate_matching_customer_meters(
+        self,
+        session: AsyncSession,
+        event_repository: EventRepository,
+        event_ids: Sequence[uuid.UUID],
+        customers: set[Customer],
+    ) -> None:
+        if not customers:
+            return
+
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+        customer_ids = [c.id for c in customers]
+
+        statement = (
+            customer_meter_repository.get_base_statement()
+            .join(CustomerMeter.meter)
+            .where(
+                CustomerMeter.customer_id.in_(customer_ids),
+                CustomerMeter.activated_at.is_(None),
+            )
+        )
+        unactivated_meters = await customer_meter_repository.get_all(statement)
+
+        for cm in unactivated_meters:
+            matching_statement = (
+                event_repository.get_base_statement()
+                .where(
+                    Event.id.in_(event_ids),
+                    Event.organization_id == cm.meter.organization_id,
+                    Event.customer_id == cm.customer_id,
+                    event_repository.get_meter_clause(cm.meter),
+                )
+                .limit(1)
+            )
+            if await event_repository.get_one_or_none(matching_statement) is not None:
+                cm.activated_at = utc_now()
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

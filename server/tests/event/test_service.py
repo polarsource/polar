@@ -22,8 +22,17 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.models import Customer, EventType, Organization, User, UserOrganization
+from polar.models import (
+    Customer,
+    CustomerMeter,
+    EventType,
+    Meter,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1234,3 +1243,95 @@ class TestIngested:
 
         await session.refresh(organization)
         assert organization.feature_settings.get("revops_enabled", False) is False
+
+    async def test_activates_matching_customer_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = Meter(
+            name="Test Meter",
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        await save_fixture(meter)
+
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            activated_at=None,
+        )
+        await save_fixture(customer_meter)
+
+        assert customer_meter.activated_at is None
+
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            source=EventSource.user,
+            metadata={"model": "lite", "tokens": 10},
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer_meter)
+        assert customer_meter.activated_at is not None
+
+    async def test_does_not_activate_non_matching_customer_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = Meter(
+            name="Test Meter",
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        await save_fixture(meter)
+
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            activated_at=None,
+        )
+        await save_fixture(customer_meter)
+
+        assert customer_meter.activated_at is None
+
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            source=EventSource.user,
+            metadata={"model": "pro", "tokens": 10},
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer_meter)
+        assert customer_meter.activated_at is None

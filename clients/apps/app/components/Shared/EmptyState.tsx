@@ -17,7 +17,7 @@ export const EmptyState = ({ title, description }: EmptyStateProps) => {
       borderWidth={1}
       borderColor="border"
       gap="spacing-8"
-      borderRadius="border-radius-16"
+      borderRadius="border-radius-24"
     >
       <Text textAlign="center">{title}</Text>
       <Text color="subtext" textAlign="center">

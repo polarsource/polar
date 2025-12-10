@@ -1,4 +1,4 @@
-import { DeleteAccountSheet } from '@/components/Errors/Accouns/DeleteAccountSheet'
+import { DeleteAccountSheet } from '@/components/Accounts/DeleteAccountSheet'
 import { Avatar } from '@/components/Shared/Avatar'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
@@ -122,7 +122,6 @@ export default function Index() {
             <Box
               padding="spacing-16"
               borderRadius="border-radius-24"
-              borderWidth={1}
               gap="spacing-12"
               backgroundColor="card"
             >

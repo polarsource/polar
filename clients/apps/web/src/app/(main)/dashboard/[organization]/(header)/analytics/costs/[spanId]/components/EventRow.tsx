@@ -13,6 +13,7 @@ interface EventRowProps {
   organization: schemas['Organization']
   averageCost: number
   p99Cost: number
+  showEventType?: boolean
 }
 
 export function EventRow({
@@ -21,12 +22,24 @@ export function EventRow({
   organization,
   averageCost,
   p99Cost,
+  showEventType = true,
 }: EventRowProps) {
   const costMetadata = (event.metadata as { _cost: { amount: string } })._cost
   const parsedCost = costMetadata ? Number(costMetadata.amount) : 0
 
   return (
     <tr>
+      {showEventType && (
+        <td className="p-2">
+          <Link
+            href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}`}
+            className="dark:text-polar-500 text-sm text-gray-500"
+          >
+            {eventType.label}
+          </Link>
+        </td>
+      )}
+
       <td className="p-2">
         <Link
           href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}/${event.id}`}

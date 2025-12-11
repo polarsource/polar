@@ -312,6 +312,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                     </div>
                   )
                 })}
+
               <CustomerSelector
                 organizationId={organization.id}
                 selectedCustomerIds={selectedCustomerIds}

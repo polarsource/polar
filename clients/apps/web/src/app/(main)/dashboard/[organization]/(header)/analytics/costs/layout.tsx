@@ -11,10 +11,11 @@ export default async function Layout({
   children: React.ReactNode
   params: { organization: string }
 }) {
+  const organizationSlug = (await params).organization
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
-    params.organization,
+    organizationSlug,
   )
 
   return (
@@ -25,7 +26,7 @@ export default async function Layout({
       contextView={
         <div className="flex h-full flex-col gap-y-4">
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <CostsSidebarTitle />
+            <CostsSidebarTitle organizationSlug={organizationSlug} />
           </div>
           <div className="flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4">
             <CostsSidebarFilters organization={organization} />

@@ -4,8 +4,13 @@ import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreati
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { CircleQuestionMarkIcon } from 'lucide-react'
+import Link from 'next/link'
 
-export function CostsSidebarTitle() {
+export function CostsSidebarTitle({
+  organizationSlug,
+}: {
+  organizationSlug: string
+}) {
   const {
     isShown: isEventCostCreationGuideShown,
     show: showEventCostCreationGuide,
@@ -14,7 +19,11 @@ export function CostsSidebarTitle() {
 
   return (
     <div className="flex flex-row items-center justify-between gap-1">
-      <h2 className="text-base font-medium">Costs</h2>
+      <h2 className="text-base font-medium">
+        <Link href={`/dashboard/${organizationSlug}/analytics/costs`}>
+          Costs
+        </Link>
+      </h2>
       <button
         className="dark:text-polar-500 dark:hover:text-polar-400 flex size-6 cursor-pointer items-center justify-center rounded-full text-gray-500 transition-colors hover:text-gray-600"
         onClick={showEventCostCreationGuide}

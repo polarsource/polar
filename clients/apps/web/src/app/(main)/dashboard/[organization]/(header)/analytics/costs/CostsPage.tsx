@@ -1,9 +1,9 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useEventHierarchyStats } from '@/hooks/queries/events'
+import { useEventTypes } from '@/hooks/queries/event_types'
+import { useInfiniteEvents } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { subMonths } from 'date-fns'
 import {
@@ -12,13 +12,11 @@ import {
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { parseAsString, useQueryState } from 'nuqs'
+import { useMemo } from 'react'
+import CostsEventsTable from './[spanId]/CostsEventsTable'
 import { CostsBandedSparkline } from './components/CostsBandedSparkline'
-import { SpansHeader } from './components/SpansHeader'
-import { SpansTitle } from './components/SpansTitle'
 import {
-  DEFAULT_INTERVAL,
   getCostsSearchParams,
   getDefaultEndDate,
   getDefaultStartDate,
@@ -52,11 +50,11 @@ const getTimeSeriesValues = (
 }
 
 export default function ClientPage({ organization }: ClientPageProps) {
-  const [startDateISOString, setStartDateISOString] = useQueryState(
+  const [startDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(getDefaultStartDate()),
   )
-  const [endDateISOString, setEndDateISOString] = useQueryState(
+  const [endDateISOString] = useQueryState(
     'endDate',
     parseAsString.withDefault(getDefaultEndDate()),
   )
@@ -70,81 +68,50 @@ export default function ClientPage({ organization }: ClientPageProps) {
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const [interval, setInterval] = useQueryState(
-    'interval',
-    parseAsStringLiteral([
-      'hour',
-      'day',
-      'week',
-      'month',
-      'year',
-    ] as const).withDefault(DEFAULT_INTERVAL),
-  )
+  const { data: eventTypesData } = useEventTypes(organization.id, {
+    sorting: ['-last_seen'],
+    root_events: true,
+    source: 'user',
+  })
 
-  const { data: costData, isLoading } = useEventHierarchyStats(
-    organization.id,
-    {
-      start_date: startDateISOString,
-      end_date: endDateISOString,
-      interval,
-      aggregate_fields: ['_cost.amount'],
-      sorting: ['-total'],
-    },
-  )
+  const eventTypes = eventTypesData?.items || []
 
-  const dateRange = useMemo(
-    () => ({ from: startDate, to: endDate }),
-    [startDate, endDate],
-  )
+  const {
+    data: eventsData,
+    isLoading: isEventsLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteEvents(organization.id, {
+    limit: 50,
+    sorting: ['-timestamp'],
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+    // @ts-expect-error - event_type_id is intentionally excluded from public schema
+    aggregate_fields: ['_cost.amount'],
+    name: eventTypes.map((et) => et.name),
+  })
 
-  const onDateRangeChange = useCallback(
-    (dateRange: { from: Date; to: Date }) => {
-      setStartDateISOString(toISODate(dateRange.from))
-      setEndDateISOString(toISODate(dateRange.to))
-    },
-    [setStartDateISOString, setEndDateISOString],
-  )
-
-  const onIntervalChange = useCallback(
-    (newInterval: schemas['TimeInterval']) => {
-      setInterval(newInterval)
-    },
-    [setInterval],
-  )
+  const events = useMemo(() => {
+    if (!eventsData) return []
+    return eventsData.pages.flatMap((page) => page.items)
+  }, [eventsData])
 
   return (
-    <DashboardBody
-      title={<SpansTitle organization={organization} />}
-      header={
-        <SpansHeader
-          dateRange={dateRange}
-          interval={interval}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          onIntervalChange={onIntervalChange}
-        />
-      }
-    >
-      <div className="flex flex-col gap-y-6">
-        {!isLoading && costData?.totals.length === 0 && (
-          <p className="dark:text-polar-400 dark:bg-polar-800 flex items-center justify-center rounded-2xl bg-gray-50 p-12 text-center text-sm text-gray-500">
-            No cost data available for the selected date range
-          </p>
-        )}
-        {(costData?.totals ?? []).map((totals) => (
-          <EventStatisticsCard
-            key={totals.name}
-            periods={costData?.periods || []}
-            eventStatistics={totals}
-            organization={organization}
-            startDate={startDateISOString}
-            endDate={endDateISOString}
-            interval={interval}
-          />
-        ))}
+    <div className="">
+      <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
+        <h3 className="text-4xl">Events</h3>
       </div>
-    </DashboardBody>
+
+      <CostsEventsTable
+        organization={organization}
+        spanId={''}
+        events={events}
+        eventTypes={eventTypes}
+        hasNextPage={hasNextPage}
+        fetchNextPage={fetchNextPage}
+      />
+    </div>
   )
 }
 

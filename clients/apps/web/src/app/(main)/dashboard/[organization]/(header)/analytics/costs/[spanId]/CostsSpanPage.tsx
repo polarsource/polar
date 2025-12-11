@@ -9,13 +9,12 @@ import {
   useInfiniteEvents,
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
-import { fromISODate, getTimestampFormatter, toISODate } from '@/utils/metrics'
+import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import { endOfDay, format, subMonths } from 'date-fns'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Chart } from '../components/Chart/Chart'
 import { CostsBandedChart } from '../components/CostsBandedChart'
 import {
@@ -23,12 +22,7 @@ import {
   getDefaultEndDate,
   getDefaultStartDate,
 } from '../utils'
-import { EventRow } from './components/EventRow'
-import {
-  generateDateRange,
-  groupEmptyDates,
-  groupEventsByDay,
-} from './components/utils'
+import CostsEventsTable from './CostsEventsTable'
 import { EditEventTypeModal } from './EditEventTypeModal'
 
 const PAGE_SIZE = 50
@@ -42,11 +36,11 @@ export default function SpanDetailPage({
   organization,
   spanId,
 }: SpanDetailPageProps) {
-  const [startDateISOString, setStartDateISOString] = useQueryState(
+  const [startDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(getDefaultStartDate()),
   )
-  const [endDateISOString, setEndDateISOString] = useQueryState(
+  const [endDateISOString] = useQueryState(
     'endDate',
     parseAsString.withDefault(getDefaultEndDate()),
   )
@@ -62,7 +56,7 @@ export default function SpanDetailPage({
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const [interval, setInterval] = useQueryState(
+  const [interval] = useQueryState(
     'interval',
     parseAsStringLiteral([
       'hour',
@@ -102,31 +96,20 @@ export default function SpanDetailPage({
       true,
     )
 
-  const { data: eventTypes } = useEventTypes(organization.id, {
+  const { data: eventTypesData } = useEventTypes(organization.id, {
     sorting: ['-last_seen'],
     root_events: true,
     source: 'user',
   })
 
-  const eventType = eventTypes?.items.find((item) => item.id === spanId)
+  const eventTypes = eventTypesData?.items || []
+
+  const eventType = eventTypes.find((item) => item.id === spanId)
 
   const events = useMemo(() => {
     if (!eventsData) return []
     return eventsData.pages.flatMap((page) => page.items)
   }, [eventsData])
-
-  const dayGroups = useMemo(() => {
-    const eventsMap = groupEventsByDay(events)
-    const dateRange = generateDateRange(startDate, endDate)
-    const groups = groupEmptyDates(dateRange, eventsMap)
-
-    // Remove the last group if it's an empty range (looks odd at the bottom)
-    if (groups.length > 1 && groups[groups.length - 1].type === 'empty-range') {
-      return groups.slice(0, -1)
-    }
-
-    return groups
-  }, [events, startDate, endDate])
 
   const costMetrics = useMemo(() => {
     if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
@@ -185,26 +168,6 @@ export default function SpanDetailPage({
   const timestampFormatter = useMemo(
     () => getTimestampFormatter(interval),
     [interval],
-  )
-
-  const dateRange = useMemo(
-    () => ({ from: startDate, to: endDate }),
-    [startDate, endDate],
-  )
-
-  const onDateRangeChange = useCallback(
-    (dateRange: { from: Date; to: Date }) => {
-      setStartDateISOString(toISODate(dateRange.from))
-      setEndDateISOString(toISODate(dateRange.to))
-    },
-    [setStartDateISOString, setEndDateISOString],
-  )
-
-  const onIntervalChange = useCallback(
-    (newInterval: schemas['TimeInterval']) => {
-      setInterval(newInterval)
-    },
-    [setInterval],
   )
 
   const {
@@ -320,123 +283,15 @@ export default function SpanDetailPage({
         </div>
       )}
 
-      {events.length > 0 ? (
-        <div className="flex flex-col gap-y-8">
-          <div className="flex flex-col gap-y-3">
-            <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
-              <table className="w-full table-auto border-collapse rounded-lg">
-                <thead>
-                  <tr>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
-                      Date
-                    </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
-                      Customer
-                    </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium text-gray-600">
-                      Timestamp
-                    </th>
-                    <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium text-gray-600">
-                      Cost
-                    </th>
-                  </tr>
-                </thead>
-                {dayGroups.map((group, groupIndex) => {
-                  if (group.type === 'empty-range') {
-                    return (
-                      <tbody
-                        key={`empty-${groupIndex}`}
-                        className="dark:divide-polar-700 group divide-y divide-gray-200"
-                      >
-                        <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
-                          <th
-                            colSpan={4}
-                            className="dark:text-polar-400 p-2 text-left text-sm font-medium text-gray-600"
-                          >
-                            <FormattedInterval
-                              startDatetime={group.endDate}
-                              endDatetime={group.startDate}
-                            />
-                          </th>
-                        </tr>
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="dark:text-polar-600 p-2 text-center text-sm text-gray-400 italic"
-                          >
-                            No events
-                          </td>
-                        </tr>
-                      </tbody>
-                    )
-                  }
-
-                  return (
-                    <tbody
-                      key={`day-${group.date.toISOString()}`}
-                      className="dark:divide-polar-700 group divide-y divide-gray-200"
-                    >
-                      <tr className="dark:bg-polar-800 bg-gray-50 not-group-first-of-type:border-t">
-                        <th
-                          colSpan={4}
-                          className="dark:text-polar-400 p-2 text-left text-sm font-medium text-gray-600"
-                        >
-                          <FormattedInterval
-                            startDatetime={group.date}
-                            endDatetime={group.date}
-                          />
-                        </th>
-                      </tr>
-                      {group.events.map((event) => (
-                        <EventRow
-                          key={event.id}
-                          event={event}
-                          organization={organization}
-                          eventType={eventType}
-                          averageCost={costMetrics.averageCost}
-                          p99Cost={costMetrics.p99Cost}
-                        />
-                      ))}
-                    </tbody>
-                  )
-                })}
-                <tfoot>
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="dark:border-polar-700 border-t border-gray-200"
-                    >
-                      {hasNextPage ? (
-                        <button
-                          className="group dark:text-polar-500 dark:hover:bg-polar-700 dark:hover:text-polar-300 relative flex h-10 w-full cursor-pointer items-center justify-center gap-x-2 py-3 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-                          onClick={() => fetchNextPage()}
-                        >
-                          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-100 transition-all duration-200 group-hover:opacity-0 group-hover:blur-[2px]">
-                            Showing first {events.length} events
-                          </span>
-                          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 blur-[2px] transition-all duration-200 group-hover:opacity-100 group-hover:blur-none">
-                            Load more
-                          </span>
-                        </button>
-                      ) : (
-                        <span className="group dark:text-polar-500/60 dark:bg-polar-800 relative flex h-10 w-full items-center justify-center gap-x-2 bg-gray-50 py-3 text-sm text-gray-400">
-                          Showing all {events.length} events
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
-          <h1 className="text-2xl font-normal">No Events Found</h1>
-          <p className="dark:text-polar-500 text-gray-500">
-            There are no events matching this span
-          </p>
-        </div>
+      {events.length > 0 && (
+        <CostsEventsTable
+          organization={organization}
+          spanId={spanId}
+          events={events}
+          eventTypes={eventTypes}
+          hasNextPage={hasNextPage}
+          fetchNextPage={fetchNextPage}
+        />
       )}
 
       <InlineModal

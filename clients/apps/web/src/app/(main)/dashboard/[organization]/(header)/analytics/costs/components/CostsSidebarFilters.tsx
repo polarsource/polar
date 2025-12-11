@@ -78,16 +78,13 @@ export default function CostsSidebarFilters({
     [setInterval],
   )
 
-  const { data: costData, isLoading } = useEventHierarchyStats(
-    organization.id,
-    {
-      start_date: startDateISOString,
-      end_date: endDateISOString,
-      interval,
-      aggregate_fields: ['_cost.amount'],
-      sorting: ['-total'],
-    },
-  )
+  const { data: costData } = useEventHierarchyStats(organization.id, {
+    start_date: startDateISOString,
+    end_date: endDateISOString,
+    interval,
+    aggregate_fields: ['_cost.amount'],
+    sorting: ['-total'],
+  })
 
   return (
     <>

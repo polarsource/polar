@@ -96,7 +96,7 @@ export const CustomerSelector = ({
           </div>
         </PopoverTrigger>
         <PopoverContent
-          className="p-0"
+          className="overflow-hidden p-0"
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onInteractOutside={(e) => {
@@ -106,14 +106,14 @@ export const CustomerSelector = ({
             e.preventDefault()
           }}
         >
-          <div className="max-h-[320px] overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto font-sans">
             {allCustomers.length > 0 ? (
-              <List size="small" className="rounded-none border-0">
+              <List size="small" className="rounded-md border-0">
                 {allCustomers.map((customer) => (
                   <ListItem
                     key={customer.id}
                     size="small"
-                    className="flex flex-row items-center gap-3 px-3"
+                    className="flex flex-row items-center gap-3 p-3"
                     selected={selectedCustomerIds?.includes(customer.id)}
                     onSelect={(e) => {
                       e.preventDefault()
@@ -122,16 +122,13 @@ export const CustomerSelector = ({
                   >
                     <div className="flex flex-row items-center gap-3">
                       <Avatar
-                        className="h-8 w-8"
+                        className="size-7"
                         avatar_url={customer.avatar_url}
                         name={customer.name || customer.email}
                       />
                       <div className="flex flex-col">
-                        <div className="text-xxs w-full truncate">
-                          {customer.name ?? '—'}
-                        </div>
-                        <div className="dark:text-polar-500 text-xxs w-full truncate font-mono text-gray-500">
-                          {customer.email}
+                        <div className="w-full truncate text-sm">
+                          {customer.name ?? customer.email}
                         </div>
                       </div>
                     </div>
@@ -157,26 +154,23 @@ export const CustomerSelector = ({
       {selectedCustomers.length > 0 && (
         <List size="small" className="rounded-xl">
           {selectedCustomers.map((customer) => (
-            <ListItem key={customer.id} size="small" className="px-3">
+            <ListItem key={customer.id} size="small" className="group px-3">
               <div className="flex flex-row items-center gap-3">
                 <Avatar
-                  className="h-8 w-8"
+                  className="size-7"
                   avatar_url={customer.avatar_url}
                   name={customer.name || customer.email}
                 />
                 <div className="flex flex-col">
-                  <div className="text-xxs w-full truncate">
-                    {customer.name ?? '—'}
-                  </div>
-                  <div className="dark:text-polar-500 text-xxs w-full truncate font-mono text-gray-500">
-                    {customer.email}
+                  <div className="w-full truncate text-sm">
+                    {customer.name ?? customer.email}
                   </div>
                 </div>
               </div>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-6 w-6"
+                className="dark:text-polar-500 size-6 text-gray-500 opacity-0 transition-all group-hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleToggleCustomer(customer.id)

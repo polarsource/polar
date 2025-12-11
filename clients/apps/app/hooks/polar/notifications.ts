@@ -1,11 +1,8 @@
+import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
-import {
-  useMutation,
-  UseMutationResult,
-  useQuery,
-  UseQueryResult,
-} from '@tanstack/react-query'
+import { unwrap } from '@polar-sh/client'
+import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import { Platform } from 'react-native'
 
 export interface NotificationRecipient {
@@ -16,105 +13,84 @@ export interface NotificationRecipient {
   updated_at: string
 }
 
-export const useCreateNotificationRecipient = (): UseMutationResult<
-  NotificationRecipient,
-  Error,
-  string
-> => {
-  const { session } = useSession()
+export const useCreateNotificationRecipient = () => {
+  const { polar } = usePolarClient()
 
   return useMutation({
     mutationFn: async (expoPushToken: string) => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications/recipients`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
+      return unwrap(
+        polar.POST('/v1/notifications/recipients', {
+          body: {
             expo_push_token: expoPushToken,
-            platform: Platform.OS,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
+            platform: Platform.OS as 'ios' | 'android',
           },
-        },
+        }),
       )
-
-      return response.json()
+    },
+    onSuccess: (result, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['notification_recipient'] })
+      queryClient.invalidateQueries({ queryKey: ['notification_recipients'] })
     },
   })
 }
 
-export const useListNotificationRecipients = (): UseQueryResult<
-  NotificationRecipient[],
-  Error
-> => {
-  const { session } = useSession()
+export const useListNotificationRecipients = () => {
+  const { polar } = usePolarClient()
 
   return useQuery({
     queryKey: ['notification_recipients'],
     queryFn: async () => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications/recipients`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
-          },
-        },
-      )
-
-      return response.json()
+      return unwrap(polar.GET('/v1/notifications/recipients'))
     },
   })
 }
 
 export const useGetNotificationRecipient = (
   expoPushToken: string | undefined,
-): UseQueryResult<NotificationRecipient | null, Error> => {
+) => {
   const { session } = useSession()
+  const { polar } = usePolarClient()
 
   return useQuery({
     queryKey: ['notification_recipient', expoPushToken],
     queryFn: async () => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications/recipients?expo_push_token=${expoPushToken}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
+      const response = await unwrap(
+        polar.GET('/v1/notifications/recipients', {
+          params: {
+            query: {
+              expo_push_token: expoPushToken,
+            },
           },
-        },
+        }),
       )
 
-      const data = await response.json()
-      return data.items?.[0] ?? null
+      return response.items?.[0] ?? null
     },
     enabled: !!expoPushToken && !!session,
   })
 }
 
-export const useDeleteNotificationRecipient = (): UseMutationResult<
-  NotificationRecipient,
-  Error,
-  string
-> => {
-  const { session } = useSession()
+export const useDeleteNotificationRecipient = () => {
+  const { polar } = usePolarClient()
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(
-        `${process.env.EXPO_PUBLIC_POLAR_SERVER_URL}/v1/notifications/recipients/${id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session}`,
+      return polar
+        .DELETE('/v1/notifications/recipients/{id}', {
+          params: {
+            path: {
+              id,
+            },
           },
-        },
-      )
-
-      return response.json()
+        })
+        .finally(() => {
+          queryClient.invalidateQueries({
+            queryKey: ['notification_recipients'],
+          })
+          queryClient.invalidateQueries({
+            queryKey: ['notification_recipient'],
+          })
+        })
     },
   })
 }

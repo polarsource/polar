@@ -2,7 +2,12 @@ import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, UseMutationResult, useQuery } from '@tanstack/react-query'
+import {
+  useMutation,
+  UseMutationResult,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 interface OrganizationDeletionResponse {
   deleted: boolean
@@ -45,7 +50,7 @@ export const useOrganization = (
   const { polar } = usePolarClient()
 
   return useQuery({
-    queryKey: ['organizations', { organizationId, ...(parameters || {}) }],
+    queryKey: ['organizations', organizationId, parameters],
     queryFn: () =>
       unwrap(
         polar.GET('/v1/organizations/', {
@@ -73,6 +78,63 @@ export const useCreateOrganization = () => {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] })
+    },
+  })
+}
+
+export const useUpdateOrganization = () => {
+  const { polar } = usePolarClient()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      organizationId,
+      update,
+    }: {
+      organizationId: string
+      update: schemas['OrganizationUpdate']
+    }) => {
+      return unwrap(
+        polar.PATCH('/v1/organizations/{id}', {
+          params: { path: { id: organizationId } },
+          body: update,
+        }),
+      )
+    },
+    onMutate: async ({
+      organizationId,
+      update,
+    }: {
+      organizationId: string
+      update: schemas['OrganizationUpdate']
+    }) => {
+      queryClient.cancelQueries({ queryKey: ['organizations', organizationId] })
+
+      const previousData = queryClient.getQueryData([
+        'organizations',
+        organizationId,
+      ])
+
+      // Optimistically update the data
+      queryClient.setQueryData(
+        ['organizations', organizationId],
+        (old: schemas['Organization']) => {
+          return { ...old, ...update }
+        },
+      )
+
+      return { previousData }
+    },
+    onError: (err, updatedOrganization, context) => {
+      queryClient.setQueryData(
+        ['organizations', updatedOrganization.organizationId],
+        context?.previousData,
+      )
+    },
+    onSettled: (data, error, variables, context) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizations'],
+      })
     },
   })
 }

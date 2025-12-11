@@ -17,12 +17,14 @@
     "lint": "pnpm format:check && expo lint",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
-    "postinstall": "pnpm --filter @polar-sh/client build"
+    "postinstall": "pnpm --filter @polar-sh/client build && patch-package",
+    "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean"
   },
   "jest": {
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@bacons/apple-targets": "^3.0.6",
     "@dev-plugins/react-navigation": "^0.3.1",
     "@dev-plugins/react-query": "^0.1.0",
     "@expo-google-fonts/instrument-serif": "^0.4.0",
@@ -67,6 +69,7 @@
     "expo-updates": "~29.0.12",
     "expo-web-browser": "~15.0.9",
     "nativewind": "^4.1.23",
+    "patch-package": "^8.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-error-boundary": "^6.0.0",

@@ -15,7 +15,7 @@ export const palette = {
 
   pureWhite: '#FFFFFF',
   pureBlack: '#000000',
-  blackOverlay: '#000000aa',
+  blackOverlay: '#000000cc',
   whiteDisabled: '#ffffff11',
 
   blue: '#0062FF',

@@ -3,6 +3,8 @@ import uuid
 from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
+import stripe as stripe_lib
+import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.orm import joinedload
 
@@ -31,6 +33,8 @@ from polar.product.repository import ProductRepository
 
 from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
+
+log = structlog.get_logger()
 
 
 class DiscountError(PolarError): ...
@@ -302,7 +306,18 @@ class DiscountService(ResourceServiceReader[Discount]):
             new_stripe_coupon = await stripe_service.create_coupon(
                 **discount.get_stripe_coupon_params()
             )
-            await stripe_service.delete_coupon(discount.stripe_coupon_id)
+            try:
+                await stripe_service.delete_coupon(discount.stripe_coupon_id)
+            except stripe_lib.InvalidRequestError as e:
+                error = e.error
+                if error is not None and error.code == "resource_missing":
+                    log.warning(
+                        "discount.update.stripe_coupon_not_found",
+                        discount_id=discount.id,
+                        stripe_coupon_id=discount.stripe_coupon_id,
+                    )
+                else:
+                    raise
             discount.stripe_coupon_id = new_stripe_coupon.id
         elif "name" in updated_fields:
             await stripe_service.update_coupon(
@@ -319,7 +334,18 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def delete(self, session: AsyncSession, discount: Discount) -> Discount:
         discount.set_deleted_at()
 
-        await stripe_service.delete_coupon(discount.stripe_coupon_id)
+        try:
+            await stripe_service.delete_coupon(discount.stripe_coupon_id)
+        except stripe_lib.InvalidRequestError as e:
+            error = e.error
+            if error is not None and error.code == "resource_missing":
+                log.warning(
+                    "discount.delete.stripe_coupon_not_found",
+                    discount_id=discount.id,
+                    stripe_coupon_id=discount.stripe_coupon_id,
+                )
+            else:
+                raise
 
         session.add(discount)
         return discount

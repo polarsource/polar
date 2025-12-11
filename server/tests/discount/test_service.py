@@ -5,6 +5,7 @@ from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, User
@@ -446,6 +447,40 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
+
+    async def test_update_stripe_coupon_not_found(
+        self,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        stripe_service_mock.create_coupon.return_value = SimpleNamespace(
+            id="NEW_STRIPE_COUPON_ID"
+        )
+        stripe_error = stripe_lib.InvalidRequestError(
+            "No such coupon", param=None, code="resource_missing"
+        )
+        stripe_error.error = stripe_lib.ErrorObject.construct_from(
+            {"code": "resource_missing"}, None
+        )
+        stripe_service_mock.delete_coupon.side_effect = stripe_error
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(basis_points=2000),
+        )
+
+        assert updated_discount.stripe_coupon_id == "NEW_STRIPE_COUPON_ID"
 
 
 @pytest.mark.asyncio

@@ -249,7 +249,7 @@ resource "render_web_service" "worker" {
   region            = "ohio"
   health_check_path = "/"
   start_command     = each.value.start_command
-  num_instances     = 1
+  num_instances     = each.value.num_instances
 
   runtime_source = {
     image = merge(

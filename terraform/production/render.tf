@@ -143,6 +143,7 @@ module "production" {
       tag                = "latest"
       custom_domains     = [{ name = "worker.polar.sh" }]
       dramatiq_prom_port = "10000"
+      num_instances      = 2
     }
     "worker-medium-priority" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues default medium_priority"

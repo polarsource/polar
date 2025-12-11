@@ -148,6 +148,47 @@ class MemberService:
             )
             raise
 
+    async def get_or_create_seat_member(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        organization: OrgModel,
+    ) -> Member | None:
+        """
+        Get or create a member for a seat assignment if feature flag is enabled.
+
+        Returns:
+            Created/existing Member if feature flag enabled, None if flag disabled
+        """
+        if not organization.feature_settings.get("member_model_enabled", False):
+            return None
+
+        repository = MemberRepository.from_session(session)
+
+        existing_member = await repository.get_by_customer_and_email(
+            session, customer, email=customer.email
+        )
+        if existing_member:
+            return existing_member
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name=customer.name,
+            role=MemberRole.member,
+        )
+
+        try:
+            return await repository.create(member)
+        except IntegrityError:
+            existing_member = await repository.get_by_customer_and_email(
+                session, customer, email=customer.email
+            )
+            if existing_member:
+                return existing_member
+            raise
+
     async def list_by_customer(
         self,
         session: AsyncReadSession,

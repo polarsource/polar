@@ -15,6 +15,7 @@ from polar.customer_session.service import (
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
+from polar.member.service import member_service
 from polar.models import (
     Customer,
     CustomerSeat,
@@ -257,6 +258,14 @@ class SeatService:
             customer_id,
         )
 
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
+        member = None
+        if organization:
+            member = await member_service.get_or_create_seat_member(
+                session, customer, organization
+            )
+
         existing_seat = await repository.get_by_container_and_customer(
             container, customer.id
         )
@@ -275,12 +284,15 @@ class SeatService:
 
         revoked_seat = await repository.get_revoked_seat_by_container(container)
 
+        member_id = member.id if member else None
+
         if revoked_seat:
             seat = revoked_seat
             seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
             seat.invitation_token = invitation_token
             seat.invitation_token_expires_at = token_expires_at
             seat.customer_id = customer.id
+            seat.member_id = member_id
             seat.seat_metadata = metadata or {}
             seat.revoked_at = None
             seat.claimed_at = datetime.now(UTC) if immediate_claim else None
@@ -290,6 +302,7 @@ class SeatService:
                 "invitation_token": invitation_token,
                 "invitation_token_expires_at": token_expires_at,
                 "customer_id": customer.id,
+                "member_id": member_id,
                 "seat_metadata": metadata or {},
                 "claimed_at": datetime.now(UTC) if immediate_claim else None,
             }
@@ -327,8 +340,6 @@ class SeatService:
                 invitation_token=invitation_token or "none",
             )
 
-            organization_repository = OrganizationRepository.from_session(session)
-            organization = await organization_repository.get_by_id(organization_id)
             if organization:
                 send_seat_invitation_email(
                     customer_email=customer.email,

@@ -579,6 +579,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/accounts/{id}/credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Get Credits */
+    get: operations['accounts:get_credits']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/': {
     parameters: {
       query?: never
@@ -4885,6 +4902,8 @@ export interface components {
       is_payouts_enabled: boolean
       /** Country */
       country: string
+      /** Credit Balance */
+      credit_balance: number
       /** Billing Name */
       billing_name: string | null
       billing_address: components['schemas']['Address'] | null
@@ -4911,6 +4930,29 @@ export interface components {
        */
       account_type: 'stripe'
       country: components['schemas']['StripeAccountCountry']
+    }
+    /** AccountCredit */
+    AccountCredit: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string
+      /** Title */
+      title: string
+      /** Amount */
+      amount: number
+      /** Used */
+      used: number
+      /**
+       * Granted At
+       * Format: date-time
+       */
+      granted_at: string
+      /** Expires At */
+      expires_at: string | null
+      /** Revoked At */
+      revoked_at: string | null
     }
     /** AccountLink */
     AccountLink: {
@@ -20282,6 +20324,7 @@ export interface components {
       | 'payout'
       | 'account'
       | 'dispute'
+      | 'fee_credit'
       | 'platform'
     /**
      * PledgeState
@@ -26115,6 +26158,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AccountLink']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'accounts:get_credits': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AccountCredit'][]
         }
       }
       /** @description Validation Error */
@@ -39877,6 +39951,7 @@ export const platformFeeTypeValues: ReadonlyArray<
   'payout',
   'account',
   'dispute',
+  'fee_credit',
   'platform',
 ]
 export const pledgeStateValues: ReadonlyArray<

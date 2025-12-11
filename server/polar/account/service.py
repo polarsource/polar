@@ -7,6 +7,7 @@ import stripe as stripe_lib
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
+from polar.account_credit.service import account_credit_service
 from polar.auth.models import AuthSubject
 from polar.campaign.service import campaign as campaign_service
 from polar.enums import AccountType
@@ -334,6 +335,15 @@ class AccountService:
 
         session.add(account)
         await session.flush()
+
+        # Create fee credits from campaign if applicable
+        if campaign and campaign.fee_credit:
+            await account_credit_service.grant_from_campaign(
+                session,
+                account=account,
+                campaign=campaign,
+            )
+
         return account
 
     async def update_account_from_stripe(

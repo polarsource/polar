@@ -39,6 +39,7 @@ def configure_sentry() -> None:
             FastApiIntegration(transaction_style="endpoint"),
             # DramatiqIntegration(),
         ],
+        auto_enabling_integrations=False,
     )
 
 

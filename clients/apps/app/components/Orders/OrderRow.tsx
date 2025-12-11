@@ -11,19 +11,25 @@ import React, { useContext } from 'react'
 import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 
 export interface OrderRowProps {
-  order: schemas['Order']
+  order?: schemas['Order']
   showTimestamp?: boolean
   style?: StyleProp<TextStyle>
+  loading?: boolean
 }
 
-export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
+export const OrderRow = ({
+  order,
+  style,
+  showTimestamp,
+  loading,
+}: OrderRowProps) => {
   const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
-  const { data: product } = useProduct(organization?.id, order.product?.id)
+  const { data: product } = useProduct(organization?.id, order?.product?.id)
 
   return (
     <Link
-      href={`/orders/${order.id}`}
+      href={`/orders/${order?.id}`}
       style={[
         {
           padding: theme.spacing['spacing-16'],
@@ -69,16 +75,25 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
           )}
         </Box>
         <Box flex={1} flexDirection="column" gap="spacing-4">
-          <Text variant="bodyMedium">{order.product?.name}</Text>
+          <Text variant="bodyMedium" loading={loading}>
+            {order?.product?.name}
+          </Text>
           <Box flex={1} flexDirection="row" gap="spacing-6">
             {showTimestamp && (
               <>
-                <Text color="subtext">
-                  {new Date(order.created_at).toLocaleDateString('en-US', {
-                    dateStyle: 'medium',
-                  })}
+                <Text
+                  color="subtext"
+                  loading={loading}
+                  placeholderText="12/12/2025"
+                >
+                  {new Date(order?.created_at || new Date()).toLocaleDateString(
+                    'en-US',
+                    {
+                      dateStyle: 'medium',
+                    },
+                  )}
                 </Text>
-                <Text color="subtext">•</Text>
+                {loading ? null : <Text color="subtext">•</Text>}
               </>
             )}
             <Text
@@ -86,7 +101,7 @@ export const OrderRow = ({ order, style, showTimestamp }: OrderRowProps) => {
               style={{ flexShrink: 1, flexWrap: 'wrap' }}
               color="subtext"
             >
-              {order.customer.email}
+              {order?.customer.email}
             </Text>
           </Box>
         </Box>

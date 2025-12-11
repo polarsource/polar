@@ -25,22 +25,24 @@ const subscriptionStatusColors: Record<
 }
 
 export interface SubscriptionRowProps {
-  subscription: schemas['Subscription']
+  subscription?: schemas['Subscription']
   showCustomer?: boolean
   style?: StyleProp<TextStyle>
+  loading?: boolean
 }
 
 export const SubscriptionRow = ({
   subscription,
   style,
   showCustomer,
+  loading,
 }: SubscriptionRowProps) => {
   const theme = useTheme()
-  const product = subscription.product
+  const product = subscription?.product
 
   return (
     <Link
-      href={`/subscriptions/${subscription.id}`}
+      href={`/subscriptions/${subscription?.id}`}
       style={[
         {
           padding: theme.spacing['spacing-16'],
@@ -91,26 +93,42 @@ export const SubscriptionRow = ({
             justifyContent="space-between"
             gap="spacing-8"
           >
-            <Text variant="bodyMedium" numberOfLines={1} ellipsizeMode="tail">
-              {subscription.product.name}
+            <Text
+              loading={loading}
+              variant="bodyMedium"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {subscription?.product?.name}
             </Text>
-            <Pill color={subscriptionStatusColors[subscription.status]}>
-              {subscription.status.split('_').join(' ')}
+            <Pill
+              loading={loading}
+              color={subscriptionStatusColors[subscription?.status || 'active']}
+            >
+              {subscription?.status.split('_').join(' ')}
             </Pill>
           </Box>
           <Box flex={1} flexDirection="row" alignItems="center" gap="spacing-8">
-            <ProductPriceLabel product={subscription.product} />
+            <ProductPriceLabel
+              loading={loading}
+              product={subscription?.product}
+            />
             {showCustomer && (
               <>
-                <Text style={{ flexShrink: 1 }} color="subtext">
+                <Text
+                  style={{ flexShrink: 1, display: loading ? 'none' : 'flex' }}
+                  color="subtext"
+                >
                   •
                 </Text>
                 <Text
                   numberOfLines={1}
                   style={{ flexShrink: 1, flexWrap: 'wrap' }}
                   color="subtext"
+                  loading={loading}
+                  placeholderText="johndoe@example.com"
                 >
-                  {subscription.customer.email}
+                  {subscription?.customer.email}
                 </Text>
               </>
             )}

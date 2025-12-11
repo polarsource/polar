@@ -8,7 +8,11 @@ import { useContext, useMemo } from 'react'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
-export const CatalogueTile = () => {
+export interface CatalogueTileProps {
+  loading?: boolean
+}
+
+export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
   const theme = useTheme()
 
   const { organization } = useContext(OrganizationContext)
@@ -35,7 +39,7 @@ export const CatalogueTile = () => {
           <Text variant="body" color="subtext">
             Catalogue
           </Text>
-          <Text variant="body">
+          <Text variant="body" loading={loading} placeholderText="10 Products">
             {products?.items.length}{' '}
             {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
           </Text>

@@ -23,11 +23,13 @@ export const Pill = ({
   children,
   style,
   textStyle,
+  loading,
 }: {
   color: PillColor
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
   textStyle?: StyleProp<TextStyle>
+  loading?: boolean
 }) => {
   const theme = useTheme()
   const colorTokens = getColorTokens(color)
@@ -42,6 +44,9 @@ export const Pill = ({
       <Text
         variant="caption"
         textTransform="capitalize"
+        loading={loading}
+        placeholderText={color}
+        placeholderColor={colorTokens.bg}
         style={[
           {
             color: theme.colors[colorTokens.text],

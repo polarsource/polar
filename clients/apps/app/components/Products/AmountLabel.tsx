@@ -9,6 +9,7 @@ interface AmountLabelProps {
   currency: string
   interval?: schemas['SubscriptionRecurringInterval']
   minimumFractionDigits?: number
+  loading?: boolean
 }
 
 const AmountLabel = ({
@@ -16,6 +17,7 @@ const AmountLabel = ({
   currency,
   interval,
   minimumFractionDigits = 0,
+  loading,
 }: AmountLabelProps) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
@@ -33,7 +35,7 @@ const AmountLabel = ({
 
   return (
     <Box flexDirection="row" alignItems="baseline">
-      <Text variant="bodySmall">
+      <Text loading={loading} variant="bodySmall">
         {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
       </Text>
       <Text variant="captionSmall">{intervalDisplay}</Text>

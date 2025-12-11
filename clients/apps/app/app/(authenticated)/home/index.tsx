@@ -57,6 +57,7 @@ export default function Index() {
     data: orders,
     refetch: refetchOrders,
     isRefetching: isRefetchingOrders,
+    isLoading: isLoadingOrders,
   } = useOrders(organization?.id, {
     limit: 3,
   })
@@ -65,6 +66,7 @@ export default function Index() {
     data: subscriptions,
     refetch: refetchSubscriptions,
     isRefetching: isRefetchingSubscriptions,
+    isLoading: isLoadingSubscriptions,
   } = useSubscriptions(organization?.id, {
     limit: 3,
     active: true,
@@ -75,6 +77,7 @@ export default function Index() {
     data: customers,
     refetch: refetchCustomers,
     isRefetching: isRefetchingCustomers,
+    isLoading: isLoadingCustomers,
   } = useCustomers(organization?.id, {
     limit: 5,
   })
@@ -235,18 +238,19 @@ export default function Index() {
               <Box flex={1}>
                 <OrganizationTile
                   onPress={() => setShowOrganizationsSheet(true)}
+                  loading={!organization}
                 />
               </Box>
               <Box flex={1}>
-                <RevenueTile />
+                <RevenueTile loading={!organization} />
               </Box>
             </Box>
             <Box flexDirection="row" gap="spacing-16">
               <Box flex={1}>
-                <CatalogueTile />
+                <CatalogueTile loading={!organization} />
               </Box>
               <Box flex={1}>
-                <FinanceTile />
+                <FinanceTile loading={!organization} />
               </Box>
             </Box>
           </Box>
@@ -262,7 +266,13 @@ export default function Index() {
                 <MiniButton variant="secondary">View All</MiniButton>
               </Link>
             </Box>
-            {flatSubscriptions.length > 0 ? (
+            {isLoadingSubscriptions ? (
+              <Box gap="spacing-8">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <SubscriptionRow key={i} loading showCustomer />
+                ))}
+              </Box>
+            ) : flatSubscriptions.length > 0 ? (
               <Box gap="spacing-8">
                 {flatSubscriptions.map((subscription) => (
                   <SubscriptionRow
@@ -291,7 +301,13 @@ export default function Index() {
                 <MiniButton variant="secondary">View All</MiniButton>
               </Link>
             </Box>
-            {flatOrders.length > 0 ? (
+            {isLoadingOrders ? (
+              <Box gap="spacing-8">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <OrderRow key={i} loading showTimestamp />
+                ))}
+              </Box>
+            ) : flatOrders.length > 0 ? (
               <Box gap="spacing-8">
                 {flatOrders.map((order) => (
                   <OrderRow key={order.id} order={order} showTimestamp />
@@ -330,9 +346,13 @@ export default function Index() {
               }}
               contentOffset={{ x: -theme.spacing['spacing-16'], y: 0 }}
             >
-              {flatCustomers.map((customer) => (
-                <CustomerCard key={customer.id} customer={customer} />
-              ))}
+              {isLoadingCustomers
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <CustomerCard key={i} loading />
+                  ))
+                : flatCustomers.map((customer) => (
+                    <CustomerCard key={customer.id} customer={customer} />
+                  ))}
             </ScrollView>
           ) : (
             <Box flex={1} paddingHorizontal="spacing-16">

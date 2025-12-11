@@ -3,6 +3,7 @@ import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useProducts } from '@/hooks/polar/products'
@@ -236,22 +237,10 @@ const ProrationBehaviorSelector = ({
       borderRadius="border-radius-12"
     >
       {Object.entries(PRORATION_BEHAVIOR_LABELS).map(([key, label]) => (
-        <TouchableOpacity
+        <Touchable
           key={key}
           activeOpacity={0.6}
-          style={[
-            {
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingVertical: theme.spacing['spacing-10'],
-              paddingHorizontal: theme.spacing['spacing-8'],
-              borderRadius: theme.borderRadii['border-radius-8'],
-              flex: 1,
-            },
-            prorationBehavior === key && {
-              backgroundColor: theme.colors.background,
-            },
-          ]}
+          style={{ flex: 1 }}
           onPress={() => {
             setValue(
               'proration_behavior',
@@ -262,15 +251,25 @@ const ProrationBehaviorSelector = ({
             )
           }}
         >
-          <Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            textAlign="center"
-            width="100%"
+          <Box
+            justifyContent="center"
+            alignItems="center"
+            backgroundColor={prorationBehavior === key ? 'background' : 'card'}
+            paddingVertical="spacing-10"
+            paddingHorizontal="spacing-8"
+            borderRadius="border-radius-8"
+            flex={1}
           >
-            {label}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              textAlign="center"
+              width="100%"
+            >
+              {label}
+            </Text>
+          </Box>
+        </Touchable>
       ))}
     </Box>
   )

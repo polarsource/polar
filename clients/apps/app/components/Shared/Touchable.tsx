@@ -1,10 +1,11 @@
+import { Theme } from '@/design-system/theme'
+import { BoxProps } from '@shopify/restyle'
+import * as Haptics from 'expo-haptics'
 import { useCallback } from 'react'
 import type {
   GestureResponderEvent,
   TouchableWithoutFeedbackProps,
 } from 'react-native'
-
-import * as Haptics from 'expo-haptics'
 import {
   TouchableHighlight,
   TouchableOpacity,
@@ -18,74 +19,72 @@ interface TouchableProps extends TouchableWithoutFeedbackProps {
   feedback?: Feedback
   activeOpacity?: number
   isListItem?: boolean
+  boxProps?: BoxProps<Theme>
 }
 
 export const Touchable = ({
-  feedback: _feedback,
+  feedback = 'opacity',
   onPress,
   onLongPress: _onLongPress,
   isListItem,
   children,
-  activeOpacity,
+  activeOpacity = 0.6,
+  boxProps,
   style,
   ...props
 }: TouchableProps) => {
-  const feedback: Feedback = _feedback ?? 'opacity'
-
   const onLongPress = useCallback(
     (event: GestureResponderEvent) => {
       if (_onLongPress) {
-        onLongPress(event)
+        _onLongPress(event)
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
       }
     },
     [_onLongPress],
   )
 
-  let touchableComponent: React.ReactNode
-
   if (feedback === 'highlight') {
-    touchableComponent = (
+    return (
       <TouchableHighlight
+        activeOpacity={activeOpacity}
         onPress={onPress}
         onLongPress={onLongPress}
         delayPressIn={isListItem ? 130 : 0}
         delayPressOut={isListItem ? 130 : 0}
-        activeOpacity={activeOpacity}
         style={style}
         {...props}
       >
         {children}
       </TouchableHighlight>
     )
-  } else if (feedback === 'opacity') {
-    touchableComponent = (
+  }
+
+  if (feedback === 'opacity') {
+    return (
       <TouchableOpacity
+        activeOpacity={activeOpacity}
         onPress={onPress}
         onLongPress={onLongPress}
         delayPressIn={isListItem ? 130 : 0}
         delayPressOut={isListItem ? 130 : 0}
-        activeOpacity={activeOpacity}
         style={style}
         {...props}
       >
         {children}
       </TouchableOpacity>
     )
-  } else if (feedback === 'none') {
-    touchableComponent = (
-      <TouchableWithoutFeedback
-        onPress={onPress}
-        onLongPress={onLongPress}
-        delayPressIn={isListItem ? 130 : 0}
-        delayPressOut={isListItem ? 130 : 0}
-        style={style}
-        {...props}
-      >
-        {children}
-      </TouchableWithoutFeedback>
-    )
   }
 
-  return touchableComponent
+  return (
+    <TouchableWithoutFeedback
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayPressIn={isListItem ? 130 : 0}
+      delayPressOut={isListItem ? 130 : 0}
+      style={style}
+      {...props}
+    >
+      {children}
+    </TouchableWithoutFeedback>
+  )
 }

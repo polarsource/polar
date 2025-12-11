@@ -1,13 +1,15 @@
 import { FadeInAndUp } from '@/components/Animations/FadeInAndUp'
 import { KenBurns } from '@/components/Animations/KenBurns'
+import { Box } from '@/components/Shared/Box'
 import LogoIcon from '@/components/Shared/PolarLogo'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOAuth } from '@/hooks/oauth'
 import { useSession } from '@/providers/SessionProvider'
 import { Image } from 'expo-image'
 import { Redirect } from 'expo-router'
-import { StatusBar, TouchableOpacity } from 'react-native'
+import { StatusBar } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function App() {
@@ -55,22 +57,18 @@ export default function App() {
       </FadeInAndUp>
 
       <FadeInAndUp delay={900}>
-        <TouchableOpacity
-          activeOpacity={0.6}
-          disabled={!authRequest}
-          style={{
-            width: 'auto',
-            paddingVertical: theme.spacing['spacing-12'],
-            paddingHorizontal: theme.spacing['spacing-24'],
-            backgroundColor: theme.colors.monochromeInverted,
-            borderRadius: theme.borderRadii['border-radius-100'],
-          }}
-          onPress={authenticate}
-        >
-          <Text variant="bodyMedium" color="monochrome" textAlign="center">
-            Get Started
-          </Text>
-        </TouchableOpacity>
+        <Touchable onPress={authenticate} disabled={!authRequest}>
+          <Box
+            paddingVertical="spacing-12"
+            paddingHorizontal="spacing-24"
+            backgroundColor="monochromeInverted"
+            borderRadius="border-radius-100"
+          >
+            <Text variant="bodyMedium" color="monochrome" textAlign="center">
+              Get Started
+            </Text>
+          </Box>
+        </Touchable>
       </FadeInAndUp>
     </SafeAreaView>
   )

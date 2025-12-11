@@ -4,6 +4,7 @@ import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { MiniButton } from '@/components/Shared/MiniButton'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
@@ -12,7 +13,7 @@ import { useUser } from '@/providers/UserProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
-import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
+import { RefreshControl, ScrollView } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -75,7 +76,7 @@ export default function Index() {
             </Box>
             <Box flexDirection="column" gap="spacing-4">
               {organizationData?.items.map((organization) => (
-                <TouchableOpacity
+                <Touchable
                   key={organization?.id}
                   style={{
                     paddingVertical: theme.spacing['spacing-16'],
@@ -109,7 +110,7 @@ export default function Index() {
                       color={theme.colors.monochromeInverted}
                     />
                   ) : null}
-                </TouchableOpacity>
+                </Touchable>
               ))}
             </Box>
           </Box>

@@ -8,15 +8,16 @@ import { Avatar } from '../Shared/Avatar'
 import { Text } from '../Shared/Text'
 
 export interface CustomerCardProps {
-  customer: schemas['Customer']
+  customer?: schemas['Customer']
+  loading?: boolean
 }
 
-export const CustomerCard = ({ customer }: CustomerCardProps) => {
+export const CustomerCard = ({ customer, loading }: CustomerCardProps) => {
   const theme = useTheme()
 
   return (
     <Link
-      href={`/customers/${customer.id}`}
+      href={`/customers/${customer?.id}`}
       style={{
         paddingVertical: theme.spacing['spacing-32'],
         paddingHorizontal: theme.spacing['spacing-16'],
@@ -32,19 +33,24 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
       <TouchableOpacity activeOpacity={0.6}>
         <Avatar
           size={64}
-          name={customer.name ?? customer.email}
-          image={customer.avatar_url ?? undefined}
+          name={customer?.name || customer?.email || ''}
+          image={customer?.avatar_url ?? undefined}
+          loading={loading}
         />
-        <Box flexDirection="column" alignItems="center" gap="spacing-8">
-          <Text textAlign="center">{customer.name ?? '—'}</Text>
+        <Box flexDirection="column" gap="spacing-8">
+          <Text loading={loading} textAlign="center" placeholderText="John Doe">
+            {customer?.name ?? '—'}
+          </Text>
           <Text
             variant="bodySmall"
-            textAlign="center"
             numberOfLines={1}
             ellipsizeMode="tail"
+            textAlign="center"
             color="subtext"
+            loading={loading}
+            placeholderText="johndoe@example.com"
           >
-            {customer.email}
+            {customer?.email}
           </Text>
         </Box>
       </TouchableOpacity>

@@ -10,7 +10,11 @@ import { CartesianChart, Line } from 'victory-native'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
-export const RevenueTile = () => {
+export interface RevenueTileProps {
+  loading?: boolean
+}
+
+export const RevenueTile = ({ loading }: RevenueTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
 
@@ -95,7 +99,12 @@ export const RevenueTile = () => {
             </CartesianChart>
           </Box>
         )}
-        <Text variant="headline" numberOfLines={1}>
+        <Text
+          variant="headline"
+          numberOfLines={1}
+          loading={loading}
+          placeholderText="$1,234"
+        >
           {formatCurrencyAndAmount(
             metrics.data?.totals.revenue ?? 0,
             'usd',

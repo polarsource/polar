@@ -106,7 +106,7 @@ export default function Index() {
         })),
       })
     },
-    [updateProduct],
+    [reset, updateProduct],
   )
 
   if (!product) {

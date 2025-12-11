@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { Image } from '@/components/Shared/Image/Image'
 import { useTheme } from '@/design-system/useTheme'
+import { PlaceholderBox } from './PlaceholderBox'
 import { Text } from './Text'
 
 const getInitials = (fullName: string) => {
@@ -19,6 +20,7 @@ interface AvatarProps {
   size?: number
   image?: string | null
   backgroundColor?: string
+  loading?: boolean
 }
 
 export const Avatar = ({
@@ -26,6 +28,7 @@ export const Avatar = ({
   size = 32,
   image,
   backgroundColor,
+  loading,
 }: AvatarProps) => {
   const theme = useTheme()
 
@@ -35,6 +38,24 @@ export const Avatar = ({
   if (image) {
     const avatarHost = image.startsWith('http') ? new URL(image).host : null
     showInitials = avatarHost === 'www.gravatar.com'
+  }
+
+  if (loading) {
+    return (
+      <Box
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
+        overflow="hidden"
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+      >
+        <PlaceholderBox
+          width={size}
+          height={size}
+          borderRadius="border-radius-4"
+        />
+      </Box>
+    )
   }
 
   return (

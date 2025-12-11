@@ -11,7 +11,11 @@ import { MiniButton } from '../Shared/MiniButton'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
-export const FinanceTile = () => {
+export interface FinanceTileProps {
+  loading?: boolean
+}
+
+export const FinanceTile = ({ loading }: FinanceTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
@@ -28,7 +32,12 @@ export const FinanceTile = () => {
           <Text variant="body" color="subtext">
             Account Balance
           </Text>
-          <Text variant="headline" numberOfLines={1}>
+          <Text
+            variant="headline"
+            numberOfLines={1}
+            loading={loading}
+            placeholderText="$1,234"
+          >
             {formatCurrencyAndAmount(
               summary?.balance.amount ?? 0,
               'USD',

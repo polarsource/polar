@@ -41,5 +41,4 @@ def downgrade() -> None:
         ["customer_id", "external_id"],
         postgresql_nulls_not_distinct=True,
     )
-    )
     # ### end Alembic commands ###

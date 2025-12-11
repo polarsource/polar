@@ -41,6 +41,13 @@ export const RevenueTile = () => {
     return Math.max(...cumulativeRevenueData.map((d) => d.value), 1)
   }, [cumulativeRevenueData])
 
+  useEffect(() => {
+    if (cumulativeRevenueData.length > 0) {
+      console.log('Revenue chart data:', cumulativeRevenueData)
+      console.log('Max value:', maxValue)
+    }
+  }, [cumulativeRevenueData, maxValue])
+
   const lineProgress = useSharedValue(0)
 
   useEffect(() => {
@@ -76,7 +83,8 @@ export const RevenueTile = () => {
               data={cumulativeRevenueData}
               xKey="index"
               yKeys={['value']}
-              domainPadding={{ top: 4, bottom: 4 }}
+              domain={{ y: [0, maxValue] }}
+              domainPadding={{ bottom: 4, top: 4 }}
               axisOptions={{
                 lineColor: 'transparent',
                 labelColor: 'transparent',
@@ -87,7 +95,7 @@ export const RevenueTile = () => {
                   points={points.value}
                   color={theme.colors.primary}
                   strokeWidth={2}
-                  curveType="natural"
+                  curveType="monotoneX"
                   end={lineProgress}
                 />
               )}

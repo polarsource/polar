@@ -1,4 +1,4 @@
-import { useTransactionsSummary } from '@/hooks/queries'
+import { useAccountCredits, useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -23,6 +23,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     refetch: refetchBalance,
     isLoading,
   } = useTransactionsSummary(account.id)
+
+  const hasCredits = account.credit_balance > 0
+  const { data: credits, isLoading: isLoadingCredits } = useAccountCredits(
+    hasCredits ? account.id : undefined,
+  )
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const onWithdraw = useCallback(() => {
@@ -67,6 +72,31 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             </p>
           </div>
         </div>
+        {hasCredits && !isLoadingCredits && credits && credits.length > 0 && (
+          <div className="mt-6">
+            {credits.map((credit, index) => (
+              <div
+                key={credit.id}
+                className={`flex items-center justify-between py-3 ${
+                  index > 0 ? 'border-t dark:border-polar-700' : ''
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span>🎉</span>
+                  <span className="font-medium">{credit.title}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-medium">
+                    {formatCurrencyAndAmount(credit.amount, 'usd')} Credits
+                  </span>
+                  <span className="dark:text-polar-400 text-xs text-gray-500">
+                    {formatCurrencyAndAmount(credit.used, 'usd')} used
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </ShadowBoxOnMd>
       <WithdrawModal
         account={account}

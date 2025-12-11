@@ -40,6 +40,7 @@ export const DeleteAccountSheet = ({ onDismiss }: DeleteAccountSheetProps) => {
       <Text color="subtext">
         Deleting your organizations & account is an irreversible action.
       </Text>
+      <Text color="subtext">Enter your email below to confirm.</Text>
       <BottomSheetTextInput
         style={{
           backgroundColor: theme.colors.inputBackground,

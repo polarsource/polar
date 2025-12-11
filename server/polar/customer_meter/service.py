@@ -17,6 +17,7 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
+    CountAggregation,
     PropertyAggregation,
     UniqueAggregation,
 )
@@ -456,13 +457,29 @@ class CustomerMeterService:
     def _combine_incremental(
         self, meter: Meter, current: float, delta: float
     ) -> Decimal:
-        if isinstance(meter.aggregation, PropertyAggregation):
-            match meter.aggregation.func:
-                case AggregationFunction.max:
-                    return Decimal(max(current, delta))
-                case AggregationFunction.min:
-                    return Decimal(min(current, delta))
-        return Decimal(current + delta)
+        match meter.aggregation:
+            case CountAggregation():
+                return Decimal(current + delta)
+            case PropertyAggregation(func=func):
+                match func:
+                    case AggregationFunction.sum:
+                        return Decimal(current + delta)
+                    case AggregationFunction.max:
+                        return Decimal(max(current, delta))
+                    case AggregationFunction.min:
+                        return Decimal(min(current, delta))
+                    case AggregationFunction.avg:
+                        raise ValueError(
+                            f"Incremental aggregation not supported for {func}"
+                        )
+                    case _:
+                        raise ValueError(f"Unhandled aggregation function: {func}")
+            case UniqueAggregation(func=func):
+                raise ValueError(f"Incremental aggregation not supported for {func}")
+            case _:
+                raise ValueError(
+                    f"Unhandled aggregation type: {type(meter.aggregation)}"
+                )
 
     async def _get_credit_events(
         self,

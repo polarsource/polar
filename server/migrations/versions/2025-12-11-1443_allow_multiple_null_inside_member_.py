@@ -1,7 +1,7 @@
 """Allow multiple null inside member.external_id
 
 Revision ID: 827dddaa615a
-Revises: cf31af43f14a
+Revises: 613163140f90
 Create Date: 2025-12-11 14:43:07.293389
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "827dddaa615a"
-down_revision = "cf31af43f14a"
+down_revision = "613163140f90"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
 
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
@@ -291,10 +292,12 @@ class AuthorizationServer(_AuthorizationServer):
         self,
         session: Session,
         *,
-        scopes_supported: list[str] | None = None,
         error_uris: list[tuple[str, str]] | None = None,
     ) -> None:
-        super().__init__(scopes_supported)
+        super().__init__(
+            # Allow also reserved scopes for first-party clients
+            scopes_supported=[s.value for s in Scope],
+        )
         self.session = session
         self._error_uris = dict(error_uris) if error_uris is not None else None
 
@@ -305,12 +308,9 @@ class AuthorizationServer(_AuthorizationServer):
         cls,
         session: Session,
         *,
-        scopes_supported: list[str] | None = None,
         error_uris: list[tuple[str, str]] | None = None,
     ) -> typing.Self:
-        authorization_server = cls(
-            session, scopes_supported=scopes_supported, error_uris=error_uris
-        )
+        authorization_server = cls(session, error_uris=error_uris)
         authorization_server.register_endpoint(RevocationEndpoint)
         authorization_server.register_endpoint(IntrospectionEndpoint)
         authorization_server.register_endpoint(ClientRegistrationEndpoint)

@@ -73,6 +73,32 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
 
 
 @pytest_asyncio.fixture
+async def first_party_oauth2_client(
+    save_fixture: SaveFixture, user: User
+) -> OAuth2Client:
+    oauth2_client = OAuth2Client(
+        client_id="polar_ci_123",
+        client_secret="polar_cs_123",
+        registration_access_token="polar_crt_123",
+        first_party=True,
+        user=user,
+    )
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Client",
+            "redirect_uris": ["http://127.0.0.1:8000/docs/oauth2-redirect"],
+            "token_endpoint_auth_method": "client_secret_post",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "scope": "openid profile email web:read web:write",
+            "default_sub_type": "user",
+        }
+    )
+    await save_fixture(oauth2_client)
+    return oauth2_client
+
+
+@pytest_asyncio.fixture
 async def web_grant_oauth2_client(
     save_fixture: SaveFixture, user: User
 ) -> OAuth2Client:
@@ -455,6 +481,28 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == set(oauth2_client.scope.split(" "))
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("prompt", [None, "none", "consent"])
+    async def test_no_scope_first_party_client(
+        self,
+        prompt: str | None,
+        client: AsyncClient,
+        first_party_oauth2_client: OAuth2Client,
+    ) -> None:
+        params = {
+            "client_id": first_party_oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+        if prompt is not None:
+            params["prompt"] = prompt
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        assert location.startswith(params["redirect_uri"])
+        assert "code=" in location
+
+    @pytest.mark.auth
     async def test_new_scope(
         self,
         save_fixture: SaveFixture,
@@ -481,6 +529,36 @@ class TestOAuth2Authorize:
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("prompt", [None, "none", "consent"])
+    async def test_new_scope_first_party_client(
+        self,
+        prompt: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        first_party_oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_grant(
+            save_fixture,
+            client=first_party_oauth2_client,
+            user=user,
+            scopes=["openid", "profile"],
+        )
+        params = {
+            "client_id": first_party_oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+        if prompt is not None:
+            params["prompt"] = prompt
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 302
+        location = response.headers["location"]
+        assert location.startswith(params["redirect_uri"])
+        assert "code=" in location
 
     @pytest.mark.auth
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])

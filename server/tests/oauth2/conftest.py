@@ -15,7 +15,6 @@ import pytest
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
 from polar.app import app
-from polar.auth.scope import SCOPES_SUPPORTED
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Engine, Session, create_sync_engine
@@ -89,9 +88,7 @@ def save_fixture(sync_session: Session) -> SaveFixture:
 
 @pytest.fixture(autouse=True)
 def override_get_authorization_server(sync_session: Session) -> Iterator[None]:
-    authorization_server = AuthorizationServer.build(
-        sync_session, scopes_supported=SCOPES_SUPPORTED
-    )
+    authorization_server = AuthorizationServer.build(sync_session)
     app.dependency_overrides[get_authorization_server] = lambda: authorization_server
     yield
     app.dependency_overrides.pop(get_authorization_server)

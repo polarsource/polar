@@ -5,9 +5,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo, useState } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { RefreshControl } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -35,7 +36,7 @@ export default function Index() {
           placeholderTextColor={theme.colors.subtext}
         />
       </Box>
-      <FlatList
+      <FlashList
         data={customersData}
         renderItem={({ item }: { item: schemas['Customer'] }) => {
           return <CustomerRow customer={item} />

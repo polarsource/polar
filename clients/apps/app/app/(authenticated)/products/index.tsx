@@ -5,9 +5,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { RefreshControl } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -27,17 +28,16 @@ export default function Index() {
   return (
     <>
       <Stack.Screen options={{ title: 'Products' }} />
-      <FlatList
+      <FlashList
         data={flatData}
         renderItem={({ item }: { item: schemas['Product'] }) => (
           <ProductRow product={item} />
         )}
         contentContainerStyle={{
-          padding: 16,
+          padding: theme.spacing['spacing-16'],
           backgroundColor: theme.colors.background,
-          gap: 4,
           flexGrow: 1,
-          paddingBottom: 32,
+          paddingBottom: theme.spacing['spacing-32'],
         }}
         ListEmptyComponent={
           isLoading ? null : (
@@ -46,7 +46,7 @@ export default function Index() {
             </Box>
           )
         }
-        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => <Box padding="spacing-4" />}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

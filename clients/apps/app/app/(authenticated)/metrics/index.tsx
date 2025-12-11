@@ -10,14 +10,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo, useState } from 'react'
-import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  SafeAreaView,
-} from 'react-native'
+import { ActivityIndicator, RefreshControl, SafeAreaView } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -101,13 +97,13 @@ export default function Index() {
           <ActivityIndicator />
         </Box>
       ) : (
-        <FlatList
+        <FlashList
           style={{ flex: 1 }}
           contentContainerStyle={{
             flexDirection: 'column',
             padding: theme.spacing['spacing-16'],
-            gap: theme.spacing['spacing-16'],
           }}
+          ItemSeparatorComponent={() => <Box padding="spacing-8" />}
           data={
             Object.entries(metrics.data?.metrics ?? {}).map(
               ([metric, value]) => ({

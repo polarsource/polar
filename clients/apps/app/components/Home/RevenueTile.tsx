@@ -5,7 +5,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { subMonths } from 'date-fns'
 import { useContext, useEffect, useMemo } from 'react'
-import { useSharedValue, withTiming } from 'react-native-reanimated'
+import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { CartesianChart, Line } from 'victory-native'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
@@ -53,7 +53,7 @@ export const RevenueTile = () => {
   useEffect(() => {
     if (cumulativeRevenueData.length > 0) {
       lineProgress.value = 0
-      lineProgress.value = withTiming(1, { duration: 800 })
+      lineProgress.value = withDelay(500, withTiming(1, { duration: 800 }))
     }
   }, [cumulativeRevenueData.length, lineProgress])
 

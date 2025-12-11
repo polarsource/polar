@@ -55,6 +55,7 @@ def configure_sentry() -> None:
                 event_level=None,
             ),
             FastApiIntegration(transaction_style="endpoint"),
+            DramatiqIntegration(),
         ],
     )
 

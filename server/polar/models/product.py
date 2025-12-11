@@ -2,14 +2,10 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
-    Index,
     Integer,
     String,
     Text,
@@ -18,7 +14,7 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.dialects.postgresql import CITEXT, TSVECTOR
+from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -51,15 +47,6 @@ class ProductBillingType(StrEnum):
 
 class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
-    __table_args__ = (
-        Index(
-            "ix_products_search_vector",
-            "search_vector",
-            postgresql_using="gin",
-        ),
-    )
-
-    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -221,34 +208,3 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
             (cls.is_recurring.is_(True), ProductBillingType.recurring),
             else_=ProductBillingType.one_time,
         )
-
-
-products_search_vector_update_function = PGFunction(
-    schema="public",
-    signature="products_search_vector_update()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        NEW.search_vector := to_tsvector('english', coalesce(NEW.name, '') || ' ' || coalesce(NEW.description, ''));
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-products_search_vector_trigger = PGTrigger(
-    schema="public",
-    signature="products_search_vector_trigger",
-    on_entity="products",
-    definition="""
-    BEFORE INSERT OR UPDATE ON products
-    FOR EACH ROW EXECUTE FUNCTION products_search_vector_update();
-    """,
-)
-
-register_entities(
-    (
-        products_search_vector_update_function,
-        products_search_vector_trigger,
-    )
-)

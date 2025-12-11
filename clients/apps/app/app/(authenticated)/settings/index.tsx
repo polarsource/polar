@@ -125,10 +125,8 @@ export default function Index() {
 
       {showOrganizationsSheet ? (
         <OrganizationsSheet
-          onDismiss={() => {
-            setShowOrganizationsSheet(false)
-            router.back()
-          }}
+          onDismiss={() => setShowOrganizationsSheet(false)}
+          onSelect={() => router.back()}
         />
       ) : null}
     </GestureHandlerRootView>

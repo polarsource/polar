@@ -2,25 +2,13 @@
 
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useInfiniteEvents } from '@/hooks/queries/events'
-import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { subMonths } from 'date-fns'
-import {
-  BadgeDollarSignIcon,
-  CircleUserRound,
-  MousePointerClickIcon,
-} from 'lucide-react'
-import Link from 'next/link'
-import { parseAsString, useQueryState } from 'nuqs'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import CostsEventsTable from './[spanId]/CostsEventsTable'
-import { CostsBandedSparkline } from './components/CostsBandedSparkline'
-import {
-  getCostsSearchParams,
-  getDefaultEndDate,
-  getDefaultStartDate,
-} from './utils'
+import { getDefaultEndDate, getDefaultStartDate } from './utils'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -76,6 +64,11 @@ export default function ClientPage({ organization }: ClientPageProps) {
 
   const eventTypes = eventTypesData?.items || []
 
+  const [customerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString),
+  )
+
   const {
     data: eventsData,
     isLoading: isEventsLoading,
@@ -87,6 +80,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
     sorting: ['-timestamp'],
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
+    customer_id: customerIds,
     // @ts-expect-error - event_type_id is intentionally excluded from public schema
     aggregate_fields: ['_cost.amount'],
     name: eventTypes.map((et) => et.name),
@@ -100,7 +94,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
   return (
     <div className="">
       <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
-        <h3 className="text-4xl">Events</h3>
+        <h3 className="text-2xl font-medium whitespace-nowrap dark:text-white">
+          Events
+        </h3>
       </div>
 
       <CostsEventsTable
@@ -112,92 +108,5 @@ export default function ClientPage({ organization }: ClientPageProps) {
         fetchNextPage={fetchNextPage}
       />
     </div>
-  )
-}
-
-function EventStatisticsCard({
-  periods,
-  eventStatistics,
-  organization,
-  startDate,
-  endDate,
-  interval,
-}: {
-  periods: schemas['StatisticsPeriod'][]
-  eventStatistics: schemas['EventStatistics']
-  organization: schemas['Organization']
-  startDate: string
-  endDate: string
-  interval: string
-}) {
-  const averageCostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
-  }, [periods, eventStatistics.name])
-
-  const p10CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p10')
-  }, [periods, eventStatistics.name])
-
-  const p90CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p90')
-  }, [periods, eventStatistics.name])
-
-  const p99CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
-  }, [periods, eventStatistics.name])
-
-  const searchString = getCostsSearchParams(startDate, endDate, interval)
-
-  return (
-    <Link
-      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
-      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col justify-between gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200 md:flex-row"
-    >
-      <div className="flex flex-col justify-between gap-1.5">
-        <h2 className="text-lg/5 font-medium">
-          {eventStatistics.label ?? eventStatistics.name}
-        </h2>
-        <dl className="dark:text-polar-500 flex max-w-sm items-center gap-5 font-mono text-gray-500">
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            <dt>
-              <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.occurrences}</dd>
-          </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            <dt>
-              <CircleUserRound className="size-5" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.customers}</dd>
-          </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            {eventStatistics.totals?._cost_amount !== undefined && (
-              <>
-                <dt>
-                  <BadgeDollarSignIcon className="size-5" strokeWidth={1.5} />
-                </dt>
-                <dd>
-                  {formatSubCentCurrency(
-                    Number(eventStatistics.totals?._cost_amount),
-                    'usd',
-                  )}
-                </dd>
-              </>
-            )}
-          </div>
-        </dl>
-      </div>
-      <div className="dark:bg-polar-800 -m-2 flex max-w-80 flex-1 flex-col rounded-lg bg-gray-50 p-1">
-        <CostsBandedSparkline
-          average={averageCostValues}
-          p10={p10CostValues}
-          p90={p90CostValues}
-          p99={p99CostValues}
-          trendUpIsBad={true}
-          height={60}
-          className="pointer-events-none"
-        />
-      </div>
-    </Link>
   )
 }

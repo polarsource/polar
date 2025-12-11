@@ -28,9 +28,8 @@ export default async function Layout({
           <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
             <CostsSidebarTitle organizationSlug={organizationSlug} />
           </div>
-          <div className="flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4">
-            <CostsSidebarFilters organization={organization} />
-          </div>
+          <CostsSidebarFilters organization={organization} />
+
           {/*
           <div
             className={twMerge(

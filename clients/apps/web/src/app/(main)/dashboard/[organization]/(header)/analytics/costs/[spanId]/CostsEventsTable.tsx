@@ -150,8 +150,8 @@ export default function CostsEventsTable({
                   >
                     {group.type === 'empty-range' ? (
                       <FormattedInterval
-                        startDatetime={group.startDate}
-                        endDatetime={group.endDate}
+                        startDatetime={group.endDate}
+                        endDatetime={group.startDate}
                       />
                     ) : (
                       <FormattedInterval
@@ -189,7 +189,7 @@ export default function CostsEventsTable({
           <tfoot>
             <tr>
               <td
-                colSpan={4}
+                colSpan={showEventTypes ? 5 : 4}
                 className="dark:border-polar-700 border-t border-gray-200"
               >
                 {hasNextPage ? (

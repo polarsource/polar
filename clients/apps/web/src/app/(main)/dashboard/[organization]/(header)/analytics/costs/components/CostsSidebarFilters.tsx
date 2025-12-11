@@ -3,14 +3,20 @@
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { subMonths } from 'date-fns'
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
+import { useCallback, useMemo, useState } from 'react'
 import {
   DEFAULT_INTERVAL,
   getDefaultEndDate,
   getDefaultStartDate,
 } from '../utils'
 
+import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
@@ -21,6 +27,7 @@ import {
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
+import { twMerge } from 'tailwind-merge'
 import { getCostsSearchParams } from '../utils'
 import { CostsBandedSparkline } from './CostsBandedSparkline'
 
@@ -33,6 +40,7 @@ export default function CostsSidebarFilters({
     'startDate',
     parseAsString.withDefault(getDefaultStartDate()),
   )
+
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
     parseAsString.withDefault(getDefaultEndDate()),
@@ -78,6 +86,11 @@ export default function CostsSidebarFilters({
     [setInterval],
   )
 
+  const [customerIds, setCustomerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  )
+
   const { data: costData } = useEventHierarchyStats(organization.id, {
     start_date: startDateISOString,
     end_date: endDateISOString,
@@ -86,8 +99,27 @@ export default function CostsSidebarFilters({
     sorting: ['-total'],
   })
 
+  const [hasScrolled, setHasScrolled] = useState(false)
+
+  const handleScroll = useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      if (event.currentTarget.scrollTop > 0 && !hasScrolled) {
+        setHasScrolled(true)
+      } else if (event.currentTarget.scrollTop === 0 && hasScrolled) {
+        setHasScrolled(false)
+      }
+    },
+    [hasScrolled],
+  )
+
   return (
-    <>
+    <div
+      className={twMerge(
+        'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
+        hasScrolled && 'dark:border-polar-700 border-t border-gray-200',
+      )}
+      onScroll={handleScroll}
+    >
       <div className="flex flex-col items-stretch gap-y-2">
         <h3 className="text-sm">Timeline</h3>
         <DateRangePicker
@@ -117,11 +149,19 @@ export default function CostsSidebarFilters({
               startDate={startDateISOString}
               endDate={endDateISOString}
               interval={interval}
+              customerIds={customerIds}
             />
           ))}
         </div>
       </div>
-    </>
+      <div className="flex flex-col gap-y-2">
+        <CustomerSelector
+          organizationId={organization.id}
+          selectedCustomerIds={customerIds}
+          onSelectCustomerIds={setCustomerIds}
+        />
+      </div>
+    </div>
   )
 }
 
@@ -155,6 +195,7 @@ function EventStatisticsCard({
   startDate,
   endDate,
   interval,
+  customerIds,
 }: {
   periods: schemas['StatisticsPeriod'][]
   eventStatistics: schemas['EventStatistics']
@@ -162,6 +203,7 @@ function EventStatisticsCard({
   startDate: string
   endDate: string
   interval: string
+  customerIds?: string[]
 }) {
   const averageCostValues = useMemo(() => {
     return getTimeSeriesValues(periods, eventStatistics.name, 'average')
@@ -179,7 +221,12 @@ function EventStatisticsCard({
     return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
   }, [periods, eventStatistics.name])
 
-  const searchString = getCostsSearchParams(startDate, endDate, interval)
+  const searchString = getCostsSearchParams(
+    startDate,
+    endDate,
+    interval,
+    customerIds,
+  )
 
   return (
     <Link

@@ -13,7 +13,12 @@ import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { endOfDay, format, subMonths } from 'date-fns'
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
 import { useMemo } from 'react'
 import { Chart } from '../components/Chart/Chart'
 import { CostsBandedChart } from '../components/CostsBandedChart'
@@ -67,6 +72,11 @@ export default function SpanDetailPage({
     ] as const).withDefault(DEFAULT_INTERVAL),
   )
 
+  const [customerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString),
+  )
+
   const {
     data: eventsData,
     isLoading: isEventsLoading,
@@ -78,6 +88,7 @@ export default function SpanDetailPage({
     event_type_id: spanId,
     limit: PAGE_SIZE,
     sorting: ['-timestamp'],
+    customer_id: customerIds,
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
     aggregate_fields: ['_cost.amount'],
@@ -186,8 +197,10 @@ export default function SpanDetailPage({
 
   return (
     <div>
-      <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
-        <h3 className="text-4xl">{eventType?.label ?? ''}</h3>
+      <div className="-mt-1 mb-11 flex flex-row items-center justify-between gap-y-4">
+        <h3 className="text-2xl font-medium whitespace-nowrap dark:text-white">
+          {eventType?.label ?? ''}
+        </h3>
         <Button variant="secondary" onClick={showEditEventTypeModal}>
           Edit
         </Button>

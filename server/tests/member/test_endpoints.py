@@ -253,18 +253,15 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Enable member feature flag
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        # Create a customer
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        # Create a member
         response = await client.post(
             "/v1/members/",
             json={
@@ -290,18 +287,15 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Enable member feature flag
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        # Create a customer
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        # Create a member with external_id
         response = await client.post(
             "/v1/members/",
             json={
@@ -326,18 +320,15 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Enable member feature flag
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        # Create a customer
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        # Create initial member
         member = Member(
             customer_id=customer.id,
             organization_id=organization.id,
@@ -346,7 +337,6 @@ class TestCreateMember:
         )
         await save_fixture(member)
 
-        # Try to create another member with the same email
         response = await client.post(
             "/v1/members/",
             json={
@@ -356,7 +346,6 @@ class TestCreateMember:
             },
         )
 
-        # Should return the existing member (idempotent)
         assert response.status_code == 201
         json = response.json()
         assert json["email"] == "duplicate@example.com"
@@ -370,18 +359,15 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Ensure feature flag is disabled
         organization.feature_settings = {"member_model_enabled": False}
         await save_fixture(organization)
 
-        # Create a customer
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        # Try to create a member
         response = await client.post(
             "/v1/members/",
             json={
@@ -400,11 +386,9 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Enable member feature flag
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        # Try to create a member for a non-existent customer (but valid UUID format)
         import uuid
 
         non_existent_customer_id = str(uuid.uuid4())
@@ -425,21 +409,18 @@ class TestCreateMember:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        # Create a different organization that the user doesn't have access to
         from tests.fixtures.random_objects import create_organization
 
         other_org = await create_organization(save_fixture)
         other_org.feature_settings = {"member_model_enabled": True}
         await save_fixture(other_org)
 
-        # Create a customer for the other organization
         customer = await create_customer(
             save_fixture,
             organization=other_org,
             email="customer@example.com",
         )
 
-        # Try to create a member - should fail because user doesn't have access
         response = await client.post(
             "/v1/members/",
             json={
@@ -458,18 +439,15 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        # Enable member feature flag
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        # Create a customer
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        # Create a member without specifying role
         response = await client.post(
             "/v1/members/",
             json={
@@ -480,4 +458,4 @@ class TestCreateMember:
 
         assert response.status_code == 201
         json = response.json()
-        assert json["role"] == "member"  # Should default to member role
+        assert json["role"] == "member"

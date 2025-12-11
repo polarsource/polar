@@ -5,6 +5,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
@@ -199,24 +200,20 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If feature flag disabled or no permission to add members
         """
-        repository = MemberRepository.from_session(session)
-        row = await repository.get_customer_with_organization(session, customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_readable_by_id(
+            auth_subject, customer_id, options=(joinedload(Customer.organization),)
+        )
 
-        if row is None:
+        if customer is None:
             raise ResourceNotFound("Customer not found")
 
-        customer, organization = row
-
-        if not organization.feature_settings.get("member_model_enabled", False):
+        if not customer.organization.feature_settings.get(
+            "member_model_enabled", False
+        ):
             raise NotPermitted("Member management is not enabled for this organization")
 
-        customer_repository = CustomerRepository.from_session(session)
-        readable_statement = customer_repository.get_readable_statement(auth_subject)
-        accessible_customer = await customer_repository.get_one_or_none(
-            readable_statement.where(Customer.id == customer_id)
-        )
-        if accessible_customer is None:
-            raise ResourceNotFound("Customer not found")
+        repository = MemberRepository.from_session(session)
 
         existing_member = await repository.get_by_customer_and_email(
             session, customer, email=email
@@ -232,7 +229,7 @@ class MemberService:
 
         member = Member(
             customer_id=customer_id,
-            organization_id=organization.id,
+            organization_id=customer.organization_id,
             email=email,
             name=name,
             external_id=external_id,
@@ -245,7 +242,7 @@ class MemberService:
                 "member.create.success",
                 customer_id=customer_id,
                 member_id=created_member.id,
-                organization_id=organization.id,
+                organization_id=customer.organization_id,
                 role=role,
             )
             return created_member
@@ -253,7 +250,7 @@ class MemberService:
             log.warning(
                 "member.create.constraint_violation",
                 customer_id=customer_id,
-                organization_id=organization.id,
+                organization_id=customer.organization_id,
                 error=str(e),
             )
             existing_member = await repository.get_by_customer_and_email(

@@ -4,7 +4,6 @@ from fastapi import Depends, Request
 from fastapi.security import OpenIdConnect
 from fastapi.security.utils import get_authorization_scheme_param
 
-from polar.auth.scope import SCOPES_SUPPORTED
 from polar.exceptions import Unauthorized
 from polar.kit.db.postgres import SyncSessionMaker
 from polar.models import OAuth2Token
@@ -49,9 +48,7 @@ def get_authorization_server(
 ) -> Generator[AuthorizationServer, None, None]:
     sync_sessionmaker: SyncSessionMaker = request.state.sync_sessionmaker
     with sync_sessionmaker() as session:
-        authorization_server = AuthorizationServer.build(
-            session, scopes_supported=SCOPES_SUPPORTED
-        )
+        authorization_server = AuthorizationServer.build(session)
         try:
             yield authorization_server
         except:

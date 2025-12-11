@@ -1,12 +1,15 @@
 from uuid import UUID
 
 import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import Member, Organization
 from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
+from polar.models.order import Order
+from polar.models.subscription import Subscription
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -54,7 +57,8 @@ async def resolve_scope(
     if subscription_id := scope.get("subscription_id"):
         subscription_repository = SubscriptionRepository.from_session(session)
         subscription = await subscription_repository.get_by_id(
-            subscription_id, options=subscription_repository.get_eager_options()
+            subscription_id,
+            options=(joinedload(Subscription.product),),
         )
         if subscription is None:
             raise InvalidScopeError(scope)
@@ -62,7 +66,8 @@ async def resolve_scope(
     if order_id := scope.get("order_id"):
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
-            order_id, options=order_repository.get_eager_options()
+            order_id,
+            options=(joinedload(Order.product),),
         )
         if order is None:
             raise InvalidScopeError(scope)
@@ -86,15 +91,6 @@ async def resolve_member(
     member_id: UUID | None,
     is_seat_based: bool,
 ) -> Member | None:
-    """
-    Resolve member for benefit grant. Called from benefit_grant task.
-
-    Logic:
-    1. If feature flag disabled → return None (no member tracking)
-    2. If member_id provided → load and return that member (raises if not found for B2B)
-    3. If B2C (not seat-based) → auto-resolve owner member from customer
-    4. If B2B (seat-based) but no member_id → raise MemberIdRequired
-    """
     member_model_enabled = organization.feature_settings.get(
         "member_model_enabled", False
     )

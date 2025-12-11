@@ -16,6 +16,7 @@
     "format:check": "prettier -c .",
     "lint": "pnpm format:check && expo lint",
     "typecheck": "tsc --noEmit",
+    "push:test": "node tooling/push-notifications/send-push.js",
     "postinstall": "pnpm --filter @polar-sh/client build"
   },
   "jest": {

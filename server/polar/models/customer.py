@@ -111,6 +111,11 @@ class Customer(MetadataMixin, RecordModel):
             unique=True,
             postgresql_nulls_not_distinct=True,
         ),
+        Index(
+            "ix_customers_external_id_pattern",
+            "external_id",
+            postgresql_ops={"external_id": "text_pattern_ops"},
+        ),
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
     )

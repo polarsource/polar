@@ -135,6 +135,11 @@ class Event(Model, MetadataMixin):
             "customer_id",
             literal_column("ingested_at DESC"),
         ),
+        Index(
+            "ix_events_external_customer_id_pattern",
+            "external_customer_id",
+            postgresql_ops={"external_customer_id": "text_pattern_ops"},
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

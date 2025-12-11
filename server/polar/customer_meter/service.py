@@ -396,7 +396,7 @@ class CustomerMeterService:
 
         if customer.external_id is None:
             result = await session.scalar(by_customer_id.with_only_columns(agg_column))
-            return result or 0.0
+            return float(result) if result else 0.0
 
         by_external_id = self._build_events_statement(
             event_repository,
@@ -420,7 +420,7 @@ class CustomerMeterService:
             result = await session.scalar(
                 select(func.coalesce(func.sum(union_subquery.c.value), 0))
             )
-            return result or 0.0
+            return float(result) if result else 0.0
 
         raw_value_column = self._get_raw_aggregation_column(meter)
         union_subquery = union_all(
@@ -430,7 +430,7 @@ class CustomerMeterService:
 
         outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
         result = await session.scalar(select(func.coalesce(outer_agg, 0)))
-        return result or 0.0
+        return float(result) if result else 0.0
 
     def _get_raw_aggregation_column(self, meter: Meter) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):

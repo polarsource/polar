@@ -13,14 +13,16 @@ from polar.redis import create_redis
 
 
 async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
-    auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
+    auth_subject: AuthSubject[Subject] | None = scope["state"].get("auth_subject")
 
-    if is_anonymous(auth_subject):
+    if auth_subject is None or is_anonymous(auth_subject):
         try:
             ip, _ = await client_ip(scope)
             return ip, RateLimitGroup.default
         except EmptyInformation:
-            return auth_subject.rate_limit_key
+            if auth_subject is not None:
+                return auth_subject.rate_limit_key
+            return "unknown", RateLimitGroup.default
 
     return auth_subject.rate_limit_key
 

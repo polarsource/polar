@@ -172,6 +172,7 @@ def create_app() -> FastAPI:
     if not settings.is_testing():
         app.add_middleware(rate_limit.get_middleware)
         app.add_middleware(AuthSubjectMiddleware)
+        app.add_middleware(rate_limit.get_middleware)
         app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
         app.add_middleware(AsyncSessionMiddleware)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")

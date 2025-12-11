@@ -1,9 +1,9 @@
 import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { PropsWithChildren, useMemo } from 'react'
-import { TouchableOpacity } from 'react-native'
 import { Box } from '../Shared/Box'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface SettingsItemProps extends PropsWithChildren {
   label: string
@@ -31,14 +31,13 @@ export const SettingsItem = ({
   }, [variant])
 
   return (
-    <TouchableOpacity
+    <Touchable
       onPress={onPress}
-      activeOpacity={0.6}
-      style={{
+      boxProps={{
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: theme.spacing['spacing-8'],
-        gap: theme.spacing['spacing-12'],
+        paddingVertical: 'spacing-8',
+        gap: 'spacing-12',
       }}
     >
       <Text variant="body">{label}</Text>
@@ -50,6 +49,6 @@ export const SettingsItem = ({
           color={theme.colors.subtext}
         />
       </Box>
-    </TouchableOpacity>
+    </Touchable>
   )
 }

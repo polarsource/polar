@@ -152,8 +152,34 @@ class CustomerMeterService:
 
             event_repository = EventRepository.from_session(session)
 
-            usage_units = await self._get_usage_quantity(session, customer, meter)
-            customer_meter.consumed_units = Decimal(usage_units)
+            meter_reset_event = await event_repository.get_latest_meter_reset(
+                customer, meter.id
+            )
+            reset_after_last_balanced = (
+                meter_reset_event is not None
+                and customer_meter.last_balanced_event is not None
+                and meter_reset_event.ingested_at
+                > customer_meter.last_balanced_event.ingested_at
+            )
+
+            can_increment = (
+                customer_meter.last_balanced_event is not None
+                and meter.aggregation.is_incremental()
+                and not reset_after_last_balanced
+            )
+            if can_increment:
+                delta = await self._get_usage_quantity(
+                    session,
+                    customer,
+                    meter,
+                    since_event=customer_meter.last_balanced_event,
+                )
+                customer_meter.consumed_units = self._combine_incremental(
+                    meter, float(customer_meter.consumed_units), delta
+                )
+            else:
+                usage_units = await self._get_usage_quantity(session, customer, meter)
+                customer_meter.consumed_units = Decimal(usage_units)
 
             credit_events = await self._get_credit_events(
                 customer, meter, event_repository
@@ -280,6 +306,7 @@ class CustomerMeterService:
         meter: Meter,
         meter_reset_event: Event | None,
         by_external_id: bool = False,
+        since_event: Event | None = None,
     ) -> Select[tuple[Event]]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
@@ -297,6 +324,9 @@ class CustomerMeterService:
             statement = statement.where(
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
+
+        if since_event is not None:
+            statement = statement.where(Event.ingested_at > since_event.ingested_at)
 
         if by_external_id:
             statement = statement.where(event_repository.get_meter_clause(meter))
@@ -328,7 +358,11 @@ class CustomerMeterService:
         )
 
     async def _get_usage_quantity(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        since_event: Event | None = None,
     ) -> float:
         """
         Get the aggregated usage quantity for a customer's meter.
@@ -338,6 +372,8 @@ class CustomerMeterService:
         (COUNT, SUM), we aggregate each branch and sum the results. For
         non-summable aggregations (MAX, MIN, AVG, UNIQUE), we aggregate over
         the raw values from the union.
+
+        If since_event is provided, only events after that event are aggregated.
         """
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
@@ -347,7 +383,12 @@ class CustomerMeterService:
         agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
 
         by_customer_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=False
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=False,
+            since_event=since_event,
         ).where(Event.source == EventSource.user)
 
         if customer.external_id is None:
@@ -355,7 +396,12 @@ class CustomerMeterService:
             return result or 0.0
 
         by_external_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=True
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=True,
+            since_event=since_event,
         ).where(Event.source == EventSource.user)
 
         if meter.aggregation.is_summable():
@@ -406,6 +452,17 @@ class CustomerMeterService:
         elif isinstance(meter.aggregation, UniqueAggregation):
             return func.count(func.distinct(column))
         return func.sum(column)
+
+    def _combine_incremental(
+        self, meter: Meter, current: float, delta: float
+    ) -> Decimal:
+        if isinstance(meter.aggregation, PropertyAggregation):
+            match meter.aggregation.func:
+                case AggregationFunction.max:
+                    return Decimal(max(current, delta))
+                case AggregationFunction.min:
+                    return Decimal(min(current, delta))
+        return Decimal(current + delta)
 
     async def _get_credit_events(
         self,

@@ -248,6 +248,14 @@ class ValidateSubAndPrompt:
         redirect_uri: str,
         redirect_fragment: bool = False,
     ) -> None:
+        # First party clients always skip consent
+        client = grant.client
+        assert client is not None
+        first_party: bool = client.first_party
+        if first_party and grant.sub is not None:
+            grant.prompt = "none"
+            return
+
         payload = grant.request.payload
         assert payload is not None
 

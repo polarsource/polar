@@ -24,7 +24,11 @@ export const OrganizationsSheet = ({ onDismiss }: OrganizationsSheetProps) => {
   const theme = useTheme()
 
   return (
-    <BottomSheet onDismiss={onDismiss}>
+    <BottomSheet
+      onDismiss={onDismiss}
+      snapPoints={['40%']}
+      enableDynamicSizing={false}
+    >
       <Box gap="spacing-16">
         <Box flexDirection="row" justifyContent="space-between">
           <Text variant="title">Organizations</Text>

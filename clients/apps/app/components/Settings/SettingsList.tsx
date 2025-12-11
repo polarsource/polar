@@ -31,23 +31,22 @@ export const SettingsItem = ({
   }, [variant])
 
   return (
-    <Touchable
-      onPress={onPress}
-      boxProps={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingVertical: 'spacing-8',
-        gap: 'spacing-12',
-      }}
-    >
-      <Text variant="body">{label}</Text>
-      <Box flexDirection="row" alignItems="center" gap="spacing-12">
-        {children}
-        <MaterialIcons
-          name={iconName}
-          size={variant === 'link' ? 16 : 20}
-          color={theme.colors.subtext}
-        />
+    <Touchable onPress={onPress}>
+      <Box
+        flexDirection="row"
+        gap="spacing-4"
+        justifyContent="space-between"
+        paddingVertical="spacing-8"
+      >
+        <Text variant="body">{label}</Text>
+        <Box flexDirection="row" alignItems="center" gap="spacing-12">
+          {children}
+          <MaterialIcons
+            name={iconName}
+            size={variant === 'link' ? 16 : 20}
+            color={theme.colors.subtext}
+          />
+        </Box>
       </Box>
     </Touchable>
   )

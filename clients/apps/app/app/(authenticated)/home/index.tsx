@@ -148,10 +148,11 @@ export default function Index() {
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       const pullDistance = Math.max(0, -event.contentOffset.y)
-      logoScale.value = 1 + Math.min(pullDistance / 500, 0.15)
-    },
-    onEndDrag: () => {
-      logoScale.value = withSpring(1, { damping: 15, stiffness: 300 })
+      if (pullDistance > 0) {
+        logoScale.value = 1 + pullDistance / 900
+      } else {
+        logoScale.value = withSpring(1, { damping: 15, stiffness: 300 })
+      }
     },
   })
 

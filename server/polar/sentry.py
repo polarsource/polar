@@ -30,8 +30,8 @@ class DramatiqIntegration(_DramatiqIntegration):
 def configure_sentry() -> None:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
-        traces_sample_rate=0,
-        profiles_sample_rate=0,
+        traces_sample_rate=None,  # `0` still opts in to trace continuation
+        profiles_sample_rate=None,
         release=os.environ.get("RELEASE_VERSION", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment=settings.ENV,
@@ -39,6 +39,7 @@ def configure_sentry() -> None:
             FastApiIntegration(transaction_style="endpoint"),
             # DramatiqIntegration(),
         ],
+        auto_enabling_integrations=False,
     )
 
 

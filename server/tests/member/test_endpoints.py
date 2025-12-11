@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import Member, Organization, UserOrganization
+from polar.models.member import MemberRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -54,7 +55,7 @@ class TestListMembers:
             organization_id=organization.id,
             email="member1@example.com",
             name="Member 1",
-            role="owner",
+            role=MemberRole.owner,
         )
         await save_fixture(member1)
 
@@ -64,7 +65,7 @@ class TestListMembers:
             organization_id=organization.id,
             email="member2@example.com",
             name="Member 2",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member2)
 
@@ -116,7 +117,7 @@ class TestListMembers:
             organization_id=organization.id,
             email="member1@example.com",
             name="Member 1",
-            role="owner",
+            role=MemberRole.owner,
         )
         await save_fixture(member1)
 
@@ -125,7 +126,7 @@ class TestListMembers:
             organization_id=organization.id,
             email="member2@example.com",
             name="Member 2",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member2)
 
@@ -161,7 +162,7 @@ class TestListMembers:
                 email=f"member{i}@example.com",
                 name=f"Member {i}",
                 external_id=f"ext_{i}",
-                role="member",
+                role=MemberRole.member,
             )
             await save_fixture(member)
 
@@ -204,7 +205,7 @@ class TestListMembers:
             organization_id=other_org.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 
@@ -235,7 +236,7 @@ class TestDeleteMember:
             organization_id=organization.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 
@@ -262,7 +263,7 @@ class TestDeleteMember:
             organization_id=organization.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 
@@ -304,7 +305,7 @@ class TestDeleteMember:
             organization_id=other_org.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 
@@ -332,7 +333,7 @@ class TestDeleteMember:
             organization_id=organization.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 
@@ -368,7 +369,7 @@ class TestDeleteMember:
             organization_id=organization.id,
             email="member@example.com",
             name="Member",
-            role="member",
+            role=MemberRole.member,
         )
         await save_fixture(member)
 

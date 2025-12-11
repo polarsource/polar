@@ -58,17 +58,3 @@ class AccountCredit(MetadataMixin, RecordModel):
     @property
     def remaining(self) -> int:
         return max(0, self.amount - self.used)
-
-    def is_active(self) -> bool:
-        now = datetime.utcnow()
-
-        if self.revoked_at is not None:
-            return False
-
-        if self.expires_at is not None and self.expires_at <= now:
-            return False
-
-        if self.remaining <= 0:
-            return False
-
-        return True

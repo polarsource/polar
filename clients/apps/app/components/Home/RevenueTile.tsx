@@ -86,6 +86,7 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
                 lineColor: 'transparent',
                 labelColor: 'transparent',
               }}
+              frame={{ lineColor: 'transparent' }}
             >
               {({ points }) => (
                 <Line

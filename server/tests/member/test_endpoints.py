@@ -1,10 +1,12 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
 from polar.models import Member, Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_organization
 
 
 @pytest.mark.asyncio
@@ -389,8 +391,6 @@ class TestCreateMember:
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
-        import uuid
-
         non_existent_customer_id = str(uuid.uuid4())
         response = await client.post(
             "/v1/members/",
@@ -409,8 +409,6 @@ class TestCreateMember:
         client: AsyncClient,
         organization: Organization,
     ) -> None:
-        from tests.fixtures.random_objects import create_organization
-
         other_org = await create_organization(save_fixture)
         other_org.feature_settings = {"member_model_enabled": True}
         await save_fixture(other_org)

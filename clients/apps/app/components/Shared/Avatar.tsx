@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
+import { Image } from '@/components/Shared/Image/Image'
 import { useTheme } from '@/design-system/useTheme'
-import { Image } from 'react-native'
 import { Text } from './Text'
 
 const getInitials = (fullName: string) => {
@@ -47,6 +47,8 @@ export const Avatar = ({
       }}
       alignItems="center"
       justifyContent="center"
+      position="relative"
+      overflow="hidden"
     >
       {showInitials && (
         <Box
@@ -64,19 +66,21 @@ export const Avatar = ({
         </Box>
       )}
       {image && (
-        <Image
-          height={size}
-          width={size}
-          style={{
-            borderRadius: size / 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'absolute',
-            inset: 0,
-            zIndex: 1,
-          }}
-          source={{ uri: image }}
-        />
+        <Box position="absolute" style={{ inset: 0 }}>
+          <Image
+            style={{
+              borderRadius: size / 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'absolute',
+              inset: 0,
+              zIndex: 1,
+              height: size,
+              width: size,
+            }}
+            source={{ uri: image }}
+          />
+        </Box>
       )}
     </Box>
   )

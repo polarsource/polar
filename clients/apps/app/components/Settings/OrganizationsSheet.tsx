@@ -12,9 +12,13 @@ import { Text } from '../Shared/Text'
 
 export interface OrganizationsSheetProps {
   onDismiss: () => void
+  onSelect?: () => void
 }
 
-export const OrganizationsSheet = ({ onDismiss }: OrganizationsSheetProps) => {
+export const OrganizationsSheet = ({
+  onDismiss,
+  onSelect,
+}: OrganizationsSheetProps) => {
   const {
     setOrganization,
     organization: selectedOrganization,
@@ -64,8 +68,12 @@ export const OrganizationsSheet = ({ onDismiss }: OrganizationsSheetProps) => {
                     : undefined,
               }}
               onPress={() => {
+                const didSwitch = selectedOrganization?.id !== organization?.id
                 setOrganization(organization)
                 onDismiss()
+                if (didSwitch) {
+                  onSelect?.()
+                }
               }}
               activeOpacity={0.6}
             >

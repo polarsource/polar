@@ -1,21 +1,36 @@
 import { DeleteAccountSheet } from '@/components/Accounts/DeleteAccountSheet'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
+import { SettingsItem } from '@/components/Settings/SettingsList'
 import { Box } from '@/components/Shared/Box'
-import { Button } from '@/components/Shared/Button'
-import { MiniButton } from '@/components/Shared/MiniButton'
 import { Text } from '@/components/Shared/Text'
-import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { Stack } from 'expo-router'
+import Constants from 'expo-constants'
+import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
-import { RefreshControl, ScrollView } from 'react-native'
+import {
+  Linking,
+  Platform,
+  PlatformOSType,
+  RefreshControl,
+  ScrollView,
+} from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+const PLATFORM_DISPLAY_NAME: Record<PlatformOSType, string> = {
+  ios: 'iOS',
+  android: 'Android',
+  web: 'Web',
+  macos: 'macOS',
+  windows: 'Windows',
+  native: 'Native',
+}
+
+const BUILD_VERSION = Constants.expoConfig?.version ?? 'Unknown'
 
 export default function Index() {
   const {
@@ -41,6 +56,7 @@ export default function Index() {
   const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
     useState(false)
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
+  const router = useRouter()
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -57,121 +73,47 @@ export default function Index() {
         }}
       >
         <Stack.Screen options={{ title: 'Settings' }} />
-        <Box
-          gap="spacing-12"
-          justifyContent="space-between"
-          flexDirection="row"
-        >
-          <Text variant="bodyMedium">Organization</Text>
-          <TouchableOpacity
-            onPress={() => setShowOrganizationsSheet(true)}
-            activeOpacity={0.6}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: theme.spacing['spacing-12'],
+        <Box>
+          <SettingsItem
+            label="Organization"
+            variant="select"
+            onPress={() => {
+              setShowOrganizationsSheet(true)
             }}
           >
-            <Box flexDirection="row" alignItems="center" gap="spacing-12">
-              <Text variant="bodyMedium" numberOfLines={1}>
-                {selectedOrganization?.name}
-              </Text>
-            </Box>
-            <MaterialIcons
-              name="unfold-more"
-              size={20}
-              color={theme.colors.monochromeInverted}
-            />
-          </TouchableOpacity>
-        </Box>
-        <Box gap="spacing-32">
-          <Box gap="spacing-16">
-            <Box flexDirection="row" justifyContent="space-between">
-              <Text variant="title">Organizations</Text>
-              <MiniButton
-                onPress={() => router.push('/onboarding')}
-                icon={
-                  <MaterialIcons
-                    name="add"
-                    size={16}
-                    color={theme.colors.monochrome}
-                  />
-                }
-              >
-                New
-              </MiniButton>
-            </Box>
-            <Box flexDirection="column" gap="spacing-4">
-              {organizationData?.items.map((organization) => (
-                <Touchable
-                  key={organization?.id}
-                  style={{
-                    paddingVertical: theme.spacing['spacing-16'],
-                    paddingLeft: theme.spacing['spacing-16'],
-                    paddingRight: theme.spacing['spacing-24'],
-                    borderRadius: theme.borderRadii['border-radius-12'],
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: theme.spacing['spacing-12'],
-                    justifyContent: 'space-between',
-                    backgroundColor: theme.colors.card,
-                  }}
-                  onPress={() => {
-                    setOrganization(organization)
-                    router.back()
-                  }}
-                  activeOpacity={0.6}
-                >
-                  <Box flexDirection="row" alignItems="center" gap="spacing-12">
-                    <Avatar
-                      size={32}
-                      image={organization?.avatar_url}
-                      name={organization?.name}
-                    />
-                    <Text>{organization?.name}</Text>
-                  </Box>
-                  {selectedOrganization?.id === organization?.id ? (
-                    <MaterialIcons
-                      name="check"
-                      size={20}
-                      color={theme.colors.monochromeInverted}
-                    />
-                  ) : null}
-                </Touchable>
-              ))}
-            </Box>
-          </Box>
-          <Box gap="spacing-16">
-            <Box>
-              <Text variant="title">Danger zone</Text>
-              <Text color="subtext">Irreversible actions for this account</Text>
-            </Box>
-            <Box
-              padding="spacing-16"
-              borderRadius="border-radius-24"
-              gap="spacing-12"
-              backgroundColor="card"
-            >
-              <Box gap="spacing-4">
-                <Text variant="subtitle">Account Deletion</Text>
-                <Text color="subtext">
-                  Permanently delete this account, all organizations, and all
-                  associated data. This action cannot be undone.
-                </Text>
-              </Box>
-              <MiniButton
-                variant="destructive"
-                onPress={() => setShowAccountDeletionSheet(true)}
-                style={{ alignSelf: 'flex-start' }}
-              >
-                Delete Account
-              </MiniButton>
-            </Box>
-          </Box>
-        </Box>
+            <Text variant="body" numberOfLines={1}>
+              {selectedOrganization?.name}
+            </Text>
+          </SettingsItem>
+          <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
+          <SettingsItem
+            label="Support"
+            variant="link"
+            onPress={() => Linking.openURL('https://polar.sh/docs/support')}
+          />
+          <SettingsItem
+            label="Privacy Policy"
+            variant="link"
+            onPress={() => Linking.openURL('https://polar.sh/legal/privacy')}
+          />
 
-        <Box gap="spacing-12">
-          <Button onPress={logout}>Logout</Button>
+          <SettingsItem
+            label="Terms of Service"
+            variant="link"
+            onPress={() => Linking.openURL('https://polar.sh/legal/terms')}
+          />
+          <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
+          <SettingsItem
+            label="Delete Account"
+            variant="navigate"
+            onPress={() => setShowAccountDeletionSheet(true)}
+          />
+          <SettingsItem label="Logout" variant="navigate" onPress={logout} />
+        </Box>
+        <Box justifyContent="center" flexDirection="row">
+          <Text variant="body" color="subtext" textAlign="center">
+            {`Polar for ${PLATFORM_DISPLAY_NAME[Platform.OS as keyof typeof PLATFORM_DISPLAY_NAME]} ${BUILD_VERSION}`}
+          </Text>
         </Box>
       </ScrollView>
 
@@ -183,7 +125,10 @@ export default function Index() {
 
       {showOrganizationsSheet ? (
         <OrganizationsSheet
-          onDismiss={() => setShowOrganizationsSheet(false)}
+          onDismiss={() => {
+            setShowOrganizationsSheet(false)
+            router.back()
+          }}
         />
       ) : null}
     </GestureHandlerRootView>

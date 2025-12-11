@@ -3,24 +3,46 @@ import { Href, Link } from 'expo-router'
 import { PropsWithChildren } from 'react'
 import { TouchableOpacity } from 'react-native'
 
-export interface TileProps extends PropsWithChildren {
+export type TileWithLinkProps = PropsWithChildren & {
   href: Href
 }
 
-export const Tile = ({ href, children }: TileProps) => {
+export type TileWithOnPressProps = PropsWithChildren & {
+  onPress: () => void
+}
+
+export type TileProps = TileWithLinkProps | TileWithOnPressProps
+
+export const Tile = ({ children, ...props }: TileProps) => {
+  if ('href' in props) {
+    return (
+      <Link href={props.href} asChild>
+        <TouchableOpacity activeOpacity={0.6}>
+          <Box
+            backgroundColor="card"
+            padding="spacing-20"
+            borderRadius="border-radius-24"
+            flex={1}
+            style={{ aspectRatio: 1 }}
+          >
+            {children}
+          </Box>
+        </TouchableOpacity>
+      </Link>
+    )
+  }
+
   return (
-    <Link href={href} asChild>
-      <TouchableOpacity activeOpacity={0.6}>
-        <Box
-          backgroundColor="card"
-          padding="spacing-20"
-          borderRadius="border-radius-24"
-          flex={1}
-          style={{ aspectRatio: 1 }}
-        >
-          {children}
-        </Box>
-      </TouchableOpacity>
-    </Link>
+    <TouchableOpacity activeOpacity={0.6} onPress={props.onPress}>
+      <Box
+        backgroundColor="card"
+        padding="spacing-20"
+        borderRadius="border-radius-24"
+        flex={1}
+        style={{ aspectRatio: 1 }}
+      >
+        {children}
+      </Box>
+    </TouchableOpacity>
   )
 }

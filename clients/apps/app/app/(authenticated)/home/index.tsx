@@ -5,6 +5,7 @@ import { OrganizationTile } from '@/components/Home/OrganizationTile'
 import { RevenueTile } from '@/components/Home/RevenueTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
 import { OrderRow } from '@/components/Orders/OrderRow'
+import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { EmptyState } from '@/components/Shared/EmptyState'
@@ -31,6 +32,9 @@ import {
 } from 'expo-updates'
 import React, { useCallback, useContext, useEffect, useMemo } from 'react'
 import { Platform, RefreshControl, ScrollView } from 'react-native'
+import { useState } from 'react'
+import { TouchableOpacity } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
@@ -127,33 +131,98 @@ export default function Index() {
 
   const safeAreaInsets = useSafeAreaInsets()
 
+  const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
+
   return (
-    <ScrollView
-      contentContainerStyle={{
-        paddingBottom: theme.spacing['spacing-48'],
-        backgroundColor: theme.colors['background-regular'],
-        gap: theme.spacing['spacing-32'],
-      }}
-      refreshControl={
-        <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
-      }
-    >
-      <Stack.Screen
-        options={{
-          header: () => (
+    <GestureHandlerRootView>
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: theme.spacing['spacing-48'],
+          backgroundColor: theme.colors['background-regular'],
+          gap: theme.spacing['spacing-32'],
+        }}
+        refreshControl={
+          <RefreshControl onRefresh={refresh} refreshing={isRefetching} />
+        }
+      >
+        <Stack.Screen
+          options={{
+            header: () => (
+              <Box
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="space-between"
+                backgroundColor="background-regular"
+                paddingBottom="spacing-12"
+                paddingHorizontal="spacing-32"
+                style={{
+                  paddingTop: Platform.select({
+                    ios: safeAreaInsets.top,
+                    android: safeAreaInsets.top + theme.spacing['spacing-12'],
+                  }),
+                }}
+              >
+                <PolarLogo size={36} />
+                <Box flexDirection="row" gap="spacing-20">
+                  <NotificationBadge />
+                  <Link href="/settings" asChild>
+                    <TouchableOpacity activeOpacity={0.6}>
+                      <MaterialIcons
+                        name="tune"
+                        size={24}
+                        color={theme.colors['foreground-regular']}
+                      />
+                    </TouchableOpacity>
+                  </Link>
+                </Box>
+              </Box>
+            ),
+            headerTitle: 'Home',
+          }}
+        />
+        <Box
+          padding="spacing-16"
+          gap="spacing-32"
+          flex={1}
+          flexDirection="column"
+        >
+          {isUpdateAvailable && (
+            <Banner
+              title="New Update Available"
+              description="Update to the latest version to get the latest features and bug fixes"
+              button={{
+                onPress: onFetchUpdateAsync,
+                children: 'Update',
+                loading: isDownloading || isRestarting,
+              }}
+            />
+          )}
+          <Box gap="spacing-16">
+            <Box flexDirection="row" gap="spacing-16">
+              <Box flex={1}>
+                <OrganizationTile
+                  onPress={() => setShowOrganizationsSheet(true)}
+                />
+              </Box>
+              <Box flex={1}>
+                <RevenueTile />
+              </Box>
+            </Box>
+            <Box flexDirection="row" gap="spacing-16">
+              <Box flex={1}>
+                <CatalogueTile />
+              </Box>
+              <Box flex={1}>
+                <FinanceTile />
+              </Box>
+            </Box>
+          </Box>
+
+          <Box gap="spacing-24" flexDirection="column" flex={1}>
             <Box
               flexDirection="row"
               alignItems="center"
               justifyContent="space-between"
-              backgroundColor="background-regular"
-              paddingBottom="spacing-12"
-              paddingHorizontal="spacing-32"
-              style={{
-                paddingTop: Platform.select({
-                  ios: safeAreaInsets.top,
-                  android: safeAreaInsets.top + theme.spacing['spacing-12'],
-                }),
-              }}
             >
               <PolarLogo size={36} />
               <Box flexDirection="row" gap="spacing-20">
@@ -168,44 +237,37 @@ export default function Index() {
                   </Touchable>
                 </Link>
               </Box>
-            </Box>
-          ),
-          headerTitle: 'Home',
-        }}
-      />
-      <Box
-        padding="spacing-16"
-        gap="spacing-32"
-        flex={1}
-        flexDirection="column"
-      >
-        {isUpdateAvailable && (
-          <Banner
-            title="New Update Available"
-            description="Update to the latest version to get the latest features and bug fixes"
-            button={{
-              onPress: onFetchUpdateAsync,
-              children: 'Update',
-              loading: isDownloading || isRestarting,
-            }}
-          />
-        )}
-        <Box gap="spacing-16">
-          <Box flexDirection="row" gap="spacing-16">
-            <Box flex={1}>
-              <OrganizationTile />
-            </Box>
-            <Box flex={1}>
-              <RevenueTile />
-            </Box>
+            ) : (
+              <EmptyState
+                title="No Subscriptions"
+                description="No active subscriptions found for this organization"
+              />
+            )}
           </Box>
-          <Box flexDirection="row" gap="spacing-16">
-            <Box flex={1}>
-              <CatalogueTile />
+
+          <Box gap="spacing-24" flexDirection="column" flex={1}>
+            <Box
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Text variant="title">Recent Orders</Text>
+              <Link href="/orders" asChild>
+                <MiniButton variant="secondary">View All</MiniButton>
+              </Link>
             </Box>
-            <Box flex={1}>
-              <FinanceTile />
-            </Box>
+            {flatOrders.length > 0 ? (
+              <Box gap="spacing-8">
+                {flatOrders.map((order) => (
+                  <OrderRow key={order.id} order={order} showTimestamp />
+                ))}
+              </Box>
+            ) : (
+              <EmptyState
+                title="No Orders"
+                description="No orders found for this organization"
+              />
+            )}
           </Box>
         </Box>
 
@@ -214,93 +276,45 @@ export default function Index() {
             flexDirection="row"
             alignItems="center"
             justifyContent="space-between"
+            paddingHorizontal="spacing-16"
           >
-            <Text variant="title">Recent Subscriptions</Text>
-            <Link href="/subscriptions" asChild>
+            <Text variant="title">Recent Customers</Text>
+            <Link href="/customers" asChild>
               <MiniButton variant="secondary">View All</MiniButton>
             </Link>
           </Box>
-          {flatSubscriptions.length > 0 ? (
-            <Box gap="spacing-8">
-              {flatSubscriptions.map((subscription) => (
-                <SubscriptionRow
-                  key={subscription.id}
-                  subscription={subscription}
-                  showCustomer
-                />
+
+          {flatCustomers && flatCustomers.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                flexDirection: 'row',
+                gap: theme.spacing['spacing-16'],
+                paddingHorizontal: theme.spacing['spacing-16'],
+              }}
+              contentOffset={{ x: -theme.spacing['spacing-16'], y: 0 }}
+            >
+              {flatCustomers.map((customer) => (
+                <CustomerCard key={customer.id} customer={customer} />
               ))}
-            </Box>
+            </ScrollView>
           ) : (
-            <EmptyState
-              title="No Subscriptions"
-              description="No active subscriptions found for this organization"
-            />
+            <Box flex={1} paddingHorizontal="spacing-16">
+              <EmptyState
+                title="No Customers"
+                description="No customers found for this organization"
+              />
+            </Box>
           )}
         </Box>
+      </ScrollView>
 
-        <Box gap="spacing-24" flexDirection="column" flex={1}>
-          <Box
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Text variant="title">Recent Orders</Text>
-            <Link href="/orders" asChild>
-              <MiniButton variant="secondary">View All</MiniButton>
-            </Link>
-          </Box>
-          {flatOrders.length > 0 ? (
-            <Box gap="spacing-8">
-              {flatOrders.map((order) => (
-                <OrderRow key={order.id} order={order} showTimestamp />
-              ))}
-            </Box>
-          ) : (
-            <EmptyState
-              title="No Orders"
-              description="No orders found for this organization"
-            />
-          )}
-        </Box>
-      </Box>
-
-      <Box gap="spacing-24" flexDirection="column" flex={1}>
-        <Box
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="space-between"
-          paddingHorizontal="spacing-16"
-        >
-          <Text variant="title">Recent Customers</Text>
-          <Link href="/customers" asChild>
-            <MiniButton variant="secondary">View All</MiniButton>
-          </Link>
-        </Box>
-
-        {flatCustomers && flatCustomers.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              flexDirection: 'row',
-              gap: theme.spacing['spacing-16'],
-              paddingHorizontal: theme.spacing['spacing-16'],
-            }}
-            contentOffset={{ x: -theme.spacing['spacing-16'], y: 0 }}
-          >
-            {flatCustomers.map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} />
-            ))}
-          </ScrollView>
-        ) : (
-          <Box flex={1} paddingHorizontal="spacing-16">
-            <EmptyState
-              title="No Customers"
-              description="No customers found for this organization"
-            />
-          </Box>
-        )}
-      </Box>
-    </ScrollView>
+      {showOrganizationsSheet ? (
+        <OrganizationsSheet
+          onDismiss={() => setShowOrganizationsSheet(false)}
+        />
+      ) : null}
+    </GestureHandlerRootView>
   )
 }

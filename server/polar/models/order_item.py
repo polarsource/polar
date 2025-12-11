@@ -31,7 +31,7 @@ class OrderItem(RecordModel):
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     proration: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     order_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("orders.id", ondelete="cascade")
+        Uuid, ForeignKey("orders.id", ondelete="cascade"), index=True
     )
     product_price_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="restrict"), nullable=True

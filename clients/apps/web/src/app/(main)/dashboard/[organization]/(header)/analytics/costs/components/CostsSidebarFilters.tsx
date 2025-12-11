@@ -27,6 +27,7 @@ import {
   MousePointerClickIcon,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 import { getCostsSearchParams } from '../utils'
 import { CostsBandedSparkline } from './CostsBandedSparkline'
@@ -36,6 +37,8 @@ export default function CostsSidebarFilters({
 }: {
   organization: schemas['Organization']
 }) {
+  const params = useParams()
+
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(getDefaultStartDate()),
@@ -150,6 +153,7 @@ export default function CostsSidebarFilters({
               endDate={endDateISOString}
               interval={interval}
               customerIds={customerIds}
+              isSelected={totals.event_type_id === params.spanId}
             />
           ))}
         </div>
@@ -196,6 +200,7 @@ function EventStatisticsCard({
   endDate,
   interval,
   customerIds,
+  isSelected = false,
 }: {
   periods: schemas['StatisticsPeriod'][]
   eventStatistics: schemas['EventStatistics']
@@ -204,6 +209,7 @@ function EventStatisticsCard({
   endDate: string
   interval: string
   customerIds?: string[]
+  isSelected?: boolean
 }) {
   const averageCostValues = useMemo(() => {
     return getTimeSeriesValues(periods, eventStatistics.name, 'average')
@@ -230,8 +236,17 @@ function EventStatisticsCard({
 
   return (
     <Link
-      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
-      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 flex cursor-pointer flex-col justify-between gap-5 rounded-2xl border border-gray-100 px-3 pt-2 pb-3 transition-colors hover:border-gray-200"
+      href={
+        isSelected
+          ? `/dashboard/${organization.slug}/analytics/costs${searchString ? `?${searchString}` : ''}`
+          : `/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`
+      }
+      className={twMerge(
+        'dark:bg-polar-700 flex cursor-pointer flex-col justify-between gap-5 rounded-2xl border px-3 pt-2 pb-3 transition-colors',
+        isSelected
+          ? 'border-gray-300 bg-gray-50'
+          : 'dark:border-polar-700 dark:hover:border-polar-600 border-gray-200 hover:border-gray-300',
+      )}
     >
       <div className="flex flex-col justify-between gap-1.5">
         <h2 className="text-sm font-medium">

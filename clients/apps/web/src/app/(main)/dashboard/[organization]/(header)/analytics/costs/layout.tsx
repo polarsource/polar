@@ -11,7 +11,8 @@ export default async function Layout({
   children: React.ReactNode
   params: { organization: string }
 }) {
-  const organizationSlug = (await params).organization
+  const resolvedParams = await params
+  const organizationSlug = resolvedParams.organization
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,

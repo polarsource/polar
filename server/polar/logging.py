@@ -10,6 +10,18 @@ from polar.config import settings
 Logger = structlog.stdlib.BoundLogger
 
 
+def _map_critical_to_fatal(
+    logger: logging.Logger, method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    """Map 'critical' log level to 'fatal' for logfire compatibility.
+
+    Logfire expects 'fatal' instead of Python's standard 'critical' level.
+    """
+    if event_dict.get("level") == "critical":
+        event_dict["level"] = "fatal"
+    return event_dict
+
+
 class Logging[RendererType]:
     """Hubben logging configurator of `structlog` and `logging`.
 
@@ -34,7 +46,7 @@ class Logging[RendererType]:
             cls.timestamper,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.StackInfoRenderer(),
-            *([LogfireProcessor()] if logfire else []),
+            *([_map_critical_to_fatal, LogfireProcessor()] if logfire else []),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ]
 
@@ -65,7 +77,11 @@ class Logging[RendererType]:
                             cls.timestamper,
                             structlog.processors.UnicodeDecoder(),
                             structlog.processors.StackInfoRenderer(),
-                            *([LogfireProcessor()] if logfire else []),
+                            *(
+                                [_map_critical_to_fatal, LogfireProcessor()]
+                                if logfire
+                                else []
+                            ),
                         ],
                     },
                 },

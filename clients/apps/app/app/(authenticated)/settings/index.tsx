@@ -90,6 +90,11 @@ export default function Index() {
             variant="navigate"
             onPress={() => router.push('/settings/notifications')}
           />
+          <SettingsItem
+            title="Subscriptions"
+            variant="navigate"
+            onPress={() => router.push('/settings/subscriptions')}
+          />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem
             title="Support"

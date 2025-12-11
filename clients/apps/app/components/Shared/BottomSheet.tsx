@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export interface BottomSheetProps
   extends React.PropsWithChildren, Omit<GorhomBottomSheetProps, 'children'> {
-  onDismiss: () => void
+  onDismiss?: () => void
 }
 
 export const BottomSheet = ({

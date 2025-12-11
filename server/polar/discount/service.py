@@ -196,6 +196,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
+        if discount_update.code is not None:
+            existing_discount = await self.get_by_code_and_organization(
+                session, discount_update.code, discount.organization, redeemable=False
+            )
+            if existing_discount is not None and existing_discount.id != discount.id:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "code"),
+                            "msg": "Discount with this code already exists.",
+                            "input": discount_update.code,
+                        }
+                    ]
+                )
+
         if discount.redemptions_count > 0:
             forbidden_fields = (
                 {"amount", "currency"}

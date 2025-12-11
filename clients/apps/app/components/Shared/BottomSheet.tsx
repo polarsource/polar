@@ -23,8 +23,11 @@ export const BottomSheet = ({ children, onDismiss }: BottomSheetProps) => {
       onClose={onDismiss}
       enablePanDownToClose
       backgroundStyle={{
-        backgroundColor: theme.colors.card,
+        backgroundColor: theme.colors.background,
         borderRadius: theme.borderRadii['border-radius-32'],
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: theme.colors.card,
       }}
       backdropComponent={(props) => (
         <GorhomBottomSheetBackdrop

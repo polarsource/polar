@@ -1,5 +1,5 @@
 import { DeleteAccountSheet } from '@/components/Accounts/DeleteAccountSheet'
-import { Avatar } from '@/components/Shared/Avatar'
+import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { MiniButton } from '@/components/Shared/MiniButton'
@@ -11,7 +11,7 @@ import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { Stack, useRouter } from 'expo-router'
+import { Stack } from 'expo-router'
 import React, { useContext, useState } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -23,10 +23,9 @@ export default function Index() {
     organization: selectedOrganization,
     organizations,
   } = useContext(OrganizationContext)
-  const router = useRouter()
 
   const theme = useTheme()
-  const { data: organizationData, refetch, isRefetching } = useOrganizations()
+  const { refetch, isRefetching } = useOrganizations()
   const { user } = useUser()
 
   const { logout } = useSettingsActions({
@@ -41,6 +40,7 @@ export default function Index() {
 
   const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
     useState(false)
+  const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -57,6 +57,33 @@ export default function Index() {
         }}
       >
         <Stack.Screen options={{ title: 'Settings' }} />
+        <Box
+          gap="spacing-12"
+          justifyContent="space-between"
+          flexDirection="row"
+        >
+          <Text variant="bodyMedium">Organization</Text>
+          <TouchableOpacity
+            onPress={() => setShowOrganizationsSheet(true)}
+            activeOpacity={0.6}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing['spacing-12'],
+            }}
+          >
+            <Box flexDirection="row" alignItems="center" gap="spacing-12">
+              <Text variant="bodyMedium" numberOfLines={1}>
+                {selectedOrganization?.name}
+              </Text>
+            </Box>
+            <MaterialIcons
+              name="unfold-more"
+              size={20}
+              color={theme.colors.monochromeInverted}
+            />
+          </TouchableOpacity>
+        </Box>
         <Box gap="spacing-32">
           <Box gap="spacing-16">
             <Box flexDirection="row" justifyContent="space-between">
@@ -151,6 +178,12 @@ export default function Index() {
       {showAccountDeletionSheet ? (
         <DeleteAccountSheet
           onDismiss={() => setShowAccountDeletionSheet(false)}
+        />
+      ) : null}
+
+      {showOrganizationsSheet ? (
+        <OrganizationsSheet
+          onDismiss={() => setShowOrganizationsSheet(false)}
         />
       ) : null}
     </GestureHandlerRootView>

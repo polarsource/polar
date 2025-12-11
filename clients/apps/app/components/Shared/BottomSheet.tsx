@@ -27,7 +27,7 @@ export const BottomSheet = ({ children, onDismiss }: BottomSheetProps) => {
         borderRadius: theme.borderRadii['border-radius-32'],
       }}
       handleIndicatorStyle={{
-        backgroundColor: theme.colors.card,
+        backgroundColor: theme.colors.subtext,
       }}
       backdropComponent={(props) => (
         <GorhomBottomSheetBackdrop

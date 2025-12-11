@@ -61,7 +61,7 @@ export const OrganizationsSheet = ({ onDismiss }: OrganizationsSheetProps) => {
               }}
               onPress={() => {
                 setOrganization(organization)
-                router.back()
+                onDismiss()
               }}
               activeOpacity={0.6}
             >

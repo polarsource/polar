@@ -6,7 +6,11 @@ import { Avatar } from '../Shared/Avatar'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
-export const OrganizationTile = () => {
+export interface OrganizationTileProps {
+  onPress: () => void
+}
+
+export const OrganizationTile = ({ onPress }: OrganizationTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
 
@@ -15,7 +19,7 @@ export const OrganizationTile = () => {
   }
 
   return (
-    <Tile href="/settings">
+    <Tile onPress={onPress}>
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Avatar
           name={organization.name}

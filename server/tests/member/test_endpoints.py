@@ -1,10 +1,12 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
 from polar.models import Member, Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_organization
 
 
 @pytest.mark.asyncio
@@ -214,3 +216,244 @@ class TestListMembers:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
+
+
+@pytest.mark.asyncio
+class TestCreateMember:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": "00000000-0000-0000-0000-000000000000",
+                "email": "test@example.com",
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": "00000000-0000-0000-0000-000000000000",
+                "email": "test@example.com",
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_create_member_success(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "newmember@example.com",
+                "name": "New Member",
+                "role": "member",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["email"] == "newmember@example.com"
+        assert json["name"] == "New Member"
+        assert json["customer_id"] == str(customer.id)
+        assert json["role"] == "member"
+
+    @pytest.mark.auth
+    async def test_create_member_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "member@example.com",
+                "external_id": "ext_123",
+                "role": "billing_manager",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["email"] == "member@example.com"
+        assert json["external_id"] == "ext_123"
+        assert json["role"] == "billing_manager"
+
+    @pytest.mark.auth
+    async def test_create_member_duplicate_email(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="duplicate@example.com",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "duplicate@example.com",
+                "role": "member",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["email"] == "duplicate@example.com"
+        assert json["id"] == str(member.id)
+
+    @pytest.mark.auth
+    async def test_create_member_feature_flag_disabled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": False}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "member@example.com",
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_create_member_customer_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        non_existent_customer_id = str(uuid.uuid4())
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": non_existent_customer_id,
+                "email": "member@example.com",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_create_member_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        other_org.feature_settings = {"member_model_enabled": True}
+        await save_fixture(other_org)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "member@example.com",
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_create_member_default_role(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        response = await client.post(
+            "/v1/members/",
+            json={
+                "customer_id": str(customer.id),
+                "email": "member@example.com",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["role"] == "member"

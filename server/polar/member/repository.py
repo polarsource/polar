@@ -11,6 +11,7 @@ from polar.kit.repository import (
 )
 from polar.models.customer import Customer
 from polar.models.member import Member
+from polar.models.organization import Organization as OrgModel
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -95,3 +96,18 @@ class MemberRepository(
             )
 
         return statement
+
+    async def get_customer_with_organization(
+        self, session: AsyncSession, customer_id: UUID
+    ) -> tuple[Customer, OrgModel] | None:
+        """Get a customer with its organization."""
+        statement = (
+            select(Customer, OrgModel)
+            .join(OrgModel, Customer.organization_id == OrgModel.id)
+            .where(Customer.id == customer_id, Customer.deleted_at.is_(None))
+        )
+        result = await session.execute(statement)
+        row = result.one_or_none()
+        if row is None:
+            return None
+        return (row[0], row[1])

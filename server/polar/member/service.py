@@ -3,10 +3,11 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -198,26 +199,16 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If feature flag disabled or no permission to add members
         """
-        # Get customer with organization
-        statement = (
-            select(Customer, OrgModel)
-            .join(OrgModel, Customer.organization_id == OrgModel.id)
-            .where(Customer.id == customer_id, Customer.deleted_at.is_(None))
-        )
-        result = await session.execute(statement)
-        row = result.one_or_none()
+        repository = MemberRepository.from_session(session)
+        row = await repository.get_customer_with_organization(session, customer_id)
 
         if row is None:
             raise ResourceNotFound("Customer not found")
 
         customer, organization = row
 
-        # Check if feature flag is enabled
         if not organization.feature_settings.get("member_model_enabled", False):
             raise NotPermitted("Member management is not enabled for this organization")
-
-        # Check if auth subject has access to the organization
-        from polar.customer.repository import CustomerRepository
 
         customer_repository = CustomerRepository.from_session(session)
         readable_statement = customer_repository.get_readable_statement(auth_subject)
@@ -227,9 +218,6 @@ class MemberService:
         if accessible_customer is None:
             raise ResourceNotFound("Customer not found")
 
-        repository = MemberRepository.from_session(session)
-
-        # Check if member with this email already exists
         existing_member = await repository.get_by_customer_and_email(
             session, customer, email=email
         )
@@ -240,7 +228,6 @@ class MemberService:
                 email=email,
                 existing_member_id=existing_member.id,
             )
-            # Return existing member to maintain idempotency
             return existing_member
 
         member = Member(
@@ -269,7 +256,6 @@ class MemberService:
                 organization_id=organization.id,
                 error=str(e),
             )
-            # Check if member was created by another concurrent request
             existing_member = await repository.get_by_customer_and_email(
                 session, customer, email=email
             )

@@ -1,7 +1,7 @@
 """Remove unique constraint on customer,subscription, and benefit
 
 Revision ID: 412c2088be03
-Revises: 827dddaa615a
+Revises: 26cae817076b
 Create Date: 2025-12-11 14:57:25.499264
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "412c2088be03"
-down_revision = "827dddaa615a"
+down_revision = "26cae817076b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

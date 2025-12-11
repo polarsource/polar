@@ -12,7 +12,14 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Benefit, BenefitGrant, Customer, Product, ProductBenefit
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    Member,
+    Product,
+    ProductBenefit,
+)
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 
@@ -28,11 +35,16 @@ class BenefitGrantRepository(
     model = BenefitGrant
 
     async def get_by_benefit_and_scope(
-        self, customer: Customer, benefit: Benefit, **scope: Unpack[BenefitGrantScope]
+        self,
+        customer: Customer,
+        benefit: Benefit,
+        member: Member | None = None,
+        **scope: Unpack[BenefitGrantScope],
     ) -> BenefitGrant | None:
         statement = self.get_base_statement().where(
             BenefitGrant.customer_id == customer.id,
             BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.member_id == (member.id if member else None),
             BenefitGrant.deleted_at.is_(None),
             BenefitGrant.scope == scope,
         )

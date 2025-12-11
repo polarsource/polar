@@ -10,7 +10,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models.customer import Customer
-from polar.models.member import Member
+from polar.models.member import Member, MemberRole
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -54,6 +54,20 @@ class MemberRepository(
         )
         result = await session.execute(statement)
         return result.scalars().all()
+
+    async def get_owner_by_customer_id(
+        self,
+        session: AsyncReadSession,
+        customer_id: UUID,
+    ) -> Member | None:
+        """Get the owner member for a customer."""
+        statement = select(Member).where(
+            Member.customer_id == customer_id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
     async def list_by_customers(
         self,

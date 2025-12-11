@@ -118,6 +118,7 @@ class SeatService:
                 task="grant",
                 customer_id=seat.customer_id,
                 product_id=product_id,
+                member_id=seat.member_id,
                 subscription_id=seat.subscription_id,
             )
         else:
@@ -126,6 +127,7 @@ class SeatService:
                 task="grant",
                 customer_id=seat.customer_id,
                 product_id=product_id,
+                member_id=seat.member_id,
                 order_id=seat.order_id,
             )
 
@@ -452,8 +454,9 @@ class SeatService:
 
         await self.check_seat_feature_enabled(session, organization_id)
 
-        # Capture customer_id before clearing to avoid race condition
+        # Capture customer_id and member_id before clearing to avoid race condition
         original_customer_id = seat.customer_id
+        original_member_id = seat.member_id
 
         # Revoke benefits from the customer before clearing the customer_id
         if original_customer_id:
@@ -463,6 +466,7 @@ class SeatService:
                     task="revoke",
                     customer_id=original_customer_id,
                     product_id=product_id,
+                    member_id=original_member_id,
                     subscription_id=seat.subscription_id,
                 )
             else:
@@ -471,6 +475,7 @@ class SeatService:
                     task="revoke",
                     customer_id=original_customer_id,
                     product_id=product_id,
+                    member_id=original_member_id,
                     order_id=seat.order_id,
                 )
 

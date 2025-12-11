@@ -90,12 +90,6 @@ class BenefitGrant(RecordModel):
     __table_args__ = (
         UniqueConstraint(
             "subscription_id",
-            "customer_id",
-            "benefit_id",
-            name="benefit_grants_sbc_key",
-        ),
-        UniqueConstraint(
-            "subscription_id",
             "member_id",
             "benefit_id",
             name="benefit_grants_smb_key",

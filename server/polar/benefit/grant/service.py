@@ -16,7 +16,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
-from polar.models import Benefit, BenefitGrant, Customer, Product
+from polar.models import Benefit, BenefitGrant, Customer, Member, Product
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -177,19 +177,29 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         customer: Customer,
         benefit: Benefit,
         *,
+        member: Member | None = None,
         attempt: int = 1,
         **scope: Unpack[BenefitGrantScope],
     ) -> BenefitGrant:
         log.info(
-            "Granting benefit", benefit_id=str(benefit.id), customer_id=str(customer.id)
+            "Granting benefit",
+            benefit_id=str(benefit.id),
+            customer_id=str(customer.id),
+            member_id=str(member.id) if member else None,
         )
 
         repository = BenefitGrantRepository.from_session(session)
-        grant = await repository.get_by_benefit_and_scope(customer, benefit, **scope)
+        grant = await repository.get_by_benefit_and_scope(
+            customer, benefit, member=member, **scope
+        )
 
         if grant is None:
             grant = BenefitGrant(
-                customer=customer, benefit=benefit, properties={}, **scope
+                customer=customer,
+                benefit=benefit,
+                member=member,
+                properties={},
+                **scope,
             )
             session.add(grant)
         elif grant.is_granted:
@@ -256,19 +266,29 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         customer: Customer,
         benefit: Benefit,
         *,
+        member: Member | None = None,
         attempt: int = 1,
         **scope: Unpack[BenefitGrantScope],
     ) -> BenefitGrant:
         log.info(
-            "Revoking benefit", benefit_id=str(benefit.id), customer_id=str(customer.id)
+            "Revoking benefit",
+            benefit_id=str(benefit.id),
+            customer_id=str(customer.id),
+            member_id=str(member.id) if member else None,
         )
 
         repository = BenefitGrantRepository.from_session(session)
-        grant = await repository.get_by_benefit_and_scope(customer, benefit, **scope)
+        grant = await repository.get_by_benefit_and_scope(
+            customer, benefit, member=member, **scope
+        )
 
         if grant is None:
             grant = BenefitGrant(
-                customer=customer, benefit=benefit, properties={}, **scope
+                customer=customer,
+                benefit=benefit,
+                member=member,
+                properties={},
+                **scope,
             )
             session.add(grant)
         elif grant.is_revoked:
@@ -343,6 +363,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         task: Literal["grant", "revoke"],
         customer: Customer,
         product: Product,
+        member_id: UUID | None = None,
         **scope: Unpack[BenefitGrantScope],
     ) -> None:
         # Get granted benefits that are not part of this product.
@@ -355,6 +376,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 f"benefit.{task}",
                 customer_id=customer.id,
                 benefit_id=benefit.id,
+                member_id=member_id,
                 **scope_to_args(scope),
             )
 
@@ -363,6 +385,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 "benefit.revoke",
                 customer_id=customer.id,
                 benefit_id=outdated_grant.benefit_id,
+                member_id=member_id,
                 **scope_to_args(scope),
             )
 

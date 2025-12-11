@@ -7,12 +7,22 @@ from pytest_mock import MockerFixture
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
-from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    Member,
+    Organization,
+    Product,
+    Subscription,
+)
+from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit_grant,
+    create_customer,
     create_order,
     create_subscription,
     set_product_benefits,
@@ -394,6 +404,7 @@ class TestEnqueueBenefitsGrants:
                     f"benefit.{task}",
                     customer_id=customer.id,
                     benefit_id=benefit.id,
+                    member_id=None,
                     subscription_id=subscription.id,
                 )
                 for benefit in benefits
@@ -430,6 +441,7 @@ class TestEnqueueBenefitsGrants:
             "benefit.revoke",
             customer_id=customer.id,
             benefit_id=benefits[0].id,
+            member_id=None,
             subscription_id=subscription.id,
         )
 
@@ -929,3 +941,442 @@ class TestGetByBenefitAndScope:
         )
         assert retrieved_grant is not None
         assert retrieved_grant.id == grant.id
+
+    async def test_grant_with_member_found(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+    ) -> None:
+        """Test that grant with member is found when querying with same member."""
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+        )
+        await save_fixture(grant)
+
+        repository = BenefitGrantRepository.from_session(session)
+        retrieved_grant = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, member=member, subscription=subscription
+        )
+        assert retrieved_grant is not None
+        assert retrieved_grant.id == grant.id
+        assert retrieved_grant.member_id == member.id
+
+    async def test_grant_with_member_not_found_when_querying_without_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+    ) -> None:
+        """Test that grant with member is NOT found when querying without member."""
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+        )
+        await save_fixture(grant)
+
+        repository = BenefitGrantRepository.from_session(session)
+        # Query without member - should not find grant with member_id set
+        retrieved_grant = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, subscription=subscription
+        )
+        assert retrieved_grant is None
+
+    async def test_grant_without_member_not_found_when_querying_with_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+    ) -> None:
+        """Test that grant without member is NOT found when querying with member."""
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        # Grant without member
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=None,
+        )
+        await save_fixture(grant)
+
+        repository = BenefitGrantRepository.from_session(session)
+        # Query with member - should not find grant without member_id
+        retrieved_grant = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, member=member, subscription=subscription
+        )
+        assert retrieved_grant is None
+
+    async def test_different_members_create_separate_grants(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+    ) -> None:
+        """Test that different members with different customers can have separate grants.
+
+        In B2B scenarios, each seat holder (member) is typically the same customer (billing).
+        This test verifies that the repository correctly queries by member.
+        """
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer1@example.com"
+        )
+
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.member,
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        grant1 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member1.id,
+        )
+        await save_fixture(grant1)
+
+        grant2 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member2.id,
+        )
+        await save_fixture(grant2)
+
+        repository = BenefitGrantRepository.from_session(session)
+
+        retrieved_grant1 = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, member=member1, subscription=subscription
+        )
+        assert retrieved_grant1 is not None
+        assert retrieved_grant1.id == grant1.id
+
+        retrieved_grant2 = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, member=member2, subscription=subscription
+        )
+        assert retrieved_grant2 is not None
+        assert retrieved_grant2.id == grant2.id
+
+
+@pytest.mark.asyncio
+class TestGrantBenefitWithMember:
+    """Tests for grant_benefit with member support."""
+
+    async def test_grant_with_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """Test granting benefit with a member creates grant with member_id."""
+        benefit_strategy_mock.grant.return_value = {"external_id": "abc"}
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        grant = await benefit_grant_service.grant_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member,
+            subscription=subscription,
+        )
+
+        assert grant.member_id == member.id
+        assert grant.customer_id == customer.id
+        assert grant.is_granted
+        benefit_strategy_mock.grant.assert_called_once()
+
+    async def test_grant_updates_existing_member_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """Test that granting to same member updates existing grant."""
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        # Create existing grant for this member
+        existing_grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+        )
+        await save_fixture(existing_grant)
+
+        # Grant again with same member
+        updated_grant = await benefit_grant_service.grant_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member,
+            subscription=subscription,
+        )
+
+        assert updated_grant.id == existing_grant.id
+        assert updated_grant.member_id == member.id
+        assert updated_grant.is_granted
+
+    async def test_grant_different_members_with_different_customers_creates_separate_grants(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """Test that granting to different members creates separate grants.
+
+        In B2B scenarios, each seat holder (member) belongs to the same customer.
+        """
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer1@example.com"
+        )
+
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.member,
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        grant1 = await benefit_grant_service.grant_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member1,
+            subscription=subscription,
+        )
+
+        grant2 = await benefit_grant_service.grant_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member2,
+            subscription=subscription,
+        )
+
+        assert grant1.id != grant2.id
+        assert grant1.member_id == member1.id
+        assert grant2.member_id == member2.id
+        assert grant1.customer_id == customer.id
+        assert grant2.customer_id == customer.id
+
+
+@pytest.mark.asyncio
+class TestRevokeBenefitWithMember:
+    """Tests for revoke_benefit with member support."""
+
+    async def test_revoke_with_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """Test revoking benefit for a specific member."""
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        existing_grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+        )
+        existing_grant.set_granted()
+        await save_fixture(existing_grant)
+
+        revoked_grant = await benefit_grant_service.revoke_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member,
+            subscription=subscription,
+        )
+
+        assert revoked_grant.id == existing_grant.id
+        assert revoked_grant.member_id == member.id
+        assert revoked_grant.is_revoked
+        benefit_strategy_mock.revoke.assert_called_once()
+
+    async def test_revoke_specific_member_does_not_affect_others(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """Test that revoking for one member doesn't affect another member's grant.
+
+        In B2B scenarios, each seat holder (member) belongs to the same customer.
+        """
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.member,
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        # Create grants for both members
+        grant1 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member1.id,
+        )
+        grant1.set_granted()
+        await save_fixture(grant1)
+
+        grant2 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member2.id,
+        )
+        grant2.set_granted()
+        await save_fixture(grant2)
+
+        # Revoke for member1 only
+        await benefit_grant_service.revoke_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member1,
+            subscription=subscription,
+        )
+
+        # Refresh grants
+        await session.refresh(grant1)
+        await session.refresh(grant2)
+
+        # Member1's grant should be revoked
+        assert grant1.is_revoked
+
+        # Member2's grant should still be granted
+        assert grant2.is_granted

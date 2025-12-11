@@ -18,7 +18,7 @@ from polar.worker import (
     get_retries,
 )
 
-from .grant.scope import resolve_scope
+from .grant.scope import resolve_member, resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
 from .strategies import BenefitRetriableError
 
@@ -68,6 +68,7 @@ async def enqueue_benefits_grants(
     task: Literal["grant", "revoke"],
     customer_id: uuid.UUID,
     product_id: uuid.UUID,
+    member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -88,7 +89,7 @@ async def enqueue_benefits_grants(
         resolved_scope = await resolve_scope(session, scope)
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, task, customer, product, **resolved_scope
+            session, task, customer, product, member_id=member_id, **resolved_scope
         )
 
 
@@ -96,6 +97,7 @@ async def enqueue_benefits_grants(
 async def benefit_grant(
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
+    member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -113,12 +115,28 @@ async def benefit_grant(
 
         resolved_scope = await resolve_scope(session, scope)
 
+        product = None
+        if subscription := resolved_scope.get("subscription"):
+            product = subscription.product
+        elif order := resolved_scope.get("order"):
+            product = order.product
+        is_seat_based = product.has_seat_based_price if product else False
+
+        member = await resolve_member(
+            session,
+            customer_id=customer_id,
+            organization=benefit.organization,
+            member_id=member_id,
+            is_seat_based=is_seat_based,
+        )
+
         try:
             await benefit_grant_service.grant_benefit(
                 session,
                 RedisMiddleware.get(),
                 customer,
                 benefit,
+                member=member,
                 attempt=get_retries(),
                 **resolved_scope,
             )
@@ -137,6 +155,7 @@ async def benefit_grant(
 async def benefit_revoke(
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
+    member_id: uuid.UUID | None = None,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -158,12 +177,28 @@ async def benefit_revoke(
 
         resolved_scope = await resolve_scope(session, scope)
 
+        product = None
+        if subscription := resolved_scope.get("subscription"):
+            product = subscription.product
+        elif order := resolved_scope.get("order"):
+            product = order.product
+        is_seat_based = product.has_seat_based_price if product else False
+
+        member = await resolve_member(
+            session,
+            customer_id=customer_id,
+            organization=benefit.organization,
+            member_id=member_id,
+            is_seat_based=is_seat_based,
+        )
+
         try:
             await benefit_grant_service.revoke_benefit(
                 session,
                 RedisMiddleware.get(),
                 customer,
                 benefit,
+                member=member,
                 attempt=get_retries(),
                 **resolved_scope,
             )

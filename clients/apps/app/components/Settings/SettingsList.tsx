@@ -67,7 +67,7 @@ const StaticSettingsItem = ({
       alignItems={description ? 'flex-start' : 'center'}
       paddingVertical="spacing-8"
     >
-      <Box flexDirection="column" gap="spacing-2" maxWidth="70%">
+      <Box flexDirection="column" gap="spacing-2" maxWidth="80%">
         <Text variant="body">{title}</Text>
         {description && (
           <Text variant="bodySmall" color="subtext">
@@ -86,6 +86,7 @@ const TouchableSettingsItem = ({
   title,
   variant,
   onPress,
+  description,
   children,
 }: TouchableSettingsItemProps) => {
   const theme = useTheme()
@@ -105,10 +106,18 @@ const TouchableSettingsItem = ({
       <Box
         flexDirection="row"
         gap="spacing-4"
+        alignItems={description ? 'flex-start' : 'center'}
         justifyContent="space-between"
         paddingVertical="spacing-8"
       >
-        <Text variant="body">{title}</Text>
+        <Box flexDirection="column" gap="spacing-2" maxWidth="70%">
+          <Text variant="body">{title}</Text>
+          {description && (
+            <Text variant="bodySmall" color="subtext">
+              {description}
+            </Text>
+          )}
+        </Box>
         <Box flexDirection="row" alignItems="center" gap="spacing-12">
           {children}
           <MaterialIcons

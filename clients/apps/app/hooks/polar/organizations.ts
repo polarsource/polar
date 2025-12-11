@@ -101,36 +101,6 @@ export const useUpdateOrganization = () => {
         }),
       )
     },
-    onMutate: async ({
-      organizationId,
-      update,
-    }: {
-      organizationId: string
-      update: schemas['OrganizationUpdate']
-    }) => {
-      queryClient.cancelQueries({ queryKey: ['organizations', organizationId] })
-
-      const previousData = queryClient.getQueryData([
-        'organizations',
-        organizationId,
-      ])
-
-      // Optimistically update the data
-      queryClient.setQueryData(
-        ['organizations', organizationId],
-        (old: schemas['Organization']) => {
-          return { ...old, ...update }
-        },
-      )
-
-      return { previousData }
-    },
-    onError: (err, updatedOrganization, context) => {
-      queryClient.setQueryData(
-        ['organizations', updatedOrganization.organizationId],
-        context?.previousData,
-      )
-    },
     onSettled: (data, error, variables, context) => {
       queryClient.invalidateQueries({
         queryKey: ['organizations'],

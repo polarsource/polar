@@ -127,9 +127,7 @@ class CustomerMeterService:
         ):
             repository = CustomerMeterRepository.from_session(session)
             customer_meter = await repository.get_by_customer_and_meter(
-                customer.id,
-                meter.id,
-                options=(joinedload(CustomerMeter.last_balanced_event),),
+                customer.id, meter.id
             )
 
             if customer_meter is not None and customer_meter.activated_at is None:

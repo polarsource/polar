@@ -1,10 +1,11 @@
 import { Box } from '@/components/Shared/Box'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
+import { Image, StyleProp, TextStyle } from 'react-native'
 import { ProductPriceLabel } from '../Products/ProductPriceLabel'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
@@ -52,7 +53,7 @@ export const SubscriptionRow = ({
       ]}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Box
           width={48}
           height={48}
@@ -114,7 +115,7 @@ export const SubscriptionRow = ({
             )}
           </Box>
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

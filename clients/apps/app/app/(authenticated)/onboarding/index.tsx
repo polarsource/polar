@@ -3,6 +3,7 @@ import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { Checkbox } from '@/components/Shared/Checkbox'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useCreateOrganization } from '@/hooks/polar/organizations'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -11,12 +12,7 @@ import { ClientResponseError, schemas } from '@polar-sh/client'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import {
-  Linking,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native'
+import { Linking, SafeAreaView, ScrollView } from 'react-native'
 import slugify from 'slugify'
 
 export default function Onboarding() {
@@ -145,7 +141,7 @@ export default function Onboarding() {
             <Box style={{ marginLeft: 4 }} gap="spacing-8">
               <Box flexDirection="row" alignItems="flex-start">
                 <Box>
-                  <TouchableOpacity
+                  <Touchable
                     onPress={() =>
                       Linking.openURL(
                         'https://docs.polar.sh/merchant-of-record/acceptable-use',
@@ -153,7 +149,7 @@ export default function Onboarding() {
                     }
                   >
                     <Text color="primary">Acceptable Use Policy</Text>
-                  </TouchableOpacity>
+                  </Touchable>
                   <Text color="subtext">
                     I&apos;ll only sell digital products and SaaS that complies
                     with it or risk suspension.
@@ -161,7 +157,7 @@ export default function Onboarding() {
                 </Box>
               </Box>
               <Box>
-                <TouchableOpacity
+                <Touchable
                   onPress={() =>
                     Linking.openURL(
                       'https://docs.polar.sh/merchant-of-record/account-reviews',
@@ -169,30 +165,30 @@ export default function Onboarding() {
                   }
                 >
                   <Text color="primary">Account Reviews</Text>
-                </TouchableOpacity>
+                </Touchable>
                 <Text color="subtext">
                   I&apos;ll comply with all reviews and requests for compliance
                   materials (KYC/AML).
                 </Text>
               </Box>
               <Box>
-                <TouchableOpacity
+                <Touchable
                   onPress={() =>
                     Linking.openURL('https://polar.sh/legal/terms')
                   }
                 >
                   <Text color="primary">Terms of Service</Text>
-                </TouchableOpacity>
+                </Touchable>
               </Box>
 
               <Box>
-                <TouchableOpacity
+                <Touchable
                   onPress={() =>
                     Linking.openURL('https://polar.sh/legal/privacy')
                   }
                 >
                   <Text color="primary">Privacy Policy</Text>
-                </TouchableOpacity>
+                </Touchable>
               </Box>
             </Box>
           </Box>

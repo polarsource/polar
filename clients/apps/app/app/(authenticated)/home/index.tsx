@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import { MiniButton } from '@/components/Shared/MiniButton'
 import PolarLogo from '@/components/Shared/PolarLogo'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
@@ -29,12 +30,7 @@ import {
   useUpdates,
 } from 'expo-updates'
 import React, { useCallback, useContext, useEffect, useMemo } from 'react'
-import {
-  Platform,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native'
+import { Platform, RefreshControl, ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
@@ -163,13 +159,13 @@ export default function Index() {
               <Box flexDirection="row" gap="spacing-20">
                 <NotificationBadge />
                 <Link href="/settings" asChild>
-                  <TouchableOpacity activeOpacity={0.6}>
+                  <Touchable>
                     <MaterialIcons
                       name="tune"
                       size={24}
                       color={theme.colors['foreground-regular']}
                     />
-                  </TouchableOpacity>
+                  </Touchable>
                 </Link>
               </Box>
             </Box>

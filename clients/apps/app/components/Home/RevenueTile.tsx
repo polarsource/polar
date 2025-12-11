@@ -41,13 +41,6 @@ export const RevenueTile = () => {
     return Math.max(...cumulativeRevenueData.map((d) => d.value), 1)
   }, [cumulativeRevenueData])
 
-  useEffect(() => {
-    if (cumulativeRevenueData.length > 0) {
-      console.log('Revenue chart data:', cumulativeRevenueData)
-      console.log('Max value:', maxValue)
-    }
-  }, [cumulativeRevenueData, maxValue])
-
   const lineProgress = useSharedValue(0)
 
   useEffect(() => {

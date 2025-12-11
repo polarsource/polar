@@ -4,9 +4,8 @@ import { useTheme } from '@/design-system/useTheme'
 import { toValueDataPoints, useMetrics } from '@/hooks/polar/metrics'
 import { schemas } from '@polar-sh/client'
 import { format } from 'date-fns'
-import { useMemo, useState } from 'react'
-import Svg from 'react-native-svg'
-import { ChartPath } from './ChartPath'
+import { useMemo } from 'react'
+import { CartesianChart, Line } from 'victory-native'
 import { getFormattedMetricValue } from './utils'
 
 interface ChartProps {
@@ -38,12 +37,10 @@ export const Chart = ({
   currentPeriod,
 }: ChartProps) => {
   const theme = useTheme()
-  const [width, setWidth] = useState(0)
-  const [chartHeight, setChartHeight] = useState(0)
 
   const totalValue = useMemo(() => {
     return currentPeriodData?.totals[metric.key] ?? 0
-  }, [currentPeriodData])
+  }, [currentPeriodData, metric.key])
 
   const formattedTotal = useMemo(() => {
     return getFormattedMetricValue(metric, totalValue)
@@ -51,7 +48,7 @@ export const Chart = ({
 
   const previousPeriodTotalValue = useMemo(() => {
     return previousPeriodData?.totals[metric.key]
-  }, [previousPeriodData])
+  }, [previousPeriodData, metric.key])
 
   const previousPeriodFormattedTotal = useMemo(() => {
     return previousPeriodTotalValue != null
@@ -68,13 +65,21 @@ export const Chart = ({
     metric.key,
   )
 
+  const chartData = useMemo(() => {
+    return currentPeriodDataPoints.map((point, index) => ({
+      index,
+      current: point.value,
+      previous: previousPeriodDataPoints[index]?.value ?? 0,
+    }))
+  }, [currentPeriodDataPoints, previousPeriodDataPoints])
+
   const values = [
     ...currentPeriodDataPoints.map((d) => d.value),
     ...previousPeriodDataPoints.map((d) => d.value),
   ]
 
-  const minValue = Math.min(...values)
-  const maxValue = Math.max(...values)
+  const minValue = Math.min(...values, 0)
+  const maxValue = Math.max(...values, 1)
 
   return (
     <Box
@@ -95,34 +100,38 @@ export const Chart = ({
         ) : null}
       </Box>
 
-      <Box
-        style={{ width: '100%', height }}
-        onLayout={(event) => {
-          setChartHeight(event.nativeEvent.layout.height)
-          setWidth(event.nativeEvent.layout.width)
-        }}
-      >
-        <Svg height={chartHeight} width={width} preserveAspectRatio="none">
-          <ChartPath
-            dataPoints={previousPeriodDataPoints}
-            width={width}
-            chartHeight={chartHeight}
-            strokeWidth={strokeWidth}
-            strokeColor={theme.colors.secondary}
-            minValue={minValue}
-            maxValue={maxValue}
-          />
-          <ChartPath
-            dataPoints={currentPeriodDataPoints}
-            width={width}
-            chartHeight={chartHeight}
-            strokeWidth={strokeWidth}
-            strokeColor={theme.colors.primary}
-            minValue={minValue}
-            maxValue={maxValue}
-          />
-        </Svg>
-      </Box>
+      {chartData.length > 0 && (
+        <Box style={{ width: '100%', height }}>
+          <CartesianChart
+            data={chartData}
+            xKey="index"
+            yKeys={['current', 'previous']}
+            domain={{ y: [minValue, maxValue] }}
+            domainPadding={{ top: 4, bottom: 4 }}
+            axisOptions={{
+              lineColor: 'transparent',
+              labelColor: 'transparent',
+            }}
+          >
+            {({ points }) => (
+              <>
+                <Line
+                  points={points.previous}
+                  color={theme.colors.secondary}
+                  strokeWidth={strokeWidth}
+                  curveType="monotoneX"
+                />
+                <Line
+                  points={points.current}
+                  color={theme.colors.primary}
+                  strokeWidth={strokeWidth}
+                  curveType="monotoneX"
+                />
+              </>
+            )}
+          </CartesianChart>
+        </Box>
+      )}
       <Box flexDirection="row" justifyContent="space-between">
         <Text variant="caption" color="subtext">
           {format(currentPeriod.startDate, 'MMM d')}

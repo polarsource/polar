@@ -1,6 +1,7 @@
 import { ErrorFallback } from '@/components/Errors/Fallback'
 import { useTheme } from '@/design-system/useTheme'
 import { useAppOpenTracking } from '@/hooks/useAppOpenTracking'
+import DeepLinkProvider from '@/providers/DeepLinkProvider'
 import NotificationsProvider from '@/providers/NotificationsProvider'
 import { PolarOrganizationProvider } from '@/providers/OrganizationProvider'
 import { PolarClientProvider } from '@/providers/PolarClientProvider'
@@ -62,11 +63,13 @@ export default function Providers() {
       <PolarClientProvider>
         <PolarQueryClientProvider>
           <UserProvider>
-            <NotificationsProvider>
-              <PolarOrganizationProvider>
-                <RootLayout />
-              </PolarOrganizationProvider>
-            </NotificationsProvider>
+            <DeepLinkProvider>
+              <NotificationsProvider>
+                <PolarOrganizationProvider>
+                  <RootLayout />
+                </PolarOrganizationProvider>
+              </NotificationsProvider>
+            </DeepLinkProvider>
           </UserProvider>
         </PolarQueryClientProvider>
       </PolarClientProvider>

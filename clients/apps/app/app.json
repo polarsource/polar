@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "owner": "polar-sh",
     "ios": {
+      "appleTeamId": "55U3YA3QTA",
       "supportsTablet": false,
       "bundleIdentifier": "com.polarsource.Polar",
       "infoPlist": {
@@ -17,7 +18,12 @@
       },
       "icon": "./assets/images/ios-dark.png",
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.developer.applesignin": [
+          "Default"
+        ],
+        "com.apple.security.application-groups": [
+          "group.com.polarsource.Polar"
+        ]
       }
     },
     "android": {
@@ -51,7 +57,10 @@
       [
         "expo-asset",
         {
-          "assets": ["./assets/images/login-background.jpg"]
+          "assets": [
+            "./assets/images/login-background.jpg",
+            "./assets/images/login-background.jpg"
+          ]
         }
       ],
       "expo-web-browser",
@@ -62,7 +71,8 @@
           "project": "polar-app",
           "organization": "polar-sh"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true

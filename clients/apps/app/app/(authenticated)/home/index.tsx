@@ -22,6 +22,7 @@ import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { useStoreReview } from '@/hooks/useStoreReview'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Link, Stack } from 'expo-router'
 import {

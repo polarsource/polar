@@ -14,6 +14,7 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
 
     if is_sub_user(sub):
         _, user = sub
+        claims.update({"is_admin": user.is_admin})
         if scopes:
             if Scope.openid in scopes:
                 pass

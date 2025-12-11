@@ -189,6 +189,7 @@ class UserInfoUser(Schema):
     name: str | None = None
     email: str | None = None
     email_verified: bool | None = None
+    is_admin: bool | None = None
 
 
 class UserInfoOrganization(Schema):

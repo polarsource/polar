@@ -75,7 +75,7 @@ export default function Index() {
         <Stack.Screen options={{ title: 'Settings' }} />
         <Box>
           <SettingsItem
-            label="Organization"
+            title="Organization"
             variant="select"
             onPress={() => {
               setShowOrganizationsSheet(true)
@@ -85,30 +85,34 @@ export default function Index() {
               {selectedOrganization?.name}
             </Text>
           </SettingsItem>
+          <SettingsItem
+            title="Notifications"
+            variant="navigate"
+            onPress={() => router.push('/settings/notifications')}
+          />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem
-            label="Support"
+            title="Support"
             variant="link"
             onPress={() => Linking.openURL('https://polar.sh/docs/support')}
           />
           <SettingsItem
-            label="Privacy Policy"
+            title="Privacy Policy"
             variant="link"
             onPress={() => Linking.openURL('https://polar.sh/legal/privacy')}
           />
-
           <SettingsItem
-            label="Terms of Service"
+            title="Terms of Service"
             variant="link"
             onPress={() => Linking.openURL('https://polar.sh/legal/terms')}
           />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem
-            label="Delete Account"
+            title="Delete Account"
             variant="navigate"
             onPress={() => setShowAccountDeletionSheet(true)}
           />
-          <SettingsItem label="Logout" variant="navigate" onPress={logout} />
+          <SettingsItem title="Logout" variant="navigate" onPress={logout} />
         </Box>
         <Box justifyContent="center" flexDirection="row">
           <Text variant="body" color="subtext" textAlign="center">

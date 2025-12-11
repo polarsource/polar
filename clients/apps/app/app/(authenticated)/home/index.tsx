@@ -30,10 +30,14 @@ import {
   reloadAsync,
   useUpdates,
 } from 'expo-updates'
-import React, { useCallback, useContext, useEffect, useMemo } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { Platform, RefreshControl, ScrollView } from 'react-native'
-import { useState } from 'react'
-import { TouchableOpacity } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -166,13 +170,13 @@ export default function Index() {
                 <Box flexDirection="row" gap="spacing-20">
                   <NotificationBadge />
                   <Link href="/settings" asChild>
-                    <TouchableOpacity activeOpacity={0.6}>
+                    <Touchable>
                       <MaterialIcons
                         name="tune"
                         size={24}
                         color={theme.colors['foreground-regular']}
                       />
-                    </TouchableOpacity>
+                    </Touchable>
                   </Link>
                 </Box>
               </Box>
@@ -224,18 +228,20 @@ export default function Index() {
               alignItems="center"
               justifyContent="space-between"
             >
-              <PolarLogo size={36} />
-              <Box flexDirection="row" gap="spacing-20">
-                <NotificationBadge />
-                <Link href="/settings" asChild>
-                  <Touchable>
-                    <MaterialIcons
-                      name="tune"
-                      size={24}
-                      color={theme.colors['foreground-regular']}
-                    />
-                  </Touchable>
-                </Link>
+              <Text variant="title">Recent Subscriptions</Text>
+              <Link href="/subscriptions" asChild>
+                <MiniButton variant="secondary">View All</MiniButton>
+              </Link>
+            </Box>
+            {flatSubscriptions.length > 0 ? (
+              <Box gap="spacing-8">
+                {flatSubscriptions.map((subscription) => (
+                  <SubscriptionRow
+                    key={subscription.id}
+                    subscription={subscription}
+                    showCustomer
+                  />
+                ))}
               </Box>
             ) : (
               <EmptyState

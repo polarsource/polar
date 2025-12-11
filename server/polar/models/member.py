@@ -27,7 +27,7 @@ class Member(RecordModel):
             "customer_id",
             "external_id",
             name="members_customer_id_external_id_key",
-            postgresql_nulls_not_distinct=True,
+            postgresql_nulls_not_distinct=False,
         ),
     )
 

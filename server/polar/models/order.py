@@ -3,9 +3,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
-from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import (
     TIMESTAMP,
     ColumnElement,
@@ -17,7 +14,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -88,14 +85,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Index(
             "ix_total_amount", text("(subtotal_amount - discount_amount + tax_amount)")
         ),
-        Index(
-            "ix_orders_search_vector",
-            "search_vector",
-            postgresql_using="gin",
-        ),
     )
-
-    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
 
     status: Mapped[OrderStatus] = mapped_column(
         String, nullable=False, default=OrderStatus.pending, index=True
@@ -383,34 +373,3 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ratio = self.tax_amount / self.net_amount
         tax_amount = round(refund_amount * ratio)
         return tax_amount
-
-
-orders_search_vector_update_function = PGFunction(
-    schema="public",
-    signature="orders_search_vector_update()",
-    definition="""
-    RETURNS trigger AS $$
-    BEGIN
-        NEW.search_vector := to_tsvector('simple', coalesce(NEW.invoice_number, '') || ' ' || coalesce(NEW.stripe_invoice_id, ''));
-        RETURN NEW;
-    END
-    $$ LANGUAGE plpgsql;
-    """,
-)
-
-orders_search_vector_trigger = PGTrigger(
-    schema="public",
-    signature="orders_search_vector_trigger",
-    on_entity="orders",
-    definition="""
-    BEFORE INSERT OR UPDATE ON orders
-    FOR EACH ROW EXECUTE FUNCTION orders_search_vector_update();
-    """,
-)
-
-register_entities(
-    (
-        orders_search_vector_update_function,
-        orders_search_vector_trigger,
-    )
-)

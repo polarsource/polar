@@ -43,6 +43,28 @@ class OwnerCreate(Schema):
     )
 
 
+class MemberCreate(Schema):
+    """Schema for creating a new member."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer this member belongs to."
+    )
+    email: EmailStrDNS = Field(
+        description=_email_description, examples=[_email_example]
+    )
+    name: MemberNameInput | None = None
+    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+    )
+    role: MemberRole = Field(
+        default=MemberRole.member,
+        description="The role of the member within the customer.",
+        examples=[MemberRole.member],
+    )
+
+
 class MemberBase(TimestampedSchema, IDSchema):
     """Base schema for member responses."""
 

@@ -3,10 +3,11 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy import UnaryExpression, asc, desc, select
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer
@@ -166,6 +167,120 @@ class MemberService:
         """
         repository = MemberRepository.from_session(session)
         return await repository.list_by_customers(session, customer_ids)
+
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        customer_id: UUID,
+        email: str,
+        name: str | None = None,
+        external_id: str | None = None,
+        role: MemberRole = MemberRole.member,
+    ) -> Member:
+        """
+        Create a new member for a customer.
+
+        Args:
+            session: Database session
+            auth_subject: Authenticated user/organization
+            customer_id: ID of the customer to add member to
+            email: Email address of the member
+            name: Optional name of the member
+            external_id: Optional external ID of the member
+            role: Role of the member (defaults to member)
+
+        Returns:
+            Created Member
+
+        Raises:
+            ResourceNotFound: If customer not found or not accessible
+            NotPermitted: If feature flag disabled or no permission to add members
+        """
+        # Get customer with organization
+        statement = (
+            select(Customer, OrgModel)
+            .join(OrgModel, Customer.organization_id == OrgModel.id)
+            .where(Customer.id == customer_id, Customer.deleted_at.is_(None))
+        )
+        result = await session.execute(statement)
+        row = result.one_or_none()
+
+        if row is None:
+            raise ResourceNotFound("Customer not found")
+
+        customer, organization = row
+
+        # Check if feature flag is enabled
+        if not organization.feature_settings.get("member_model_enabled", False):
+            raise NotPermitted("Member management is not enabled for this organization")
+
+        # Check if auth subject has access to the organization
+        from polar.customer.repository import CustomerRepository
+
+        customer_repository = CustomerRepository.from_session(session)
+        readable_statement = customer_repository.get_readable_statement(auth_subject)
+        accessible_customer = await customer_repository.get_one_or_none(
+            readable_statement.where(Customer.id == customer_id)
+        )
+        if accessible_customer is None:
+            raise ResourceNotFound("Customer not found")
+
+        repository = MemberRepository.from_session(session)
+
+        # Check if member with this email already exists
+        existing_member = await repository.get_by_customer_and_email(
+            session, customer, email=email
+        )
+        if existing_member:
+            log.info(
+                "member.create.already_exists",
+                customer_id=customer_id,
+                email=email,
+                existing_member_id=existing_member.id,
+            )
+            # Return existing member to maintain idempotency
+            return existing_member
+
+        member = Member(
+            customer_id=customer_id,
+            organization_id=organization.id,
+            email=email,
+            name=name,
+            external_id=external_id,
+            role=role,
+        )
+
+        try:
+            created_member = await repository.create(member, flush=True)
+            log.info(
+                "member.create.success",
+                customer_id=customer_id,
+                member_id=created_member.id,
+                organization_id=organization.id,
+                role=role,
+            )
+            return created_member
+        except IntegrityError as e:
+            log.warning(
+                "member.create.constraint_violation",
+                customer_id=customer_id,
+                organization_id=organization.id,
+                error=str(e),
+            )
+            # Check if member was created by another concurrent request
+            existing_member = await repository.get_by_customer_and_email(
+                session, customer, email=email
+            )
+            if existing_member:
+                log.info(
+                    "member.create.found_existing_after_error",
+                    customer_id=customer_id,
+                    member_id=existing_member.id,
+                )
+                return existing_member
+            raise
 
 
 member_service = MemberService()

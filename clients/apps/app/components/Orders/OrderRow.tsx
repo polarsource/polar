@@ -1,4 +1,6 @@
 import { Box } from '@/components/Shared/Box'
+import { Image } from '@/components/Shared/Image/Image'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useProduct } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -6,8 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React, { useContext } from 'react'
-import { Image, StyleProp, TextStyle, TouchableOpacity } from 'react-native'
-import { Text } from '../Shared/Text'
+import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
 
 export interface OrderRowProps {
   order: schemas['Order']

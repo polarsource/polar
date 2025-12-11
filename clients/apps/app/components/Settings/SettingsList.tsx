@@ -47,7 +47,7 @@ export const SettingsItem = ({
         <MaterialIcons
           name={iconName}
           size={variant === 'link' ? 16 : 20}
-          color={theme.colors.monochromeInverted}
+          color={theme.colors.subtext}
         />
       </Box>
     </TouchableOpacity>

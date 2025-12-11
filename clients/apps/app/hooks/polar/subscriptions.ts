@@ -55,7 +55,7 @@ export const useUpdateSubscription = (id: string) => {
         body,
       }),
     onSuccess: (data, variables) => {
-      queryClient.setQueryData(['subscription', id], data)
+      queryClient.setQueryData(['subscription', id], data.data)
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptions'],

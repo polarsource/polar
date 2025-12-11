@@ -5,9 +5,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { RefreshControl } from 'react-native'
 
 const groupOrdersByDate = (orders: schemas['Order'][]) => {
   if (!orders?.length) return []
@@ -48,7 +49,7 @@ export default function Index() {
   return (
     <>
       <Stack.Screen options={{ title: 'Orders' }} />
-      <FlatList
+      <FlashList
         data={groupOrdersByDate(flatData)}
         renderItem={({ item }: { item: schemas['Order'] | string }) => {
           if (typeof item === 'string') {

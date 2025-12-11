@@ -7,10 +7,11 @@ import {
   useListNotifications,
   useNotificationsMarkRead,
 } from '@/hooks/polar/notifications'
+import { FlashList } from '@shopify/flash-list'
 import { setBadgeCountAsync } from 'expo-notifications'
 import { Stack } from 'expo-router'
 import React, { useEffect } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { RefreshControl } from 'react-native'
 
 const groupNotificationsByDate = (notifications: PolarNotification[]) => {
   if (!notifications?.length) return []
@@ -62,7 +63,7 @@ export default function Notifications() {
   return (
     <React.Fragment>
       <Stack.Screen options={{ title: 'Notifications' }} />
-      <FlatList
+      <FlashList
         data={groupNotificationsByDate(notifications?.notifications ?? [])}
         ListEmptyComponent={
           isLoading ? null : (
@@ -80,7 +81,6 @@ export default function Notifications() {
 
           return (
             <Notification
-              key={item.id}
               type={item.type}
               payload={item.payload}
               createdAt={item.created_at}

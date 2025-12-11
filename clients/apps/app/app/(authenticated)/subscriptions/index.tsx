@@ -5,9 +5,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
+import { FlashList } from '@shopify/flash-list'
 import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { FlatList, RefreshControl } from 'react-native'
+import { RefreshControl } from 'react-native'
 
 const groupSubscriptionsByDate = (subscriptions: schemas['Subscription'][]) => {
   if (!subscriptions?.length) return []
@@ -51,7 +52,7 @@ export default function Index() {
   return (
     <>
       <Stack.Screen options={{ title: 'Subscriptions' }} />
-      <FlatList
+      <FlashList
         data={groupSubscriptionsByDate(flatData)}
         renderItem={({ item }: { item: schemas['Subscription'] | string }) => {
           if (typeof item === 'string') {

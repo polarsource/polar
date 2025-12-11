@@ -39,6 +39,12 @@ import React, {
 } from 'react'
 import { Platform, RefreshControl, ScrollView } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import Animated, {
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function Index() {
@@ -137,9 +143,30 @@ export default function Index() {
 
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
 
+  const logoScale = useSharedValue(1)
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const pullDistance = Math.max(0, -event.contentOffset.y)
+      if (pullDistance > 0) {
+        logoScale.value = 1 + pullDistance / 900
+      } else {
+        logoScale.value = withSpring(1, { damping: 15, stiffness: 300 })
+      }
+    },
+  })
+
+  const logoAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: logoScale.value }],
+    }
+  })
+
   return (
     <GestureHandlerRootView>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingBottom: theme.spacing['spacing-48'],
           backgroundColor: theme.colors['background-regular'],
@@ -166,7 +193,9 @@ export default function Index() {
                   }),
                 }}
               >
-                <PolarLogo size={36} />
+                <Animated.View style={logoAnimatedStyle}>
+                  <PolarLogo size={36} />
+                </Animated.View>
                 <Box flexDirection="row" gap="spacing-20">
                   <NotificationBadge />
                   <Link href="/settings" asChild>
@@ -314,7 +343,7 @@ export default function Index() {
             </Box>
           )}
         </Box>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {showOrganizationsSheet ? (
         <OrganizationsSheet

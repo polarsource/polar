@@ -1,67 +1,54 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
-import { useRevenueTrend } from '@/hooks/trend'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { subMonths } from 'date-fns'
-import { useContext, useMemo, useState } from 'react'
-import Svg, { Path } from 'react-native-svg'
+import { useContext, useEffect, useMemo } from 'react'
+import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
+import { CartesianChart, Line } from 'victory-native'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export const RevenueTile = () => {
-  const [width, setWidth] = useState(0)
-  const [height, setHeight] = useState(0)
-
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
 
-  const metricParameters = useMemo(
-    () => ({
-      currentInterval: [subMonths(new Date(), 1), new Date()] as [Date, Date],
-      previousInterval: [
-        subMonths(new Date(), 2),
-        subMonths(new Date(), 1),
-      ] as [Date, Date],
-      interval: 'day' as const,
-    }),
-    [],
-  )
+  const startDate = useMemo(() => subMonths(new Date(), 1), [])
+  const endDate = useMemo(() => new Date(), [])
 
-  const metrics = useMetrics(
-    organization?.id,
-    metricParameters.currentInterval[0],
-    metricParameters.currentInterval[1],
-    {
-      interval: metricParameters.interval,
-    },
-  )
-
-  const revenueTrend = useRevenueTrend(
-    metricParameters.currentInterval,
-    metricParameters.previousInterval,
-    {
-      interval: metricParameters.interval,
-    },
-  )
-
-  const cumulativeRevenue = revenueTrend.currentCumulativeRevenue
+  const metrics = useMetrics(organization?.id, startDate, endDate, {
+    interval: 'day',
+  })
 
   const cumulativeRevenueData = useMemo(() => {
     return (
-      metrics.data?.periods.reduce<{ value: number; date: Date }[]>(
-        (acc, period) => [
+      metrics.data?.periods.reduce<{ value: number; index: number }[]>(
+        (acc, period, index) => [
           ...acc,
           {
             value: (acc[acc.length - 1]?.value ?? 0) + (period.revenue ?? 0),
-            date: period.timestamp,
+            index,
           },
         ],
         [],
       ) ?? []
     )
   }, [metrics])
+
+  const maxValue = useMemo(() => {
+    if (cumulativeRevenueData.length === 0) return 1
+    return Math.max(...cumulativeRevenueData.map((d) => d.value), 1)
+  }, [cumulativeRevenueData])
+
+  const lineProgress = useSharedValue(0)
+
+  useEffect(() => {
+    if (cumulativeRevenueData.length > 0) {
+      lineProgress.value = 0
+      lineProgress.value = withDelay(500, withTiming(1, { duration: 800 }))
+    }
+  }, [cumulativeRevenueData.length, lineProgress])
 
   return (
     <Tile href="/metrics">
@@ -83,44 +70,29 @@ export const RevenueTile = () => {
           </Box>
           <Text variant="body">30 Days</Text>
         </Box>
-        {cumulativeRevenueData && (
-          <Box
-            flex={1}
-            flexGrow={1}
-            width="100%"
-            onLayout={(event) => {
-              setHeight(event.nativeEvent.layout.height)
-              setWidth(event.nativeEvent.layout.width)
-            }}
-          >
-            <Svg height={height} width={width} preserveAspectRatio="none">
-              <Path
-                d={cumulativeRevenueData
-                  .map((period, index) => {
-                    const x =
-                      index === 0
-                        ? 1
-                        : (index / (cumulativeRevenueData.length - 1)) *
-                          (width - 2)
-
-                    const values = cumulativeRevenueData.map((d) => d.value)
-                    const maxValue = Math.max(...values)
-                    const minValue = Math.min(...values)
-                    const valueRange = Math.abs(maxValue - minValue) || 1
-
-                    const y =
-                      height -
-                      2 -
-                      ((period.value - minValue) / valueRange) * (height - 4)
-
-                    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
-                  })
-                  .join(' ')}
-                stroke={theme.colors.primary}
-                strokeWidth="2"
-                fill="none"
-              />
-            </Svg>
+        {cumulativeRevenueData.length > 0 && (
+          <Box flex={1} flexGrow={1} width="100%">
+            <CartesianChart
+              data={cumulativeRevenueData}
+              xKey="index"
+              yKeys={['value']}
+              domain={{ y: [0, maxValue] }}
+              domainPadding={{ bottom: 4, top: 4 }}
+              axisOptions={{
+                lineColor: 'transparent',
+                labelColor: 'transparent',
+              }}
+            >
+              {({ points }) => (
+                <Line
+                  points={points.value}
+                  color={theme.colors.primary}
+                  strokeWidth={2}
+                  curveType="monotoneX"
+                  end={lineProgress}
+                />
+              )}
+            </CartesianChart>
           </Box>
         )}
         <Text variant="headline" numberOfLines={1}>

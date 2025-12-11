@@ -167,5 +167,35 @@ class MemberService:
         repository = MemberRepository.from_session(session)
         return await repository.list_by_customers(session, customer_ids)
 
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> Member | None:
+        """Get a member by ID with auth subject validation."""
+        repository = MemberRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Member.id == id
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        member: Member,
+    ) -> Member:
+        """Soft delete a member."""
+        repository = MemberRepository.from_session(session)
+        deleted_member = await repository.soft_delete(member)
+        log.info(
+            "member.delete.success",
+            member_id=member.id,
+            customer_id=member.customer_id,
+            organization_id=member.organization_id,
+        )
+        return deleted_member
+
 
 member_service = MemberService()

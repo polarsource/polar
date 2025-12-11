@@ -214,3 +214,168 @@ class TestListMembers:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
+
+
+@pytest.mark.asyncio
+class TestDeleteMember:
+    async def test_anonymous(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        # Create a customer and member
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.delete(f"/v1/members/{member.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Create a customer and member
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.delete(f"/v1/members/{member.id}")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_member_not_found(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Use a random UUID that doesn't exist
+        from uuid import uuid4
+
+        non_existent_id = uuid4()
+        response = await client.delete(f"/v1/members/{non_existent_id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+    ) -> None:
+        # Create a member for a different organization that the user doesn't have access to
+        from tests.fixtures.random_objects import create_organization
+
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        # Try to delete the member - should fail with 404 (not found due to auth filtering)
+        response = await client.delete(f"/v1/members/{member.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid_delete(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Create a customer and member
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        # Delete the member
+        response = await client.delete(f"/v1/members/{member.id}")
+
+        assert response.status_code == 204
+
+        # Verify the member is soft deleted by trying to list it
+        response = await client.get(
+            "/v1/members/", params={"customer_id": str(customer.id)}
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_idempotency(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Create a customer and member
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        # Delete the member first time
+        response = await client.delete(f"/v1/members/{member.id}")
+        assert response.status_code == 204
+
+        # Try to delete the same member again - should return 404 since it's already deleted
+        response = await client.delete(f"/v1/members/{member.id}")
+        assert response.status_code == 404

@@ -291,3 +291,108 @@ class TestCreateOwnerMember:
         assert member is not None
         assert member.external_id is None
         assert member.email == customer.email
+
+
+@pytest.mark.asyncio
+class TestGetById:
+    @pytest.mark.auth
+    async def test_get_by_id_success(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test successfully getting a member by ID."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        result = await member_service.get_by_id(session, auth_subject, member.id)
+
+        assert result is not None
+        assert result.id == member.id
+        assert result.email == member.email
+
+    @pytest.mark.auth
+    async def test_get_by_id_not_found(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test getting a member that doesn't exist."""
+        from uuid import uuid4
+
+        result = await member_service.get_by_id(session, auth_subject, uuid4())
+
+        assert result is None
+
+    @pytest.mark.auth
+    async def test_get_by_id_not_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """Test that user cannot get member from organization they don't belong to."""
+        from tests.fixtures.random_objects import create_organization
+
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        result = await member_service.get_by_id(session, auth_subject, member.id)
+
+        assert result is None
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    async def test_delete_member(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test deleting a member."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        deleted_member = await member_service.delete(session, member)
+
+        assert deleted_member.id == member.id
+        assert deleted_member.deleted_at is not None

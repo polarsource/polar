@@ -1,11 +1,18 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Query
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.openapi import APITag
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -17,6 +24,7 @@ router = APIRouter(
     tags=["members", APITag.public, APITag.mcp],
 )
 
+MemberID = Annotated[UUID4, Path(description="The member ID.")]
 MemberNotFound = {
     "description": "Member not found.",
     "model": ResourceNotFound.schema(),
@@ -56,3 +64,26 @@ async def list_members(
         count,
         pagination,
     )
+
+
+@router.delete(
+    "/{id}",
+    status_code=204,
+    summary="Delete Member",
+    responses={
+        204: {"description": "Member deleted."},
+        404: MemberNotFound,
+    },
+)
+async def delete(
+    id: MemberID,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a member."""
+    member = await member_service.get_by_id(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound()
+
+    await member_service.delete(session, member)

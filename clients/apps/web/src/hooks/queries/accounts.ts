@@ -11,3 +11,18 @@ export const useListAccounts: () => UseQueryResult<
     queryFn: () => unwrap(api.GET('/v1/accounts/search')),
     retry: defaultRetry,
   })
+
+export const useAccountCredits = (
+  accountId: string | undefined,
+): UseQueryResult<schemas['AccountCredit'][]> =>
+  useQuery({
+    queryKey: ['account', 'credits', accountId],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/accounts/{id}/credits', {
+          params: { path: { id: accountId as string } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!accountId,
+  })

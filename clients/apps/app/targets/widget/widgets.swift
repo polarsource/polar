@@ -25,8 +25,8 @@ struct Provider: AppIntentTimelineProvider {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         let orgName = defaults?.string(forKey: "widget_organization_name")
         let days = configuration.timeFrame.days
-        
-        let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) ?? (425, generatePlaceholderData(days: days))
+
+        let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) ?? (182, generatePlaceholderData(days: days))
         
         let entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate)
         
@@ -279,6 +279,85 @@ struct AdaptiveWidgetBackground: View {
                 endPoint: .bottomTrailing
             )
         }
+    }
+}
+
+struct LockScreenWidget: Widget {
+    let kind: String = "LockScreenWidget"
+    
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
+            LockScreenWidgetView(entry: entry)
+        }
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
+        .configurationDisplayName("Polar Lock Screen")
+        .description("Quick glance at your metrics.")
+    }
+}
+
+struct LockScreenWidgetView: View {
+    var entry: Provider.Entry
+    @Environment(\.widgetFamily) var family
+    
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            circularView
+        case .accessoryRectangular:
+            rectangularView
+        case .accessoryInline:
+            inlineView
+        default:
+            EmptyView()
+        }
+    }
+    
+    private var circularView: some View {
+        let metricType = entry.configuration.metricType
+        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let iconName = metricType == .revenue ? "chart.line.uptrend.xyaxis" : "chart.line.uptrend.xyaxis"
+        
+        return ZStack {
+            AccessoryWidgetBackground()
+            VStack(spacing: 1) {
+                Image(systemName: iconName)
+                    .font(.callout)
+                Text(formattedValue)
+                    .font(.caption2)
+                    .fontWeight(.bold)
+            }
+        }
+    }
+    
+    private var rectangularView: some View {
+        let metricType = entry.configuration.metricType
+        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let timeFrameText = entry.configuration.timeFrame.rawValue
+        
+        return HStack(spacing: 8) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 32))
+                .frame(maxHeight: .infinity)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(formattedValue)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                Text("Past \(timeFrameText)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var inlineView: some View {
+        let metricType = entry.configuration.metricType
+        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        
+        return Text("\(metricType.rawValue): \(formattedValue)")
     }
 }
 

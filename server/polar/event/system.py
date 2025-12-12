@@ -201,6 +201,10 @@ class SubscriptionCanceledEvent(Event):
 
 class SubscriptionCycledMetadata(TypedDict):
     subscription_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
 
 
 class SubscriptionCycledEvent(Event):

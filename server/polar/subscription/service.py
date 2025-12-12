@@ -32,6 +32,7 @@ from polar.event.service import event as event_service
 from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
+    SubscriptionCycledMetadata,
     SubscriptionRevokedMetadata,
     SystemEvent,
     build_system_event,
@@ -931,7 +932,13 @@ class SubscriptionService:
                     SystemEvent.subscription_cycled,
                     customer=subscription.customer,
                     organization=subscription.organization,
-                    metadata={"subscription_id": str(subscription.id)},
+                    metadata=SubscriptionCycledMetadata(
+                        subscription_id=str(subscription.id),
+                        amount=subscription.amount,
+                        currency=subscription.currency,
+                        recurring_interval=subscription.recurring_interval.value,
+                        recurring_interval_count=subscription.recurring_interval_count,
+                    ),
                 ),
             )
             # Add a billing entry for a new period

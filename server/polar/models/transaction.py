@@ -172,6 +172,12 @@ class PlatformFeeType(StrEnum):
     Fee applied when a dispute was opened on a payment.
     """
 
+    fee_credit = "fee_credit"
+    """
+    Credit applied to offset platform fees.
+    This is a positive amount that reduces the effective fee charged.
+    """
+
     platform = "platform"
     """
     Polar platform fee.

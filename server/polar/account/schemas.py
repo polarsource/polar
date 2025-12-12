@@ -153,6 +153,7 @@ class Account(Schema):
     is_charges_enabled: bool
     is_payouts_enabled: bool
     country: str
+    credit_balance: int
 
     billing_name: str | None
     billing_address: Address | None

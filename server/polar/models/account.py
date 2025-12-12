@@ -14,6 +14,7 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
+    from .account_credit import AccountCredit
     from .organization import Organization
     from .user import User
 
@@ -102,6 +103,8 @@ class Account(RecordModel):
     )
     billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
+    credit_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     @declared_attr
     def admin(cls) -> Mapped["User"]:
         return relationship("User", lazy="raise", foreign_keys="[Account.admin_id]")
@@ -132,6 +135,10 @@ class Account(RecordModel):
             ),
             viewonly=True,
         )
+
+    @declared_attr
+    def credits(cls) -> Mapped[list["AccountCredit"]]:
+        return relationship("AccountCredit", lazy="raise", back_populates="account")
 
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE
@@ -172,3 +179,6 @@ class Account(RecordModel):
         fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
         # Apply same logic as Stripe fee rounding
         return polar_round(fee_in_cents)
+
+    def reduce_credit_balance(self, amount: int) -> None:
+        self.credit_balance -= min(amount, self.credit_balance)

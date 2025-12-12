@@ -182,6 +182,7 @@ class SubscriptionCreatedEvent(Event):
 
 class SubscriptionCanceledMetadata(TypedDict):
     subscription_id: str
+    product_id: str
     amount: int
     currency: str
     recurring_interval: str
@@ -201,6 +202,7 @@ class SubscriptionCanceledEvent(Event):
 
 class SubscriptionCycledMetadata(TypedDict):
     subscription_id: str
+    product_id: str
     amount: int
     currency: str
     recurring_interval: str
@@ -216,6 +218,7 @@ class SubscriptionCycledEvent(Event):
 
 class SubscriptionRevokedMetadata(TypedDict):
     subscription_id: str
+    product_id: str
     amount: int
     currency: str
     recurring_interval: str
@@ -271,6 +274,8 @@ class SubscriptionBillingPeriodUpdatedEvent(Event):
 
 class OrderPaidMetadata(TypedDict):
     order_id: str
+    product_id: str
+    billing_type: str
     amount: int
     currency: str
     net_amount: int

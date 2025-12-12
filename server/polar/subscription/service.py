@@ -896,6 +896,7 @@ class SubscriptionService:
                     organization=subscription.organization,
                     metadata=SubscriptionRevokedMetadata(
                         subscription_id=str(subscription.id),
+                        product_id=str(subscription.product_id),
                         amount=subscription.amount,
                         currency=subscription.currency,
                         recurring_interval=subscription.recurring_interval.value,
@@ -934,6 +935,7 @@ class SubscriptionService:
                     organization=subscription.organization,
                     metadata=SubscriptionCycledMetadata(
                         subscription_id=str(subscription.id),
+                        product_id=str(subscription.product_id),
                         amount=subscription.amount,
                         currency=subscription.currency,
                         recurring_interval=subscription.recurring_interval.value,
@@ -2355,6 +2357,7 @@ class SubscriptionService:
         assert subscription.canceled_at is not None
         metadata = SubscriptionCanceledMetadata(
             subscription_id=str(subscription.id),
+            product_id=str(subscription.product_id),
             amount=subscription.amount,
             currency=subscription.currency,
             recurring_interval=subscription.recurring_interval.value,

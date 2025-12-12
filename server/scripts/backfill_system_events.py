@@ -103,7 +103,7 @@ async def backfill_order_paid_metadata(
             orders_result = await session.execute(
                 select(Order)
                 .where(Order.id.cast(String).in_(order_ids))
-                .options(selectinload(Order.subscription))
+                .options(selectinload(Order.subscription), selectinload(Order.product))
             )
             orders_by_id = {str(o.id): o for o in orders_result.scalars().all()}
 
@@ -121,6 +121,10 @@ async def backfill_order_paid_metadata(
                 order = orders_by_id[order_id]
                 metadata = dict(event.user_metadata)
 
+                metadata["product_id"] = str(order.product_id)
+                metadata["billing_type"] = (
+                    order.product.billing_type.value if order.product else "one_time"
+                )
                 metadata["currency"] = order.currency
                 metadata["net_amount"] = order.net_amount
                 metadata["tax_amount"] = order.tax_amount
@@ -162,7 +166,7 @@ async def backfill_subscription_revoked_metadata(
 ) -> int:
     """
     Backfill missing metadata fields for subscription.revoked events.
-    Fields added: amount, recurring_interval, recurring_interval_count
+    Fields added: product_id, amount, recurring_interval, recurring_interval_count
     """
     typer.echo("\n=== Backfilling subscription.revoked metadata ===")
 
@@ -234,6 +238,7 @@ async def backfill_subscription_revoked_metadata(
                 sub = subs_by_id[sub_id]
                 metadata = dict(event.user_metadata)
 
+                metadata["product_id"] = str(sub.product_id)
                 metadata["amount"] = sub.amount
                 metadata["currency"] = sub.currency
                 metadata["recurring_interval"] = sub.recurring_interval.value
@@ -261,7 +266,7 @@ async def backfill_subscription_cycled_metadata(
 ) -> int:
     """
     Backfill missing metadata fields for subscription.cycled events.
-    Fields added: amount, currency
+    Fields added: product_id, amount, currency
     """
     typer.echo("\n=== Backfilling subscription.cycled metadata ===")
 
@@ -333,6 +338,7 @@ async def backfill_subscription_cycled_metadata(
                 sub = subs_by_id[sub_id]
                 metadata = dict(event.user_metadata)
 
+                metadata["product_id"] = str(sub.product_id)
                 metadata["amount"] = sub.amount
                 metadata["currency"] = sub.currency
                 metadata["recurring_interval"] = sub.recurring_interval.value
@@ -360,7 +366,7 @@ async def backfill_subscription_canceled_metadata(
 ) -> int:
     """
     Backfill missing metadata fields for subscription.canceled events.
-    Fields added: amount, currency, recurring_interval, recurring_interval_count
+    Fields added: product_id, amount, currency, recurring_interval, recurring_interval_count
     """
     typer.echo("\n=== Backfilling subscription.canceled metadata ===")
 
@@ -432,6 +438,7 @@ async def backfill_subscription_canceled_metadata(
                 sub = subs_by_id[sub_id]
                 metadata = dict(event.user_metadata)
 
+                metadata["product_id"] = str(sub.product_id)
                 metadata["amount"] = sub.amount
                 metadata["currency"] = sub.currency
                 metadata["recurring_interval"] = sub.recurring_interval.value
@@ -449,6 +456,112 @@ async def backfill_subscription_canceled_metadata(
             await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Updated {updated_count} subscription.canceled events")
+    return updated_count
+
+
+async def backfill_subscription_created_canceled_product_id(
+    session: AsyncSession,
+    batch_size: int,
+    rate_limit_delay: float,
+) -> int:
+    """
+    Backfill product_id for subscription.created and subscription.canceled events
+    that are missing it. This handles events created before the product_id field was added.
+    """
+    typer.echo("\n=== Backfilling subscription.created/canceled product_id ===")
+
+    event_names = [
+        SystemEvent.subscription_created,
+        SystemEvent.subscription_canceled,
+    ]
+
+    count_result = await session.execute(
+        select(func.count(Event.id)).where(
+            Event.name.in_(event_names),
+            Event.source == EventSource.system,
+            Event.user_metadata["product_id"].is_(None),
+        )
+    )
+    total_to_update = count_result.scalar() or 0
+
+    if total_to_update == 0:
+        typer.echo("No subscription.created/canceled events need product_id backfill")
+        return 0
+
+    typer.echo(
+        f"Found {total_to_update} subscription.created/canceled events to update"
+    )
+
+    updated_count = 0
+
+    with Progress() as progress:
+        task = progress.add_task(
+            "[cyan]Updating subscription.created/canceled product_id...",
+            total=total_to_update,
+        )
+
+        while True:
+            statement = (
+                select(Event)
+                .where(
+                    Event.name.in_(event_names),
+                    Event.source == EventSource.system,
+                    Event.user_metadata["product_id"].is_(None),
+                )
+                .order_by(Event.timestamp.asc())
+                .limit(batch_size)
+            )
+
+            result = await session.execute(statement)
+            events = result.scalars().all()
+
+            if not events:
+                break
+
+            subscription_ids = [
+                e.user_metadata.get("subscription_id")
+                for e in events
+                if e.user_metadata
+            ]
+
+            subs_result = await session.execute(
+                select(Subscription).where(
+                    Subscription.id.cast(String).in_(subscription_ids)
+                )
+            )
+            subs_by_id = {str(s.id): s for s in subs_result.scalars().all()}
+
+            for event in events:
+                sub_id = event.user_metadata.get("subscription_id")
+                if not sub_id:
+                    typer.echo(
+                        f"Warning: Event {event.id} has no subscription_id in metadata"
+                    )
+                    continue
+                if sub_id not in subs_by_id:
+                    typer.echo(
+                        f"Warning: Subscription {sub_id} not found for event {event.id}"
+                    )
+                    continue
+
+                sub = subs_by_id[sub_id]
+                metadata = dict(event.user_metadata)
+                metadata["product_id"] = str(sub.product_id)
+
+                await session.execute(
+                    update(Event)
+                    .where(Event.id == event.id)
+                    .values(user_metadata=metadata)
+                )
+                updated_count += 1
+
+            await session.commit()
+            progress.update(task, advance=len(events))
+            await asyncio.sleep(rate_limit_delay)
+
+    typer.echo(
+        f"Updated {updated_count} subscription.created/canceled events with product_id"
+    )
     return updated_count
 
 
@@ -631,6 +744,7 @@ async def create_missing_subscription_canceled_events(
             for sub in subscriptions:
                 metadata = SubscriptionCanceledMetadata(
                     subscription_id=str(sub.id),
+                    product_id=str(sub.product_id),
                     amount=sub.amount,
                     currency=sub.currency,
                     recurring_interval=sub.recurring_interval.value,
@@ -818,6 +932,12 @@ async def run_backfill(
         results[
             "subscription_canceled_updated"
         ] = await backfill_subscription_canceled_metadata(
+            session, batch_size, rate_limit_delay
+        )
+
+        results[
+            "subscription_created_canceled_product_id"
+        ] = await backfill_subscription_created_canceled_product_id(
             session, batch_size, rate_limit_delay
         )
 

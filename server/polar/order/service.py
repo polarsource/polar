@@ -1972,6 +1972,10 @@ class OrderService:
 
         metadata = OrderPaidMetadata(
             order_id=str(order.id),
+            product_id=str(order.product_id),
+            billing_type=order.product.billing_type.value
+            if order.product
+            else "one_time",
             amount=order.total_amount,
             currency=order.currency,
             net_amount=order.net_amount,

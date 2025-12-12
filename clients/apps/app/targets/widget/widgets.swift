@@ -5,7 +5,7 @@ import Charts
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         let placeholderData = generatePlaceholderData(days: 30)
-        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), revenue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
+        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
@@ -13,11 +13,11 @@ struct Provider: AppIntentTimelineProvider {
         let orgName = defaults?.string(forKey: "widget_organization_name")
         let days = configuration.timeFrame.days
         
-        if let (revenue, chartData) = await fetchRevenue(days: days) {
-            return SimpleEntry(date: Date(), configuration: configuration, revenue: revenue, organizationName: orgName, chartData: chartData, lastUpdated: Date())
+        if let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) {
+            return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: Date())
         }
         let placeholderData = generatePlaceholderData(days: days)
-        return SimpleEntry(date: Date(), configuration: configuration, revenue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date())
+        return SimpleEntry(date: Date(), configuration: configuration, metricValue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date())
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
@@ -26,9 +26,9 @@ struct Provider: AppIntentTimelineProvider {
         let orgName = defaults?.string(forKey: "widget_organization_name")
         let days = configuration.timeFrame.days
         
-        let (revenue, chartData) = await fetchRevenue(days: days) ?? (425, generatePlaceholderData(days: days))
+        let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) ?? (425, generatePlaceholderData(days: days))
         
-        let entry = SimpleEntry(date: currentDate, configuration: configuration, revenue: revenue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate)
+        let entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate)
         
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: currentDate)!
         
@@ -41,7 +41,7 @@ struct Provider: AppIntentTimelineProvider {
         }
     }
     
-    private func fetchRevenue(days: Int) async -> (Int, [RevenueData])? {
+    private func fetchMetrics(days: Int, metricType: MetricType) async -> (Int, [RevenueData])? {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         guard let apiToken = defaults?.string(forKey: "widget_api_token"),
               let organizationId = defaults?.string(forKey: "widget_organization_id") else {
@@ -79,19 +79,30 @@ struct Provider: AppIntentTimelineProvider {
             let (data, _) = try await URLSession.shared.data(for: request)
             let decodedResponse = try JSONDecoder().decode(MetricsResponse.self, from: data)
             
-            let revenueCents = decodedResponse.totals.revenue ?? 0
-            let revenueDollars = Int(Double(revenueCents) / 100.0)
-            
-            var cumulativeRevenue: Double = 0
-            let chartData = decodedResponse.periods.enumerated().map { index, period -> RevenueData in
-                let periodRevenueCents = Double(period.revenue ?? 0)
-                cumulativeRevenue += periodRevenueCents
-                let cumulativeDollars = cumulativeRevenue / 100.0
-                
-                return RevenueData(day: index + 1, amount: cumulativeDollars)
+            let metricValue: Int
+            switch metricType {
+            case .revenue:
+                let revenueCents = decodedResponse.totals.revenue ?? 0
+                metricValue = Int(Double(revenueCents) / 100.0)
+            case .orders:
+                metricValue = decodedResponse.totals.orders ?? 0
             }
             
-            return (revenueDollars, chartData)
+            var cumulativeValue: Double = 0
+            let chartData = decodedResponse.periods.enumerated().map { index, period -> RevenueData in
+                let periodValue: Double
+                switch metricType {
+                case .revenue:
+                    periodValue = Double(period.revenue ?? 0) / 100.0
+                case .orders:
+                    periodValue = Double(period.orders ?? 0)
+                }
+                cumulativeValue += periodValue
+                
+                return RevenueData(day: index + 1, amount: cumulativeValue)
+            }
+            
+            return (metricValue, chartData)
             
         } catch {
             return nil
@@ -106,16 +117,18 @@ struct MetricsResponse: Codable {
 
 struct MetricsTotals: Codable {
     let revenue: Int?
+    let orders: Int?
 }
 
 struct MetricsPeriod: Codable {
     let revenue: Int?
+    let orders: Int?
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
-    let revenue: Int
+    let metricValue: Int
     let organizationName: String?
     let chartData: [RevenueData]
     let lastUpdated: Date
@@ -135,10 +148,12 @@ struct widgetEntryView : View {
         let maxValue = entry.chartData.map { $0.amount }.max() ?? 240
         let yAxisMax = maxValue * 1.2
         let timeFrameText = entry.configuration.timeFrame.rawValue
+        let metricType = entry.configuration.metricType
+        let metricLabel = metricType.rawValue
+        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
       
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
             if family == .systemSmall {
-                // Small widget: compact two-row layout
                 let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -159,13 +174,13 @@ struct widgetEntryView : View {
                         
                         Spacer(minLength: 4)
                         
-                        Text("$\(entry.revenue)")
+                        Text(formattedValue)
                             .font(.headline)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
                     }
                     
-                    Text("Revenue | \(shortTimeFrame)")
+                    Text("\(metricLabel) | \(shortTimeFrame)")
                         .font(.caption2)
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.6))
@@ -190,13 +205,13 @@ struct widgetEntryView : View {
                         
                         Spacer()
                         
-                        Text("$\(entry.revenue)")
+                        Text(formattedValue)
                             .font(.title)
                             .fontWeight(.bold)
                             .foregroundStyle(.white)
                     }
                     
-                    Text("Revenue | \(timeFrameText)")
+                    Text("\(metricLabel) | \(timeFrameText)")
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.6))
@@ -268,7 +283,7 @@ struct widget: Widget {
 } timeline: {
     let placeholderData = (1...30).map { i in RevenueData(day: i, amount: Double(i * 10)) }
     let config = ConfigurationAppIntent()
-    SimpleEntry(date: .now, configuration: config, revenue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
+    SimpleEntry(date: .now, configuration: config, metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
 }
 
 extension Color {

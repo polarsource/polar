@@ -22,9 +22,23 @@ enum TimeFrame: String, AppEnum {
     }
 }
 
+enum MetricType: String, AppEnum {
+    case revenue = "Revenue"
+    case orders = "Orders"
+    
+    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Metric")
+    static var caseDisplayRepresentations: [MetricType: DisplayRepresentation] = [
+        .revenue: "Revenue",
+        .orders: "Orders"
+    ]
+}
+
 struct ConfigurationAppIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource { "Revenue Widget" }
-    static var description: IntentDescription { "Displays your organization's revenue over time." }
+    static var title: LocalizedStringResource { "Metrics Widget" }
+    static var description: IntentDescription { "Displays your organization's revenue or orders over time." }
+    
+    @Parameter(title: "Metric", default: .revenue)
+    var metricType: MetricType
     
     @Parameter(title: "Time Frame", default: .thirtyDays)
     var timeFrame: TimeFrame

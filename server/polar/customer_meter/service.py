@@ -117,7 +117,12 @@ class CustomerMeterService:
         await customer_repository.set_meters_updated_at((customer,))
 
     async def update_customer_meter(
-        self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meter: Meter,
+        activate_meter: bool = False,
     ) -> tuple[CustomerMeter | None, bool]:
         async with locker.lock(
             f"customer_meter:{customer.id}:{meter.id}",
@@ -130,7 +135,9 @@ class CustomerMeterService:
             )
 
             if customer_meter is not None and customer_meter.activated_at is None:
-                return customer_meter, False
+                if not activate_meter:
+                    return customer_meter, False
+                customer_meter.activated_at = utc_now()
 
             last_event = await self._get_latest_current_window_event(
                 session, customer, meter

@@ -185,7 +185,7 @@ class BenefitMeterCreditService(
         if meter is not None:
             locker = Locker(self.redis)
             await customer_meter_service.update_customer_meter(
-                self.session, locker, customer, meter
+                self.session, locker, customer, meter, activate_meter=True
             )
 
         return {

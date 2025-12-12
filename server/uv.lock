@@ -1939,6 +1939,7 @@ dependencies = [
     { name = "taskipy" },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -2024,6 +2025,7 @@ requires-dist = [
     { name = "taskipy", specifier = ">=1.10.3" },
     { name = "typer", specifier = ">=0.12.5" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.31.1" },
+    { name = "websockets", specifier = ">=15.0.1" },
 ]
 
 [package.metadata.requires-dev]

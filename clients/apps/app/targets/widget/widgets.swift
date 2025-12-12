@@ -138,27 +138,39 @@ struct widgetEntryView : View {
       
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
             if family == .systemSmall {
-                // Small widget: compact layout
-                HStack(spacing: 8) {
-                    Image("PolarLogoSmall")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 16, height: 16)
+                // Small widget: compact two-row layout
+                let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image("PolarLogoSmall")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 12, height: 12)
+                        
+                        if let orgName = entry.organizationName {
+                            Text(orgName)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white.opacity(0.95))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        
+                        Spacer(minLength: 4)
+                        
+                        Text("$\(entry.revenue)")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                    }
                     
-                    Text(timeFrameText)
-                        .font(.caption)
+                    Text("Revenue | \(shortTimeFrame)")
+                        .font(.caption2)
                         .fontWeight(.medium)
-                        .foregroundStyle(.white.opacity(0.7))
-                    
-                    Spacer()
+                        .foregroundStyle(.white.opacity(0.6))
                 }
                 .padding(.horizontal, 8)
-                
-                Text("$\(entry.revenue)")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
             } else {
                 // Medium/Large widget: two-row layout
                 VStack(alignment: .leading, spacing: 2) {

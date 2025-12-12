@@ -185,7 +185,7 @@ struct widgetEntryView : View {
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.6))
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, family == .systemSmall ? 6 : 8)
             } else {
                 // Medium/Large widget: two-row layout
                 VStack(alignment: .leading, spacing: 2) {
@@ -216,7 +216,7 @@ struct widgetEntryView : View {
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.6))
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, family == .systemSmall ? 6 : 8)
             }
             
             Chart(entry.chartData) { data in
@@ -252,9 +252,9 @@ struct widgetEntryView : View {
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .frame(maxHeight: .infinity)
-            .padding(.horizontal, family == .systemSmall ? 8 : 10)
+            .padding(.horizontal, family == .systemSmall ? 6 : 8)
         }
-        .padding(.vertical, family == .systemSmall ? 8 : 10)
+        .padding(.vertical, family == .systemSmall ? 0 : 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .unredacted()
     }

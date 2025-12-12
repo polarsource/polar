@@ -147,6 +147,7 @@ struct RevenueData: Identifiable {
 struct widgetEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         let maxValue = entry.chartData.map { $0.amount }.max() ?? 240
@@ -155,13 +156,18 @@ struct widgetEntryView : View {
         let metricType = entry.configuration.metricType
         let metricLabel = metricType.rawValue
         let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        
+        // Adaptive colors based on color scheme
+        let primaryTextColor: Color = colorScheme == .dark ? .white : .black
+        let secondaryTextColor: Color = colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
+        let logoImageName = colorScheme == .dark ? "PolarLogoWhite" : "PolarLogoBlack"
       
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
             if family == .systemSmall {
                 let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
                 
                 HStack(spacing: 4) {
-                    Image("PolarLogoSmall")
+                    Image(logoImageName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
@@ -169,34 +175,34 @@ struct widgetEntryView : View {
                   Text("\(metricLabel)")
                               .font(.caption2)
                               .fontWeight(.medium)
-                              .foregroundStyle(.white)
+                              .foregroundStyle(primaryTextColor)
                   
                     Spacer(minLength: 4)
                     
                     Text(formattedValue)
                         .font(.headline)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(primaryTextColor)
                 }
                 .padding(.horizontal, 8)
             } else {
                 HStack(spacing: 10) {
-                    Image("PolarLogoSmall")
+                    Image(logoImageName)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 20, height: 20)
+                        .frame(width: 24, height: 24)
                     
                     Text("\(metricLabel) | \(timeFrameText)")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(primaryTextColor)
                     
                     Spacer()
                     
                     Text(formattedValue)
                         .font(.title)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(primaryTextColor)
                 }
                 .padding(.horizontal, family == .systemSmall ? 6 : 8)
             }
@@ -249,14 +255,30 @@ struct widget: Widget {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             widgetEntryView(entry: entry)
                 .containerBackground(for: .widget) {
-                    LinearGradient(
-                        colors: [Color(red: 0.1, green: 0.1, blue: 0.15), Color(red: 0.05, green: 0.05, blue: 0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    AdaptiveWidgetBackground()
                 }
         }
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+struct AdaptiveWidgetBackground: View {
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        if colorScheme == .dark {
+            LinearGradient(
+                colors: [Color(red: 0.1, green: 0.1, blue: 0.15), Color(red: 0.05, green: 0.05, blue: 0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        } else {
+            LinearGradient(
+                colors: [Color(red: 0.95, green: 0.95, blue: 0.97), Color(red: 0.90, green: 0.90, blue: 0.92)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
 }
 

@@ -17,7 +17,6 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
-    CountAggregation,
     PropertyAggregation,
     UniqueAggregation,
 )
@@ -127,9 +126,7 @@ class CustomerMeterService:
         ):
             repository = CustomerMeterRepository.from_session(session)
             customer_meter = await repository.get_by_customer_and_meter(
-                customer.id,
-                meter.id,
-                options=(joinedload(CustomerMeter.last_balanced_event),),
+                customer.id, meter.id
             )
 
             if customer_meter is not None and customer_meter.activated_at is None:
@@ -155,34 +152,8 @@ class CustomerMeterService:
 
             event_repository = EventRepository.from_session(session)
 
-            meter_reset_event = await event_repository.get_latest_meter_reset(
-                customer, meter.id
-            )
-            reset_after_last_balanced = (
-                meter_reset_event is not None
-                and customer_meter.last_balanced_event is not None
-                and meter_reset_event.ingested_at
-                > customer_meter.last_balanced_event.ingested_at
-            )
-
-            can_increment = (
-                customer_meter.last_balanced_event is not None
-                and meter.aggregation.is_incremental()
-                and not reset_after_last_balanced
-            )
-            if can_increment:
-                delta = await self._get_usage_quantity(
-                    session,
-                    customer,
-                    meter,
-                    since_event=customer_meter.last_balanced_event,
-                )
-                customer_meter.consumed_units = self._combine_incremental(
-                    meter, float(customer_meter.consumed_units), delta
-                )
-            else:
-                usage_units = await self._get_usage_quantity(session, customer, meter)
-                customer_meter.consumed_units = Decimal(usage_units)
+            usage_units = await self._get_usage_quantity(session, customer, meter)
+            customer_meter.consumed_units = Decimal(usage_units)
 
             credit_events = await self._get_credit_events(
                 customer, meter, event_repository
@@ -309,7 +280,6 @@ class CustomerMeterService:
         meter: Meter,
         meter_reset_event: Event | None,
         by_external_id: bool = False,
-        since_event: Event | None = None,
     ) -> Select[tuple[Event]]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
@@ -327,9 +297,6 @@ class CustomerMeterService:
             statement = statement.where(
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
-
-        if since_event is not None:
-            statement = statement.where(Event.ingested_at > since_event.ingested_at)
 
         if by_external_id:
             statement = statement.where(event_repository.get_meter_clause(meter))
@@ -361,11 +328,7 @@ class CustomerMeterService:
         )
 
     async def _get_usage_quantity(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        meter: Meter,
-        since_event: Event | None = None,
+        self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> float:
         """
         Get the aggregated usage quantity for a customer's meter.
@@ -375,8 +338,6 @@ class CustomerMeterService:
         (COUNT, SUM), we aggregate each branch and sum the results. For
         non-summable aggregations (MAX, MIN, AVG, UNIQUE), we aggregate over
         the raw values from the union.
-
-        If since_event is provided, only events after that event are aggregated.
         """
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
@@ -386,25 +347,15 @@ class CustomerMeterService:
         agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
 
         by_customer_id = self._build_events_statement(
-            event_repository,
-            customer,
-            meter,
-            meter_reset_event,
-            by_external_id=False,
-            since_event=since_event,
+            event_repository, customer, meter, meter_reset_event, by_external_id=False
         ).where(Event.source == EventSource.user)
 
         if customer.external_id is None:
             result = await session.scalar(by_customer_id.with_only_columns(agg_column))
-            return float(result) if result else 0.0
+            return result or 0.0
 
         by_external_id = self._build_events_statement(
-            event_repository,
-            customer,
-            meter,
-            meter_reset_event,
-            by_external_id=True,
-            since_event=since_event,
+            event_repository, customer, meter, meter_reset_event, by_external_id=True
         ).where(Event.source == EventSource.user)
 
         if meter.aggregation.is_summable():
@@ -420,7 +371,7 @@ class CustomerMeterService:
             result = await session.scalar(
                 select(func.coalesce(func.sum(union_subquery.c.value), 0))
             )
-            return float(result) if result else 0.0
+            return result or 0.0
 
         raw_value_column = self._get_raw_aggregation_column(meter)
         union_subquery = union_all(
@@ -430,7 +381,7 @@ class CustomerMeterService:
 
         outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
         result = await session.scalar(select(func.coalesce(outer_agg, 0)))
-        return float(result) if result else 0.0
+        return result or 0.0
 
     def _get_raw_aggregation_column(self, meter: Meter) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):
@@ -455,33 +406,6 @@ class CustomerMeterService:
         elif isinstance(meter.aggregation, UniqueAggregation):
             return func.count(func.distinct(column))
         return func.sum(column)
-
-    def _combine_incremental(
-        self, meter: Meter, current: float, delta: float
-    ) -> Decimal:
-        match meter.aggregation:
-            case CountAggregation():
-                return Decimal(current + delta)
-            case PropertyAggregation(func=func):
-                match func:
-                    case AggregationFunction.sum:
-                        return Decimal(current + delta)
-                    case AggregationFunction.max:
-                        return Decimal(max(current, delta))
-                    case AggregationFunction.min:
-                        return Decimal(min(current, delta))
-                    case AggregationFunction.avg:
-                        raise ValueError(
-                            f"Incremental aggregation not supported for {func}"
-                        )
-                    case _:
-                        raise ValueError(f"Unhandled aggregation function: {func}")
-            case UniqueAggregation(func=func):
-                raise ValueError(f"Incremental aggregation not supported for {func}")
-            case _:
-                raise ValueError(
-                    f"Unhandled aggregation type: {type(meter.aggregation)}"
-                )
 
     async def _get_credit_events(
         self,

@@ -47,6 +47,8 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import (
+    IncompleteTaxLocation,
+    InvalidTaxLocation,
     TaxabilityReason,
     TaxRate,
     calculate_tax,
@@ -709,26 +711,37 @@ class OrderService:
                 and product.is_tax_applicable
                 and billing_address is not None
             ):
-                tax_calculation = await calculate_tax(
-                    order_id,
-                    subscription.currency,
-                    # Stripe doesn't support calculating negative tax amounts
-                    taxable_amount if taxable_amount >= 0 else -taxable_amount,
-                    product.tax_code,
-                    billing_address,
-                    [tax_id] if tax_id is not None else [],
-                    subscription.tax_exempted,
-                )
-                if taxable_amount >= 0:
-                    tax_calculation_processor_id = tax_calculation["processor_id"]
-                    tax_amount = tax_calculation["amount"]
-                else:
-                    # When the taxable amount is negative it's usually due to a credit proration
-                    # this means we "owe" the customer money -- but we don't pay it back at this
-                    # point. This also means that there's no money transaction going on, and we
-                    # don't have to record the tax transaction either.
+                try:
+                    tax_calculation = await calculate_tax(
+                        order_id,
+                        subscription.currency,
+                        # Stripe doesn't support calculating negative tax amounts
+                        taxable_amount if taxable_amount >= 0 else -taxable_amount,
+                        product.tax_code,
+                        billing_address,
+                        [tax_id] if tax_id is not None else [],
+                        subscription.tax_exempted,
+                    )
+                except (IncompleteTaxLocation, InvalidTaxLocation):
+                    log.warning(
+                        "Failed to calculate tax for subscription order due to invalid or incomplete address",
+                        subscription_id=subscription.id,
+                        order_id=order_id,
+                        customer_id=customer.id,
+                    )
+                    tax_amount = 0
                     tax_calculation_processor_id = None
-                    tax_amount = -tax_calculation["amount"]
+                else:
+                    if taxable_amount >= 0:
+                        tax_calculation_processor_id = tax_calculation["processor_id"]
+                        tax_amount = tax_calculation["amount"]
+                    else:
+                        # When the taxable amount is negative it's usually due to a credit proration
+                        # this means we "owe" the customer money -- but we don't pay it back at this
+                        # point. This also means that there's no money transaction going on, and we
+                        # don't have to record the tax transaction either.
+                        tax_calculation_processor_id = None
+                        tax_amount = -tax_calculation["amount"]
 
                 taxability_reason = tax_calculation["taxability_reason"]
                 tax_rate = tax_calculation["tax_rate"]

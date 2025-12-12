@@ -190,23 +190,32 @@ struct widgetEntryView : View {
             if family == .systemSmall {
                 let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
                 
+                // Check if we need to hide the label to prevent number truncation
+                // Show label only if the value is 3 characters or less
+                let shouldShowLabel = formattedValue.count <= 3
+                
                 HStack(spacing: 4) {
                     Image(logoImageName)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
 
-                  Text("\(metricLabel)")
-                              .font(.caption2)
-                              .fontWeight(.medium)
-                              .foregroundStyle(primaryTextColor)
+                    if shouldShowLabel {
+                        Text("\(metricLabel)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(primaryTextColor)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
                   
-                    Spacer(minLength: 4)
+                    Spacer(minLength: 2)
                     
                     Text(formattedValue)
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundStyle(primaryTextColor)
+                        .lineLimit(1)
                 }
                 .padding(.horizontal, 6)
             } else {

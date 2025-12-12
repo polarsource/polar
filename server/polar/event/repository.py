@@ -26,6 +26,7 @@ from sqlalchemy.orm import aliased, joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
+from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
 from polar.models import (
     BillingEntry,
@@ -38,6 +39,7 @@ from polar.models import (
 from polar.models.event import EventClosure, EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
 
+from .sorting import EventSortProperty
 from .system import SystemEvent
 
 
@@ -247,6 +249,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         depth: int | None = None,
         parent_id: UUID | None = None,
         cursor_pagination: bool = False,
+        sorting: Sequence[Sorting[EventSortProperty]] = (
+            (EventSortProperty.timestamp, True),
+        ),
     ) -> tuple[Sequence[Event], int]:
         """
         List events using closure table to get a correct children_count.
@@ -376,6 +381,14 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                         text("true"),
                     )
 
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == EventSortProperty.timestamp:
+                order_by_clauses.append(
+                    clause_function(paginated_events_subquery.c.timestamp)
+                )
+
         final_query = (
             select(Event)
             .select_from(paginated_events_subquery)
@@ -387,6 +400,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 metadata_expr.label("aggregated_metadata"),
             )
             .outerjoin(aggregations_lateral, literal_column("true"))
+            .order_by(*order_by_clauses)
             .options(*self.get_eager_options())
         )
 

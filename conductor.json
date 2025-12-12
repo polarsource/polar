@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "cp $CONDUCTOR_ROOT_PATH/server/.env server/.env && cp $CONDUCTOR_ROOT_PATH/clients/apps/web/.env.local clients/apps/web/.env.local && cd server && docker compose up -d && uv sync && uv run task emails && uv run task db_migrate && cd ../clients && pnpm install",
+    "run": "cd server && uv run task api"
+  }
+}

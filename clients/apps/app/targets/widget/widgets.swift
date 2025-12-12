@@ -4,18 +4,19 @@ import Charts
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        let placeholderData = generatePlaceholderData()
+        let placeholderData = generatePlaceholderData(days: 30)
         return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), revenue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         let orgName = defaults?.string(forKey: "widget_organization_name")
+        let days = configuration.timeFrame.days
         
-        if let (revenue, chartData) = await fetchRevenue() {
+        if let (revenue, chartData) = await fetchRevenue(days: days) {
             return SimpleEntry(date: Date(), configuration: configuration, revenue: revenue, organizationName: orgName, chartData: chartData, lastUpdated: Date())
         }
-        let placeholderData = generatePlaceholderData()
+        let placeholderData = generatePlaceholderData(days: days)
         return SimpleEntry(date: Date(), configuration: configuration, revenue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date())
     }
     
@@ -23,8 +24,9 @@ struct Provider: AppIntentTimelineProvider {
         let currentDate = Date()
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         let orgName = defaults?.string(forKey: "widget_organization_name")
+        let days = configuration.timeFrame.days
         
-        let (revenue, chartData) = await fetchRevenue() ?? (425, generatePlaceholderData())
+        let (revenue, chartData) = await fetchRevenue(days: days) ?? (425, generatePlaceholderData(days: days))
         
         let entry = SimpleEntry(date: currentDate, configuration: configuration, revenue: revenue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate)
         
@@ -33,13 +35,13 @@ struct Provider: AppIntentTimelineProvider {
         return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
     
-    private func generatePlaceholderData() -> [RevenueData] {
-        return (1...30).map { day in
+    private func generatePlaceholderData(days: Int) -> [RevenueData] {
+        return (1...days).map { day in
             RevenueData(day: day, amount: Double(day * 10))
         }
     }
     
-    private func fetchRevenue() async -> (Int, [RevenueData])? {
+    private func fetchRevenue(days: Int) async -> (Int, [RevenueData])? {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         guard let apiToken = defaults?.string(forKey: "widget_api_token"),
               let organizationId = defaults?.string(forKey: "widget_organization_id") else {
@@ -47,7 +49,7 @@ struct Provider: AppIntentTimelineProvider {
         }
         
         let endDate = Date()
-        guard let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate) else {
+        guard let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) else {
             return nil
         }
         
@@ -132,6 +134,7 @@ struct widgetEntryView : View {
     var body: some View {
         let maxValue = entry.chartData.map { $0.amount }.max() ?? 240
         let yAxisMax = maxValue * 1.2
+        let timeFrameText = entry.configuration.timeFrame.rawValue
       
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
             HStack(spacing: 8) {
@@ -141,14 +144,14 @@ struct widgetEntryView : View {
                     .frame(width: family == .systemSmall ? 20 : 20, height: family == .systemSmall ? 20 : 20)
                 
                 if let orgName = entry.organizationName {
-                    Text("\(orgName) | 30 days")
+                    Text("\(orgName) | \(timeFrameText)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.9))
                         .lineLimit(1)
                         .truncationMode(.tail)
                 } else {
-                    Text("Revenue | 30 days")
+                    Text("Revenue | \(timeFrameText)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundStyle(.white.opacity(0.9))
@@ -191,7 +194,7 @@ struct widgetEntryView : View {
                     )
                 )
             }
-            .chartXScale(domain: 0...31)
+            .chartXScale(domain: 1...entry.chartData.count)
             .chartYScale(domain: 0...yAxisMax)
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
@@ -226,7 +229,8 @@ struct widget: Widget {
     widget()
 } timeline: {
     let placeholderData = (1...30).map { i in RevenueData(day: i, amount: Double(i * 10)) }
-    SimpleEntry(date: .now, configuration: ConfigurationAppIntent(), revenue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
+    let config = ConfigurationAppIntent()
+    SimpleEntry(date: .now, configuration: config, revenue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
 }
 
 extension Color {

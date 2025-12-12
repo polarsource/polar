@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from httpx import AsyncClient
 
@@ -5,7 +7,7 @@ from polar.models import Member, Organization, UserOrganization
 from polar.models.member import MemberRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_organization
 
 
 @pytest.mark.asyncio
@@ -190,8 +192,6 @@ class TestListMembers:
         organization: Organization,
     ) -> None:
         # Create a customer for a different organization that the user doesn't have access to
-        from tests.fixtures.random_objects import create_organization
-
         other_org = await create_organization(save_fixture)
         customer = await create_customer(
             save_fixture,
@@ -278,8 +278,6 @@ class TestDeleteMember:
         user_organization: UserOrganization,
     ) -> None:
         # Use a random UUID that doesn't exist
-        from uuid import uuid4
-
         non_existent_id = uuid4()
         response = await client.delete(f"/v1/members/{non_existent_id}")
 
@@ -292,8 +290,6 @@ class TestDeleteMember:
         client: AsyncClient,
     ) -> None:
         # Create a member for a different organization that the user doesn't have access to
-        from tests.fixtures.random_objects import create_organization
-
         other_org = await create_organization(save_fixture)
         customer = await create_customer(
             save_fixture,

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import Subscription
+from polar.models import Customer, Organization, Subscription
 from polar.postgres import create_sync_engine
 
 
@@ -39,16 +39,8 @@ class SubscriptionJobStore(BaseJobStore):
         return None
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
-        statement = (
-            select(Subscription)
-            .where(
-                Subscription.scheduler_locked_at.is_(None),
-                Subscription.stripe_subscription_id.is_(None),
-                Subscription.active.is_(True),
-                Subscription.current_period_end.is_not(None),
-                Subscription.current_period_end <= now,
-            )
-            .order_by(Subscription.current_period_end.asc())
+        statement = self._get_base_statement().where(
+            Subscription.current_period_end <= now,
         )
         jobs = self._list_jobs_from_statement(statement)
         self.log.debug("Due jobs", count=len(jobs))
@@ -56,14 +48,8 @@ class SubscriptionJobStore(BaseJobStore):
 
     def get_next_run_time(self) -> datetime.datetime | None:
         statement = (
-            select(Subscription.current_period_end)
-            .where(
-                Subscription.scheduler_locked_at.is_(None),
-                Subscription.stripe_subscription_id.is_(None),
-                Subscription.active.is_(True),
-                Subscription.current_period_end.is_not(None),
-            )
-            .order_by(Subscription.current_period_end.asc())
+            self._get_base_statement()
+            .with_only_columns(Subscription.current_period_end)
             .limit(1)
         )
         with self.engine.connect() as connection:
@@ -73,16 +59,7 @@ class SubscriptionJobStore(BaseJobStore):
             return next_run_time
 
     def get_all_jobs(self) -> list[Job]:
-        statement = (
-            select(Subscription)
-            .where(
-                Subscription.scheduler_locked_at.is_(None),
-                Subscription.stripe_subscription_id.is_(None),
-                Subscription.active.is_(True),
-                Subscription.current_period_end.is_not(None),
-            )
-            .order_by(Subscription.current_period_end.asc())
-        )
+        statement = self._get_base_statement()
         jobs = self._list_jobs_from_statement(statement)
         self.log.debug("All jobs", count=len(jobs))
         return jobs
@@ -134,3 +111,20 @@ class SubscriptionJobStore(BaseJobStore):
                 job = Job(self._scheduler, **job_kwargs)
                 jobs.append(job)
         return jobs
+
+    def _get_base_statement(self) -> Select[tuple[Subscription]]:
+        return (
+            select(Subscription)
+            .join(Customer, onclause=Customer.id == Subscription.customer_id)
+            .join(Organization, onclause=Organization.id == Customer.organization_id)
+            .where(
+                Customer.deleted_at.is_(None),
+                Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
+                Subscription.scheduler_locked_at.is_(None),
+                Subscription.stripe_subscription_id.is_(None),
+                Subscription.active.is_(True),
+                Subscription.current_period_end.is_not(None),
+            )
+            .order_by(Subscription.current_period_end.asc())
+        )

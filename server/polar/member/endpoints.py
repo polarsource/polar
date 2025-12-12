@@ -16,7 +16,7 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import Member
+from .schemas import Member, MemberCreate
 from .service import member_service
 
 router = APIRouter(
@@ -64,6 +64,41 @@ async def list_members(
         count,
         pagination,
     )
+
+
+@router.post(
+    "/",
+    response_model=Member,
+    status_code=201,
+    summary="Create Member",
+    responses={
+        201: {"description": "Member created."},
+        403: {"description": "Not permitted to add members."},
+        404: MemberNotFound,
+    },
+)
+async def create_member(
+    member_create: MemberCreate,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Member:
+    """
+    Create a new member for a customer.
+
+    Only B2B customers with the member management feature enabled can add members.
+    The authenticated user or organization must have access to the customer's organization.
+    """
+    created_member = await member_service.create(
+        session,
+        auth_subject,
+        customer_id=member_create.customer_id,
+        email=member_create.email,
+        name=member_create.name,
+        external_id=member_create.external_id,
+        role=member_create.role,
+    )
+
+    return Member.model_validate(created_member)
 
 
 @router.delete(

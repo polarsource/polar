@@ -253,6 +253,7 @@ class EventService:
         parent_id: uuid.UUID | None = None,
         depth: int | None = None,
         aggregate_fields: Sequence[str] = (),
+        cursor_pagination: bool = False,
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
         statement = await self._build_filtered_statement(
@@ -281,6 +282,7 @@ class EventService:
             aggregate_fields=aggregate_fields,
             depth=depth,
             parent_id=parent_id,
+            cursor_pagination=cursor_pagination,
         )
 
     async def get(

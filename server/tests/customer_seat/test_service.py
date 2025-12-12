@@ -635,6 +635,80 @@ class TestAssignSeat:
                 customer_id=customer.id,
             )
 
+    @pytest.mark.asyncio
+    async def test_assign_seat_with_member_model_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that assign_seat creates a member when member_model_enabled is true."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=1000
+        )
+        # Billing manager customer (subscription owner)
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+        # Seat customer (to be assigned a seat)
+        seat_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="seat@example.com",
+        )
+
+        seat = await seat_service.assign_seat(
+            session, subscription, email="seat@example.com"
+        )
+
+        assert seat.customer_id == seat_customer.id
+        assert seat.member_id is not None
+
+        # Verify member was created with correct properties
+        await session.refresh(seat, ["member"])
+        assert seat.member is not None
+        assert seat.member.customer_id == seat_customer.id
+        assert seat.member.email == seat_customer.email
+        assert seat.member.organization_id == organization.id
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_without_member_model_enabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Test that assign_seat does not create a member when member_model is disabled."""
+        customer = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="test@example.com",
+        )
+
+        seat = await seat_service.assign_seat(
+            session, subscription_with_seats, email="test@example.com"
+        )
+
+        assert seat.customer_id == customer.id
+        assert seat.member_id is None
+
 
 class TestGetSeatByToken:
     @pytest.mark.asyncio

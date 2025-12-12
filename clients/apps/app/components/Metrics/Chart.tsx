@@ -112,6 +112,7 @@ export const Chart = ({
               lineColor: 'transparent',
               labelColor: 'transparent',
             }}
+            frame={{ lineColor: 'transparent' }}
           >
             {({ points }) => (
               <>

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
+import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
@@ -104,7 +105,10 @@ export default function NotificationsProvider({
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response)
+        const data = response.notification.request.content.data
+        if (data?.deepLink && typeof data.deepLink === 'string') {
+          Linking.openURL(data.deepLink)
+        }
       })
 
     return () => {

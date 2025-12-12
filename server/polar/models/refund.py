@@ -248,7 +248,7 @@ class Refund(MetadataMixin, RecordModel):
 
         failure_reason = getattr(stripe_refund, "failure_reason", None)
         failure_reason = RefundFailureReason.from_stripe(failure_reason)
-        stripe_reason = stripe_refund.reason
+        stripe_reason = stripe_refund.reason if stripe_refund.reason else "other"
         reason = RefundReason.from_stripe(stripe_refund.reason)
 
         status = RefundStatus.pending

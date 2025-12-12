@@ -53,6 +53,44 @@ class MemberService:
             statement, limit=pagination.limit, page=pagination.page
         )
 
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> Member | None:
+        """Get a member by ID if the auth subject has access to it."""
+        repository = MemberRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Member.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        member: Member,
+    ) -> Member:
+        """
+        Soft delete a member.
+
+        Args:
+            session: Database session
+            member: Member to delete
+
+        Returns:
+            Deleted Member
+        """
+        repository = MemberRepository.from_session(session)
+        deleted_member = await repository.soft_delete(member)
+        log.info(
+            "member.delete.success",
+            member_id=member.id,
+            customer_id=member.customer_id,
+            organization_id=member.organization_id,
+        )
+        return deleted_member
+
     async def create_owner_member(
         self,
         session: AsyncSession,

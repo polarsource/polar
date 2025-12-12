@@ -96,3 +96,30 @@ async def create_member(
     )
 
     return Member.model_validate(created_member)
+
+
+@router.delete(
+    "/{id}",
+    status_code=204,
+    summary="Delete Member",
+    responses={
+        204: {"description": "Member deleted."},
+        404: MemberNotFound,
+    },
+)
+async def delete_member(
+    id: UUID,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Delete a member.
+
+    The authenticated user or organization must have access to the member's organization.
+    """
+    member = await member_service.get(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    await member_service.delete(session, member)

@@ -144,6 +144,30 @@ struct RevenueData: Identifiable {
     let amount: Double
 }
 
+func formatCompactValue(_ value: Int) -> String {
+    let absValue = abs(value)
+    
+    if absValue >= 1_000_000 {
+        let millions = Double(absValue) / 1_000_000.0
+        if millions >= 10 {
+            return "$\(Int(millions))M"
+        } else {
+            return String(format: "$%.1fM", millions)
+        }
+    } else if absValue >= 1_000 {
+        let thousands = Double(absValue) / 1_000.0
+        if thousands >= 100 {
+            return "$\(Int(thousands))k"
+        } else if thousands >= 10 {
+            return String(format: "$%.0fk", thousands)
+        } else {
+            return String(format: "$%.1fk", thousands)
+        }
+    } else {
+        return "$\(absValue)"
+    }
+}
+
 struct widgetEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
@@ -155,7 +179,7 @@ struct widgetEntryView : View {
         let timeFrameText = entry.configuration.timeFrame.rawValue
         let metricType = entry.configuration.metricType
         let metricLabel = metricType.rawValue
-        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         
         // Adaptive colors based on color scheme
         let primaryTextColor: Color = colorScheme == .dark ? .white : .black
@@ -314,7 +338,7 @@ struct LockScreenWidgetView: View {
     
     private var circularView: some View {
         let metricType = entry.configuration.metricType
-        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         let iconName = metricType == .revenue ? "chart.line.uptrend.xyaxis" : "chart.line.uptrend.xyaxis"
         
         return ZStack {
@@ -331,7 +355,7 @@ struct LockScreenWidgetView: View {
     
     private var rectangularView: some View {
         let metricType = entry.configuration.metricType
-        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         let timeFrameText = entry.configuration.timeFrame.rawValue
         
         return HStack(spacing: 8) {
@@ -339,12 +363,12 @@ struct LockScreenWidgetView: View {
                 .font(.system(size: 32))
                 .frame(maxHeight: .infinity)
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(formattedValue)
                     .font(.headline)
                     .fontWeight(.bold)
                 Text("Past \(timeFrameText)")
-                    .font(.caption2)
+                    .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
             
@@ -355,7 +379,7 @@ struct LockScreenWidgetView: View {
     
     private var inlineView: some View {
         let metricType = entry.configuration.metricType
-        let formattedValue = metricType == .revenue ? "$\(entry.metricValue)" : "\(entry.metricValue)"
+        let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         
         return Text("\(metricType.rawValue): \(formattedValue)")
     }

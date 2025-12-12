@@ -274,16 +274,16 @@ class SubscriptionBillingPeriodUpdatedEvent(Event):
 
 class OrderPaidMetadata(TypedDict):
     order_id: str
-    product_id: str
-    billing_type: str
+    product_id: NotRequired[str]
+    billing_type: NotRequired[str]
     amount: int
-    currency: str
-    net_amount: int
-    tax_amount: int
-    applied_balance_amount: int
-    discount_amount: int
+    currency: NotRequired[str]
+    net_amount: NotRequired[int]
+    tax_amount: NotRequired[int]
+    applied_balance_amount: NotRequired[int]
+    discount_amount: NotRequired[int]
     discount_id: NotRequired[str]
-    platform_fee: int
+    platform_fee: NotRequired[int]
     subscription_id: NotRequired[str]
     recurring_interval: NotRequired[str]
     recurring_interval_count: NotRequired[int]

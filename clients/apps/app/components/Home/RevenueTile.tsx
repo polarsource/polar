@@ -3,10 +3,8 @@ import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { ExtensionStorage } from '@bacons/apple-targets'
 import { subMonths } from 'date-fns'
 import { useContext, useEffect, useMemo } from 'react'
-import { AppState } from 'react-native'
 import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { CartesianChart, Line } from 'victory-native'
 import { Text } from '../Shared/Text'
@@ -15,8 +13,6 @@ import { Tile } from './Tile'
 export interface RevenueTileProps {
   loading?: boolean
 }
-
-const storage = new ExtensionStorage('group.com.polarsource.Polar')
 
 export const RevenueTile = ({ loading }: RevenueTileProps) => {
   const { organization } = useContext(OrganizationContext)
@@ -43,17 +39,6 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
       ) ?? []
     )
   }, [metrics])
-
-  const revenue = metrics.data?.totals.revenue ?? 0
-  storage.set('widget_revenue', revenue / 100)
-
-  useEffect(() => {
-    AppState.addEventListener('change', (state) => {
-      if (state === 'background') {
-        ExtensionStorage.reloadWidget()
-      }
-    })
-  }, [revenue])
 
   const maxValue = useMemo(() => {
     if (cumulativeRevenueData.length === 0) return 1

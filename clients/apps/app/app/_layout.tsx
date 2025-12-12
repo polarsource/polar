@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
+import { ExtensionStorage } from '@bacons/apple-targets'
 import { useReactNavigationDevTools } from '@dev-plugins/react-navigation'
 import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
 import { InstrumentSerif_400Regular_Italic } from '@expo-google-fonts/instrument-serif/400Regular_Italic'
@@ -11,7 +12,8 @@ import { ThemeProvider } from '@shopify/restyle'
 import { onlineManager } from '@tanstack/react-query'
 import { Slot, useNavigationContainerRef } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect } from 'react'
+import { AppState } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 Sentry.init({
@@ -60,6 +62,14 @@ export default Sentry.wrap(function RootLayout() {
     InstrumentSerif_400Regular,
     InstrumentSerif_400Regular_Italic,
   })
+
+  useEffect(() => {
+    AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        ExtensionStorage.reloadWidget()
+      }
+    })
+  }, [])
 
   const onLayoutRootView = useCallback(() => {
     if (fontsLoaded) {

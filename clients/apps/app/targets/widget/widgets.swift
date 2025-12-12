@@ -184,7 +184,7 @@ struct widgetEntryView : View {
                         .fontWeight(.bold)
                         .foregroundStyle(primaryTextColor)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
             } else {
                 HStack(spacing: 10) {
                     Image(logoImageName)

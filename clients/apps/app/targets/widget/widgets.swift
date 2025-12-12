@@ -5,7 +5,15 @@ import Charts
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         let placeholderData = generatePlaceholderData(days: 30)
-        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false)
+        let combinedMetrics = CombinedMetrics(
+            revenueValue: 425,
+            revenueChartData: placeholderData,
+            ordersValue: 12,
+            ordersChartData: generatePlaceholderData(days: 30, scale: 0.5),
+            averageOrderValue: 35.42,
+            averageOrderValueChartData: generatePlaceholderData(days: 30, scale: 0.3)
+        )
+        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), metricValue: 425, metricValueDouble: nil, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false, combinedMetrics: combinedMetrics)
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
@@ -13,11 +21,12 @@ struct Provider: AppIntentTimelineProvider {
         let orgName = defaults?.string(forKey: "widget_organization_name")
         let days = configuration.timeFrame.days
         
-        if let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) {
-            return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: Date(), isError: false)
+        if let (metricValue, metricValueDouble, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) {
+            let combinedMetrics = await fetchAllMetrics(days: days)
+            return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, metricValueDouble: metricValueDouble, organizationName: orgName, chartData: chartData, lastUpdated: Date(), isError: false, combinedMetrics: combinedMetrics)
         }
         let placeholderData = generatePlaceholderData(days: days)
-        return SimpleEntry(date: Date(), configuration: configuration, metricValue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date(), isError: true)
+        return SimpleEntry(date: Date(), configuration: configuration, metricValue: 425, metricValueDouble: nil, organizationName: orgName, chartData: placeholderData, lastUpdated: Date(), isError: true, combinedMetrics: nil)
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
@@ -27,12 +36,13 @@ struct Provider: AppIntentTimelineProvider {
         let days = configuration.timeFrame.days
 
         let result = await fetchMetrics(days: days, metricType: configuration.metricType)
+        let combinedMetrics = await fetchAllMetrics(days: days)
         
         let entry: SimpleEntry
-        if let (metricValue, chartData) = result {
-            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate, isError: false)
+        if let (metricValue, metricValueDouble, chartData) = result {
+            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, metricValueDouble: metricValueDouble, organizationName: orgName, chartData: chartData, lastUpdated: currentDate, isError: false, combinedMetrics: combinedMetrics)
         } else {
-            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: 182, organizationName: orgName, chartData: generatePlaceholderData(days: days), lastUpdated: currentDate, isError: true)
+            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: 182, metricValueDouble: nil, organizationName: orgName, chartData: generatePlaceholderData(days: days), lastUpdated: currentDate, isError: true, combinedMetrics: nil)
         }
         
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: currentDate)!
@@ -40,17 +50,24 @@ struct Provider: AppIntentTimelineProvider {
         return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
     
-    func generatePlaceholderData(days: Int) -> [RevenueData] {
+    func generatePlaceholderData(days: Int, scale: Double = 1.0) -> [RevenueData] {
         return (1...days).map { day in
-            let baseGrowth = Double(day) * 8
-            let wave1 = sin(Double(day) * 0.3) * 40
-            let wave2 = cos(Double(day) * 0.15) * 25
-            let amount = max(10, baseGrowth + wave1 + wave2)
+            let dayDouble = Double(day)
+            let baseGrowth = dayDouble * 8.0 * scale
+            let wave1 = sin(dayDouble * 0.3) * 40.0 * scale
+            let wave2 = cos(dayDouble * 0.15) * 25.0 * scale
+            let amount = max(10.0, baseGrowth + wave1 + wave2)
             return RevenueData(day: day, amount: amount)
         }
     }
     
-    private func fetchMetrics(days: Int, metricType: MetricType) async -> (Int, [RevenueData])? {
+    private func calculateAverageOrderValue(revenue: Int, orders: Int) -> Double {
+        guard orders > 0 else { return 0 }
+        // Revenue is in cents, convert to dollars
+        return Double(revenue) / Double(orders) / 100.0
+    }
+    
+    private func fetchMetrics(days: Int, metricType: MetricType) async -> (Int, Double?, [RevenueData])? {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
         guard let apiToken = defaults?.string(forKey: "widget_api_token"),
               let organizationId = defaults?.string(forKey: "widget_organization_id") else {
@@ -89,12 +106,22 @@ struct Provider: AppIntentTimelineProvider {
             let decodedResponse = try JSONDecoder().decode(MetricsResponse.self, from: data)
             
             let metricValue: Int
+            let metricValueDouble: Double?
             switch metricType {
             case .revenue:
                 let revenueCents = decodedResponse.totals.revenue ?? 0
                 metricValue = Int(Double(revenueCents) / 100.0)
+                metricValueDouble = nil
             case .orders:
                 metricValue = decodedResponse.totals.orders ?? 0
+                metricValueDouble = nil
+            case .averageOrderValue:
+                let aov = calculateAverageOrderValue(
+                    revenue: decodedResponse.totals.revenue ?? 0,
+                    orders: decodedResponse.totals.orders ?? 0
+                )
+                metricValue = Int(aov)
+                metricValueDouble = aov
             }
             
             var cumulativeValue: Double = 0
@@ -105,13 +132,99 @@ struct Provider: AppIntentTimelineProvider {
                     periodValue = Double(period.revenue ?? 0) / 100.0
                 case .orders:
                     periodValue = Double(period.orders ?? 0)
+                case .averageOrderValue:
+                    let periodRevenue = period.revenue ?? 0
+                    let periodOrders = period.orders ?? 0
+                    periodValue = calculateAverageOrderValue(revenue: periodRevenue, orders: periodOrders)
                 }
                 cumulativeValue += periodValue
                 
                 return RevenueData(day: index + 1, amount: cumulativeValue)
             }
             
-            return (metricValue, chartData)
+            return (metricValue, metricValueDouble, chartData)
+            
+        } catch {
+            return nil
+        }
+    }
+    
+    private func fetchAllMetrics(days: Int) async -> CombinedMetrics? {
+        let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
+        guard let apiToken = defaults?.string(forKey: "widget_api_token"),
+              let organizationId = defaults?.string(forKey: "widget_organization_id") else {
+            return nil
+        }
+        
+        let endDate = Date()
+        guard let startDate = Calendar.current.date(byAdding: .day, value: -days, to: endDate) else {
+            return nil
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let startDateStr = dateFormatter.string(from: startDate)
+        let endDateStr = dateFormatter.string(from: endDate)
+        
+        var components = URLComponents(string: "https://api.polar.sh/v1/metrics/")!
+        components.queryItems = [
+            URLQueryItem(name: "organization_id", value: organizationId),
+            URLQueryItem(name: "start_date", value: startDateStr),
+            URLQueryItem(name: "end_date", value: endDateStr),
+            URLQueryItem(name: "interval", value: "day"),
+            URLQueryItem(name: "timezone", value: TimeZone.current.identifier)
+        ]
+        
+        guard let url = components.url else {
+            return nil
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decodedResponse = try JSONDecoder().decode(MetricsResponse.self, from: data)
+            
+            let revenueValue = Int(Double(decodedResponse.totals.revenue ?? 0) / 100.0)
+            let ordersValue = decodedResponse.totals.orders ?? 0
+            let averageOrderValue = calculateAverageOrderValue(
+                revenue: decodedResponse.totals.revenue ?? 0,
+                orders: decodedResponse.totals.orders ?? 0
+            )
+            
+            var cumulativeRevenue: Double = 0
+            let revenueChartData = decodedResponse.periods.enumerated().map { index, period -> RevenueData in
+                let periodValue = Double(period.revenue ?? 0) / 100.0
+                cumulativeRevenue += periodValue
+                return RevenueData(day: index + 1, amount: cumulativeRevenue)
+            }
+            
+            var cumulativeOrders: Double = 0
+            let ordersChartData = decodedResponse.periods.enumerated().map { index, period -> RevenueData in
+                let periodValue = Double(period.orders ?? 0)
+                cumulativeOrders += periodValue
+                return RevenueData(day: index + 1, amount: cumulativeOrders)
+            }
+            
+            var cumulativeAOV: Double = 0
+            let aovChartData = decodedResponse.periods.enumerated().map { index, period -> RevenueData in
+                let periodRevenue = period.revenue ?? 0
+                let periodOrders = period.orders ?? 0
+                let periodAOV = calculateAverageOrderValue(revenue: periodRevenue, orders: periodOrders)
+                cumulativeAOV += periodAOV
+                return RevenueData(day: index + 1, amount: cumulativeAOV)
+            }
+            
+            return CombinedMetrics(
+                revenueValue: revenueValue,
+                revenueChartData: revenueChartData,
+                ordersValue: ordersValue,
+                ordersChartData: ordersChartData,
+                averageOrderValue: averageOrderValue,
+                averageOrderValueChartData: aovChartData
+            )
             
         } catch {
             return nil
@@ -134,14 +247,25 @@ struct MetricsPeriod: Codable {
     let orders: Int?
 }
 
+struct CombinedMetrics {
+    let revenueValue: Int
+    let revenueChartData: [RevenueData]
+    let ordersValue: Int
+    let ordersChartData: [RevenueData]
+    let averageOrderValue: Double
+    let averageOrderValueChartData: [RevenueData]
+}
+
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
     let metricValue: Int
+    let metricValueDouble: Double?
     let organizationName: String?
     let chartData: [RevenueData]
     let lastUpdated: Date
     let isError: Bool
+    let combinedMetrics: CombinedMetrics?
 }
 
 struct RevenueData: Identifiable {
@@ -174,18 +298,32 @@ func formatCompactValue(_ value: Int) -> String {
     }
 }
 
+func formatAverageOrderValue(_ value: Double) -> String {
+    if value >= 1000 {
+        return String(format: "$%.1fk", value / 1000.0)
+    } else if value >= 100 {
+        return String(format: "$%.0f", value)
+    } else {
+        return String(format: "$%.2f", value)
+    }
+}
+
 struct widgetEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var family
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        let maxValue = entry.chartData.map { $0.amount }.max() ?? 240
-        let yAxisMax = maxValue * 1.2
+        if family == .systemLarge && entry.combinedMetrics != nil {
+            largeWidgetView
+        } else {
+            standardWidgetView
+        }
+    }
+    
+    private var largeWidgetView: some View {
+        let combinedMetrics = entry.combinedMetrics!
         let timeFrameText = entry.configuration.timeFrame.rawValue
-        let metricType = entry.configuration.metricType
-        let metricLabel = metricType.rawValue
-        let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         
         let primaryTextColor: Color = colorScheme == .dark ? .white : .black
         let secondaryTextColor: Color = colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
@@ -193,6 +331,238 @@ struct widgetEntryView : View {
         
         let displayTextColor = entry.isError ? primaryTextColor.opacity(0.3) : primaryTextColor
         let chartOpacity = entry.isError ? 0.15 : 1.0
+        
+        return ZStack {
+            VStack(alignment: .leading, spacing: 12) {
+                // Header
+                HStack(spacing: 10) {
+                    Image(logoImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                    
+                    Text("Metrics | \(timeFrameText)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(displayTextColor)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 24)
+                
+                // Revenue Row
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Revenue")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(displayTextColor)
+                        
+                        Spacer()
+                        
+                        Text(formatCompactValue(combinedMetrics.revenueValue))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(displayTextColor)
+                    }
+                    .padding(.horizontal, 16)
+                    
+                    Chart(combinedMetrics.revenueChartData) { data in
+                        LineMark(
+                            x: .value("Day", data.day),
+                            y: .value("Revenue", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        
+                        AreaMark(
+                            x: .value("Day", data.day),
+                            y: .value("Revenue", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                    .opacity(chartOpacity)
+                    .chartXScale(domain: 1...combinedMetrics.revenueChartData.count)
+                    .chartYScale(domain: 0...(combinedMetrics.revenueChartData.map { $0.amount }.max() ?? 240) * 1.2)
+                    .chartXAxis(.hidden)
+                    .chartYAxis(.hidden)
+                    .frame(height: 30)
+                    .padding(.horizontal, 16)
+                }
+                
+                Divider()
+                    .padding(.horizontal, 16)
+                
+                // Orders Row
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Orders")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(displayTextColor)
+                        
+                        Spacer()
+                        
+                        Text("\(combinedMetrics.ordersValue)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(displayTextColor)
+                    }
+                    .padding(.horizontal, 16)
+                    
+                    Chart(combinedMetrics.ordersChartData) { data in
+                        LineMark(
+                            x: .value("Day", data.day),
+                            y: .value("Orders", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        
+                        AreaMark(
+                            x: .value("Day", data.day),
+                            y: .value("Orders", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                    .opacity(chartOpacity)
+                    .chartXScale(domain: 1...combinedMetrics.ordersChartData.count)
+                    .chartYScale(domain: 0...(combinedMetrics.ordersChartData.map { $0.amount }.max() ?? 240) * 1.2)
+                    .chartXAxis(.hidden)
+                    .chartYAxis(.hidden)
+                    .frame(height: 30)
+                    .padding(.horizontal, 16)
+                }
+                
+                Divider()
+                    .padding(.horizontal, 16)
+                
+                // Average Order Value Row
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Avg Order Value")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(displayTextColor)
+                        
+                        Spacer()
+                        
+                        Text(formatAverageOrderValue(combinedMetrics.averageOrderValue))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(displayTextColor)
+                    }
+                    .padding(.horizontal, 16)
+                    
+                    Chart(combinedMetrics.averageOrderValueChartData) { data in
+                        LineMark(
+                            x: .value("Day", data.day),
+                            y: .value("AOV", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        
+                        AreaMark(
+                            x: .value("Day", data.day),
+                            y: .value("AOV", data.amount)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                    .opacity(chartOpacity)
+                    .chartXScale(domain: 1...combinedMetrics.averageOrderValueChartData.count)
+                    .chartYScale(domain: 0...(combinedMetrics.averageOrderValueChartData.map { $0.amount }.max() ?? 240) * 1.2)
+                    .chartXAxis(.hidden)
+                    .chartYAxis(.hidden)
+                    .frame(height: 30)
+                    .padding(.horizontal, 16)
+                }
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if entry.isError {
+                Text("Error fetching data")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(primaryTextColor)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+        }
+        .unredacted()
+    }
+    
+    private var standardWidgetView: some View {
+        let maxValue = entry.chartData.map { $0.amount }.max() ?? 240
+        let yAxisMax = maxValue * 1.2
+        let timeFrameText = entry.configuration.timeFrame.rawValue
+        let metricType = entry.configuration.metricType
+        let metricLabel = metricType.rawValue
+        
+        let formattedValue: String
+        switch metricType {
+        case .revenue:
+            formattedValue = formatCompactValue(entry.metricValue)
+        case .orders:
+            formattedValue = "\(entry.metricValue)"
+        case .averageOrderValue:
+            let aovValue = entry.metricValueDouble ?? Double(entry.metricValue)
+            formattedValue = formatAverageOrderValue(aovValue)
+        }
+        
+        let primaryTextColor: Color = colorScheme == .dark ? .white : .black
+        let secondaryTextColor: Color = colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
+        let logoImageName = colorScheme == .dark ? "PolarLogoWhite" : "PolarLogoBlack"
+        
+        let displayTextColor = entry.isError ? primaryTextColor.opacity(0.3) : primaryTextColor
+        let chartOpacity = entry.isError ? 0.15 : 1.0
+        
+        // All charts use blue color
+        let chartColor = "005FFF"
       
         return ZStack {
             VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
@@ -255,7 +625,7 @@ struct widgetEntryView : View {
                     .interpolationMethod(.monotone)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
+                            colors: [Color(hex: chartColor), Color(hex: chartColor).opacity(0.7)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -269,7 +639,7 @@ struct widgetEntryView : View {
                     .interpolationMethod(.monotone)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
+                            colors: [Color(hex: chartColor).opacity(0.3), Color(hex: chartColor).opacity(0.05)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -415,9 +785,19 @@ struct LockScreenWidgetView: View {
 #Preview(as: .systemSmall) {
     widget()
 } timeline: {
-    let placeholderData = (1...30).map { i in RevenueData(day: i, amount: Double(i * 10)) }
+    let placeholderData = (1...30).map { i in RevenueData(day: i, amount: Double(i) * 10.0) }
+    let ordersData = (1...30).map { i in RevenueData(day: i, amount: Double(i) * 0.5) }
+    let aovData = (1...30).map { i in RevenueData(day: i, amount: Double(i) * 0.3) }
+    let combinedMetrics = CombinedMetrics(
+        revenueValue: 425,
+        revenueChartData: placeholderData,
+        ordersValue: 12,
+        ordersChartData: ordersData,
+        averageOrderValue: 35.42,
+        averageOrderValueChartData: aovData
+    )
     let config = ConfigurationAppIntent()
-    SimpleEntry(date: .now, configuration: config, metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false)
+    SimpleEntry(date: .now, configuration: config, metricValue: 425, metricValueDouble: nil, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false, combinedMetrics: combinedMetrics)
 }
 
 extension Color {

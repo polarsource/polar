@@ -25,11 +25,13 @@ enum TimeFrame: String, AppEnum {
 enum MetricType: String, AppEnum {
     case revenue = "Revenue"
     case orders = "Orders"
+    case averageOrderValue = "AOV"
     
     static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Metric")
     static var caseDisplayRepresentations: [MetricType: DisplayRepresentation] = [
         .revenue: "Revenue",
-        .orders: "Orders"
+        .orders: "Orders",
+        .averageOrderValue: "Average Order Value"
     ]
 }
 

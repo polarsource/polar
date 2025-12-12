@@ -50,9 +50,19 @@ const applySubRouteIsActive = (
   parentRoute?: Route,
 ): ((r: SubRoute) => SubRouteWithActive) => {
   return (r: SubRoute): SubRouteWithActive => {
-    const isActive =
-      r.link === path ||
-      (parentRoute?.link !== r.link && path.startsWith(r.link))
+    let isActive = r.link === path
+
+    if (!isActive && path.startsWith(r.link)) {
+      if (parentRoute?.link !== r.link) {
+        isActive = true
+      } else if (parentRoute.subs) {
+        const hasMoreSpecificMatch = parentRoute.subs.some(
+          (sub) =>
+            sub !== r && sub.link !== r.link && path.startsWith(sub.link),
+        )
+        isActive = !hasMoreSpecificMatch
+      }
+    }
 
     return {
       ...r,

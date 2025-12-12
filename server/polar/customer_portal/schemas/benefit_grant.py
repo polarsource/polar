@@ -45,6 +45,7 @@ class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     granted_at: datetime | None
     revoked_at: datetime | None
     customer_id: UUID4
+    member_id: UUID4 | None = None
     benefit_id: UUID4
     subscription_id: UUID4 | None
     order_id: UUID4 | None

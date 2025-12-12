@@ -38,6 +38,7 @@ from polar.models import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     LegacyRecurringProductPriceFree,
+    Member,
     Meter,
     Order,
     OrderItem,
@@ -1582,9 +1583,10 @@ async def create_benefit_grant(
     benefit: Benefit,
     granted: bool | None = None,
     properties: dict[str, Any] | None = None,
+    member: Member | None = None,
     **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
-    grant = BenefitGrant(benefit=benefit, customer=customer, **scope)
+    grant = BenefitGrant(benefit=benefit, customer=customer, member=member, **scope)
     if granted is not None:
         grant.set_granted() if granted else grant.set_revoked()
     if properties is not None:

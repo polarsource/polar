@@ -1,4 +1,5 @@
 from fastapi import Depends, Query
+from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -115,6 +116,9 @@ async def grants(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer."
     ),
+    member_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="MemberID Filter", description="Filter by member."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitGrant]:
     """
@@ -132,6 +136,7 @@ async def grants(
         benefit,
         is_granted=is_granted,
         customer_id=customer_id,
+        member_id=member_id,
         pagination=pagination,
     )
 

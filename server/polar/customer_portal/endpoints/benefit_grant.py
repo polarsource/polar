@@ -72,6 +72,9 @@ async def list(
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
+    member_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="MemberID Filter", description="Filter by member ID."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerBenefitGrant]:
     """List benefits grants of the authenticated customer."""
@@ -83,6 +86,7 @@ async def list(
         checkout_id=checkout_id,
         order_id=order_id,
         subscription_id=subscription_id,
+        member_id=member_id,
         pagination=pagination,
         sorting=sorting,
     )

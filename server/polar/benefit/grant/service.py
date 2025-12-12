@@ -109,6 +109,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         *,
         is_granted: bool | None = None,
         customer_id: Sequence[UUID] | None = None,
+        member_id: Sequence[UUID] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[BenefitGrant], int]:
         statement = (
@@ -129,6 +130,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if customer_id is not None:
             statement = statement.where(BenefitGrant.customer_id.in_(customer_id))
+
+        if member_id is not None:
+            statement = statement.where(BenefitGrant.member_id.in_(member_id))
 
         return await paginate(session, statement, pagination=pagination)
 

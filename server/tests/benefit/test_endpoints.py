@@ -5,7 +5,14 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.models import Benefit, Customer, Organization, Subscription, UserOrganization
+from polar.models import (
+    Benefit,
+    Customer,
+    Member,
+    Organization,
+    Subscription,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -449,3 +456,112 @@ class TestViewGrants:
         assert error_item["error"]["message"] == error_message
         assert error_item["error"]["type"] == "Exception"
         assert "timestamp" in error_item["error"]
+
+    @pytest.mark.auth
+    async def test_with_member_id_filter(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role="member",
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role="member",
+        )
+        await save_fixture(member2)
+
+        grant_with_member1 = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member1,
+            subscription=subscription,
+        )
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member2,
+            subscription=subscription,
+        )
+
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+            params={"member_id": str(member1.id)},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 1
+        assert json["items"][0]["id"] == str(grant_with_member1.id)
+        assert json["items"][0]["member_id"] == str(member1.id)
+
+    @pytest.mark.auth
+    async def test_member_id_in_response(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        grant_with_member = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        grant_without_member = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 2
+
+        items_by_id = {item["id"]: item for item in json["items"]}
+        assert items_by_id[str(grant_with_member.id)]["member_id"] == str(member.id)
+        assert items_by_id[str(grant_without_member.id)]["member_id"] is None

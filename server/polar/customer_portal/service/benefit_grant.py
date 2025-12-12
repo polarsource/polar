@@ -51,6 +51,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         checkout_id: Sequence[uuid.UUID] | None = None,
         order_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
+        member_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
             (CustomerBenefitGrantSortProperty.product_benefit, False),
@@ -111,6 +112,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             statement = statement.where(
                 BenefitGrant.subscription_id.in_(subscription_id)
             )
+
+        if member_id is not None:
+            statement = statement.where(BenefitGrant.member_id.in_(member_id))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

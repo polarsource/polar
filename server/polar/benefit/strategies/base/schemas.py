@@ -95,6 +95,10 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     customer_id: UUID4 = Field(
         description="The ID of the customer concerned by this grant."
     )
+    member_id: UUID4 | None = Field(
+        default=None,
+        description="The ID of the member concerned by this grant.",
+    )
     benefit_id: UUID4 = Field(
         description="The ID of the benefit concerned by this grant."
     )

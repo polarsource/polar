@@ -19,7 +19,6 @@ const plugins = [
     {
       assets: [
         "./assets/images/login-background.jpg",
-        "./assets/images/login-background.jpg",
       ],
     },
   ],

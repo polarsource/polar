@@ -24,7 +24,7 @@ export const Image = ({ onLoad, onLayout, style, ...props }: ImageProps) => {
   // Adding this little breadcrump below to make it easier to find and disable this warning
   // Too large, too small
 
-  const showWarning = false
+  const showWarning = __DEV__ && sizeWarning
 
   return (
     <>

@@ -756,7 +756,11 @@ class EventService:
         statement = (
             customer_meter_repository.get_base_statement()
             .join(CustomerMeter.meter)
-            .options(contains_eager(CustomerMeter.meter))
+            .join(CustomerMeter.customer)
+            .options(
+                contains_eager(CustomerMeter.meter),
+                contains_eager(CustomerMeter.customer),
+            )
             .where(
                 CustomerMeter.customer_id.in_(customer_ids),
                 CustomerMeter.activated_at.is_(None),
@@ -765,12 +769,17 @@ class EventService:
         unactivated_meters = await customer_meter_repository.get_all(statement)
 
         for cm in unactivated_meters:
+            customer_clause = or_(
+                Event.customer_id == cm.customer_id,
+                Event.external_customer_id == cm.customer.external_id,
+            )
+
             matching_statement = (
                 event_repository.get_base_statement()
                 .where(
                     Event.id.in_(event_ids),
                     Event.organization_id == cm.meter.organization_id,
-                    Event.customer_id == cm.customer_id,
+                    customer_clause,
                     event_repository.get_meter_clause(cm.meter),
                 )
                 .limit(1)

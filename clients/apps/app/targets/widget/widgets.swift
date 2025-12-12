@@ -160,64 +160,43 @@ struct widgetEntryView : View {
             if family == .systemSmall {
                 let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image("PolarLogoSmall")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 12, height: 12)
-                        
-                        if let orgName = entry.organizationName {
-                            Text(orgName)
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white.opacity(0.95))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                        }
-                        
-                        Spacer(minLength: 4)
-                        
-                        Text(formattedValue)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.white)
-                    }
+                HStack(spacing: 4) {
+                    Image("PolarLogoSmall")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+
+                  Text("\(metricLabel)")
+                              .font(.caption2)
+                              .fontWeight(.medium)
+                              .foregroundStyle(.white)
+                  
+                    Spacer(minLength: 4)
                     
-                    Text("\(metricLabel) | \(shortTimeFrame)")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white.opacity(0.6))
+                    Text(formattedValue)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
                 }
-                .padding(.horizontal, family == .systemSmall ? 6 : 8)
+                .padding(.horizontal, 8)
             } else {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 10) {
-                        Image("PolarLogoSmall")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                        
-                        if let orgName = entry.organizationName {
-                            Text(orgName)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white.opacity(0.95))
-                                .lineLimit(1)
-                        }
-                        
-                        Spacer()
-                        
-                        Text(formattedValue)
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.white)
-                    }
+                HStack(spacing: 10) {
+                    Image("PolarLogoSmall")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
                     
                     Text("\(metricLabel) | \(timeFrameText)")
-                        .font(.caption)
+                        .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(.white)
+                    
+                    Spacer()
+                    
+                    Text(formattedValue)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
                 }
                 .padding(.horizontal, family == .systemSmall ? 6 : 8)
             }

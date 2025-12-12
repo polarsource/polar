@@ -11,6 +11,7 @@ from polar.models.subscription import SubscriptionStatus
 from scripts.backfill_system_events import (
     backfill_order_paid_metadata,
     backfill_subscription_canceled_metadata,
+    backfill_subscription_created_canceled_product_id,
     backfill_subscription_cycled_metadata,
     backfill_subscription_revoked_metadata,
     create_missing_checkout_created_events,
@@ -438,3 +439,99 @@ class TestCreateMissingCheckoutCreatedEvents:
         )
 
         assert created == 0
+
+
+@pytest.mark.asyncio
+class TestBackfillSubscriptionCreatedCanceledProductId:
+    async def test_backfills_product_id_and_creates_missing_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+
+        sub1 = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=datetime.now(UTC),
+        )
+        event_with_product_id = Event(
+            name=SystemEvent.subscription_created,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "subscription_id": str(sub1.id),
+                "product_id": str(sub1.product_id),
+                "amount": sub1.amount,
+                "currency": sub1.currency,
+                "recurring_interval": sub1.recurring_interval.value,
+                "recurring_interval_count": sub1.recurring_interval_count,
+                "started_at": sub1.started_at.isoformat() if sub1.started_at else "",
+            },
+        )
+        await save_fixture(event_with_product_id)
+
+        sub2 = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=datetime.now(UTC),
+        )
+        event_without_product_id = Event(
+            name=SystemEvent.subscription_created,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "subscription_id": str(sub2.id),
+                "amount": sub2.amount,
+                "currency": sub2.currency,
+                "recurring_interval": sub2.recurring_interval.value,
+                "recurring_interval_count": sub2.recurring_interval_count,
+                "started_at": sub2.started_at.isoformat() if sub2.started_at else "",
+            },
+        )
+        await save_fixture(event_without_product_id)
+
+        sub3 = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=datetime.now(UTC),
+        )
+
+        created = await create_missing_subscription_created_events(
+            session, batch_size=10, rate_limit_delay=0
+        )
+        assert created == 1
+
+        updated = await backfill_subscription_created_canceled_product_id(
+            session, batch_size=10, rate_limit_delay=0
+        )
+        assert updated == 1
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_created
+        )
+
+        assert len(events) == 3
+
+        events_by_sub_id = {e.user_metadata["subscription_id"]: e for e in events}
+
+        assert events_by_sub_id[str(sub1.id)].user_metadata["product_id"] == str(
+            sub1.product_id
+        )
+        assert events_by_sub_id[str(sub2.id)].user_metadata["product_id"] == str(
+            sub2.product_id
+        )
+        assert events_by_sub_id[str(sub3.id)].user_metadata["product_id"] == str(
+            sub3.product_id
+        )

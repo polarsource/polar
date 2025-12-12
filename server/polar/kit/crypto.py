@@ -43,3 +43,28 @@ def generate_token_hash_pair(*, secret: str, prefix: str = "") -> tuple[str, str
     """
     token = generate_token(prefix=prefix)
     return token, get_token_hash(token, secret=secret)
+
+
+def validate_token_checksum(token: str, *, prefix: str) -> bool:
+    """
+    Validate that a token has a valid CRC32 checksum.
+
+    Tokens are structured as: {prefix}{37 random chars}{6 checksum chars}
+    Returns True if the checksum is valid, False otherwise.
+    """
+    if not token.startswith(prefix):
+        return False
+
+    token_without_prefix = token[len(prefix) :]
+
+    # Token should be 37 random chars + 6 checksum chars = 43 chars
+    if len(token_without_prefix) != 43:
+        return False
+
+    random_part = token_without_prefix[:37]
+    checksum_part = token_without_prefix[37:]
+
+    expected_checksum = zlib.crc32(random_part.encode("utf-8")) & 0xFFFFFFFF
+    expected_checksum_base62 = _crc32_to_base62(expected_checksum)
+
+    return checksum_part == expected_checksum_base62

@@ -752,6 +752,9 @@ class EventService:
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer_ids = [c.id for c in customers]
+        customer_external_ids: dict[uuid.UUID, str | None] = {
+            c.id: c.external_id for c in customers
+        }
 
         statement = (
             customer_meter_repository.get_base_statement()
@@ -765,12 +768,21 @@ class EventService:
         unactivated_meters = await customer_meter_repository.get_all(statement)
 
         for cm in unactivated_meters:
+            external_id = customer_external_ids.get(cm.customer_id)
+            if external_id is not None:
+                customer_clause = or_(
+                    Event.customer_id == cm.customer_id,
+                    Event.external_customer_id == external_id,
+                )
+            else:
+                customer_clause = Event.customer_id == cm.customer_id
+
             matching_statement = (
                 event_repository.get_base_statement()
                 .where(
                     Event.id.in_(event_ids),
                     Event.organization_id == cm.meter.organization_id,
-                    Event.customer_id == cm.customer_id,
+                    customer_clause,
                     event_repository.get_meter_clause(cm.meter),
                 )
                 .limit(1)

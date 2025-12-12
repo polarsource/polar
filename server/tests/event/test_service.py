@@ -1352,6 +1352,58 @@ class TestIngested:
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is None
 
+    async def test_activates_matching_customer_meter_via_external_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = Customer(
+            organization=organization,
+            email="external-test@example.com",
+            external_id="ext_customer_123",
+        )
+        await save_fixture(customer)
+
+        meter = Meter(
+            name="Test Meter",
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        await save_fixture(meter)
+
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            activated_at=None,
+        )
+        await save_fixture(customer_meter)
+
+        assert customer_meter.activated_at is None
+
+        event = await create_event(
+            save_fixture,
+            external_customer_id="ext_customer_123",
+            organization=organization,
+            source=EventSource.user,
+            metadata={"model": "lite", "tokens": 10},
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer_meter)
+        assert customer_meter.activated_at is not None
+
 
 @pytest.mark.asyncio
 class TestSystemEvents:

@@ -35,9 +35,13 @@ struct Provider: AppIntentTimelineProvider {
         return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
     
-    private func generatePlaceholderData(days: Int) -> [RevenueData] {
+    func generatePlaceholderData(days: Int) -> [RevenueData] {
         return (1...days).map { day in
-            RevenueData(day: day, amount: Double(day * 10))
+            let baseGrowth = Double(day) * 8
+            let wave1 = sin(Double(day) * 0.3) * 40
+            let wave2 = cos(Double(day) * 0.15) * 25
+            let amount = max(10, baseGrowth + wave1 + wave2)
+            return RevenueData(day: day, amount: amount)
         }
     }
     
@@ -187,7 +191,6 @@ struct widgetEntryView : View {
                 }
                 .padding(.horizontal, family == .systemSmall ? 6 : 8)
             } else {
-                // Medium/Large widget: two-row layout
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 10) {
                         Image("PolarLogoSmall")

@@ -5,7 +5,7 @@ import Charts
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         let placeholderData = generatePlaceholderData(days: 30)
-        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
+        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false)
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
@@ -14,10 +14,10 @@ struct Provider: AppIntentTimelineProvider {
         let days = configuration.timeFrame.days
         
         if let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) {
-            return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: Date())
+            return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: Date(), isError: false)
         }
         let placeholderData = generatePlaceholderData(days: days)
-        return SimpleEntry(date: Date(), configuration: configuration, metricValue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date())
+        return SimpleEntry(date: Date(), configuration: configuration, metricValue: 425, organizationName: orgName, chartData: placeholderData, lastUpdated: Date(), isError: true)
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
@@ -26,9 +26,14 @@ struct Provider: AppIntentTimelineProvider {
         let orgName = defaults?.string(forKey: "widget_organization_name")
         let days = configuration.timeFrame.days
 
-        let (metricValue, chartData) = await fetchMetrics(days: days, metricType: configuration.metricType) ?? (182, generatePlaceholderData(days: days))
+        let result = await fetchMetrics(days: days, metricType: configuration.metricType)
         
-        let entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate)
+        let entry: SimpleEntry
+        if let (metricValue, chartData) = result {
+            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, organizationName: orgName, chartData: chartData, lastUpdated: currentDate, isError: false)
+        } else {
+            entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: 182, organizationName: orgName, chartData: generatePlaceholderData(days: days), lastUpdated: currentDate, isError: true)
+        }
         
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: currentDate)!
         
@@ -136,6 +141,7 @@ struct SimpleEntry: TimelineEntry {
     let organizationName: String?
     let chartData: [RevenueData]
     let lastUpdated: Date
+    let isError: Bool
 }
 
 struct RevenueData: Identifiable {
@@ -181,102 +187,114 @@ struct widgetEntryView : View {
         let metricLabel = metricType.rawValue
         let formattedValue = metricType == .revenue ? formatCompactValue(entry.metricValue) : "\(entry.metricValue)"
         
-        // Adaptive colors based on color scheme
         let primaryTextColor: Color = colorScheme == .dark ? .white : .black
         let secondaryTextColor: Color = colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
         let logoImageName = colorScheme == .dark ? "PolarLogoWhite" : "PolarLogoBlack"
+        
+        let displayTextColor = entry.isError ? primaryTextColor.opacity(0.3) : primaryTextColor
+        let chartOpacity = entry.isError ? 0.15 : 1.0
       
-        return VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
-            if family == .systemSmall {
-                let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
-                
-                // Check if we need to hide the label to prevent number truncation
-                // Show label only if the value is 3 characters or less
-                let shouldShowLabel = formattedValue.count <= 3
-                
-                HStack(spacing: 4) {
-                    Image(logoImageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 16, height: 16)
+        return ZStack {
+            VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
+                if family == .systemSmall {
+                    let shortTimeFrame = timeFrameText.replacingOccurrences(of: " days", with: "d")
 
-                    if shouldShowLabel {
-                        Text("\(metricLabel)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .foregroundStyle(primaryTextColor)
+                    let shouldShowLabel = formattedValue.count <= 3
+                    
+                    HStack(spacing: 4) {
+                        Image(logoImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
+
+                        if shouldShowLabel {
+                            Text("\(metricLabel)")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundStyle(displayTextColor)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                      
+                        Spacer(minLength: 2)
+                        
+                        Text(formattedValue)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(displayTextColor)
                             .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
                     }
-                  
-                    Spacer(minLength: 2)
-                    
-                    Text(formattedValue)
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(primaryTextColor)
-                        .lineLimit(1)
+                    .padding(.horizontal, 6)
+                } else {
+                    HStack(spacing: 10) {
+                        Image(logoImageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        
+                        Text("\(metricLabel) | \(timeFrameText)")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(displayTextColor)
+                        
+                        Spacer()
+                        
+                        Text(formattedValue)
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundStyle(displayTextColor)
+                    }
+                    .padding(.horizontal, family == .systemSmall ? 6 : 8)
                 }
-                .padding(.horizontal, 6)
-            } else {
-                HStack(spacing: 10) {
-                    Image(logoImageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 24, height: 24)
+                
+                Chart(entry.chartData) { data in
+                    LineMark(
+                        x: .value("Day", data.day),
+                        y: .value("Revenue", data.amount)
+                    )
+                    .interpolationMethod(.monotone)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .lineStyle(StrokeStyle(lineWidth: family == .systemSmall ? 2.5 : 3))
                     
-                    Text("\(metricLabel) | \(timeFrameText)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(primaryTextColor)
-                    
-                    Spacer()
-                    
-                    Text(formattedValue)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundStyle(primaryTextColor)
+                    AreaMark(
+                        x: .value("Day", data.day),
+                        y: .value("Revenue", data.amount)
+                    )
+                    .interpolationMethod(.monotone)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 }
+                .opacity(chartOpacity)
+                .chartXScale(domain: 1...entry.chartData.count)
+                .chartYScale(domain: 0...yAxisMax)
+                .chartXAxis(.hidden)
+                .chartYAxis(.hidden)
+                .frame(maxHeight: .infinity)
                 .padding(.horizontal, family == .systemSmall ? 6 : 8)
             }
-            
-            Chart(entry.chartData) { data in
-                LineMark(
-                    x: .value("Day", data.day),
-                    y: .value("Revenue", data.amount)
-                )
-                .interpolationMethod(.monotone)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color(hex: "005FFF"), Color(hex: "005FFF").opacity(0.7)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .lineStyle(StrokeStyle(lineWidth: family == .systemSmall ? 2.5 : 3))
-                
-                AreaMark(
-                    x: .value("Day", data.day),
-                    y: .value("Revenue", data.amount)
-                )
-                .interpolationMethod(.monotone)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [Color(hex: "005FFF").opacity(0.3), Color(hex: "005FFF").opacity(0.05)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+            .padding(.vertical, family == .systemSmall ? 0 : 10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if entry.isError {
+                Text("Error fetching data")
+                    .font(family == .systemSmall ? .caption : .subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(primaryTextColor)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
             }
-            .chartXScale(domain: 1...entry.chartData.count)
-            .chartYScale(domain: 0...yAxisMax)
-            .chartXAxis(.hidden)
-            .chartYAxis(.hidden)
-            .frame(maxHeight: .infinity)
-            .padding(.horizontal, family == .systemSmall ? 6 : 8)
         }
-        .padding(.vertical, family == .systemSmall ? 0 : 10)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .unredacted()
     }
 }
@@ -399,7 +417,7 @@ struct LockScreenWidgetView: View {
 } timeline: {
     let placeholderData = (1...30).map { i in RevenueData(day: i, amount: Double(i * 10)) }
     let config = ConfigurationAppIntent()
-    SimpleEntry(date: .now, configuration: config, metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date())
+    SimpleEntry(date: .now, configuration: config, metricValue: 425, organizationName: "Acme Inc", chartData: placeholderData, lastUpdated: Date(), isError: false)
 }
 
 extension Color {

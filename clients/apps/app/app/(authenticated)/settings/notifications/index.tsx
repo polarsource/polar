@@ -84,19 +84,6 @@ export default function NotificationsPage() {
           />
         </SettingsItem>
         <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
-        <Box
-          flexDirection="column"
-          gap="spacing-4"
-          marginVertical="spacing-12"
-          padding="spacing-16"
-          backgroundColor="card"
-          borderRadius="border-radius-12"
-        >
-          <Text variant="body">Notification Behavior</Text>
-          <Text variant="bodySmall" color="subtext">
-            Settings below will also affect email notifications
-          </Text>
-        </Box>
         <SettingsItem
           title="New Orders"
           description="Send a notification when new orders are created"
@@ -117,6 +104,19 @@ export default function NotificationsPage() {
             onValueChange={createNotificationSettingHandler('new_subscription')}
           />
         </SettingsItem>
+        <Box
+          flexDirection="column"
+          gap="spacing-4"
+          marginVertical="spacing-12"
+          padding="spacing-16"
+          backgroundColor="card"
+          borderRadius="border-radius-12"
+        >
+          <Text variant="bodySmall" color="subtext">
+            These settings will affect both email & push notifications on all
+            your devices.
+          </Text>
+        </Box>
       </ScrollView>
     </>
   )

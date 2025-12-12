@@ -136,35 +136,61 @@ struct widgetEntryView : View {
         let yAxisMax = maxValue * 1.2
         let timeFrameText = entry.configuration.timeFrame.rawValue
       
-        return VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
-            HStack(spacing: 8) {
-                Image("PolarLogoSmall")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: family == .systemSmall ? 20 : 20, height: family == .systemSmall ? 20 : 20)
-                
-                if let orgName = entry.organizationName {
-                    Text("\(orgName) | \(timeFrameText)")
-                        .font(.subheadline)
+        return VStack(alignment: .leading, spacing: family == .systemSmall ? 4 : 2) {
+            if family == .systemSmall {
+                // Small widget: compact layout
+                HStack(spacing: 8) {
+                    Image("PolarLogoSmall")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                    
+                    Text(timeFrameText)
+                        .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundStyle(.white.opacity(0.9))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                } else {
-                    Text("Revenue | \(timeFrameText)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(0.7))
+                    
+                    Spacer()
                 }
-                
-                Spacer()
+                .padding(.horizontal, 8)
                 
                 Text("$\(entry.revenue)")
-                    .font(family == .systemSmall ? .title3 : .title)
+                    .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+            } else {
+                // Medium/Large widget: two-row layout
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 10) {
+                        Image("PolarLogoSmall")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                        
+                        if let orgName = entry.organizationName {
+                            Text(orgName)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white.opacity(0.95))
+                                .lineLimit(1)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("$\(entry.revenue)")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                    }
+                    
+                    Text("Revenue | \(timeFrameText)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .padding(.horizontal, 10)
             }
-            .padding(.horizontal, family == .systemSmall ? 8 : 10)
             
             Chart(entry.chartData) { data in
                 LineMark(

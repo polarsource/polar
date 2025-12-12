@@ -72,7 +72,7 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             if subscription is None:
                 raise SubscriptionDoesNotExist(subscription_id)
 
-            if (
+            if not subscription.active or (
                 not force
                 and subscription.current_period_end
                 and subscription.current_period_end > utc_now()

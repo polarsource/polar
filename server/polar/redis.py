@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Literal
 
 import redis.asyncio as _async_redis
-from fastapi import Request
 from redis import ConnectionError, RedisError, TimeoutError
 from redis.asyncio.retry import Retry
 from redis.backoff import default_backoff
+from starlette.requests import HTTPConnection
 
 from polar.config import settings
 
@@ -32,7 +32,7 @@ def create_redis(process_name: ProcessName) -> Redis:
     )
 
 
-async def get_redis(request: Request) -> Redis:
+async def get_redis(request: HTTPConnection) -> Redis:
     return request.state.redis
 
 

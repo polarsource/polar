@@ -283,6 +283,7 @@ class EventService:
             depth=depth,
             parent_id=parent_id,
             cursor_pagination=cursor_pagination,
+            sorting=sorting,
         )
 
     async def get(

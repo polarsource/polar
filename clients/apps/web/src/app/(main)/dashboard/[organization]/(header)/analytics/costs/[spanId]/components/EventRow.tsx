@@ -11,8 +11,11 @@ interface EventRowProps {
   eventType: schemas['EventType']
   event: schemas['Event']
   organization: schemas['Organization']
-  averageCost: number
-  p99Cost: number
+  costDeviationMetadata?: {
+    average: number
+    p10: number
+    p90: number
+  }
   showEventType?: boolean
 }
 
@@ -20,8 +23,7 @@ export function EventRow({
   eventType,
   event,
   organization,
-  averageCost,
-  p99Cost,
+  costDeviationMetadata,
   showEventType = true,
 }: EventRowProps) {
   const costMetadata = (event.metadata as { _cost: { amount: string } })._cost
@@ -71,11 +73,14 @@ export function EventRow({
               )}
             </span>
 
-            <CostDeviationBar
-              eventCost={parsedCost}
-              averageCost={averageCost}
-              p99Cost={p99Cost}
-            />
+            {costDeviationMetadata && (
+              <CostDeviationBar
+                eventCost={parsedCost}
+                averageCost={costDeviationMetadata.average}
+                p10Cost={costDeviationMetadata.p10}
+                p90Cost={costDeviationMetadata.p90}
+              />
+            )}
           </div>
         )}
       </td>

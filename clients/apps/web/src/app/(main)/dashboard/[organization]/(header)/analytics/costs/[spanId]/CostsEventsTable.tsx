@@ -1,5 +1,6 @@
 'use client'
 
+import { useEventHierarchyStats } from '@/hooks/queries/events'
 import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
@@ -49,18 +50,18 @@ export default function CostsEventsTable({
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  // const { data: hierarchyStats, isLoading: isHierarchyLoading } =
-  //   useEventHierarchyStats(
-  //     organization.id,
-  //     {
-  //       event_type_id: spanId,
-  //       start_date: startDateISOString,
-  //       end_date: endDateISOString,
-  //       interval,
-  //       aggregate_fields: ['_cost.amount'],
-  //     },
-  //     true,
-  //   )
+  const { data: hierarchyStats, isLoading: isHierarchyLoading } =
+    useEventHierarchyStats(
+      organization.id,
+      {
+        event_type_id: spanId,
+        start_date: startDateISOString,
+        end_date: endDateISOString,
+        interval: 'month',
+        aggregate_fields: ['_cost.amount'],
+      },
+      !!spanId,
+    )
 
   const eventTypesMap = eventTypes.reduce<
     Record<string, schemas['EventTypeWithStats']>
@@ -84,29 +85,22 @@ export default function CostsEventsTable({
 
   const showEventTypes = !spanId
 
-  // const costMetrics = useMemo(() => {
-  //   if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
-  //     return {
-  //       totalOccurrences: 0,
-  //       totalCost: 0,
-  //       averageCost: 0,
-  //       p99Cost: 0,
-  //     }
-  //   }
+  const costDeviationMetadata = useMemo(() => {
+    if (!hierarchyStats?.totals || hierarchyStats.totals.length === 0) {
+      return undefined
+    }
 
-  //   const stat = hierarchyStats.totals[0]
-  //   const totalOccurrences = stat.occurrences || 0
-  //   const totalCost = parseFloat(stat.totals?.['_cost_amount'] || '0')
-  //   const averageCost = parseFloat(stat.averages?.['_cost_amount'] || '0')
-  //   const p99Cost = parseFloat(stat.p99?.['_cost_amount'] || '0')
+    const stat = hierarchyStats.totals[0]
+    const average = parseFloat(stat.averages?.['_cost_amount'] || '0')
+    const p10 = parseFloat(stat.p10?.['_cost_amount'] || '0')
+    const p90 = parseFloat(stat.p90?.['_cost_amount'] || '0')
 
-  //   return {
-  //     totalOccurrences,
-  //     totalCost,
-  //     averageCost,
-  //     p99Cost,
-  //   }
-  // }, [hierarchyStats])
+    return {
+      average,
+      p10,
+      p90,
+    }
+  }, [hierarchyStats])
 
   return events.length > 0 ? (
     <div>
@@ -178,8 +172,7 @@ export default function CostsEventsTable({
                       organization={organization}
                       eventType={eventTypesMap[event.name]}
                       showEventType={showEventTypes}
-                      averageCost={0 /* costMetrics.averageCost */}
-                      p99Cost={0 /* costMetrics.p99Cost */}
+                      costDeviationMetadata={costDeviationMetadata}
                     />
                   ))
                 )}

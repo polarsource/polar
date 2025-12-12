@@ -15,7 +15,8 @@ const COLORS = {
 export function getEventCostDeviation(
   eventCost: number,
   averageCost: number,
-  p99Cost: number,
+  p10Cost: number,
+  p90Cost: number,
 ) {
   const deviation =
     averageCost > 0 ? ((eventCost - averageCost) / averageCost) * 100 : 0
@@ -25,7 +26,8 @@ export function getEventCostDeviation(
   let barColor: string
 
   if (isAboveAverage) {
-    const range = p99Cost - averageCost
+    // Above average: 0% at average, 100% at P90 and beyond
+    const range = p90Cost - averageCost
     const position = range > 0 ? (eventCost - averageCost) / range : 0
     barFillPercent = Math.min(100, position * 100)
 
@@ -35,8 +37,10 @@ export function getEventCostDeviation(
       barColor = COLORS.red
     }
   } else {
-    const position = averageCost > 0 ? eventCost / averageCost : 1
-    barFillPercent = Math.min(100, (1 - position) * 100)
+    // Below average: 0% at average, 100% at P10 and below
+    const range = averageCost - p10Cost
+    const position = range > 0 ? (averageCost - eventCost) / range : 0
+    barFillPercent = Math.min(100, position * 100)
     barColor = COLORS.emerald
   }
 
@@ -53,15 +57,22 @@ export function getEventCostDeviation(
 interface CostDeviationBarProps {
   eventCost: number
   averageCost: number
-  p99Cost: number
+  p10Cost: number
+  p90Cost: number
 }
 
 export function CostDeviationBar({
   eventCost,
   averageCost,
-  p99Cost,
+  p10Cost,
+  p90Cost,
 }: CostDeviationBarProps) {
-  const deviation = getEventCostDeviation(eventCost, averageCost, p99Cost)
+  const deviation = getEventCostDeviation(
+    eventCost,
+    averageCost,
+    p10Cost,
+    p90Cost,
+  )
 
   return (
     <Tooltip>

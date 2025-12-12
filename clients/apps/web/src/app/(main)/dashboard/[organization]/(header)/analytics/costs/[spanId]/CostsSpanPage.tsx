@@ -103,6 +103,7 @@ export default function SpanDetailPage({
         end_date: endDateISOString,
         interval,
         aggregate_fields: ['_cost.amount'],
+        customer_id: customerIds,
       },
       true,
     )

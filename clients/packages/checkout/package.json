@@ -40,7 +40,7 @@
     "@stripe/react-stripe-js": "^4.0.2",
     "@stripe/stripe-js": "^7.9.0",
     "@types/react": "^19.2.7",
-    "react": "^19.2.1",
+    "react": "^19.2.3",
     "terser": "^5.44.1",
     "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
@@ -55,7 +55,7 @@
     "event-source-plus": "^0.1.15",
     "eventemitter3": "^5.0.1",
     "markdown-to-jsx": "^8.0.0",
-    "react-hook-form": "~7.65.0"
+    "react-hook-form": "~7.68.0"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",

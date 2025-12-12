@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
+from itertools import batched
 from uuid import UUID
 
 from sqlalchemy import Select, func, update
@@ -26,15 +27,16 @@ class BillingEntryRepository(
     async def update_order_item_id(
         self, billing_entries: Sequence[UUID], order_item_id: UUID
     ) -> None:
-        statement = (
-            update(self.model)
-            .where(
-                self.model.id.in_(billing_entries),
-                self.model.order_item_id.is_(None),
+        for batch in batched(billing_entries, 1000):
+            statement = (
+                update(self.model)
+                .where(
+                    self.model.id.in_(batch),
+                    self.model.order_item_id.is_(None),
+                )
+                .values(order_item_id=order_item_id)
             )
-            .values(order_item_id=order_item_id)
-        )
-        await self.session.execute(statement)
+            await self.session.execute(statement)
 
     async def get_pending_by_subscription(
         self, subscription_id: UUID, *, options: Options = ()

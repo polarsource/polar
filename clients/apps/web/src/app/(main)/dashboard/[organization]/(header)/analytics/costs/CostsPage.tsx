@@ -4,7 +4,7 @@ import { useEventTypes } from '@/hooks/queries/event_types'
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { subMonths } from 'date-fns'
+import { endOfDay, subMonths } from 'date-fns'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import CostsEventsTable from './[spanId]/CostsEventsTable'
@@ -52,7 +52,9 @@ export default function ClientPage({ organization }: ClientPageProps) {
     const startDate = startDateISOString
       ? fromISODate(startDateISOString)
       : subMonths(today, 1)
-    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    const endDate = endDateISOString
+      ? endOfDay(fromISODate(endDateISOString))
+      : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 

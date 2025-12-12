@@ -2,7 +2,7 @@
 
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { subMonths } from 'date-fns'
+import { endOfDay, subMonths } from 'date-fns'
 import {
   parseAsArrayOf,
   parseAsString,
@@ -54,7 +54,9 @@ export default function CostsSidebarFilters({
     const startDate = startDateISOString
       ? fromISODate(startDateISOString)
       : subMonths(today, 1)
-    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    const endDate = endDateISOString
+      ? endOfDay(fromISODate(endDateISOString))
+      : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 

@@ -56,6 +56,7 @@ export const Chart = <T extends Record<string, unknown>>({
       ) : (
         <GenericChart
           data={data}
+          chartType="bar"
           series={genericSeries}
           xAxisKey={xAxisKey as string}
           xAxisFormatter={

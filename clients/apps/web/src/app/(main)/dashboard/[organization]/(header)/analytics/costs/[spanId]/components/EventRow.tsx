@@ -47,7 +47,13 @@ export function EventRow({
           href={`/dashboard/${organization.slug}/analytics/costs/${eventType.id}/${event.id}`}
           className="text-sm font-medium"
         >
-          {event.label}
+          {event.label === eventType.label ? (
+            <span className="dark:text-polar-200 font-mono font-normal text-gray-600">
+              {event.id}
+            </span>
+          ) : (
+            event.label
+          )}
         </Link>
       </td>
 

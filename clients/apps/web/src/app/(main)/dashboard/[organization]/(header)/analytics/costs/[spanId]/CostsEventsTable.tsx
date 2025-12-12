@@ -105,24 +105,24 @@ export default function CostsEventsTable({
   return events.length > 0 ? (
     <div>
       <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
-        <table className="w-full table-auto border-collapse rounded-lg">
+        <table className="w-full table-fixed border-collapse rounded-lg">
           <thead>
             <tr>
               {showEventTypes && (
-                <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
+                <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
                   Event Type
                 </th>
               )}
               <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
                 Event
               </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
+              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-64 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
                 Customer
               </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
+              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-left text-sm font-medium whitespace-nowrap text-gray-600">
                 Timestamp
               </th>
-              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium whitespace-nowrap text-gray-600">
+              <th className="dark:bg-polar-700 dark:text-polar-500 dark:border-polar-700 w-48 border-b border-gray-200 bg-gray-100 p-2 text-right text-sm font-medium whitespace-nowrap text-gray-600">
                 Cost
               </th>
             </tr>

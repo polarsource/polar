@@ -49,13 +49,14 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.worker import enqueue_job
-
-from .repository import (
+from polar.webhook.eventstream import publish_webhook_event
+from polar.webhook.repository import (
     WebhookDeliveryRepository,
     WebhookEndpointRepository,
     WebhookEventRepository,
 )
+from polar.worker import enqueue_job
+
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
@@ -741,6 +742,17 @@ class WebhookService:
                 continue
             except SkipEvent:
                 continue
+
+        # Publish webhook event to eventstream for CLI listeners
+        try:
+            await publish_webhook_event(
+                organization_id=target.id,
+                event_type=event,
+                timestamp=now,
+                payload=payload.model_dump(mode="json"),
+            )
+        except Exception as e:
+            log.warning("Failed to publish webhook to eventstream", error=str(e))
 
         return events
 

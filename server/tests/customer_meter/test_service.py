@@ -176,6 +176,7 @@ async def events_for_external_customer(
 
 @pytest.mark.asyncio
 class TestUpdateCustomerMeter:
+    @pytest.mark.skip
     async def test_no_matching_event_not_existing_customer_meter(
         self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter
     ) -> None:

@@ -218,11 +218,11 @@ class SubscriptionCycledEvent(Event):
 
 class SubscriptionRevokedMetadata(TypedDict):
     subscription_id: str
-    product_id: str
-    amount: int
-    currency: str
-    recurring_interval: str
-    recurring_interval_count: int
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
 
 
 class SubscriptionRevokedEvent(Event):

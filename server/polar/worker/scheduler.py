@@ -43,3 +43,7 @@ def start() -> None:
 
 
 __all__ = ["tasks", "start"]
+
+
+if __name__ == "__main__":
+    start()

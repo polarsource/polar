@@ -126,7 +126,7 @@ class CustomerMeterService:
     ) -> tuple[CustomerMeter | None, bool]:
         async with locker.lock(
             f"customer_meter:{customer.id}:{meter.id}",
-            timeout=5.0,
+            timeout=30.0,
             blocking_timeout=0.2,
         ):
             repository = CustomerMeterRepository.from_session(session)

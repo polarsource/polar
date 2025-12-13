@@ -182,7 +182,7 @@ class SubscriptionCreatedEvent(Event):
 
 class SubscriptionCanceledMetadata(TypedDict):
     subscription_id: str
-    product_id: str
+    product_id: NotRequired[str]
     amount: int
     currency: str
     recurring_interval: str

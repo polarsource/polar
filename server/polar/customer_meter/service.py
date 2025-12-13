@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 from typing import Any
 
+import logfire
 from sqlalchemy import Float, Select, func, or_, select, union_all
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
@@ -233,9 +234,21 @@ class CustomerMeterService:
         union_statement = union_all(by_customer_id, by_external_id)
         union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
 
-        # Execute directly - FromStatement works fine for execution
-        result = await session.execute(select(Event).from_statement(union_statement))
-        return result.scalar_one_or_none()
+        with logfire.span(
+            "Get latest current window event",
+            organization_id=str(meter.organization_id),
+            customer_id=str(customer.id),
+            external_customer_id=customer.external_id,
+            meter_id=str(meter.id),
+            meter_filter=meter.filter.model_dump_json() if meter.filter else None,
+            meter_reset_event_ingested_at=(
+                meter_reset_event.ingested_at.isoformat() if meter_reset_event else None
+            ),
+        ):
+            result = await session.execute(
+                select(Event).from_statement(union_statement)
+            )
+            return result.scalar_one_or_none()
 
     async def _get_current_window_events_statement(
         self, session: AsyncSession, customer: Customer, meter: Meter

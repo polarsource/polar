@@ -138,6 +138,14 @@ module "production" {
   }
 
   workers = {
+    "scheduler" = {
+      start_command      = "uv run dramatiq polar.worker.run -f polar.worker.scheduler:start"
+      plan               = "starter"
+      tag                = "latest"
+      custom_domains     = [{ name = "worker.polar.sh" }]
+      dramatiq_prom_port = "10000"
+      num_instances      = 1
+    }
     "worker" = {
       start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues low_priority"
       tag                = "latest"
@@ -151,7 +159,7 @@ module "production" {
       dramatiq_prom_port = "10001"
     }
     "worker-high-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority -f polar.worker.scheduler:start"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8 --queues high_priority"
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }

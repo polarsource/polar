@@ -27,6 +27,7 @@ from ._enqueue import (
     enqueue_job,
 )
 from ._health import HealthMiddleware
+from ._memory import MemoryMonitorMiddleware
 from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
 from ._sqlalchemy import AsyncSessionMaker, SQLAlchemyMiddleware
@@ -187,6 +188,7 @@ broker.add_middleware(
         min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
     )
 )
+broker.add_middleware(MemoryMonitorMiddleware())
 broker.add_middleware(HealthMiddleware())
 broker.add_middleware(AsyncIOMiddleware())
 broker.add_middleware(middleware.CurrentMessage())

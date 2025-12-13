@@ -1,3 +1,5 @@
+import threading
+
 import logfire
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import STATE_STOPPED
@@ -10,6 +12,7 @@ from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
 from polar.subscription.scheduler import SubscriptionJobStore
 from polar.worker import scheduler_middleware
+from polar.worker._health import _run_exposition_server
 
 configure_sentry()
 configure_logfire("worker")
@@ -27,6 +30,9 @@ class LogfireBlockingScheduler(BlockingScheduler):
 
 
 def start() -> None:
+    health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
+    health_thread.start()
+
     scheduler = LogfireBlockingScheduler()
 
     scheduler.add_jobstore(MemoryJobStore(), "memory")

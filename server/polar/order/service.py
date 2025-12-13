@@ -50,6 +50,7 @@ from polar.kit.tax import (
     IncompleteTaxLocation,
     InvalidTaxLocation,
     TaxabilityReason,
+    TaxCalculation,
     TaxRate,
     calculate_tax,
     from_stripe_tax_rate,
@@ -699,6 +700,7 @@ class OrderService:
                 discount_amount = discount.get_discount_amount(discountable_amount)
 
             # Calculate tax
+            tax_calculation: TaxCalculation | None = None
             taxable_amount = subtotal_amount - discount_amount
             tax_amount = 0
             taxability_reason: TaxabilityReason | None = None
@@ -743,8 +745,9 @@ class OrderService:
                         tax_calculation_processor_id = None
                         tax_amount = -tax_calculation["amount"]
 
-                taxability_reason = tax_calculation["taxability_reason"]
-                tax_rate = tax_calculation["tax_rate"]
+                if tax_calculation is not None:
+                    taxability_reason = tax_calculation["taxability_reason"]
+                    tax_rate = tax_calculation["tax_rate"]
 
             invoice_number = await organization_service.get_next_invoice_number(
                 session, subscription.organization, customer

@@ -38,7 +38,7 @@ class PrometheusMiddleware(dramatiq.Middleware):
         start_remote_write_pusher()
 
     def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         message.options["prometheus_start_time"] = time.perf_counter()
 
@@ -49,10 +49,10 @@ class PrometheusMiddleware(dramatiq.Middleware):
     def after_process_message(
         self,
         broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         *,
         result: Any | None = None,
-        exception: Exception | None = None,
+        exception: BaseException | None = None,
     ) -> None:
         start_time: float | None = message.options.pop("prometheus_start_time", None)
         if start_time is not None:
@@ -63,7 +63,7 @@ class PrometheusMiddleware(dramatiq.Middleware):
         TASK_EXECUTIONS.labels(task_name=message.actor_name, status=status).inc()
 
     def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         start_time: float | None = message.options.pop("prometheus_start_time", None)
         if start_time is not None:

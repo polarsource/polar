@@ -55,10 +55,10 @@ class MemoryMonitorMiddleware(dramatiq.Middleware):
     def after_process_message(
         self,
         broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         *,
         result: Any | None = None,
-        exception: Exception | None = None,
+        exception: BaseException | None = None,
     ) -> None:
         if isinstance(exception, MemoryError):
             log.error(

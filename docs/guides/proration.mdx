@@ -109,6 +109,7 @@ curl --request PATCH \
 
 
 ## Some examples for proration amount calculation
+You can create a subscription with two plan options, one for \$5 and other for \$20 by following [Create Product Variants](https://polar.sh/docs/guides/create-variants).  
 
 For this example, let's assume that the subscription is for 30 days period and the plan is being changed after 10 days. The proration will then apply the price difference for the remaining 20 days.
 
@@ -144,3 +145,7 @@ Total difference = 20 × \$0.50 = \$10 credit
 Prorate: \$0 charged now, -\$10 applied in next invoice
 
 Invoice: \$10 credited immediately, \$0 next invoice
+
+<Note>
+If the billing interval changes, i.e. daily to monthly or monthly to yearly or vice versa, the proration is always applied as invoice (even if set to prorate).
+</Note>

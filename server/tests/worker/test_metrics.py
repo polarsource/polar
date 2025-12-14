@@ -1,6 +1,5 @@
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
 import dramatiq
 import pytest
@@ -71,7 +70,9 @@ class TestPrometheusMiddlewareWithStubBroker:
             raise ValueError("Task failed")
 
         failing_task.send()
-        stub_broker.join(failing_task.queue_name)
+
+        with pytest.raises(ValueError):
+            stub_broker.join(failing_task.queue_name)
         stub_worker.join()
 
         mock_executions.labels.assert_called_with(
@@ -137,14 +138,16 @@ class TestPrometheusMiddlewareDirectCalls:
         return StubBroker()
 
     @pytest.fixture
-    def message(self) -> dramatiq.Message[Any]:
+    def message(self) -> dramatiq.MessageProxy:
         """Create a test Dramatiq message."""
-        return dramatiq.Message(
-            queue_name="test_queue",
-            actor_name="test_actor",
-            args=(),
-            kwargs={},
-            options={},
+        return dramatiq.MessageProxy(
+            dramatiq.Message(
+                queue_name="test_queue",
+                actor_name="test_actor",
+                args=(),
+                kwargs={},
+                options={},
+            )
         )
 
     def test_before_worker_boot_clears_directory(
@@ -191,7 +194,7 @@ class TestPrometheusMiddlewareDirectCalls:
         middleware.before_worker_boot(broker, worker)
 
     def test_before_process_message_sets_start_time(
-        self, broker: StubBroker, message: dramatiq.Message[Any]
+        self, broker: StubBroker, message: dramatiq.MessageProxy
     ) -> None:
         """Test that before_process_message records the start time."""
         middleware = PrometheusMiddleware()
@@ -204,7 +207,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_before_process_message_increments_retries(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that before_process_message increments retry counter on retries."""
@@ -220,7 +223,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_before_process_message_no_retry_on_first_attempt(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that before_process_message doesn't increment retries on first attempt."""
@@ -235,7 +238,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_after_process_message_records_success(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that after_process_message records success metrics."""
@@ -259,7 +262,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_after_process_message_records_failure(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that after_process_message records failure metrics."""
@@ -281,7 +284,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_after_process_message_removes_start_time(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that after_process_message removes start time from options."""
@@ -298,7 +301,7 @@ class TestPrometheusMiddlewareDirectCalls:
     def test_after_skip_message_records_skipped(
         self,
         broker: StubBroker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         mocker: MockerFixture,
     ) -> None:
         """Test that after_skip_message records skipped status."""

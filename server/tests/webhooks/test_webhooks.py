@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import cast
 from unittest.mock import MagicMock
 
 import dramatiq
@@ -139,7 +139,7 @@ async def test_webhook_delivery_500(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.Message[Any],
+    current_message: dramatiq.MessageProxy,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         return_value=httpx.Response(500, text="Internal Error")
@@ -184,7 +184,7 @@ async def test_webhook_delivery_http_error(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    current_message: dramatiq.Message[Any],
+    current_message: dramatiq.MessageProxy,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         side_effect=httpx.HTTPError("ERROR")

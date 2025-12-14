@@ -29,7 +29,7 @@ def patch_middlewares(
 
 @pytest.fixture(autouse=True)
 def current_message() -> Iterator[dramatiq.Message[Any]]:
-    message = dramatiq.Message[Any](
+    message: dramatiq.Message[Any] = dramatiq.Message(
         queue_name="default",
         actor_name="actor",
         args=(),

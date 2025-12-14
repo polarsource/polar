@@ -39,7 +39,7 @@ class MaxRetriesMiddleware(dramatiq.Middleware):
     """Middleware to set the max_retries option for a message."""
 
     def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         actor = broker.get_actor(message.actor_name)
         max_retries = message.options.get(
@@ -84,7 +84,7 @@ class LogContextMiddleware(dramatiq.Middleware):
     """Middleware to manage log context for each message."""
 
     def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         structlog.contextvars.bind_contextvars(
             actor_name=message.actor_name, message_id=message.message_id
@@ -93,15 +93,15 @@ class LogContextMiddleware(dramatiq.Middleware):
     def after_process_message(
         self,
         broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         *,
         result: Any | None = None,
-        exception: Exception | None = None,
+        exception: BaseException | None = None,
     ) -> None:
         structlog.contextvars.unbind_contextvars("actor_name", "message_id")
 
     def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         return self.after_process_message(broker, message)
 
@@ -115,7 +115,7 @@ class LogfireMiddleware(dramatiq.Middleware):
         instrument_httpx()
 
     def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         logfire_stack = contextlib.ExitStack()
         actor_name = message.actor_name
@@ -132,10 +132,10 @@ class LogfireMiddleware(dramatiq.Middleware):
     def after_process_message(
         self,
         broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
+        message: dramatiq.MessageProxy,
         *,
         result: Any | None = None,
-        exception: Exception | None = None,
+        exception: BaseException | None = None,
     ) -> None:
         logfire_stack: contextlib.ExitStack | None = message.options.pop(
             "logfire_stack", None
@@ -144,26 +144,9 @@ class LogfireMiddleware(dramatiq.Middleware):
             logfire_stack.close()
 
     def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         return self.after_process_message(broker, message)
-
-
-class AsyncIOMiddleware(middleware.AsyncIO):
-    """
-    See: https://github.com/Bogdanp/dramatiq/pull/802
-    """
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
-        *,
-        result: Any | None = None,
-        exception: Exception | None = None,
-    ) -> None:
-        if exception is not None:
-            exception.__traceback__ = None
 
 
 broker = RedisBroker(
@@ -190,7 +173,7 @@ broker.add_middleware(
 )
 broker.add_middleware(MemoryMonitorMiddleware())
 broker.add_middleware(HealthMiddleware())
-broker.add_middleware(AsyncIOMiddleware())
+broker.add_middleware(middleware.AsyncIO())
 broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())

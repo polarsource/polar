@@ -47,6 +47,7 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
   apt-get update \
   && apt-get install -y \
+  git \
   build-essential \
   redis \
   libpq-dev \

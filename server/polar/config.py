@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     WORKER_MAX_RETRIES: int = 20
     WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
     WORKER_PROMETHEUS_DIR: Path = Path(tempfile.gettempdir()) / "prometheus_multiproc"
+    WORKER_TRACEMALLOC: bool = False
+    WORKER_TRACEMALLOC_THRESHOLD: int = 50
+    WORKER_TRACEMALLOC_FRAMES: int = 10
 
     # Bulk jobs spread settings (for staggering large batch job enqueueing)
     BULK_JOBS_SPREAD_THRESHOLD: int = 50  # Only spread if count exceeds this

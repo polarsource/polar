@@ -1,0 +1,146 @@
+---
+title: "Proration for Subscription Upgrades and Downgrades"
+sidebarTitle: "Proration behavior"
+description: "Learn how proration works in Polar, including available proration types, billing behavior during upgrades and downgrades, and how to configure proration using APIs and dashboard settings."
+---
+
+## What is Proration?
+Proration is the adjustment of charges based on the unused portion of the current billing period when a subscription is upgraded or downgraded.
+
+## Types of Proration
+- **Invoice Immediately (`invoice`)**  
+The price difference is charged or credited immediately when the subscription is upgraded or downgraded.
+- **Next Invoice (`prorate`)**  
+The price difference is charged or credited on the next invoice on updgrading or downgrading a subscription.
+
+<Note>
+For both `prorate` and `invoice` proration types, the **subscription plan always changes immediately**, whether the change is an upgrade or a downgrade.  
+The only difference between the two proration types is **when the price difference is charged or credited**.
+</Note>
+
+## How to change the default proration setting using dashboard
+<Steps>
+    <Step title = "Go to Organization Settings">
+        In the Polar dashboard sidebar, click on **Settings**.
+            You can also go directly to:  
+            `https://polar.sh/dashboard/${org_slug}/settings`  
+        Scroll down to **Subscriptions** section.
+        <img height="200" src="/assets/guides/proration/settings.png" />
+    </Step>
+    <Step title = "Choose the Proration type">
+        Choose the default proration behavior: **Invoice Immediately** or **Next invoice**.
+        <img height="200" src="/assets/guides/proration/proration.png" />
+        The default proration setting is changed successfully. 
+    </Step>
+</Steps>
+
+## How to change the default proration setting using the OAT API
+You can change the default proration behavior using the [Update Organization API](https://polar.sh/docs/api-reference/organizations/update).
+ 
+    
+## Proration using Subscription Update API
+<Steps>
+    <Step title = "Create an organization Token">
+        Create a new organization token by following our [Organization Access Tokens](https://polar.sh/docs/integrate/oat) guide.
+    </Step>
+    <Step title = "Save your Access Token">
+        After creating your access token, you will be able to view it. Please copy and save your access token.
+        <img height="200" src="/assets/guides/proration/access-token.png" />
+    </Step>
+    <Step title = "Fetch the Subscription ID">
+        - In the Polar dashboard sidebar, navigate to **Sales** > **Subscriptions** for your organization.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/sales/subscriptions`
+
+        <img height="200" src="/assets/guides/proration/subscription-list.png" />
+        - Click on the Subscription you want to upgrade/downgrade and copy its **Subscription ID**.
+        <img height="200" src="/assets/guides/proration/subscription-details.png" />
+    </Step>
+    <Step title = "Fetch the Product ID">
+        - In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
+        You can also go directly to:  
+        `https://polar.sh/dashboard/${org_slug}/products`  
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/products-catalogue.png" />
+        - Retrieve the Product ID for the item you wish to upgrade the subscription to by clicking on the **⋮ (More options) menu** next to chosen products and selecting **Copy Product ID**.       
+        <img height="200" src="/assets/guides/theme-switch-in-checkout/product-id.png" />
+    </Step>
+    <Step title = "API call for updating the subscription">
+        Call the **Update Subscription API** as follows. 
+        Make sure to replace:
+
+            - **YOUR_BEARER_TOKEN_HERE** with your API access token
+
+            - **subscription_id** with the ID of the subscription you want to update
+
+            - **product_id** with the new product ID
+
+            - **invoice | prorate** with the desired proration type (invoice or prorate)
+<CodeGroup>
+
+```py Python
+from polar_sdk import Polar
+
+with Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+) as polar:
+
+    res = polar.subscriptions.update(id="<subscription_id>", subscription_update={
+        "product_id": "<product_id>",
+        "proration_behavior": "<invoice | prorate>"
+    })
+
+    # Handle response
+    print(res)
+```
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{<subscription_id>} \
+  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "product_id": "<product_id>",
+    "proration_behavior": "invoice | prorate"
+  }'
+```
+</CodeGroup>
+    </Step>
+</Steps>
+
+
+## Some examples for proration amount calculation
+
+For this example, let's assume that the subscription is for 30 days period and the plan is being changed after 10 days. The proration will then apply the price difference for the remaining 20 days.
+
+| Plan Change | Proration Type | Amount Charged Immediately| Addition to next invoice|
+|:------------:|:----------------:|:----------------:|:----------------------:|
+| \$5 → $20   | prorate        |      $0    | $10 |
+| \$5 → $20   | invoice        | $10         | $0 |
+| \$20 → $5   | prorate        | $0 | -$10 |
+| \$20 → $5   | invoice        | -$10 | -$0 |
+
+**Example**: \$5 → \$20 upgrade after 10 days
+
+Total period = 30 days
+
+Days remaining = 30 - 10 = 20 days
+
+Daily cost difference = \$20/30 - \$5/30 = \$0.50 per day
+
+Balance for remaining days = 20 × \$0.50 = \$10
+
+Prorate: \$0 charged now, \$10 added to next invoice
+
+Invoice: \$10 charged immediately, $0 next invoice
+
+**Example**: \$20 → \$5 downgrade after 10 days
+
+Daily difference = \$20/30 - \$5/30 = \$0.50 per day
+
+Remaining days = 20
+
+Total difference = 20 × \$0.50 = \$10 credit
+
+Prorate: \$0 charged now, -\$10 applied in next invoice
+
+Invoice: \$10 credited immediately, \$0 next invoice

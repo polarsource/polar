@@ -9,6 +9,7 @@ import Animated, {
   interpolate,
   interpolateColor,
   runOnJS,
+  useAnimatedProps,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
@@ -17,6 +18,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { Box } from './Box'
+
+const AnimatedIcon = Animated.createAnimatedComponent(MaterialIcons)
 
 interface SlideToActionProps {
   onSlideComplete: () => Promise<void> | void
@@ -105,7 +108,6 @@ export const SlideToAction = ({
       if (isAtThreshold !== prev) {
         atThreshold.value = isAtThreshold
         if (isAtThreshold) {
-          // Bounce the thumb
           thumbScale.value = withSequence(
             withTiming(1.25, { duration: 100 }),
             withTiming(1.1, { duration: 100 }),
@@ -184,11 +186,20 @@ export const SlideToAction = ({
     const translateX = Math.max(0, progress.value * maxSlide)
 
     const clampedProgress = Math.max(0, Math.min(1, progress.value))
-    const baseColor = interpolateColor(
+
+    const slideColor = interpolateColor(
       clampedProgress,
-      [0, 0.9],
-      [theme.colors.secondary, theme.colors.primary],
+      [0, 0.15],
+      [theme.colors.secondary, theme.colors.monochromeInverted],
     )
+
+    const thresholdColor = interpolateColor(
+      clampedProgress,
+      [0.89, 0.9],
+      [theme.colors.monochromeInverted, theme.colors.primary],
+    )
+
+    const baseColor = clampedProgress >= 0.9 ? thresholdColor : slideColor
 
     const backgroundColor =
       successProgress.value > 0
@@ -254,6 +265,37 @@ export const SlideToAction = ({
     return {
       opacity,
       transform: [{ translateY }],
+    }
+  })
+
+  const iconProps = useAnimatedProps(() => {
+    const clampedProgress = Math.max(0, Math.min(1, progress.value))
+
+    const slideColor = interpolateColor(
+      clampedProgress,
+      [0, 0.15],
+      [theme.colors.monochromeInverted, theme.colors.monochrome],
+    )
+
+    const thresholdColor = interpolateColor(
+      clampedProgress,
+      [0.89, 0.9],
+      [theme.colors.monochrome, theme.colors.monochromeInverted],
+    )
+
+    const baseColor = clampedProgress >= 0.9 ? thresholdColor : slideColor
+
+    const color =
+      successProgress.value > 0
+        ? interpolateColor(
+            successProgress.value,
+            [0, 1],
+            [baseColor, theme.colors.monochrome],
+          )
+        : baseColor
+
+    return {
+      color,
     }
   })
 
@@ -379,10 +421,10 @@ export const SlideToAction = ({
             thumbStyle,
           ]}
         >
-          <MaterialIcons
+          <AnimatedIcon
             name={phase === 'success' ? 'check' : 'arrow-forward-ios'}
             size={phase === 'success' ? 24 : 18}
-            color={theme.colors.monochromeInverted}
+            animatedProps={iconProps}
           />
         </Animated.View>
       </GestureDetector>

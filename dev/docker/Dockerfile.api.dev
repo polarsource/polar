@@ -1,0 +1,38 @@
+# Development Dockerfile for Polar API and Worker services
+# Optimized for hot-reloading with mounted source code
+
+FROM python:3.14-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    libpq-dev \
+    curl \
+    tzdata-legacy \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install Node.js and pnpm for email templates
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm@10.24.0 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV FORWARDED_ALLOW_IPS=*
+
+WORKDIR /app/server
+
+# Note: Source code is mounted at runtime, not copied
+# This Dockerfile only sets up the environment
+
+EXPOSE 8000
+
+# Entrypoint script handles dependency installation, migrations, and service startup
+ENTRYPOINT ["/app/dev/docker/scripts/startup.sh"]
+CMD ["api"]

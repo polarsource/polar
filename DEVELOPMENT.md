@@ -222,6 +222,117 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 > [!NOTE]
 > On **GitHub Codespaces**, both API backend and web frontend will be routed on the 8080 port.
 
+## Docker-Based Development (Alternative)
+
+For a fully containerized development environment with hot-reloading, you can use the Docker-based setup. This is useful for:
+
+- Running multiple isolated instances for testing
+- Consistent environments across different machines
+- AI agents that need isolated development environments
+
+### Quick Start
+
+```sh
+./dev/docker-dev
+```
+
+This single command will:
+1. Build the necessary Docker images
+2. Start PostgreSQL, Redis, and MinIO
+3. Install Python and Node.js dependencies
+4. Run database migrations
+5. Start the API server, worker, and web frontend with hot-reloading
+
+### Access Points
+
+| Service | URL |
+|---------|-----|
+| Web Frontend | http://localhost:3000 |
+| API Server | http://localhost:8000 |
+| MinIO Console | http://localhost:9001 |
+
+### Common Commands
+
+```sh
+# Start in background (detached mode)
+./dev/docker-dev -d
+
+# View logs
+./dev/docker-dev logs
+
+# View logs for specific service
+./dev/docker-dev logs api
+
+# Stop all services
+./dev/docker-dev down
+
+# Rebuild images
+./dev/docker-dev -b
+
+# Open shell in container
+./dev/docker-dev shell api
+
+# Include monitoring (Prometheus + Grafana)
+./dev/docker-dev --monitoring
+```
+
+### Running Multiple Instances
+
+For parallel development or testing, you can run multiple isolated instances:
+
+```sh
+# Instance 0 (default): API on 8000, Web on 3000
+./dev/docker-dev -d
+
+# Instance 1: API on 8100, Web on 3100
+./dev/docker-dev -i 1 -d
+
+# Instance 2: API on 8200, Web on 3200
+./dev/docker-dev -i 2 -d
+```
+
+Each instance has its own:
+- Docker containers and networks
+- PostgreSQL database
+- Redis instance
+- MinIO storage
+
+### Port Mapping
+
+| Service | Instance 0 | Instance 1 | Instance 2 |
+|---------|------------|------------|------------|
+| API | 8000 | 8100 | 8200 |
+| Web | 3000 | 3100 | 3200 |
+| PostgreSQL | 5432 | 5532 | 5632 |
+| Redis | 6379 | 6479 | 6579 |
+| MinIO API | 9000 | 9100 | 9200 |
+| MinIO Console | 9001 | 9101 | 9201 |
+
+### Hot-Reloading
+
+The Docker setup supports hot-reloading:
+
+- **Backend (API)**: Uses uvicorn with `--reload` flag
+- **Backend (Worker)**: Uses dramatiq with `--watch` flag
+- **Frontend (Web)**: Uses Next.js with Turbopack
+
+Code changes on your host machine are immediately reflected in the running containers.
+
+### Configuration
+
+The Docker environment uses `dev/docker/.env.docker` for configuration. To customize:
+
+```sh
+# Copy template (done automatically on first run)
+cp dev/docker/.env.docker.template dev/docker/.env.docker
+
+# Edit as needed
+vim dev/docker/.env.docker
+```
+
+> [!NOTE]
+> The Docker-based setup is additive. The traditional host-based development workflow (`docker compose up -d` + `uv run task api`) continues to work as before.
+
 ## Login using email
 
 To log in for the first time, follow these steps:

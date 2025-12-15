@@ -53,11 +53,12 @@ export const createServerSideAPI = async (
     }
   }
 
-  const client = baseCreateClient(
-    process.env.NEXT_PUBLIC_API_URL as string,
-    token,
-    apiHeaders,
-  )
+  // Use POLAR_API_URL for server-side requests (e.g., in Docker containers)
+  // Fall back to NEXT_PUBLIC_API_URL for local development
+  const apiUrl =
+    process.env.POLAR_API_URL || (process.env.NEXT_PUBLIC_API_URL as string)
+
+  const client = baseCreateClient(apiUrl, token, apiHeaders)
 
   return client
 }

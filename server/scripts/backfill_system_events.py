@@ -737,7 +737,7 @@ async def create_missing_subscription_canceled_events(
                 )
                 if sub.customer_cancellation_reason:
                     metadata["customer_cancellation_reason"] = (
-                        sub.customer_cancellation_reason.value
+                        sub.customer_cancellation_reason
                     )
                 if sub.customer_cancellation_comment:
                     metadata["customer_cancellation_comment"] = (

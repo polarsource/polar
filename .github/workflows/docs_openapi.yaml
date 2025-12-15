@@ -29,7 +29,7 @@ jobs:
         run: ./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           add-paths: docs/
           commit-message: "docs: update OpenAPI schema"

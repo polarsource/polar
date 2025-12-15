@@ -575,29 +575,29 @@ async def create_missing_subscription_created_events(
     """
     typer.echo("\n=== Creating missing subscription.created events ===")
 
-    existing_sub_ids_subquery = (
-        select(Event.user_metadata["subscription_id"].as_string().label("sub_id"))
+    existing_sub_ids_result = await session.execute(
+        select(Event.user_metadata["subscription_id"].as_string())
         .where(
             Event.name == SystemEvent.subscription_created,
             Event.source == EventSource.system,
         )
         .distinct()
-        .subquery()
     )
+    existing_sub_ids = {row[0] for row in existing_sub_ids_result.fetchall()}
+    typer.echo(f"Found {len(existing_sub_ids)} existing subscription.created events")
 
-    count_result = await session.execute(
-        select(func.count(Subscription.id))
-        .outerjoin(
-            existing_sub_ids_subquery,
-            existing_sub_ids_subquery.c.sub_id == Subscription.id.cast(String),
-        )
-        .where(
+    all_sub_ids_result = await session.execute(
+        select(Subscription.id).where(
             Subscription.deleted_at.is_(None),
             Subscription.started_at.is_not(None),
-            existing_sub_ids_subquery.c.sub_id.is_(None),
         )
     )
-    total_to_create = count_result.scalar() or 0
+    all_sub_ids = [row[0] for row in all_sub_ids_result.fetchall()]
+
+    missing_sub_ids = [
+        sub_id for sub_id in all_sub_ids if str(sub_id) not in existing_sub_ids
+    ]
+    total_to_create = len(missing_sub_ids)
 
     if total_to_create == 0:
         typer.echo("No missing subscription.created events to create")
@@ -612,21 +612,13 @@ async def create_missing_subscription_created_events(
             "[cyan]Creating subscription.created events...", total=total_to_create
         )
 
-        while True:
+        for i in range(0, total_to_create, batch_size):
+            batch_ids = missing_sub_ids[i : i + batch_size]
+
             statement = (
                 select(Subscription)
-                .outerjoin(
-                    existing_sub_ids_subquery,
-                    existing_sub_ids_subquery.c.sub_id == Subscription.id.cast(String),
-                )
-                .where(
-                    Subscription.deleted_at.is_(None),
-                    Subscription.started_at.is_not(None),
-                    existing_sub_ids_subquery.c.sub_id.is_(None),
-                )
+                .where(Subscription.id.in_(batch_ids))
                 .options(selectinload(Subscription.customer))
-                .order_by(Subscription.created_at.asc(), Subscription.id.asc())
-                .limit(batch_size)
             )
 
             result = await session.execute(statement)
@@ -680,29 +672,29 @@ async def create_missing_subscription_canceled_events(
     """
     typer.echo("\n=== Creating missing subscription.canceled events ===")
 
-    existing_sub_ids_subquery = (
-        select(Event.user_metadata["subscription_id"].as_string().label("sub_id"))
+    existing_sub_ids_result = await session.execute(
+        select(Event.user_metadata["subscription_id"].as_string())
         .where(
             Event.name == SystemEvent.subscription_canceled,
             Event.source == EventSource.system,
         )
         .distinct()
-        .subquery()
     )
+    existing_sub_ids = {row[0] for row in existing_sub_ids_result.fetchall()}
+    typer.echo(f"Found {len(existing_sub_ids)} existing subscription.canceled events")
 
-    count_result = await session.execute(
-        select(func.count(Subscription.id))
-        .outerjoin(
-            existing_sub_ids_subquery,
-            existing_sub_ids_subquery.c.sub_id == Subscription.id.cast(String),
-        )
-        .where(
+    all_sub_ids_result = await session.execute(
+        select(Subscription.id).where(
             Subscription.deleted_at.is_(None),
             Subscription.canceled_at.is_not(None),
-            existing_sub_ids_subquery.c.sub_id.is_(None),
         )
     )
-    total_to_create = count_result.scalar() or 0
+    all_sub_ids = [row[0] for row in all_sub_ids_result.fetchall()]
+
+    missing_sub_ids = [
+        sub_id for sub_id in all_sub_ids if str(sub_id) not in existing_sub_ids
+    ]
+    total_to_create = len(missing_sub_ids)
 
     if total_to_create == 0:
         typer.echo("No missing subscription.canceled events to create")
@@ -717,21 +709,13 @@ async def create_missing_subscription_canceled_events(
             "[cyan]Creating subscription.canceled events...", total=total_to_create
         )
 
-        while True:
+        for i in range(0, total_to_create, batch_size):
+            batch_ids = missing_sub_ids[i : i + batch_size]
+
             statement = (
                 select(Subscription)
-                .outerjoin(
-                    existing_sub_ids_subquery,
-                    existing_sub_ids_subquery.c.sub_id == Subscription.id.cast(String),
-                )
-                .where(
-                    Subscription.deleted_at.is_(None),
-                    Subscription.canceled_at.is_not(None),
-                    existing_sub_ids_subquery.c.sub_id.is_(None),
-                )
+                .where(Subscription.id.in_(batch_ids))
                 .options(selectinload(Subscription.customer))
-                .order_by(Subscription.canceled_at.asc(), Subscription.id.asc())
-                .limit(batch_size)
             )
 
             result = await session.execute(statement)
@@ -795,28 +779,28 @@ async def create_missing_checkout_created_events(
     """
     typer.echo("\n=== Creating missing checkout.created events ===")
 
-    existing_checkout_ids_subquery = (
-        select(Event.user_metadata["checkout_id"].as_string().label("checkout_id"))
+    existing_checkout_ids_result = await session.execute(
+        select(Event.user_metadata["checkout_id"].as_string())
         .where(
             Event.name == SystemEvent.checkout_created,
             Event.source == EventSource.system,
         )
         .distinct()
-        .subquery()
     )
+    existing_checkout_ids = {row[0] for row in existing_checkout_ids_result.fetchall()}
+    typer.echo(f"Found {len(existing_checkout_ids)} existing checkout.created events")
 
-    count_result = await session.execute(
-        select(func.count(Checkout.id))
-        .outerjoin(
-            existing_checkout_ids_subquery,
-            existing_checkout_ids_subquery.c.checkout_id == Checkout.id.cast(String),
-        )
-        .where(
-            Checkout.deleted_at.is_(None),
-            existing_checkout_ids_subquery.c.checkout_id.is_(None),
-        )
+    all_checkout_ids_result = await session.execute(
+        select(Checkout.id).where(Checkout.deleted_at.is_(None))
     )
-    total_to_create = count_result.scalar() or 0
+    all_checkout_ids = [row[0] for row in all_checkout_ids_result.fetchall()]
+
+    missing_checkout_ids = [
+        checkout_id
+        for checkout_id in all_checkout_ids
+        if str(checkout_id) not in existing_checkout_ids
+    ]
+    total_to_create = len(missing_checkout_ids)
 
     if total_to_create == 0:
         typer.echo("No missing checkout.created events to create")
@@ -831,21 +815,13 @@ async def create_missing_checkout_created_events(
             "[cyan]Creating checkout.created events...", total=total_to_create
         )
 
-        while True:
+        for i in range(0, total_to_create, batch_size):
+            batch_ids = missing_checkout_ids[i : i + batch_size]
+
             statement = (
                 select(Checkout)
-                .outerjoin(
-                    existing_checkout_ids_subquery,
-                    existing_checkout_ids_subquery.c.checkout_id
-                    == Checkout.id.cast(String),
-                )
-                .where(
-                    Checkout.deleted_at.is_(None),
-                    existing_checkout_ids_subquery.c.checkout_id.is_(None),
-                )
+                .where(Checkout.id.in_(batch_ids))
                 .options(selectinload(Checkout.organization))
-                .order_by(Checkout.created_at.asc(), Checkout.id.asc())
-                .limit(batch_size)
             )
 
             result = await session.execute(statement)

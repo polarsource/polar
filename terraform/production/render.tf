@@ -160,11 +160,6 @@ module "production" {
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }
-    "worker-default" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues default"
-      digest             = "sha256:d55ecc35d8a51bcf7dde0d4d865c96b9de8d2c3469b12d1a719fef2ae39a4825"
-      dramatiq_prom_port = "10001"
-    }
   }
 
   google_secrets = {

@@ -38,8 +38,9 @@ const MIN_LOADING_MS = 2000
 const SUCCESS_DISPLAY_MS = 2000
 
 const springConfig = {
-  damping: 50,
-  stiffness: 400,
+  damping: 30,
+  stiffness: 300,
+  overshootClamping: true,
 }
 
 type Phase = 'idle' | 'loading' | 'success'
@@ -166,10 +167,11 @@ export const SlideToAction = ({
     })
 
   const thumbStyle = useAnimatedStyle(() => {
-    const translateX = progress.value * maxSlide
+    const translateX = Math.max(0, progress.value * maxSlide)
 
+    const clampedProgress = Math.max(0, Math.min(1, progress.value))
     const baseColor = interpolateColor(
-      progress.value,
+      clampedProgress,
       [0, 0.9],
       [theme.colors.secondary, theme.colors.primary],
     )

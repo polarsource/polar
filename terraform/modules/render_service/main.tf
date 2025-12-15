@@ -257,7 +257,13 @@ resource "render_web_service" "worker" {
         image_url              = "ghcr.io/polarsource/polar"
         registry_credential_id = var.registry_credential_id
       },
-      each.value.digest != null ? { digest = each.value.digest } : { tag = each.value.tag }
+      each.value.digest != null ? {
+        digest = each.value.digest
+        tag    = null
+        } : {
+        tag    = each.value.tag
+        digest = null
+      }
     )
   }
 

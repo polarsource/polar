@@ -1,30 +1,33 @@
-import asyncio
 import uuid
 from typing import Any
 
-from sqlalchemy import or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy import (
+    ColumnElement,
+    Integer,
+    Select,
+    String,
+    func,
+    literal,
+    or_,
+    select,
+    union_all,
+)
 
 from polar.auth.models import AuthSubject, User
 from polar.auth.scope import Scope
-from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import (
     Customer,
     Order,
+    Organization,
     Product,
     Subscription,
+    UserOrganization,
 )
-from polar.order.repository import OrderRepository
-from polar.product.repository import ProductRepository
-from polar.subscription.repository import SubscriptionRepository
 
 from .schemas import (
     SearchResult,
-    SearchResultCustomer,
-    SearchResultOrder,
-    SearchResultProduct,
-    SearchResultSubscription,
+    SearchResultTypeAdapter,
 )
 
 
@@ -80,248 +83,238 @@ class SearchService:
         *,
         organization_id: uuid.UUID,
         query: str,
-        limit: int = 5,
+        limit: int = 20,
     ) -> list[SearchResult]:
-        prefix_term = f"{query}%"
-        substring_term = f"%{query}%"
         query_uuid = self._try_parse_uuid(query)
 
-        tasks: list[asyncio.Task[Any]] = []
+        ts_query_simple = func.websearch_to_tsquery("simple", query)
+        ts_query_english = func.websearch_to_tsquery("english", query)
+        ilike_term = f"%{query}%"
 
-        if self._has_products_scope(auth_subject):
-            tasks.append(
-                asyncio.create_task(
-                    self._search_products(
-                        session,
-                        auth_subject,
-                        organization_id,
-                        substring_term,
-                        query_uuid,
-                        limit,
-                    )
-                )
+        organization_subquery = (
+            select(Organization.id)
+            .join(UserOrganization, Organization.id == UserOrganization.organization_id)
+            .where(
+                Organization.id == organization_id,
+                UserOrganization.user_id == auth_subject.subject.id,
+                UserOrganization.deleted_at.is_(None),
             )
+        )
+
+        subqueries: list[Select[Any]] = []
+        if self._has_products_scope(auth_subject):
+            products_subquery = self._build_products_subquery(
+                organization_subquery, query_uuid, ts_query_english
+            )
+            subqueries.append(products_subquery)
 
         if self._has_customers_scope(auth_subject):
-            tasks.append(
-                asyncio.create_task(
-                    self._search_customers(
-                        session,
-                        auth_subject,
-                        organization_id,
-                        prefix_term,
-                        query_uuid,
-                        limit,
-                    )
-                )
+            customers_subquery = self._build_customers_subquery(
+                organization_subquery, query_uuid, ts_query_simple, ilike_term
             )
+            subqueries.append(customers_subquery)
 
         if self._has_orders_scope(auth_subject):
-            tasks.append(
-                asyncio.create_task(
-                    self._search_orders(
-                        session,
-                        auth_subject,
-                        organization_id,
-                        prefix_term,
-                        substring_term,
-                        query_uuid,
-                        limit,
-                    )
-                )
+            orders_subquery = self._build_orders_subquery(
+                organization_subquery,
+                query_uuid,
+                ts_query_simple,
+                ts_query_english,
+                ilike_term,
             )
+            subqueries.append(orders_subquery)
 
         if self._has_subscriptions_scope(auth_subject):
-            tasks.append(
-                asyncio.create_task(
-                    self._search_subscriptions(
-                        session,
-                        auth_subject,
-                        organization_id,
-                        prefix_term,
-                        substring_term,
-                        query_uuid,
-                        limit,
-                    )
-                )
+            subscriptions_subquery = self._build_subscriptions_subquery(
+                organization_subquery,
+                query_uuid,
+                ts_query_simple,
+                ts_query_english,
+                ilike_term,
             )
+            subqueries.append(subscriptions_subquery)
 
-        if not tasks:
+        if not subqueries:
             return []
 
-        results = await asyncio.gather(*tasks)
-        return [item for sublist in results for item in sublist]
+        union_query = union_all(*subqueries).subquery()
 
-    async def _search_products(
+        final_query = (
+            select(union_query).order_by(union_query.c.rank.desc()).limit(limit)
+        )
+
+        result = await session.execute(final_query)
+        return [SearchResultTypeAdapter.validate_python(row) for row in result.all()]
+
+    def _build_products_subquery(
         self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User],
-        organization_id: uuid.UUID,
-        search_term: str,
+        organization_subquery: Select[tuple[uuid.UUID]],
         query_uuid: uuid.UUID | None,
-        limit: int,
-    ) -> list[SearchResultProduct]:
-        product_repository = ProductRepository.from_session(session)
-        product_statement = product_repository.get_readable_statement(
-            auth_subject
-        ).where(Product.organization_id == organization_id)
+        ts_query_english: ColumnElement[Any],
+    ) -> Select[Any]:
+        rank_expr = func.ts_rank(Product.search_vector, ts_query_english)
 
-        if query_uuid:
-            product_statement = product_statement.where(Product.id == query_uuid)
-        else:
-            product_statement = product_statement.where(
-                or_(
-                    Product.name.ilike(search_term),
-                    Product.description.ilike(search_term),
-                )
-            )
-
-        product_statement = product_statement.limit(limit)
-        products = await product_repository.get_all(product_statement)
-
-        return [
-            SearchResultProduct(
-                id=product.id,
-                name=product.name,
-                description=product.description,
-            )
-            for product in products
-        ]
-
-    async def _search_customers(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User],
-        organization_id: uuid.UUID,
-        search_term: str,
-        query_uuid: uuid.UUID | None,
-        limit: int,
-    ) -> list[SearchResultCustomer]:
-        customer_repository = CustomerRepository.from_session(session)
-        customer_statement = customer_repository.get_readable_statement(
-            auth_subject
-        ).where(Customer.organization_id == organization_id)
-
-        if query_uuid:
-            customer_statement = customer_statement.where(Customer.id == query_uuid)
-        else:
-            customer_statement = customer_statement.where(
-                or_(
-                    Customer.email.ilike(search_term),
-                    Customer.name.ilike(search_term),
-                )
-            )
-
-        customer_statement = customer_statement.limit(limit)
-        customers = await customer_repository.get_all(customer_statement)
-
-        return [
-            SearchResultCustomer(
-                id=customer.id,
-                name=customer.name,
-                email=customer.email,
-            )
-            for customer in customers
-        ]
-
-    async def _search_orders(
-        self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User],
-        organization_id: uuid.UUID,
-        prefix_term: str,
-        substring_term: str,
-        query_uuid: uuid.UUID | None,
-        limit: int,
-    ) -> list[SearchResultOrder]:
-        order_repository = OrderRepository.from_session(session)
-
-        order_statement = (
-            order_repository.get_readable_statement(auth_subject)
-            .options(
-                joinedload(Order.customer),
-                joinedload(Order.product),
-            )
-            .where(Product.organization_id == organization_id)
+        stmt = select(
+            Product.id,
+            literal("product").label("type"),
+            rank_expr.label("rank"),
+            Product.name.label("name"),
+            Product.description.label("description"),
+            literal(None).cast(String).label("email"),
+            literal(None).cast(String).label("customer_name"),
+            literal(None).cast(String).label("customer_email"),
+            literal(None).cast(String).label("product_name"),
+            literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("status"),
+        ).where(
+            Product.organization_id.in_(organization_subquery),
+            Product.deleted_at.is_(None),
         )
 
         if query_uuid:
-            order_statement = order_statement.where(Order.id == query_uuid)
+            stmt = stmt.where(Product.id == query_uuid)
         else:
-            order_statement = order_statement.where(
-                or_(
-                    Customer.email.ilike(prefix_term),
-                    Customer.name.ilike(prefix_term),
-                    Product.name.ilike(substring_term),
-                    Order.invoice_number.ilike(substring_term),
-                    Order.stripe_invoice_id.ilike(substring_term),
-                )
-            )
+            stmt = stmt.where(Product.search_vector.op("@@")(ts_query_english))
 
-        order_statement = order_statement.limit(limit)
-        orders = await order_repository.get_all(order_statement)
+        return stmt
 
-        return [
-            SearchResultOrder(
-                id=order.id,
-                customer_name=order.customer.name,
-                customer_email=order.customer.email,
-                product_name=order.product.name,
-                amount=order.total_amount,
-            )
-            for order in orders
-            if order.product is not None and order.customer is not None
-        ]
-
-    async def _search_subscriptions(
+    def _build_customers_subquery(
         self,
-        session: AsyncReadSession,
-        auth_subject: AuthSubject[User],
-        organization_id: uuid.UUID,
-        prefix_term: str,
-        substring_term: str,
+        organization_subquery: Select[tuple[uuid.UUID]],
         query_uuid: uuid.UUID | None,
-        limit: int,
-    ) -> list[SearchResultSubscription]:
-        subscription_repository = SubscriptionRepository.from_session(session)
+        ts_query_simple: ColumnElement[Any],
+        ilike_term: str,
+    ) -> Select[Any]:
+        rank_expr = func.ts_rank(Customer.search_vector, ts_query_simple)
 
-        subscription_statement = (
-            subscription_repository.get_readable_statement(auth_subject)
-            .options(
-                joinedload(Subscription.customer),
-                joinedload(Subscription.product),
-            )
-            .where(Product.organization_id == organization_id)
+        stmt = select(
+            Customer.id,
+            literal("customer").label("type"),
+            rank_expr.label("rank"),
+            Customer.name.label("name"),
+            literal(None).cast(String).label("description"),
+            Customer.email.label("email"),
+            literal(None).cast(String).label("customer_name"),
+            literal(None).cast(String).label("customer_email"),
+            literal(None).cast(String).label("product_name"),
+            literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("status"),
+        ).where(
+            Customer.organization_id.in_(organization_subquery),
+            Customer.deleted_at.is_(None),
         )
 
         if query_uuid:
-            subscription_statement = subscription_statement.where(
-                Subscription.id == query_uuid
-            )
+            stmt = stmt.where(Customer.id == query_uuid)
         else:
-            subscription_statement = subscription_statement.where(
+            stmt = stmt.where(
                 or_(
-                    Customer.email.ilike(prefix_term),
-                    Customer.name.ilike(prefix_term),
-                    Product.name.ilike(substring_term),
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Customer.email.ilike(ilike_term),
                 )
             )
 
-        subscription_statement = subscription_statement.limit(limit)
-        subscriptions = await subscription_repository.get_all(subscription_statement)
+        return stmt
 
-        return [
-            SearchResultSubscription(
-                id=subscription.id,
-                customer_name=subscription.customer.name,
-                customer_email=subscription.customer.email,
-                product_name=subscription.product.name,
-                status=subscription.status,
-                amount=subscription.amount,
+    def _build_orders_subquery(
+        self,
+        organization_subquery: Select[tuple[uuid.UUID]],
+        query_uuid: uuid.UUID | None,
+        ts_query_simple: ColumnElement[Any],
+        ts_query_english: ColumnElement[Any],
+        ilike_term: str,
+    ) -> Select[Any]:
+        rank_expr = func.greatest(
+            func.ts_rank(Order.search_vector, ts_query_simple),
+            func.ts_rank(Customer.search_vector, ts_query_simple),
+            func.ts_rank(Product.search_vector, ts_query_english),
+        )
+
+        stmt = (
+            select(
+                Order.id,
+                literal("order").label("type"),
+                rank_expr.label("rank"),
+                literal(None).cast(String).label("name"),
+                literal(None).cast(String).label("description"),
+                literal(None).cast(String).label("email"),
+                Customer.name.label("customer_name"),
+                Customer.email.label("customer_email"),
+                Product.name.label("product_name"),
+                (
+                    Order.subtotal_amount - Order.discount_amount + Order.tax_amount
+                ).label("amount"),
+                literal(None).cast(String).label("status"),
             )
-            for subscription in subscriptions
-            if subscription.product is not None and subscription.customer is not None
-        ]
+            .join(Customer, Order.customer_id == Customer.id)
+            .join(Product, Order.product_id == Product.id)
+            .where(
+                Customer.organization_id.in_(organization_subquery),
+                Order.deleted_at.is_(None),
+            )
+        )
+
+        if query_uuid:
+            stmt = stmt.where(Order.id == query_uuid)
+        else:
+            stmt = stmt.where(
+                or_(
+                    Order.search_vector.op("@@")(ts_query_simple),
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Product.search_vector.op("@@")(ts_query_english),
+                    Customer.email.ilike(ilike_term),
+                )
+            )
+
+        return stmt
+
+    def _build_subscriptions_subquery(
+        self,
+        organization_subquery: Select[tuple[uuid.UUID]],
+        query_uuid: uuid.UUID | None,
+        ts_query_simple: ColumnElement[Any],
+        ts_query_english: ColumnElement[Any],
+        ilike_term: str,
+    ) -> Select[Any]:
+        rank_expr = func.greatest(
+            func.ts_rank(Customer.search_vector, ts_query_simple),
+            func.ts_rank(Product.search_vector, ts_query_english),
+        )
+
+        stmt = (
+            select(
+                Subscription.id,
+                literal("subscription").label("type"),
+                rank_expr.label("rank"),
+                literal(None).cast(String).label("name"),
+                literal(None).cast(String).label("description"),
+                literal(None).cast(String).label("email"),
+                Customer.name.label("customer_name"),
+                Customer.email.label("customer_email"),
+                Product.name.label("product_name"),
+                Subscription.amount.label("amount"),
+                Subscription.status.label("status"),
+            )
+            .join(Customer, Subscription.customer_id == Customer.id)
+            .join(Product, Subscription.product_id == Product.id)
+            .where(
+                Customer.organization_id.in_(organization_subquery),
+                Subscription.deleted_at.is_(None),
+            )
+        )
+
+        if query_uuid:
+            stmt = stmt.where(Subscription.id == query_uuid)
+        else:
+            stmt = stmt.where(
+                or_(
+                    Customer.search_vector.op("@@")(ts_query_simple),
+                    Product.search_vector.op("@@")(ts_query_english),
+                    Customer.email.ilike(ilike_term),
+                )
+            )
+
+        return stmt
 
 
 search = SearchService()

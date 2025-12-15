@@ -25,7 +25,7 @@ export default function Index() {
   const theme = useTheme()
   const router = useRouter()
 
-  const { mutateAsync: withdrawFunds, isPending } = useCreatePayout(account?.id)
+  const { mutateAsync: withdrawFunds } = useCreatePayout(account?.id)
   const { requestReview, shouldShow } = useStoreReview()
 
   const hasOrders = useMemo(() => {

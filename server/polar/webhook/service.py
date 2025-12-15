@@ -558,6 +558,15 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
+        event: Literal[WebhookEventType.subscription_past_due],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
         event: Literal[WebhookEventType.refund_created],
         data: Refund,
     ) -> list[WebhookEvent]: ...

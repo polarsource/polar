@@ -69,7 +69,7 @@ class SubscriptionStatus(StrEnum):
 
     @classmethod
     def revoked_statuses(cls) -> set[Self]:
-        return {cls.past_due, cls.canceled, cls.unpaid}  # type: ignore
+        return {cls.canceled, cls.unpaid}  # type: ignore
 
     @classmethod
     def billable_statuses(cls) -> set[Self]:

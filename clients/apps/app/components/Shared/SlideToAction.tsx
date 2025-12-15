@@ -65,6 +65,7 @@ export const SlideToAction = ({
   const atThreshold = useSharedValue(false)
   const loadingProgress = useSharedValue(0)
   const successProgress = useSharedValue(0)
+  const thumbScale = useSharedValue(1)
 
   const maxSlide = Math.max(0, sliderWidth - THUMB_SIZE - THUMB_PADDING * 2)
 
@@ -143,6 +144,7 @@ export const SlideToAction = ({
   const panGesture = Gesture.Pan()
     .enabled(!disabled && phase === 'idle')
     .onStart(() => {
+      thumbScale.value = withTiming(1.1, { duration: 150 })
       runOnJS(handleStart)()
       runOnJS(hapticLight)()
     })
@@ -152,6 +154,7 @@ export const SlideToAction = ({
       }
     })
     .onEnd(() => {
+      thumbScale.value = withTiming(1, { duration: 150 })
       runOnJS(handleEnd)()
 
       if (progress.value >= COMPLETION_THRESHOLD) {
@@ -181,7 +184,7 @@ export const SlideToAction = ({
         : baseColor
 
     return {
-      transform: [{ translateX }],
+      transform: [{ translateX }, { scale: thumbScale.value }],
       backgroundColor,
     }
   })

@@ -12,6 +12,7 @@ import { onlineManager } from '@tanstack/react-query'
 import { Slot, useNavigationContainerRef } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import React, { useCallback } from 'react'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 Sentry.init({
@@ -77,18 +78,20 @@ export default Sentry.wrap(function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider theme={theme}>
-        <SessionProvider>
-          <Box
-            flex={1}
-            backgroundColor="background"
-            onLayout={onLayoutRootView}
-          >
-            <Slot />
-          </Box>
-        </SessionProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider theme={theme}>
+          <SessionProvider>
+            <Box
+              flex={1}
+              backgroundColor="background"
+              onLayout={onLayoutRootView}
+            >
+              <Slot />
+            </Box>
+          </SessionProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 })

@@ -93,7 +93,7 @@ from polar.product.guard import (
     is_free_price,
     is_static_price,
 )
-from polar.product.repository import ProductRepository
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import calculate_bulk_job_delay, enqueue_job
@@ -2862,13 +2862,46 @@ class SubscriptionService:
             raise SubscriptionNotReadyForMigration(subscription)
 
         # Ensure there are no pending prorations
+        product_price_repository = ProductPriceRepository.from_session(session)
+        entries: list[BillingEntry] = []
+        event = build_system_event(
+            SystemEvent.subscription_product_updated,
+            customer=subscription.customer,
+            organization=subscription.organization,
+            metadata={
+                "subscription_id": str(subscription.id),
+                "old_product_id": str(subscription.product_id),
+                "new_product_id": str(subscription.product_id),
+            },
+        )
         try:
             upcoming_invoice = await stripe_lib.Invoice.create_preview_async(
                 subscription=stripe_subscription_id
             )
             async for item in upcoming_invoice.lines.auto_paging_iter():
                 if item.proration:
-                    raise SubscriptionNotReadyForMigration(subscription)
+                    assert item.price is not None
+                    product_price = (
+                        await product_price_repository.get_by_stripe_price_id(
+                            item.price.id
+                        )
+                    )
+                    entry = BillingEntry(
+                        type=BillingEntryType.proration,
+                        direction=BillingEntryDirection.credit
+                        if item.amount < 0
+                        else BillingEntryDirection.debit,
+                        start_timestamp=_from_timestamp(item.period.start),
+                        end_timestamp=_from_timestamp(item.period.end),
+                        amount=abs(item.amount),
+                        discount_amount=0,
+                        currency=subscription.currency,
+                        customer=subscription.customer,
+                        product_price=product_price,
+                        subscription=subscription,
+                        event=event,
+                    )
+                    entries.append(entry)
         except stripe_lib.InvalidRequestError as e:
             if "no upcoming invoices" in str(e).lower():
                 # No upcoming invoice, so no prorations
@@ -2880,6 +2913,11 @@ class SubscriptionService:
         subscription.stripe_subscription_id = None
         session.add(subscription)
         await session.commit()  # Commit now so we stop handling Stripe webhooks
+
+        if entries:
+            session.add(event)
+            session.add_all(entries)
+        return subscription
 
         try:
             await stripe_lib.Subscription.cancel_async(
@@ -2908,6 +2946,9 @@ class SubscriptionService:
                 )
                 subscription.payment_method = payment_method
                 session.add(subscription)
+                if entries:
+                    session.add(event)
+                    session.add_all(entries)
         except Exception:
             # Revert changes
             subscription.stripe_subscription_id = stripe_subscription_id

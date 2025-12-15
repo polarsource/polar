@@ -24,10 +24,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.config import settings
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.sorting import Sorting
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import (
     BillingEntry,
     Customer,
@@ -37,6 +38,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.event import EventClosure, EventSource
+from polar.models.event_hyper import EventHyper
 from polar.models.product_price import ProductPriceMeteredUnit
 
 from .sorting import EventSortProperty
@@ -55,6 +57,41 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == organization_id
         )
         return await self.get_all(statement)
+
+    async def create(self, event: Event, flush: bool = False) -> Event:
+        if settings.EVENTS_DUAL_WRITE_ENABLED:
+            if event.id is None:
+                event.id = generate_uuid()
+            if event.ingested_at is None:
+                event.ingested_at = utc_now()
+            if event.timestamp is None:
+                event.timestamp = utc_now()
+            if event.user_metadata is None:
+                event.user_metadata = {}
+
+        created_event = await super().create(event, flush=flush)
+
+        if settings.EVENTS_DUAL_WRITE_ENABLED:
+            hyper_event = EventHyper(
+                id=event.id,
+                ingested_at=event.ingested_at,
+                timestamp=event.timestamp,
+                name=event.name,
+                source=event.source,
+                customer_id=event.customer_id,
+                external_customer_id=event.external_customer_id,
+                external_id=event.external_id,
+                parent_id=event.parent_id,
+                root_id=event.root_id,
+                organization_id=event.organization_id,
+                event_type_id=event.event_type_id,
+                user_metadata=event.user_metadata,
+            )
+            self.session.add(hyper_event)
+            if flush:
+                await self.session.flush()
+
+        return created_event
 
     async def insert_batch(
         self, events: Sequence[dict[str, Any]]
@@ -101,6 +138,28 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         inserted_ids = [row[0] for row in result.all()]
 
         duplicates_count = len(events) - len(inserted_ids)
+
+        # Dual-write to hypertable if enabled
+        if settings.EVENTS_DUAL_WRITE_ENABLED:
+            # Pre-check for duplicates (TimescaleDB can't have unique index on external_id alone)
+            external_ids = [e["external_id"] for e in events if e.get("external_id")]
+            existing_external_ids: set[str] = set()
+            if external_ids:
+                result = await self.session.execute(
+                    select(EventHyper.external_id).where(
+                        EventHyper.external_id.in_(external_ids)
+                    )
+                )
+                existing_external_ids = {row[0] for row in result}
+
+            hyper_events = [
+                e
+                for e in events
+                if not e.get("external_id")
+                or e["external_id"] not in existing_external_ids
+            ]
+            if hyper_events:
+                await self.session.execute(insert(EventHyper), hyper_events)
 
         return inserted_ids, duplicates_count
 

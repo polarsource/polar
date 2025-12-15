@@ -78,7 +78,7 @@ export default function Index() {
             scrollRef.current?.setNativeProps({ isEnabled: true })
           }}
           onSlideComplete={async () => {
-            // await withdrawFunds({ accountId: account?.id })
+            await withdrawFunds({ accountId: account?.id })
           }}
           onFinish={() => {
             if (shouldShow(hasOrders)) {

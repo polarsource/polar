@@ -117,7 +117,6 @@ async def list(
         False,
         title="Use cursor pagination",
         description="Use cursor-based pagination (has_next_page) instead of offset pagination. Faster for large datasets.",
-        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:

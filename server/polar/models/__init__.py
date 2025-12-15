@@ -22,6 +22,7 @@ from .dispute import Dispute
 from .downloadable import Downloadable
 from .email_verification import EmailVerification
 from .event import Event, EventClosure
+from .event_hyper import EventHyper
 from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
@@ -107,6 +108,7 @@ __all__ = [
     "EmailVerification",
     "Event",
     "EventClosure",
+    "EventHyper",
     "EventType",
     "ExternalEvent",
     "File",

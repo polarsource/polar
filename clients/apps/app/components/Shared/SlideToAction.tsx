@@ -2,9 +2,10 @@ import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useCallback, useState } from 'react'
-import { StyleProp, View, ViewStyle } from 'react-native'
+import { StyleProp, ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
+  Extrapolation,
   interpolate,
   interpolateColor,
   runOnJS,
@@ -14,6 +15,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
+import { Box } from './Box'
 
 interface SlideToActionProps {
   onSlideComplete: () => Promise<void> | void
@@ -74,10 +76,6 @@ export const SlideToAction = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
   }, [])
 
-  const hapticMedium = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-  }, [])
-
   const startLoading = useCallback(() => {
     setPhase('loading')
   }, [])
@@ -125,7 +123,7 @@ export const SlideToAction = ({
 
     await handleComplete()
 
-    hapticMedium()
+    hapticHeavy()
     startSuccess()
     loadingProgress.value = withTiming(0, { duration: 200 })
     successProgress.value = withTiming(1, { duration: 300 })
@@ -134,7 +132,7 @@ export const SlideToAction = ({
     onFinish?.()
   }, [
     handleComplete,
-    hapticMedium,
+    hapticHeavy,
     startLoading,
     startSuccess,
     loadingProgress,
@@ -200,8 +198,18 @@ export const SlideToAction = ({
   })
 
   const releaseTextStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(progress.value, [0, 0.7, 0.9], [0, 0, 1])
-    const translateY = interpolate(progress.value, [0, 0.7, 0.9], [15, 15, 0])
+    const opacity = interpolate(
+      progress.value,
+      [0, 0.7, 0.9],
+      [0, 0, 1],
+      Extrapolation.CLAMP,
+    )
+    const translateY = interpolate(
+      progress.value,
+      [0, 0.7, 0.9],
+      [15, 15, 0],
+      Extrapolation.CLAMP,
+    )
 
     return {
       opacity:
@@ -231,17 +239,13 @@ export const SlideToAction = ({
   })
 
   return (
-    <View
-      style={[
-        {
-          height: SLIDER_HEIGHT,
-          width: '100%',
-          borderRadius: SLIDER_HEIGHT / 2,
-          backgroundColor: theme.colors.card,
-          overflow: 'hidden',
-        },
-        style,
-      ]}
+    <Box
+      height={SLIDER_HEIGHT}
+      width="100%"
+      borderRadius="border-radius-999"
+      backgroundColor="card"
+      overflow="hidden"
+      style={style}
       onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
     >
       <Animated.View
@@ -363,6 +367,6 @@ export const SlideToAction = ({
           />
         </Animated.View>
       </GestureDetector>
-    </View>
+    </Box>
   )
 }

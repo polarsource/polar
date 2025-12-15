@@ -2914,11 +2914,6 @@ class SubscriptionService:
         session.add(subscription)
         await session.commit()  # Commit now so we stop handling Stripe webhooks
 
-        if entries:
-            session.add(event)
-            session.add_all(entries)
-        return subscription
-
         try:
             await stripe_lib.Subscription.cancel_async(
                 stripe_subscription_id,

@@ -12,6 +12,7 @@ import Animated, {
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
@@ -104,6 +105,11 @@ export const SlideToAction = ({
       if (isAtThreshold !== prev) {
         atThreshold.value = isAtThreshold
         if (isAtThreshold) {
+          // Bounce the thumb
+          thumbScale.value = withSequence(
+            withTiming(1.25, { duration: 100 }),
+            withTiming(1.1, { duration: 100 }),
+          )
           runOnJS(hapticHeavy)()
         }
       }
@@ -129,6 +135,10 @@ export const SlideToAction = ({
     startSuccess()
     loadingProgress.value = withTiming(0, { duration: 200 })
     successProgress.value = withTiming(1, { duration: 300 })
+    thumbScale.value = withSequence(
+      withTiming(1.3, { duration: 100 }),
+      withTiming(1, { duration: 100 }),
+    )
 
     await new Promise((resolve) => setTimeout(resolve, SUCCESS_DISPLAY_MS))
     onFinish?.()
@@ -145,7 +155,10 @@ export const SlideToAction = ({
   const panGesture = Gesture.Pan()
     .enabled(!disabled && phase === 'idle')
     .onStart(() => {
-      thumbScale.value = withTiming(1.1, { duration: 150 })
+      thumbScale.value = withSequence(
+        withTiming(1.2, { duration: 100 }),
+        withTiming(1.1, { duration: 100 }),
+      )
       runOnJS(handleStart)()
       runOnJS(hapticLight)()
     })

@@ -2366,7 +2366,7 @@ class SubscriptionService:
         )
         if subscription.customer_cancellation_reason is not None:
             metadata["customer_cancellation_reason"] = (
-                subscription.customer_cancellation_reason.value
+                subscription.customer_cancellation_reason
             )
         if subscription.customer_cancellation_comment is not None:
             metadata["customer_cancellation_comment"] = (

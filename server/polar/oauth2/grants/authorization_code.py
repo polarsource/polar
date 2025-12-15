@@ -252,8 +252,16 @@ class ValidateSubAndPrompt:
         client = grant.client
         assert client is not None
         first_party: bool = client.first_party
-        if first_party and grant.sub is not None:
+        if first_party and grant.sub_type is not None and grant.sub is not None:
             grant.prompt = "none"
+            # Implicitly save the grant to all the scopes
+            oauth2_grant_service.create_or_update_grant(
+                self._session,
+                sub_type=grant.sub_type,
+                sub_id=grant.sub.id,
+                client_id=grant.client.client_id,
+                scope=client.scope,
+            )
             return
 
         payload = grant.request.payload

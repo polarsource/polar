@@ -535,12 +535,13 @@ class TestOAuth2Authorize:
     async def test_new_scope_first_party_client(
         self,
         prompt: str | None,
+        sync_session: Session,
         save_fixture: SaveFixture,
         client: AsyncClient,
         user: User,
         first_party_oauth2_client: OAuth2Client,
     ) -> None:
-        await create_oauth2_grant(
+        grant = await create_oauth2_grant(
             save_fixture,
             client=first_party_oauth2_client,
             user=user,
@@ -559,6 +560,12 @@ class TestOAuth2Authorize:
         location = response.headers["location"]
         assert location.startswith(params["redirect_uri"])
         assert "code=" in location
+
+        updated_grant = sync_session.get(OAuth2Grant, grant.id)
+        assert updated_grant is not None
+        assert set(updated_grant.scopes) == set(
+            first_party_oauth2_client.scope.split(" ")
+        )
 
     @pytest.mark.auth
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])

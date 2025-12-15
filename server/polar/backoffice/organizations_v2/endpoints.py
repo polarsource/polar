@@ -1834,9 +1834,7 @@ async def disconnect_stripe_account(
         raise HTTPException(status_code=400, detail="Account is not a Stripe account")
 
     if not organization.account.stripe_id:
-        raise HTTPException(
-            status_code=400, detail="Account does not have a Stripe ID"
-        )
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
 
     account = organization.account
     validation_error = None
@@ -1942,9 +1940,7 @@ async def delete_stripe_account(
         raise HTTPException(status_code=400, detail="Account is not a Stripe account")
 
     if not organization.account.stripe_id:
-        raise HTTPException(
-            status_code=400, detail="Account does not have a Stripe ID"
-        )
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
 
     account = organization.account
     validation_error = None

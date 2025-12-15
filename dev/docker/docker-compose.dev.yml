@@ -1,0 +1,252 @@
+# Docker Compose for full-stack Polar development environment
+# Usage: ./dev/docker-dev
+#
+# This file defines all services needed to run Polar in development mode
+# with hot-reloading support. Source code is mounted from the host.
+#
+# For multiple isolated instances, use: ./dev/docker-dev -i <instance_number>
+# Each instance uses different ports (offset by 100 * instance_number)
+
+x-common-backend-env: &common-backend-env
+  POLAR_ENV: development
+  POLAR_LOG_LEVEL: DEBUG
+  POLAR_TESTING: "0"
+  POLAR_SQLALCHEMY_DEBUG: "1"
+  POLAR_POSTHOG_DEBUG: "1"
+  # Database - uses service name for container networking
+  POLAR_POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
+  POLAR_POSTGRES_PWD: ${POLAR_POSTGRES_PWD:-polar}
+  POLAR_POSTGRES_HOST: db
+  POLAR_POSTGRES_PORT: "5432"
+  POLAR_POSTGRES_DATABASE: ${POLAR_POSTGRES_DATABASE:-polar}
+  POLAR_POSTGRES_READ_USER: ${POLAR_POSTGRES_READ_USER:-polar_read}
+  POLAR_POSTGRES_READ_PWD: ${POLAR_POSTGRES_READ_PWD:-polar}
+  POLAR_POSTGRES_READ_HOST: db
+  POLAR_POSTGRES_READ_PORT: "5432"
+  POLAR_POSTGRES_READ_DATABASE: ${POLAR_POSTGRES_DATABASE:-polar}
+  # Redis - uses service name for container networking
+  POLAR_REDIS_HOST: redis
+  POLAR_REDIS_PORT: "6379"
+  POLAR_REDIS_DB: "0"
+  # S3/MinIO - uses service name for container networking
+  POLAR_S3_ENDPOINT_URL: http://minio:9000
+  POLAR_AWS_ACCESS_KEY_ID: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
+  POLAR_AWS_SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
+  POLAR_S3_FILES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+  POLAR_S3_FILES_PUBLIC_BUCKET_NAME: ${POLAR_S3_FILES_PUBLIC_BUCKET_NAME:-polar-s3-public}
+  POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+  POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+  # CORS and allowed hosts - configured for Docker networking
+  POLAR_CORS_ORIGINS: '["http://localhost:${WEB_PORT:-3000}", "http://127.0.0.1:${WEB_PORT:-3000}", "http://web:3000"]'
+  POLAR_ALLOWED_HOSTS: '["localhost:${WEB_PORT:-3000}", "127.0.0.1:${WEB_PORT:-3000}"]'
+  POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
+  POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
+  POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
+  # OAuth insecure transport for development
+  AUTHLIB_INSECURE_TRANSPORT: "true"
+  # Optional integrations (set __UNSET__ for disabled features)
+  POLAR_GITHUB_CLIENT_ID: ${POLAR_GITHUB_CLIENT_ID:-__UNSET__}
+  POLAR_GITHUB_CLIENT_SECRET: ${POLAR_GITHUB_CLIENT_SECRET:-__UNSET__}
+  POLAR_STRIPE_SECRET_KEY: ${POLAR_STRIPE_SECRET_KEY:-__UNSET__}
+  POLAR_STRIPE_PUBLISHABLE_KEY: ${POLAR_STRIPE_PUBLISHABLE_KEY:-__UNSET__}
+  POLAR_STRIPE_WEBHOOK_SECRET: ${POLAR_STRIPE_WEBHOOK_SECRET:-__UNSET__}
+  POLAR_STRIPE_CONNECT_WEBHOOK_SECRET: ${POLAR_STRIPE_CONNECT_WEBHOOK_SECRET:-__UNSET__}
+  # Prometheus (optional)
+  POLAR_PROMETHEUS_REMOTE_WRITE_URL: ${POLAR_PROMETHEUS_REMOTE_WRITE_URL:-}
+
+x-api-volumes: &api-volumes
+  - ../../server:/app/server:cached
+  - ../../dev:/app/dev:cached
+  - server_uv_cache:/root/.cache/uv
+  - api_venv:/app/server/.venv
+
+x-worker-volumes: &worker-volumes
+  - ../../server:/app/server:cached
+  - ../../dev:/app/dev:cached
+  - server_uv_cache:/root/.cache/uv
+  - worker_venv:/app/server/.venv
+
+services:
+  # ============================================
+  # Infrastructure Services
+  # ============================================
+
+  db:
+    image: postgres:15.1-bullseye
+    environment:
+      POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
+      POSTGRES_PASSWORD: ${POLAR_POSTGRES_PWD:-polar}
+      POSTGRES_DB: ${POLAR_POSTGRES_DATABASE:-polar}
+      POLAR_READ_USER: ${POLAR_POSTGRES_READ_USER:-polar_read}
+      POLAR_READ_PASSWORD: ${POLAR_POSTGRES_READ_PWD:-polar}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../server/init-readonly-user.sql:/docker-entrypoint-initdb.d/init-readonly-user.sql:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POLAR_POSTGRES_DATABASE:-polar}", "-U", "${POLAR_POSTGRES_USER:-polar}"]
+      interval: 2s
+      timeout: 40s
+      retries: 20
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: bitnamilegacy/minio:2024.5.28
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/minio
+    environment:
+      MINIO_ROOT_USER: ${POLAR_MINIO_USER:-polar}
+      MINIO_ROOT_PASSWORD: ${POLAR_MINIO_PWD:-polarpolar}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  minio-setup:
+    image: bitnamilegacy/minio-client:2024.5.24
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ../../server/.minio:/tmp/config:ro
+    environment:
+      MINIO_HOST: minio
+      MINIO_ROOT_USER: ${POLAR_MINIO_USER:-polar}
+      MINIO_ROOT_PASSWORD: ${POLAR_MINIO_PWD:-polarpolar}
+      BUCKET_NAME: ${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+      PUBLIC_BUCKET_NAME: ${POLAR_S3_FILES_PUBLIC_BUCKET_NAME:-polar-s3-public}
+      BUCKET_TESTING_NAME: testing-${POLAR_S3_FILES_BUCKET_NAME:-polar-s3}
+      ACCESS_KEY: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
+      SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
+      POLICY_FILE: /tmp/config/policy.json
+    entrypoint: ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
+
+  # ============================================
+  # Application Services
+  # ============================================
+
+  api:
+    build:
+      context: ../..
+      dockerfile: dev/docker/Dockerfile.api.dev
+    environment:
+      <<: *common-backend-env
+    volumes: *api-volumes
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+    command: ["api"]
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: dev/docker/Dockerfile.api.dev
+    environment:
+      <<: *common-backend-env
+    volumes: *worker-volumes
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+    command: ["worker"]
+
+  web:
+    build:
+      context: ../..
+      dockerfile: dev/docker/Dockerfile.web.dev
+    environment:
+      # NEXT_PUBLIC_* are for browser requests (via host machine)
+      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
+      NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
+      NEXT_PUBLIC_BACKOFFICE_URL: http://localhost:${API_PORT:-8000}/backoffice
+      NEXT_PUBLIC_STRIPE_KEY: ${POLAR_STRIPE_PUBLISHABLE_KEY:-__UNSET__}
+      NEXT_PUBLIC_GITHUB_APP_NAMESPACE: ${POLAR_GITHUB_APP_NAMESPACE:-__UNSET__}
+      # POLAR_API_URL is for server-side requests (container-to-container)
+      POLAR_API_URL: http://api:8000
+      S3_PUBLIC_IMAGES_BUCKET_PROTOCOL: http
+      S3_PUBLIC_IMAGES_BUCKET_HOSTNAME: localhost
+      S3_PUBLIC_IMAGES_BUCKET_PORT: "${MINIO_API_PORT:-9000}"
+      S3_PUBLIC_IMAGES_BUCKET_PATHNAME: "**"
+      S3_UPLOAD_ORIGINS: http://localhost:${MINIO_API_PORT:-9000}
+    volumes:
+      - ../../clients:/app/clients:cached
+      - ../../dev:/app/dev:cached
+      - web_node_modules:/app/clients/node_modules
+      - web_next_cache:/app/clients/apps/web/.next
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+  # ============================================
+  # Optional Services (use --profile flag)
+  # ============================================
+
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ../../server/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=1d"
+      - "--web.enable-lifecycle"
+      - "--web.enable-remote-write-receiver"
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.3.0
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ../../server/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../server/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: polar
+      GF_SECURITY_ADMIN_PASSWORD: polar
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+  minio_data:
+  server_uv_cache:
+  api_venv:
+  worker_venv:
+  web_node_modules:
+  web_next_cache:
+  prometheus_data:
+  grafana_data:

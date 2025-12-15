@@ -140,3 +140,6 @@ playground.py
 server/tests/invoice/test_invoice*.pdf
 supervisord.pid
 server/.minio/
+
+# Docker dev environment
+dev/docker/.env.docker

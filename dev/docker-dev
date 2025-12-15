@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+# One-command script to start Polar development environment in Docker
+#
+# Usage:
+#   ./dev/docker-dev                    Start full stack (API, worker, web)
+#   ./dev/docker-dev -i 1               Start isolated instance 1 (different ports)
+#   ./dev/docker-dev -d                 Start in detached mode
+#   ./dev/docker-dev -b                 Force rebuild images
+#   ./dev/docker-dev api                Start only API service
+#   ./dev/docker-dev web                Start only web service
+#   ./dev/docker-dev down               Stop all services
+#   ./dev/docker-dev logs               View logs
+#   ./dev/docker-dev logs api           View logs for specific service
+#   ./dev/docker-dev ps                 Show running services
+#   ./dev/docker-dev restart api        Restart specific service
+#   ./dev/docker-dev shell api          Open shell in container
+#   ./dev/docker-dev --monitoring       Include Prometheus and Grafana
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+DOCKER_DIR="$SCRIPT_DIR/docker"
+
+# Default values
+INSTANCE=0
+ACTION="up"
+SERVICES=""
+BUILD=false
+DETACH=false
+MONITORING=false
+FOLLOW_LOGS=true
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+print_info() {
+    echo -e "${BLUE}==>${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}==>${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}==>${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}ERROR:${NC} $1"
+}
+
+print_usage() {
+    cat << EOF
+Polar Docker Development Environment
+
+Usage: ./dev/docker-dev [OPTIONS] [ACTION] [SERVICES...]
+
+Actions:
+  up        Start services (default)
+  down      Stop and remove services
+  logs      View service logs
+  ps        List running services
+  restart   Restart services
+  build     Build or rebuild services
+  shell     Open a shell in a service container
+
+Services:
+  api       Backend API server
+  worker    Background job worker
+  web       Frontend web server
+  db        PostgreSQL database
+  redis     Redis cache
+  minio     S3-compatible storage
+
+Options:
+  -i, --instance NUM   Instance number for port isolation (default: 0)
+  -d, --detach         Run in background
+  -b, --build          Force rebuild images
+  --monitoring         Include Prometheus and Grafana
+  --no-follow          Don't follow logs (for logs action)
+  -h, --help           Show this help message
+
+Examples:
+  ./dev/docker-dev                     # Start full stack
+  ./dev/docker-dev -d                  # Start in background
+  ./dev/docker-dev -i 1                # Start instance 1 (ports +100)
+  ./dev/docker-dev -i 1 -d api web     # Start API and web for instance 1
+  ./dev/docker-dev logs api            # View API logs
+  ./dev/docker-dev shell api           # Open shell in API container
+  ./dev/docker-dev down                # Stop all services
+  ./dev/docker-dev --monitoring        # Include monitoring stack
+
+Port mapping (base ports, add instance*100 for other instances):
+  API:    8000
+  Web:    3000
+  DB:     5432
+  Redis:  6379
+  MinIO:  9000 (API), 9001 (Console)
+EOF
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -i|--instance)
+            INSTANCE="$2"
+            shift 2
+            ;;
+        -b|--build)
+            BUILD=true
+            shift
+            ;;
+        -d|--detach)
+            DETACH=true
+            shift
+            ;;
+        --monitoring)
+            MONITORING=true
+            shift
+            ;;
+        --no-follow)
+            FOLLOW_LOGS=false
+            shift
+            ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
+        up|down|logs|ps|restart|build|shell)
+            ACTION="$1"
+            shift
+            ;;
+        api|worker|web|db|redis|minio|minio-setup|prometheus|grafana)
+            SERVICES="$SERVICES $1"
+            shift
+            ;;
+        -*)
+            print_error "Unknown option: $1"
+            print_usage
+            exit 1
+            ;;
+        *)
+            print_error "Unknown argument: $1"
+            print_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Calculate ports based on instance
+OFFSET=$((INSTANCE * 100))
+export API_PORT=$((8000 + OFFSET))
+export WEB_PORT=$((3000 + OFFSET))
+export DB_PORT=$((5432 + OFFSET))
+export REDIS_PORT=$((6379 + OFFSET))
+export MINIO_API_PORT=$((9000 + OFFSET))
+export MINIO_CONSOLE_PORT=$((9001 + OFFSET))
+export PROMETHEUS_PORT=$((9090 + OFFSET))
+export GRAFANA_PORT=$((3001 + OFFSET))
+
+# Project name for isolation
+PROJECT_NAME="polar-dev-${INSTANCE}"
+
+# Compose file
+COMPOSE_FILE="$DOCKER_DIR/docker-compose.dev.yml"
+
+# Check for env file, create from template if missing
+ENV_FILE="$DOCKER_DIR/.env.docker"
+if [[ ! -f "$ENV_FILE" ]]; then
+    print_info "Creating Docker environment file from template..."
+    cp "$DOCKER_DIR/.env.docker.template" "$ENV_FILE"
+fi
+
+# Build compose command
+COMPOSE_CMD="docker compose -p $PROJECT_NAME -f $COMPOSE_FILE --env-file $ENV_FILE"
+
+# Add monitoring profile if requested
+if [[ "$MONITORING" == "true" ]]; then
+    COMPOSE_CMD="$COMPOSE_CMD --profile monitoring"
+fi
+
+# Helper function to check if Docker is running
+check_docker() {
+    if ! docker info > /dev/null 2>&1; then
+        print_error "Docker is not running. Please start Docker and try again."
+        exit 1
+    fi
+}
+
+# Helper function to print access info
+print_access_info() {
+    echo ""
+    echo "============================================"
+    echo "  Polar Development Environment"
+    echo "  Instance: $INSTANCE"
+    echo "============================================"
+    echo ""
+    echo "Services:"
+    echo "  API:           http://localhost:$API_PORT"
+    echo "  Web:           http://localhost:$WEB_PORT"
+    echo "  MinIO Console: http://localhost:$MINIO_CONSOLE_PORT"
+    echo "  PostgreSQL:    localhost:$DB_PORT"
+    echo "  Redis:         localhost:$REDIS_PORT"
+    if [[ "$MONITORING" == "true" ]]; then
+        echo "  Prometheus:    http://localhost:$PROMETHEUS_PORT"
+        echo "  Grafana:       http://localhost:$GRAFANA_PORT (admin/polar)"
+    fi
+    echo ""
+    echo "Commands:"
+    echo "  View logs:     ./dev/docker-dev -i $INSTANCE logs"
+    echo "  API logs:      ./dev/docker-dev -i $INSTANCE logs api"
+    echo "  Stop:          ./dev/docker-dev -i $INSTANCE down"
+    echo "  Shell (API):   ./dev/docker-dev -i $INSTANCE shell api"
+    echo "  Shell (Web):   ./dev/docker-dev -i $INSTANCE shell web"
+    echo ""
+}
+
+# Execute action
+case $ACTION in
+    up)
+        check_docker
+
+        print_info "Starting Polar development environment (instance $INSTANCE)..."
+
+        # Build if requested
+        if [[ "$BUILD" == "true" ]]; then
+            print_info "Building images..."
+            # shellcheck disable=SC2086
+            $COMPOSE_CMD build $SERVICES
+        fi
+
+        # Start services
+        FLAGS=""
+        if [[ "$DETACH" == "true" ]]; then
+            FLAGS="-d"
+        fi
+
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD up $FLAGS $SERVICES
+
+        # Print access info if detached
+        if [[ "$DETACH" == "true" ]]; then
+            print_access_info
+        fi
+        ;;
+
+    down)
+        check_docker
+        print_info "Stopping Polar development environment (instance $INSTANCE)..."
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD down $SERVICES
+        print_success "Environment stopped"
+        ;;
+
+    logs)
+        check_docker
+        FLAGS=""
+        if [[ "$FOLLOW_LOGS" == "true" ]]; then
+            FLAGS="-f"
+        fi
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD logs $FLAGS $SERVICES
+        ;;
+
+    ps)
+        check_docker
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD ps $SERVICES
+        ;;
+
+    restart)
+        check_docker
+        print_info "Restarting services..."
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD restart $SERVICES
+        print_success "Services restarted"
+        ;;
+
+    build)
+        check_docker
+        print_info "Building images..."
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD build $SERVICES
+        print_success "Build complete"
+        ;;
+
+    shell)
+        check_docker
+        if [[ -z "$SERVICES" ]]; then
+            print_error "Please specify a service: ./dev/docker-dev shell api"
+            exit 1
+        fi
+        SERVICE=$(echo "$SERVICES" | awk '{print $1}')
+        print_info "Opening shell in $SERVICE container..."
+        # shellcheck disable=SC2086
+        $COMPOSE_CMD exec "$SERVICE" /bin/bash
+        ;;
+
+    *)
+        print_error "Unknown action: $ACTION"
+        print_usage
+        exit 1
+        ;;
+esac

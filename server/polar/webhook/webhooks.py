@@ -74,6 +74,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -592,6 +593,7 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         | Literal[WebhookEventType.subscription_canceled]
         | Literal[WebhookEventType.subscription_uncanceled]
         | Literal[WebhookEventType.subscription_revoked]
+        | Literal[WebhookEventType.subscription_past_due]
     )
     data: SubscriptionSchema
 
@@ -751,6 +753,41 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
         return json.dumps(payload)
 
+    def _get_past_due_discord_payload(self, target: User | Organization) -> str:
+        payload: DiscordPayload = {
+            "content": "Subscription payment has failed.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Past Due Subscription",
+                        "description": "Subscription payment has failed. The customer can still recover by updating their payment method.",
+                        "fields": self._get_discord_fields(target),
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_past_due_slack_payload(self, target: User | Organization) -> str:
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription payment has failed.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription payment has failed. The customer can still recover by updating their payment method.",
+                        },
+                        "fields": self._get_slack_fields(target),
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
     def _get_discord_fields(
         self, target: User | Organization
     ) -> list[DiscordEmbedField]:
@@ -778,11 +815,11 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
     Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
 
-    If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.
+    If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
 
     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
 
-    **Discord & Slack support:** On cancellation and revocation. Renewals are skipped.
+    **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
     """
 
     type: Literal[WebhookEventType.subscription_updated]
@@ -794,6 +831,9 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
         if SubscriptionStatus.is_revoked(self.data.status):
             return self._get_revoked_discord_payload(target)
+
+        if self.data.status == SubscriptionStatus.past_due:
+            return self._get_past_due_discord_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
@@ -807,7 +847,10 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         if SubscriptionStatus.is_revoked(self.data.status):
-            return self._get_revoked_discord_payload(target)
+            return self._get_revoked_slack_payload(target)
+
+        if self.data.status == SubscriptionStatus.past_due:
+            return self._get_past_due_slack_payload(target)
 
         # Avoid to send notifications for subscription renewals (not interesting)
         # TODO: Notify about upgrades and downgrades
@@ -890,8 +933,10 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
-    Sent when a subscription is revoked, the user loses access immediately.
-    Happens when the subscription is canceled, or payment is past due.
+    Sent when a subscription is revoked and the user loses access immediately.
+    Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
+
+    For payment failures that can still be recovered, see `subscription.past_due`.
 
     **Discord & Slack support:** Full
     """
@@ -910,6 +955,34 @@ class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         return self._get_revoked_slack_payload(target)
+
+
+class WebhookSubscriptionPastDuePayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription payment fails and the subscription enters `past_due` status.
+
+    This is a recoverable state - the customer can update their payment method to restore the subscription.
+    Benefits may be revoked depending on the organization's grace period settings.
+
+    If payment retries are exhausted, a `subscription.revoked` event will be sent.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_past_due]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_past_due_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_past_due_slack_payload(target)
 
 
 class WebhookRefundBase(BaseWebhookPayload):
@@ -1162,6 +1235,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionRevokedPayload
+    | WebhookSubscriptionPastDuePayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

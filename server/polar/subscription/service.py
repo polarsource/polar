@@ -142,7 +142,7 @@ class InactiveSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = f"Subscription {subscription.id} is not active."
-        super().__init__(message)
+        super().__init__(message, 403)
 
 
 class SubscriptionDoesNotExist(SubscriptionError):
@@ -2332,6 +2332,9 @@ class SubscriptionService:
     async def _on_subscription_past_due(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_past_due
+        )
         await self.send_past_due_email(session, subscription)
 
     async def _on_subscription_uncanceled(
@@ -2437,6 +2440,7 @@ class SubscriptionService:
             WebhookEventType.subscription_canceled,
             WebhookEventType.subscription_uncanceled,
             WebhookEventType.subscription_revoked,
+            WebhookEventType.subscription_past_due,
         ],
     ) -> None:
         repository = SubscriptionRepository.from_session(session)

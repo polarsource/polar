@@ -2,6 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
+    "POLAR_API_URL",
     "CODESPACES",
     "CODESPACE_NAME",
     "EXPO_PUBLIC_POLAR_SERVER_URL",

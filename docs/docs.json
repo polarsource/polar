@@ -573,12 +573,12 @@
               "guides/disable-email-editing-in-checkout",
               "guides/grant-meter-credits-after-purchase",
               "guides/grant-meter-credits-before-purchase",
+              "guides/proration-for-subscription-changes",
               "guides/subscription-downgrades",
-              "guides/schedule-subscription-downgrades-qstash",
               "guides/subscription-upgrades",
+              "guides/schedule-subscription-downgrades-qstash",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout",
-              "guides/proration"
+              "guides/theme-switch-in-checkout"
             ]
           }
         ]

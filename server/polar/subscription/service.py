@@ -2941,9 +2941,9 @@ class SubscriptionService:
                 )
                 subscription.payment_method = payment_method
                 session.add(subscription)
-                if entries:
-                    session.add(event)
-                    session.add_all(entries)
+            if entries:
+                session.add(event)
+                session.add_all(entries)
         except Exception:
             # Revert changes
             subscription.stripe_subscription_id = stripe_subscription_id

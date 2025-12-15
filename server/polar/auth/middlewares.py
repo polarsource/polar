@@ -223,8 +223,9 @@ class AuthSubjectMiddleware:
         self.app = app
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
+        session: AsyncSession = scope["state"]["async_session"]
+
         if scope["type"] == "http":
-            session: AsyncSession = scope["state"]["async_session"]
             request = Request(scope)
 
             try:
@@ -241,8 +242,6 @@ class AuthSubjectMiddleware:
                 await self.app(scope, receive, send)
 
         elif scope["type"] == "websocket":
-            session: AsyncSession = scope["state"]["async_session"]
-
             try:
                 auth_subject = await get_auth_subject_from_websocket(scope, session)
             except OAuth2Error as e:

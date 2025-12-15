@@ -258,3 +258,37 @@ class OrganizationOrdersImportForm(forms.BaseForm):
             ),
         ),
     ]
+
+
+class DisconnectStripeAccountForm(forms.BaseForm):
+    stripe_account_id: Annotated[
+        str,
+        StringConstraints(min_length=1),
+        Field(title="Stripe Account ID"),
+    ]
+    reason: Annotated[
+        str,
+        forms.TextAreaField(rows=4),
+        Field(
+            min_length=1,
+            title="Reason",
+            description="Explain why this Stripe account is being disconnected",
+        ),
+    ]
+
+
+class DeleteStripeAccountForm(forms.BaseForm):
+    stripe_account_id: Annotated[
+        str,
+        StringConstraints(min_length=1),
+        Field(title="Stripe Account ID"),
+    ]
+    reason: Annotated[
+        str,
+        forms.TextAreaField(rows=4),
+        Field(
+            min_length=1,
+            title="Reason",
+            description="Explain why this Stripe account is being deleted",
+        ),
+    ]

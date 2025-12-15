@@ -152,6 +152,42 @@ class AccountService:
         account.is_payouts_enabled = False
         session.add(account)
 
+    async def disconnect_stripe(
+        self, session: AsyncSession, account: Account
+    ) -> Account:
+        if not account.stripe_id:
+            raise AccountServiceError("Account does not have a Stripe ID")
+
+        old_stripe_id = account.stripe_id
+
+        archive_account = Account(
+            status=account.status,
+            admin_id=account.admin_id,
+            account_type=account.account_type,
+            stripe_id=old_stripe_id,
+            email=account.email,
+            country=account.country,
+            currency=account.currency,
+            is_details_submitted=account.is_details_submitted,
+            is_charges_enabled=account.is_charges_enabled,
+            is_payouts_enabled=account.is_payouts_enabled,
+            business_type=account.business_type,
+            data=account.data,
+            processor_fees_applicable=account.processor_fees_applicable,
+            _platform_fee_percent=account._platform_fee_percent,
+            _platform_fee_fixed=account._platform_fee_fixed,
+            next_review_threshold=account.next_review_threshold,
+            campaign_id=account.campaign_id,
+        )
+        archive_account.set_deleted_at()
+        session.add(archive_account)
+        await session.flush()
+
+        account.stripe_id = None
+        session.add(account)
+
+        return archive_account
+
     async def create_account(
         self,
         session: AsyncSession,

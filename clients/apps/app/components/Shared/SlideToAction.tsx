@@ -143,12 +143,13 @@ export const SlideToAction = ({
     await new Promise((resolve) => setTimeout(resolve, SUCCESS_DISPLAY_MS))
     onFinish?.()
   }, [
+    startLoading,
+    loadingProgress,
     handleComplete,
     hapticHeavy,
-    startLoading,
     startSuccess,
-    loadingProgress,
     successProgress,
+    thumbScale,
     onFinish,
   ])
 

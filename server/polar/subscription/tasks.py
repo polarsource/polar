@@ -2,7 +2,7 @@ import uuid
 
 import structlog
 from sqlalchemy import func, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
@@ -169,7 +169,14 @@ async def enqueue_stripe_subscription_migrate(
 async def migrate_stripe_subscription(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.get_by_id(subscription_id)
+        subscription = await repository.get_by_id(
+            subscription_id,
+            options=(
+                joinedload(Subscription.product).joinedload(Product.organization),
+                joinedload(Subscription.discount),
+                joinedload(Subscription.customer).joinedload(Customer.organization),
+            ),
+        )
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
         try:

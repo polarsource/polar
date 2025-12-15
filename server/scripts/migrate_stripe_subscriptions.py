@@ -5,8 +5,10 @@ from typing import Any
 
 import structlog
 import typer
+from pydantic import UUID4
 from rich.progress import Progress
 from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Customer, Organization, Product, Subscription
@@ -43,10 +45,15 @@ def typer_async(f):  # type: ignore
 @cli.command()
 @typer_async
 async def migrate_subscriptions(
-    max_subscriptions_count: int = typer.Option(
-        ..., help="Maximum number of subscriptions per organization to process"
+    subscription_id: UUID4 | None = typer.Option(
+        None, help="If set, only migrate this subscription"
     ),
-    limit: int = typer.Option(..., help="Maximum number of organizations to process"),
+    max_subscriptions_count: int | None = typer.Option(
+        None, help="Maximum number of subscriptions per organization to process"
+    ),
+    limit: int | None = typer.Option(
+        None, help="Maximum number of organizations to process"
+    ),
     subscriptions_limit: int | None = typer.Option(
         None, help="Maximum number of subscriptions to process"
     ),
@@ -57,35 +64,48 @@ async def migrate_subscriptions(
     async with sessionmaker() as session:
         subscription_repository = SubscriptionRepository.from_session(session)
 
-        # Build organizations statement to find candidates
-        organizations_statement = (
-            select(Organization.id)
-            .join(Product, Product.organization_id == Organization.id, isouter=True)
-            .join(
-                Subscription,
-                Subscription.product_id == Product.id,
-                isouter=True,
+        if subscription_id is not None:
+            subscriptions_statement = (
+                subscription_repository.get_base_statement().where(
+                    Subscription.id == subscription_id
+                )
+            ).options(
+                joinedload(Subscription.product).joinedload(Product.organization),
+                joinedload(Subscription.discount),
+                joinedload(Subscription.customer).joinedload(Customer.organization),
             )
-            .where(
-                Subscription.stripe_subscription_id.is_not(None),
+        else:
+            # Build organizations statement to find candidates
+            organizations_statement = (
+                select(Organization.id)
+                .join(Product, Product.organization_id == Organization.id, isouter=True)
+                .join(
+                    Subscription,
+                    Subscription.product_id == Product.id,
+                    isouter=True,
+                )
+                .where(
+                    Subscription.stripe_subscription_id.is_not(None),
+                )
+                .group_by(Organization.id)
+                .having(func.count(Subscription.id) < max_subscriptions_count)
+                .order_by(func.count(Subscription.id).asc())
+                .limit(limit)
             )
-            .group_by(Organization.id)
-            .having(func.count(Subscription.id) < max_subscriptions_count)
-            .order_by(func.count(Subscription.id).asc())
-            .limit(limit)
-        )
 
-        # Get subscriptions to migrate
-        subscriptions_statement = (
-            subscription_repository.get_base_statement()
-            .join(Customer, Customer.id == Subscription.customer_id)
-            .where(
-                Subscription.stripe_subscription_id.is_not(None),
-                Customer.organization_id.in_(organizations_statement),
+            # Get subscriptions to migrate
+            subscriptions_statement = (
+                subscription_repository.get_base_statement()
+                .join(Customer, Customer.id == Subscription.customer_id)
+                .where(
+                    Subscription.stripe_subscription_id.is_not(None),
+                    Customer.organization_id.in_(organizations_statement),
+                )
             )
-        )
-        if subscriptions_limit is not None:
-            subscriptions_statement = subscriptions_statement.limit(subscriptions_limit)
+            if subscriptions_limit is not None:
+                subscriptions_statement = subscriptions_statement.limit(
+                    subscriptions_limit
+                )
 
         # Count total subscriptions
         count_statement = subscriptions_statement.with_only_columns(

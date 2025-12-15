@@ -4,20 +4,23 @@ description: "Learn how proration works in Polar, including available proration 
 ---
 
 ## What is Proration?
+
 Proration is the adjustment of charges based on the unused portion of the current billing period when a subscription is upgraded or downgraded.
 
 ## Types of Proration
-- **Invoice Immediately (`invoice`)**  
+
+For both `prorate` and `invoice` proration types, the **subscription plan always changes immediately**, whether the change is an upgrade or a downgrade. The only difference between the two proration types is **when the price difference is charged or credited**.
+
+### Invoice Immediately (`invoice`)
+
 The price difference is charged or credited immediately when the subscription is upgraded or downgraded.
-- **Next Invoice (`prorate`)**  
+
+### Next Invoice (`prorate`)
+
 The price difference is charged or credited on the next invoice on updgrading or downgrading a subscription.
 
-<Note>
-For both `prorate` and `invoice` proration types, the **subscription plan always changes immediately**, whether the change is an upgrade or a downgrade.  
-The only difference between the two proration types is **when the price difference is charged or credited**.
-</Note>
-
 ## How to change the default proration setting using dashboard
+
 <Steps>
     <Step title = "Go to Organization Settings">
         In the Polar dashboard sidebar, click on **Settings**.
@@ -34,10 +37,11 @@ The only difference between the two proration types is **when the price differen
 </Steps>
 
 ## How to change the default proration setting using the OAT API
+
 You can change the default proration behavior using the [Update Organization API](https://polar.sh/docs/api-reference/organizations/update).
- 
     
-## Proration using Subscription Update API
+## How to prorate when updating subscription via API
+
 <Steps>
     <Step title = "Create an organization Token">
         Create a new organization token by following our [Organization Access Tokens](https://polar.sh/docs/integrate/oat) guide.
@@ -46,7 +50,7 @@ You can change the default proration behavior using the [Update Organization API
         After creating your access token, you will be able to view it. Please copy and save your access token.
         <img height="200" src="/assets/guides/proration/access-token.png" />
     </Step>
-    <Step title = "Fetch the Subscription ID">
+    <Step title = "Copy the Subscription ID">
         - In the Polar dashboard sidebar, navigate to **Sales** > **Subscriptions** for your organization.
         You can also go directly to:  
         `https://polar.sh/dashboard/${org_slug}/sales/subscriptions`
@@ -55,7 +59,7 @@ You can change the default proration behavior using the [Update Organization API
         - Click on the Subscription you want to upgrade/downgrade and copy its **Subscription ID**.
         <img height="200" src="/assets/guides/proration/subscription-details.png" />
     </Step>
-    <Step title = "Fetch the Product ID">
+    <Step title = "Copy the Product ID">
         - In the Polar dashboard sidebar, navigate to **Products** > **Catalogue** for your organization.
         You can also go directly to:  
         `https://polar.sh/dashboard/${org_slug}/products`  
@@ -63,8 +67,9 @@ You can change the default proration behavior using the [Update Organization API
         - Retrieve the Product ID for the item you wish to upgrade the subscription to by clicking on the **⋮ (More options) menu** next to chosen products and selecting **Copy Product ID**.       
         <img height="200" src="/assets/guides/proration/product-id.png" />
     </Step>
-    <Step title = "API call for updating the subscription">
+    <Step title = "Call the Update Subscription API">
         Call the **Update Subscription API** as follows. 
+        
         Make sure to replace:
 
             - **YOUR_BEARER_TOKEN_HERE** with your API access token

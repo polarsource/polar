@@ -6,11 +6,12 @@ from fastapi import Depends, WebSocket, WebSocketDisconnect
 from polar.auth.models import Organization, User, is_anonymous
 from polar.auth.scope import Scope
 from polar.eventstream.service import Receivers
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, create_redis, get_redis
 from polar.routing import APIRouter
 
-router = APIRouter(prefix="/cli", tags=["cli"])
+router = APIRouter(prefix="/cli", tags=["cli", APITag.private])
 
 log = structlog.get_logger()
 

@@ -68,8 +68,9 @@ export default function Index() {
           />
         </Details>
         <SlideToAction
-          isLoading={isPending}
           text="Slide To Withdraw"
+          loadingText="Withdrawing..."
+          successText="Withdrawal Complete!"
           onSlideStart={() => {
             scrollRef.current?.setNativeProps({ isEnabled: false })
           }}
@@ -77,15 +78,15 @@ export default function Index() {
             scrollRef.current?.setNativeProps({ isEnabled: true })
           }}
           onSlideComplete={async () => {
-            await withdrawFunds({ accountId: account?.id })
-
+            // await withdrawFunds({ accountId: account?.id })
+          }}
+          onFinish={() => {
             if (shouldShow(hasOrders)) {
               setTimeout(() => {
                 requestReview()
               }, 1500)
             }
-
-            router.replace(`/finance`)
+            router.replace('/finance')
           }}
         />
       </SafeAreaView>

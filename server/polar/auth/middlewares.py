@@ -61,7 +61,7 @@ def get_bearer_token(request: Request) -> str | None:
 
 
 def get_bearer_token_from_websocket(scope: ASGIScope) -> str | None:
-    """Extract bearer token from WebSocket connection (headers or query params)."""
+    """Extract bearer token from WebSocket connection."""
     # Try to get token from Authorization header
     headers = dict(scope.get("headers", []))
     authorization = headers.get(b"authorization", b"").decode("utf-8")

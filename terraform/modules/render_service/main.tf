@@ -267,6 +267,7 @@ resource "render_web_service" "worker" {
     ignore_changes = [
       runtime_source.image.image_url,
       runtime_source.image.tag,
+      runtime_source.image.digest,
     ]
   }
 

@@ -18,7 +18,8 @@
       "icon": "./assets/images/ios-dark.png",
       "entitlements": {
         "com.apple.developer.applesignin": ["Default"]
-      }
+      },
+      "associatedDomains": ["applinks:polar.godetour.link"]
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +28,21 @@
       },
       "package": "com.polarsource.Polar",
       "scheme": "polar",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "polar.godetour.link",
+              "pathPrefix": "/baSjUTJtg8"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

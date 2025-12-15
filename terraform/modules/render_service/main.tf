@@ -252,19 +252,15 @@ resource "render_web_service" "worker" {
   num_instances     = each.value.num_instances
 
   runtime_source = {
-    image = merge(
-      {
-        image_url              = "ghcr.io/polarsource/polar"
-        registry_credential_id = var.registry_credential_id
-      },
-      each.value.digest != null ? {
-        digest = each.value.digest
-        tag    = null
-        } : {
-        tag    = each.value.tag
-        digest = null
-      }
-    )
+    image = each.value.digest != null ? {
+      image_url              = "ghcr.io/polarsource/polar"
+      registry_credential_id = var.registry_credential_id
+      digest                 = each.value.digest
+      } : {
+      image_url              = "ghcr.io/polarsource/polar"
+      registry_credential_id = var.registry_credential_id
+      tag                    = each.value.tag
+    }
   }
 
   lifecycle {

@@ -2,11 +2,20 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
+from alembic_utils.pg_extension import PGExtension
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from polar.config import settings
 from polar.models import Model
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    # Exclude TimescaleDB - Docker image handles creation, migration is backup
+    if isinstance(object, PGExtension) and object.signature == "timescaledb":
+        return False
+    return True
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -54,6 +63,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -62,7 +72,10 @@ def run_migrations_offline() -> None:
 
 def do_run_migrations(connection):
     context.configure(
-        connection=connection, target_metadata=target_metadata, compare_type=True
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_object=include_object,
     )
 
     with context.begin_transaction():

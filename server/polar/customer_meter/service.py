@@ -145,7 +145,9 @@ class CustomerMeterService:
             )
 
             if customer_meter is None:
-                activated_at = utc_now()
+                activated_at = (
+                    utc_now() if (last_event is not None or activate_meter) else None
+                )
                 customer_meter = await repository.create(
                     CustomerMeter(
                         customer=customer, meter=meter, activated_at=activated_at

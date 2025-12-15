@@ -135,6 +135,41 @@ class AccountSection:
                                         text(icon)
                                     text("Payouts Enabled")
 
+                        if (
+                            account.account_type == AccountType.stripe
+                            and account.stripe_id
+                        ):
+                            with tag.div(classes="pt-4 border-t border-base-300"):
+                                with tag.div(classes="text-sm font-semibold mb-3"):
+                                    text("Account Actions")
+
+                                with tag.div(classes="flex flex-wrap gap-2"):
+                                    with button(
+                                        variant="warning",
+                                        size="sm",
+                                        hx_get=str(
+                                            request.url_for(
+                                                "organizations-v2:disconnect_stripe_account",
+                                                organization_id=self.org.id,
+                                            )
+                                        ),
+                                        hx_target="#modal",
+                                    ):
+                                        text("Disconnect")
+
+                                    with button(
+                                        variant="error",
+                                        size="sm",
+                                        hx_get=str(
+                                            request.url_for(
+                                                "organizations-v2:delete_stripe_account",
+                                                organization_id=self.org.id,
+                                            )
+                                        ),
+                                        hx_target="#modal",
+                                    ):
+                                        text("Delete")
+
                 else:
                     # No account
                     with tag.div(classes="text-center py-8"):

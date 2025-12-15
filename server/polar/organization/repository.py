@@ -46,6 +46,26 @@ class OrganizationRepository(
 
         return await self.get_one_or_none(statement)
 
+    async def get_by_id_with_account(
+        self,
+        id: UUID,
+        *,
+        include_deleted: bool = False,
+        include_blocked: bool = True,
+    ) -> Organization | None:
+        from sqlalchemy.orm import joinedload
+
+        statement = (
+            self.get_base_statement(include_deleted=include_deleted)
+            .options(joinedload(Organization.account))
+            .where(self.model.id == id)
+        )
+
+        if not include_blocked:
+            statement = statement.where(self.model.blocked_at.is_(None))
+
+        return await self.get_one_or_none(statement)
+
     async def get_by_slug(self, slug: str) -> Organization | None:
         statement = self.get_base_statement().where(Organization.slug == slug)
         return await self.get_one_or_none(statement)

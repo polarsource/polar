@@ -8,6 +8,8 @@ This module provides a modern, three-column layout with:
 - Keyboard shortcuts and accessibility improvements
 """
 
+from datetime import UTC, datetime
+
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
@@ -16,6 +18,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
+from polar.account.service import account as account_service
 from polar.auth.scope import Scope
 from polar.auth.service import auth as auth_service
 from polar.backoffice.organizations.analytics import (
@@ -23,11 +26,14 @@ from polar.backoffice.organizations.analytics import (
     PaymentAnalyticsService,
 )
 from polar.backoffice.organizations.forms import (
+    DeleteStripeAccountForm,
+    DisconnectStripeAccountForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
     UpdateOrganizationSocialsForm,
 )
+from polar.enums import AccountType
 from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
@@ -43,6 +49,7 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
+from .views.modals import DeleteStripeModal, DisconnectStripeModal
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
@@ -1799,6 +1806,211 @@ async def setup_account(
                     ),
                 ):
                     text("Create Manual Account")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/disconnect-stripe-account",
+    name="organizations-v2:disconnect_stripe_account",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def disconnect_stripe_account(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id_with_account(organization_id)
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if not organization.account:
+        raise HTTPException(status_code=400, detail="Organization has no account")
+
+    if organization.account.account_type != AccountType.stripe:
+        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
+
+    if not organization.account.stripe_id:
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
+
+    account = organization.account
+    validation_error = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = DisconnectStripeAccountForm.model_validate_form(data)
+
+            if form.stripe_account_id != account.stripe_id:
+                raise ValidationError.from_exception_data(
+                    title="StripeAccountIdMismatch",
+                    line_errors=[
+                        {
+                            "loc": ("stripe_account_id",),
+                            "type": PydanticCustomError(
+                                "StripeAccountIdMismatch",
+                                "Stripe Account ID does not match.",
+                            ),
+                            "input": form.stripe_account_id,
+                        }
+                    ],
+                )
+
+            old_stripe_id = account.stripe_id
+            archive_account = await account_service.disconnect_stripe(session, account)
+
+            timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+            disconnect_note = (
+                f"[{timestamp}] Stripe account disconnected.\n"
+                f"Previous Stripe ID: {old_stripe_id}\n"
+                f"Archive Account ID: {archive_account.id}\n"
+                f"Reason: {form.reason.strip()}"
+            )
+            if organization.internal_notes:
+                organization.internal_notes = (
+                    f"{organization.internal_notes}\n\n{disconnect_note}"
+                )
+            else:
+                organization.internal_notes = disconnect_note
+
+            session.add(organization)
+
+            is_ready = await organization_service.is_organization_ready_for_payment(
+                session, organization
+            )
+
+            logger.info(
+                "Stripe account disconnected from organization",
+                organization_id=str(organization_id),
+                old_stripe_id=old_stripe_id,
+                archive_account_id=str(archive_account.id),
+                payment_ready=is_ready,
+            )
+
+            redirect_url = (
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=account"
+            )
+            return HXRedirectResponse(request, redirect_url, 303)
+
+        except ValidationError as e:
+            validation_error = e
+
+    form_action = str(
+        request.url_for(
+            "organizations-v2:disconnect_stripe_account",
+            organization_id=organization_id,
+        )
+    )
+    modal_view = DisconnectStripeModal(account, form_action, validation_error)
+    with modal_view.render():
+        pass
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/delete-stripe-account",
+    name="organizations-v2:delete_stripe_account",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def delete_stripe_account(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id_with_account(organization_id)
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if not organization.account:
+        raise HTTPException(status_code=400, detail="Organization has no account")
+
+    if organization.account.account_type != AccountType.stripe:
+        raise HTTPException(status_code=400, detail="Account is not a Stripe account")
+
+    if not organization.account.stripe_id:
+        raise HTTPException(status_code=400, detail="Account does not have a Stripe ID")
+
+    account = organization.account
+    validation_error = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = DeleteStripeAccountForm.model_validate_form(data)
+
+            if form.stripe_account_id != account.stripe_id:
+                raise ValidationError.from_exception_data(
+                    title="StripeAccountIdMismatch",
+                    line_errors=[
+                        {
+                            "loc": ("stripe_account_id",),
+                            "type": PydanticCustomError(
+                                "StripeAccountIdMismatch",
+                                "Stripe Account ID does not match.",
+                            ),
+                            "input": form.stripe_account_id,
+                        }
+                    ],
+                )
+
+            old_stripe_id = account.stripe_id
+            await account_service.delete_stripe_account(session, account)
+
+            timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+            delete_note = (
+                f"[{timestamp}] Stripe account deleted.\n"
+                f"Deleted Stripe ID: {old_stripe_id}\n"
+                f"Reason: {form.reason.strip()}"
+            )
+            if organization.internal_notes:
+                organization.internal_notes = (
+                    f"{organization.internal_notes}\n\n{delete_note}"
+                )
+            else:
+                organization.internal_notes = delete_note
+
+            session.add(organization)
+
+            logger.info(
+                "Stripe account deleted from organization",
+                organization_id=str(organization_id),
+                deleted_stripe_id=old_stripe_id,
+            )
+
+            redirect_url = (
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=account"
+            )
+            return HXRedirectResponse(request, redirect_url, 303)
+
+        except ValidationError as e:
+            validation_error = e
+
+    form_action = str(
+        request.url_for(
+            "organizations-v2:delete_stripe_account",
+            organization_id=organization_id,
+        )
+    )
+    modal_view = DeleteStripeModal(account, form_action, validation_error)
+    with modal_view.render():
+        pass
 
     return None
 

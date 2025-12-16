@@ -19,7 +19,7 @@ export const Switch = ({ value, onValueChange, disabled }: SwitchProps) => {
         false: theme.colors.border,
         true: theme.colors.primary,
       }}
-      thumbColor={theme.colors.card}
+      thumbColor={theme.colors.monochromeInverted}
       ios_backgroundColor={theme.colors.border}
     />
   )

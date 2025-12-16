@@ -7,6 +7,7 @@ import { PolarOrganizationProvider } from '@/providers/OrganizationProvider'
 import { PolarClientProvider } from '@/providers/PolarClientProvider'
 import { PolarQueryClientProvider } from '@/providers/PolarQueryClientProvider'
 import { useSession } from '@/providers/SessionProvider'
+import { ToastProvider } from '@/providers/ToastProvider'
 import { UserProvider } from '@/providers/UserProvider'
 import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
@@ -66,7 +67,9 @@ export default function Providers() {
             <DeepLinkProvider>
               <NotificationsProvider>
                 <PolarOrganizationProvider>
-                  <RootLayout />
+                  <ToastProvider>
+                    <RootLayout />
+                  </ToastProvider>
                 </PolarOrganizationProvider>
               </NotificationsProvider>
             </DeepLinkProvider>

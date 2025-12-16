@@ -17,6 +17,7 @@ import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
 import { useProduct, useProductUpdate } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { useToast } from '@/providers/ToastProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams } from 'expo-router'
@@ -37,6 +38,7 @@ export default function Index() {
   const { id } = useLocalSearchParams()
   const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
+  const toast = useToast()
 
   const {
     data: product,
@@ -121,6 +123,8 @@ export default function Index() {
           value,
         })),
       })
+
+      toast.showInfo('Saved!')
     },
     [reset, updateProduct],
   )

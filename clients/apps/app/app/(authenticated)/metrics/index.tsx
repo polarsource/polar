@@ -79,7 +79,7 @@ export default function Index() {
             setSelectedTimeInterval(value as keyof ReturnType<typeof timeRange>)
           }
         >
-          {organization && (
+          {organization ? (
             <TabsList>
               {Object.entries(timeRange(organization)).map(([key, value]) => {
                 return (
@@ -89,7 +89,7 @@ export default function Index() {
                 )
               })}
             </TabsList>
-          )}
+          ) : null}
         </Tabs>
       </SafeAreaView>
       {metrics.isLoading ? (

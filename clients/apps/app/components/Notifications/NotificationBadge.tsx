@@ -13,7 +13,7 @@ export const NotificationBadge = () => {
     <Link href="/notifications" asChild>
       <Touchable hitSlop={16} style={{ position: 'relative' }}>
         <MaterialIcons name="bolt" size={24} color={theme.colors.text} />
-        {showBadge && (
+        {showBadge ? (
           <Box
             backgroundColor="primary"
             position="absolute"
@@ -23,7 +23,7 @@ export const NotificationBadge = () => {
             height={4}
             borderRadius="border-radius-2"
           />
-        )}
+        ) : null}
       </Touchable>
     </Link>
   )

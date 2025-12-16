@@ -113,7 +113,7 @@ export const SubscriptionRow = ({
               loading={loading}
               product={subscription?.product}
             />
-            {showCustomer && (
+            {showCustomer ? (
               <>
                 <Text
                   style={{ flexShrink: 1, display: loading ? 'none' : 'flex' }}
@@ -131,7 +131,7 @@ export const SubscriptionRow = ({
                   {subscription?.customer.email}
                 </Text>
               </>
-            )}
+            ) : null}
           </Box>
         </Box>
       </Touchable>

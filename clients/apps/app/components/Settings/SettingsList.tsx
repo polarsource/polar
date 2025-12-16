@@ -69,11 +69,11 @@ const StaticSettingsItem = ({
     >
       <Box flexDirection="column" gap="spacing-2" maxWidth="80%">
         <Text variant="body">{title}</Text>
-        {description && (
+        {description ? (
           <Text variant="bodySmall" color="subtext">
             {description}
           </Text>
-        )}
+        ) : null}
       </Box>
       <Box flexDirection="row" alignItems="center" gap="spacing-12">
         {children}
@@ -112,11 +112,11 @@ const TouchableSettingsItem = ({
       >
         <Box flexDirection="column" gap="spacing-2" maxWidth="70%">
           <Text variant="body">{title}</Text>
-          {description && (
+          {description ? (
             <Text variant="bodySmall" color="subtext">
               {description}
             </Text>
-          )}
+          ) : null}
         </Box>
         <Box flexDirection="row" alignItems="center" gap="spacing-12">
           {children}

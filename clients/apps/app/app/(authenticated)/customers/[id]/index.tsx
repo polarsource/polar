@@ -176,7 +176,7 @@ export default function Index() {
           </Details>
         </Box>
 
-        {customer?.metadata && Object.keys(customer.metadata).length > 0 && (
+        {customer?.metadata && Object.keys(customer.metadata).length > 0 ? (
           <Box>
             <Details>
               {Object.entries(customer.metadata).map(([key, value]) => (
@@ -184,7 +184,7 @@ export default function Index() {
               ))}
             </Details>
           </Box>
-        )}
+        ) : null}
 
         <Box gap="spacing-16" flexDirection="column" flex={1}>
           <Box

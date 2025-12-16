@@ -31,14 +31,14 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
         borderWidth={1}
         borderColor="border"
       >
-        {checked && (
+        {checked ? (
           <Box
             width={12}
             height={12}
             borderRadius="border-radius-full"
             backgroundColor="monochromeInverted"
           />
-        )}
+        ) : null}
       </Box>
       <Text color={checked ? 'text' : 'subtext'}>{label}</Text>
     </Touchable>

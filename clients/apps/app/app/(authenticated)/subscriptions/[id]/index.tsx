@@ -141,13 +141,13 @@ export default function Index() {
             }
             valueStyle={{ textTransform: 'capitalize' }}
           />
-          {subscription.status === 'canceled' && (
+          {subscription.status === 'canceled' ? (
             <DetailRow
               label="Cancellation Reason"
               value={subscription.customer_cancellation_reason}
             />
-          )}
-          {subscription.status === 'canceled' && (
+          ) : null}
+          {subscription.status === 'canceled' ? (
             <DetailRow
               label="Cancels At"
               value={
@@ -165,7 +165,7 @@ export default function Index() {
                     )
               }
             />
-          )}
+          ) : null}
           <DetailRow
             label="Recurring Interval"
             value={subscription.recurring_interval.split('_').join(' ')}
@@ -188,7 +188,7 @@ export default function Index() {
               dateStyle: 'medium',
             })}
           />
-          {subscription.ends_at && (
+          {subscription.ends_at ? (
             <DetailRow
               label="End Date"
               value={new Date(subscription.ends_at ?? '').toLocaleDateString(
@@ -198,22 +198,23 @@ export default function Index() {
                 },
               )}
             />
-          )}
+          ) : null}
         </Details>
       </Box>
 
-      {subscription.metadata &&
-        Object.keys(subscription.metadata).length > 0 && (
-          <Box>
-            <Details>
-              {Object.entries(subscription.metadata).map(([key, value]) => (
-                <DetailRow key={key} label={key} value={String(value)} />
-              ))}
-            </Details>
-          </Box>
-        )}
+      {subscription.metadata
+        ? Object.keys(subscription.metadata).length > 0 && (
+            <Box>
+              <Details>
+                {Object.entries(subscription.metadata).map(([key, value]) => (
+                  <DetailRow key={key} label={key} value={String(value)} />
+                ))}
+              </Details>
+            </Box>
+          )
+        : null}
 
-      {subscription.status === 'active' && (
+      {subscription.status === 'active' ? (
         <Box flexDirection="column" gap="spacing-8">
           <Link key={'update'} href={`/subscriptions/${id}/update`} asChild>
             <Button>Update Subscription</Button>
@@ -222,7 +223,7 @@ export default function Index() {
             <Button variant="secondary">Cancel Subscription</Button>
           </Link>
         </Box>
-      )}
+      ) : null}
 
       <Box gap="spacing-16" paddingVertical="spacing-12">
         <Box

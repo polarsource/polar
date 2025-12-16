@@ -181,7 +181,7 @@ export default function Index() {
           )}
         </Box>
       </Box>
-      {selectedProduct && selectedProduct.id !== subscription.product.id && (
+      {selectedProduct && selectedProduct.id !== subscription.product.id ? (
         <Box
           backgroundColor="card"
           padding="spacing-16"
@@ -192,7 +192,7 @@ export default function Index() {
             lose access to {subscription.product.name} benefits.
           </Text>
         </Box>
-      )}
+      ) : null}
       <Button
         loading={updateSubscription.isPending}
         disabled={updateSubscription.isPending || !selectedProductId}
@@ -217,8 +217,6 @@ const ProrationBehaviorSelector = ({
 }: {
   form: UseFormReturn<schemas['SubscriptionUpdateProduct']>
 }) => {
-  const theme = useTheme()
-
   const { watch, setValue } = form
 
   const prorationBehavior = watch('proration_behavior')

@@ -34,7 +34,9 @@ export const FormInput = <T extends FieldValues>({
       <Box flexDirection="column" gap="spacing-8">
         <Box flexDirection="row" gap="spacing-8" justifyContent="space-between">
           <Text color="subtext">{label}</Text>
-          {secondaryLabel && <Text color="subtext">{secondaryLabel}</Text>}
+          {secondaryLabel ? (
+            <Text color="subtext">{secondaryLabel}</Text>
+          ) : null}
         </Box>
         <Input value={field.value} onChangeText={field.onChange} {...props} />
       </Box>

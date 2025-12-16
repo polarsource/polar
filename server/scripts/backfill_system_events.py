@@ -15,6 +15,7 @@ from polar.event.system import (
     CheckoutCreatedMetadata,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
+    SubscriptionRevokedMetadata,
     SystemEvent,
 )
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -22,6 +23,7 @@ from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Checkout, Event, Order, Subscription
 from polar.models.checkout import CheckoutStatus
 from polar.models.event import EventSource
+from polar.models.subscription import SubscriptionStatus
 
 cli = typer.Typer()
 
@@ -769,6 +771,100 @@ async def create_missing_subscription_canceled_events(
     return created_count
 
 
+async def create_missing_subscription_revoked_events(
+    session: AsyncSession,
+    batch_size: int,
+    rate_limit_delay: float,
+) -> int:
+    """
+    Create subscription.revoked events for revoked subscriptions that don't have one.
+    """
+    typer.echo("\n=== Creating missing subscription.revoked events ===")
+
+    existing_sub_ids_result = await session.execute(
+        select(Event.user_metadata["subscription_id"].as_string())
+        .where(
+            Event.name == SystemEvent.subscription_revoked,
+            Event.source == EventSource.system,
+        )
+        .distinct()
+    )
+    existing_sub_ids = {row[0] for row in existing_sub_ids_result.fetchall()}
+    typer.echo(f"Found {len(existing_sub_ids)} existing subscription.revoked events")
+
+    all_sub_ids_result = await session.execute(
+        select(Subscription.id).where(
+            Subscription.deleted_at.is_(None),
+            Subscription.status.in_(SubscriptionStatus.revoked_statuses()),
+        )
+    )
+    all_sub_ids = [row[0] for row in all_sub_ids_result.fetchall()]
+
+    missing_sub_ids = [
+        sub_id for sub_id in all_sub_ids if str(sub_id) not in existing_sub_ids
+    ]
+    total_to_create = len(missing_sub_ids)
+
+    if total_to_create == 0:
+        typer.echo("No missing subscription.revoked events to create")
+        return 0
+
+    typer.echo(f"Found {total_to_create} revoked subscriptions without events")
+
+    created_count = 0
+
+    with Progress() as progress:
+        task = progress.add_task(
+            "[cyan]Creating subscription.revoked events...", total=total_to_create
+        )
+
+        for i in range(0, total_to_create, batch_size):
+            batch_ids = missing_sub_ids[i : i + batch_size]
+
+            statement = (
+                select(Subscription)
+                .where(Subscription.id.in_(batch_ids))
+                .options(selectinload(Subscription.customer))
+            )
+
+            result = await session.execute(statement)
+            subscriptions = result.scalars().all()
+
+            if not subscriptions:
+                break
+
+            events = []
+            for sub in subscriptions:
+                events.append(
+                    {
+                        "name": SystemEvent.subscription_revoked,
+                        "source": EventSource.system,
+                        "timestamp": sub.ended_at,
+                        "customer_id": sub.customer_id,
+                        "organization_id": sub.customer.organization_id,
+                        "user_metadata": SubscriptionRevokedMetadata(
+                            subscription_id=str(sub.id),
+                            product_id=str(sub.product_id),
+                            amount=sub.amount,
+                            currency=sub.currency,
+                            recurring_interval=sub.recurring_interval.value,
+                            recurring_interval_count=sub.recurring_interval_count,
+                        ),
+                    }
+                )
+
+            if events:
+                await EventRepository.from_session(session).insert_batch(events)
+                await session.commit()
+                created_count += len(events)
+
+            progress.update(task, advance=len(subscriptions))
+            await asyncio.sleep(rate_limit_delay)
+
+    typer.echo(f"Created {created_count} subscription.revoked events")
+    return created_count
+
+
 async def create_missing_checkout_created_events(
     session: AsyncSession,
     batch_size: int,
@@ -930,6 +1026,12 @@ async def run_backfill(
         )
 
         results[
+            "subscription_revoked_events"
+        ] = await create_missing_subscription_revoked_events(
+            session, batch_size, rate_limit_delay
+        )
+
+        results[
             "checkout_created_events"
         ] = await create_missing_checkout_created_events(
             session, batch_size, rate_limit_delay
@@ -972,7 +1074,8 @@ async def backfill(
     4. Updates subscription.canceled events with missing metadata fields
     5. Creates subscription.created events for existing subscriptions
     6. Creates subscription.canceled events for canceled subscriptions
-    7. Creates checkout.created events for existing checkouts
+    7. Creates subscription.revoked events for revoked subscriptions
+    8. Creates checkout.created events for existing checkouts
     """
     structlog.configure(processors=[drop_all])
     logging.config.dictConfig(

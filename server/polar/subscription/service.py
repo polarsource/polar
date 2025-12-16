@@ -887,23 +887,6 @@ class SubscriptionService:
         if revoke:
             subscription.ended_at = subscription.ends_at
             subscription.status = SubscriptionStatus.canceled
-
-            event = await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.subscription_revoked,
-                    customer=subscription.customer,
-                    organization=subscription.organization,
-                    metadata=SubscriptionRevokedMetadata(
-                        subscription_id=str(subscription.id),
-                        product_id=str(subscription.product_id),
-                        amount=subscription.amount,
-                        currency=subscription.currency,
-                        recurring_interval=subscription.recurring_interval.value,
-                        recurring_interval_count=subscription.recurring_interval_count,
-                    ),
-                ),
-            )
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
@@ -2403,6 +2386,22 @@ class SubscriptionService:
             session, subscription, WebhookEventType.subscription_revoked
         )
 
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_revoked,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionRevokedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
         # Only send revoked email if the subscription is not past due,
         # as past due has its own email.
         if not past_due:

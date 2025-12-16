@@ -46,7 +46,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
             <Image
               source={{ uri: product?.medias?.[0]?.public_url }}
               style={{ width: '100%', height: '100%' }}
-              resizeMode="cover"
+              contentFit="cover"
             />
           ) : (
             <Box

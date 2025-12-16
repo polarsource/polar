@@ -63,8 +63,8 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
               <Box
                 key={period.timestamp.toISOString()}
                 style={{
-                  height: 10,
-                  width: 10,
+                  height: theme.dimension['dimension-10'],
+                  width: theme.dimension['dimension-10'],
                   backgroundColor:
                     (period.orders ?? 0) > 0
                       ? theme.colors.primary

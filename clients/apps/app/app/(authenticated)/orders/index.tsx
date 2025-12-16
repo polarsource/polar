@@ -54,13 +54,18 @@ export default function Index() {
         renderItem={({ item }: { item: schemas['Order'] | string }) => {
           if (typeof item === 'string') {
             return (
-              <Text variant="subtitle" style={{ paddingVertical: 12 }}>
+              <Text variant="subtitle" paddingVertical="spacing-12">
                 {item}
               </Text>
             )
           }
 
-          return <OrderRow order={item} style={{ marginBottom: 8 }} />
+          return (
+            <OrderRow
+              order={item}
+              style={{ marginBottom: theme.spacing['spacing-8'] }}
+            />
+          )
         }}
         ListEmptyComponent={
           isLoading ? null : (
@@ -70,11 +75,13 @@ export default function Index() {
           )
         }
         contentContainerStyle={{
-          padding: 16,
+          padding: theme.spacing['spacing-16'],
           backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
-        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => (
+          <Box style={{ height: theme.dimension['dimension-1'] }} />
+        )}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

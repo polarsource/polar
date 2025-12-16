@@ -8,6 +8,7 @@ const plugins = [
       image: './assets/images/splash-icon.png',
       imageWidth: 120,
       resizeMode: 'contain',
+      // eslint-disable-next-line @polar/no-hardcoded-colors
       backgroundColor: '#0D0E10',
     },
   ],

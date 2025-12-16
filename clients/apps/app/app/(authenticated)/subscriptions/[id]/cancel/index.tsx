@@ -190,7 +190,7 @@ export default function Index() {
                   justifyContent: 'space-between',
                   gap: theme.spacing['spacing-8'],
                   backgroundColor: theme.colors.card,
-                  height: 48,
+                  height: theme.dimension['dimension-48'],
                   paddingHorizontal: theme.spacing['spacing-16'],
                   borderRadius: theme.borderRadii['border-radius-8'],
                 }}

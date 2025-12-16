@@ -6,7 +6,7 @@ import {
   buttonVariants,
 } from '@/design-system/buttonVariants'
 import { TextVariantKey } from '@/design-system/textVariants'
-import { SpacingToken } from '@/design-system/theme'
+import { DimensionToken, SpacingToken } from '@/design-system/theme'
 import { useTheme } from '@/design-system/useTheme'
 import { Box } from './Box'
 import { Touchable } from './Touchable'
@@ -14,7 +14,7 @@ import { Touchable } from './Touchable'
 export type ButtonSize = 'small' | 'medium'
 
 type SizeConfig = {
-  height?: number
+  height?: DimensionToken
   paddingHorizontal: SpacingToken
   paddingVertical: SpacingToken
   textVariant: TextVariantKey
@@ -27,7 +27,7 @@ const buttonSizes: Record<ButtonSize, SizeConfig> = {
     textVariant: 'bodySmall',
   },
   medium: {
-    height: 50,
+    height: 'dimension-50',
     paddingHorizontal: 'spacing-16',
     paddingVertical: 'spacing-10',
     textVariant: 'bodyMedium',
@@ -76,7 +76,11 @@ export const Button = ({
         alignItems="center"
         justifyContent="center"
         flexDirection="row"
-        height={sizeStyle.height}
+        style={
+          sizeStyle.height
+            ? { height: theme.dimension[sizeStyle.height] }
+            : undefined
+        }
         opacity={disabled ? 0.7 : 1}
         backgroundColor={backgroundColor}
         width={fullWidth ? '100%' : undefined}

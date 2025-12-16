@@ -57,7 +57,7 @@ export default function Index() {
         renderItem={({ item }: { item: schemas['Subscription'] | string }) => {
           if (typeof item === 'string') {
             return (
-              <Text variant="subtitle" style={{ paddingVertical: 12 }}>
+              <Text paddingVertical="spacing-12" variant="subtitle">
                 {item}
               </Text>
             )
@@ -66,13 +66,13 @@ export default function Index() {
           return (
             <SubscriptionRow
               subscription={item}
-              style={{ marginBottom: 8 }}
+              style={{ marginBottom: theme.spacing['spacing-8'] }}
               showCustomer
             />
           )
         }}
         contentContainerStyle={{
-          padding: 16,
+          padding: theme.spacing['spacing-16'],
           backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
@@ -83,7 +83,9 @@ export default function Index() {
             </Box>
           )
         }
-        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => (
+          <Box style={{ height: theme.dimension['dimension-1'] }} />
+        )}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

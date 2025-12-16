@@ -42,10 +42,12 @@ export default function Index() {
           return <CustomerRow customer={item} />
         }}
         contentContainerStyle={{
-          padding: 16,
+          padding: theme.spacing['spacing-16'],
           backgroundColor: theme.colors.background,
         }}
-        ItemSeparatorComponent={() => <Box style={{ height: 6 }} />}
+        ItemSeparatorComponent={() => (
+          <Box style={{ height: theme.dimension['dimension-6'] }} />
+        )}
         keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl onRefresh={refetch} refreshing={isRefetching} />

@@ -80,6 +80,7 @@ export const dimension = {
   'dimension-32': 32,
   'dimension-40': 40,
   'dimension-48': 48,
+  'dimension-50': 50,
   'dimension-54': 54,
   'dimension-56': 56,
   'dimension-64': 64,
@@ -138,3 +139,4 @@ export default theme
 export type ColorToken = keyof typeof colors
 export type SpacingToken = keyof typeof spacing
 export type BorderRadiiToken = keyof typeof borderRadii
+export type DimensionToken = keyof typeof dimension

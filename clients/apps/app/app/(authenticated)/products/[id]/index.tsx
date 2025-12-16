@@ -202,7 +202,7 @@ export default function Index() {
               multiline
               control={control}
               name="description"
-              style={{ height: 120 }}
+              style={{ height: theme.dimension['dimension-120'] }}
               label="Description"
               secondaryLabel="Markdown"
             />

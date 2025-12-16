@@ -9,6 +9,9 @@ const noFlatListRule = require('./eslint-rules/no-flatlist')
 const noTouchableRule = require('./eslint-rules/no-touchable')
 const noJsxLogicalAndRule = require('./eslint-rules/no-jsx-logical-and')
 const noRestyleUseThemeRule = require('./eslint-rules/no-restyle-use-theme')
+const noHardcodedSpacingRule = require('./eslint-rules/no-hardcoded-spacing')
+const noHardcodedColorsRule = require('./eslint-rules/no-hardcoded-colors')
+const noHardcodedDimensionsRule = require('./eslint-rules/no-hardcoded-dimensions')
 
 module.exports = defineConfig([
   expoConfig,
@@ -27,6 +30,9 @@ module.exports = defineConfig([
           'no-touchable': noTouchableRule,
           'no-jsx-logical-and': noJsxLogicalAndRule,
           'no-restyle-use-theme': noRestyleUseThemeRule,
+          'no-hardcoded-spacing': noHardcodedSpacingRule,
+          'no-hardcoded-colors': noHardcodedColorsRule,
+          'no-hardcoded-dimensions': noHardcodedDimensionsRule,
         },
       },
     },
@@ -39,6 +45,9 @@ module.exports = defineConfig([
       '@polar/no-touchable': 'error',
       '@polar/no-jsx-logical-and': 'error',
       '@polar/no-restyle-use-theme': 'error',
+      '@polar/no-hardcoded-spacing': 'error',
+      '@polar/no-hardcoded-colors': 'error',
+      '@polar/no-hardcoded-dimensions': 'error',
     },
   },
 ])

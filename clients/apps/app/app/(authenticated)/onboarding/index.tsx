@@ -140,7 +140,7 @@ export default function Onboarding() {
             onChange={(checked) => setValue('terms', checked)}
           />
           <Box>
-            <Box style={{ marginLeft: 4 }} gap="spacing-8">
+            <Box marginLeft="spacing-4" gap="spacing-8">
               <Box flexDirection="row" alignItems="flex-start">
                 <Box>
                   <Touchable

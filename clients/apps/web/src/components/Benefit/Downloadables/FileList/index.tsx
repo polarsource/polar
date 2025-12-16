@@ -5,7 +5,7 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
 
 const ITEMS_PER_PAGE = 20
@@ -60,7 +60,7 @@ export const FileList = ({
   const totalPages = Math.ceil(filteredFiles.length / ITEMS_PER_PAGE)
 
   // Reset to page 1 when search query changes
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery])
 
@@ -73,12 +73,15 @@ export const FileList = ({
   } = useDraggable(
     paginatedFiles,
     (updated) => {
-      // Update only the paginated files in the original array
-      const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+      // Update the files with the new order from drag-and-drop
+      // Create a map of updated files for efficient lookup
+      const updatedMap = new Map(updated.map((file, index) => [file.id, { file, newIndex: index }]))
+      
       setFiles((prev) => {
         const newFiles = [...prev]
-        updated.forEach((file, index) => {
-          const originalIndex = prev.findIndex((f) => f.id === file.id)
+        // Update only the files that were reordered
+        updatedMap.forEach(({ file }, fileId) => {
+          const originalIndex = prev.findIndex((f) => f.id === fileId)
           if (originalIndex !== -1) {
             newFiles[originalIndex] = file
           }

@@ -105,7 +105,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            stripe_invoice_id="inv_1",
         )
         order1.next_payment_attempt_at = past_time
         await save_fixture(order1)
@@ -115,7 +114,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            stripe_invoice_id="inv_2",
         )
         order2.next_payment_attempt_at = past_time
         await save_fixture(order2)
@@ -280,7 +278,6 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,
         )
         payment_method = await create_payment_method(save_fixture, customer=customer)
         subscription.payment_method = payment_method
@@ -333,7 +330,6 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,
         )
 
         first_retry_time = utc_now() - timedelta(hours=1)
@@ -383,7 +379,6 @@ class TestProcessDunningOrder:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,
         )
 
         very_old_time = utc_now() - timedelta(days=30)
@@ -550,7 +545,6 @@ class TestTriggerPayment:
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
-            stripe_subscription_id=None,
         )
         order = await create_order(
             save_fixture,

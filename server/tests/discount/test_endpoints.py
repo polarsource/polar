@@ -1,20 +1,7 @@
-from types import SimpleNamespace
-from unittest.mock import MagicMock
-
 import pytest
 from httpx import AsyncClient
-from pytest_mock import MockerFixture
 
-from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, UserOrganization
-
-
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.discount.service.stripe_service", new=mock)
-    mock.create_coupon.return_value = SimpleNamespace(id="COUPON_ID")
-    return mock
 
 
 @pytest.mark.asyncio

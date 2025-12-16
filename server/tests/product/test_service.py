@@ -1,8 +1,7 @@
 import uuid
 from decimal import Decimal
-from types import SimpleNamespace
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, call
 
 import pytest
 from pytest_mock import MockerFixture
@@ -378,16 +377,7 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
@@ -404,14 +394,9 @@ class TestCreate:
         product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
 
-        create_product_mock.assert_called_once()
-        create_price_for_product_mock.assert_called_once()
-        assert product.stripe_product_id == "PRODUCT_ID"
-
         assert len(product.prices) == 1
         price = product.prices[0]
         assert is_static_price(price)
-        assert price.stripe_price_id == "PRICE_ID"
 
     @pytest.mark.auth
     async def test_user_empty_description(
@@ -420,15 +405,7 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         create_schema = ProductCreateRecurring(
             name="Product",
             description="",
@@ -475,16 +452,7 @@ class TestCreate:
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
         organization: Organization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         create_schema = ProductCreateRecurring(
             name="Product",
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -507,13 +475,7 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-
         create_schema = ProductCreateRecurring(
             name="Product",
             organization_id=organization.id,
@@ -530,9 +492,6 @@ class TestCreate:
 
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(session, create_schema, auth_subject)
-
-        create_product_mock.assert_not_called()
-        create_price_for_product_mock.assert_not_called()
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -551,7 +510,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         file = File(
             **{
@@ -567,11 +525,6 @@ class TestCreate:
             }
         )
         await save_fixture(file)
-
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
 
         create_schema = ProductCreateRecurring(
             name="Product",
@@ -590,9 +543,6 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(session, create_schema, auth_subject)
 
-        create_product_mock.assert_not_called()
-        create_price_for_product_mock.assert_not_called()
-
     @pytest.mark.auth
     async def test_valid_media(
         self,
@@ -601,7 +551,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         file = ProductMediaFile(
             **{
@@ -616,14 +565,6 @@ class TestCreate:
             }
         )
         await save_fixture(file)
-
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
         create_schema = ProductCreateRecurring(
             name="Product",
@@ -707,28 +648,13 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         create_schema.organization_id = organization.id
         product = await product_service.create(session, create_schema, auth_subject)
         assert product.organization_id == organization.id
 
-        create_product_mock.assert_called_once()
-        assert product.stripe_product_id == "PRODUCT_ID"
-
         assert len(product.prices) == len(create_schema.prices)
-        for price in product.prices:
-            if is_static_price(price):
-                assert price.stripe_price_id == "PRICE_ID"
 
     @pytest.mark.auth
     async def test_invalid_several_static_prices(
@@ -737,7 +663,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
@@ -769,7 +694,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await product_service.create(
@@ -797,7 +721,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
@@ -825,7 +748,6 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
         meter: Meter,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
@@ -887,10 +809,7 @@ class TestUpdate:
         product: Product,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        update_product_mock: MagicMock = stripe_service_mock.update_product
-
         update_schema = ProductUpdate(name="Product Update")
         updated_product = await product_service.update(
             session,
@@ -899,11 +818,6 @@ class TestUpdate:
             auth_subject,
         )
         assert updated_product.name == "Product Update"
-
-        update_product_mock.assert_called_once_with(
-            updated_product.stripe_product_id,
-            name=f"{organization.slug} - Product Update",
-        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -915,10 +829,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        update_product_mock: MagicMock = stripe_service_mock.update_product
-
         update_schema = ProductUpdate(description="Description update")
         updated_product = await product_service.update(
             session,
@@ -927,11 +838,6 @@ class TestUpdate:
             auth_subject,
         )
         assert updated_product.description == "Description update"
-
-        update_product_mock.assert_called_once_with(
-            updated_product.stripe_product_id,
-            description="Description update",
-        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -943,10 +849,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        update_product_mock: MagicMock = stripe_service_mock.update_product
-
         update_schema = ProductUpdate(description="")
         updated_product = await product_service.update(
             session,
@@ -959,8 +862,6 @@ class TestUpdate:
         assert len(updated_product.prices) == 1
         assert len(updated_product.all_prices) == 1
 
-        update_product_mock.assert_not_called()
-
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -971,12 +872,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-
         update_schema = ProductUpdate(
             prices=[
                 ExistingProductPrice(id=product.prices[0].id),
@@ -988,8 +884,6 @@ class TestUpdate:
             update_schema,
             auth_subject,
         )
-
-        create_price_for_product_mock.assert_not_called()
 
         assert len(updated_product.prices) == 1
         assert updated_product.prices[0].id == product.prices[0].id
@@ -1004,14 +898,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
-        archive_price_mock: MagicMock = stripe_service_mock.archive_price
-
         update_schema = ProductUpdate(
             prices=[
                 ProductPriceFixedCreate(
@@ -1023,7 +910,6 @@ class TestUpdate:
         )
         deleted_price = product.prices[0]
         assert is_static_price(deleted_price)
-        deleted_price_id = deleted_price.stripe_price_id
 
         updated_product = await product_service.update(
             session,
@@ -1034,15 +920,11 @@ class TestUpdate:
 
         await session.flush()
 
-        create_price_for_product_mock.assert_called_once()
-        archive_price_mock.assert_called_once_with(deleted_price_id)
-
         assert len(updated_product.prices) == 1
 
         new_price = updated_product.prices[0]
         assert isinstance(new_price, ProductPriceFixed)
         assert new_price.price_amount == 12000
-        assert new_price.stripe_price_id == "NEW_PRICE_ID"
 
         assert len(updated_product.all_prices) == 2
         assert deleted_price in updated_product.all_prices
@@ -1059,7 +941,6 @@ class TestUpdate:
         product: Product,
         product_second: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout_link_one_product = await create_checkout_link(
             save_fixture, products=[product]
@@ -1067,7 +948,6 @@ class TestUpdate:
         checkout_link_two_products = await create_checkout_link(
             save_fixture, products=[product, product_second]
         )
-        archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
         update_schema = ProductUpdate(is_archived=True)
         updated_product = await product_service.update(
@@ -1076,8 +956,6 @@ class TestUpdate:
             update_schema,
             auth_subject,
         )
-
-        archive_product_mock.assert_called_once_with(product.stripe_product_id)
 
         assert updated_product.is_archived
 
@@ -1105,12 +983,9 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
         product.is_archived = True
         await save_fixture(product)
-
-        unarchive_product: MagicMock = stripe_service_mock.unarchive_product
 
         update_schema = ProductUpdate(is_archived=False)
         updated_product = await product_service.update(
@@ -1119,8 +994,6 @@ class TestUpdate:
             update_schema,
             auth_subject,
         )
-
-        unarchive_product.assert_called_once_with(product.stripe_product_id)
 
         assert not updated_product.is_archived
 
@@ -1292,12 +1165,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product_recurring_monthly_and_yearly: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-
         update_schema = ProductUpdate(
             prices=[
                 ExistingProductPrice(
@@ -1314,8 +1182,6 @@ class TestUpdate:
             update_schema,
             auth_subject,
         )
-
-        create_price_for_product_mock.assert_not_called()
 
         assert len(updated_product.prices) == 2
         assert (
@@ -1337,20 +1203,7 @@ class TestUpdate:
         auth_subject: AuthSubject[User | Organization],
         product_recurring_monthly_and_yearly: Product,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
-        archive_price_mock: MagicMock = stripe_service_mock.archive_price
-
-        old_price_ids = [
-            p.stripe_price_id
-            for p in product_recurring_monthly_and_yearly.prices
-            if is_static_price(p)
-        ]
-
         update_schema = ProductUpdate(
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
@@ -1367,10 +1220,6 @@ class TestUpdate:
             update_schema,
             auth_subject,
         )
-
-        create_price_for_product_mock.assert_called_once()
-        for old_price_id in old_price_ids:
-            archive_price_mock.assert_any_call(old_price_id)
 
         assert len(updated_product.prices) == 1
 

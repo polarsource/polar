@@ -184,15 +184,6 @@ class PaymentMethodService:
         for subscription in subscriptions:
             subscription.payment_method = to_payment_method
 
-            if (
-                subscription.stripe_subscription_id
-                and to_payment_method.processor == PaymentProcessor.stripe
-            ):
-                await stripe_service.set_automatically_charged_subscription(
-                    subscription.stripe_subscription_id,
-                    payment_method=to_payment_method.processor_id,
-                )
-
         await session.flush()
 
     async def delete(

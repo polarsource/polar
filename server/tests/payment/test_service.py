@@ -68,7 +68,6 @@ class TestUpsertFromStripeCharge:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_invoice_id="INVOICE_ID",
         )
 
         # Create a charge with invoice

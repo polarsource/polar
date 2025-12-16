@@ -3,7 +3,6 @@ import uuid
 from collections.abc import Sequence
 from typing import Literal
 
-import stripe
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
@@ -19,7 +18,6 @@ from polar.exceptions import (
 )
 from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -35,7 +33,7 @@ from polar.models import (
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import HasStripePriceId, ProductPriceSource
+from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
@@ -243,26 +241,6 @@ class ProductService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        metadata: dict[str, str] = {"product_id": str(product.id)}
-        metadata["organization_id"] = str(organization.id)
-        metadata["organization_name"] = organization.slug
-
-        stripe_product = await stripe_service.create_product(
-            product.get_stripe_name(),
-            description=product.description,
-            metadata=metadata,
-        )
-        product.stripe_product_id = stripe_product.id
-
-        for price in product.all_prices:
-            if isinstance(price, HasStripePriceId):
-                stripe_price = await stripe_service.create_price_for_product(
-                    stripe_product.id,
-                    price.get_stripe_price_params(product.recurring_interval),
-                )
-                price.stripe_price_id = stripe_price.id
-            session.add(price)
-
         await session.flush()
 
         await self._after_product_created(session, auth_subject, product)
@@ -405,43 +383,20 @@ class ProductService:
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
 
-        product_update: stripe.Product.ModifyParams = {}
         if update_schema.name is not None and update_schema.name != product.name:
             product.name = update_schema.name
-            product_update["name"] = product.get_stripe_name()
         if (
             update_schema.description is not None
             and update_schema.description != product.description
         ):
             product.description = update_schema.description
-            product_update["description"] = update_schema.description
-
-        if product_update and product.stripe_product_id is not None:
-            await stripe_service.update_product(
-                product.stripe_product_id, **product_update
-            )
 
         if update_schema.recurring_interval is not None:
             product.recurring_interval = update_schema.recurring_interval
 
         deleted_prices = set(product.prices) - existing_prices
         for deleted_price in deleted_prices:
-            assert product.stripe_product_id is not None
-            if isinstance(deleted_price, HasStripePriceId):
-                await stripe_service.update_product(
-                    product.stripe_product_id, default_price=""
-                )
-                await stripe_service.archive_price(deleted_price.stripe_price_id)
             deleted_price.is_archived = True
-
-        for price in added_prices:
-            if isinstance(price, HasStripePriceId):
-                assert product.stripe_product_id is not None
-                stripe_price = await stripe_service.create_price_for_product(
-                    product.stripe_product_id,
-                    price.get_stripe_price_params(product.recurring_interval),
-                )
-                price.stripe_price_id = stripe_price.id
 
         if update_schema.is_archived:
             product = await self._archive(session, product)
@@ -648,9 +603,6 @@ class ProductService:
         return prices, existing_prices, added_prices, errors
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
-        if product.stripe_product_id is not None:
-            await stripe_service.archive_product(product.stripe_product_id)
-
         product.is_archived = True
 
         checkout_link_repository = CheckoutLinkRepository.from_session(session)
@@ -659,11 +611,7 @@ class ProductService:
         return product
 
     async def _unarchive(self, product: Product) -> Product:
-        if product.stripe_product_id is not None:
-            await stripe_service.unarchive_product(product.stripe_product_id)
-
         product.is_archived = False
-
         return product
 
     async def _after_product_created(

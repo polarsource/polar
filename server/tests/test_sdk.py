@@ -1,15 +1,12 @@
 from collections.abc import AsyncGenerator
-from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from polar_sdk import Polar
-from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Benefit, Customer, Organization, Product, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
@@ -20,7 +17,6 @@ from tests.fixtures.random_objects import (
     create_order,
     create_subscription,
 )
-from tests.fixtures.stripe import construct_stripe_subscription
 
 
 @pytest_asyncio.fixture
@@ -86,14 +82,12 @@ class TestSDK:
                 save_fixture,
                 product=product_one_time,
                 customer=customer,
-                stripe_invoice_id="INVOICE_1",
             ),
             await create_order(
                 save_fixture,
                 product=product,
                 customer=customer,
                 subscription=subscription,
-                stripe_invoice_id="INVOICE_2",
             ),
         ]
 
@@ -126,21 +120,12 @@ class TestSDK:
 
     async def test_cancel_subscription(
         self,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
         polar: Polar,
         product: Product,
         customer: Customer,
         user_organization: UserOrganization,
     ) -> None:
-        stripe_service_mock = MagicMock(spec=StripeService)
-        stripe_service_mock.cancel_subscription.return_value = (
-            construct_stripe_subscription(product=product)
-        )
-        mocker.patch(
-            "polar.subscription.service.stripe_service", new=stripe_service_mock
-        )
-
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )

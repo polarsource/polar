@@ -417,7 +417,6 @@ class TestUpsertFromStripe:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
         order = await create_order(
             save_fixture, customer=customer, product=product, subscription=subscription

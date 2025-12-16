@@ -396,7 +396,6 @@ async def create_product(
         recurring_interval_count=recurring_interval_count,
         is_archived=is_archived,
         organization=organization,
-        stripe_product_id=rstr("PRODUCT_ID"),
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
         all_prices=[],
@@ -474,7 +473,6 @@ async def create_product_price_fixed(
     price = ProductPriceFixed(
         price_amount=amount,
         price_currency="usd",
-        stripe_price_id=rstr("PRICE_ID"),
         product=product,
         is_archived=is_archived,
     )
@@ -495,7 +493,6 @@ async def create_product_price_custom(
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         preset_amount=preset_amount,
-        stripe_price_id=rstr("PRICE_ID"),
         product=product,
     )
     await save_fixture(price)
@@ -508,7 +505,6 @@ async def create_product_price_free(
     product: Product,
 ) -> ProductPriceFree:
     price = ProductPriceFree(
-        stripe_price_id=rstr("PRICE_ID"),
         product=product,
     )
     await save_fixture(price)
@@ -617,7 +613,6 @@ async def create_legacy_recurring_product_price(
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
             price_currency="usd",
-            stripe_price_id=rstr("PRICE_ID"),
             product=product,
             is_archived=False,
         )
@@ -627,13 +622,11 @@ async def create_legacy_recurring_product_price(
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,
-            stripe_price_id=rstr("PRICE_ID"),
             product=product,
             is_archived=False,
         )
     elif amount_type == ProductPriceAmountType.free:
         product_price = LegacyRecurringProductPriceFree(
-            stripe_price_id=rstr("PRICE_ID"),
             product=product,
             is_archived=False,
         )
@@ -657,7 +650,6 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -674,7 +666,6 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -692,7 +683,6 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -706,9 +696,6 @@ async def create_discount(
         duration=duration,
         duration_in_months=duration_in_months,
         organization=organization,
-        stripe_coupon_id=stripe_coupon_id
-        if stripe_coupon_id
-        else rstr("STRIPE_COUPON_ID"),
         starts_at=starts_at,
         ends_at=ends_at,
         discount_products=[],
@@ -818,7 +805,6 @@ async def create_order(
     currency: str = "usd",
     order_items: list[OrderItem] | None = None,
     subscription: Subscription | None = None,
-    stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReasonInternal = OrderBillingReasonInternal.purchase,
     user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
@@ -853,7 +839,6 @@ async def create_order(
         items=order_items,
         currency=currency,
         billing_reason=billing_reason,
-        stripe_invoice_id=stripe_invoice_id,
         billing_name=billing_name,
         billing_address=billing_address,
         invoice_number=invoice_number or rstr("INV-"),
@@ -980,7 +965,6 @@ async def create_subscription(
     trial_start: datetime | None = None,
     trial_end: datetime | None = None,
     discount: Discount | None = None,
-    stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = False,
     revoke: bool = False,
     user_metadata: dict[str, Any] | None = None,
@@ -1020,7 +1004,6 @@ async def create_subscription(
             canceled_at = now
 
     subscription = Subscription(
-        stripe_subscription_id=stripe_subscription_id,
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         status=status,
@@ -1084,7 +1067,6 @@ async def create_trialing_subscription(
         trial_end=trial_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
-        stripe_subscription_id=None,
     )
 
 
@@ -1102,7 +1084,6 @@ async def create_active_subscription(
     cancel_at_period_end: bool = False,
     current_period_start: datetime | None = None,
     current_period_end: datetime | None = None,
-    stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
 ) -> Subscription:
@@ -1120,7 +1101,6 @@ async def create_active_subscription(
         current_period_start=current_period_start,
         current_period_end=current_period_end,
         cancel_at_period_end=cancel_at_period_end,
-        stripe_subscription_id=stripe_subscription_id,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
     )
@@ -1132,7 +1112,6 @@ async def create_canceled_subscription(
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
-    stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = True,
     revoke: bool = False,
 ) -> Subscription:
@@ -1145,7 +1124,6 @@ async def create_canceled_subscription(
         started_at=utc_now(),
         cancel_at_period_end=cancel_at_period_end,
         revoke=revoke,
-        stripe_subscription_id=stripe_subscription_id,
     )
 
 
@@ -2088,9 +2066,6 @@ async def create_subscription_with_seats(
         kwargs["status"] = SubscriptionStatus.active
     if "started_at" not in kwargs:
         kwargs["started_at"] = utc_now()
-    # Seat management is Polar-only, not Stripe-managed
-    if "stripe_subscription_id" not in kwargs:
-        kwargs["stripe_subscription_id"] = None
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer, seats=seats, **kwargs
     )

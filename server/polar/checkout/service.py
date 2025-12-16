@@ -27,7 +27,7 @@ from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
-from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
 from polar.event.system import (
     CheckoutCreatedMetadata,
@@ -1203,29 +1203,21 @@ class CheckoutService:
         product = checkout.product
         subscription: Subscription | None = None
         if product.is_recurring:
-            if not checkout.organization.subscriptions_billing_engine:
-                (
-                    subscription,
-                    _,
-                ) = await subscription_service.create_or_update_from_checkout_stripe(
-                    session, checkout, payment, payment_method
-                )
-            else:
-                (
-                    subscription,
-                    created,
-                ) = await subscription_service.create_or_update_from_checkout(
-                    session, checkout, payment_method
-                )
-                await order_service.create_from_checkout_subscription(
-                    session,
-                    checkout,
-                    subscription,
-                    OrderBillingReasonInternal.subscription_create
-                    if created
-                    else OrderBillingReasonInternal.subscription_update,
-                    payment,
-                )
+            (
+                subscription,
+                created,
+            ) = await subscription_service.create_or_update_from_checkout(
+                session, checkout, payment_method
+            )
+            await order_service.create_from_checkout_subscription(
+                session,
+                checkout,
+                subscription,
+                OrderBillingReasonInternal.subscription_create
+                if created
+                else OrderBillingReasonInternal.subscription_update,
+                payment,
+            )
         else:
             await order_service.create_from_checkout_one_time(
                 session, checkout, payment
@@ -2182,34 +2174,6 @@ class CheckoutService:
                 yield customer
         else:
             yield await repository.update(customer, flush=True)
-
-    async def _create_ad_hoc_custom_price(
-        self, checkout: Checkout, *, idempotency_key: str | None = None
-    ) -> stripe_lib.Price:
-        assert has_product_checkout(checkout)
-        assert checkout.product.stripe_product_id is not None
-        price_params: stripe_lib.Price.CreateParams = {
-            "unit_amount": checkout.amount,
-            "currency": checkout.currency,
-            "metadata": {
-                "product_price_id": str(checkout.product_price_id),
-            },
-        }
-        if checkout.product.is_recurring:
-            recurring_interval: SubscriptionRecurringInterval
-            if isinstance(checkout.product_price, LegacyRecurringProductPriceCustom):
-                recurring_interval = checkout.product_price.recurring_interval
-            else:
-                assert checkout.product.recurring_interval is not None
-                recurring_interval = checkout.product.recurring_interval
-            price_params["recurring"] = {
-                "interval": recurring_interval.as_literal(),
-            }
-        return await stripe_service.create_price_for_product(
-            checkout.product.stripe_product_id,
-            price_params,
-            idempotency_key=idempotency_key,
-        )
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout

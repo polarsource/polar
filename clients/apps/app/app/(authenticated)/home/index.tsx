@@ -100,13 +100,17 @@ export default function Index() {
     )
   }, [isRefetchingOrders, isRefetchingSubscriptions, isRefetchingCustomers])
 
-  const refresh = useCallback(() => {
-    Promise.all([
+  const refresh = useCallback(async () => {
+    await Promise.all([
       refetchOrders(),
       refetchCustomers(),
       refetchSubscriptions(),
-      checkForUpdateAsync(),
     ])
+    try {
+      await checkForUpdateAsync()
+    } catch {
+      // checkForUpdateAsync is not supported on simulator/emulator
+    }
   }, [refetchOrders, refetchCustomers, refetchSubscriptions])
 
   const { expoPushToken } = useNotifications()

@@ -51,6 +51,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
         <Box flexDirection="row" justifyContent="flex-start">
           <Button
             size="small"
+            variant="primary"
             disabled={!canWithdraw}
             onPress={() => router.push('/finance/withdraw')}
           >

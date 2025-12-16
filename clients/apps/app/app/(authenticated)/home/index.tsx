@@ -1,9 +1,10 @@
 import { CustomerCard } from '@/components/Customers/CustomerCard'
 import { ActivityFeed } from '@/components/Home/ActivityFeed'
-import { CatalogueTile } from '@/components/Home/CatalogueTile'
+import { FAB } from '@/components/Home/FAB'
 import { FinanceTile } from '@/components/Home/FinanceTile'
 import { OrdersTile } from '@/components/Home/OrdersTile'
 import { RevenueTile } from '@/components/Home/RevenueTile'
+import { SubscriptionsTile } from '@/components/Home/SubscriptionsTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
@@ -260,7 +261,7 @@ export default function Index() {
             </Box>
             <Box flexDirection="row" gap="spacing-16">
               <Box flex={1}>
-                <CatalogueTile loading={!organization} />
+                <SubscriptionsTile loading={!organization} />
               </Box>
               <Box flex={1}>
                 <FinanceTile loading={!organization} />
@@ -322,6 +323,7 @@ export default function Index() {
           )}
         </Box>
       </Animated.ScrollView>
+      <FAB />
     </GestureHandlerRootView>
   )
 }

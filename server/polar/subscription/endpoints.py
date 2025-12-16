@@ -31,7 +31,10 @@ from .schemas import (
     SubscriptionID,
     SubscriptionUpdate,
 )
-from .service import AlreadyCanceledSubscription, SubscriptionLocked
+from .service import (
+    AlreadyCanceledSubscription,
+    SubscriptionLocked,
+)
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()

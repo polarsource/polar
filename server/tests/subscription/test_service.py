@@ -2471,6 +2471,47 @@ class TestUpdateTrial:
         assert errors[0]["loc"] == ("body", "trial_end")
         assert "Trial end must be after the current period end" in errors[0]["msg"]
 
+    async def test_seat_based_trialing_subscription_extending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Trialing seat-based subscription
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trialing,
+            trial_start=utc_now(),
+            trial_end=utc_now() + timedelta(days=14),
+            stripe_subscription_id=None,
+            seats=5,
+        )
+
+        original_trial_end = subscription.trial_end
+        assert original_trial_end is not None
+        new_trial_end = original_trial_end + timedelta(days=30)
+
+        # When: Extend trial
+        updated_subscription = await subscription_service.update_trial(
+            session, subscription, trial_end=new_trial_end
+        )
+
+        # Then: Trial extended, seats preserved
+        assert updated_subscription.status == SubscriptionStatus.trialing
+        assert updated_subscription.trial_end == new_trial_end
+        assert updated_subscription.current_period_end == new_trial_end
+        assert updated_subscription.seats == 5
+        assert updated_subscription.amount == 5000
+
 
 @pytest.mark.asyncio
 async def test_send_past_due_email(
@@ -2995,10 +3036,20 @@ class TestUpdateSeats:
             seats=5,
         )
 
-        # When: Try to update seats
-        # Then: Raises error
-        with pytest.raises(TrialingSubscription):
-            await subscription_service.update_seats(session, subscription, seats=10)
+        # When: Update seats during trial
+        updated = await subscription_service.update_seats(
+            session, subscription, seats=10
+        )
+        await session.flush()
+
+        # Then: Successfully updated
+        assert updated.seats == 10
+        assert updated.amount == 10000
+
+        # And: No proration entry created (no billing during trial)
+        billing_entry_repo = BillingEntryRepository.from_session(session)
+        entries = await billing_entry_repo.get_pending_by_subscription(subscription.id)
+        assert len(entries) == 0
 
     async def test_canceled_subscription(
         self,

@@ -981,6 +981,97 @@ class TestSubscriptionUpdateSeats:
         error = response.json()
         assert "not support seat-based pricing" in error["detail"]
 
+    @pytest.mark.auth
+    async def test_trialing_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that updating seats on a trialing subscription succeeds.
+
+        Seat updates are allowed during trial - no proration is created
+        since the customer isn't being billed yet.
+        """
+        # Given: Trialing subscription with seats
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            status=SubscriptionStatus.trialing,
+            started_at=datetime.now(UTC),
+            trial_start=datetime.now(UTC),
+            trial_end=datetime.now(UTC) + timedelta(days=30),
+        )
+
+        # When: Update seats during trial
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"seats": 10},
+        )
+
+        # Then: Successfully updated
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["seats"] == 10
+        assert updated["amount"] == 10000
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdateTrial:
+    @pytest.mark.auth
+    async def test_extend_trial_seat_based_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that trial end date can be updated for seat-based subscriptions."""
+        # Given: Trialing seat-based subscription
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000)],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            status=SubscriptionStatus.trialing,
+            started_at=datetime.now(UTC),
+            trial_start=datetime.now(UTC),
+            trial_end=datetime.now(UTC) + timedelta(days=14),
+        )
+
+        # When: Extend trial by 30 days
+        new_trial_end = datetime.now(UTC) + timedelta(days=44)
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"trial_end": new_trial_end.isoformat()},
+        )
+
+        # Then: Trial extended, seats preserved
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["status"] == SubscriptionStatus.trialing
+        assert updated["seats"] == 5
+        assert updated["amount"] == 5000
+        assert datetime.fromisoformat(updated["trial_end"]) == new_trial_end
+
 
 @pytest.mark.asyncio
 class TestSubscriptionUpdateBillingPeriod:

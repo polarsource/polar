@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from tagflow import classes, tag, text
+from tagflow import attr, classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
@@ -62,18 +62,31 @@ class IdentityVerificationStatusDescriptionListItem(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
         status = item.identity_verification_status
-        if item.identity_verification_id is not None:
-            with tag.a(
-                href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                classes="link flex flex-row gap-1",
-                target="_blank",
-                rel="noopener noreferrer",
-            ):
+        with tag.div(classes="flex items-center gap-2"):
+            if item.identity_verification_id is not None:
+                with tag.a(
+                    href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
+                    classes="link flex flex-row gap-1",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                ):
+                    text(status.get_display_name())
+                    with tag.div(classes="icon-external-link"):
+                        pass
+                with tag.button(
+                    classes="btn btn-xs btn-ghost text-error opacity-0 hover:opacity-100 transition-opacity",
+                    hx_get=str(
+                        request.url_for(
+                            "users:delete-identity-verification", id=item.id
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    attr("title", "Delete identity verification")
+                    with tag.div(classes="icon-trash size-4"):
+                        pass
+            else:
                 text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
-                    pass
-        else:
-            text(status.get_display_name())
         return None
 
 

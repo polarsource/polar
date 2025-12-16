@@ -1,11 +1,10 @@
 import { CustomerCard } from '@/components/Customers/CustomerCard'
 import { CatalogueTile } from '@/components/Home/CatalogueTile'
 import { FinanceTile } from '@/components/Home/FinanceTile'
-import { OrganizationTile } from '@/components/Home/OrganizationTile'
+import { OrdersTile } from '@/components/Home/OrdersTile'
 import { RevenueTile } from '@/components/Home/RevenueTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
 import { OrderRow } from '@/components/Orders/OrderRow'
-import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
@@ -30,15 +29,11 @@ import {
   reloadAsync,
   useUpdates,
 } from 'expo-updates'
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import React, { useCallback, useContext, useEffect, useMemo } from 'react'
+
 import { Platform, RefreshControl, ScrollView } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+
 import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -46,6 +41,13 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+const getGreeting = (): string => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -148,8 +150,6 @@ export default function Index() {
 
   const safeAreaInsets = useSafeAreaInsets()
 
-  const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
-
   const logoScale = useSharedValue(1)
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -220,8 +220,17 @@ export default function Index() {
             headerTitle: 'Home',
           }}
         />
+        <Box paddingHorizontal="spacing-16" gap="spacing-4">
+          <Text variant="headlineLarge">{getGreeting()}</Text>
+          <Text variant="body" color="subtext">
+            {"Here's how "}
+            {organization?.name ?? 'your business'}
+            {' is doing'}
+          </Text>
+        </Box>
+
         <Box
-          padding="spacing-16"
+          paddingHorizontal="spacing-16"
           gap="spacing-32"
           flex={1}
           flexDirection="column"
@@ -242,10 +251,7 @@ export default function Index() {
           <Box gap="spacing-16">
             <Box flexDirection="row" gap="spacing-16">
               <Box flex={1}>
-                <OrganizationTile
-                  onPress={() => setShowOrganizationsSheet(true)}
-                  loading={!organization}
-                />
+                <OrdersTile loading={!organization} />
               </Box>
               <Box flex={1}>
                 <RevenueTile loading={!organization} />
@@ -376,12 +382,6 @@ export default function Index() {
           )}
         </Box>
       </Animated.ScrollView>
-
-      {showOrganizationsSheet ? (
-        <OrganizationsSheet
-          onDismiss={() => setShowOrganizationsSheet(false)}
-        />
-      ) : null}
     </GestureHandlerRootView>
   )
 }

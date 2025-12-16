@@ -191,6 +191,7 @@ class SubscriptionCanceledMetadata(TypedDict):
     customer_cancellation_comment: NotRequired[str]
     canceled_at: str
     ends_at: NotRequired[str]
+    cancel_at_period_end: NotRequired[bool]
 
 
 class SubscriptionCanceledEvent(Event):

@@ -261,6 +261,7 @@ class TestBackfillSubscriptionCanceledMetadata:
             metadata["recurring_interval_count"]
             == subscription.recurring_interval_count
         )
+        assert metadata["cancel_at_period_end"] == subscription.cancel_at_period_end
 
 
 @pytest.mark.asyncio
@@ -379,6 +380,10 @@ class TestCreateMissingSubscriptionCanceledEvents:
             == subscription.recurring_interval_count
         )
         assert "canceled_at" in event.user_metadata
+        assert (
+            event.user_metadata["cancel_at_period_end"]
+            == subscription.cancel_at_period_end
+        )
 
 
 @pytest.mark.asyncio

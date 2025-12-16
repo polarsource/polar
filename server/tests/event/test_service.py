@@ -1587,7 +1587,6 @@ class TestSystemEvents:
             save_fixture,
             product=product,
             customer=customer,
-            stripe_subscription_id=None,
         )
 
         await subscription_service.cancel(

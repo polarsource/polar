@@ -1,7 +1,5 @@
 import uuid
-from types import SimpleNamespace
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
@@ -161,17 +159,8 @@ class TestCreateProduct:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         response = await client.post(
             "/v1/products/",
             json={
@@ -331,16 +320,7 @@ class TestCreateProduct:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        stripe_service_mock: MagicMock,
     ) -> None:
-        create_product_mock: MagicMock = stripe_service_mock.create_product
-        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
-
-        create_price_for_product_mock: MagicMock = (
-            stripe_service_mock.create_price_for_product
-        )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
-
         response = await client.post(
             "/v1/products/",
             json={

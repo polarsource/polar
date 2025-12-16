@@ -56,7 +56,6 @@ async def create_order_and_payment(
     amount: int,
     tax_amount: int,
     subscription: Subscription | None = None,
-    stripe_invoice_id: str | None = "INVOICE_ID",
 ) -> tuple[Order, Payment, Transaction]:
     order = await ro.create_order(
         save_fixture,
@@ -64,7 +63,6 @@ async def create_order_and_payment(
         customer=customer,
         subtotal_amount=amount,
         tax_amount=tax_amount,
-        stripe_invoice_id=stripe_invoice_id,
         subscription=subscription,
     )
     payment = await ro.create_payment(
@@ -109,7 +107,6 @@ class TestListRefunds(StripeRefund):
             customer=customer,
             amount=1000,
             tax_amount=250,
-            stripe_invoice_id="STRIPE_SECOND_INVOICE_ID",
         )
         order_second_org, payment_second_org, _ = await create_order_and_payment(
             save_fixture,
@@ -117,7 +114,6 @@ class TestListRefunds(StripeRefund):
             customer=customer_organization_second,
             amount=1000,
             tax_amount=250,
-            stripe_invoice_id="STRIPE_SECOND_ORG_INVOICE_ID",
         )
 
         def refund_id() -> str:

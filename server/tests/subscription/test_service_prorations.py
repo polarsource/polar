@@ -324,7 +324,6 @@ class TestUpdateProductProrations:
                 save_fixture,
                 product=old_product,
                 customer=customer,
-                stripe_subscription_id=None,
             )
 
             previous_period_start = subscription.current_period_start
@@ -466,7 +465,6 @@ class TestUpdateProductProrations:
             save_fixture,
             product=old_product,
             customer=customer,
-            stripe_subscription_id=None,
             current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
             current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
         )
@@ -525,7 +523,6 @@ class TestUpdateProductProrations:
             save_fixture,
             product=old_product,
             customer=customer,
-            stripe_subscription_id=None,
             current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
             current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
         )
@@ -586,7 +583,6 @@ class TestUpdateProductProrations:
             product=product,
             prices=[old_price],
             customer=customer,
-            stripe_subscription_id=None,
             current_period_start=datetime(2025, 6, 1, tzinfo=UTC),
             current_period_end=datetime(2025, 7, 1, tzinfo=UTC),
         )
@@ -701,7 +697,6 @@ class TestUpdateProductProrations:
                 save_fixture,
                 product=old_product,
                 customer=customer,
-                stripe_subscription_id=None,
             )
 
             frozen_time.move_to(time_of_update)
@@ -769,7 +764,6 @@ class TestUpdateProductProrations:
                     save_fixture,
                     product=products[i],
                     customer=customer,
-                    stripe_subscription_id=None,
                 )
                 subscriptions.append(subscription)
 
@@ -904,7 +898,6 @@ class TestUpdateProductProrations:
                 save_fixture,
                 product=products[0],
                 customer=customer,
-                stripe_subscription_id=None,
             )
 
             previous_period_start = subscription.current_period_start
@@ -1039,7 +1032,6 @@ class TestUpdateProductProrations:
                 save_fixture,
                 product=old_product,
                 customer=customer,
-                stripe_subscription_id=None,
             )
             assert len(subscription.meters) == 1
             subscription_meter = subscription.meters[0]

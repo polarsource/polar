@@ -3,7 +3,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
-import stripe as stripe_lib
 from babel.numbers import format_currency, format_decimal
 from sqlalchemy import (
     Boolean,
@@ -82,11 +81,6 @@ class HasStripePriceId:
     stripe_price_id: Mapped[str] = mapped_column(
         String, nullable=True, use_existing_column=True
     )
-
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        raise NotImplementedError()
 
 
 LEGACY_IDENTITY_PREFIX = "legacy_"
@@ -237,20 +231,6 @@ class _ProductPriceFixed(HasStripePriceId, HasPriceCurrency, ProductPrice):
         use_existing_column=True, default=ProductPriceAmountType.fixed
     )
 
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        params: stripe_lib.Price.CreateParams = {
-            "unit_amount": self.price_amount,
-            "currency": self.price_currency,
-        }
-        if recurring_interval is not None:
-            params = {
-                **params,
-                "recurring": {"interval": recurring_interval.as_literal()},
-            }
-        return params
-
     __mapper_args__ = {
         "polymorphic_abstract": True,
         "polymorphic_load": "inline",
@@ -285,27 +265,6 @@ class _ProductPriceCustom(HasStripePriceId, HasPriceCurrency, ProductPrice):
         Integer, nullable=True, default=None
     )
 
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        custom_unit_amount_params: stripe_lib.Price.CreateParamsCustomUnitAmount = {
-            "enabled": True,
-        }
-        if self.minimum_amount is not None:
-            custom_unit_amount_params["minimum"] = self.minimum_amount
-        if self.maximum_amount is not None:
-            custom_unit_amount_params["maximum"] = self.maximum_amount
-        if self.preset_amount is not None:
-            custom_unit_amount_params["preset"] = self.preset_amount
-
-        # `recurring_interval` is unused because we actually create ad-hoc prices,
-        # since Stripe doesn't support PWYW pricing for subscriptions.
-
-        return {
-            "currency": self.price_currency,
-            "custom_unit_amount": custom_unit_amount_params,
-        }
-
     __mapper_args__ = {
         "polymorphic_abstract": True,
         "polymorphic_load": "inline",
@@ -332,21 +291,6 @@ class _ProductPriceFree(HasStripePriceId, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )
-
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        params: stripe_lib.Price.CreateParams = {
-            "unit_amount": 0,
-            "currency": "usd",
-        }
-        if recurring_interval is not None:
-            params = {
-                **params,
-                "recurring": {"interval": recurring_interval.as_literal()},
-            }
-
-        return params
 
     __mapper_args__ = {
         "polymorphic_abstract": True,

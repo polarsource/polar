@@ -11,7 +11,6 @@ from sqlalchemy.util.typing import Literal
 from typing_extensions import AsyncGenerator
 
 from polar.event.repository import EventRepository
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
@@ -55,42 +54,14 @@ class MeteredLineItem:
 class BillingEntryService:
     @contextlib.asynccontextmanager
     async def create_order_items_from_pending(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        *,
-        stripe_invoice_id: str | None = None,
-        stripe_customer_id: str | None = None,
+        self, session: AsyncSession, subscription: Subscription
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         item_entries_map: dict[OrderItem, Sequence[uuid.UUID]] = {}
         async for line_item, entries in self.compute_pending_subscription_line_items(
             session, subscription
         ):
-            order_item_id = uuid.uuid4()
-
-            # For legacy subscriptions managed by Stripe, we create invoice items on Stripe
-            if stripe_invoice_id and stripe_customer_id:
-                assert isinstance(line_item, MeteredLineItem)
-                price = line_item.price
-                await stripe_service.create_invoice_item(
-                    customer=stripe_customer_id,
-                    invoice=stripe_invoice_id,
-                    amount=line_item.amount,
-                    currency=line_item.currency,
-                    description=line_item.label,
-                    metadata={
-                        "order_item_id": str(order_item_id),
-                        "product_price_id": str(price.id),
-                        "meter_id": str(price.meter_id),
-                        "units": str(line_item.consumed_units),
-                        "credited_units": str(line_item.credited_units),
-                        "unit_amount": str(price.unit_amount),
-                        "cap_amount": str(price.cap_amount),
-                    },
-                )
-
             order_item = OrderItem(
-                id=order_item_id,
+                id=uuid.uuid4(),
                 label=line_item.label,
                 amount=line_item.amount,
                 tax_amount=0,

@@ -90,8 +90,8 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    stripe_coupon_id: Mapped[str] = mapped_column(
-        String, nullable=False, unique=True, index=True
+    stripe_coupon_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, unique=True, index=True
     )
 
     organization_id: Mapped[UUID] = mapped_column(

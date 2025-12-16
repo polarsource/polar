@@ -1,12 +1,8 @@
 import asyncio
 from datetime import timedelta
-from types import SimpleNamespace
 from typing import Literal
-from unittest.mock import MagicMock
 
 import pytest
-import stripe as stripe_lib
-from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
@@ -18,7 +14,6 @@ from polar.discount.schemas import (
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
-from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
@@ -48,13 +43,6 @@ async def create_discount_redemption(
     return discount_redemption
 
 
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.discount.service.stripe_service", new=mock)
-    return mock
-
-
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.auth
@@ -62,7 +50,6 @@ class TestCreate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        stripe_service_mock: MagicMock,
         organization: Organization,
         user_organization: UserOrganization,
         product: Product,
@@ -86,9 +73,6 @@ class TestCreate:
         )
 
         assert discount.name == "A" * 256
-        stripe_service_mock.create_coupon.assert_called_once()
-        name_params = stripe_service_mock.create_coupon.call_args[1]["name"]
-        assert name_params == "A" * 40
 
 
 @pytest.mark.asyncio
@@ -219,15 +203,10 @@ class TestUpdate:
         self,
         type: DiscountType,
         payload: DiscountUpdate,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        stripe_service_mock.create_coupon.return_value = SimpleNamespace(
-            id="NEW_STRIPE_COUPON_ID"
-        )
-
         discount: Discount
         if type == DiscountType.percentage:
             discount = await create_discount(
@@ -246,7 +225,6 @@ class TestUpdate:
                 duration=DiscountDuration.once,
                 organization=organization,
             )
-        old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_ends_at = utc_now() + timedelta(days=2)
         payload.ends_at = updated_ends_at
@@ -261,14 +239,9 @@ class TestUpdate:
             assert updated_discount.currency == "usd"
 
         assert updated_discount.ends_at == updated_ends_at
-        assert updated_discount.stripe_coupon_id == "NEW_STRIPE_COUPON_ID"
-
-        stripe_service_mock.delete_coupon.assert_called_once_with(old_stripe_coupon_id)
-        stripe_service_mock.create_coupon.assert_called_once()
 
     async def test_update_name(
         self,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -280,7 +253,6 @@ class TestUpdate:
             duration=DiscountDuration.once,
             organization=organization,
         )
-        old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_discount = await discount_service.update(
             session,
@@ -289,15 +261,9 @@ class TestUpdate:
         )
 
         assert updated_discount.name == "Updated Name"
-        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
-
-        stripe_service_mock.update_coupon.assert_called_once_with(
-            old_stripe_coupon_id, name="Updated Name"
-        )
 
     async def test_update_products(
         self,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -312,7 +278,6 @@ class TestUpdate:
             organization=organization,
             products=[product],
         )
-        old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_discount = await discount_service.update(
             session,
@@ -321,12 +286,9 @@ class TestUpdate:
         )
 
         assert updated_discount.products == [product_one_time]
-        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
-        stripe_service_mock.update_coupon.assert_not_called()
 
     async def test_update_products_reset(
         self,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -340,7 +302,6 @@ class TestUpdate:
             organization=organization,
             products=[product],
         )
-        old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_discount = await discount_service.update(
             session,
@@ -349,12 +310,9 @@ class TestUpdate:
         )
 
         assert updated_discount.products == []
-        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
-        stripe_service_mock.update_coupon.assert_not_called()
 
     async def test_update_discount_past_dates(
         self,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -368,7 +326,6 @@ class TestUpdate:
             starts_at=utc_now() - timedelta(days=7),
             ends_at=utc_now() - timedelta(days=1),
         )
-        old_stripe_coupon_id = discount.stripe_coupon_id
 
         updated_discount = await discount_service.update(
             session,
@@ -381,15 +338,8 @@ class TestUpdate:
         )
 
         assert updated_discount.name == "Updated Name"
-        assert updated_discount.stripe_coupon_id == old_stripe_coupon_id
         assert updated_discount.starts_at == discount.starts_at
         assert updated_discount.ends_at == discount.ends_at
-
-        stripe_service_mock.update_coupon.assert_called_once_with(
-            old_stripe_coupon_id, name="Updated Name"
-        )
-        stripe_service_mock.delete_coupon.assert_not_called()
-        stripe_service_mock.create_coupon.assert_not_called()
 
     async def test_update_code_already_exists(
         self,
@@ -426,7 +376,6 @@ class TestUpdate:
 
     async def test_update_code_same_discount(
         self,
-        stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -447,40 +396,6 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
-
-    async def test_update_stripe_coupon_not_found(
-        self,
-        stripe_service_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        stripe_service_mock.create_coupon.return_value = SimpleNamespace(
-            id="NEW_STRIPE_COUPON_ID"
-        )
-        stripe_error = stripe_lib.InvalidRequestError(
-            "No such coupon", param=None, code="resource_missing"
-        )
-        stripe_error.error = stripe_lib.ErrorObject.construct_from(
-            {"code": "resource_missing"}, None
-        )
-        stripe_service_mock.delete_coupon.side_effect = stripe_error
-
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization,
-        )
-
-        updated_discount = await discount_service.update(
-            session,
-            discount,
-            discount_update=DiscountUpdate(basis_points=2000),
-        )
-
-        assert updated_discount.stripe_coupon_id == "NEW_STRIPE_COUPON_ID"
 
 
 @pytest.mark.asyncio

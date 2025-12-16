@@ -13,17 +13,7 @@ from polar.dispute.service import dispute as dispute_service
 from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
-from polar.locker import Locker
 from polar.logging import Logger
-from polar.order.service import (
-    NotAnOrderInvoice,
-    NotASubscriptionInvoice,
-    OrderDoesNotExist,
-)
-from polar.order.service import (
-    SubscriptionDoesNotExist as OrderSubscriptionDoesNotExist,
-)
-from polar.order.service import order as order_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
@@ -31,23 +21,13 @@ from polar.payout.service import payout as payout_service
 from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import MissingRelatedDispute, RefundPendingCreation
 from polar.refund.service import refund as refund_service
-from polar.subscription.service import SubscriptionDoesNotExist, SubscriptionLocked
 from polar.subscription.service import subscription as subscription_service
-from polar.transaction.service.payment import (
-    BalanceTransactionNotAvailableError,
-)
+from polar.transaction.service.payment import BalanceTransactionNotAvailableError
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.user.service import user as user_service
-from polar.worker import (
-    AsyncSessionMaker,
-    RedisMiddleware,
-    TaskPriority,
-    actor,
-    can_retry,
-    get_retries,
-)
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
 from .service import stripe as stripe_service
@@ -361,99 +341,6 @@ async def charge_dispute_closed(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
             await dispute_service.upsert_from_stripe(session, dispute)
-
-
-@actor(
-    actor_name="stripe.webhook.customer.subscription.updated",
-    priority=TaskPriority.HIGH,
-)
-@stripe_api_connection_error_retry
-async def customer_subscription_updated(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
-            redis = RedisMiddleware.get()
-            locker = Locker(redis)
-            try:
-                await subscription_service.update_from_stripe(
-                    session, locker, stripe_subscription=subscription
-                )
-            except (SubscriptionDoesNotExist, SubscriptionLocked) as e:
-                log.warning(e.message, event_id=event.id)
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created yet!
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-
-@actor(
-    actor_name="stripe.webhook.customer.subscription.deleted",
-    priority=TaskPriority.HIGH,
-)
-@stripe_api_connection_error_retry
-async def customer_subscription_deleted(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
-            redis = RedisMiddleware.get()
-            locker = Locker(redis)
-            try:
-                await subscription_service.update_from_stripe(
-                    session, locker, stripe_subscription=subscription
-                )
-            except (SubscriptionDoesNotExist, SubscriptionLocked) as e:
-                log.warning(e.message, event_id=event.id)
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created yet!
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-
-@actor(actor_name="stripe.webhook.invoice.created", priority=TaskPriority.HIGH)
-@stripe_api_connection_error_retry
-async def invoice_created(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            invoice = cast(stripe_lib.Invoice, event.stripe_data.data.object)
-            try:
-                await order_service.create_order_from_stripe(session, invoice=invoice)
-            except OrderSubscriptionDoesNotExist as e:
-                log.warning(e.message, event_id=event.id)
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created yet!
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-            except (NotAnOrderInvoice, NotASubscriptionInvoice):
-                # Ignore invoices that are not for products (pledges) and subscriptions
-                return
-
-
-@actor(actor_name="stripe.webhook.invoice.paid", priority=TaskPriority.HIGH)
-@stripe_api_connection_error_retry
-async def invoice_paid(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            invoice = cast(stripe_lib.Invoice, event.stripe_data.data.object)
-            try:
-                await order_service.update_order_from_stripe(session, invoice=invoice)
-            except OrderDoesNotExist as e:
-                log.warning(e.message, event_id=event.id)
-                # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle invoice.created yet!
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
 
 
 @actor(actor_name="stripe.webhook.payout.updated", priority=TaskPriority.LOW)

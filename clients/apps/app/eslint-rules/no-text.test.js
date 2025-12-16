@@ -35,7 +35,7 @@ ruleTester.run('no-text', rule, {
     {
       code: `
         import { TextStyle } from 'react-native';
-        const style: TextStyle = { fontSize: 16 };
+        const style = { fontSize: 16 };
       `,
     },
     {

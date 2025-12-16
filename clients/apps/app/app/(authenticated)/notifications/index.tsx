@@ -75,7 +75,9 @@ export default function Notifications() {
         renderItem={({ item }: { item: PolarNotification | string }) => {
           if (typeof item === 'string') {
             return (
-              <Text style={{ paddingTop: 12, paddingBottom: 24 }}>{item}</Text>
+              <Text paddingBottom="spacing-24" paddingTop="spacing-12">
+                {item}
+              </Text>
             )
           }
 
@@ -84,16 +86,18 @@ export default function Notifications() {
               type={item.type}
               payload={item.payload}
               createdAt={item.created_at}
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: theme.spacing['spacing-16'] }}
             />
           )
         }}
         contentContainerStyle={{
-          padding: 16,
+          padding: theme.spacing['spacing-16'],
           backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
-        ItemSeparatorComponent={() => <Box style={{ height: 1 }} />}
+        ItemSeparatorComponent={() => (
+          <Box style={{ height: theme.dimension['dimension-1'] }} />
+        )}
         keyExtractor={(item) => (typeof item === 'string' ? item : item.id)}
         refreshControl={
           <RefreshControl

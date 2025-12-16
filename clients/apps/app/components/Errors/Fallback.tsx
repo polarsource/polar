@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 
 import { Box } from '@/components/Shared/Box'
 import PolarLogo from '@/components/Shared/PolarLogo'
+import { useTheme } from '@/design-system/useTheme'
 import { useLogout } from '@/hooks/auth'
 import { useOAuth } from '@/hooks/oauth'
 import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
@@ -16,6 +17,7 @@ export const ErrorFallback = ({
   error,
   resetErrorBoundary,
 }: ErrorFallbackProps) => {
+  const theme = useTheme()
   const logout = useLogout()
   const { authenticate } = useOAuth()
   const permissionError =
@@ -72,18 +74,18 @@ export const ErrorFallback = ({
       <Touchable
         activeOpacity={0.6}
         style={{
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.monochromeInverted,
           borderRadius: 100,
           width: 'auto',
-          paddingVertical: 12,
-          paddingHorizontal: 24,
+          paddingVertical: theme.spacing['spacing-12'],
+          paddingHorizontal: theme.spacing['spacing-24'],
         }}
         onPress={async () => {
           await action()
           resetErrorBoundary()
         }}
       >
-        <Text variant="bodyMedium" style={{ color: '#000' }}>
+        <Text variant="bodyMedium" style={{ color: theme.colors.monochrome }}>
           {actionText}
         </Text>
       </Touchable>

@@ -56,14 +56,17 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: pnpm install
 
-      - name: Lint
+      - name: 💅Lint
         run: pnpm run lint
 
-      - name: Typecheck
+      - name: 👀 Typecheck
         run: pnpm run typecheck
 
-      - name: Build
+      - name: "🧪 Test: App"
+        run: pnpm --filter @polar-sh/app test
+
+      - name: 🛠️ Build
         run: pnpm build

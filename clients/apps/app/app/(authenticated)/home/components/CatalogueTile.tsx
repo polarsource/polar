@@ -1,11 +1,11 @@
 import { Box } from '@/components/Shared/Box'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { subDays } from 'date-fns'
 import { useContext, useMemo } from 'react'
-import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export interface CatalogueTileProps {

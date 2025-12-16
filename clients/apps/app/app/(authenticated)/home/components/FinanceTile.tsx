@@ -1,4 +1,6 @@
 import { Box } from '@/components/Shared/Box'
+import { Button } from '@/components/Shared/Button'
+import { Text } from '@/components/Shared/Text'
 import {
   useOrganizationAccount,
   useTransactionsSummary,
@@ -7,8 +9,6 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { useRouter } from 'expo-router'
 import { useContext } from 'react'
-import { Button } from '../Shared/Button'
-import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export interface FinanceTileProps {

@@ -1,8 +1,4 @@
 import { CustomerCard } from '@/components/Customers/CustomerCard'
-import { CatalogueTile } from '@/components/Home/CatalogueTile'
-import { FinanceTile } from '@/components/Home/FinanceTile'
-import { OrganizationTile } from '@/components/Home/OrganizationTile'
-import { RevenueTile } from '@/components/Home/RevenueTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
@@ -46,6 +42,10 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { CatalogueTile } from './components/CatalogueTile'
+import { FinanceTile } from './components/FinanceTile'
+import { OrganizationTile } from './components/OrganizationTile'
+import { RevenueTile } from './components/RevenueTile'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)

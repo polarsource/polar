@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
+import { Touchable } from '@/components/Shared/Touchable'
 import { Href, Link } from 'expo-router'
 import { PropsWithChildren } from 'react'
-import { Touchable } from '../Shared/Touchable'
 
 export type TileWithLinkProps = PropsWithChildren & {
   href: Href

@@ -1,4 +1,5 @@
 import { Box } from '@/components/Shared/Box'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -7,7 +8,6 @@ import { subMonths } from 'date-fns'
 import { useContext, useEffect, useMemo } from 'react'
 import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { CartesianChart, Line } from 'victory-native'
-import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export interface RevenueTileProps {

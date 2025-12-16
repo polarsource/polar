@@ -1,9 +1,9 @@
+import { Avatar } from '@/components/Shared/Avatar'
 import { Box } from '@/components/Shared/Box'
+import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useContext } from 'react'
-import { Avatar } from '../Shared/Avatar'
-import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export interface OrganizationTileProps {

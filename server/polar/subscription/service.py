@@ -1623,20 +1623,17 @@ class SubscriptionService:
 
         Validates:
         - Subscription is seat-based
-        - Subscription is active (not canceled/trialing)
+        - Subscription is active
         - New seat count >= minimum from pricing tiers
         - New seat count >= currently assigned seats
 
-        Creates proration billing entry for the cost difference.
+
         """
         if subscription.stripe_subscription_id is not None:
             raise SubscriptionManagedByStripe(subscription)
 
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
-
-        if subscription.trialing:
-            raise TrialingSubscription(subscription)
 
         seat_price = self._get_seat_based_price(subscription)
         if seat_price is None:
@@ -1687,16 +1684,18 @@ class SubscriptionService:
             ),
         )
 
-        await self._create_seat_proration_entry(
-            session,
-            subscription,
-            old_seats=old_seats,
-            new_seats=seats,
-            old_amount=old_amount,
-            new_amount=subscription.amount,
-            proration_behavior=proration_behavior,
-            event=event,
-        )
+        # Skip proration for trialing subscriptions - no billing during trial
+        if not subscription.trialing:
+            await self._create_seat_proration_entry(
+                session,
+                subscription,
+                old_seats=old_seats,
+                new_seats=seats,
+                old_amount=old_amount,
+                new_amount=subscription.amount,
+                proration_behavior=proration_behavior,
+                event=event,
+            )
 
         session.add(subscription)
         await session.flush()

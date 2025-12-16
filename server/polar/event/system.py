@@ -21,6 +21,7 @@ class SystemEvent(StrEnum):
     subscription_canceled = "subscription.canceled"
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
+    subscription_uncanceled = "subscription.uncanceled"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
     subscription_billing_period_updated = "subscription.billing_period_updated"
@@ -41,6 +42,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.canceled": "Subscription Canceled",
     "subscription.cycled": "Subscription Cycled",
     "subscription.revoked": "Subscription Revoked",
+    "subscription.uncanceled": "Subscription Uncanceled",
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
@@ -231,6 +233,22 @@ class SubscriptionRevokedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_revoked]]
         user_metadata: Mapped[SubscriptionRevokedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionUncanceledMetadata(TypedDict):
+    subscription_id: str
+    product_id: str
+    amount: int
+    currency: str
+    recurring_interval: str
+    recurring_interval_count: int
+
+
+class SubscriptionUncanceledEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_uncanceled]]
+        user_metadata: Mapped[SubscriptionUncanceledMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionProductUpdatedMetadata(TypedDict):
@@ -437,6 +455,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionRevokedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_uncanceled],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionUncanceledMetadata,
 ) -> Event: ...
 
 

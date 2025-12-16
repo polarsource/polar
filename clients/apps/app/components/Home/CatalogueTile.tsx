@@ -1,5 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
+import { useCheckoutLinks } from '@/hooks/polar/checkout_links'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { useProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
@@ -19,6 +20,9 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
   const { data: products } = useProducts(organization?.id, {
     limit: 100,
   })
+  const { data: checkoutLinks } = useCheckoutLinks(organization?.id, {
+    limit: 100,
+  })
 
   const startDate = useMemo(() => {
     return subDays(new Date(), 6)
@@ -33,7 +37,7 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
   })
 
   return (
-    <Tile href="/products">
+    <Tile href="/catalogue">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
           <Text variant="body" color="subtext">
@@ -42,6 +46,14 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
           <Text variant="body" loading={loading} placeholderText="10 Products">
             {products?.items.length}{' '}
             {`${(products?.items.length ?? 0) > 1 ? 'Products' : 'Product'}`}
+          </Text>
+          <Text
+            variant="body"
+            loading={loading}
+            placeholderText="5 Checkout Links"
+          >
+            {checkoutLinks?.items.length}{' '}
+            {`${(checkoutLinks?.items.length ?? 0) === 1 ? 'Checkout Link' : 'Checkout Links'}`}
           </Text>
         </Box>
         <Box flexDirection="column" gap="spacing-8">

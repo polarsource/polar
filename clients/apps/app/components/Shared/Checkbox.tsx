@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { TouchableOpacity } from 'react-native'
 import { Text } from './Text'
+import { Touchable } from './Touchable'
 
 export interface CheckboxProps {
   label: string
@@ -13,7 +13,7 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
   const theme = useTheme()
 
   return (
-    <TouchableOpacity
+    <Touchable
       onPress={() => onChange(!checked)}
       style={{
         flexDirection: 'row',
@@ -41,6 +41,6 @@ export const Checkbox = ({ label, checked, onChange }: CheckboxProps) => {
         )}
       </Box>
       <Text color={checked ? 'text' : 'subtext'}>{label}</Text>
-    </TouchableOpacity>
+    </Touchable>
   )
 }

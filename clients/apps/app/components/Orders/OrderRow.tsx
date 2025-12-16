@@ -8,7 +8,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React, { useContext } from 'react'
-import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
+import { StyleProp, TextStyle } from 'react-native'
+import { Touchable } from '../Shared/Touchable'
 
 export interface OrderRowProps {
   order?: schemas['Order']
@@ -43,7 +44,7 @@ export const OrderRow = ({
       ]}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Box
           width={48}
           height={48}
@@ -105,7 +106,7 @@ export const OrderRow = ({
             </Text>
           </Box>
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

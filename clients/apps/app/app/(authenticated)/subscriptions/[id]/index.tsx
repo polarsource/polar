@@ -7,6 +7,7 @@ import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Pill } from '@/components/Shared/Pill'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscription } from '@/hooks/polar/subscriptions'
@@ -14,7 +15,7 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import * as Clipboard from 'expo-clipboard'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
-import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
+import { RefreshControl, ScrollView } from 'react-native'
 
 const statusColors = {
   active: 'green',
@@ -80,7 +81,7 @@ export default function Index() {
       />
 
       <Box flexDirection="row" gap="spacing-12">
-        <TouchableOpacity
+        <Touchable
           style={{
             flexDirection: 'column',
             gap: theme.spacing['spacing-4'],
@@ -103,7 +104,7 @@ export default function Index() {
           >
             {subscription.id.split('-').pop()?.slice(-6, -1)}
           </Text>
-        </TouchableOpacity>
+        </Touchable>
         <Box
           flexDirection="column"
           gap="spacing-4"

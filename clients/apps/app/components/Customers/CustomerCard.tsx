@@ -3,9 +3,10 @@ import { useTheme } from '@/design-system/useTheme'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { Dimensions, TouchableOpacity } from 'react-native'
+import { Dimensions } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerCardProps {
   customer?: schemas['Customer']
@@ -30,7 +31,7 @@ export const CustomerCard = ({ customer, loading }: CustomerCardProps) => {
       }}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Avatar
           size={64}
           name={customer?.name || customer?.email || ''}
@@ -53,7 +54,7 @@ export const CustomerCard = ({ customer, loading }: CustomerCardProps) => {
             {customer?.email}
           </Text>
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { Href, Link } from 'expo-router'
 import { PropsWithChildren } from 'react'
-import { TouchableOpacity } from 'react-native'
+import { Touchable } from '../Shared/Touchable'
 
 export type TileWithLinkProps = PropsWithChildren & {
   href: Href
@@ -17,7 +17,7 @@ export const Tile = ({ children, ...props }: TileProps) => {
   if ('href' in props) {
     return (
       <Link href={props.href} asChild>
-        <TouchableOpacity activeOpacity={0.6}>
+        <Touchable>
           <Box
             backgroundColor="card"
             padding="spacing-20"
@@ -27,13 +27,13 @@ export const Tile = ({ children, ...props }: TileProps) => {
           >
             {children}
           </Box>
-        </TouchableOpacity>
+        </Touchable>
       </Link>
     )
   }
 
   return (
-    <TouchableOpacity activeOpacity={0.6} onPress={props.onPress}>
+    <Touchable onPress={props.onPress}>
       <Box
         backgroundColor="card"
         padding="spacing-20"
@@ -43,6 +43,6 @@ export const Tile = ({ children, ...props }: TileProps) => {
       >
         {children}
       </Box>
-    </TouchableOpacity>
+    </Touchable>
   )
 }

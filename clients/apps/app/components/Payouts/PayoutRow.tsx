@@ -4,9 +4,10 @@ import { Payout } from '@/hooks/polar/finance'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { Link } from 'expo-router'
 import React from 'react'
-import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
+import { StyleProp, TextStyle } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface PayoutRowProps {
   payout: Payout
@@ -39,7 +40,7 @@ export const PayoutRow = ({ payout, style }: PayoutRowProps) => {
       ]}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Box flex={1} flexDirection="column" gap="spacing-4">
           <Box flexDirection="row" justifyContent="space-between">
             <Text variant="bodyMedium">
@@ -57,7 +58,7 @@ export const PayoutRow = ({ payout, style }: PayoutRowProps) => {
             </Text>
           </Box>
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

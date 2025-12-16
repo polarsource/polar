@@ -3,12 +3,12 @@ import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { router } from 'expo-router'
 import { useContext } from 'react'
-import { TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { BottomSheet } from '../Shared/BottomSheet'
 import { Box } from '../Shared/Box'
-import { MiniButton } from '../Shared/MiniButton'
+import { Button } from '../Shared/Button'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface OrganizationsSheetProps {
   onDismiss: () => void
@@ -36,7 +36,8 @@ export const OrganizationsSheet = ({
       <Box gap="spacing-16">
         <Box flexDirection="row" justifyContent="space-between">
           <Text variant="title">Organizations</Text>
-          <MiniButton
+          <Button
+            size="small"
             onPress={() => router.push('/onboarding')}
             icon={
               <MaterialIcons
@@ -47,11 +48,11 @@ export const OrganizationsSheet = ({
             }
           >
             New
-          </MiniButton>
+          </Button>
         </Box>
         <Box flexDirection="column">
           {organizations.map((organization) => (
-            <TouchableOpacity
+            <Touchable
               key={organization?.id}
               style={{
                 paddingVertical: theme.spacing['spacing-12'],
@@ -92,7 +93,7 @@ export const OrganizationsSheet = ({
                   color={theme.colors.monochromeInverted}
                 />
               ) : null}
-            </TouchableOpacity>
+            </Touchable>
           ))}
         </Box>
       </Box>

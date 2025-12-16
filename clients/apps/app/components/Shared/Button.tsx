@@ -1,86 +1,99 @@
-import { useTheme } from '@/design-system/useTheme'
-import {
-  ActivityIndicator,
-  StyleProp,
-  TextStyle,
-  TouchableOpacity,
-  ViewStyle,
-} from 'react-native'
-import { Text } from './Text'
+import { ActivityIndicator } from 'react-native'
 
-export interface ButtonProps {
-  children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'destructive'
+import { Text } from '@/components/Shared/Text'
+import {
+  ButtonVariantKey,
+  buttonVariants,
+} from '@/design-system/buttonVariants'
+import { TextVariantKey } from '@/design-system/textVariants'
+import { SpacingToken } from '@/design-system/theme'
+import { useTheme } from '@/design-system/useTheme'
+import { Box } from './Box'
+import { Touchable } from './Touchable'
+
+export type ButtonSize = 'small' | 'medium'
+
+type SizeConfig = {
+  height?: number
+  paddingHorizontal: SpacingToken
+  paddingVertical: SpacingToken
+  textVariant: TextVariantKey
+}
+
+const buttonSizes: Record<ButtonSize, SizeConfig> = {
+  small: {
+    paddingHorizontal: 'spacing-12',
+    paddingVertical: 'spacing-6',
+    textVariant: 'bodySmall',
+  },
+  medium: {
+    height: 50,
+    paddingHorizontal: 'spacing-16',
+    paddingVertical: 'spacing-10',
+    textVariant: 'bodyMedium',
+  },
+}
+
+export type ButtonProps = {
   onPress?: () => void
+  children: React.ReactNode
+  variant?: ButtonVariantKey
+  size?: ButtonSize
   disabled?: boolean
   loading?: boolean
-  style?: StyleProp<ViewStyle>
-  textStyle?: StyleProp<TextStyle>
+  fullWidth?: boolean
+  icon?: React.ReactNode
 }
 
 export const Button = ({
-  children,
   onPress,
-  disabled,
-  loading,
-  style,
-  textStyle,
+  children,
   variant = 'primary',
+  size = 'medium',
+  disabled = false,
+  loading = false,
+  fullWidth = false,
+  icon,
 }: ButtonProps) => {
   const theme = useTheme()
+  const variantStyle = buttonVariants[variant]
+  const sizeStyle = buttonSizes[size]
 
-  const getTouchableColor = () => {
-    switch (variant) {
-      case 'primary':
-        return theme.colors.monochromeInverted
-      case 'secondary':
-        return theme.colors.card
-      case 'destructive':
-        return theme.colors.errorSubtle
-    }
-  }
+  const backgroundColor = disabled
+    ? variantStyle.disabledBackgroundColor
+    : variantStyle.backgroundColor
 
-  const getTextColor = () => {
-    if (disabled) {
-      return theme.colors.subtext
-    }
-
-    switch (variant) {
-      case 'primary':
-        return theme.colors.monochrome
-      case 'secondary':
-        return theme.colors.monochromeInverted
-      case 'destructive':
-        return theme.colors.error
-    }
-  }
+  const textColorToken = disabled
+    ? variantStyle.disabledTextColor
+    : variantStyle.textColor
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.6}
-      style={[
-        {
-          padding: theme.spacing['spacing-10'],
-          borderRadius: theme.borderRadii['border-radius-999'],
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: 50,
-          backgroundColor:
-            disabled || loading ? theme.colors.disabled : getTouchableColor(),
-          opacity: disabled || loading ? 0.5 : 1,
-        },
-        style,
-      ]}
-    >
-      <Text variant="bodyMedium" style={[{ color: getTextColor() }, textStyle]}>
-        {loading ? (
-          <ActivityIndicator size="small" color={theme.colors.monochrome} />
-        ) : (
-          children
+    <Touchable onPress={onPress} disabled={disabled || loading}>
+      <Box
+        paddingHorizontal={sizeStyle.paddingHorizontal}
+        paddingVertical={sizeStyle.paddingVertical}
+        borderRadius="border-radius-999"
+        alignItems="center"
+        justifyContent="center"
+        flexDirection="row"
+        height={sizeStyle.height}
+        opacity={disabled ? 0.7 : 1}
+        backgroundColor={backgroundColor}
+        width={fullWidth ? '100%' : undefined}
+      >
+        {loading && (
+          <Box marginRight="spacing-8">
+            <ActivityIndicator
+              size="small"
+              color={theme.colors[textColorToken]}
+            />
+          </Box>
         )}
-      </Text>
-    </TouchableOpacity>
+        {icon && !loading && <Box marginRight="spacing-4">{icon}</Box>}
+        <Text variant={sizeStyle.textVariant} color={textColorToken}>
+          {children}
+        </Text>
+      </Box>
+    </Touchable>
   )
 }

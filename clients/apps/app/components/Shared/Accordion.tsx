@@ -2,8 +2,8 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useState } from 'react'
-import { TouchableOpacity } from 'react-native'
 import { Text } from './Text'
+import { Touchable } from './Touchable'
 
 export interface AccordionProps {
   title: string
@@ -21,7 +21,7 @@ export const Accordion = ({
 
   return (
     <Box flex={1} flexDirection="column" gap="spacing-12">
-      <TouchableOpacity
+      <Touchable
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -41,7 +41,7 @@ export const Accordion = ({
           size={24}
           color={theme.colors.monochromeInverted}
         />
-      </TouchableOpacity>
+      </Touchable>
       {open && children}
     </Box>
   )

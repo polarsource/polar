@@ -18,12 +18,7 @@ import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useContext, useEffect, useMemo } from 'react'
 import { useForm, UseFormReturn } from 'react-hook-form'
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native'
+import { Alert, RefreshControl, ScrollView } from 'react-native'
 
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
@@ -148,7 +143,7 @@ export default function Index() {
         <Box flex={1} gap="spacing-4">
           {productCandidates.length > 0 ? (
             productCandidates.map((product) => (
-              <TouchableOpacity
+              <Touchable
                 key={product.id}
                 style={{
                   flexDirection: 'row',
@@ -176,7 +171,7 @@ export default function Index() {
                     }}
                   />
                 </Box>
-              </TouchableOpacity>
+              </Touchable>
             ))
           ) : (
             <EmptyState

@@ -6,6 +6,7 @@ const noTextRule = require('./eslint-rules/no-text')
 const noStyleSheetCreateRule = require('./eslint-rules/no-stylesheet-create')
 const noImageRule = require('./eslint-rules/no-image')
 const noFlatListRule = require('./eslint-rules/no-flatlist')
+const noTouchableRule = require('./eslint-rules/no-touchable')
 
 module.exports = defineConfig([
   expoConfig,
@@ -21,6 +22,7 @@ module.exports = defineConfig([
           'no-stylesheet-create': noStyleSheetCreateRule,
           'no-image': noImageRule,
           'no-flatlist': noFlatListRule,
+          'no-touchable': noTouchableRule,
         },
       },
     },
@@ -29,7 +31,8 @@ module.exports = defineConfig([
       '@polar/no-text': 'error',
       '@polar/no-stylesheet-create': 'error',
       '@polar/no-image': 'error',
-      '@polar/no-flatlist': 'warn',
+      '@polar/no-flatlist': 'error',
+      '@polar/no-touchable': 'error',
     },
   },
 ])

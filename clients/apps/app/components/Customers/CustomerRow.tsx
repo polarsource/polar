@@ -3,9 +3,9 @@ import { useTheme } from '@/design-system/useTheme'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React from 'react'
-import { TouchableOpacity } from 'react-native'
 import { Avatar } from '../Shared/Avatar'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface CustomerRowProps {
   customer: schemas['Customer']
@@ -27,7 +27,7 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
       }}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Avatar image={customer.avatar_url} name={customer.email} size={40} />
         <Box flex={1} flexDirection="column" gap="spacing-2">
           <Text variant="bodyMedium">{customer.name ?? '—'}</Text>
@@ -35,7 +35,7 @@ export const CustomerRow = ({ customer }: CustomerRowProps) => {
             <Text color="subtext">{customer.email}</Text>
           </Box>
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

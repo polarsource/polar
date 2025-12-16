@@ -8,8 +8,8 @@ import { OrderRow } from '@/components/Orders/OrderRow'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
+import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
-import { MiniButton } from '@/components/Shared/MiniButton'
 import PolarLogo from '@/components/Shared/PolarLogo'
 import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
@@ -202,7 +202,7 @@ export default function Index() {
                 <Box flexDirection="row" gap="spacing-20">
                   <NotificationBadge />
                   <Link href="/settings" asChild>
-                    <Touchable>
+                    <Touchable hitSlop={16}>
                       <MaterialIcons
                         name="tune"
                         size={24}
@@ -222,17 +222,19 @@ export default function Index() {
           flex={1}
           flexDirection="column"
         >
-          {isUpdateAvailable && (
+          {isUpdateAvailable ? (
             <Banner
               title="New Update Available"
               description="Update to the latest version to get the latest features and bug fixes"
-              button={{
-                onPress: onFetchUpdateAsync,
-                children: 'Update',
-                loading: isDownloading || isRestarting,
-              }}
-            />
-          )}
+            >
+              <Button
+                onPress={onFetchUpdateAsync}
+                loading={isDownloading || isRestarting}
+              >
+                Update
+              </Button>
+            </Banner>
+          ) : null}
           <Box gap="spacing-16">
             <Box flexDirection="row" gap="spacing-16">
               <Box flex={1}>
@@ -263,7 +265,9 @@ export default function Index() {
             >
               <Text variant="title">Recent Subscriptions</Text>
               <Link href="/subscriptions" asChild>
-                <MiniButton variant="secondary">View All</MiniButton>
+                <Button size="small" variant="secondary">
+                  View All
+                </Button>
               </Link>
             </Box>
             {isLoadingSubscriptions ? (
@@ -298,7 +302,9 @@ export default function Index() {
             >
               <Text variant="title">Recent Orders</Text>
               <Link href="/orders" asChild>
-                <MiniButton variant="secondary">View All</MiniButton>
+                <Button size="small" variant="secondary">
+                  View All
+                </Button>
               </Link>
             </Box>
             {isLoadingOrders ? (
@@ -331,7 +337,9 @@ export default function Index() {
           >
             <Text variant="title">Recent Customers</Text>
             <Link href="/customers" asChild>
-              <MiniButton variant="secondary">View All</MiniButton>
+              <Button size="small" variant="secondary">
+                View All
+              </Button>
             </Link>
           </Box>
 

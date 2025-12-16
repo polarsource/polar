@@ -7,8 +7,9 @@ import {
   useContext,
   useState,
 } from 'react'
-import { StyleProp, TouchableOpacity, ViewStyle } from 'react-native'
+import { StyleProp, ViewStyle } from 'react-native'
 import { Text } from './Text'
+import { Touchable } from './Touchable'
 
 const TabsContext = createContext({
   activeValue: '',
@@ -84,8 +85,7 @@ export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
   const { activeValue, setActiveValue } = useContext(TabsContext)
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.6}
+    <Touchable
       style={[
         {
           paddingVertical: theme.dimension['dimension-8'],
@@ -101,6 +101,6 @@ export const TabsTrigger = ({ value, children }: TabsTriggerProps) => {
       }}
     >
       <Text color={activeValue === value ? 'text' : 'subtext'}>{children}</Text>
-    </TouchableOpacity>
+    </Touchable>
   )
 }

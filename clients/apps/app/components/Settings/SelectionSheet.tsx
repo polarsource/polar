@@ -1,10 +1,10 @@
 import { useTheme } from '@/design-system/useTheme'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { BottomSheetProps as GorhomBottomSheetProps } from '@gorhom/bottom-sheet'
-import { TouchableOpacity } from 'react-native'
 import { BottomSheet } from '../Shared/BottomSheet'
 import { Box } from '../Shared/Box'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 
 export interface SelectionSheetProps<T> {
   onDismiss?: () => void
@@ -44,7 +44,7 @@ export const SelectionSheet = <T,>({
         </Box>
         <Box flexDirection="column">
           {items.map((item) => (
-            <TouchableOpacity
+            <Touchable
               key={item.label}
               style={{
                 paddingVertical: theme.spacing['spacing-12'],
@@ -73,7 +73,7 @@ export const SelectionSheet = <T,>({
                   color={theme.colors.monochromeInverted}
                 />
               ) : null}
-            </TouchableOpacity>
+            </Touchable>
           ))}
         </Box>
       </Box>

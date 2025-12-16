@@ -3,12 +3,13 @@ import { Box } from '@/components/Shared/Box'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { Pill } from '@/components/Shared/Pill'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrder } from '@/hooks/polar/orders'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { RefreshControl, ScrollView, TouchableOpacity } from 'react-native'
+import { RefreshControl, ScrollView } from 'react-native'
 
 const statusColors = {
   pending: 'yellow',
@@ -56,7 +57,7 @@ export default function Index() {
       />
 
       <Box flexDirection="row" gap="spacing-12">
-        <TouchableOpacity
+        <Touchable
           style={{
             flexDirection: 'column',
             gap: theme.spacing['spacing-4'],
@@ -84,7 +85,7 @@ export default function Index() {
           >
             {order.id.split('-').pop()?.slice(-6, -1)}
           </Text>
-        </TouchableOpacity>
+        </Touchable>
         <Box
           flexDirection="column"
           gap="spacing-4"

@@ -34,6 +34,7 @@ from polar.event.system import (
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionRevokedMetadata,
+    SubscriptionUncanceledMetadata,
     SystemEvent,
     build_system_event,
 )
@@ -2327,6 +2328,24 @@ class SubscriptionService:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_uncanceled
         )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_uncanceled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionUncanceledMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
+
         await self.send_uncanceled_email(session, subscription)
 
     async def _on_subscription_canceled(

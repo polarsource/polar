@@ -59,12 +59,14 @@ x-api-volumes: &api-volumes
   - ../../dev:/app/dev:cached
   - server_uv_cache:/root/.cache/uv
   - api_venv:/app/server/.venv
+  - emails_node_modules:/app/server/emails/node_modules
 
 x-worker-volumes: &worker-volumes
   - ../../server:/app/server:cached
   - ../../dev:/app/dev:cached
   - server_uv_cache:/root/.cache/uv
   - worker_venv:/app/server/.venv
+  - emails_node_modules:/app/server/emails/node_modules
 
 services:
   # ============================================
@@ -72,7 +74,7 @@ services:
   # ============================================
 
   db:
-    image: postgres:15.1-bullseye
+    image: timescale/timescaledb:latest-pg15
     environment:
       POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
       POSTGRES_PASSWORD: ${POLAR_POSTGRES_PWD:-polar}
@@ -85,7 +87,16 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "${POLAR_POSTGRES_DATABASE:-polar}", "-U", "${POLAR_POSTGRES_USER:-polar}"]
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "${POLAR_POSTGRES_DATABASE:-polar}",
+          "-U",
+          "${POLAR_POSTGRES_USER:-polar}",
+        ]
       interval: 2s
       timeout: 40s
       retries: 20
@@ -133,7 +144,8 @@ services:
       ACCESS_KEY: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
       SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
       POLICY_FILE: /tmp/config/policy.json
-    entrypoint: ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
+    entrypoint:
+      ["bash", "-c", "bash /tmp/config/local.sh /tmp/config/configure.sh"]
 
   # ============================================
   # Application Services
@@ -246,6 +258,7 @@ volumes:
   server_uv_cache:
   api_venv:
   worker_venv:
+  emails_node_modules:
   web_node_modules:
   web_next_cache:
   prometheus_data:

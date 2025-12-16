@@ -2360,6 +2360,7 @@ class SubscriptionService:
             )
         if subscription.ends_at is not None:
             metadata["ends_at"] = subscription.ends_at.isoformat()
+        metadata["cancel_at_period_end"] = subscription.cancel_at_period_end
 
         await event_service.create_event(
             session,

@@ -368,7 +368,8 @@ async def backfill_subscription_canceled_metadata(
 ) -> int:
     """
     Backfill missing metadata fields for subscription.canceled events.
-    Fields added: product_id, amount, currency, recurring_interval, recurring_interval_count
+    Fields added: product_id, amount, currency, recurring_interval, recurring_interval_count,
+    cancel_at_period_end
     """
     typer.echo("\n=== Backfilling subscription.canceled metadata ===")
 
@@ -376,7 +377,10 @@ async def backfill_subscription_canceled_metadata(
         select(func.count(Event.id)).where(
             Event.name == SystemEvent.subscription_canceled,
             Event.source == EventSource.system,
-            Event.user_metadata["amount"].is_(None),
+            or_(
+                Event.user_metadata["amount"].is_(None),
+                Event.user_metadata["cancel_at_period_end"].is_(None),
+            ),
         )
     )
     total_to_update = count_result.scalar() or 0
@@ -400,7 +404,10 @@ async def backfill_subscription_canceled_metadata(
                 .where(
                     Event.name == SystemEvent.subscription_canceled,
                     Event.source == EventSource.system,
-                    Event.user_metadata["amount"].is_(None),
+                    or_(
+                        Event.user_metadata["amount"].is_(None),
+                        Event.user_metadata["cancel_at_period_end"].is_(None),
+                    ),
                 )
                 .order_by(Event.timestamp.asc())
                 .limit(batch_size)
@@ -445,6 +452,7 @@ async def backfill_subscription_canceled_metadata(
                 metadata["currency"] = sub.currency
                 metadata["recurring_interval"] = sub.recurring_interval.value
                 metadata["recurring_interval_count"] = sub.recurring_interval_count
+                metadata["cancel_at_period_end"] = sub.cancel_at_period_end
 
                 await session.execute(
                     update(Event)
@@ -747,6 +755,7 @@ async def create_missing_subscription_canceled_events(
                     )
                 if sub.ends_at:
                     metadata["ends_at"] = sub.ends_at.isoformat()
+                metadata["cancel_at_period_end"] = sub.cancel_at_period_end
 
                 events.append(
                     {

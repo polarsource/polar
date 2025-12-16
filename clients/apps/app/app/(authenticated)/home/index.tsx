@@ -192,7 +192,7 @@ export default function Index() {
                 justifyContent="space-between"
                 backgroundColor="background-regular"
                 paddingBottom="spacing-12"
-                paddingHorizontal="spacing-32"
+                paddingHorizontal="spacing-12"
                 style={{
                   paddingTop: Platform.select({
                     ios: safeAreaInsets.top,
@@ -220,7 +220,11 @@ export default function Index() {
             headerTitle: 'Home',
           }}
         />
-        <Box paddingHorizontal="spacing-16" gap="spacing-4">
+        <Box
+          paddingTop="spacing-8"
+          paddingHorizontal="spacing-16"
+          gap="spacing-4"
+        >
           <Text variant="headlineLarge">{getGreeting()}</Text>
           <Text variant="body" color="subtext">
             {"Here's how "}

@@ -15,6 +15,7 @@ class EventHyper(Model, MetadataMixin):
     """
     Shadow model for the events_hyper hypertable.
     Used during the dual-write migration period.
+    Partitioned by timestamp for efficient chunk exclusion in metrics queries.
     """
 
     __tablename__ = "events_hyper"
@@ -22,11 +23,15 @@ class EventHyper(Model, MetadataMixin):
         Index(
             "ix_events_hyper_external_id",
             "external_id",
-            "ingested_at",
+            "timestamp",
             unique=True,
             postgresql_where=literal_column("external_id IS NOT NULL"),
         ),
         Index("ix_events_hyper_id", "id"),
+        Index(
+            "events_hyper_timestamp_idx",
+            literal_column("timestamp DESC"),
+        ),
         Index(
             "ix_events_hyper_org_timestamp_id",
             "organization_id",
@@ -34,16 +39,16 @@ class EventHyper(Model, MetadataMixin):
             "id",
         ),
         Index(
-            "ix_events_hyper_org_external_id_ingested",
-            "organization_id",
-            "external_customer_id",
-            literal_column("ingested_at DESC"),
-        ),
-        Index(
-            "ix_events_hyper_org_customer_id_ingested",
+            "ix_events_hyper_org_customer_timestamp",
             "organization_id",
             "customer_id",
-            literal_column("ingested_at DESC"),
+            literal_column("timestamp DESC"),
+        ),
+        Index(
+            "ix_events_hyper_org_external_customer_timestamp",
+            "organization_id",
+            "external_customer_id",
+            literal_column("timestamp DESC"),
         ),
         Index(
             "ix_events_hyper_external_customer_pattern",
@@ -53,13 +58,10 @@ class EventHyper(Model, MetadataMixin):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
-    ingested_at: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=utc_now,
-        primary_key=True,
-    )
     timestamp: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=utc_now, primary_key=True
+    )
+    ingested_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)

@@ -25,12 +25,14 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    SubscriptionBillingPeriodUpdatedMetadata,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
+    SubscriptionUncanceledMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
 from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
@@ -331,6 +333,17 @@ class SubscriptionRevokedEvent(SystemEventBase):
     )
 
 
+class SubscriptionUncanceledEvent(SystemEventBase):
+    """An event created by Polar when a subscription cancellation is reversed."""
+
+    name: Literal[SystemEventEnum.subscription_uncanceled] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionUncanceledMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionProductUpdatedEvent(SystemEventBase):
     """An event created by Polar when a subscription changes the product."""
 
@@ -349,6 +362,17 @@ class SubscriptionSeatsUpdatedEvent(SystemEventBase):
         description=_NAME_DESCRIPTION
     )
     metadata: SubscriptionSeatsUpdatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class SubscriptionBillingPeriodUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a subscription billing period is updated."""
+
+    name: Literal[SystemEventEnum.subscription_billing_period_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionBillingPeriodUpdatedMetadata = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
 
@@ -426,8 +450,10 @@ SystemEvent = Annotated[
     | SubscriptionCycledEvent
     | SubscriptionCanceledEvent
     | SubscriptionRevokedEvent
+    | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent
+    | SubscriptionBillingPeriodUpdatedEvent
     | OrderPaidEvent
     | OrderRefundedEvent
     | CheckoutCreatedEvent

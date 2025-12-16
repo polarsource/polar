@@ -12,11 +12,12 @@ import {
 } from '@/hooks/polar/finance'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { Link, Stack } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 
 export default function Finance() {
+  const router = useRouter()
   const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
   const {
@@ -123,14 +124,14 @@ export default function Finance() {
         </Text>
       </Box>
       <Box flexDirection="column" alignItems="center" gap="spacing-16">
-        <Link
-          style={{ width: '100%' }}
-          href="/finance/withdraw"
-          disabled={!canWithdraw}
-          asChild
-        >
-          <Button>Withdraw</Button>
-        </Link>
+        <Box width="100%">
+          <Button
+            onPress={() => router.push('/finance/withdraw')}
+            disabled={!canWithdraw}
+          >
+            Withdraw
+          </Button>
+        </Box>
         <Text color="subtext">You may only withdraw amounts above $10.</Text>
       </Box>
 

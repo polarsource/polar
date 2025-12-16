@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { Text } from '@/components/Shared/Text'
+import { Touchable } from '@/components/Shared/Touchable'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import {
@@ -12,12 +13,7 @@ import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
-import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native'
+import { Alert, RefreshControl, ScrollView } from 'react-native'
 
 const CANCELLATION_REASONS = {
   unused: 'Unused',
@@ -165,7 +161,7 @@ export default function Index() {
           borderRadius="border-radius-12"
         >
           {['Immediately', 'End of Period'].map((option, index) => (
-            <TouchableOpacity
+            <Touchable
               key={option}
               activeOpacity={0.6}
               style={[
@@ -190,7 +186,7 @@ export default function Index() {
               }}
             >
               <Text>{option}</Text>
-            </TouchableOpacity>
+            </Touchable>
           ))}
         </Box>
 
@@ -198,7 +194,7 @@ export default function Index() {
           <Text>Customer Cancellation Reason</Text>
           <Box flex={1} gap="spacing-4">
             {reasons.map((reason) => (
-              <TouchableOpacity
+              <Touchable
                 key={reason}
                 style={{
                   flexDirection: 'row',
@@ -224,7 +220,7 @@ export default function Index() {
                     />
                   </Box>
                 )}
-              </TouchableOpacity>
+              </Touchable>
             ))}
           </Box>
         </Box>

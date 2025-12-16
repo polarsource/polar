@@ -5,9 +5,9 @@ import {
 } from '@/hooks/polar/finance'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useContext } from 'react'
-import { MiniButton } from '../Shared/MiniButton'
+import { Button } from '../Shared/Button'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
@@ -19,6 +19,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
+  const router = useRouter()
 
   const canWithdraw =
     account?.status === 'active' &&
@@ -47,15 +48,14 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
             )}
           </Text>
         </Box>
-        <Box flexDirection="column" gap="spacing-4">
-          <Link href="/finance/withdraw" asChild>
-            <MiniButton
-              style={{ alignSelf: 'flex-start' }}
-              disabled={!canWithdraw}
-            >
-              Withdraw
-            </MiniButton>
-          </Link>
+        <Box flexDirection="row" justifyContent="flex-start">
+          <Button
+            size="small"
+            disabled={!canWithdraw}
+            onPress={() => router.push('/finance/withdraw')}
+          >
+            Withdraw
+          </Button>
         </Box>
       </Box>
     </Tile>

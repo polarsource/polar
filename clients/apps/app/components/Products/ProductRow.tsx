@@ -6,9 +6,10 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
 import React, { useContext } from 'react'
-import { StyleProp, TextStyle, TouchableOpacity } from 'react-native'
+import { StyleProp, TextStyle } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 import { ProductPriceLabel } from './ProductPriceLabel'
 
 export interface ProductRowProps {
@@ -36,7 +37,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
       ]}
       asChild
     >
-      <TouchableOpacity activeOpacity={0.6}>
+      <Touchable>
         <Box
           width={48}
           height={48}
@@ -85,7 +86,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
           </Box>
           <ProductPriceLabel product={product} />
         </Box>
-      </TouchableOpacity>
+      </Touchable>
     </Link>
   )
 }

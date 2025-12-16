@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react'
-import { TouchableOpacity } from 'react-native'
 
 import { Box } from '@/components/Shared/Box'
 import PolarLogo from '@/components/Shared/PolarLogo'
@@ -8,6 +7,7 @@ import { useLogout } from '@/hooks/auth'
 import { useOAuth } from '@/hooks/oauth'
 import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
 import { Text } from '../Shared/Text'
+import { Touchable } from '../Shared/Touchable'
 export interface ErrorFallbackProps {
   error: Error
   resetErrorBoundary: () => void
@@ -71,7 +71,7 @@ export const ErrorFallback = ({
           {message}
         </Text>
       </Box>
-      <TouchableOpacity
+      <Touchable
         activeOpacity={0.6}
         style={{
           backgroundColor: '#fff',
@@ -88,7 +88,7 @@ export const ErrorFallback = ({
         <Text variant="bodyMedium" style={{ color: '#000' }}>
           {actionText}
         </Text>
-      </TouchableOpacity>
+      </Touchable>
     </Box>
   )
 }

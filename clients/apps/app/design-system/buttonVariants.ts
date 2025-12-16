@@ -1,38 +1,31 @@
-import {
-  BorderRadiiToken,
-  ColorToken,
-  SpacingToken,
-} from '@/design-system/theme'
+import { ColorToken } from '@/design-system/theme'
 
-type ButtonVariant = {
-  backgroundColor?: ColorToken
-  borderWidth?: number
-  borderColor?: ColorToken
-  paddingHorizontal?: SpacingToken
-  paddingVertical?: SpacingToken
-  borderRadius?: BorderRadiiToken
-  alignItems?: 'center' | 'flex-start' | 'flex-end'
-  justifyContent?: 'center' | 'flex-start' | 'flex-end'
+type ButtonVariantStyle = {
+  backgroundColor: ColorToken
+  textColor: ColorToken
+  disabledBackgroundColor: ColorToken
+  disabledTextColor: ColorToken
 }
 
-type ButtonVariants = {
-  defaults: ButtonVariant
-} & Record<string, ButtonVariant>
-
-export const buttonVariants: ButtonVariants = {
+export const buttonVariants = {
   primary: {
-    backgroundColor: 'foreground-regular',
+    backgroundColor: 'monochromeInverted',
+    textColor: 'monochrome',
+    disabledBackgroundColor: 'disabled',
+    disabledTextColor: 'subtext',
   },
   secondary: {
-    backgroundColor: 'background-regular',
-    borderWidth: 1,
-    borderColor: 'foreground-regular',
+    backgroundColor: 'card',
+    textColor: 'monochromeInverted',
+    disabledBackgroundColor: 'disabled',
+    disabledTextColor: 'subtext',
   },
-  defaults: {
-    paddingHorizontal: 'spacing-24',
-    paddingVertical: 'spacing-16',
-    borderRadius: 'border-radius-full',
-    alignItems: 'center',
-    justifyContent: 'center',
+  destructive: {
+    backgroundColor: 'errorSubtle',
+    textColor: 'error',
+    disabledBackgroundColor: 'disabled',
+    disabledTextColor: 'subtext',
   },
-}
+} as const satisfies Record<string, ButtonVariantStyle>
+
+export type ButtonVariantKey = keyof typeof buttonVariants

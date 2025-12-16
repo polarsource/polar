@@ -113,6 +113,24 @@ async def _webhook_event_send(
         # Error
         except (httpx.HTTPError, SSLError) as e:
             bound_log.info("An error occurred while sending a webhook", error=e)
+
+            if (
+                isinstance(e, httpx.HTTPStatusError)
+                and e.response.status_code == 429
+                and "discord" in event.webhook_endpoint.url.lower()
+            ):
+                rate_limit_headers = {
+                    k: v
+                    for k, v in e.response.headers.items()
+                    if k.lower().startswith("x-ratelimit-")
+                    or k.lower() == "retry-after"
+                }
+                bound_log.warning(
+                    "Discord rate limit exceeded",
+                    rate_limit_headers=rate_limit_headers,
+                    response_body=e.response.text[:2048] if e.response.text else None,
+                )
+
             delivery.succeeded = False
             if delivery.response is None:
                 delivery.response = str(e)

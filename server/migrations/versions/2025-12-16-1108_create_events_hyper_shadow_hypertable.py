@@ -1,7 +1,7 @@
 """create_events_hyper_shadow_hypertable
 
 Revision ID: 03f24e6aa030
-Revises: b3887f09f522
+Revises: b3e39dadb512
 Create Date: 2025-12-15 11:00:03.649717
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "03f24e6aa030"
-down_revision = "b3887f09f522"
+down_revision = "b3e39dadb512"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

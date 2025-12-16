@@ -15,7 +15,13 @@ export const useFiles = (organizationId: string, fileIds: string[]) =>
     queryFn: () =>
       unwrap(
         api.GET('/v1/files/', {
-          params: { query: { organization_id: organizationId, ids: fileIds } },
+          params: { 
+            query: { 
+              organization_id: organizationId, 
+              ids: fileIds,
+              limit: 100, // Request maximum allowed items per page
+            } 
+          },
         }),
       ).then((response) => {
         const files = response.items.reduce<Record<string, FileRead>>(

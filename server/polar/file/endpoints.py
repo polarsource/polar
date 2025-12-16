@@ -45,6 +45,11 @@ async def list(
     ids: MultipleQueryFilter[UUID4] | None = Query(
         None, title="FileID Filter", description="Filter by file ID."
     ),
+    name: str | None = Query(
+        None,
+        title="Name Filter",
+        description="Filter by file name (case-insensitive partial match).",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[FileRead]:
     """List files."""
@@ -53,6 +58,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         ids=ids,
+        name=name,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(

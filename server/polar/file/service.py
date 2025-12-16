@@ -35,6 +35,7 @@ class FileService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         ids: Sequence[uuid.UUID] | None = None,
+        name: str | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[File], int]:
         repository = FileRepository.from_session(session)
@@ -48,6 +49,9 @@ class FileService:
 
         if ids is not None:
             statement = statement.where(File.id.in_(ids))
+
+        if name is not None:
+            statement = statement.where(File.name.ilike(f"%{name}%"))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

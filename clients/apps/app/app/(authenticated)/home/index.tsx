@@ -220,17 +220,15 @@ export default function Index() {
             headerTitle: 'Home',
           }}
         />
-        <Box
-          paddingTop="spacing-8"
-          paddingHorizontal="spacing-16"
-          gap="spacing-4"
-        >
-          <Text variant="headlineLarge">{getGreeting()}</Text>
-          <Text variant="body" color="subtext">
-            {"Here's how "}
-            {organization?.name ?? 'your business'}
-            {' is doing'}
-          </Text>
+        <Box paddingHorizontal="spacing-16" gap="spacing-16">
+          <Box paddingTop="spacing-8" gap="spacing-4">
+            <Text variant="headlineLarge">{getGreeting()}</Text>
+            <Text variant="body" color="subtext">
+              {"Here's how "}
+              {organization?.name ?? 'your business'}
+              {' is doing'}
+            </Text>
+          </Box>
         </Box>
 
         <Box

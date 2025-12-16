@@ -48,6 +48,7 @@ class CustomerMeterJobStore(BaseJobStore):
         statement = (
             select(Customer)
             .where(
+                Customer.deleted_at.is_(None),
                 Customer.meters_dirtied_at.is_not(None),
                 or_(
                     Customer.meters_dirtied_at
@@ -75,6 +76,7 @@ class CustomerMeterJobStore(BaseJobStore):
         statement = (
             select(Customer)
             .where(
+                Customer.deleted_at.is_(None),
                 or_(
                     Customer.meters_dirtied_at
                     < case(

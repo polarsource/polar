@@ -203,9 +203,16 @@ class UserService:
         repository = UserRepository.from_session(session)
 
         if user.identity_verification_id is not None:
-            await stripe_service.redact_verification_session(
-                user.identity_verification_id
-            )
+            try:
+                await stripe_service.redact_verification_session(
+                    user.identity_verification_id
+                )
+            except stripe_lib.InvalidRequestError as e:
+                log.warning(
+                    "stripe.identity.verification_session.redact.not_found",
+                    identity_verification_id=user.identity_verification_id,
+                    error=str(e),
+                )
 
         return await repository.update(
             user,

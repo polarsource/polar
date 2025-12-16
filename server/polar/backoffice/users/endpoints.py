@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from tagflow import attr, classes, tag, text
+from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
@@ -62,31 +62,18 @@ class IdentityVerificationStatusDescriptionListItem(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
         status = item.identity_verification_status
-        with tag.div(classes="flex items-center gap-2"):
-            if item.identity_verification_id is not None:
-                with tag.a(
-                    href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                    classes="link flex flex-row gap-1",
-                    target="_blank",
-                    rel="noopener noreferrer",
-                ):
-                    text(status.get_display_name())
-                    with tag.div(classes="icon-external-link"):
-                        pass
-                with tag.button(
-                    classes="btn btn-xs btn-ghost text-error opacity-0 hover:opacity-100 transition-opacity",
-                    hx_get=str(
-                        request.url_for(
-                            "users:delete-identity-verification", id=item.id
-                        )
-                    ),
-                    hx_target="#modal",
-                ):
-                    attr("title", "Delete identity verification")
-                    with tag.div(classes="icon-trash size-4"):
-                        pass
-            else:
+        if item.identity_verification_id is not None:
+            with tag.a(
+                href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
+                classes="link flex flex-row gap-1",
+                target="_blank",
+                rel="noopener noreferrer",
+            ):
                 text(status.get_display_name())
+                with tag.div(classes="icon-external-link"):
+                    pass
+        else:
+            text(status.get_display_name())
         return None
 
 
@@ -192,8 +179,35 @@ async def get(
         ### User info ###
         #################
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(user.email)
+            with tag.div(classes="flex items-center justify-between"):
+                with tag.h1(classes="text-4xl"):
+                    text(user.email)
+
+                # Actions dropdown menu
+                if user.identity_verification_id is not None:
+                    with tag.div(classes="dropdown dropdown-end"):
+                        with tag.button(
+                            classes="btn btn-circle btn-ghost",
+                            tabindex="0",
+                            **{"aria-label": "More options"},
+                        ):
+                            text("⋮")
+                        with tag.ul(
+                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                            tabindex="0",
+                        ):
+                            with tag.li():
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "users:delete-identity-verification",
+                                            id=user.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                    classes="text-error",
+                                ):
+                                    text("Delete Identity Verification")
             with description_list.DescriptionList[User](
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 description_list.DescriptionListAttrItem(

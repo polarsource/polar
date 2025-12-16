@@ -3,9 +3,9 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from tagflow import classes, tag, text
+from tagflow import attr, classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
@@ -18,10 +18,13 @@ from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
+from polar.user.service import user as user_service
 from polar.user.sorting import UserSortProperty
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from ..toast import add_toast
+from .views.modals import DeleteIdentityVerificationModal
 
 router = APIRouter()
 
@@ -59,18 +62,31 @@ class IdentityVerificationStatusDescriptionListItem(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
         status = item.identity_verification_status
-        if item.identity_verification_id is not None:
-            with tag.a(
-                href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                classes="link flex flex-row gap-1",
-                target="_blank",
-                rel="noopener noreferrer",
-            ):
+        with tag.div(classes="flex items-center gap-2"):
+            if item.identity_verification_id is not None:
+                with tag.a(
+                    href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
+                    classes="link flex flex-row gap-1",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                ):
+                    text(status.get_display_name())
+                    with tag.div(classes="icon-external-link"):
+                        pass
+                with tag.button(
+                    classes="btn btn-xs btn-ghost text-error opacity-0 hover:opacity-100 transition-opacity",
+                    hx_get=str(
+                        request.url_for(
+                            "users:delete-identity-verification", id=item.id
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    attr("title", "Delete identity verification")
+                    with tag.div(classes="icon-trash size-4"):
+                        pass
+            else:
                 text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
-                    pass
-        else:
-            text(status.get_display_name())
         return None
 
 
@@ -271,3 +287,34 @@ async def get(
                 ),
             ).render(request, accounts):
                 pass
+
+
+@router.api_route(
+    "/{id}/delete-identity-verification",
+    name="users:delete-identity-verification",
+    methods=["GET", "POST"],
+)
+async def delete_identity_verification(
+    request: Request,
+    id: UUID4,
+    confirm: bool = Form(False),
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = UserRepository.from_session(session)
+    user = await repository.get_by_id(id)
+
+    if user is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST" and confirm:
+        await user_service.delete_identity_verification(session, user)
+        await add_toast(
+            request,
+            f"Identity verification for {user.email} has been deleted and redacted",
+            "success",
+        )
+        return
+
+    form_action = str(request.url_for("users:delete-identity-verification", id=user.id))
+    with DeleteIdentityVerificationModal(user, form_action).render():
+        pass

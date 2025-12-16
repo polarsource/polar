@@ -501,6 +501,12 @@ class StripeService:
             metadata={"user_id": str(user.id)},
         )
 
+    async def redact_verification_session(
+        self, id: str
+    ) -> stripe_lib.identity.VerificationSession:
+        log.info("stripe.identity.verification_session.redact", id=id)
+        return await stripe_lib.identity.VerificationSession.redact_async(id)
+
     async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
         return await stripe_lib.TaxRate.retrieve_async(id)
 

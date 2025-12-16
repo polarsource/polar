@@ -6,8 +6,13 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+# Use CONDUCTOR_WORKSPACE_PATH if available, otherwise fall back to script location
+if [[ -n "${CONDUCTOR_WORKSPACE_PATH:-}" ]]; then
+    ROOT_DIR="$CONDUCTOR_WORKSPACE_PATH"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+fi
 
 # Calculate instance from CONDUCTOR_PORT (default to 0)
 CONDUCTOR_PORT="${CONDUCTOR_PORT:-55000}"

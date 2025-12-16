@@ -132,81 +132,6 @@ class MissingCheckoutCustomer(OrderError):
         super().__init__(message)
 
 
-class MissingStripeCustomerID(OrderError):
-    def __init__(self, checkout: Checkout, customer: Customer) -> None:
-        self.checkout = checkout
-        self.customer = customer
-        message = (
-            f"Checkout {checkout.id}'s customer {customer.id} "
-            "is missing a Stripe customer ID."
-        )
-        super().__init__(message)
-
-
-class NotAnOrderInvoice(OrderError):
-    def __init__(self, invoice_id: str) -> None:
-        self.invoice_id = invoice_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe, but it is not an order."
-            " Check if it's an issue pledge."
-        )
-        super().__init__(message)
-
-
-class NotASubscriptionInvoice(OrderError):
-    def __init__(self, invoice_id: str) -> None:
-        self.invoice_id = invoice_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe, but it it not linked to a subscription."
-            " One-time purchases invoices are handled directly upon creation."
-        )
-        super().__init__(message)
-
-
-class OrderDoesNotExist(OrderError):
-    def __init__(self, invoice_id: str) -> None:
-        self.invoice_id = invoice_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe, "
-            "but no associated Order exists."
-        )
-        super().__init__(message)
-
-
-class DiscountDoesNotExist(OrderError):
-    def __init__(self, invoice_id: str, coupon_id: str) -> None:
-        self.invoice_id = invoice_id
-        self.coupon_id = coupon_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe with coupon {coupon_id}, "
-            f"but no associated Discount exists."
-        )
-        super().__init__(message)
-
-
-class CheckoutDoesNotExist(OrderError):
-    def __init__(self, invoice_id: str, checkout_id: str) -> None:
-        self.invoice_id = invoice_id
-        self.checkout_id = checkout_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe with checkout {checkout_id}, "
-            f"but no associated Checkout exists."
-        )
-        super().__init__(message)
-
-
-class SubscriptionDoesNotExist(OrderError):
-    def __init__(self, invoice_id: str, stripe_subscription_id: str) -> None:
-        self.invoice_id = invoice_id
-        self.stripe_subscription_id = stripe_subscription_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe "
-            f"for subscription {stripe_subscription_id}, "
-            f"but no associated Subscription exists."
-        )
-        super().__init__(message)
-
-
 class AlreadyBalancedOrder(OrderError):
     def __init__(self, order: Order, payment_transaction: Transaction) -> None:
         self.order = order
@@ -1746,10 +1671,6 @@ class OrderService:
             order = await repository.release_payment_lock(order)
 
         if order.subscription is None:
-            return order
-
-        if order.subscription.stripe_subscription_id is not None:
-            # If the subscription is managed by Stripe, we don't handle dunning. Stripe will handle it.
             return order
 
         if order.next_payment_attempt_at is None:

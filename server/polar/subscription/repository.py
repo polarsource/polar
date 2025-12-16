@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, case, or_, select
+from sqlalchemy import Select, case, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -113,22 +113,6 @@ class SubscriptionRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
-
-    async def get_by_stripe_subscription_id(
-        self, stripe_subscription_id: str, *, options: Options = ()
-    ) -> Subscription | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                or_(
-                    Subscription.stripe_subscription_id == stripe_subscription_id,
-                    Subscription.legacy_stripe_subscription_id
-                    == stripe_subscription_id,
-                )
-            )
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
 
     def get_eager_options(
         self, *, product_load: "_AbstractLoad | None" = None

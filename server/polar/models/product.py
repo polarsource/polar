@@ -11,7 +11,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    String,
     Text,
     Uuid,
     case,
@@ -83,10 +82,6 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
         default=TaxCode.general_electronically_supplied_services,
     )
 
-    stripe_product_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True
-    )
-
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -153,9 +148,6 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
         cascade="all, delete-orphan",
         back_populates="product",
     )
-
-    def get_stripe_name(self) -> str:
-        return f"{self.organization.slug} - {self.name}"
 
     def get_price(
         self, id: UUID, *, include_archived: bool = False

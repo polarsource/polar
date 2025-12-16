@@ -84,7 +84,6 @@ class TestPaymentIntentSucceeded:
             product=product,
             customer=customer,
         )
-        subscription.stripe_subscription_id = "sub_123"
         subscription.payment_method = old_payment_method
         await save_fixture(subscription)
 

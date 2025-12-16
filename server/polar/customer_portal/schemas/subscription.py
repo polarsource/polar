@@ -1,7 +1,7 @@
 import inspect
 from typing import Annotated
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
+from pydantic import UUID4, AliasChoices, AliasPath, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import SubscriptionProrationBehavior
@@ -63,15 +63,6 @@ class CustomerSubscription(SubscriptionBase):
     meters: list[CustomerSubscriptionMeter] = Field(
         description="List of meters associated with the subscription."
     )
-
-    stripe_subscription_id: SkipJsonSchema[str | None] = Field(
-        validation_alias="stripe_subscription_id"
-    )
-
-    @computed_field
-    def is_polar_managed(self) -> bool:
-        """Whether the subscription is managed by Polar."""
-        return self.stripe_subscription_id is None
 
 
 class CustomerSubscriptionUpdateProduct(Schema):

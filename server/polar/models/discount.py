@@ -3,7 +3,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
-import stripe as stripe_lib
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
@@ -90,10 +89,6 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    stripe_coupon_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, unique=True, index=True
-    )
-
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -135,19 +130,6 @@ class Discount(MetadataMixin, RecordModel):
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()
 
-    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
-        params: stripe_lib.Coupon.CreateParams = {
-            "name": self.name[:40],
-            "duration": cast(Literal["once", "forever", "repeating"], self.duration),
-            "metadata": {
-                "discount_id": str(self.id),
-                "organization_id": str(self.organization.id),
-            },
-        }
-        if self.duration_in_months is not None:
-            params["duration_in_months"] = self.duration_in_months
-        return params
-
     def is_applicable(self, product: "Product") -> bool:
         if len(self.products) == 0:
             return True
@@ -187,14 +169,6 @@ class DiscountFixed(Discount):
     def get_discount_amount(self, amount: int) -> int:
         return min(self.amount, amount)
 
-    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
-        params = super().get_stripe_coupon_params()
-        return {
-            **params,
-            "amount_off": self.amount,
-            "currency": self.currency,
-        }
-
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.fixed,
         "polymorphic_load": "inline",
@@ -210,13 +184,6 @@ class DiscountPercentage(Discount):
     def get_discount_amount(self, amount: int) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
         return polar_round(discount_amount_float)
-
-    def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
-        params = super().get_stripe_coupon_params()
-        return {
-            **params,
-            "percent_off": self.basis_points / 100,
-        }
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.percentage,

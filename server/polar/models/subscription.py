@@ -113,14 +113,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     recurring_interval_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    stripe_subscription_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True, default=None
-    )
-    """
-    The ID of the subscription in Stripe.
-
-    If set, indicates that the subscription is managed by Stripe Billing.
-    """
     legacy_stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )

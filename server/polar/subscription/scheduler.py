@@ -122,7 +122,6 @@ class SubscriptionJobStore(BaseJobStore):
                 Organization.deleted_at.is_(None),
                 Organization.blocked_at.is_(None),
                 Subscription.scheduler_locked_at.is_(None),
-                Subscription.stripe_subscription_id.is_(None),
                 Subscription.active.is_(True),
                 Subscription.current_period_end.is_not(None),
             )

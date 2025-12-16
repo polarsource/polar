@@ -3,7 +3,7 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from tagflow import classes, tag, text
 
@@ -18,10 +18,13 @@ from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
+from polar.user.service import user as user_service
 from polar.user.sorting import UserSortProperty
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from ..toast import add_toast
+from .views.modals import DeleteIdentityVerificationModal
 
 router = APIRouter()
 
@@ -176,8 +179,35 @@ async def get(
         ### User info ###
         #################
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(user.email)
+            with tag.div(classes="flex items-center justify-between"):
+                with tag.h1(classes="text-4xl"):
+                    text(user.email)
+
+                # Actions dropdown menu
+                if user.identity_verification_id is not None:
+                    with tag.div(classes="dropdown dropdown-end"):
+                        with tag.button(
+                            classes="btn btn-circle btn-ghost",
+                            tabindex="0",
+                            **{"aria-label": "More options"},
+                        ):
+                            text("⋮")
+                        with tag.ul(
+                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                            tabindex="0",
+                        ):
+                            with tag.li():
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "users:delete-identity-verification",
+                                            id=user.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                    classes="text-error",
+                                ):
+                                    text("Delete Identity Verification")
             with description_list.DescriptionList[User](
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 description_list.DescriptionListAttrItem(
@@ -271,3 +301,34 @@ async def get(
                 ),
             ).render(request, accounts):
                 pass
+
+
+@router.api_route(
+    "/{id}/delete-identity-verification",
+    name="users:delete-identity-verification",
+    methods=["GET", "POST"],
+)
+async def delete_identity_verification(
+    request: Request,
+    id: UUID4,
+    confirm: bool = Form(False),
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = UserRepository.from_session(session)
+    user = await repository.get_by_id(id)
+
+    if user is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST" and confirm:
+        await user_service.delete_identity_verification(session, user)
+        await add_toast(
+            request,
+            f"Identity verification for {user.email} has been deleted and redacted",
+            "success",
+        )
+        return
+
+    form_action = str(request.url_for("users:delete-identity-verification", id=user.id))
+    with DeleteIdentityVerificationModal(user, form_action).render():
+        pass

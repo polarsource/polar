@@ -192,6 +192,36 @@ class UserService:
             },
         )
 
+    async def delete_identity_verification(
+        self, session: AsyncSession, user: User
+    ) -> User:
+        """Delete identity verification for a user.
+
+        Resets the user's identity verification status to unverified and
+        redacts the verification session in Stripe.
+        """
+        repository = UserRepository.from_session(session)
+
+        if user.identity_verification_id is not None:
+            try:
+                await stripe_service.redact_verification_session(
+                    user.identity_verification_id
+                )
+            except stripe_lib.InvalidRequestError as e:
+                log.warning(
+                    "stripe.identity.verification_session.redact.not_found",
+                    identity_verification_id=user.identity_verification_id,
+                    error=str(e),
+                )
+
+        return await repository.update(
+            user,
+            update_dict={
+                "identity_verification_status": IdentityVerificationStatus.unverified,
+                "identity_verification_id": None,
+            },
+        )
+
     async def check_can_delete(
         self,
         session: AsyncSession,

@@ -25,9 +25,11 @@ EMAIL_MARKER="emails/bin/.built-${ARCH}"
 if [[ ! -f "$EMAIL_MARKER" ]]; then
     echo "Building email templates for ${ARCH}..."
     cd emails
-    if [[ ! -d "node_modules" ]]; then
-        pnpm install --frozen-lockfile
-    fi
+    # Clean node_modules and pnpm store to avoid corruption issues
+    rm -rf node_modules
+    rm -rf /app/server/.pnpm-store
+    # Use isolated store for email builds
+    PNPM_HOME=/tmp/pnpm-email pnpm install --frozen-lockfile
     # Clean previous builds (may be from different architecture)
     rm -rf dist
     rm -f bin/react-email-pkg bin/.built-* 2>/dev/null || true
@@ -73,15 +75,22 @@ while ! pg_isready -h "$POLAR_POSTGRES_HOST" -p "$POLAR_POSTGRES_PORT" -U "$POLA
 done
 echo "Database is ready"
 
-# Run database migrations
-echo "Running database migrations..."
-uv run alembic upgrade head
-echo "Migrations complete"
+# Run database migrations (only for API, not worker to avoid race conditions)
+if [[ "${1:-api}" == "api" ]]; then
+    echo "Running database migrations..."
+    uv run alembic upgrade head
+    echo "Migrations complete"
+else
+    echo "Skipping migrations (handled by API service)"
+    # Wait a bit for API to run migrations first
+    sleep 10
+fi
 
-# Load seed data if database is empty (first run)
-# Check if any organizations exist to determine if seeds are needed
-echo "Checking for seed data..."
-SEED_CHECK=$(uv run python -c "
+# Load seed data if database is empty (first run) - only for API
+if [[ "${1:-api}" == "api" ]]; then
+    # Check if any organizations exist to determine if seeds are needed
+    echo "Checking for seed data..."
+    SEED_CHECK=$(uv run python -c "
 import asyncio
 from polar.postgres import create_async_engine
 from sqlalchemy import text
@@ -97,12 +106,13 @@ count = asyncio.run(check())
 print(count)
 " 2>/dev/null || echo "0")
 
-if [[ "$SEED_CHECK" == "0" ]]; then
-    echo "Loading seed data (first run)..."
-    uv run task seeds_load || echo "Warning: Seed loading failed, continuing anyway"
-    echo "Seed data loaded"
-else
-    echo "Database already has data, skipping seed loading"
+    if [[ "$SEED_CHECK" == "0" ]]; then
+        echo "Loading seed data (first run)..."
+        uv run task seeds_load || echo "Warning: Seed loading failed, continuing anyway"
+        echo "Seed data loaded"
+    else
+        echo "Database already has data, skipping seed loading"
+    fi
 fi
 
 # Start the requested service

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Run Polar development environment for Conductor
+#
+# This script is called by Conductor to start the development services.
+# It uses the Docker-based development setup for isolation.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Calculate instance from CONDUCTOR_PORT (default to 0)
+CONDUCTOR_PORT="${CONDUCTOR_PORT:-55000}"
+INSTANCE=$(( (CONDUCTOR_PORT - 55000) / 10 ))
+
+cd "$ROOT_DIR"
+
+# Start all services in detached mode
+./dev/docker-dev -i "$INSTANCE" -d
+
+# Calculate actual ports
+API_PORT=$((8000 + INSTANCE * 100))
+WEB_PORT=$((3000 + INSTANCE * 100))
+MINIO_CONSOLE_PORT=$((9001 + INSTANCE * 100))
+
+echo ""
+echo "============================================"
+echo "  Polar Development Environment"
+echo "  Instance: $INSTANCE"
+echo "============================================"
+echo ""
+echo "Services:"
+echo "  Web:           http://localhost:$WEB_PORT"
+echo "  API:           http://localhost:$API_PORT"
+echo "  MinIO Console: http://localhost:$MINIO_CONSOLE_PORT"
+echo ""
+echo "Commands:"
+echo "  View logs:     ./dev/docker-dev -i $INSTANCE logs"
+echo "  API logs:      ./dev/docker-dev -i $INSTANCE logs api"
+echo "  Stop:          ./dev/docker-dev -i $INSTANCE down"
+echo "  Shell (API):   ./dev/docker-dev -i $INSTANCE shell api"
+echo ""

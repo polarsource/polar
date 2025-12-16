@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Setup Polar development environment for Conductor
+#
+# This script is called by Conductor to set up the development environment.
+# It uses the Docker-based development setup for isolation.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Calculate instance from CONDUCTOR_PORT (default to 0)
+CONDUCTOR_PORT="${CONDUCTOR_PORT:-55000}"
+INSTANCE=$(( (CONDUCTOR_PORT - 55000) / 10 ))
+
+cd "$ROOT_DIR"
+
+echo "Setting up Polar development environment (instance $INSTANCE)..."
+
+# Generate environment files if needed
+if [[ ! -f "server/.env" ]] || [[ ! -f "clients/apps/web/.env.local" ]]; then
+    echo "Generating environment files..."
+    ./dev/setup-environment
+fi
+
+# Start infrastructure services
+echo "Starting infrastructure services..."
+./dev/docker-dev -i "$INSTANCE" -d db redis minio minio-setup
+
+# Wait for services to be ready
+echo "Waiting for services to be ready..."
+sleep 10
+
+# Start API to run migrations (startup.sh handles migrations automatically)
+echo "Starting API service (this will run migrations)..."
+./dev/docker-dev -i "$INSTANCE" -d api
+
+# Wait for API to be ready
+echo "Waiting for API to be ready..."
+sleep 15
+
+echo ""
+echo "============================================"
+echo "  Setup complete for instance $INSTANCE"
+echo "============================================"
+echo ""

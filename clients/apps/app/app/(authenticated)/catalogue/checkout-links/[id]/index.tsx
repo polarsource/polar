@@ -20,6 +20,7 @@ import {
 import { useInfiniteDiscounts } from '@/hooks/polar/discounts'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { useToast } from '@/providers/ToastProvider'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -43,6 +44,7 @@ export default function CheckoutLinkDetails() {
   const { id } = useLocalSearchParams()
   const theme = useTheme()
   const { organization } = useContext(OrganizationContext)
+  const toast = useToast()
 
   const {
     data: checkoutLink,
@@ -108,7 +110,6 @@ export default function CheckoutLinkDetails() {
     { key: string; value: string }[]
   >([])
   const [showAddMetadataSheet, setShowAddMetadataSheet] = useState(false)
-  const [showSaved, setShowSaved] = useState(false)
 
   useEffect(() => {
     if (checkoutLink) {
@@ -155,17 +156,18 @@ export default function CheckoutLinkDetails() {
             {} as Record<string, string>,
           ),
         })
-        setShowSaved(true)
-        setTimeout(() => setShowSaved(false), 2000)
-      } catch (error) {
+
+        toast.showInfo('Saved!')
+      } catch {
         Alert.alert('Error', 'Failed to update checkout link')
       }
     },
     [
-      updateCheckoutLink,
       selectedProductIds,
+      updateCheckoutLink,
       selectedDiscountId,
       metadataFields,
+      toast,
     ],
   )
 
@@ -299,7 +301,7 @@ export default function CheckoutLinkDetails() {
             }}
             loading={updateCheckoutLink.isPending}
           >
-            {showSaved ? 'Saved!' : 'Save'}
+            Save
           </Button>
         </ScrollView>
       </KeyboardAvoidingView>

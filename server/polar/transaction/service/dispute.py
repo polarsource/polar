@@ -2,8 +2,11 @@ import math
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.enums import PaymentProcessor
+from polar.event.service import event as event_service
+from polar.event.system import BalanceDisputeMetadata, SystemEvent, build_system_event
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
 from polar.logging import Logger
@@ -90,7 +93,12 @@ class DisputeTransactionService(BaseTransactionService):
             session
         )
         payment_transaction = await payment_transaction_repository.get_by_payment_id(
-            dispute.payment_id
+            dispute.payment_id,
+            options=(
+                joinedload(Transaction.payment_customer),
+                joinedload(Transaction.payment_organization),
+                joinedload(Transaction.order),
+            ),
         )
         assert payment_transaction is not None
 
@@ -178,10 +186,12 @@ class DisputeTransactionService(BaseTransactionService):
         if dispute_reversal_transaction is not None:
             all_fees += dispute_reversal_fees
 
+        polar_fees: int = 0
         try:
-            await self._create_dispute_fees_balances(
+            fee_transactions = await self._create_dispute_fees_balances(
                 session, payment_transaction=payment_transaction, dispute_fees=all_fees
             )
+            polar_fees = sum(f[1].amount for f in fee_transactions)
         except NotBalancedPaymentTransaction:
             log.warning(
                 "Dispute fees balances could not be created for payment transaction",
@@ -190,6 +200,43 @@ class DisputeTransactionService(BaseTransactionService):
             )
 
         await session.flush()
+
+        customer = payment_transaction.payment_customer
+        order = payment_transaction.order
+        if customer is not None:
+            organization = customer.organization
+
+            try:
+                assert dispute_transaction.presentment_amount is not None
+                assert dispute_transaction.presentment_currency is not None
+
+                metadata: BalanceDisputeMetadata = {
+                    "transaction_id": str(dispute_transaction.id),
+                    "dispute_id": str(dispute.id),
+                    "amount": dispute_transaction.amount,
+                    "currency": dispute_transaction.currency,
+                    "presentment_amount": dispute_transaction.presentment_amount,
+                    "presentment_currency": dispute_transaction.presentment_currency,
+                    "tax_amount": settlement_tax_amount,
+                    "tax_state": payment_transaction.tax_state,
+                    "tax_country": payment_transaction.tax_country,
+                    "fee": polar_fees,
+                }
+                if order is not None:
+                    metadata["order_id"] = str(order.id)
+                    metadata["product_id"] = str(order.product_id)
+                    if order.subscription_id is not None:
+                        metadata["subscription_id"] = str(order.subscription_id)
+
+                balance_dispute_event = build_system_event(
+                    SystemEvent.balance_dispute,
+                    customer=customer,
+                    organization=organization,
+                    metadata=metadata,
+                )
+                await event_service.create_event(session, balance_dispute_event)
+            except Exception as e:
+                log.error("Could not save balance.dispute transaction", error=str(e))
 
         return dispute_transaction, dispute_reversal_transaction
 

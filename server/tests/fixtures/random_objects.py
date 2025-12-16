@@ -1635,6 +1635,8 @@ async def create_payment_transaction(
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
+        presentment_currency="usd",
+        presentment_amount=amount,
     )
     await save_fixture(transaction)
     return transaction
@@ -1665,6 +1667,8 @@ async def create_refund_transaction(
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
+        presentment_currency="usd",
+        presentment_amount=amount,
     )
     await save_fixture(transaction)
     return transaction
@@ -1696,6 +1700,8 @@ async def create_dispute_transaction(
         pledge=pledge,
         order=order,
         issue_reward=issue_reward,
+        presentment_currency="usd",
+        presentment_amount=amount,
     )
     await save_fixture(transaction)
     return transaction

@@ -5,6 +5,7 @@ from sqlalchemy import Select
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -45,11 +46,14 @@ class TransactionRepository(
 
 
 class PaymentTransactionRepository(TransactionRepository):
-    async def get_by_payment_id(self, payment_id: UUID) -> Transaction | None:
+    async def get_by_payment_id(
+        self, payment_id: UUID, *, options: Options = ()
+    ) -> Transaction | None:
         statement = (
             self.get_base_statement()
             .join(Payment, onclause=Transaction.charge_id == Payment.processor_id)
             .where(Payment.id == payment_id)
+            .options(*options)
         )
         return await self.get_one_or_none(statement)
 

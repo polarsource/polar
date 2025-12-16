@@ -16,6 +16,9 @@ from typing_extensions import TypedDict
 
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
+    BalanceDisputeMetadata,
+    BalanceOrderMetadata,
+    BalanceRefundMetadata,
     BenefitGrantMetadata,
     CheckoutCreatedMetadata,
     CustomerCreatedMetadata,
@@ -439,6 +442,46 @@ class CustomerDeletedEvent(SystemEventBase):
     )
 
 
+class BalanceOrderEvent(SystemEventBase):
+    """An event created by Polar when an order is paid."""
+
+    name: Literal[SystemEventEnum.balance_order] = Field(description=_NAME_DESCRIPTION)
+    metadata: BalanceOrderMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BalanceRefundEvent(SystemEventBase):
+    """An event created by Polar when an order is refunded."""
+
+    name: Literal[SystemEventEnum.balance_refund] = Field(description=_NAME_DESCRIPTION)
+    metadata: BalanceRefundMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BalanceRefundReversalEvent(SystemEventBase):
+    """An event created by Polar when a refund is reverted."""
+
+    name: Literal[SystemEventEnum.balance_refund_reversal] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BalanceRefundMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BalanceDisputeEvent(SystemEventBase):
+    """An event created by Polar when an order is disputed."""
+
+    name: Literal[SystemEventEnum.balance_dispute] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BalanceDisputeMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
@@ -459,7 +502,11 @@ SystemEvent = Annotated[
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent
-    | CustomerDeletedEvent,
+    | CustomerDeletedEvent
+    | BalanceOrderEvent
+    | BalanceRefundEvent
+    | BalanceRefundReversalEvent
+    | BalanceDisputeEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),

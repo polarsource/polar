@@ -31,6 +31,10 @@ class SystemEvent(StrEnum):
     customer_created = "customer.created"
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"
+    balance_order = "balance.order"
+    balance_refund = "balance.refund"
+    balance_refund_reversal = "balance.refund_reversal"
+    balance_dispute = "balance.dispute"
 
 
 SYSTEM_EVENT_LABELS: dict[str, str] = {
@@ -53,6 +57,9 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "customer.deleted": "Customer Deleted",
     "meter.credited": "Meter Credited",
     "meter.reset": "Meter Reset",
+    "balance.order": "Balance Order",
+    "balance.refund": "Balance Refund",
+    "balance.dispute": "Balance Dispute",
 }
 
 
@@ -341,6 +348,82 @@ class CheckoutCreatedEvent(Event):
         user_metadata: Mapped[CheckoutCreatedMetadata]  # type: ignore[assignment]
 
 
+class BalanceOrderMetadata(TypedDict):
+    transaction_id: str
+    order_id: str
+    product_id: NotRequired[str]
+    subscription_id: NotRequired[str]
+    amount: int
+    currency: str
+    presentment_amount: int
+    presentment_currency: str
+    tax_amount: int
+    tax_state: NotRequired[str]
+    tax_country: NotRequired[str]
+    fee: int
+
+
+class BalanceOrderEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_order]]
+        user_metadata: Mapped[BalanceOrderMetadata]  # type: ignore[assignment]
+
+
+class BalanceRefundMetadata(TypedDict):
+    transaction_id: str
+    refund_id: str
+    order_id: NotRequired[str]
+    product_id: NotRequired[str]
+    subscription_id: NotRequired[str]
+    amount: int
+    currency: str
+    presentment_amount: int
+    presentment_currency: str
+    refundable_amount: NotRequired[int]
+    tax_amount: int
+    tax_state: str
+    tax_country: str
+    fee: int
+
+
+class BalanceRefundEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_refund]]
+        user_metadata: Mapped[BalanceRefundMetadata]  # type: ignore[assignment]
+
+
+class BalanceRefundReversalEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_refund_reversal]]
+        user_metadata: Mapped[BalanceRefundMetadata]  # type: ignore[assignment]
+
+
+class BalanceDisputeMetadata(TypedDict):
+    transaction_id: str
+    dispute_id: str
+    order_id: NotRequired[str]
+    product_id: NotRequired[str]
+    subscription_id: NotRequired[str]
+    amount: int
+    currency: str
+    presentment_amount: int
+    presentment_currency: str
+    tax_amount: int
+    tax_state: str
+    tax_country: str
+    fee: int
+
+
+class BalanceDisputeEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_dispute]]
+        user_metadata: Mapped[BalanceDisputeMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -509,6 +592,33 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: OrderRefundedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_order],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceOrderMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_refund],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceRefundMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_dispute],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceDisputeMetadata,
 ) -> Event: ...
 
 

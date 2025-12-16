@@ -1,12 +1,16 @@
 import itertools
 import math
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.enums import PaymentProcessor
+from polar.event.service import event as event_service
+from polar.event.system import BalanceRefundMetadata, SystemEvent, build_system_event
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
+from polar.logging import Logger
 from polar.models import Refund, Transaction
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
@@ -21,6 +25,8 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 from .processor_fee import (
     processor_fee_transaction as processor_fee_transaction_service,
 )
+
+log: Logger = structlog.get_logger()
 
 
 class RefundTransactionError(BaseTransactionServiceError): ...
@@ -75,7 +81,12 @@ class RefundTransactionService(BaseTransactionService):
             session
         )
         payment_transaction = await payment_transaction_repository.get_by_payment_id(
-            refund.payment_id
+            refund.payment_id,
+            options=(
+                joinedload(Transaction.payment_customer),
+                joinedload(Transaction.payment_organization),
+                joinedload(Transaction.order),
+            ),
         )
         assert payment_transaction is not None
 
@@ -116,6 +127,44 @@ class RefundTransactionService(BaseTransactionService):
             payment_transaction=payment_transaction,
             refund_amount=settlement_amount - settlement_tax_amount,
         )
+
+        try:
+            customer = payment_transaction.payment_customer
+            order = payment_transaction.order
+            if customer is not None:
+                organization = customer.organization
+                assert refund_transaction.presentment_amount is not None
+                assert refund_transaction.presentment_currency is not None
+
+                metadata: BalanceRefundMetadata = {
+                    "transaction_id": str(refund_transaction.id),
+                    "refund_id": str(refund.id),
+                    "amount": refund_transaction.amount,
+                    "currency": refund_transaction.currency,
+                    "presentment_amount": refund_transaction.presentment_amount,
+                    "presentment_currency": refund_transaction.presentment_currency,
+                    "tax_amount": settlement_tax_amount,
+                    "tax_country": payment_transaction.tax_country,
+                    "tax_state": payment_transaction.tax_state,
+                    "fee": 0,
+                }
+                if order is not None:
+                    metadata["order_id"] = str(order.id)
+                    metadata["product_id"] = str(order.product_id)
+                    if order.subscription_id is not None:
+                        metadata["subscription_id"] = str(order.subscription_id)
+                    metadata["refundable_amount"] = order.remaining_balance
+
+                balance_refund_event = build_system_event(
+                    SystemEvent.balance_refund,
+                    customer=customer,
+                    organization=organization,
+                    metadata=metadata,
+                )
+                await event_service.create_event(session, balance_refund_event)
+        except Exception as e:
+            log.error("Could not save balance.refund transaction", error=str(e))
+
         return refund_transaction
 
     async def revert(self, session: AsyncSession, refund: Refund) -> Transaction:

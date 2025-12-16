@@ -26,7 +26,12 @@ from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email
 from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
-from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
+from polar.event.system import (
+    BalanceOrderMetadata,
+    OrderPaidMetadata,
+    SystemEvent,
+    build_system_event,
+)
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.file.s3 import S3_SERVICES
@@ -1462,6 +1467,40 @@ class OrderService:
         payment_transaction.order = order
         payment_transaction.payment_customer = order.customer
         session.add(payment_transaction)
+
+        try:
+            assert payment_transaction.presentment_amount is not None
+            assert payment_transaction.presentment_currency is not None
+
+            metadata: BalanceOrderMetadata = {
+                "transaction_id": str(payment_transaction.id),
+                "order_id": str(order.id),
+                "amount": payment_transaction.amount,
+                "currency": payment_transaction.currency,
+                "presentment_amount": payment_transaction.presentment_amount,
+                "presentment_currency": payment_transaction.presentment_currency,
+                "tax_amount": order.tax_amount,
+                "fee": 0,
+            }
+            if order.tax_rate is not None:
+                if order.tax_rate["country"] is not None:
+                    metadata["tax_country"] = order.tax_rate["country"]
+                if order.tax_rate["state"] is not None:
+                    metadata["tax_state"] = order.tax_rate["state"]
+            if order.subscription_id is not None:
+                metadata["subscription_id"] = str(order.subscription_id)
+            if order.product_id is not None:
+                metadata["product_id"] = str(order.product_id)
+
+            balance_order_event = build_system_event(
+                SystemEvent.balance_order,
+                customer=order.customer,
+                organization=organization,
+                metadata=metadata,
+            )
+            await event_service.create_event(session, balance_order_event)
+        except Exception as e:
+            log.error("Could not save balance.order transaction", error=str(e))
 
         # Prepare an held balance
         # It'll be used if the account is not created yet

@@ -80,7 +80,7 @@ export const OrderRow = ({
             {order?.product?.name}
           </Text>
           <Box flex={1} flexDirection="row" gap="spacing-6">
-            {showTimestamp && (
+            {showTimestamp ? (
               <>
                 <Text
                   color="subtext"
@@ -96,7 +96,7 @@ export const OrderRow = ({
                 </Text>
                 {loading ? null : <Text color="subtext">•</Text>}
               </>
-            )}
+            ) : null}
             <Text
               numberOfLines={1}
               style={{ flexShrink: 1, flexWrap: 'wrap' }}

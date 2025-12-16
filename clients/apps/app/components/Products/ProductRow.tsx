@@ -1,11 +1,10 @@
 import { Box } from '@/components/Shared/Box'
 import { Image } from '@/components/Shared/Image/Image'
 import { useTheme } from '@/design-system/useTheme'
-import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Link } from 'expo-router'
-import React, { useContext } from 'react'
+import React from 'react'
 import { StyleProp, TextStyle } from 'react-native'
 import { Pill } from '../Shared/Pill'
 import { Text } from '../Shared/Text'
@@ -19,7 +18,6 @@ export interface ProductRowProps {
 
 export const ProductRow = ({ product, style }: ProductRowProps) => {
   const theme = useTheme()
-  const { organization } = useContext(OrganizationContext)
 
   return (
     <Link
@@ -82,7 +80,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
             >
               {product.name}
             </Text>
-            {product.is_archived && <Pill color="red">Archived</Pill>}
+            {product.is_archived ? <Pill color="red">Archived</Pill> : null}
           </Box>
           <ProductPriceLabel product={product} />
         </Box>

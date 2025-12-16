@@ -71,7 +71,7 @@ export const Avatar = ({
       position="relative"
       overflow="hidden"
     >
-      {showInitials && (
+      {showInitials ? (
         <Box
           style={{
             width: size,
@@ -85,8 +85,8 @@ export const Avatar = ({
         >
           <Text style={{ fontSize: size / 3 }}>{initials}</Text>
         </Box>
-      )}
-      {image && (
+      ) : null}
+      {image ? (
         <Box position="absolute" style={{ inset: 0 }}>
           <Image
             style={{
@@ -102,7 +102,7 @@ export const Avatar = ({
             source={{ uri: image }}
           />
         </Box>
-      )}
+      ) : null}
     </Box>
   )
 }

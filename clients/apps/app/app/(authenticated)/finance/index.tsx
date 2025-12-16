@@ -105,12 +105,12 @@ export default function Finance() {
       }
     >
       <Stack.Screen options={{ title: 'Finance' }} />
-      {!account?.is_payouts_enabled && (
+      {!account?.is_payouts_enabled ? (
         <Banner
           title="No Payout Account"
           description="This organization does not have a payout account connected."
         />
-      )}
+      ) : null}
       <Box
         flexDirection="column"
         gap="spacing-8"

@@ -34,7 +34,7 @@ export const Image = ({ onLoad, onLayout, style, ...props }: ImageProps) => {
         onLayout={handleLayout}
         onLoad={handleLoad}
       />
-      {showWarning && (
+      {showWarning ? (
         <Box
           position="absolute"
           backgroundColor="error"
@@ -53,7 +53,7 @@ export const Image = ({ onLoad, onLayout, style, ...props }: ImageProps) => {
               : `${100 - Math.round((sizeWarning.actual / sizeWarning.target) * 100)}% too small`}
           </Text>
         </Box>
-      )}
+      ) : null}
     </>
   )
 }

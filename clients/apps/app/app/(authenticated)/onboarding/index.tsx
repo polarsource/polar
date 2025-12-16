@@ -118,7 +118,9 @@ export default function Onboarding() {
           >
             Create your organization
           </Text>
-          {errors.root && <Text color="error">{errors.root.message}</Text>}
+          {errors.root ? (
+            <Text color="error">{errors.root.message}</Text>
+          ) : null}
           <FormInput
             label="Organization Name"
             placeholder="Acme Inc."
@@ -200,13 +202,13 @@ export default function Onboarding() {
               Create Organization
             </Button>
           </Box>
-          {organizations.length > 0 && (
+          {organizations.length > 0 ? (
             <Box>
               <Button onPress={() => router.replace('/')} variant="secondary">
                 Back to Dashboard
               </Button>
             </Box>
-          )}
+          ) : null}
         </Box>
       </SafeAreaView>
     </ScrollView>

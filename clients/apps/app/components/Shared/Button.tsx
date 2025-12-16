@@ -81,15 +81,15 @@ export const Button = ({
         backgroundColor={backgroundColor}
         width={fullWidth ? '100%' : undefined}
       >
-        {loading && (
+        {loading ? (
           <Box marginRight="spacing-8">
             <ActivityIndicator
               size="small"
               color={theme.colors[textColorToken]}
             />
           </Box>
-        )}
-        {icon && !loading && <Box marginRight="spacing-4">{icon}</Box>}
+        ) : null}
+        {icon && !loading ? <Box marginRight="spacing-4">{icon}</Box> : null}
         <Text variant={sizeStyle.textVariant} color={textColorToken}>
           {children}
         </Text>

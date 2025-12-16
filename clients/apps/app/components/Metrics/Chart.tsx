@@ -89,7 +89,7 @@ export const Chart = ({
       gap="spacing-12"
     >
       <Box flexDirection="row" justifyContent="space-between">
-        {title && <Text variant="subtitle">{title}</Text>}
+        {title ? <Text variant="subtitle">{title}</Text> : null}
       </Box>
 
       <Box flexDirection="row" alignItems="baseline" gap="spacing-8">
@@ -100,7 +100,7 @@ export const Chart = ({
         ) : null}
       </Box>
 
-      {chartData.length > 0 && (
+      {chartData.length > 0 ? (
         <Box style={{ width: '100%', height }}>
           <CartesianChart
             data={chartData}
@@ -132,7 +132,7 @@ export const Chart = ({
             )}
           </CartesianChart>
         </Box>
-      )}
+      ) : null}
       <Box flexDirection="row" justifyContent="space-between">
         <Text variant="caption" color="subtext">
           {format(currentPeriod.startDate, 'MMM d')}

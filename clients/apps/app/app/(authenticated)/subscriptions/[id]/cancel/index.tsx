@@ -102,18 +102,6 @@ export default function Index() {
     CANCELLATION_REASONS,
   ) as (keyof typeof CANCELLATION_REASONS)[]
 
-  let periodEndOutput: string | undefined = undefined
-
-  if (subscription?.current_period_end) {
-    periodEndOutput = new Date(
-      subscription.current_period_end,
-    ).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
-
   if (!subscription) {
     return (
       <Stack.Screen
@@ -211,7 +199,7 @@ export default function Index() {
                 }}
               >
                 <Text>{getHumanCancellationReason(reason)}</Text>
-                {cancellationReason === reason && (
+                {cancellationReason === reason ? (
                   <Box>
                     <MaterialIcons
                       name="check"
@@ -219,7 +207,7 @@ export default function Index() {
                       color={theme.colors.text}
                     />
                   </Box>
-                )}
+                ) : null}
               </Touchable>
             ))}
           </Box>

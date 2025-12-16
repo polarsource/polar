@@ -74,7 +74,7 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
           </Box>
           <Text variant="body">30 Days</Text>
         </Box>
-        {cumulativeRevenueData.length > 0 && (
+        {cumulativeRevenueData.length > 0 ? (
           <Box flex={1} flexGrow={1} width="100%">
             <CartesianChart
               data={cumulativeRevenueData}
@@ -99,7 +99,7 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
               )}
             </CartesianChart>
           </Box>
-        )}
+        ) : null}
         <Text
           variant="headline"
           numberOfLines={1}

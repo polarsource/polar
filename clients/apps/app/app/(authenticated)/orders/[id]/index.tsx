@@ -196,7 +196,7 @@ export default function Index() {
         />
       </Details>
 
-      {order.metadata && Object.keys(order.metadata).length > 0 && (
+      {order.metadata && Object.keys(order.metadata).length > 0 ? (
         <Box>
           <Details>
             {Object.entries(order.metadata).map(([key, value]) => (
@@ -204,7 +204,7 @@ export default function Index() {
             ))}
           </Details>
         </Box>
-      )}
+      ) : null}
     </ScrollView>
   )
 }

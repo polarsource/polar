@@ -1,5 +1,4 @@
 import { Box } from '@/components/Shared/Box'
-import { useTheme } from '@/design-system/useTheme'
 import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 import { Text } from './Text'
 
@@ -34,8 +33,6 @@ export const DetailRow = ({
   value?: React.ReactNode
   valueStyle?: StyleProp<TextStyle>
 }) => {
-  const theme = useTheme()
-
   return (
     <Box flexDirection="row" justifyContent="space-between" gap="spacing-8">
       <Text color="subtext" style={labelStyle}>

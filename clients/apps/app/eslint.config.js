@@ -8,6 +8,7 @@ const noImageRule = require('./eslint-rules/no-image')
 const noFlatListRule = require('./eslint-rules/no-flatlist')
 const noTouchableRule = require('./eslint-rules/no-touchable')
 const noJsxLogicalAndRule = require('./eslint-rules/no-jsx-logical-and')
+const noRestyleUseThemeRule = require('./eslint-rules/no-restyle-use-theme')
 
 module.exports = defineConfig([
   expoConfig,
@@ -25,6 +26,7 @@ module.exports = defineConfig([
           'no-flatlist': noFlatListRule,
           'no-touchable': noTouchableRule,
           'no-jsx-logical-and': noJsxLogicalAndRule,
+          'no-restyle-use-theme': noRestyleUseThemeRule,
         },
       },
     },
@@ -36,6 +38,7 @@ module.exports = defineConfig([
       '@polar/no-flatlist': 'error',
       '@polar/no-touchable': 'error',
       '@polar/no-jsx-logical-and': 'error',
+      '@polar/no-restyle-use-theme': 'error',
     },
   },
 ])

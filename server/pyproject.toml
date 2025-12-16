@@ -154,4 +154,4 @@ warn_required_dynamic_aliases = false
 warn_untyped_fields = true
 
 [tool.uv.sources]
-dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-bis" }
+dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio" }

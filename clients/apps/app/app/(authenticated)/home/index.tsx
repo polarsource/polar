@@ -1,10 +1,10 @@
 import { CustomerCard } from '@/components/Customers/CustomerCard'
+import { ActivityFeed } from '@/components/Home/ActivityFeed'
 import { CatalogueTile } from '@/components/Home/CatalogueTile'
 import { FinanceTile } from '@/components/Home/FinanceTile'
 import { OrdersTile } from '@/components/Home/OrdersTile'
 import { RevenueTile } from '@/components/Home/RevenueTile'
 import { NotificationBadge } from '@/components/Notifications/NotificationBadge'
-import { OrderRow } from '@/components/Orders/OrderRow'
 import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
@@ -12,7 +12,6 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import PolarLogo from '@/components/Shared/PolarLogo'
 import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
-import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
@@ -44,7 +43,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const getGreeting = (): string => {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
+  if (hour > 8) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 }
@@ -269,74 +268,13 @@ export default function Index() {
             </Box>
           </Box>
 
-          <Box gap="spacing-24" flexDirection="column" flex={1}>
-            <Box
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Text variant="title">Recent Subscriptions</Text>
-              <Link href="/subscriptions" asChild>
-                <Button size="small" variant="secondary">
-                  View All
-                </Button>
-              </Link>
-            </Box>
-            {isLoadingSubscriptions ? (
-              <Box gap="spacing-8">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <SubscriptionRow key={i} loading showCustomer />
-                ))}
-              </Box>
-            ) : flatSubscriptions.length > 0 ? (
-              <Box gap="spacing-8">
-                {flatSubscriptions.map((subscription) => (
-                  <SubscriptionRow
-                    key={subscription.id}
-                    subscription={subscription}
-                    showCustomer
-                  />
-                ))}
-              </Box>
-            ) : (
-              <EmptyState
-                title="No Subscriptions"
-                description="No active subscriptions found for this organization"
-              />
-            )}
-          </Box>
-
-          <Box gap="spacing-24" flexDirection="column" flex={1}>
-            <Box
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Text variant="title">Recent Orders</Text>
-              <Link href="/orders" asChild>
-                <Button size="small" variant="secondary">
-                  View All
-                </Button>
-              </Link>
-            </Box>
-            {isLoadingOrders ? (
-              <Box gap="spacing-8">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <OrderRow key={i} loading showTimestamp />
-                ))}
-              </Box>
-            ) : flatOrders.length > 0 ? (
-              <Box gap="spacing-8">
-                {flatOrders.map((order) => (
-                  <OrderRow key={order.id} order={order} showTimestamp />
-                ))}
-              </Box>
-            ) : (
-              <EmptyState
-                title="No Orders"
-                description="No orders found for this organization"
-              />
-            )}
+          <Box gap="spacing-16" flexDirection="column" flex={1}>
+            <Text variant="title">Recent Activity</Text>
+            <ActivityFeed
+              orders={flatOrders}
+              subscriptions={flatSubscriptions}
+              loading={isLoadingOrders || isLoadingSubscriptions}
+            />
           </Box>
         </Box>
 

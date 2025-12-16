@@ -34,8 +34,6 @@ from .schemas import (
 from .service import (
     AlreadyCanceledSubscription,
     SubscriptionLocked,
-    SubscriptionManagedByStripe,
-    TrialingSubscription,
 )
 from .service import subscription as subscription_service
 

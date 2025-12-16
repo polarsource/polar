@@ -2167,45 +2167,6 @@ class TestHandlePaymentFailure:
         assert result_order.status == OrderStatus.paid  # Status unchanged
         mock_mark_past_due.assert_not_called()  # Subscription not marked past_due
 
-    async def test_stripe_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        product: Product,
-        mocker: MockerFixture,
-    ) -> None:
-        """Test that order service skips dunning for stripe subscription orders"""
-        # Given
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-        )
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            subscription=subscription,
-            status=OrderStatus.pending,
-        )
-        order.next_payment_attempt_at = None
-        assert order.subscription is not None
-        order.subscription.stripe_subscription_id = "sub_stripe_123"
-        await save_fixture(order)
-
-        mock_mark_past_due = mocker.patch(
-            "polar.subscription.service.subscription.mark_past_due"
-        )
-
-        # When
-        result_order = await order_service.handle_payment_failure(session, order)
-
-        # Then
-        assert result_order.next_payment_attempt_at is None
-
-        mock_mark_past_due.assert_not_called()
-
     async def test_non_subscription_order(
         self,
         session: AsyncSession,

@@ -8,7 +8,6 @@ import structlog
 import typer
 from sqlalchemy import select
 
-from polar.integrations.stripe.service import stripe_lib  # type: ignore[attr-defined]
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Customer, Subscription
 from polar.postgres import create_async_engine
@@ -106,12 +105,6 @@ async def subscription_tax_exempt(
         async for subscription in subscriptions:
             typer.echo("\n---\n")
             typer.echo(f"🔄 Handling Subscription {subscription.id}")
-
-            if subscription.stripe_subscription_id is not None:
-                await stripe_lib.Subscription.modify_async(
-                    subscription.stripe_subscription_id,
-                    automatic_tax={"enabled": False},
-                )
 
             subscription.tax_exempted = True
             session.add(subscription)

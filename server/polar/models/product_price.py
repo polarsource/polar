@@ -77,12 +77,6 @@ class HasPriceCurrency:
     )
 
 
-class HasStripePriceId:
-    stripe_price_id: Mapped[str] = mapped_column(
-        String, nullable=True, use_existing_column=True
-    )
-
-
 LEGACY_IDENTITY_PREFIX = "legacy_"
 
 
@@ -225,7 +219,7 @@ class NewProductPrice:
     }
 
 
-class _ProductPriceFixed(HasStripePriceId, HasPriceCurrency, ProductPrice):
+class _ProductPriceFixed(HasPriceCurrency, ProductPrice):
     price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -251,7 +245,7 @@ class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPric
     }
 
 
-class _ProductPriceCustom(HasStripePriceId, HasPriceCurrency, ProductPrice):
+class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -287,7 +281,7 @@ class LegacyRecurringProductPriceCustom(
     }
 
 
-class _ProductPriceFree(HasStripePriceId, ProductPrice):
+class _ProductPriceFree(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )

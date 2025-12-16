@@ -17,6 +17,7 @@ from scripts.backfill_system_events import (
     create_missing_checkout_created_events,
     create_missing_subscription_canceled_events,
     create_missing_subscription_created_events,
+    create_missing_subscription_revoked_events,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -378,6 +379,87 @@ class TestCreateMissingSubscriptionCanceledEvents:
             == subscription.recurring_interval_count
         )
         assert "canceled_at" in event.user_metadata
+
+
+@pytest.mark.asyncio
+class TestCreateMissingSubscriptionRevokedEvents:
+    async def test_creates_events_for_revoked_subscriptions_without_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=datetime.now(UTC),
+            revoke=True,
+        )
+
+        created = await create_missing_subscription_revoked_events(
+            session, batch_size=10, rate_limit_delay=0
+        )
+
+        assert created == 1
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_revoked
+        )
+
+        assert len(events) == 1
+        event = events[0]
+        assert event.customer_id == customer.id
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.user_metadata["product_id"] == str(subscription.product_id)
+        assert event.user_metadata["amount"] == subscription.amount
+        assert event.user_metadata["currency"] == subscription.currency
+        assert (
+            event.user_metadata["recurring_interval"]
+            == subscription.recurring_interval.value
+        )
+        assert (
+            event.user_metadata["recurring_interval_count"]
+            == subscription.recurring_interval_count
+        )
+
+    async def test_skips_subscriptions_with_existing_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=datetime.now(UTC),
+            revoke=True,
+        )
+
+        existing_event = Event(
+            name=SystemEvent.subscription_revoked,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "subscription_id": str(subscription.id),
+            },
+        )
+        await save_fixture(existing_event)
+
+        created = await create_missing_subscription_revoked_events(
+            session, batch_size=10, rate_limit_delay=0
+        )
+
+        assert created == 0
 
 
 @pytest.mark.asyncio

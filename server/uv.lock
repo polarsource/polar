@@ -608,7 +608,7 @@ wheels = [
 [[package]]
 name = "dramatiq"
 version = "2.0.0"
-source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio#6cacb18e44f78647cdcf6337b62320334b97669d" }
+source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-bis#0a5931cf1c78924dec122a6c0678ed44bc1e3441" }
 
 [package.optional-dependencies]
 redis = [
@@ -1933,7 +1933,7 @@ requires-dist = [
     { name = "babel", specifier = ">=2.16.0" },
     { name = "boto3", specifier = ">=1.38.30" },
     { name = "cryptography", specifier = ">=43.0.1" },
-    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio" },
+    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-bis" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.120.2" },

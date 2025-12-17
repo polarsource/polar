@@ -11,7 +11,7 @@
     "estree-util-is-identifier-name": "^3.0.0",
     "estree-util-value-to-estree": "^3.5.0",
     "toml": "^3.0.0",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.2"
   },
   "type": "module"
 }

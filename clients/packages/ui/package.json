@@ -59,15 +59,15 @@
     "react-day-picker": "^9.12.0",
     "react-hook-form": "~7.68.0",
     "react-timeago": "^8.3.0",
-    "recharts": "^3.5.1",
+    "recharts": "^3.6.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
+    "@polar-sh/typescript-config": "workspace:*",
+    "@types/react": "19.2.3",
+    "@types/react-dom": "19.2.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "@polar-sh/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "5.9.3"
   },

@@ -115,7 +115,10 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
             select(AccountCredit)
             .where(
                 AccountCredit.account_id == account.id,
-                ((AccountCredit.expires_at.is_(None)) | (AccountCredit.expires_at > now)),
+                (
+                    (AccountCredit.expires_at.is_(None))
+                    | (AccountCredit.expires_at > now)
+                ),
                 AccountCredit.revoked_at.is_(None),
                 AccountCredit.deleted_at.is_(None),
                 AccountCredit.amount > AccountCredit.used,

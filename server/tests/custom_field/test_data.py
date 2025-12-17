@@ -57,7 +57,7 @@ async def custom_field_data_schema(
 
 @pytest.mark.parametrize(
     "input",
-    (
+    [
         pytest.param({"text1": "abc", "number1": "abc"}, id="invalid number"),
         pytest.param({"text1": "abc", "number1": -1}, id="invalid number constraint"),
         pytest.param(
@@ -65,7 +65,7 @@ async def custom_field_data_schema(
         ),
         pytest.param({"text1": "abc", "select1": "c"}, id="invalid select"),
         pytest.param({"number1": 123, "select1": "c"}, id="missing required"),
-    ),
+    ],
 )
 def test_invalid_input(
     input: dict[str, typing.Any], custom_field_data_schema: type[BaseModel]
@@ -76,12 +76,12 @@ def test_invalid_input(
 
 @pytest.mark.parametrize(
     "input",
-    (
+    [
         pytest.param({"text1": "abc"}, id="valid without optional"),
         pytest.param(
             {"text1": "abc", "number1": 123, "select1": "a"}, id="valid with optional"
         ),
-    ),
+    ],
 )
 def test_valid_input(
     input: dict[str, typing.Any], custom_field_data_schema: type[BaseModel]

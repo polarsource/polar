@@ -8,7 +8,7 @@ from polar.event.schemas import EventCreateExternalCustomer
 
 @pytest.mark.parametrize(
     "data",
-    (
+    [
         {"external_customer_id": "CUSTOMER", "name": "EVENT"},
         {
             "external_customer_id": "CUSTOMER",
@@ -34,7 +34,7 @@ from polar.event.schemas import EventCreateExternalCustomer
                 "key": "value",
             },
         },
-    ),
+    ],
 )
 def test_valid(data: dict[str, Any]) -> None:
     event = EventCreateExternalCustomer.model_validate(data)

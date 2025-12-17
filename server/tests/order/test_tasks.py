@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 import stripe as stripe_lib
+from dramatiq import Retry
 from pytest_mock import MockerFixture
 
 from polar.kit.db.postgres import AsyncSession
@@ -508,7 +509,7 @@ class TestTriggerPayment:
         mocker.patch("polar.order.tasks.can_retry", return_value=True)
 
         # When/Then - should raise Retry exception
-        with pytest.raises(Exception):  # Retry exception
+        with pytest.raises(Retry):  # Retry exception
             await trigger_payment(order.id, payment_method.id)
 
         mock_create_payment_intent.assert_called_once()

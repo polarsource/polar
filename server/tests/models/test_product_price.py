@@ -9,7 +9,7 @@ from tests.fixtures.random_objects import create_product_price_metered_unit
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "unit_amount, cap_amount, units, expected",
+    ("unit_amount", "cap_amount", "units", "expected"),
     [
         (Decimal(1_00), None, 1, 1_00),
         (Decimal(1_00), None, 1.994, 1_99),

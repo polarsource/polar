@@ -261,7 +261,7 @@ class TestGetQuantities:
         assert result.total == 0
 
     @pytest.mark.parametrize(
-        "aggregation,expected_value",
+        ("aggregation", "expected_value"),
         [
             (CountAggregation(), 4),
             (PropertyAggregation(func=AggregationFunction.sum, property="tokens"), 40),
@@ -613,7 +613,7 @@ class TestGetQuantities:
         assert result.total == 4
 
     @pytest.mark.parametrize(
-        "customer_aggregation_function,expected_value",
+        ("customer_aggregation_function", "expected_value"),
         [
             (AggregationFunction.cnt, 2),
             (AggregationFunction.sum, 30),

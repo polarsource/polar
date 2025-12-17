@@ -793,7 +793,7 @@ class TestUpdateCustomerMeter:
 @pytest.mark.asyncio
 class TestGetRolloverUnits:
     @pytest.mark.parametrize(
-        "credits,usage_tokens,expected_rollover",
+        ("credits", "usage_tokens", "expected_rollover"),
         [
             pytest.param([], 0, 0, id="no_events"),
             pytest.param(

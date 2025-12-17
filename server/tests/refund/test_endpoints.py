@@ -213,7 +213,7 @@ class TestListRefunds(StripeRefund):
         response = await client.get("/v1/refunds/")
         assert response.status_code == 401
 
-    @pytest.mark.auth()
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,
@@ -298,7 +298,7 @@ class TestCreateRefunds(StripeRefund):
         response = await client.post("/v1/refunds/")
         assert response.status_code == 401
 
-    @pytest.mark.auth()
+    @pytest.mark.auth
     async def test_tampered(
         self,
         session: AsyncSession,
@@ -495,7 +495,7 @@ class TestCreateRefunds(StripeRefund):
 
 @pytest.mark.asyncio
 class TestCreateRefundsAndRevokeBenefits(StripeRefund):
-    @pytest.mark.auth()
+    @pytest.mark.auth
     async def test_disallow_subscriptions(
         self,
         session: AsyncSession,
@@ -538,7 +538,7 @@ class TestCreateRefundsAndRevokeBenefits(StripeRefund):
         assert response.status_code == 400
         assert enqueue_revoke_benefits.call_count == 0
 
-    @pytest.mark.auth()
+    @pytest.mark.auth
     async def test_valid(
         self,
         session: AsyncSession,

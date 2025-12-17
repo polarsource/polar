@@ -23,8 +23,8 @@ def set_job_queue_manager_context() -> None:
 def patch_middlewares(
     mocker: MockerFixture, session: AsyncSession, redis: Redis
 ) -> None:
-    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", new=lambda: session)
-    mocker.patch.object(RedisMiddleware, "get", new=lambda: redis)
+    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", return_value=session)
+    mocker.patch.object(RedisMiddleware, "get", return_value=redis)
 
 
 @pytest.fixture(autouse=True)

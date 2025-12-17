@@ -586,7 +586,7 @@ class TestCreate:
 
     @pytest.mark.parametrize(
         "create_schema",
-        (
+        [
             ProductCreateOneTime(
                 name="One-time fixed",
                 prices=[
@@ -638,7 +638,7 @@ class TestCreate:
                     )
                 ],
             ),
-        ),
+        ],
     )
     @pytest.mark.auth
     async def test_valid_prices(

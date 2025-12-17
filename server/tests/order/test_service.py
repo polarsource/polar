@@ -3007,7 +3007,7 @@ class TestAcquirePaymentLock:
         )
         await save_fixture(order)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Test exception"):
             async with order_service.acquire_payment_lock(session, order):
                 await session.refresh(order)
                 assert order.payment_lock_acquired_at is not None

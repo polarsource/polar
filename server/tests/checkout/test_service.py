@@ -447,10 +447,10 @@ class TestCreate:
     )
     @pytest.mark.parametrize(
         "payload",
-        (
+        [
             {"customer_tax_id": "123"},
             {"customer_billing_address": {"country": "FR"}, "customer_tax_id": "123"},
-        ),
+        ],
     )
     async def test_invalid_tax_id(
         self,
@@ -918,7 +918,7 @@ class TestCreate:
 
     @pytest.mark.parametrize(
         "custom_field_data",
-        (pytest.param({"text": "abc", "select": "c"}, id="invalid select"),),
+        [pytest.param({"text": "abc", "select": "c"}, id="invalid select")],
     )
     async def test_invalid_custom_field_data(
         self,
@@ -1370,7 +1370,7 @@ class TestCreate:
         assert checkout.external_customer_id == "EXTERNAL_ID"
 
     @pytest.mark.parametrize(
-        "address,require_billing_address",
+        ("address", "require_billing_address"),
         [
             (None, False),
             (AddressInput.model_validate({"country": "FR"}), False),
@@ -1409,7 +1409,7 @@ class TestCreate:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        "product_parametrization_helper,expected_amount",
+        ("product_parametrization_helper", "expected_amount"),
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
@@ -1815,7 +1815,7 @@ class TestClientCreate:
         assert checkout.currency == price.price_currency
 
     @pytest.mark.parametrize(
-        "product_parametrization_helper,expected_amount",
+        ("product_parametrization_helper", "expected_amount"),
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
@@ -2020,7 +2020,7 @@ class TestCheckoutLinkCreate:
         }
 
     @pytest.mark.parametrize(
-        "product_parametrization_helper,expected_amount",
+        ("product_parametrization_helper", "expected_amount"),
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
@@ -2257,7 +2257,7 @@ class TestUpdate:
             )
 
     @pytest.mark.parametrize(
-        "initial_values,updated_values",
+        ("initial_values", "updated_values"),
         [
             ({"customer_billing_address": None}, {"customer_tax_id": "FR61954506077"}),
             (
@@ -2759,7 +2759,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize(
         "custom_field_data",
-        (pytest.param({"text": "abc", "select": "c"}, id="invalid select"),),
+        [pytest.param({"text": "abc", "select": "c"}, id="invalid select")],
     )
     async def test_invalid_custom_field_data(
         self,
@@ -3169,7 +3169,7 @@ class TestUpdate:
 @pytest.mark.asyncio
 class TestConfirm:
     @pytest.mark.parametrize(
-        "payload,missing_fields",
+        ("payload", "missing_fields"),
         [
             (
                 {},
@@ -3442,7 +3442,7 @@ class TestConfirm:
             )
 
     @pytest.mark.parametrize(
-        "customer_billing_address,expected_tax_metadata",
+        ("customer_billing_address", "expected_tax_metadata"),
         [
             ({"country": "FR"}, {"tax_country": "FR"}),
             (
@@ -3513,7 +3513,7 @@ class TestConfirm:
         assert customer_session.customer == checkout.customer
 
     @pytest.mark.parametrize(
-        "customer_billing_address,expected_tax_metadata",
+        ("customer_billing_address", "expected_tax_metadata"),
         [
             ({"country": "FR"}, {"tax_country": "FR"}),
             (
@@ -3883,7 +3883,7 @@ class TestConfirm:
         assert checkout.status == CheckoutStatus.confirmed
 
     @pytest.mark.parametrize(
-        "email,fingerprint",
+        ("email", "fingerprint"),
         [
             pytest.param("customer@example.com", None, id="same email"),
             pytest.param("customer@bar.com", "FINGERPRINT", id="same fingerprint"),
@@ -4478,11 +4478,11 @@ class TestHandleSuccess:
 class TestHandleFailure:
     @pytest.mark.parametrize(
         "status",
-        (
+        [
             CheckoutStatus.expired,
             CheckoutStatus.succeeded,
             CheckoutStatus.failed,
-        ),
+        ],
     )
     async def test_unrecoverable_status(
         self,

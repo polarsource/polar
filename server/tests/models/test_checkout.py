@@ -12,7 +12,7 @@ from tests.fixtures.random_objects import create_checkout
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "initial_status,expected_status",
+    ("initial_status", "expected_status"),
     [
         (
             CheckoutStatus.open,
@@ -49,7 +49,7 @@ async def test_checkout_expired_status_update(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "country,require_billing_address,expected_state_mode",
+    ("country", "require_billing_address", "expected_state_mode"),
     [
         ("FR", False, BillingAddressFieldMode.disabled),
         ("FR", True, BillingAddressFieldMode.optional),

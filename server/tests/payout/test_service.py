@@ -57,7 +57,7 @@ create_balance_transaction = partial(ro.create_balance_transaction, amount=10000
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.parametrize(
-        "currency,balance",
+        ("currency", "balance"),
         [
             ("usd", -1000),
             ("usd", 0),

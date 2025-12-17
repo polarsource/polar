@@ -67,7 +67,7 @@ class TestCreatePayment:
         enqueue_job_mock.assert_not_called()
 
     @pytest.mark.parametrize(
-        "risk_level,risk_score",
+        ("risk_level", "risk_score"),
         [
             pytest.param(None, None),
             pytest.param("normal", 20),

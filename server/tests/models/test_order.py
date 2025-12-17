@@ -6,7 +6,7 @@ from tests.fixtures.random_objects import create_order
 
 
 @pytest.mark.parametrize(
-    "amount,tax_amount,applied_balance_amount,total_refund_amount,expected_refund_amount,expected_refund_tax_amount",
+    ("amount", "tax_amount", "applied_balance_amount", "total_refund_amount", "expected_refund_amount", "expected_refund_tax_amount"),
     [
         pytest.param(
             1000, 250, 1000, 1250, 1000, 250, id="refund subtotal amount with tax"
@@ -60,7 +60,7 @@ async def test_calculate_refunded_tax_from_total(
 
 
 @pytest.mark.parametrize(
-    "amount,tax_amount,applied_balance_amount,refund_amount,expected_refund_tax_amount",
+    ("amount", "tax_amount", "applied_balance_amount", "refund_amount", "expected_refund_tax_amount"),
     [
         pytest.param(1000, 250, 0, 1000, 250, id="full amount"),
         pytest.param(1000, 250, 1000, 2000, 250, id="full amount with applied balance"),

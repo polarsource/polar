@@ -22,7 +22,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.mark.asyncio
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
-        "token, token_type",
+        ("token", "token_type"),
         [
             ("polar_at_u_123", TokenType.access_token),
             ("polar_rt_u_123", TokenType.refresh_token),
@@ -45,7 +45,7 @@ class TestRevokeLeaked:
         enqueue_email_mock.assert_not_called()
 
     @pytest.mark.parametrize(
-        "token, token_type",
+        ("token", "token_type"),
         [
             ("polar_at_u_123", TokenType.access_token),
             ("polar_rt_u_123", TokenType.refresh_token),
@@ -81,7 +81,7 @@ class TestRevokeLeaked:
         enqueue_email_mock.assert_called_once()
 
     @pytest.mark.parametrize(
-        "token, token_type",
+        ("token", "token_type"),
         [
             ("polar_at_o_123", TokenType.access_token),
             ("polar_rt_o_123", TokenType.refresh_token),

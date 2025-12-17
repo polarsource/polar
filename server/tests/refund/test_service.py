@@ -239,7 +239,7 @@ class TestCreate(StripeRefund):
         assert updated_order.refunded_tax_amount == 0
 
     @pytest.mark.parametrize(
-        "initial_balance,order_amount,order_tax_amount,refund_amount,expected_balance",
+        ("initial_balance", "order_amount", "order_tax_amount", "refund_amount", "expected_balance"),
         [
             pytest.param(500, 1000, 250, 1000, 0, id="full refund within balance"),
             pytest.param(500, 1000, 250, 100, 375, id="partial refund within balance"),
@@ -309,7 +309,7 @@ class TestCreate(StripeRefund):
         assert new_balance == expected_balance
 
     @pytest.mark.parametrize(
-        "order_amount,order_tax_amount,order_applied_balance_amount,refund_amount,expected_refunded_amount,expected_refunded_tax_amount",
+        ("order_amount", "order_tax_amount", "order_applied_balance_amount", "refund_amount", "expected_refunded_amount", "expected_refunded_tax_amount"),
         [
             pytest.param(
                 1000, 250, 1000, 1000, 1000, 250, id="refund subtotal amount with tax"

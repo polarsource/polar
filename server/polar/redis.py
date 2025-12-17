@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal
 
 import redis.asyncio as _async_redis
 from fastapi import Request
@@ -19,7 +19,7 @@ else:
 REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [ConnectionError, TimeoutError]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
 
-ProcessName: TypeAlias = Literal["app", "rate-limit", "worker", "script"]
+type ProcessName = Literal["app", "rate-limit", "worker", "script"]
 
 
 def create_redis(process_name: ProcessName) -> Redis:

@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from fastapi import Request
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -17,7 +17,7 @@ from polar.kit.db.postgres import (
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.kit.db.postgres import create_sync_engine as _create_sync_engine
 
-ProcessName: TypeAlias = Literal["app", "worker", "scheduler", "script"]
+type ProcessName = Literal["app", "worker", "scheduler", "script"]
 
 
 def create_async_engine(process_name: ProcessName) -> AsyncEngine:

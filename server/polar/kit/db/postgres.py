@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from typing import Any, NewType, TypeAlias
+from typing import Any, NewType
 
 from sqlalchemy import Engine
 from sqlalchemy import create_engine as _create_engine
@@ -92,15 +92,15 @@ def create_sync_engine(
     )
 
 
-AsyncSessionMaker: TypeAlias = async_sessionmaker[AsyncSession]
-AsyncReadSessionMaker: TypeAlias = async_sessionmaker[AsyncReadSession]
+type AsyncSessionMaker = async_sessionmaker[AsyncSession]
+type AsyncReadSessionMaker = async_sessionmaker[AsyncReadSession]
 
 
 def create_async_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
     return async_sessionmaker(engine, expire_on_commit=False, class_=_AsyncSession)  # type: ignore[return-value]
 
 
-SyncSessionMaker: TypeAlias = sessionmaker[Session]
+type SyncSessionMaker = sessionmaker[Session]
 
 
 def create_sync_sessionmaker(engine: Engine) -> sessionmaker[Session]:

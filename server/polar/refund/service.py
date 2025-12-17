@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from typing import Literal, TypeAlias
+from typing import Literal
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -25,7 +25,6 @@ from polar.models import (
     Order,
     Organization,
     Payment,
-    Pledge,
     Transaction,
     User,
 )
@@ -51,14 +50,6 @@ from .schemas import RefundCreate
 from .sorting import RefundSortProperty
 
 log: Logger = structlog.get_logger()
-
-ChargeID: TypeAlias = str
-RefundTransaction: TypeAlias = Transaction
-RefundedResources: TypeAlias = tuple[
-    ChargeID, RefundTransaction, Order | None, Pledge | None
-]
-Created: TypeAlias = bool
-FullRefund: TypeAlias = bool
 
 
 class RefundError(PolarError): ...

@@ -126,7 +126,6 @@ target-version = "py312"
 extend-select = ["I", "UP", "T20", "B039"]
 ignore = [
   "F841",  # remove unused variables
-  "UP040", # new type alias syntax not supported by mypy yet
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -1,6 +1,6 @@
 import inspect
 import re
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any
 
 from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
@@ -66,7 +66,7 @@ class MetadataInputMixin(BaseModel):
     )
 
 
-MetadataOutputType: TypeAlias = dict[str, str | int | float | bool]
+type MetadataOutputType = dict[str, str | int | float | bool]
 
 
 class MetadataOutputMixin(BaseModel):

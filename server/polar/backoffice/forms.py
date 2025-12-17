@@ -3,7 +3,7 @@ import re
 from collections.abc import Generator
 from enum import StrEnum
 from inspect import isclass
-from typing import Any, Self, TypeAlias
+from typing import Any, Self
 
 from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, ValidationError
@@ -12,7 +12,7 @@ from pydantic_core import ErrorDetails
 from tagflow import classes, tag, text
 from tagflow.tagflow import AttrValue
 
-Data: TypeAlias = dict[str, Any] | object
+type Data = dict[str, Any] | object
 
 
 def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails]:

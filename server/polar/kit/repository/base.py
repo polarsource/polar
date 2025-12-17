@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Protocol, Self, TypeAlias
+from typing import Any, Protocol, Self
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
 from sqlalchemy.orm import Mapped
@@ -28,7 +28,7 @@ class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
     deleted_at: Mapped[datetime | None]
 
 
-Options: TypeAlias = Sequence[ExecutableOption]
+type Options = Sequence[ExecutableOption]
 
 
 class RepositoryProtocol[M](Protocol):
@@ -234,7 +234,7 @@ class RepositorySoftDeletionIDMixin[
         return await self.get_one_or_none(statement)
 
 
-SortingClause: TypeAlias = ColumnExpressionArgument[Any] | UnaryExpression[Any]
+type SortingClause = ColumnExpressionArgument[Any] | UnaryExpression[Any]
 
 
 class RepositorySortingMixin[M, PE: StrEnum]:

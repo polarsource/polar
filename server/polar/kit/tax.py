@@ -549,7 +549,7 @@ async def calculate_tax(
             },
             idempotency_key=idempotency_key,
         )
-    except stripe_lib.RateLimitError as e:
+    except stripe_lib.RateLimitError:
         if settings.is_sandbox():
             log.warning(
                 "Stripe Tax API rate limit exceeded in sandbox mode, returning zero tax",

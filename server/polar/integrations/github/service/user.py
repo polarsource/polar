@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING
 
 import structlog
 from httpx_oauth.oauth2 import OAuth2Token
@@ -21,8 +21,8 @@ from .. import client as github
 log = structlog.get_logger()
 
 
-GithubUser: TypeAlias = "PrivateUser | PublicUser"
-GithubEmail: TypeAlias = tuple[str, bool]
+type GithubUser = "PrivateUser | PublicUser"
+type GithubEmail = tuple[str, bool]
 
 
 class GithubUserServiceError(PolarError): ...

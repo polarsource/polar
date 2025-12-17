@@ -241,9 +241,3 @@ variable "logfire_token_worker" {
   type        = string
   sensitive   = true
 }
-
-variable "test_example_sandbox" {
-  description = "Logfire Token for worker"
-  type        = string
-  sensitive   = true
-}

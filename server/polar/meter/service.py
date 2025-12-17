@@ -23,7 +23,7 @@ from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
-from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -50,9 +50,6 @@ from polar.worker import enqueue_job
 from .repository import MeterRepository
 from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
 from .sorting import MeterSortProperty
-
-
-class MeterError(PolarError): ...
 
 
 class MeterService:

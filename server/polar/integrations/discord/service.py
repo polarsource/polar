@@ -3,7 +3,6 @@ import structlog
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.logging import Logger
-from polar.models import Customer, User
 
 from .client import bot_client
 from .schemas import DiscordGuild, DiscordGuildRole
@@ -12,39 +11,6 @@ log: Logger = structlog.get_logger()
 
 
 class DiscordError(PolarError): ...
-
-
-class DiscordAccountNotConnected(DiscordError):
-    def __init__(self, user: User) -> None:
-        self.user = user
-        message = "You don't have a Discord account connected."
-        super().__init__(message)
-
-
-class DiscordExpiredAccessToken(DiscordError):
-    def __init__(self, user: User) -> None:
-        self.user = user
-        message = "The access token is expired and no refresh token is available."
-        super().__init__(message, 401)
-
-
-class DiscordCustomerAccountDoesNotExist(DiscordError):
-    def __init__(self, customer: Customer, account_id: str) -> None:
-        self.customer = customer
-        self.account_id = account_id
-        message = (
-            f"The Discord account {account_id} does not exist "
-            f"on customer {customer.id}."
-        )
-        super().__init__(message)
-
-
-class DiscordCustomerExpiredAccessToken(DiscordError):
-    def __init__(self, customer: Customer, account_id: str) -> None:
-        self.customer = customer
-        self.account_id = account_id
-        message = "The access token is expired and no refresh token is available."
-        super().__init__(message, 401)
 
 
 class DiscordBotService:

@@ -2,15 +2,11 @@ import uuid
 
 from sqlalchemy import select
 
-from polar.exceptions import PolarError
 from polar.kit.db.postgres import Session as SyncSession
 from polar.kit.services import ResourceServiceReader
 from polar.models import OAuth2Grant
 
 from ..sub_type import SubType
-
-
-class OAuth2GrantError(PolarError): ...
 
 
 class OAuth2GrantService(ResourceServiceReader[OAuth2Grant]):

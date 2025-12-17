@@ -1,4 +1,3 @@
-import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
 
@@ -37,30 +36,6 @@ StripeCancellationReasons = Literal[
 
 
 class StripeError(PolarError): ...
-
-
-class MissingOrganizationBillingEmail(StripeError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"The organization {organization_id} billing email is not set."
-        super().__init__(message)
-
-
-class MissingLatestInvoiceForOutofBandSubscription(StripeError):
-    def __init__(self, subscription_id: str) -> None:
-        self.subscription_id = subscription_id
-        message = f"The subscription {subscription_id} does not have a latest invoice."
-        super().__init__(message)
-
-
-class MissingPaymentMethod(StripeError):
-    def __init__(self, subscription_id: str) -> None:
-        self.subscription_id = subscription_id
-        message = (
-            f"Tried to upgrade subscription {subscription_id} "
-            "but the customer has no attached payment method."
-        )
-        super().__init__(message, 400)
 
 
 class StripeService:

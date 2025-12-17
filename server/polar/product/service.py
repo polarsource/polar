@@ -12,7 +12,6 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
-    PolarError,
     PolarRequestValidationError,
     ValidationError,
 )
@@ -50,9 +49,6 @@ from .schemas import (
     ProductUpdate,
 )
 from .sorting import ProductSortProperty
-
-
-class ProductError(PolarError): ...
 
 
 class ProductService:

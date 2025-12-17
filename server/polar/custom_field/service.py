@@ -17,7 +17,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.custom_field.sorting import CustomFieldSortProperty
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -29,9 +29,6 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
 from .schemas import CustomFieldCreate, CustomFieldUpdate
-
-
-class CustomFieldError(PolarError): ...
 
 
 class CustomFieldService(ResourceServiceReader[CustomField]):

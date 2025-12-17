@@ -10,7 +10,6 @@ from polar.email.react import render_email_template
 from polar.email.schemas import OAuth2LeakedTokenEmail, OAuth2LeakedTokenProps
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
-from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
@@ -21,9 +20,6 @@ from polar.user_organization.service import (
 )
 
 log: Logger = structlog.get_logger()
-
-
-class OAuth2TokenError(PolarError): ...
 
 
 class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):

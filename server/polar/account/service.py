@@ -31,11 +31,6 @@ class AccountServiceError(PolarError):
     pass
 
 
-class AccountAlreadyExistsError(AccountServiceError):
-    def __init__(self) -> None:
-        super().__init__("An account already exists for this organization.")
-
-
 class AccountExternalIdDoesNotExist(AccountServiceError):
     def __init__(self, external_id: str) -> None:
         self.external_id = external_id

@@ -29,13 +29,6 @@ from ..schemas.order import (
 class CustomerOrderError(PolarError): ...
 
 
-class InvoiceNotAvailable(CustomerOrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = "The invoice is not available for this order."
-        super().__init__(message, 404)
-
-
 class OrderNotEligibleForRetry(CustomerOrderError):
     def __init__(self, order: Order) -> None:
         self.order = order

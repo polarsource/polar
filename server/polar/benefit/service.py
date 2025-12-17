@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import delete
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -23,9 +23,6 @@ from .registry import get_benefit_strategy
 from .repository import BenefitRepository
 from .schemas import BenefitCreate, BenefitUpdate
 from .sorting import BenefitSortProperty
-
-
-class BenefitError(PolarError): ...
 
 
 class BenefitService:

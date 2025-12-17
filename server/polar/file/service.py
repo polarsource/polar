@@ -5,7 +5,6 @@ from datetime import datetime
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.integrations.aws.s3 import S3FileError
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, ProductMediaFile
@@ -22,9 +21,6 @@ from .schemas import (
 )
 
 log = structlog.get_logger()
-
-
-class FileError(S3FileError): ...
 
 
 class FileService:

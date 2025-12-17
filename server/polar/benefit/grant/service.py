@@ -42,12 +42,6 @@ BG = TypeVar("BG", bound=BenefitGrant)
 class BenefitGrantError(PolarError): ...
 
 
-class EmptyScopeError(BenefitGrantError):
-    def __init__(self) -> None:
-        message = "A scope must be provided to retrieve a benefit grant."
-        super().__init__(message, 500)
-
-
 class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     @overload
     async def get(

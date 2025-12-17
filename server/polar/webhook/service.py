@@ -1,6 +1,7 @@
+import base64
 import datetime
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal, cast, overload
 from uuid import UUID
 
@@ -8,6 +9,7 @@ import structlog
 from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
+from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -745,11 +747,27 @@ class WebhookService:
 
         # Publish webhook event to eventstream for CLI listeners
         try:
+            ts = utc_now()
+
+            b64secret = base64.b64encode(
+                event.webhook_endpoint.secret.encode("utf-8")
+            ).decode("utf-8")
+
+            # Sign the payload
+            wh = StandardWebhook(b64secret)
+            signature = wh.sign(str(event.id), ts, event.payload)
+
+            headers: Mapping[str, str] = {
+                "user-agent": "polar.sh webhooks",
+                "content-type": "application/json",
+                "webhook-id": str(event.id),
+                "webhook-timestamp": str(int(ts.timestamp())),
+                "webhook-signature": signature,
+            }
             await publish_webhook_event(
+                payload=event.payload,
+                headers=headers,
                 organization_id=target.id,
-                event_type=event,
-                timestamp=now,
-                payload=payload.model_dump(mode="json"),
             )
         except Exception as e:
             log.warning("Failed to publish webhook to eventstream", error=str(e))

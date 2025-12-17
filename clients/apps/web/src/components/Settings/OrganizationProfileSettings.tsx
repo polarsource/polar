@@ -537,7 +537,7 @@ export const OrganizationDetailsForm: React.FC<
                     <div>
                       <MoneyInput
                         {...field}
-                        placeholder={50000}
+                        placeholder={100_000_000}
                         className="w-full"
                       />
                       <FormMessage />

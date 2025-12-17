@@ -97,7 +97,7 @@ const CreateBenefitModalContent = ({
   }, [error, setError])
 
   return (
-    <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
+    <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
         <h2 className="text-lg">Create Benefit</h2>
         <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">

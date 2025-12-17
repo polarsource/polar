@@ -9,13 +9,23 @@ type FileRead =
   | schemas['ProductMediaFileRead']
   | schemas['OrganizationAvatarFileRead']
 
-export const useFiles = (organizationId: string, fileIds: string[]) =>
+export const useFiles = (
+  organizationId: string,
+  fileIds: string[],
+  options?: { limit?: number },
+) =>
   useQuery({
     queryKey: ['user', 'files', JSON.stringify(fileIds)],
     queryFn: () =>
       unwrap(
         api.GET('/v1/files/', {
-          params: { query: { organization_id: organizationId, ids: fileIds } },
+          params: {
+            query: {
+              organization_id: organizationId,
+              ids: fileIds,
+              limit: options?.limit ?? fileIds.length,
+            },
+          },
         }),
       ).then((response) => {
         const files = response.items.reduce<Record<string, FileRead>>(

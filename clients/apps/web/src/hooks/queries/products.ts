@@ -30,6 +30,7 @@ export const useProducts = (
         }),
       ),
     retry: defaultRetry,
+    placeholderData: keepPreviousData,
   })
 
 export const useSelectedProducts = (id: string[], includeArchived = false) =>

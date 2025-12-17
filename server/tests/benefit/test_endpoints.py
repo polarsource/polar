@@ -70,6 +70,147 @@ class TestListBenefits:
 
 
 @pytest.mark.asyncio
+class TestListBenefitsFilters:
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_id_filter(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        ids_to_include = [str(benefits[0].id), str(benefits[1].id)]
+        response = await client.get(
+            "/v1/benefits/",
+            params={"id": ids_to_include},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        returned_ids = {item["id"] for item in json["items"]}
+        assert returned_ids == set(ids_to_include)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_exclude_id_filter(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        ids_to_exclude = [str(benefits[0].id)]
+        response = await client.get(
+            "/v1/benefits/",
+            params={"exclude_id": ids_to_exclude},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+        returned_ids = {item["id"] for item in json["items"]}
+        assert str(benefits[0].id) not in returned_ids
+        assert str(benefits[1].id) in returned_ids
+        assert str(benefits[2].id) in returned_ids
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_user_order_sorting(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        ordered_ids = [str(benefits[2].id), str(benefits[0].id), str(benefits[1].id)]
+        response = await client.get(
+            "/v1/benefits/",
+            params={
+                "id": ordered_ids,
+                "sorting": ["user_order"],
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 3
+        returned_ids = [item["id"] for item in json["items"]]
+        assert returned_ids == ordered_ids
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_user_order_sorting_descending(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        ordered_ids = [str(benefits[0].id), str(benefits[1].id), str(benefits[2].id)]
+        response = await client.get(
+            "/v1/benefits/",
+            params={
+                "id": ordered_ids,
+                "sorting": ["-user_order"],
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 3
+        returned_ids = [item["id"] for item in json["items"]]
+        assert returned_ids == list(reversed(ordered_ids))
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_user_order_without_id_falls_back_to_default(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        response = await client.get(
+            "/v1/benefits/",
+            params={"sorting": ["user_order"]},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 3
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
+    )
+    async def test_combined_id_and_exclude_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        response = await client.get(
+            "/v1/benefits/",
+            params={
+                "id": [str(benefits[0].id), str(benefits[1].id)],
+                "exclude_id": [str(benefits[0].id)],
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(benefits[1].id)
+
+
+@pytest.mark.asyncio
 class TestGetBenefit:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit

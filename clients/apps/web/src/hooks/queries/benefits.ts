@@ -1,4 +1,9 @@
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
@@ -89,6 +94,7 @@ export const useBenefits = (
       ),
     retry: defaultRetry,
     enabled: !!orgId,
+    placeholderData: keepPreviousData,
   })
 
 export const useBenefit = (id?: string) =>

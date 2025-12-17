@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
-import ProductBenefitsForm from './ProductBenefitsForm'
+import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
 
 export interface EditProductPageProps {
@@ -27,13 +27,14 @@ export const EditProductPage = ({
   product,
 }: EditProductPageProps) => {
   const router = useRouter()
-  const benefits = useBenefits(organization.id, {
+  const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
   })
   const organizationBenefits = useMemo(
-    () => benefits.data?.items ?? [],
-    [benefits],
+    () => benefitsQuery.data?.items ?? [],
+    [benefitsQuery],
   )
+  const totalBenefitCount = benefitsQuery.data?.pagination?.total_count ?? 0
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]
@@ -200,15 +201,11 @@ export const EditProductPage = ({
             <ProductForm organization={organization} update={true} />
           </form>
         </Form>
-        <ProductBenefitsForm
+        <Benefits
           organization={organization}
-          organizationBenefits={organizationBenefits.filter(
-            (benefit) =>
-              // Hide not selectable benefits unless they are already enabled
-              benefit.selectable ||
-              enabledBenefits.some((b) => b.id === benefit.id),
-          )}
-          benefits={enabledBenefits}
+          benefits={organizationBenefits}
+          totalBenefitCount={totalBenefitCount}
+          selectedBenefits={enabledBenefits}
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
           onReorderBenefits={onReorderBenefits}

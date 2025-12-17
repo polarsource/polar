@@ -234,7 +234,11 @@ const MoneyInput = (props: Props) => {
       value={internalValue}
       onChange={onChange}
       onKeyDown={onKeyDown}
-      placeholder={placeholder ? `${placeholder / 100}` : undefined}
+      placeholder={
+        placeholder
+          ? `${(placeholder / 100).toLocaleString('en-US')}`
+          : undefined
+      }
       preSlot={preSlot ? preSlot : <DollarSign className="h-4 w-4" />}
       postSlot={postSlot}
       onBlur={onBlur}

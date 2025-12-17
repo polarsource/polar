@@ -174,11 +174,22 @@ export const EditProductPage = ({
     [enabledBenefits, product],
   )
 
+  const isLoading = updateProduct.isPending || updateBenefits.isPending
+
   return (
     <DashboardBody
       title="Edit Product"
       wrapperClassName="max-w-(--breakpoint-md)!"
       className="gap-y-16"
+      header={
+        <Button
+          onClick={handleSubmit(onSubmit)}
+          loading={isLoading}
+          disabled={isLoading}
+        >
+          Update Product
+        </Button>
+      }
     >
       <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 rounded-4xl border border-gray-200">
         <Form {...form}>
@@ -224,8 +235,8 @@ export const EditProductPage = ({
       <div className="flex flex-row items-center gap-2 pb-12">
         <Button
           onClick={handleSubmit(onSubmit)}
-          loading={updateProduct.isPending || updateBenefits.isPending}
-          disabled={updateProduct.isPending || updateBenefits.isPending}
+          loading={isLoading}
+          disabled={isLoading}
         >
           Update Product
         </Button>

@@ -32,7 +32,7 @@ class TestOrderBillingReasonSerializer:
     """Test OrderBase billing_reason field serializer."""
 
     @pytest.mark.parametrize(
-        "internal_reason,expected_output",
+        ("internal_reason", "expected_output"),
         list(BILLING_REASON_SERIALIZATION_MAP.items()),
     )
     # We ignore the DeprecationWarning that is logged by model_dump, since we're not

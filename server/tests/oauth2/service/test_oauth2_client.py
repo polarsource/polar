@@ -19,7 +19,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.mark.asyncio
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
-        "token, token_type",
+        ("token", "token_type"),
         [
             ("polar_cs_123", TokenType.client_secret),
             ("polar_crt_123", TokenType.client_registration_token),

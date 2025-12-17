@@ -71,7 +71,7 @@ class TestPrometheusMiddlewareWithStubBroker:
 
         failing_task.send()
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Task failed"):
             stub_broker.join(failing_task.queue_name)
         stub_worker.join()
 

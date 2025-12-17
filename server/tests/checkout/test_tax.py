@@ -4,7 +4,7 @@ from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
 
 
 @pytest.mark.parametrize(
-    "number, country, expected",
+    ("number", "country", "expected"),
     [
         (
             "GB980780684",
@@ -36,7 +36,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
 
 
 @pytest.mark.parametrize(
-    "number, country",
+    ("number", "country"),
     [
         ("123", "FR"),
         ("FR11111111111", "FR"),

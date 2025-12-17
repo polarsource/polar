@@ -67,11 +67,11 @@ class TestVerifySignature:
 class TestValidatePayload:
     @pytest.mark.parametrize(
         "payload",
-        (
+        [
             [{"foo": "bar"}],
             [{"token": "TOKEN", "type": "foobar", "source": "github"}],
             [{"token": "TOKEN", "type": None, "source": "github"}],
-        ),
+        ],
     )
     async def test_invalid_payload(self, payload: list[dict[str, Any]]) -> None:
         with pytest.raises(RequestValidationError):
@@ -79,7 +79,7 @@ class TestValidatePayload:
 
     @pytest.mark.parametrize(
         "payload",
-        (
+        [
             pytest.param(
                 [
                     {
@@ -106,7 +106,7 @@ class TestValidatePayload:
                 ],
                 id="uppercase_token_type",
             ),
-        ),
+        ],
     )
     async def test_valid_payload(self, payload: list[dict[str, Any]]) -> None:
         result = secret_scanning_service.validate_payload(json.dumps(payload))

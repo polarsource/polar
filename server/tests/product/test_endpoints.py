@@ -182,7 +182,7 @@ class TestCreateProduct:
     @pytest.mark.auth
     @pytest.mark.parametrize(
         "payload",
-        (
+        [
             pytest.param(
                 {
                     "recurring_interval": None,
@@ -312,7 +312,7 @@ class TestCreateProduct:
                 },
                 id="Recurring with interval count",
             ),
-        ),
+        ],
     )
     async def test_valid(
         self,

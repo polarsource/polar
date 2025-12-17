@@ -421,7 +421,7 @@ class TestOAuth2Authorize:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        "input_sub_type,expected_sub_type",
+        ("input_sub_type", "expected_sub_type"),
         [("user", "user"), (None, "organization"), ("organization", "organization")],
     )
     async def test_authenticated(

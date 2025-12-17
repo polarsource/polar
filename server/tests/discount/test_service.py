@@ -122,7 +122,7 @@ class TestUpdate:
             )
 
     @pytest.mark.parametrize(
-        "field,value",
+        ("field", "value"),
         [
             ("amount", 1000),
             ("basis_points", 1000),
@@ -176,7 +176,7 @@ class TestUpdate:
             )
 
     @pytest.mark.parametrize(
-        "type,payload",
+        ("type", "payload"),
         [
             (
                 DiscountType.percentage,

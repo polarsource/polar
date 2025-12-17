@@ -19,10 +19,10 @@ INT_MAX_VALUE = 2_147_483_647
 
 @pytest.mark.parametrize(
     "payload",
-    (
+    [
         {"trial_interval_count": 1},
         {"trial_interval": SubscriptionRecurringInterval.month},
-    ),
+    ],
 )
 def test_incomplete_trial_configuration(payload: dict[str, Any]) -> None:
     with pytest.raises(ValidationError) as exc_info:

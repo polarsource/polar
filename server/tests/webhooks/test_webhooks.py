@@ -87,7 +87,7 @@ async def test_webhook_send_not_subscribed_to_event(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "response,expected",
+    ("response", "expected"),
     [
         (httpx.Response(200, json={"status": "ok"}), '{"status":"ok"}'),
         (httpx.Response(200), None),

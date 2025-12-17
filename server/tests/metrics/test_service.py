@@ -235,7 +235,7 @@ async def fixtures(
 class TestGetMetrics:
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        "interval,expected_count",
+        ("interval", "expected_count"),
         [
             (TimeInterval.year, 1),
             (TimeInterval.month, 12),
@@ -1821,7 +1821,7 @@ class TestMetricsFiltering:
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
     @pytest.mark.parametrize(
-        "metric_slugs,expected_metric",
+        ("metric_slugs", "expected_metric"),
         [
             (["gross_margin"], "gross_margin"),
             (["gross_margin_percentage"], "gross_margin_percentage"),

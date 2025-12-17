@@ -13,7 +13,7 @@ CustomFieldCreateAdapter: TypeAdapter[CustomFieldCreate] = TypeAdapter(
 
 @pytest.mark.parametrize(
     "input",
-    (
+    [
         pytest.param({"slug": ""}, id="empty slug"),
         pytest.param({"slug": "aaa bbb"}, id="invalid slug 1"),
         pytest.param({"slug": "888!"}, id="invalid slug 2"),
@@ -34,7 +34,7 @@ CustomFieldCreateAdapter: TypeAdapter[CustomFieldCreate] = TypeAdapter(
             {"type": "select", "properties": {"options": []}},
             id="empty select options",
         ),
-    ),
+    ],
 )
 def test_invalid_create(input: dict[str, Any]) -> None:
     base_input: dict[str, Any] = {
@@ -57,8 +57,8 @@ def test_invalid_create(input: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize(
-    "input,expected_type",
-    (
+    ("input", "expected_type"),
+    [
         pytest.param({}, CustomFieldType.text, id="text"),
         pytest.param({"type": "number"}, CustomFieldType.number, id="number"),
         pytest.param({"type": "date"}, CustomFieldType.date, id="date"),
@@ -78,7 +78,7 @@ def test_invalid_create(input: dict[str, Any]) -> None:
         ),
         pytest.param({"slug": "valid_slug"}, CustomFieldType.text, id="valid slug 1"),
         pytest.param({"slug": "_valid_slug2"}, CustomFieldType.text, id="valid slug 2"),
-    ),
+    ],
 )
 def test_valid_create(input: dict[str, Any], expected_type: CustomFieldType) -> None:
     base_input: dict[str, Any] = {

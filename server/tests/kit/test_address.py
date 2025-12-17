@@ -5,7 +5,7 @@ from polar.kit.address import Address
 
 
 @pytest.mark.parametrize(
-    "country,state",
+    ("country", "state"),
     [
         ("US", "NY"),
         ("CA", "QC"),
@@ -18,7 +18,7 @@ def test_valid_unprefixed_state(country: str, state: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "country,state",
+    ("country", "state"),
     [
         ("US", "US-NY"),
         ("CA", "CA-QC"),
@@ -31,7 +31,7 @@ def test_valid_prefixed_state(country: str, state: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "country,state",
+    ("country", "state"),
     [
         ("US", "QC"),
         ("US", "US-QC"),
@@ -45,7 +45,7 @@ def test_invalid_state(country: str, state: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    ("input", "expected"),
     [
         ({"country": "FR", "state": None}, {"country": "FR"}),
         ({"country": "FR", "state": ""}, {"country": "FR"}),

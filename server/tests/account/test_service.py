@@ -120,7 +120,7 @@ class TestChangeAdmin:
             )
 
     @pytest.mark.parametrize(
-        "verification_status,expected_status_name",
+        ("verification_status", "expected_status_name"),
         [
             (IdentityVerificationStatus.unverified, "Unverified"),
             (IdentityVerificationStatus.pending, "Pending"),

@@ -1,3 +1,4 @@
+import { useAlertIfUnsaved } from '@/hooks/editor'
 import {
   useBenefits,
   useUpdateProduct,
@@ -9,7 +10,7 @@ import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
@@ -49,7 +50,25 @@ export const EditProductPage = ({
       })),
     },
   })
-  const { handleSubmit, setError } = form
+  const { handleSubmit, setError, formState } = form
+
+  const originalBenefitIds = useMemo(
+    () => product.benefits.map((b) => b.id),
+    [product.benefits],
+  )
+
+  const hasBenefitsChanged = useMemo(
+    () =>
+      enabledBenefitIds.length !== originalBenefitIds.length ||
+      enabledBenefitIds.some((id, index) => id !== originalBenefitIds[index]),
+    [enabledBenefitIds, originalBenefitIds],
+  )
+
+  const alertOnUnsavedChanges = useAlertIfUnsaved()
+
+  useEffect(() => {
+    alertOnUnsavedChanges(formState.isDirty || hasBenefitsChanged)
+  }, [formState.isDirty, hasBenefitsChanged, alertOnUnsavedChanges])
 
   const updateProduct = useUpdateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
@@ -77,11 +96,6 @@ export const EditProductPage = ({
         return
       }
 
-      const originalBenefitIds = product.benefits.map((b) => b.id)
-      const hasBenefitsChanged =
-        enabledBenefitIds.length !== originalBenefitIds.length ||
-        enabledBenefitIds.some((id, index) => id !== originalBenefitIds[index])
-
       if (hasBenefitsChanged) {
         await updateBenefits.mutateAsync({
           id: product.id,
@@ -103,6 +117,7 @@ export const EditProductPage = ({
       product,
       organization,
       enabledBenefitIds,
+      hasBenefitsChanged,
       updateProduct,
       updateBenefits,
       setError,

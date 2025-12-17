@@ -107,7 +107,14 @@ export const GenericChart = <T extends Record<string, unknown>>({
   }, [data, series])
 
   const formatter = useCallback(
-    (value: number, name: string, item?: { color?: string }) => {
+    (
+      value: number | undefined,
+      name: string | undefined,
+      item?: { color?: string },
+    ) => {
+      if (!value || !name) {
+        return null
+      }
       if (valueFormatter) {
         const formattedValue = valueFormatter(value, name)
         return (

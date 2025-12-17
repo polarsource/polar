@@ -3,19 +3,35 @@ from logging.config import fileConfig
 
 from alembic import context
 from alembic_utils.pg_extension import PGExtension
+from alembic_utils.pg_view import PGView
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from polar.config import settings
 from polar.models import Model
 
+VIEW_TABLE_NAMES = frozenset(
+    t.name for t in Model.metadata.tables.values() if t.info.get("is_view")
+)
+
 
 def include_object(object, name, type_, reflected, compare_to):
-    # Exclude TimescaleDB - Docker image handles creation, migration is backup
+    # Exclude TimescaleDB extension - Docker image handles creation
     if isinstance(object, PGExtension) and object.signature == "timescaledb":
         return False
     # Exclude TimescaleDB auto-created index on hypertable partitioning column
     if type_ == "index" and name == "events_hyper_ingested_at_idx":
+        return False
+    # Exclude views and their indexes - managed separately (e.g., continuous aggregates)
+    if type_ == "table" and name in VIEW_TABLE_NAMES:
+        return False
+    if (
+        type_ == "index"
+        and hasattr(object, "table")
+        and object.table.name in VIEW_TABLE_NAMES
+    ):
+        return False
+    if isinstance(object, PGView) and object.signature in VIEW_TABLE_NAMES:
         return False
     return True
 

@@ -120,7 +120,7 @@ export const MeterPage = ({
             </WellHeader>
             <WellContent className="dark:bg-polar-900 flex-col rounded-3xl bg-white p-4">
               {chartLoading ? (
-                <div className="flex h-[300px] flex-col items-center justify-center">
+                <div className="flex h-75 flex-col items-center justify-center">
                   <Spinner />
                 </div>
               ) : chartQuantities ? (
@@ -140,7 +140,7 @@ export const MeterPage = ({
                   }
                 />
               ) : (
-                <div className="flex h-[300px] flex-col items-center justify-center">
+                <div className="flex h-75 flex-col items-center justify-center">
                   <span className="text-lg">No data available</span>
                 </div>
               )}

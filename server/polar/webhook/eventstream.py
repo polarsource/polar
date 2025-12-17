@@ -1,4 +1,4 @@
-from datetime import datetime
+from collections.abc import Mapping
 from enum import StrEnum
 from typing import Any, TypedDict
 from uuid import UUID
@@ -19,24 +19,19 @@ class WebhookEventPayload(TypedDict):
 
 async def publish_webhook_event(
     organization_id: UUID,
-    event_type: str,
-    timestamp: datetime,
     payload: dict[str, Any],
+    headers: Mapping[str, str],
 ) -> None:
     """
     Publish a webhook event to the eventstream for an organization.
 
     Args:
-        organization_id: The organization to publish the event to
-        event_type: The webhook event type (e.g., 'checkout.created')
-        timestamp: The timestamp of the event
+        headers: The headers of the event
         payload: The webhook payload
     """
     event_payload: dict[str, Any] = {
-        "type": event_type,
-        "timestamp": timestamp.isoformat(),
-        "organization_id": str(organization_id),
         "payload": payload,
+        "headers": headers,
     }
 
     await publish(

@@ -2,6 +2,7 @@
 
 import LogoIcon from '@/components/Brand/LogoIcon'
 import LogoType from '@/components/Brand/LogoType'
+
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
   DropdownMenu,
@@ -19,11 +20,13 @@ export const PolarLogotype = ({
   size,
   className,
   logoClassName,
+  href,
 }: {
   logoVariant?: 'icon' | 'logotype'
   size?: number
   className?: string
   logoClassName?: string
+  href?: string
 }) => {
   const PolarLogotypeRef = useRef<HTMLDivElement>(null)
 
@@ -47,26 +50,31 @@ export const PolarLogotype = ({
     setPolarLogotypeOpen(false)
   }, [logoVariant])
 
+  const LogoComponent =
+    logoVariant === 'logotype' ? (
+      <LogoType
+        className={twMerge(
+          '-ml-2 text-black md:ml-0 dark:text-white',
+          logoClassName,
+        )}
+        width={size ?? 100}
+      />
+    ) : (
+      <LogoIcon
+        className={twMerge('text-black dark:text-white', logoClassName)}
+        size={size ?? 42}
+      />
+    )
+
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={PolarLogotypeOpen}>
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
-          <div>
-            {logoVariant === 'logotype' ? (
-              <LogoType
-                className={twMerge(
-                  '-ml-2 text-black md:ml-0 dark:text-white',
-                  logoClassName,
-                )}
-                width={size ?? 100}
-              />
-            ) : (
-              <LogoIcon
-                className={twMerge('text-black dark:text-white', logoClassName)}
-                size={size ?? 42}
-              />
-            )}
-          </div>
+          {href ? (
+            <Link href={href}>{LogoComponent}</Link>
+          ) : (
+            <div>{LogoComponent}</div>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent ref={PolarLogotypeRef} align="start">
           <DropdownMenuItem

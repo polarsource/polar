@@ -1,5 +1,3 @@
-from typing import TypeAlias
-
 from typing_extensions import TypeIs
 
 from polar.models.product_price import (
@@ -15,7 +13,7 @@ from polar.models.product_price import (
     ProductPriceSeatUnit,
 )
 
-StaticPrice: TypeAlias = (
+type StaticPrice = (
     ProductPriceFixed
     | LegacyRecurringProductPriceFixed
     | ProductPriceFree
@@ -24,17 +22,17 @@ StaticPrice: TypeAlias = (
     | LegacyRecurringProductPriceCustom
 )
 
-FixedPrice: TypeAlias = ProductPriceFixed | LegacyRecurringProductPriceFixed
+type FixedPrice = ProductPriceFixed | LegacyRecurringProductPriceFixed
 
-CustomPrice: TypeAlias = ProductPriceCustom | LegacyRecurringProductPriceCustom
+type CustomPrice = ProductPriceCustom | LegacyRecurringProductPriceCustom
 
-FreePrice: TypeAlias = ProductPriceFree | LegacyRecurringProductPriceFree
+type FreePrice = ProductPriceFree | LegacyRecurringProductPriceFree
 
-MeteredPrice: TypeAlias = ProductPriceMeteredUnit
+type MeteredPrice = ProductPriceMeteredUnit
 
-SeatPrice: TypeAlias = ProductPriceSeatUnit
+type SeatPrice = ProductPriceSeatUnit
 
-LegacyPrice: TypeAlias = (
+type LegacyPrice = (
     LegacyRecurringProductPriceFixed
     | LegacyRecurringProductPriceFree
     | LegacyRecurringProductPriceCustom

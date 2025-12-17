@@ -5,7 +5,7 @@ import time
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncIterator, Iterable, Mapping
-from typing import Any, Self, TypeAlias
+from typing import Any, Self
 
 import dramatiq
 import structlog
@@ -18,7 +18,7 @@ from polar.redis import Redis
 log: Logger = structlog.get_logger()
 
 
-JSONSerializable: TypeAlias = (
+type JSONSerializable = (
     Mapping[str, "JSONSerializable"]
     | Iterable["JSONSerializable"]
     | str

@@ -215,7 +215,7 @@ class PaymentMethodService:
         if payment_method.processor == PaymentProcessor.stripe:
             try:
                 await stripe_service.delete_payment_method(payment_method.processor_id)
-            except stripe_lib.InvalidRequestError as e:
+            except stripe_lib.InvalidRequestError:
                 pass
 
         repository = PaymentMethodRepository.from_session(session)

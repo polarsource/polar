@@ -50,7 +50,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                 else:
                     response.failure(f"Failed to create checkout: {response.text}")
                     self.interrupt()  # Stop this flow on failure
-        except Exception as e:
+        except Exception:
             self.interrupt()
 
     @task(2)
@@ -72,7 +72,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                     response.success()
                 else:
                     response.failure(f"Failed to update: {response.text}")
-        except Exception as e:
+        except Exception:
             pass
 
     @task
@@ -92,7 +92,7 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                     response.success()
                 else:
                     response.failure(f"Failed to get status: {response.status_code}")
-        except Exception as e:
+        except Exception:
             pass
 
     @task
@@ -134,13 +134,13 @@ class CheckoutFlowTaskSet(SequentialTaskSet):
                         error_data = response.json()
                         error_msg = error_data.get("detail", response.text)
                         response.failure(f"Validation error: {error_msg}")
-                    except Exception as e:
+                    except Exception:
                         response.failure(f"Validation error: {response.text}")
                 else:
                     response.failure(
                         f"Failed to confirm (HTTP {response.status_code}): {response.text}"
                     )
-        except Exception as e:
+        except Exception:
             pass
 
 

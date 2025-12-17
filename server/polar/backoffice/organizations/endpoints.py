@@ -843,7 +843,7 @@ async def remove_member(
             detail=f"Cannot remove {user_email} - they are the organization admin",
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=500, detail="An error occurred while removing the user"
         )
@@ -1051,7 +1051,7 @@ async def change_admin(
     except UserNotOrganizationMemberError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=500, detail="An error occurred while changing the admin"
         )

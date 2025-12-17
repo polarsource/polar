@@ -29,7 +29,7 @@ class _SortingGetter[PE: StrEnum]:
                 criteria = criteria[1:]
             try:
                 parsed_sorting.append((self.sort_property_enum(criteria), desc))
-            except ValueError as e:
+            except ValueError:
                 raise PolarRequestValidationError(
                     [
                         {

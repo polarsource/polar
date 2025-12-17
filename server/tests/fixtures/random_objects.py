@@ -6,7 +6,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Literal, TypeAlias, Unpack
+from typing import Any, Literal, Unpack
 
 import pytest_asyncio
 from typing_extensions import TypeIs
@@ -350,7 +350,7 @@ async def create_custom_field(
     return custom_field
 
 
-PriceFixtureType: TypeAlias = (
+type PriceFixtureType = (
     tuple[int]
     | tuple[int | None, int | None, int | None]
     | tuple[None]

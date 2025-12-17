@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
@@ -18,9 +18,9 @@ if TYPE_CHECKING:
     from .user import User
 
 
-FeeBasisPoints: TypeAlias = int
-FeeFixedCents: TypeAlias = int
-Fees: TypeAlias = tuple[FeeBasisPoints, FeeFixedCents]
+type FeeBasisPoints = int
+type FeeFixedCents = int
+type Fees = tuple[FeeBasisPoints, FeeFixedCents]
 
 
 class Account(RecordModel):

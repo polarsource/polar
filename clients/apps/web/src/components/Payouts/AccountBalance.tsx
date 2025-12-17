@@ -1,10 +1,12 @@
-import { useAccountCredits, useTransactionsSummary } from '@/hooks/queries'
+import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback } from 'react'
+import { useModal } from '../Modal/useModal'
+import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
+import { FeeCreditGrantsModal } from './FeeCreditGrantsModal'
 import WithdrawModal from './WithdrawModal'
 
 interface AccountBalanceProps {
@@ -24,88 +26,99 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     isLoading,
   } = useTransactionsSummary(account.id)
 
-  const hasCredits = account.credit_balance > 0
-  const { data: credits, isLoading: isLoadingCredits } = useAccountCredits(
-    hasCredits ? account.id : undefined,
-  )
-
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const onWithdraw = useCallback(() => {
-    setShowConfirmModal(true)
-  }, [])
+  const {
+    isShown: isPayoutConfirmModalShown,
+    show: showPayoutConfirmModal,
+    hide: hidePayoutConfirmModal,
+  } = useModal(false)
+  const {
+    isShown: isCreditGrantsModalShown,
+    show: showCreditGrantsModal,
+    hide: hideCreditGrantsModal,
+  } = useModal(false)
 
   const onWithdrawSuccess = useCallback(
     (payoutId: string) => {
       refetchBalance()
-      setShowConfirmModal(false)
+      hidePayoutConfirmModal()
       if (_onWithdrawSuccess) {
         _onWithdrawSuccess(payoutId)
       }
     },
-    [_onWithdrawSuccess, refetchBalance],
+    [_onWithdrawSuccess, refetchBalance, hidePayoutConfirmModal],
   )
 
   return (
-    <>
-      <ShadowBoxOnMd>
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h2 className="text-lg font-medium capitalize">Balance</h2>
-            <div className="text-4xl">
-              {isLoading ? (
-                <Skeleton />
-              ) : (
-                <>
-                  {summary &&
-                    formatCurrencyAndAmount(
-                      summary.balance.amount,
-                      summary.balance.currency,
-                    )}
-                </>
-              )}
-            </div>
+    <div className="flex flex-col gap-8 md:flex-row">
+      <Well className="flex-1 justify-between rounded-2xl p-6">
+        <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+          <h2 className="text-lg font-medium capitalize">Balance</h2>
+          <Button className="self-start" onClick={showPayoutConfirmModal}>
+            Withdraw
+          </Button>
+        </WellHeader>
+        <WellContent>
+          <div className="text-4xl">
+            {isLoading ? (
+              <Skeleton />
+            ) : (
+              <>
+                {summary &&
+                  formatCurrencyAndAmount(
+                    summary.balance.amount,
+                    summary.balance.currency,
+                  )}
+              </>
+            )}
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <Button onClick={onWithdraw}>Withdraw</Button>
-            <p className="dark:text-polar-500 text-xs text-gray-500">
-              Minimum {formatCurrencyAndAmount(1000, 'usd', 0)}
-            </p>
+        </WellContent>
+        <WellFooter>
+          <p className="dark:text-polar-500 text-gray-500">
+            You may only withdraw funds above $10.
+          </p>
+        </WellFooter>
+      </Well>
+      <Well className="flex-1 justify-between rounded-2xl p-6">
+        <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+          <h2 className="text-lg font-medium capitalize">Fee Credits</h2>
+          <Button
+            className="self-start"
+            variant="secondary"
+            onClick={showCreditGrantsModal}
+          >
+            View Grants
+          </Button>
+        </WellHeader>
+        <WellContent>
+          <div className="text-4xl">
+            {isLoading ? (
+              <Skeleton />
+            ) : (
+              <>
+                {summary &&
+                  formatCurrencyAndAmount(account.credit_balance, 'usd')}
+              </>
+            )}
           </div>
-        </div>
-        {hasCredits && !isLoadingCredits && credits && credits.length > 0 && (
-          <div className="mt-6">
-            {credits.map((credit, index) => (
-              <div
-                key={credit.id}
-                className={`flex items-center justify-between py-3 ${
-                  index > 0 ? 'border-t dark:border-polar-700' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span>🎉</span>
-                  <span className="font-medium">{credit.title}</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-medium">
-                    {formatCurrencyAndAmount(credit.amount, 'usd')} Credits
-                  </span>
-                  <span className="dark:text-polar-400 text-xs text-gray-500">
-                    {formatCurrencyAndAmount(credit.used, 'usd')} used
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </ShadowBoxOnMd>
+        </WellContent>
+        <WellFooter>
+          <p className="dark:text-polar-500 text-gray-500">
+            Fees are first deducted from any available credits.
+          </p>
+        </WellFooter>
+      </Well>
       <WithdrawModal
         account={account}
         organization={organization}
-        isShown={showConfirmModal}
-        hide={() => setShowConfirmModal(false)}
+        isShown={isPayoutConfirmModalShown}
+        hide={hidePayoutConfirmModal}
         onSuccess={onWithdrawSuccess}
       />
-    </>
+      <FeeCreditGrantsModal
+        isShown={isCreditGrantsModalShown}
+        hide={hideCreditGrantsModal}
+      />
+    </div>
   )
 }
 

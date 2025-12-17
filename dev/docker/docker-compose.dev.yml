@@ -59,14 +59,14 @@ x-api-volumes: &api-volumes
   - ../../dev:/app/dev:cached
   - server_uv_cache:/root/.cache/uv
   - api_venv:/app/server/.venv
-  - emails_node_modules:/app/server/emails/node_modules
+  - pnpm_store:/root/.local/share/pnpm/store
 
 x-worker-volumes: &worker-volumes
   - ../../server:/app/server:cached
   - ../../dev:/app/dev:cached
   - server_uv_cache:/root/.cache/uv
   - worker_venv:/app/server/.venv
-  - emails_node_modules:/app/server/emails/node_modules
+  - pnpm_store:/root/.local/share/pnpm/store
 
 services:
   # ============================================
@@ -192,6 +192,8 @@ services:
       context: ../..
       dockerfile: dev/docker/Dockerfile.web.dev
     environment:
+      # Node memory limit to prevent OOM
+      NODE_OPTIONS: "--max-old-space-size=3072"
       # NEXT_PUBLIC_* are for browser requests (via host machine)
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
@@ -214,6 +216,10 @@ services:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
       - api
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
   # ============================================
   # Optional Services (use --profile flag)
@@ -258,7 +264,7 @@ volumes:
   server_uv_cache:
   api_venv:
   worker_venv:
-  emails_node_modules:
+  pnpm_store:
   web_node_modules:
   web_next_cache:
   prometheus_data:

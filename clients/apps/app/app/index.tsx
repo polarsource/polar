@@ -19,7 +19,7 @@ export default function App() {
   const { authRequest, authenticate } = useOAuth()
 
   if (session) {
-    return <Redirect href="/home" />
+    return <Redirect href="/(authenticated)/(tabs)/home" />
   }
 
   return (

@@ -52,7 +52,9 @@ const RootLayout = () => {
             contentStyle: { backgroundColor: theme.colors.background },
             headerShadowVisible: false,
           }}
-        />
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
       </>
     </ErrorBoundaryComponent>
   )

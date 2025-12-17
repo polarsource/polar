@@ -1,14 +1,16 @@
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { Box } from '@/components/Shared/Box'
+import { LargeTitle, ScreenHeader } from '@/components/Shared/LargeTitle'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrders } from '@/hooks/polar/orders'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
-import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
 import { RefreshControl } from 'react-native'
+import { useSharedValue } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const groupOrdersByDate = (orders: schemas['Order'][]) => {
   if (!orders?.length) return []
@@ -39,6 +41,9 @@ const groupOrdersByDate = (orders: schemas['Order'][]) => {
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const offsetY = useSharedValue(0)
+  const titleBottomY = useSharedValue(0)
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
     useOrders(organization?.id)
 
@@ -46,11 +51,22 @@ export default function Index() {
     return data?.pages.flatMap((page) => page.items) ?? []
   }, [data])
 
+  const headerHeight = insets.top + 44
+  const contentPaddingTop = headerHeight + theme.spacing['spacing-16']
+
   return (
-    <>
-      <Stack.Screen options={{ title: 'Orders' }} />
+    <Box flex={1} backgroundColor="background">
+      <ScreenHeader
+        title="Orders"
+        offsetY={offsetY}
+        titleBottomY={titleBottomY}
+      />
       <FlashList
         data={groupOrdersByDate(flatData)}
+        onScroll={(e) => {
+          offsetY.value = e.nativeEvent.contentOffset.y
+        }}
+        scrollEventThrottle={16}
         renderItem={({ item }: { item: schemas['Order'] | string }) => {
           if (typeof item === 'string') {
             return (
@@ -67,6 +83,16 @@ export default function Index() {
             />
           )
         }}
+        ListHeaderComponent={
+          <Box marginBottom="spacing-16">
+            <LargeTitle
+              title="Orders"
+              offsetY={offsetY}
+              titleBottomY={titleBottomY}
+              contentPaddingTop={contentPaddingTop}
+            />
+          </Box>
+        }
         ListEmptyComponent={
           isLoading ? null : (
             <Box flex={1} justifyContent="center" alignItems="center">
@@ -75,7 +101,9 @@ export default function Index() {
           )
         }
         contentContainerStyle={{
-          padding: theme.spacing['spacing-16'],
+          paddingTop: contentPaddingTop,
+          paddingHorizontal: theme.spacing['spacing-16'],
+          paddingBottom: theme.spacing['spacing-120'],
           backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
@@ -93,6 +121,6 @@ export default function Index() {
         }}
         onEndReachedThreshold={0.8}
       />
-    </>
+    </Box>
   )
 }

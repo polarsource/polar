@@ -1,4 +1,5 @@
 import { Box } from '@/components/Shared/Box'
+import { LargeTitle, ScreenHeader } from '@/components/Shared/LargeTitle'
 import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
@@ -6,9 +7,10 @@ import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
-import { Stack } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
 import { RefreshControl } from 'react-native'
+import { useSharedValue } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const groupSubscriptionsByDate = (subscriptions: schemas['Subscription'][]) => {
   if (!subscriptions?.length) return []
@@ -40,6 +42,9 @@ const groupSubscriptionsByDate = (subscriptions: schemas['Subscription'][]) => {
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const offsetY = useSharedValue(0)
+  const titleBottomY = useSharedValue(0)
   const { data, refetch, isRefetching, fetchNextPage, hasNextPage, isLoading } =
     useSubscriptions(organization?.id, {
       sorting: ['-started_at'],
@@ -49,11 +54,22 @@ export default function Index() {
     return data?.pages.flatMap((page) => page.items) ?? []
   }, [data])
 
+  const headerHeight = insets.top + 44
+  const contentPaddingTop = headerHeight + theme.spacing['spacing-16']
+
   return (
-    <>
-      <Stack.Screen options={{ title: 'Subscriptions' }} />
+    <Box flex={1} backgroundColor="background">
+      <ScreenHeader
+        title="Subscriptions"
+        offsetY={offsetY}
+        titleBottomY={titleBottomY}
+      />
       <FlashList
         data={groupSubscriptionsByDate(flatData)}
+        onScroll={(e) => {
+          offsetY.value = e.nativeEvent.contentOffset.y
+        }}
+        scrollEventThrottle={16}
         renderItem={({ item }: { item: schemas['Subscription'] | string }) => {
           if (typeof item === 'string') {
             return (
@@ -71,8 +87,20 @@ export default function Index() {
             />
           )
         }}
+        ListHeaderComponent={
+          <Box marginBottom="spacing-16">
+            <LargeTitle
+              title="Subscriptions"
+              offsetY={offsetY}
+              titleBottomY={titleBottomY}
+              contentPaddingTop={contentPaddingTop}
+            />
+          </Box>
+        }
         contentContainerStyle={{
-          padding: theme.spacing['spacing-16'],
+          paddingTop: contentPaddingTop,
+          paddingHorizontal: theme.spacing['spacing-16'],
+          paddingBottom: theme.spacing['spacing-120'],
           backgroundColor: theme.colors.background,
           flexGrow: 1,
         }}
@@ -97,6 +125,6 @@ export default function Index() {
         }}
         onEndReachedThreshold={0.8}
       />
-    </>
+    </Box>
   )
 }

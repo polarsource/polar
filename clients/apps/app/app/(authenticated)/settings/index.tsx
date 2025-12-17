@@ -2,6 +2,7 @@ import { DeleteAccountSheet } from '@/components/Accounts/DeleteAccountSheet'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { SettingsItem } from '@/components/Settings/SettingsList'
 import { Box } from '@/components/Shared/Box'
+import { LargeTitle, ScreenHeader } from '@/components/Shared/LargeTitle'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
@@ -9,16 +10,13 @@ import { useSettingsActions } from '@/hooks/useSettingsActions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useUser } from '@/providers/UserProvider'
 import Constants from 'expo-constants'
-import { Stack, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useContext, useState } from 'react'
-import {
-  Linking,
-  Platform,
-  PlatformOSType,
-  RefreshControl,
-  ScrollView,
-} from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { Linking, Platform, PlatformOSType, RefreshControl } from 'react-native'
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const PLATFORM_DISPLAY_NAME: Record<PlatformOSType, string> = {
@@ -52,28 +50,53 @@ export default function Index() {
   })
 
   const safeAreaInsets = useSafeAreaInsets()
+  const offsetY = useSharedValue(0)
+  const titleBottomY = useSharedValue(0)
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: ({ contentOffset: { y } }) => {
+      offsetY.value = y
+    },
+  })
 
   const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
     useState(false)
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
   const router = useRouter()
 
+  const headerHeight = safeAreaInsets.top + 44
+  const contentPaddingTop = headerHeight + theme.spacing['spacing-16']
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScrollView
+    <Box flex={1} backgroundColor="background">
+      <ScreenHeader
+        title="Settings"
+        offsetY={offsetY}
+        titleBottomY={titleBottomY}
+      />
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
         }
         contentContainerStyle={{
-          flex: 1,
-          margin: theme.spacing['spacing-16'],
+          flexGrow: 1,
+          paddingTop: contentPaddingTop,
+          paddingHorizontal: theme.spacing['spacing-16'],
           gap: theme.spacing['spacing-24'],
           justifyContent: 'space-between',
-          paddingBottom: safeAreaInsets.bottom,
+          paddingBottom: safeAreaInsets.bottom + theme.spacing['spacing-120'],
         }}
       >
-        <Stack.Screen options={{ title: 'Settings' }} />
-        <Box>
+        <Box gap="spacing-24">
+          <LargeTitle
+            title="Settings"
+            offsetY={offsetY}
+            titleBottomY={titleBottomY}
+            contentPaddingTop={contentPaddingTop}
+          />
+          <Box>
           <SettingsItem
             title="Organization"
             variant="select"
@@ -118,13 +141,14 @@ export default function Index() {
             onPress={() => setShowAccountDeletionSheet(true)}
           />
           <SettingsItem title="Logout" variant="navigate" onPress={logout} />
+          </Box>
         </Box>
         <Box justifyContent="center" flexDirection="row">
           <Text variant="body" color="subtext" textAlign="center">
             {`Polar for ${PLATFORM_DISPLAY_NAME[Platform.OS as keyof typeof PLATFORM_DISPLAY_NAME]} ${BUILD_VERSION}`}
           </Text>
         </Box>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {showAccountDeletionSheet ? (
         <DeleteAccountSheet
@@ -138,6 +162,6 @@ export default function Index() {
           onSelect={() => router.back()}
         />
       ) : null}
-    </GestureHandlerRootView>
+    </Box>
   )
 }

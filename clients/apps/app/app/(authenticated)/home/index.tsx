@@ -165,7 +165,7 @@ function HomeContent() {
           scrollEventThrottle={16}
           contentContainerStyle={{
             paddingTop: grossHeaderHeight,
-            paddingBottom: theme.spacing['spacing-48'],
+            paddingBottom: theme.spacing['spacing-120'],
             backgroundColor: theme.colors['background-regular'],
             gap: theme.spacing['spacing-32'],
           }}

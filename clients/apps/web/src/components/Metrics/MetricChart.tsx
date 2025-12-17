@@ -58,11 +58,6 @@ const MetricChart = ({
 
   const series = useMemo(
     () => [
-      {
-        key: 'current',
-        label: 'Current Period',
-        color: '#2563eb',
-      },
       ...(previousData
         ? [
             {
@@ -72,6 +67,11 @@ const MetricChart = ({
             },
           ]
         : []),
+      {
+        key: 'current',
+        label: 'Current Period',
+        color: '#2563eb',
+      },
     ],
     [previousData, isDark],
   )

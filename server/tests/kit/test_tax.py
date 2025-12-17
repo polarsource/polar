@@ -5,7 +5,13 @@ import pytest
 import stripe as stripe_lib
 
 from polar.kit.address import Address, CountryAlpha2
-from polar.kit.tax import TaxCode, calculate_tax
+from polar.kit.tax import (
+    InvalidTaxID,
+    TaxCode,
+    TaxIDFormat,
+    calculate_tax,
+    validate_tax_id,
+)
 
 
 @pytest.fixture
@@ -77,3 +83,41 @@ class TestCalculateTaxRateLimit:
                     tax_ids=[],
                     customer_exempt=False,
                 )
+
+
+class TestValidateTaxID:
+    def test_valid_uae_trn(self) -> None:
+        # 15-digit UAE TRN
+        result = validate_tax_id("104479084600003", "AE")
+        assert result == ("104479084600003", TaxIDFormat.ae_trn)
+
+    def test_valid_uae_trn_with_separators(self) -> None:
+        # UAE TRN with spaces and dashes should be normalized
+        result = validate_tax_id("104 479 084 600 003", "AE")
+        assert result == ("104479084600003", TaxIDFormat.ae_trn)
+
+        result = validate_tax_id("104-479-084-600-003", "AE")
+        assert result == ("104479084600003", TaxIDFormat.ae_trn)
+
+    def test_invalid_uae_trn_wrong_length(self) -> None:
+        # Too short
+        with pytest.raises(InvalidTaxID):
+            validate_tax_id("12345678901234", "AE")
+
+        # Too long
+        with pytest.raises(InvalidTaxID):
+            validate_tax_id("1234567890123456", "AE")
+
+    def test_invalid_uae_trn_non_numeric(self) -> None:
+        with pytest.raises(InvalidTaxID):
+            validate_tax_id("10447908460000A", "AE")
+
+    def test_valid_eu_vat(self) -> None:
+        # French VAT number
+        result = validate_tax_id("FR61954506077", "FR")
+        assert result == ("FR61954506077", TaxIDFormat.eu_vat)
+
+    def test_invalid_country(self) -> None:
+        # Country not in COUNTRY_TAX_ID_MAP
+        with pytest.raises(InvalidTaxID):
+            validate_tax_id("123456789", "XX")

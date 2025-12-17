@@ -23,6 +23,7 @@ from .downloadable import Downloadable
 from .email_verification import EmailVerification
 from .event import Event, EventClosure
 from .event_hyper import EventHyper
+from .event_metrics import EventMetricsHourly
 from .event_type import EventType
 from .external_event import ExternalEvent
 from .file import File
@@ -109,6 +110,7 @@ __all__ = [
     "Event",
     "EventClosure",
     "EventHyper",
+    "EventMetricsHourly",
     "EventType",
     "ExternalEvent",
     "File",

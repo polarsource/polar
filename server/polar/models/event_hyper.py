@@ -1,7 +1,18 @@
 import datetime
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Uuid, literal_column
+from sqlalchemy import (
+    TIMESTAMP,
+    Connection,
+    ForeignKey,
+    Index,
+    String,
+    Uuid,
+    event,
+    literal_column,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import Model
@@ -92,4 +103,24 @@ class EventHyper(Model, MetadataMixin):
 
     event_type_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("event_types.id"), nullable=True, index=True
+    )
+
+
+@event.listens_for(EventHyper.__table__, "after_create")
+def _create_hypertable(target: Any, connection: Connection, **kw: Any) -> None:
+    """
+    Convert events_hyper to a TimescaleDB hypertable after the table is created.
+
+    This only fires when create_all() creates the table (i.e., in tests).
+    In production, migrations handle this.
+    """
+    connection.execute(
+        text("""
+            SELECT create_hypertable(
+                'events_hyper',
+                'timestamp',
+                chunk_time_interval => INTERVAL '1 week',
+                if_not_exists => TRUE
+            )
+        """)
     )

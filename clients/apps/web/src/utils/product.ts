@@ -116,7 +116,7 @@ export const productToCreateForm = (
   return {
     ...productBase,
     name: `Copy of ${product.name}`,
-    full_medias: product.medias,
+    full_medias: product.medias.map((media) => ({ ...media })),
     prices: product.prices.map((price) => {
       /* eslint-disable @typescript-eslint/no-unused-vars */
       const {

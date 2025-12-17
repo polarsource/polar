@@ -1,3 +1,4 @@
+import { Upload } from '@/components/FileUpload/Upload'
 import {
   useBenefits,
   useCreateProduct,
@@ -15,6 +16,29 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm from './ProductForm/ProductForm'
+
+const reuploadMedia = async (
+  media: schemas['ProductMediaFileRead'],
+  organization: schemas['Organization'],
+): Promise<schemas['ProductMediaFileRead']> => {
+  const response = await fetch(media.public_url)
+  const blob = await response.blob()
+  const file = new File([blob], media.name, { type: media.mime_type })
+
+  return new Promise((resolve, reject) => {
+    const upload = new Upload({
+      organization,
+      service: 'product_media',
+      file,
+      onFileProcessing: () => {},
+      onFileCreate: () => {},
+      onFileUploadProgress: () => {},
+      onFileUploaded: (response) =>
+        resolve(response as schemas['ProductMediaFileRead']),
+    })
+    upload.run().catch(reject)
+  })
+}
 
 export interface CreateProductPageProps {
   organization: schemas['Organization']
@@ -77,9 +101,18 @@ export const CreateProductPage = ({
     async (productCreate: ProductEditOrCreateForm) => {
       const { full_medias, metadata, ...productCreateRest } = productCreate
 
+      // When duplicating, re-upload medias to create new files
+      let mediaIds = full_medias.map((media) => media.id)
+      if (sourceProduct && full_medias.length > 0) {
+        const reuploadedMedias = await Promise.all(
+          full_medias.map((media) => reuploadMedia(media, organization)),
+        )
+        mediaIds = reuploadedMedias.map((media) => media.id)
+      }
+
       const { data: product, error } = await createProduct.mutateAsync({
         ...productCreateRest,
-        medias: full_medias.map((media) => media.id),
+        medias: mediaIds,
         metadata: metadata.reduce(
           (acc, { key, value }) => ({ ...acc, [key]: value }),
           {},
@@ -110,6 +143,7 @@ export const CreateProductPage = ({
     },
     [
       organization,
+      sourceProduct,
       enabledBenefitIds,
       createProduct,
       updateBenefits,

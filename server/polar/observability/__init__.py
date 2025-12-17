@@ -5,7 +5,7 @@ from polar.observability.metrics import (
 )
 
 __all__ = [
-    "TASK_EXECUTIONS",
     "TASK_DURATION",
+    "TASK_EXECUTIONS",
     "TASK_RETRIES",
 ]

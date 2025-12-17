@@ -756,10 +756,10 @@ def pagination(
 
 
 __all__ = [
-    "pagination",
     "Datatable",
-    "DatatableColumn",
-    "DatatableAttrColumn",
-    "DatatableDateTimeColumn",
     "DatatableActionsColumn",
+    "DatatableAttrColumn",
+    "DatatableColumn",
+    "DatatableDateTimeColumn",
+    "pagination",
 ]

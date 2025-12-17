@@ -199,8 +199,8 @@ async def handle_failure(
 
 
 __all__ = [
-    "handle_success",
     "handle_failure",
+    "handle_success",
     "resolve_checkout",
     "resolve_order",
 ]

@@ -69,7 +69,7 @@ def shell_asyncio(loop: asyncio.AbstractEventLoop, **namespace: object) -> None:
 
     readline: object | None
     try:
-        import readline  # NoQA
+        import readline
     except ImportError:
         readline = None
 

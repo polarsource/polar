@@ -15,6 +15,7 @@ from ._status_badge import status_badge
 from ._tab_nav import Tab, tab_nav
 
 __all__ = [
+    "Tab",
     "accordion",
     "action_bar",
     "alert",
@@ -31,6 +32,5 @@ __all__ = [
     "modal",
     "navigation",
     "status_badge",
-    "Tab",
     "tab_nav",
 ]

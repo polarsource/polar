@@ -9,10 +9,10 @@ from .service import (
 
 __all__ = [
     "BenefitActionRequiredError",
-    "BenefitServiceProtocol",
+    "BenefitGrantProperties",
+    "BenefitProperties",
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
-    "BenefitProperties",
-    "BenefitGrantProperties",
+    "BenefitServiceProtocol",
 ]

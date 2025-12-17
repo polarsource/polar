@@ -41,9 +41,9 @@ def get_benefit_strategy(
 
 __all__ = [
     "BenefitActionRequiredError",
-    "BenefitServiceProtocol",
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
+    "BenefitServiceProtocol",
     "get_benefit_strategy",
 ]

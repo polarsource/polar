@@ -6,14 +6,14 @@ Insert = postgresql.Insert
 insert = postgresql.insert
 
 __all__ = [
-    "Select",
-    "select",
-    "Update",
-    "update",
-    "Insert",
-    "insert",
     "Delete",
+    "ExecutableOption",
+    "Insert",
+    "Select",
+    "Update",
     "delete",
     "func",
-    "ExecutableOption",
+    "insert",
+    "select",
+    "update",
 ]

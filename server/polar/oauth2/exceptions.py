@@ -37,4 +37,4 @@ class InsufficientScopeError(_InvalidTokenError):
         )
 
 
-__all__ = ["InvalidTokenError", "InsufficientScopeError"]
+__all__ = ["InsufficientScopeError", "InvalidTokenError"]

@@ -1079,11 +1079,11 @@ METRICS: list[type[Metric]] = [
 ]
 
 __all__ = [
-    "MetricType",
-    "Metric",
-    "SQLMetric",
-    "MetaMetric",
-    "METRICS_SQL",
-    "METRICS_POST_COMPUTE",
     "METRICS",
+    "METRICS_POST_COMPUTE",
+    "METRICS_SQL",
+    "MetaMetric",
+    "Metric",
+    "MetricType",
+    "SQLMetric",
 ]

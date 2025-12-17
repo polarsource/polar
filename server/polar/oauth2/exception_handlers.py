@@ -13,4 +13,4 @@ async def oauth2_error_exception_handler(
     return Response(body, status_code=status_code, headers={k: v for k, v in headers})
 
 
-__all__ = ["oauth2_error_exception_handler", "OAuth2Error"]
+__all__ = ["OAuth2Error", "oauth2_error_exception_handler"]

@@ -45,4 +45,4 @@ async def add_toast(request: Request, message: str, variant: Variant = "info") -
     request.scope["toasts"] = toasts
 
 
-__all__ = ["render_toasts", "add_toast"]
+__all__ = ["add_toast", "render_toasts"]

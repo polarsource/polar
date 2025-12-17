@@ -114,4 +114,4 @@ def tab_nav(
         yield
 
 
-__all__ = ["tab_nav", "Tab"]
+__all__ = ["Tab", "tab_nav"]

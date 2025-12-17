@@ -21,11 +21,11 @@ BenefitGrantProperties = (
 )
 
 __all__ = [
-    "BenefitProperties",
     "BenefitActionRequiredError",
-    "BenefitServiceProtocol",
+    "BenefitGrantProperties",
+    "BenefitProperties",
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
-    "BenefitGrantProperties",
+    "BenefitServiceProtocol",
 ]

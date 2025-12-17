@@ -98,11 +98,11 @@ def get_app_installation_client(
 
 
 __all__ = [
-    "get_client",
+    "AppInstallationAuthStrategy",
+    "GitHub",
+    "Response",
+    "TokenAuthStrategy",
     "get_app_client",
     "get_app_installation_client",
-    "GitHub",
-    "AppInstallationAuthStrategy",
-    "TokenAuthStrategy",
-    "Response",
+    "get_client",
 ]

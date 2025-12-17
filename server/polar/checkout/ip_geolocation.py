@@ -81,4 +81,4 @@ if __name__ == "__main__":
     _download_database(args.access_token)
     sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
-__all__ = ["get_client", "get_ip_country", "IPGeolocationClient"]
+__all__ = ["IPGeolocationClient", "get_client", "get_ip_country"]

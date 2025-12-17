@@ -66,11 +66,13 @@ export default Sentry.wrap(function RootLayout() {
   })
 
   useEffect(() => {
-    AppState.addEventListener('change', (state) => {
+    const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
         ExtensionStorage.reloadWidget()
       }
     })
+
+    return () => subscription.remove()
   }, [])
 
   const onLayoutRootView = useCallback(() => {

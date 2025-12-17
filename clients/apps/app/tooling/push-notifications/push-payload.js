@@ -9,6 +9,7 @@ const payloads = {
         body: 'You received a new order for $49.00',
       },
       sound: 'default',
+      badge: 1,
     },
     body: {
       // Update with a proper order ID

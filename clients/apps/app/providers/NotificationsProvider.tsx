@@ -22,10 +22,6 @@ function handleRegistrationError(errorMessage: string) {
 }
 
 async function registerForPushNotificationsAsync() {
-  if (!Device.isDevice) {
-    return
-  }
-
   if (Platform.OS === 'android') {
     Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -42,11 +38,15 @@ async function registerForPushNotificationsAsync() {
     finalStatus = status
   }
   if (finalStatus !== 'granted') {
-    handleRegistrationError(
-      'Permission not granted to get push token for push notification!',
-    )
+    // Don't throw error, just return - badge clearing still works without push token
     return
   }
+
+  // Only try to get push token on real devices
+  if (!Device.isDevice) {
+    return
+  }
+
   const projectId =
     Constants?.expoConfig?.extra?.eas?.projectId ??
     Constants?.easConfig?.projectId

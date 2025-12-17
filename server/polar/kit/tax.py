@@ -286,8 +286,26 @@ class VNTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class AETRNValidator(ValidatorProtocol):
+    """
+    Validator for UAE Tax Registration Number (TRN).
+
+    The UAE TRN is a 15-digit number issued by the Federal Tax Authority.
+    """
+
+    def validate(self, number: str, country: str) -> str:
+        # Remove spaces, dashes, and other common separators
+        number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
+        # Validate: must be exactly 15 digits
+        if len(number) != 15 or not number.isdigit():
+            raise InvalidTaxID(number, country)
+        return number
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
+        case TaxIDFormat.ae_trn:
+            return AETRNValidator()
         case TaxIDFormat.ca_gst_hst:
             return CAGSTHSTValidator()
         case TaxIDFormat.cl_tin:

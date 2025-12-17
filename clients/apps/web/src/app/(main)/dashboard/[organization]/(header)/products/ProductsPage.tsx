@@ -65,6 +65,22 @@ export default function ClientPage({
     [pagination, router, sorting, pathname, query],
   )
 
+  const onLimitChange = useCallback(
+    (limit: string) => {
+      const searchParams = serializeSearchParams(
+        { ...pagination, pageSize: parseInt(limit), pageIndex: 0 },
+        sorting,
+      )
+      if (query) {
+        searchParams.set('query', query)
+      } else {
+        searchParams.delete('query')
+      }
+      router.replace(`${pathname}?${searchParams}`)
+    },
+    [pagination, router, sorting, pathname, query],
+  )
+
   const debouncedQueryChange = useDebouncedCallback(
     (query: string) => {
       const searchParams = serializeSearchParams(pagination, sorting)
@@ -117,6 +133,21 @@ export default function ClientPage({
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
+            {(products.data?.pagination.total_count ?? 0) >= 20 && (
+              <Select
+                value={pagination.pageSize.toString()}
+                onValueChange={onLimitChange}
+              >
+                <SelectTrigger className="w-full md:max-w-fit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20">Show 20</SelectItem>
+                  <SelectItem value="50">Show 50</SelectItem>
+                  <SelectItem value="100">Show 100</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <Link
             href={`/dashboard/${org.slug}/products/new`}

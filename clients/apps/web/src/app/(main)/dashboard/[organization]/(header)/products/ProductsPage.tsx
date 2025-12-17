@@ -167,7 +167,9 @@ export default function ClientPage({
                 <SelectItem value="-created_at">Newest</SelectItem>
                 <SelectItem value="created_at">Oldest</SelectItem>
                 <SelectItem value="price_amount">Price: Low to High</SelectItem>
-                <SelectItem value="-price_amount">Price: High to Low</SelectItem>
+                <SelectItem value="-price_amount">
+                  Price: High to Low
+                </SelectItem>
               </SelectContent>
             </Select>
             {(products.data?.pagination.total_count ?? 0) > 20 && (

@@ -81,6 +81,30 @@ export default function ClientPage({
     [pagination, router, sorting, pathname, query],
   )
 
+  const onSortingChange = useCallback(
+    (value: string) => {
+      const desc = value.startsWith('-')
+      const id = desc ? value.slice(1) : value
+      const newSorting: DataTableSortingState = [{ id, desc }]
+      const searchParams = serializeSearchParams(
+        { ...pagination, pageIndex: 0 },
+        newSorting,
+      )
+      if (query) {
+        searchParams.set('query', query)
+      } else {
+        searchParams.delete('query')
+      }
+      router.replace(`${pathname}?${searchParams}`)
+    },
+    [pagination, router, pathname, query],
+  )
+
+  const currentSortingValue =
+    sorting.length > 0
+      ? `${sorting[0].desc ? '-' : ''}${sorting[0].id}`
+      : 'name'
+
   const debouncedQueryChange = useDebouncedCallback(
     (query: string) => {
       const searchParams = serializeSearchParams(pagination, sorting)
@@ -133,7 +157,22 @@ export default function ClientPage({
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
-            {(products.data?.pagination.total_count ?? 0) >= 20 && (
+            <Select value={currentSortingValue} onValueChange={onSortingChange}>
+              <SelectTrigger className="w-full md:max-w-fit">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="-name">Name Z-A</SelectItem>
+                <SelectItem value="-created_at">Newest</SelectItem>
+                <SelectItem value="created_at">Oldest</SelectItem>
+                <SelectItem value="price_amount">Price: Low to High</SelectItem>
+                <SelectItem value="-price_amount">
+                  Price: High to Low
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {(products.data?.pagination.total_count ?? 0) > 20 && (
               <Select
                 value={pagination.pageSize.toString()}
                 onValueChange={onLimitChange}

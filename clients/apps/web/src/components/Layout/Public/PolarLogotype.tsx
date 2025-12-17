@@ -20,13 +20,13 @@ export const PolarLogotype = ({
   size,
   className,
   logoClassName,
-  orgSlug,
+  href,
 }: {
   logoVariant?: 'icon' | 'logotype'
   size?: number
   className?: string
   logoClassName?: string
-  orgSlug?: string
+  href?: string
 }) => {
   const PolarLogotypeRef = useRef<HTMLDivElement>(null)
 
@@ -70,8 +70,8 @@ export const PolarLogotype = ({
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={PolarLogotypeOpen}>
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
-          {orgSlug ? (
-            <Link href={`/dashboard/${orgSlug}`}>{LogoComponent}</Link>
+          {href ? (
+            <Link href={href}>{LogoComponent}</Link>
           ) : (
             <div>{LogoComponent}</div>
           )}

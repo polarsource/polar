@@ -166,13 +166,6 @@ class NotConfirmedCheckout(CheckoutError):
         super().__init__(message)
 
 
-class PaymentDoesNotExist(CheckoutError):
-    def __init__(self, payment_id: uuid.UUID) -> None:
-        self.payment_id = payment_id
-        message = f"Payment {payment_id} does not exist."
-        super().__init__(message)
-
-
 class ArchivedPriceCheckout(CheckoutError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
@@ -183,14 +176,6 @@ class ArchivedPriceCheckout(CheckoutError):
         super().__init__(message)
 
 
-class IntentNotSucceeded(CheckoutError):
-    def __init__(self, checkout: Checkout, intent_id: str) -> None:
-        self.checkout = checkout
-        self.intent_id = intent_id
-        message = f"Intent {intent_id} for {checkout.id} is not successful."
-        super().__init__(message)
-
-
 class NoPaymentMethodOnIntent(CheckoutError):
     def __init__(self, checkout: Checkout, intent_id: str) -> None:
         self.checkout = checkout
@@ -198,13 +183,6 @@ class NoPaymentMethodOnIntent(CheckoutError):
         message = (
             f"Intent {intent_id} for {checkout.id} has no payment method associated."
         )
-        super().__init__(message)
-
-
-class PaymentRequired(CheckoutError):
-    def __init__(self, checkout: Checkout) -> None:
-        self.checkout = checkout
-        message = f"{checkout.id} requires a payment."
         super().__init__(message)
 
 

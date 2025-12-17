@@ -197,13 +197,6 @@ class BelowMinimumSeats(SubscriptionError):
         super().__init__(message, 400)
 
 
-class OneTimeOrderNotSupported(SubscriptionError):
-    def __init__(
-        self, message: str = "This operation is not supported for one-time orders"
-    ) -> None:
-        super().__init__(message, 403)
-
-
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 

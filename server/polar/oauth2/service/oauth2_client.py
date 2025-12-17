@@ -10,7 +10,6 @@ from polar.email.react import render_email_template
 from polar.email.schemas import OAuth2LeakedClientEmail, OAuth2LeakedClientProps
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
-from polar.exceptions import PolarError
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -21,9 +20,6 @@ from polar.postgres import AsyncSession
 from ..constants import CLIENT_REGISTRATION_TOKEN_PREFIX, CLIENT_SECRET_PREFIX
 
 log: Logger = structlog.get_logger()
-
-
-class OAuth2ClientError(PolarError): ...
 
 
 class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):

@@ -211,13 +211,6 @@ class CardPaymentFailed(OrderError):
         super().__init__(message, 402)
 
 
-class InvalidPaymentProcessor(OrderError):
-    def __init__(self, payment_processor: PaymentProcessor) -> None:
-        self.payment_processor = payment_processor
-        message = f"Invalid payment processor: {payment_processor}"
-        super().__init__(message, 422)
-
-
 class PaymentRetryValidationError(OrderError):
     def __init__(self, message: str) -> None:
         super().__init__(message, 422)

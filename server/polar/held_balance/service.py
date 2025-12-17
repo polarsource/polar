@@ -3,7 +3,6 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import (
@@ -27,9 +26,6 @@ from polar.transaction.service.refund import (
 )
 
 log: Logger = structlog.get_logger()
-
-
-class HeldBalanceError(PolarError): ...
 
 
 class HeldBalanceService(ResourceServiceReader[HeldBalance]):

@@ -7,10 +7,7 @@ from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 
 from ..repository import BalanceTransactionRepository, PayoutTransactionRepository
-from .base import BaseTransactionService, BaseTransactionServiceError
-
-
-class PayoutTransactionError(BaseTransactionServiceError): ...
+from .base import BaseTransactionService
 
 
 class PayoutTransactionService(BaseTransactionService):

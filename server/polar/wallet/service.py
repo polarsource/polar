@@ -23,13 +23,6 @@ from .sorting import WalletSortProperty
 class WalletError(PolarError): ...
 
 
-class WalletAlreadyExistsError(WalletError):
-    def __init__(self, customer: Customer) -> None:
-        self.customer = customer
-        message = "A wallet already exists for this customer."
-        super().__init__(message, 409)
-
-
 class MissingPaymentMethodError(WalletError):
     def __init__(self, wallet: Wallet) -> None:
         self.wallet = wallet

@@ -10,7 +10,6 @@ from dramatiq import Retry
 from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
-from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
@@ -54,9 +53,6 @@ def stripe_api_connection_error_retry[**Params, ReturnValue](
             raise Retry() from e
 
     return wrapper
-
-
-class StripeTaskError(PolarTaskError): ...
 
 
 @actor(actor_name="stripe.webhook.account.updated", priority=TaskPriority.HIGH)

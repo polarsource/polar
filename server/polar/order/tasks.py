@@ -55,13 +55,6 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-class PaymentMethodDoesNotExist(OrderTaskError):
-    def __init__(self, payment_method_id: uuid.UUID) -> None:
-        self.payment_method_id = payment_method_id
-        message = f"The payment method with id {payment_method_id} does not exist."
-        super().__init__(message)
-
-
 @actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
 async def create_subscription_order(
     subscription_id: uuid.UUID, order_reason: OrderBillingReasonInternal

@@ -157,7 +157,7 @@ function HomeContent() {
   return (
     <GestureHandlerRootView>
       <Box flex={1} backgroundColor="background-regular">
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={{ headerShown: false, title: 'Home' }} />
         <AnimatedHeader />
         <Animated.ScrollView
           ref={scrollViewRef}

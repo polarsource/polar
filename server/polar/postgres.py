@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 from typing import Literal
 
-from starlette.requests import HTTPConnection
+from fastapi import Request
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from polar.config import settings
@@ -72,11 +72,11 @@ class AsyncSessionMiddleware:
             await self.app(scope, receive, send)
 
 
-async def get_db_sessionmaker(request: HTTPConnection) -> AsyncSessionMaker:
+async def get_db_sessionmaker(request: Request) -> AsyncSessionMaker:
     return request.state.async_sessionmaker
 
 
-async def get_db_session(request: HTTPConnection) -> AsyncGenerator[AsyncSession]:
+async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
     try:
         session = request.state.async_session
     except AttributeError as e:
@@ -95,7 +95,7 @@ async def get_db_session(request: HTTPConnection) -> AsyncGenerator[AsyncSession
 
 
 async def get_db_read_session(
-    request: HTTPConnection,
+    request: Request,
 ) -> AsyncGenerator[AsyncReadSession]:
     sessionmaker: AsyncReadSessionMaker = request.state.async_read_sessionmaker
     async with sessionmaker() as session:

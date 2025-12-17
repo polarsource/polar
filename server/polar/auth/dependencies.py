@@ -2,10 +2,9 @@ from collections.abc import Awaitable, Callable
 from inspect import Parameter, Signature
 from typing import Annotated, Any
 
-from fastapi import Depends, Security
+from fastapi import Depends, Request, Security
 from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
-from starlette.requests import HTTPConnection
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.exceptions import Unauthorized
@@ -75,7 +74,7 @@ def _get_auth_subject_factory(
         Parameter(
             name="request",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=HTTPConnection,
+            annotation=Request,
         )
     ]
     if User in allowed_subjects or Organization in allowed_subjects:
@@ -122,9 +121,7 @@ def _get_auth_subject_factory(
     signature = Signature(parameters)
 
     @with_signature(signature)
-    async def get_auth_subject(
-        request: HTTPConnection, **kwargs: Any
-    ) -> AuthSubject[Subject]:
+    async def get_auth_subject(request: Request, **kwargs: Any) -> AuthSubject[Subject]:
         try:
             return request.state.auth_subject
         except AttributeError as e:

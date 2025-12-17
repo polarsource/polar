@@ -25,14 +25,13 @@ EMAIL_MARKER="emails/bin/.built-${ARCH}"
 if [[ ! -f "$EMAIL_MARKER" ]]; then
     echo "Building email templates for ${ARCH}..."
     cd emails
-    # Clean node_modules and pnpm store to avoid corruption issues
-    rm -rf node_modules
-    rm -rf /app/server/.pnpm-store
-    # Use isolated store for email builds
-    PNPM_HOME=/tmp/pnpm-email pnpm install --frozen-lockfile
     # Clean previous builds (may be from different architecture)
     rm -rf dist
     rm -f bin/react-email-pkg bin/.built-* 2>/dev/null || true
+    # Configure pnpm to use the mounted store volume for faster installs
+    pnpm config set store-dir /root/.local/share/pnpm/store --location project
+    # Install dependencies (uses shared pnpm store for speed)
+    pnpm install --frozen-lockfile
     # Build: tsup compiles TypeScript, pkg creates standalone binary
     pnpm exec tsup
     pnpm exec pkg package.json

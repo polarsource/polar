@@ -50,26 +50,31 @@ export const PolarLogotype = ({
     setPolarLogotypeOpen(false)
   }, [logoVariant])
 
+  const LogoComponent =
+    logoVariant === 'logotype' ? (
+      <LogoType
+        className={twMerge(
+          '-ml-2 text-black md:ml-0 dark:text-white',
+          logoClassName,
+        )}
+        width={size ?? 100}
+      />
+    ) : (
+      <LogoIcon
+        className={twMerge('text-black dark:text-white', logoClassName)}
+        size={size ?? 42}
+      />
+    )
+
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={PolarLogotypeOpen}>
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
-          <Link href={`/dashboard/${orgSlug}`}>
-            {logoVariant === 'logotype' ? (
-              <LogoType
-                className={twMerge(
-                  '-ml-2 text-black md:ml-0 dark:text-white',
-                  logoClassName,
-                )}
-                width={size ?? 100}
-              />
-            ) : (
-              <LogoIcon
-                className={twMerge('text-black dark:text-white', logoClassName)}
-                size={size ?? 42}
-              />
-            )}
-          </Link>
+          {orgSlug ? (
+            <Link href={`/dashboard/${orgSlug}`}>{LogoComponent}</Link>
+          ) : (
+            <div>{LogoComponent}</div>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent ref={PolarLogotypeRef} align="start">
           <DropdownMenuItem

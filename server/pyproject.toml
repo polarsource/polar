@@ -123,7 +123,7 @@ exclude_lines = [
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "T20", "B039", "PT"]
+extend-select = ["I", "UP", "T20", "B039", "PT", "RUF022", "RUF023", "RUF10", "RUF20"]
 ignore = [
   "F841",  # remove unused variables
   "PT012",

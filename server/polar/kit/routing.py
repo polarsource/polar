@@ -199,12 +199,12 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
 
 
 __all__ = [
-    "get_api_router_class",
     "AutoCommitAPIRoute",
     "IncludedInSchemaAPIRoute",
     "SpeakeasyGroupAPIRoute",
     "SpeakeasyIgnoreAPIRoute",
+    "SpeakeasyMCPAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",
     "SpeakeasyPaginationAPIRoute",
-    "SpeakeasyMCPAPIRoute",
+    "get_api_router_class",
 ]

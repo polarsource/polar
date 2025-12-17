@@ -35,4 +35,4 @@ def _validate_email_dns(email: str) -> str:
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
 
-__all__ = ["EmailNotValidError", "validate_email", "EmailStrDNS"]
+__all__ = ["EmailNotValidError", "EmailStrDNS", "validate_email"]

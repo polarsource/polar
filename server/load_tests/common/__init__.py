@@ -11,11 +11,11 @@ from load_tests.common.test_data import (
 )
 
 __all__ = [
-    "get_auth_headers",
-    "generate_checkout_data",
+    "PowerLawDistribution",
     "generate_checkout_confirmation_data",
+    "generate_checkout_data",
     "generate_customer_data",
     "generate_event_batch",
     "generate_event_payload",
-    "PowerLawDistribution",
+    "get_auth_headers",
 ]

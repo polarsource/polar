@@ -107,4 +107,4 @@ def confirmation_dialog(
                 pass
 
 
-__all__ = ["confirmation_dialog", "Variant"]
+__all__ = ["Variant", "confirmation_dialog"]

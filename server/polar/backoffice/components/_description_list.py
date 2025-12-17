@@ -384,9 +384,9 @@ class DescriptionList[M]:
 
 
 __all__ = [
-    "DescriptionListItem",
+    "DescriptionList",
     "DescriptionListAttrItem",
     "DescriptionListDateTimeItem",
+    "DescriptionListItem",
     "DescriptionListLinkItem",
-    "DescriptionList",
 ]

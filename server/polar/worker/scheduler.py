@@ -48,7 +48,7 @@ def start() -> None:
         scheduler.shutdown()
 
 
-__all__ = ["tasks", "start"]
+__all__ = ["start", "tasks"]
 
 
 if __name__ == "__main__":

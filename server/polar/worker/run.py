@@ -8,4 +8,4 @@ configure_sentry()
 configure_logfire("worker")
 configure_logging(logfire=True)
 
-__all__ = ["tasks", "broker"]
+__all__ = ["broker", "tasks"]

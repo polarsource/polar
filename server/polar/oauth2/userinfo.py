@@ -32,4 +32,4 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
     return UserInfo(**claims)
 
 
-__all__ = ["generate_user_info", "UserInfo"]
+__all__ = ["UserInfo", "generate_user_info"]

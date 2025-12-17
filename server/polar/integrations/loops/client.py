@@ -100,4 +100,4 @@ class LoopsClient:
 
 client = LoopsClient(settings.LOOPS_API_KEY)
 
-__all__ = ["client", "Properties"]
+__all__ = ["Properties", "client"]

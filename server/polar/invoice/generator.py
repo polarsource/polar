@@ -446,4 +446,4 @@ class InvoiceGenerator(FPDF):
         self.set_creation_date(utc_now())
 
 
-__all__ = ["InvoiceGenerator", "Invoice", "InvoiceItem"]
+__all__ = ["Invoice", "InvoiceGenerator", "InvoiceItem"]

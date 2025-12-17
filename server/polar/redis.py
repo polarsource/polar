@@ -37,9 +37,9 @@ async def get_redis(request: Request) -> Redis:
 
 
 __all__ = [
-    "Redis",
-    "REDIS_RETRY_ON_ERRROR",
     "REDIS_RETRY",
+    "REDIS_RETRY_ON_ERRROR",
+    "Redis",
     "create_redis",
     "get_redis",
 ]

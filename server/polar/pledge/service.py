@@ -328,7 +328,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if not split.user_id and not split.organization_id:
             raise NotPermitted(
-                "Either user_id or organization_id must be set on the split to create a transfer"  # noqa: E501
+                "Either user_id or organization_id must be set on the split to create a transfer"
             )
 
         # sanity check
@@ -341,7 +341,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         if existing_trx:
             raise NotPermitted(
-                "A transfer for this pledge_id and issue_reward_id already exists, refusing to make another one"  # noqa: E501
+                "A transfer for this pledge_id and issue_reward_id already exists, refusing to make another one"
             )
 
         # pledge amount * the users share

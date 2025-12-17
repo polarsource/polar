@@ -12,8 +12,8 @@ __all__ = [
     "Options",
     "RepositoryBase",
     "RepositoryIDMixin",
-    "RepositorySoftDeletionMixin",
     "RepositorySoftDeletionIDMixin",
+    "RepositorySoftDeletionMixin",
     "RepositorySortingMixin",
     "SortingClause",
 ]

@@ -114,15 +114,15 @@ def is_customer[S: Subject](
 
 
 __all__ = [
-    "Subject",
-    "SubjectType",
-    "AuthSubject",
-    "is_anonymous",
-    "is_user",
-    "is_organization",
     # Re-export subject types for convenience
     "Anonymous",
-    "User",
-    "Organization",
+    "AuthSubject",
     "Customer",
+    "Organization",
+    "Subject",
+    "SubjectType",
+    "User",
+    "is_anonymous",
+    "is_organization",
+    "is_user",
 ]

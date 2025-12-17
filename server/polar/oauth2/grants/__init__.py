@@ -28,4 +28,4 @@ def register_grants(server: "AuthorizationServer") -> None:
     server.register_grant(WebGrant)
 
 
-__all__ = ["register_grants", "AuthorizationCodeGrant", "CodeChallenge"]
+__all__ = ["AuthorizationCodeGrant", "CodeChallenge", "register_grants"]

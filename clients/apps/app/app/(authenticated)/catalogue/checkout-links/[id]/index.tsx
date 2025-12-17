@@ -21,6 +21,7 @@ import { useInfiniteDiscounts } from '@/hooks/polar/discounts'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
+import { withMinDuration } from '@/utils/withMinDuration'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -131,6 +132,8 @@ export default function CheckoutLinkDetails() {
       .filter(Boolean) as string[]
   }, [selectedProductIds, allProducts])
 
+  const [isSaving, setIsSaving] = useState(false)
+
   const onSubmit = useCallback(
     async (data: CheckoutLinkUpdateForm) => {
       if (selectedProductIds.length === 0) {
@@ -138,28 +141,37 @@ export default function CheckoutLinkDetails() {
         return
       }
 
+      setIsSaving(true)
       try {
-        await updateCheckoutLink.mutateAsync({
-          label: data.label || null,
-          success_url: data.success_url || null,
-          allow_discount_codes: data.allow_discount_codes,
-          require_billing_address: data.require_billing_address,
-          products: selectedProductIds,
-          discount_id: selectedDiscountId,
-          metadata: metadataFields.reduce(
-            (acc, { key, value }) => {
-              if (key) {
-                acc[key] = value
-              }
-              return acc
-            },
-            {} as Record<string, string>,
-          ),
-        })
+        await withMinDuration(
+          () =>
+            updateCheckoutLink.mutateAsync({
+              label: data.label || null,
+              success_url: data.success_url || null,
+              allow_discount_codes: data.allow_discount_codes,
+              require_billing_address: data.require_billing_address,
+              products: selectedProductIds,
+              discount_id: selectedDiscountId,
+              metadata: metadataFields.reduce(
+                (acc, { key, value }) => {
+                  if (key) {
+                    acc[key] = value
+                  }
+                  return acc
+                },
+                {} as Record<string, string>,
+              ),
+            }),
+          2500,
+        )
 
-        toast.showInfo('Saved!')
+        toast.showInfo('Saved!', {
+          delay: 500,
+        })
       } catch {
         Alert.alert('Error', 'Failed to update checkout link')
+      } finally {
+        setIsSaving(false)
       }
     },
     [
@@ -299,7 +311,8 @@ export default function CheckoutLinkDetails() {
             onPress={() => {
               handleSubmit(onSubmit)()
             }}
-            loading={updateCheckoutLink.isPending}
+            loading={isSaving}
+            fullWidth
           >
             Save
           </Button>

@@ -13,6 +13,8 @@ const BOTTOM_OFFSET = 30
 
 interface ToastOptions {
   persistent?: boolean
+  /** Delay in ms before showing the toast */
+  delay?: number
 }
 
 interface ToastState {
@@ -48,12 +50,17 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
   const [toast, setToast] = useState<ToastState | null>(null)
   const [visible, setVisible] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const delayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const idCounter = useRef(0)
 
   const clearTimer = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
       timeoutRef.current = null
+    }
+    if (delayTimeoutRef.current) {
+      clearTimeout(delayTimeoutRef.current)
+      delayTimeoutRef.current = null
     }
   }, [])
 
@@ -70,15 +77,24 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
       clearTimer()
 
       const persistent = options?.persistent ?? false
+      const delay = options?.delay ?? 0
       const id = ++idCounter.current
 
-      setToast({ id, message, type, persistent })
-      setVisible(true)
+      const doShow = () => {
+        setToast({ id, message, type, persistent })
+        setVisible(true)
 
-      if (!persistent) {
-        timeoutRef.current = setTimeout(() => {
-          dismiss()
-        }, AUTO_DISMISS_DURATION)
+        if (!persistent) {
+          timeoutRef.current = setTimeout(() => {
+            dismiss()
+          }, AUTO_DISMISS_DURATION)
+        }
+      }
+
+      if (delay > 0) {
+        delayTimeoutRef.current = setTimeout(doShow, delay)
+      } else {
+        doShow()
       }
     },
     [clearTimer, dismiss],

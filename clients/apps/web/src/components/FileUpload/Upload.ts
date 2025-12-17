@@ -166,7 +166,11 @@ export class Upload {
             }
             resolve(completed)
           } else {
-            reject(new Error('Failed to upload part'))
+            reject(
+              new Error(
+                `Failed to upload part: HTTP ${xhr.status} - ${xhr.statusText}`,
+              ),
+            )
           }
         }
       }

@@ -44,7 +44,7 @@ export const ListItem = ({
       className={twMerge(
         'flex flex-row items-center justify-between',
         selected
-          ? 'dark:bg-polar-800 bg-gray-50'
+          ? 'dark:bg-polar-800 bg-blue-50 ring-2 ring-blue-500 ring-inset dark:ring-blue-400'
           : 'dark:hover:bg-polar-800 hover:bg-gray-50',
         selected ? selectedClassName : inactiveClassName,
         onSelect && 'cursor-pointer',

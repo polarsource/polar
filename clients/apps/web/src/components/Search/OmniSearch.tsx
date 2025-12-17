@@ -4,6 +4,8 @@ import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
+import { toast } from '@/components/Toast/use-toast'
+import { useKeyboardNavigation } from '@/providers/KeyboardNavigationProvider'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import {
@@ -19,8 +21,14 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
-import { getQuickActions } from './quickActions'
+import {
+  getContextualActions,
+  getQuickActions,
+  QuickAction,
+} from './quickActions'
 import type { SearchResult, SearchResultPage } from './types'
+
+type ActionResult = QuickAction & { type: 'action' }
 
 interface OmniSearchProps {
   open: boolean
@@ -39,6 +47,8 @@ export const OmniSearch = ({
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
 
+  const { pageContext, selectedItem } = useKeyboardNavigation()
+
   const generalRoutes = useGeneralRoutes(organization)
   const orgRoutes = useOrganizationRoutes(organization)
   const allRoutes = useMemo(
@@ -51,14 +61,40 @@ export const OmniSearch = ({
     [organization.slug],
   )
 
+  // Get contextual actions based on current page and selected item
+  const contextualActions = useMemo(() => {
+    const pageType = pageContext.type
+    return getContextualActions(organization.slug, pageType, selectedItem)
+  }, [organization.slug, pageContext.type, selectedItem])
+
+  // Combine quick actions with contextual actions
+  const allActions = useMemo(() => {
+    // If there's a selected item, prioritize contextual actions
+    if (selectedItem) {
+      return contextualActions
+    }
+    // Otherwise show page-specific + general quick actions
+    return [...contextualActions, ...quickActions]
+  }, [selectedItem, contextualActions, quickActions])
+
   const actionResults = useMemo(() => {
-    if (!query.trim()) return []
+    // When no query, show contextual actions (or page-specific + quick actions if no item selected)
+    if (!query.trim()) {
+      return allActions.map((action) => ({ ...action, type: 'action' as const }))
+    }
+
+    // When there's a query, search through ALL actions (contextual + quick) regardless of selected item
+    const allAvailableActions = [...contextualActions, ...quickActions]
     const searchLower = query.toLowerCase()
-    return quickActions
-      .filter((action) => action.title.toLowerCase().includes(searchLower))
+    return allAvailableActions
+      .filter(
+        (action) =>
+          action.title.toLowerCase().includes(searchLower) ||
+          action.keywords?.some((kw) => kw.toLowerCase().includes(searchLower)),
+      )
       .map((action) => ({ ...action, type: 'action' as const }))
-      .slice(0, 3)
-  }, [query, quickActions])
+      .slice(0, 5)
+  }, [query, allActions, contextualActions, quickActions])
 
   const pageResults = useMemo(() => {
     if (!query.trim()) return []
@@ -151,13 +187,25 @@ export const OmniSearch = ({
     }
   }, [query, performSearch])
 
-  const handleSelect = (result: SearchResult) => {
+  const handleSelect = async (result: SearchResult | ActionResult) => {
+    // Handle action with callback
+    if (result.type === 'action' && 'action' in result && result.action) {
+      await result.action()
+      toast({
+        title: result.title,
+        description: 'Action completed',
+      })
+      onOpenChange(false)
+      setQuery('')
+      return
+    }
+
     let path = ''
 
     switch (result.type) {
       case 'action':
       case 'page':
-        path = result.url
+        path = result.url || ''
         break
       case 'product':
         path = `/dashboard/${organization.slug}/products/${result.id}`
@@ -188,9 +236,23 @@ export const OmniSearch = ({
   }
 
   const getTypeLabel = (type: string) => {
+    // Show contextual label when item is selected
+    if (type === 'action' && selectedItem) {
+      switch (selectedItem.type) {
+        case 'product':
+          return `Actions for "${selectedItem.data.name}"`
+        case 'customer':
+          return `Actions for "${selectedItem.data.name || selectedItem.data.email}"`
+        case 'order':
+          return 'Order Actions'
+        default:
+          return 'Actions'
+      }
+    }
+
     switch (type) {
       case 'action':
-        return 'Quick Action'
+        return 'Quick Actions'
       case 'page':
         return 'Go to'
       case 'product':
@@ -206,25 +268,32 @@ export const OmniSearch = ({
     }
   }
 
-  const groupedResults: Record<string, SearchResult[]> = useMemo(
-    () =>
-      combinedResults.reduce(
-        (acc, result) => {
-          if (!acc[result.type]) {
-            acc[result.type] = []
-          }
-          acc[result.type].push(result)
-          return acc
-        },
-        {} as Record<string, SearchResult[]>,
-      ),
-    [combinedResults],
-  )
+  const groupedResults: Record<string, (SearchResult | ActionResult)[]> =
+    useMemo(
+      () =>
+        combinedResults.reduce(
+          (acc, result) => {
+            if (!acc[result.type]) {
+              acc[result.type] = []
+            }
+            acc[result.type].push(result)
+            return acc
+          },
+          {} as Record<string, (SearchResult | ActionResult)[]>,
+        ),
+      [combinedResults],
+    )
 
-  const renderResult = (result: SearchResult) => {
+  const renderResult = (result: SearchResult | ActionResult) => {
     switch (result.type) {
       case 'action':
-        return <Result icon={result.icon} title={result.title} />
+        return (
+          <Result
+            icon={result.icon}
+            title={result.title}
+            destructive={'destructive' in result && result.destructive}
+          />
+        )
       case 'page':
         return <Result icon={result.icon} title={result.title} />
       case 'product':
@@ -258,8 +327,11 @@ export const OmniSearch = ({
     }
   }
 
+  // Show contextual actions even without a query when there's a selected item
+  const hasContextualActions = selectedItem && actionResults.length > 0
   const cleanState =
-    !query || (!loading && !hasSearched && combinedResults.length === 0)
+    !hasContextualActions &&
+    (!query || (!loading && !hasSearched && combinedResults.length === 0))
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -273,7 +345,7 @@ export const OmniSearch = ({
           >
             <div className="flex grow items-center px-4">
               <CommandInput
-                placeholder="Search products, customers, orders..."
+                placeholder="Search or type a command..."
                 value={query}
                 onValueChange={setQuery}
                 wrapperClassName="border-none grow"
@@ -319,6 +391,8 @@ export const OmniSearch = ({
                             const isLastItem =
                               isLastGroup &&
                               resultIndex === typeResults.length - 1
+                            const isDestructive =
+                              'destructive' in result && result.destructive
                             return (
                               <CommandItem
                                 key={key}
@@ -332,6 +406,9 @@ export const OmniSearch = ({
                                     : resultIndex < typeResults.length - 1
                                       ? 'mb-1'
                                       : '',
+                                  isDestructive
+                                    ? 'text-red-500 dark:text-red-400'
+                                    : '',
                                 )}
                               >
                                 {renderResult(result)}

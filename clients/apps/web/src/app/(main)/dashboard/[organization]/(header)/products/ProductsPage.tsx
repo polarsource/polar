@@ -4,7 +4,9 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useProducts } from '@/hooks/queries/products'
+import { useListKeyboardNavigation } from '@/hooks/useListKeyboardNavigation'
 import { useDebouncedCallback } from '@/hooks/utils'
+import { useKeyboardNavigation } from '@/providers/KeyboardNavigationProvider'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -29,7 +31,7 @@ import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 export default function ClientPage({
   organization: org,
@@ -135,6 +137,29 @@ export default function ClientPage({
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
 
+  const { setPageContext, setSelectedItem } = useKeyboardNavigation()
+
+  useEffect(() => {
+    setPageContext({ type: 'products', organization: org })
+    return () => {
+      setPageContext({ type: 'other' })
+      setSelectedItem(null)
+    }
+  }, [org, setPageContext, setSelectedItem])
+
+  const productItems = products.data?.items ?? []
+
+  const { containerRef, isSelected } = useListKeyboardNavigation({
+    items: productItems,
+    getItemId: (product) => product.id,
+    onSelect: (product) => {
+      setSelectedItem({ type: 'product', data: product as schemas['Product'] })
+    },
+    onOpen: (product) => {
+      router.push(`/dashboard/${org.slug}/products/${product.id}`)
+    },
+  })
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-8">
@@ -210,20 +235,23 @@ export default function ClientPage({
             currentURL={serializeSearchParams(pagination, sorting)}
             onPageChange={onPageChange}
           >
-            <List size="small">
-              {products.data.items
-                .sort((a, b) => {
-                  if (a.is_archived === b.is_archived) return 0
-                  return a.is_archived ? 1 : -1
-                })
-                .map((product) => (
-                  <ProductListItem
-                    key={product.id}
-                    organization={org}
-                    product={product}
-                  />
-                ))}
-            </List>
+            <div ref={containerRef}>
+              <List size="small">
+                {products.data.items
+                  .sort((a, b) => {
+                    if (a.is_archived === b.is_archived) return 0
+                    return a.is_archived ? 1 : -1
+                  })
+                  .map((product, index) => (
+                    <ProductListItem
+                      key={product.id}
+                      organization={org}
+                      product={product}
+                      isSelected={isSelected(index)}
+                    />
+                  ))}
+              </List>
+            </div>
           </Pagination>
         ) : (
           <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">

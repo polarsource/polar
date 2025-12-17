@@ -1,22 +1,38 @@
 import KeyboardReturnOutlined from '@mui/icons-material/KeyboardReturnOutlined'
+import { twMerge } from 'tailwind-merge'
 
 interface Props {
   icon?: React.ReactNode
   title: string
   description?: string
+  destructive?: boolean
 }
 
-export const Result = ({ icon, title, description }: Props) => {
+export const Result = ({ icon, title, description, destructive }: Props) => {
   return (
     <div className="flex w-full flex-row items-center justify-between gap-3 px-2">
       <div className="flex w-full flex-col gap-0.5">
         <div className="flex flex-row items-center gap-2">
           {icon && (
-            <span className="dark:text-polar-400 flex h-5 w-5 items-center justify-center text-gray-500">
+            <span
+              className={twMerge(
+                'flex h-5 w-5 items-center justify-center',
+                destructive
+                  ? 'text-red-500 dark:text-red-400'
+                  : 'dark:text-polar-400 text-gray-500',
+              )}
+            >
               {icon}
             </span>
           )}
-          <div className="font-medium text-gray-700 dark:text-white">
+          <div
+            className={twMerge(
+              'font-medium',
+              destructive
+                ? 'text-red-500 dark:text-red-400'
+                : 'text-gray-700 dark:text-white',
+            )}
+          >
             {title}
           </div>
         </div>

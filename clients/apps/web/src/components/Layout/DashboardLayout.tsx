@@ -21,6 +21,7 @@ import {
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { KeyboardNavigationProvider } from '@/providers/KeyboardNavigationProvider'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
@@ -42,33 +43,35 @@ const DashboardLayout = (
   }, [organization])
 
   return (
-    <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
-        <MobileNav
-          organization={organization}
-          organizations={organizations ?? []}
-          type={props.type}
-        />
-        <div className="hidden md:flex">
-          <DashboardSidebar
+    <KeyboardNavigationProvider>
+      <DashboardProvider organization={organization}>
+        <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
+          <MobileNav
             organization={organization}
             organizations={organizations ?? []}
             type={props.type}
           />
+          <div className="hidden md:flex">
+            <DashboardSidebar
+              organization={organization}
+              organizations={organizations ?? []}
+              type={props.type}
+            />
+          </div>
+          <div
+            className={twMerge(
+              'relative flex h-full w-full flex-col',
+              props.className,
+            )}
+          >
+            {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
+            <main className="relative flex min-h-0 min-w-0 grow flex-col">
+              {props.children}
+            </main>
+          </div>
         </div>
-        <div
-          className={twMerge(
-            'relative flex h-full w-full flex-col',
-            props.className,
-          )}
-        >
-          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative flex min-h-0 min-w-0 grow flex-col">
-            {props.children}
-          </main>
-        </div>
-      </div>
-    </DashboardProvider>
+      </DashboardProvider>
+    </KeyboardNavigationProvider>
   )
 }
 

@@ -35,11 +35,13 @@ import { useCallback } from 'react'
 interface ProductListItemProps {
   product: schemas['Product'] | schemas['CheckoutProduct']
   organization: schemas['Organization']
+  isSelected?: boolean
 }
 
 export const ProductListItem = ({
   product,
   organization,
+  isSelected = false,
 }: ProductListItemProps) => {
   const router = useRouter()
   const {
@@ -90,8 +92,8 @@ export const ProductListItem = ({
 
   return (
     <>
-      <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-        <ListItem className="flex flex-row items-center justify-between gap-x-6">
+      <Link href={`/dashboard/${organization.slug}/products/${product.id}`} data-list-item>
+        <ListItem className="flex flex-row items-center justify-between gap-x-6" selected={isSelected}>
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
             <ProductThumbnail product={product} />
             <div className="flex min-w-0 flex-col">

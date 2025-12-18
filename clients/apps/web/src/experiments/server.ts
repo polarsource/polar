@@ -9,12 +9,18 @@ import {
 
 export interface GetExperimentOptions {
   distinctId?: string
+  /**
+   * Whether to track exposure in PostHog. Defaults to true.
+   * Set to false when pre-fetching experiments for the provider.
+   */
+  trackExposure?: boolean
 }
 
 export async function getExperiment<T extends ExperimentName>(
   experimentName: T,
   options?: GetExperimentOptions,
 ): Promise<ExperimentVariant<T>> {
+  const { trackExposure = true } = options ?? {}
   const posthog = getPostHogServer()
 
   if (!posthog) {
@@ -26,7 +32,7 @@ export async function getExperiment<T extends ExperimentName>(
 
   try {
     const flagValue = await posthog.getFeatureFlag(experimentName, distinctId, {
-      sendFeatureFlagEvents: false,
+      sendFeatureFlagEvents: trackExposure,
     })
 
     if (typeof flagValue === 'string') {
@@ -47,15 +53,22 @@ export async function getExperiment<T extends ExperimentName>(
   }
 }
 
+/**
+ * Fetch multiple experiments at once. Used by ExperimentProvider.
+ * Does NOT track exposure - tracking happens in useExperiment().
+ */
 export async function getExperiments<T extends ExperimentName>(
   experimentNames: T[],
-  options?: GetExperimentOptions,
+  options?: Omit<GetExperimentOptions, 'trackExposure'>,
 ): Promise<Record<T, ExperimentVariant<T>>> {
   const distinctId = options?.distinctId ?? (await getDistinctId())
 
   const results = await Promise.all(
     experimentNames.map(async (name) => {
-      const variant = await getExperiment(name, { distinctId })
+      const variant = await getExperiment(name, {
+        distinctId,
+        trackExposure: false,
+      })
       return [name, variant] as const
     }),
   )

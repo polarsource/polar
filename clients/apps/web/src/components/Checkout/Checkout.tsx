@@ -28,7 +28,7 @@ import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -54,6 +54,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const posthog = usePostHog()
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
+  const hasTrackedOpen = useRef(false)
 
   // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(
@@ -68,6 +69,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
   // Track checkout page open
   useEffect(() => {
+    if (hasTrackedOpen.current) return
+    hasTrackedOpen.current = true
     posthog.capture('storefront:subscriptions:checkout:open', {
       organization_slug: checkout.organization.slug,
       product_id: checkout.productId,

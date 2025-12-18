@@ -29,7 +29,6 @@ export function PolarPostHogProvider({
       api_host: '/ingest',
       defaults: '2025-05-24', // this enables automatic pageview tracking
       persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
-      advanced_disable_feature_flags: true,
     })
   }, [])
 

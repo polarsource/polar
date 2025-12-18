@@ -1,6 +1,9 @@
 import '../styles/globals.css'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
+import { getExperimentNames } from '@/experiments'
+import { ExperimentProvider } from '@/experiments/ExperimentProvider'
+import { getExperiments } from '@/experiments/server'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { CONFIG } from '@/utils/config'
@@ -101,6 +104,8 @@ export default async function RootLayout({
     }
   }
 
+  const experimentVariants = await getExperiments(getExperimentNames())
+
   return (
     <html
       lang="en"
@@ -141,21 +146,23 @@ export default async function RootLayout({
           textRendering: 'optimizeLegibility',
         }}
       >
-        <UserContextProvider
-          user={authenticatedUser}
-          userOrganizations={userOrganizations}
-        >
-          <PolarPostHogProvider>
-            <PolarQueryClientProvider>
-              <PolarNuqsProvider>
-                <NavigationHistoryProvider>
-                  <SandboxBanner />
-                  {children}
-                </NavigationHistoryProvider>
-              </PolarNuqsProvider>
-            </PolarQueryClientProvider>
-          </PolarPostHogProvider>
-        </UserContextProvider>
+        <ExperimentProvider experiments={experimentVariants}>
+          <UserContextProvider
+            user={authenticatedUser}
+            userOrganizations={userOrganizations}
+          >
+            <PolarPostHogProvider>
+              <PolarQueryClientProvider>
+                <PolarNuqsProvider>
+                  <NavigationHistoryProvider>
+                    <SandboxBanner />
+                    {children}
+                  </NavigationHistoryProvider>
+                </PolarNuqsProvider>
+              </PolarQueryClientProvider>
+            </PolarPostHogProvider>
+          </UserContextProvider>
+        </ExperimentProvider>
       </body>
     </html>
   )

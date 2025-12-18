@@ -181,6 +181,8 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "Polar"
     EMAIL_FROM_DOMAIN: str = "notifications.polar.sh"
     EMAIL_FROM_LOCAL: str = "mail"
+    EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
+    EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
 
     # Github App
     GITHUB_CLIENT_ID: str = ""

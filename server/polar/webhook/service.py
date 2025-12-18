@@ -5,10 +5,10 @@ from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import CursorResult, Select, desc, func, select, text, update
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import CursorResult, desc, func, select, text, update
+from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -20,7 +20,7 @@ from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -35,7 +35,6 @@ from polar.models import (
     Refund,
     Subscription,
     User,
-    UserOrganization,
     WebhookDelivery,
     WebhookEvent,
 )
@@ -49,16 +48,14 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.webhook.repository import (
+from polar.worker import enqueue_job
+
+from .repository import (
+    WebhookDeliveryRepository,
     WebhookEndpointRepository,
     WebhookEventRepository,
 )
-from polar.webhook.schemas import (
-    WebhookEndpointCreate,
-    WebhookEndpointUpdate,
-)
-from polar.worker import enqueue_job
-
+from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
@@ -90,18 +87,19 @@ class WebhookService:
         organization_id: Sequence[UUID] | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
-        statement = self._get_readable_endpoints_statement(auth_subject)
+        repository = WebhookEndpointRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).order_by(
+            WebhookEndpoint.created_at.desc()
+        )
 
         if organization_id is not None:
             statement = statement.where(
                 WebhookEndpoint.organization_id.in_(organization_id)
             )
 
-        statement = statement.order_by(WebhookEndpoint.created_at.desc())
-
-        results, count = await paginate(session, statement, pagination=pagination)
-
-        return results, count
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_endpoint(
         self,
@@ -109,11 +107,11 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         id: UUID,
     ) -> WebhookEndpoint | None:
-        statement = self._get_readable_endpoints_statement(auth_subject).where(
+        repository = WebhookEndpointRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
             WebhookEndpoint.id == id
         )
-        res = await session.execute(statement)
-        return res.scalars().unique().one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create_endpoint(
         self,
@@ -121,6 +119,7 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
     ) -> WebhookEndpoint:
+        repository = WebhookEndpointRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
@@ -128,12 +127,14 @@ class WebhookService:
             secret = create_schema.secret
         else:
             secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
-        endpoint = WebhookEndpoint(
-            **create_schema.model_dump(exclude={"secret"}, by_alias=True),
-            secret=secret,
-            organization=organization,
+
+        endpoint = await repository.create(
+            WebhookEndpoint(
+                **create_schema.model_dump(exclude={"secret"}, by_alias=True),
+                secret=secret,
+                organization=organization,
+            )
         )
-        session.add(endpoint)
 
         # Store it in Loops in case we need to announce technical things regarding webhooks
         user_organizations = await user_organization_service.list_by_org(
@@ -153,28 +154,30 @@ class WebhookService:
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
     ) -> WebhookEndpoint:
-        for attr, value in update_schema.model_dump(
-            exclude_unset=True, exclude_none=True
-        ).items():
-            setattr(endpoint, attr, value)
-        session.add(endpoint)
-        return endpoint
+        repository = WebhookEndpointRepository.from_session(session)
+        return await repository.update(
+            endpoint,
+            update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
+        )
 
     async def reset_endpoint_secret(
         self, session: AsyncSession, *, endpoint: WebhookEndpoint
     ) -> WebhookEndpoint:
-        endpoint.secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
-        session.add(endpoint)
-        return endpoint
+        repository = WebhookEndpointRepository.from_session(session)
+        return await repository.update(
+            endpoint,
+            update_dict={
+                "secret": generate_token(prefix=WEBHOOK_SECRET_PREFIX),
+            },
+        )
 
     async def delete_endpoint(
         self,
         session: AsyncSession,
         endpoint: WebhookEndpoint,
     ) -> WebhookEndpoint:
-        endpoint.deleted_at = utc_now()
-        session.add(endpoint)
-        return endpoint
+        repository = WebhookEndpointRepository.from_session(session)
+        return await repository.soft_delete(endpoint)
 
     async def list_deliveries(
         self,
@@ -186,18 +189,10 @@ class WebhookService:
         end_timestamp: datetime.datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
-        readable_endpoints_statement = self._get_readable_endpoints_statement(
-            auth_subject
-        )
+        repository = WebhookDeliveryRepository.from_session(session)
+
         statement = (
-            select(WebhookDelivery)
-            .join(WebhookEndpoint)
-            .where(
-                WebhookDelivery.deleted_at.is_(None),
-                WebhookEndpoint.id.in_(
-                    readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
-                ),
-            )
+            repository.get_readable_statement(auth_subject)
             .options(joinedload(WebhookDelivery.webhook_event))
             .order_by(desc(WebhookDelivery.created_at))
         )
@@ -213,7 +208,9 @@ class WebhookService:
         if end_timestamp is not None:
             statement = statement.where(WebhookDelivery.created_at < end_timestamp)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def redeliver_event(
         self,
@@ -221,25 +218,12 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         id: UUID,
     ) -> None:
-        readable_endpoints_statement = self._get_readable_endpoints_statement(
-            auth_subject
+        repository = WebhookEventRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            WebhookEvent.id == id
         )
-        statement = (
-            select(WebhookEvent)
-            .join(WebhookEndpoint)
-            .where(
-                WebhookEvent.id == id,
-                WebhookEvent.deleted_at.is_(None),
-                WebhookEvent.is_archived.is_(False),
-                WebhookEndpoint.id.in_(
-                    readable_endpoints_statement.with_only_columns(WebhookEndpoint.id)
-                ),
-            )
-            .options(contains_eager(WebhookEvent.webhook_endpoint))
-        )
+        event = await repository.get_one_or_none(statement)
 
-        res = await session.execute(statement)
-        event = res.scalars().unique().one_or_none()
         if event is None:
             raise ResourceNotFound()
 
@@ -251,7 +235,8 @@ class WebhookService:
 
         Useful to trigger logic that might wait for an event to be delivered.
         """
-        event = await self.get_event_by_id(session, id)
+        repository = WebhookEventRepository.from_session(session)
+        event = await repository.get_by_id(id, options=repository.get_eager_options())
         if event is None:
             raise EventDoesNotExist(id)
 
@@ -281,7 +266,10 @@ class WebhookService:
 
         Detects consecutive failures and disables the endpoint if threshold is exceeded.
         """
-        event = await self.get_event_by_id(session, id)
+        webhook_event_repository = WebhookEventRepository.from_session(session)
+        event = await webhook_event_repository.get_by_id(
+            id, options=webhook_event_repository.get_eager_options()
+        )
         if event is None:
             raise EventDoesNotExist(id)
 
@@ -293,7 +281,6 @@ class WebhookService:
             return
 
         # Get recent events to count the streak
-        webhook_event_repository = WebhookEventRepository.from_session(session)
         recent_events = await webhook_event_repository.get_recent_by_endpoint(
             endpoint.id, limit=settings.WEBHOOK_FAILURE_THRESHOLD
         )
@@ -346,17 +333,6 @@ class WebhookService:
                         subject=f"Webhook endpoint disabled for {organization.name}",
                         html_content=body,
                     )
-
-    async def get_event_by_id(
-        self, session: AsyncSession, id: UUID
-    ) -> WebhookEvent | None:
-        statement = (
-            select(WebhookEvent)
-            .where(WebhookEvent.deleted_at.is_(None), WebhookEvent.id == id)
-            .options(joinedload(WebhookEvent.webhook_endpoint))
-        )
-        res = await session.execute(statement)
-        return res.scalars().unique().one_or_none()
 
     async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
         age_limit = utc_now() - datetime.timedelta(minutes=1)
@@ -734,28 +710,6 @@ class WebhookService:
 
             if updated_count < batch_size:
                 break
-
-    def _get_readable_endpoints_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[WebhookEndpoint]]:
-        statement = select(WebhookEndpoint).where(WebhookEndpoint.deleted_at.is_(None))
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                WebhookEndpoint.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                WebhookEndpoint.organization_id == auth_subject.subject.id
-            )
-
-        return statement
 
     async def _get_event_target_endpoints(
         self,

@@ -14,6 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
+from polar.webhook.repository import WebhookEventRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, enqueue_job
 
 from .service import webhook as webhook_service
@@ -36,8 +37,11 @@ async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) ->
 async def _webhook_event_send(
     session: AsyncSession, *, webhook_event_id: UUID, redeliver: bool = False
 ) -> None:
-    event = await webhook_service.get_event_by_id(session, webhook_event_id)
-    if not event:
+    repository = WebhookEventRepository.from_session(session)
+    event = await repository.get_by_id(
+        webhook_event_id, options=repository.get_eager_options()
+    )
+    if event is None:
         raise Exception(f"webhook event not found id={webhook_event_id}")
 
     bound_log = log.bind(

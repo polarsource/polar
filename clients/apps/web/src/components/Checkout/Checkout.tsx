@@ -1,5 +1,6 @@
 'use client'
 
+import type { ExperimentVariant } from '@/experiments'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -35,9 +36,14 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
+  merchantAvatarVariant?: ExperimentVariant<'checkout_merchant_avatar_experiment'>
 }
 
-const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
+const Checkout = ({
+  embed: _embed,
+  theme: _theme,
+  merchantAvatarVariant = 'control',
+}: CheckoutProps) => {
   const { client } = useCheckout()
   const {
     checkout,
@@ -241,6 +247,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             <CheckoutProductInfo
               organization={checkout.organization}
               product={checkout.product}
+              merchantAvatarVariant={merchantAvatarVariant}
             />
             <CheckoutProductSwitcher
               checkout={checkout}

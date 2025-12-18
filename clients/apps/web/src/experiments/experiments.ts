@@ -8,8 +8,9 @@
  *
  */
 export const experiments = {
-  'placeholder-experiment': {
-    description: 'Placeholder description',
+  checkout_merchant_avatar_experiment: {
+    description:
+      'Replace the merchant avatar with the merchant name in the checkout product info',
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },

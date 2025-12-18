@@ -199,6 +199,10 @@ class SubscriptionRepository(
                 )
             case SubscriptionSortProperty.started_at:
                 return Subscription.started_at
+            case SubscriptionSortProperty.ended_at:
+                return Subscription.ended_at
+            case SubscriptionSortProperty.ends_at:
+                return Subscription.ends_at
             case SubscriptionSortProperty.current_period_end:
                 return Subscription.current_period_end
             case SubscriptionSortProperty.amount:

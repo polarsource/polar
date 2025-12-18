@@ -115,13 +115,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
         ? updaterOrValue(sorting)
         : updaterOrValue
 
-    // Add secondary sort on cancel_at_period_end when sorting by status
+    // Add secondary sort on ends_at when sorting by status
     const statusSort = updatedSorting.find((s) => s.id === 'status')
     if (statusSort) {
-      const hasSecondarySortOnCancelAtPeriodEnd = updatedSorting.some(
+      const hasSecondarySortOnEndsAt = updatedSorting.some(
         (s) => s.id === 'ends_at',
       )
-      if (!hasSecondarySortOnCancelAtPeriodEnd) {
+      if (!hasSecondarySortOnEndsAt) {
         updatedSorting = [
           statusSort,
           { id: 'ends_at', desc: statusSort.desc },

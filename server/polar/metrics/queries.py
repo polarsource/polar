@@ -630,7 +630,7 @@ def get_events_metrics_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    day_column = interval.sql_date_trunc(EventHyper.timestamp)
+    day_column = interval.sql_time_bucket(EventHyper.timestamp)
 
     statement = (
         select(

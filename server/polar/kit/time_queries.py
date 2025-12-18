@@ -28,6 +28,11 @@ class TimeInterval(StrEnum):
     ) -> Function[datetime]:
         return func.date_trunc(self.value, column)
 
+    def sql_time_bucket(
+        self, column: SQLColumnExpression[datetime] | datetime
+    ) -> Function[datetime]:
+        return func.time_bucket(self.sql_interval(), column)
+
 
 def get_timestamp_series_cte(
     start_timestamp: datetime, end_timestamp: datetime, interval: TimeInterval

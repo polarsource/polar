@@ -62,7 +62,7 @@ export const useEventCostBadge = (event: schemas['Event']) => {
       return (
         <EventCostBadge
           type={event.name === 'order.paid' ? 'revenue' : 'cost'}
-          currency={event.metadata.currency}
+          currency={event.metadata.currency ?? 'usd'}
           cost={
             event.name === 'order.paid'
               ? event.metadata.amount

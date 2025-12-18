@@ -51,6 +51,12 @@ async def list(
     type: MultipleQueryFilter[BenefitType] | None = Query(
         None, title="BenefitType Filter", description="Filter by benefit type."
     ),
+    id: MultipleQueryFilter[BenefitID] | None = Query(
+        None, title="Filter IDs", description="Filter by benefit IDs."
+    ),
+    exclude_id: MultipleQueryFilter[BenefitID] | None = Query(
+        None, title="Exclude IDs", description="Exclude benefits with these IDs."
+    ),
     session: AsyncSession = Depends(get_db_session),
     query: str | None = Query(
         None, title="Query", description="Filter by description."
@@ -62,6 +68,8 @@ async def list(
         auth_subject,
         type=type,
         organization_id=organization_id,
+        id_in=id,
+        id_not_in=exclude_id,
         metadata=metadata,
         query=query,
         pagination=pagination,

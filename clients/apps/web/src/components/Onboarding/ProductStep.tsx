@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useContext, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { FadeUp } from '../Animated/FadeUp'
-import ProductBenefitsForm from '../Products/ProductBenefitsForm'
+import { Benefits } from '../Products/Benefits/Benefits'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
@@ -29,14 +29,16 @@ export const ProductStep = () => {
     schemas['Benefit']['id'][]
   >([])
 
-  const benefits = useBenefits(organization.id, {
+  const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
   })
 
   const organizationBenefits = useMemo(
-    () => benefits.data?.items ?? [],
-    [benefits],
+    () => benefitsQuery.data?.items ?? [],
+    [benefitsQuery],
   )
+
+  const totalBenefitCount = benefitsQuery.data?.pagination?.total_count ?? 0
 
   const form = useForm<ProductCreateForm>({
     defaultValues: {
@@ -168,16 +170,12 @@ export const ProductStep = () => {
           </div>
         </form>
         <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-          <ProductBenefitsForm
+          <Benefits
             className="px-0 py-0"
             organization={organization}
-            organizationBenefits={organizationBenefits.filter(
-              (benefit) =>
-                // Hide not selectable benefits unless they are already enabled
-                benefit.selectable ||
-                enabledBenefits.some((b) => b.id === benefit.id),
-            )}
-            benefits={enabledBenefits}
+            benefits={organizationBenefits}
+            totalBenefitCount={totalBenefitCount}
+            selectedBenefits={enabledBenefits}
             onSelectBenefit={onSelectBenefit}
             onRemoveBenefit={onRemoveBenefit}
             onReorderBenefits={onReorderBenefits}

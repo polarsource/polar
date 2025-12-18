@@ -58,3 +58,5 @@ class BenefitRepository(
                 return Benefit.description
             case BenefitSortProperty.type:
                 return Benefit.type
+            case BenefitSortProperty.user_order:
+                return Benefit.created_at

@@ -14,6 +14,8 @@ export interface paths {
     /**
      * Search
      * @description Internal search endpoint for dashboard.
+     *
+     *     **Scopes**: `customers:read` `customers:write` `orders:read` `products:read` `products:write` `subscriptions:read` `subscriptions:write`
      */
     get: operations['search:search']
     put?: never
@@ -2560,8 +2562,41 @@ export interface paths {
      */
     get: operations['members:list_members']
     put?: never
-    post?: never
+    /**
+     * Create Member
+     * @description Create a new member for a customer.
+     *
+     *     Only B2B customers with the member management feature enabled can add members.
+     *     The authenticated user or organization must have access to the customer's organization.
+     *
+     *     **Scopes**: `members:write`
+     */
+    post: operations['members:create_member']
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/members/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete Member
+     * @description Delete a member.
+     *
+     *     The authenticated user or organization must have access to the member's organization.
+     *
+     *     **Scopes**: `members:write`
+     */
+    delete: operations['members:delete_member']
     options?: never
     head?: never
     patch?: never
@@ -4396,11 +4431,11 @@ export interface webhooks {
      * subscription.updated
      * @description Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
      *
-     *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.
+     *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
      *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
      *
-     *     **Discord & Slack support:** On cancellation and revocation. Renewals are skipped.
+     *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
     post: operations['_endpointsubscription_updated_post']
     delete?: never
@@ -4488,12 +4523,41 @@ export interface webhooks {
     put?: never
     /**
      * subscription.revoked
-     * @description Sent when a subscription is revoked, the user loses access immediately.
-     *     Happens when the subscription is canceled, or payment is past due.
+     * @description Sent when a subscription is revoked and the user loses access immediately.
+     *     Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
+     *
+     *     For payment failures that can still be recovered, see `subscription.past_due`.
      *
      *     **Discord & Slack support:** Full
      */
     post: operations['_endpointsubscription_revoked_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.past_due': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.past_due
+     * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
+     *
+     *     This is a recoverable state - the customer can update their payment method to restore the subscription.
+     *     Benefits may be revoked depending on the organization's grace period settings.
+     *
+     *     If payment retries are exhausted, a `subscription.revoked` event will be sent.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_past_due_post']
     delete?: never
     options?: never
     head?: never
@@ -5637,10 +5701,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitCustomProperties']
     }
     /**
@@ -5743,10 +5804,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitCustomSubscriberProperties']
     }
@@ -5904,10 +5962,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDiscordProperties']
     }
     /** BenefitDiscordCreate */
@@ -6032,10 +6087,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDiscordSubscriberProperties']
     }
@@ -6128,10 +6180,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitDownloadablesProperties']
     }
     /** BenefitDownloadablesCreate */
@@ -6236,10 +6285,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitDownloadablesSubscriberProperties']
     }
@@ -6331,10 +6377,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
     }
     /** BenefitGitHubRepositoryCreate */
@@ -6466,10 +6509,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitGitHubRepositorySubscriberProperties']
     }
@@ -6580,6 +6620,11 @@ export interface components {
        */
       customer_id: string
       /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The ID of the benefit concerned by this grant.
@@ -6655,6 +6700,11 @@ export interface components {
        * @description The ID of the customer concerned by this grant.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -6737,6 +6787,11 @@ export interface components {
        */
       customer_id: string
       /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The ID of the benefit concerned by this grant.
@@ -6811,6 +6866,11 @@ export interface components {
        * @description The ID of the customer concerned by this grant.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -6907,6 +6967,11 @@ export interface components {
        */
       customer_id: string
       /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
        * Benefit Id
        * Format: uuid4
        * @description The ID of the benefit concerned by this grant.
@@ -6983,6 +7048,11 @@ export interface components {
        * @description The ID of the customer concerned by this grant.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -7070,6 +7140,11 @@ export interface components {
        * @description The ID of the customer concerned by this grant.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -7237,10 +7312,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitLicenseKeysProperties']
     }
     /** BenefitLicenseKeysCreate */
@@ -7350,10 +7422,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitLicenseKeysSubscriberProperties']
     }
@@ -7453,10 +7522,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       properties: components['schemas']['BenefitMeterCreditProperties']
     }
     /**
@@ -7573,10 +7639,7 @@ export interface components {
        * @description The ID of the organization owning the benefit.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       organization: components['schemas']['BenefitSubscriberOrganization']
       properties: components['schemas']['BenefitMeterCreditSubscriberProperties']
     }
@@ -7747,6 +7810,8 @@ export interface components {
       | '-description'
       | 'type'
       | '-type'
+      | 'user_order'
+      | '-user_order'
     /** BenefitSubscriberOrganization */
     BenefitSubscriberOrganization: {
       /**
@@ -8248,10 +8313,7 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count: number | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Customer Id
        * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
@@ -8400,6 +8462,80 @@ export interface components {
        * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
        */
       subscription_id?: string | null
+    }
+    /**
+     * CheckoutCreatedEvent
+     * @description An event created by Polar when a checkout is created.
+     */
+    CheckoutCreatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'checkout.created'
+      metadata: components['schemas']['CheckoutCreatedMetadata']
+    }
+    /** CheckoutCreatedMetadata */
+    CheckoutCreatedMetadata: {
+      /** Checkout Id */
+      checkout_id: string
+      /** Checkout Status */
+      checkout_status: string
+      /** Product Id */
+      product_id?: string
     }
     /**
      * CheckoutCustomerBillingAddressFields
@@ -8563,10 +8699,7 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count: number | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
       /**
@@ -8837,10 +8970,7 @@ export interface components {
      * @description Product data for a checkout link.
      */
     CheckoutLinkProduct: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Id
        * Format: uuid4
@@ -10827,10 +10957,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11112,10 +11239,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11175,10 +11299,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11238,10 +11359,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11319,10 +11437,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -11561,10 +11676,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -11645,6 +11757,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -11698,6 +11812,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -11757,6 +11873,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -11810,6 +11928,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -11869,6 +11989,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -11922,6 +12044,8 @@ export interface components {
        * Format: uuid4
        */
       customer_id: string
+      /** Member Id */
+      member_id?: string | null
       /**
        * Benefit Id
        * Format: uuid4
@@ -13280,10 +13404,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -13387,15 +13508,12 @@ export interface components {
        */
       benefit_type: components['schemas']['BenefitType']
       /**
-       * Benefit Metadata
        * @description The metadata of the benefit concerned by this grant.
        * @example {
        *       "key": "value"
        *     }
        */
-      benefit_metadata: {
-        [key: string]: string | number | boolean
-      }
+      benefit_metadata: components['schemas']['MetadataOutputType']
       /** Properties */
       properties:
         | components['schemas']['BenefitGrantDiscordProperties']
@@ -13482,10 +13600,7 @@ export interface components {
       custom_field_data?: {
         [key: string]: string | number | boolean | null
       }
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Status
        * @example active
@@ -13758,11 +13873,6 @@ export interface components {
        * @description List of meters associated with the subscription.
        */
       meters: components['schemas']['CustomerSubscriptionMeter'][]
-      /**
-       * Is Polar Managed
-       * @description Whether the subscription is managed by Polar.
-       */
-      readonly is_polar_managed: boolean
     }
     /** CustomerSubscriptionCancel */
     CustomerSubscriptionCancel: {
@@ -14221,10 +14331,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -14347,10 +14454,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -14422,10 +14526,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -14570,10 +14671,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -14647,10 +14745,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -14797,10 +14892,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -14868,10 +14960,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -15009,10 +15098,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -15082,10 +15168,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
        * @description Name of the discount. Will be displayed to the customer when the discount is applied.
@@ -15204,10 +15287,7 @@ export interface components {
      * @description A product that a discount can be applied to.
      */
     DiscountProduct: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Id
        * Format: uuid4
@@ -16638,10 +16718,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -17334,6 +17411,39 @@ export interface components {
       role: components['schemas']['MemberRole']
     }
     /**
+     * MemberCreate
+     * @description Schema for creating a new member.
+     */
+    MemberCreate: {
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer this member belongs to.
+       */
+      customer_id: string
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the member.
+       * @example member@example.com
+       */
+      email: string
+      /** Name */
+      name?: string | null
+      /**
+       * External Id
+       * @description The ID of the member in your system. This must be unique within the customer.
+       * @example usr_1337
+       */
+      external_id?: string | null
+      /**
+       * @description The role of the member within the customer.
+       * @default member
+       * @example member
+       */
+      role: components['schemas']['MemberRole']
+    }
+    /**
      * MemberRole
      * @enum {string}
      */
@@ -17343,12 +17453,12 @@ export interface components {
      * @enum {string}
      */
     MemberSortProperty: 'created_at' | '-created_at'
+    MetadataOutputType: {
+      [key: string]: string | number | boolean
+    }
     /** Meter */
     Meter: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Created At
        * Format: date-time
@@ -18432,10 +18542,7 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Custom Field Data
        * @description Key-value object storing custom field values.
@@ -18525,10 +18632,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -18717,19 +18821,36 @@ export interface components {
     OrderPaidMetadata: {
       /** Order Id */
       order_id: string
+      /** Product Id */
+      product_id?: string
+      /** Billing Type */
+      billing_type?: string
       /** Amount */
       amount: number
       /** Currency */
-      currency: string
-      /** Backfilled */
-      backfilled?: boolean
+      currency?: string
+      /** Net Amount */
+      net_amount?: number
+      /** Tax Amount */
+      tax_amount?: number
+      /** Applied Balance Amount */
+      applied_balance_amount?: number
+      /** Discount Amount */
+      discount_amount?: number
+      /** Discount Id */
+      discount_id?: string
+      /** Platform Fee */
+      platform_fee?: number
+      /** Subscription Id */
+      subscription_id?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
     }
     /** OrderProduct */
     OrderProduct: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Id
        * Format: uuid4
@@ -18863,8 +18984,6 @@ export interface components {
       refunded_amount: number
       /** Currency */
       currency: string
-      /** Backfilled */
-      backfilled?: boolean
     }
     /**
      * OrderSortProperty
@@ -18896,10 +19015,7 @@ export interface components {
     OrderStatus: 'pending' | 'paid' | 'refunded' | 'partially_refunded'
     /** OrderSubscription */
     OrderSubscription: {
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Created At
        * Format: date-time
@@ -20156,10 +20272,7 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Prices
        * @description List of prices for this product.
@@ -21101,10 +21214,7 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       status: components['schemas']['RefundStatus']
       reason: components['schemas']['RefundReason']
       /** Amount */
@@ -21450,6 +21560,11 @@ export interface components {
     /** SearchResultCustomer */
     SearchResultCustomer: {
       /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'customer'
+      /**
        * Id
        * Format: uuid4
        */
@@ -21458,15 +21573,14 @@ export interface components {
       name: string | null
       /** Email */
       email: string
-      /**
-       * Type
-       * @default customer
-       * @constant
-       */
-      type: 'customer'
     }
     /** SearchResultOrder */
     SearchResultOrder: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'order'
       /**
        * Id
        * Format: uuid4
@@ -21480,15 +21594,14 @@ export interface components {
       product_name: string
       /** Amount */
       amount: number
-      /**
-       * Type
-       * @default order
-       * @constant
-       */
-      type: 'order'
     }
     /** SearchResultProduct */
     SearchResultProduct: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'product'
       /**
        * Id
        * Format: uuid4
@@ -21496,17 +21609,16 @@ export interface components {
       id: string
       /** Name */
       name: string
-      /**
-       * Type
-       * @default product
-       * @constant
-       */
-      type: 'product'
       /** Description */
       description?: string | null
     }
     /** SearchResultSubscription */
     SearchResultSubscription: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'subscription'
       /**
        * Id
        * Format: uuid4
@@ -21522,12 +21634,6 @@ export interface components {
       status: string
       /** Amount */
       amount: number
-      /**
-       * Type
-       * @default subscription
-       * @constant
-       */
-      type: 'subscription'
     }
     /** SearchResults */
     SearchResults: {
@@ -21966,10 +22072,7 @@ export interface components {
         | null
       /** Customer Cancellation Comment */
       customer_cancellation_comment: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * Custom Field Data
        * @description Key-value object storing custom field values.
@@ -22001,6 +22104,80 @@ export interface components {
        * @description List of meters associated with the subscription.
        */
       meters: components['schemas']['SubscriptionMeter'][]
+    }
+    /**
+     * SubscriptionBillingPeriodUpdatedEvent
+     * @description An event created by Polar when a subscription billing period is updated.
+     */
+    SubscriptionBillingPeriodUpdatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.billing_period_updated'
+      metadata: components['schemas']['SubscriptionBillingPeriodUpdatedMetadata']
+    }
+    /** SubscriptionBillingPeriodUpdatedMetadata */
+    SubscriptionBillingPeriodUpdatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Old Period End */
+      old_period_end: string
+      /** New Period End */
+      new_period_end: string
     }
     /** SubscriptionCancel */
     SubscriptionCancel: {
@@ -22046,6 +22223,96 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end: boolean
+    }
+    /**
+     * SubscriptionCanceledEvent
+     * @description An event created by Polar when a subscription is canceled.
+     */
+    SubscriptionCanceledEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.canceled'
+      metadata: components['schemas']['SubscriptionCanceledMetadata']
+    }
+    /** SubscriptionCanceledMetadata */
+    SubscriptionCanceledMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Recurring Interval */
+      recurring_interval: string
+      /** Recurring Interval Count */
+      recurring_interval_count: number
+      /** Customer Cancellation Reason */
+      customer_cancellation_reason?: string
+      /** Customer Cancellation Comment */
+      customer_cancellation_comment?: string
+      /** Canceled At */
+      canceled_at: string
+      /** Ends At */
+      ends_at?: string
+      /** Cancel At Period End */
+      cancel_at_period_end?: boolean
     }
     /**
      * SubscriptionChargePreview
@@ -22155,6 +22422,88 @@ export interface components {
        */
       external_customer_id: string
     }
+    /**
+     * SubscriptionCreatedEvent
+     * @description An event created by Polar when a subscription is created.
+     */
+    SubscriptionCreatedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.created'
+      metadata: components['schemas']['SubscriptionCreatedMetadata']
+    }
+    /** SubscriptionCreatedMetadata */
+    SubscriptionCreatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Recurring Interval */
+      recurring_interval: string
+      /** Recurring Interval Count */
+      recurring_interval_count: number
+      /** Started At */
+      started_at: string
+    }
     /** SubscriptionCustomer */
     SubscriptionCustomer: {
       /**
@@ -22175,10 +22524,7 @@ export interface components {
        * @description Last modification timestamp of the object.
        */
       modified_at: string | null
-      /** Metadata */
-      metadata: {
-        [key: string]: string | number | boolean
-      }
+      metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -22293,6 +22639,16 @@ export interface components {
     SubscriptionCycledMetadata: {
       /** Subscription Id */
       subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
     }
     /** SubscriptionLocked */
     SubscriptionLocked: {
@@ -22552,6 +22908,16 @@ export interface components {
     SubscriptionRevokedMetadata: {
       /** Subscription Id */
       subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
     }
     /**
      * SubscriptionSeatsUpdatedEvent
@@ -22660,6 +23026,86 @@ export interface components {
       | 'past_due'
       | 'canceled'
       | 'unpaid'
+    /**
+     * SubscriptionUncanceledEvent
+     * @description An event created by Polar when a subscription cancellation is reversed.
+     */
+    SubscriptionUncanceledEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.uncanceled'
+      metadata: components['schemas']['SubscriptionUncanceledMetadata']
+    }
+    /** SubscriptionUncanceledMetadata */
+    SubscriptionUncanceledMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Recurring Interval */
+      recurring_interval: string
+      /** Recurring Interval Count */
+      recurring_interval_count: number
+    }
     SubscriptionUpdate:
       | components['schemas']['SubscriptionUpdateProduct']
       | components['schemas']['SubscriptionUpdateDiscount']
@@ -22744,12 +23190,17 @@ export interface components {
       | components['schemas']['BenefitCycledEvent']
       | components['schemas']['BenefitUpdatedEvent']
       | components['schemas']['BenefitRevokedEvent']
+      | components['schemas']['SubscriptionCreatedEvent']
       | components['schemas']['SubscriptionCycledEvent']
+      | components['schemas']['SubscriptionCanceledEvent']
       | components['schemas']['SubscriptionRevokedEvent']
+      | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
+      | components['schemas']['SubscriptionBillingPeriodUpdatedEvent']
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
+      | components['schemas']['CheckoutCreatedEvent']
       | components['schemas']['CustomerCreatedEvent']
       | components['schemas']['CustomerUpdatedEvent']
       | components['schemas']['CustomerDeletedEvent']
@@ -24100,6 +24551,7 @@ export interface components {
       | 'subscription.canceled'
       | 'subscription.uncanceled'
       | 'subscription.revoked'
+      | 'subscription.past_due'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -24378,9 +24830,36 @@ export interface components {
       data: components['schemas']['Subscription']
     }
     /**
+     * WebhookSubscriptionPastDuePayload
+     * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
+     *
+     *     This is a recoverable state - the customer can update their payment method to restore the subscription.
+     *     Benefits may be revoked depending on the organization's grace period settings.
+     *
+     *     If payment retries are exhausted, a `subscription.revoked` event will be sent.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionPastDuePayload: {
+      /**
+       * Type
+       * @example subscription.past_due
+       * @constant
+       */
+      type: 'subscription.past_due'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
      * WebhookSubscriptionRevokedPayload
-     * @description Sent when a subscription is revoked, the user loses access immediately.
-     *     Happens when the subscription is canceled, or payment is past due.
+     * @description Sent when a subscription is revoked and the user loses access immediately.
+     *     Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
+     *
+     *     For payment failures that can still be recovered, see `subscription.past_due`.
      *
      *     **Discord & Slack support:** Full
      */
@@ -24422,11 +24901,11 @@ export interface components {
      * WebhookSubscriptionUpdatedPayload
      * @description Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
      *
-     *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, and `subscription.revoked`.
+     *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
      *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
      *
-     *     **Discord & Slack support:** On cancellation and revocation. Renewals are skipped.
+     *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
     WebhookSubscriptionUpdatedPayload: {
       /**
@@ -26863,6 +27342,10 @@ export interface operations {
           | components['schemas']['BenefitType']
           | components['schemas']['BenefitType'][]
           | null
+        /** @description Filter by benefit IDs. */
+        id?: string | string[] | null
+        /** @description Exclude benefits with these IDs. */
+        exclude_id?: string | string[] | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -27077,6 +27560,8 @@ export interface operations {
         is_granted?: boolean | null
         /** @description Filter by customer. */
         customer_id?: string | string[] | null
+        /** @description Filter by member. */
+        member_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -31055,6 +31540,93 @@ export interface operations {
       }
     }
   }
+  'members:create_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberCreate']
+      }
+    }
+    responses: {
+      /** @description Member created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Not permitted to add members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'members:delete_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
@@ -31071,6 +31643,8 @@ export interface operations {
         order_id?: string | string[] | null
         /** @description Filter by subscription ID. */
         subscription_id?: string | string[] | null
+        /** @description Filter by member ID. */
+        member_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -35803,6 +36377,39 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_past_due_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionPastDuePayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointrefund_created_post: {
     parameters: {
       query?: never
@@ -38015,6 +38622,8 @@ export const benefitSortPropertyValues: ReadonlyArray<
   '-description',
   'type',
   '-type',
+  'user_order',
+  '-user_order',
 ]
 export const benefitTypeValues: ReadonlyArray<
   components['schemas']['BenefitType']
@@ -38035,6 +38644,9 @@ export const billingAddressFieldModeValues: ReadonlyArray<
 export const body_oauth2_consentActionValues: ReadonlyArray<
   components['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']
+export const checkoutCreatedEventNameValues: ReadonlyArray<
+  components['schemas']['CheckoutCreatedEvent']['name']
+> = ['checkout.created']
 export const checkoutLinkSortPropertyValues: ReadonlyArray<
   components['schemas']['CheckoutLinkSortProperty']
 > = [
@@ -39246,6 +39858,18 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'notification_recipients:read',
   'notification_recipients:write',
 ]
+export const searchResultCustomerTypeValues: ReadonlyArray<
+  components['schemas']['SearchResultCustomer']['type']
+> = ['customer']
+export const searchResultOrderTypeValues: ReadonlyArray<
+  components['schemas']['SearchResultOrder']['type']
+> = ['order']
+export const searchResultProductTypeValues: ReadonlyArray<
+  components['schemas']['SearchResultProduct']['type']
+> = ['product']
+export const searchResultSubscriptionTypeValues: ReadonlyArray<
+  components['schemas']['SearchResultSubscription']['type']
+> = ['subscription']
 export const seatStatusValues: ReadonlyArray<
   components['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
@@ -39383,6 +40007,15 @@ export const subTypeValues: ReadonlyArray<components['schemas']['SubType']> = [
   'user',
   'organization',
 ]
+export const subscriptionBillingPeriodUpdatedEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionBillingPeriodUpdatedEvent']['name']
+> = ['subscription.billing_period_updated']
+export const subscriptionCanceledEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionCanceledEvent']['name']
+> = ['subscription.canceled']
+export const subscriptionCreatedEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionCreatedEvent']['name']
+> = ['subscription.created']
 export const subscriptionCycledEventNameValues: ReadonlyArray<
   components['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
@@ -39430,6 +40063,9 @@ export const subscriptionStatusValues: ReadonlyArray<
   'canceled',
   'unpaid',
 ]
+export const subscriptionUncanceledEventNameValues: ReadonlyArray<
+  components['schemas']['SubscriptionUncanceledEvent']['name']
+> = ['subscription.uncanceled']
 export const taxIDFormatValues: ReadonlyArray<
   components['schemas']['TaxIDFormat']
 > = [
@@ -39569,6 +40205,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.canceled',
   'subscription.uncanceled',
   'subscription.revoked',
+  'subscription.past_due',
   'refund.created',
   'refund.updated',
   'product.created',

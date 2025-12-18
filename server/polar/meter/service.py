@@ -336,52 +336,74 @@ class MeterService:
             event_clauses.append(get_metadata_clause(Event, metadata))
         event_clauses.append(event_repository.get_meter_clause(meter))
 
-        statement = (
-            select(
-                timestamp_column.label("timestamp"),
-                func.coalesce(
-                    meter.aggregation.get_sql_column(Event).filter(
-                        interval.sql_date_trunc(Event.timestamp)
-                        == interval.sql_date_trunc(timestamp_column),
-                    ),
-                    0,
-                ).label("quantity"),
-                func.coalesce(
-                    meter.aggregation.get_sql_column(Event).filter(
-                        interval.sql_date_trunc(Event.timestamp)
-                        >= interval.sql_date_trunc(start_timestamp),
-                        interval.sql_date_trunc(Event.timestamp)
-                        <= interval.sql_date_trunc(end_timestamp),
-                    ),
-                    0,
-                ).label("total"),
-            )
-            .join(Event, onclause=and_(*event_clauses), isouter=True)
-            .group_by(timestamp_column)
-            .order_by(timestamp_column.asc())
-        )
+        day_column = interval.sql_date_trunc(Event.timestamp)
+        truncated_timestamp = interval.sql_date_trunc(timestamp_column)
 
         if customer_aggregation_function is not None:
-            inner_statement = cte(
-                statement.add_columns(Event.resolved_customer_id).group_by(
-                    timestamp_column, Event.resolved_customer_id
+            daily_metrics = cte(
+                select(
+                    day_column.label("day"),
+                    Event.resolved_customer_id.label("customer"),
+                    meter.aggregation.get_sql_column(Event).label("quantity"),
                 )
+                .where(and_(*event_clauses))
+                .group_by(day_column, Event.resolved_customer_id)
+            )
+            daily_aggregated = cte(
+                select(
+                    daily_metrics.c.day.label("day"),
+                    customer_aggregation_function.get_sql_function(
+                        daily_metrics.c.quantity
+                    ).label("quantity"),
+                ).group_by(daily_metrics.c.day)
             )
             statement = (
                 select(
                     timestamp_column.label("timestamp"),
-                    customer_aggregation_function.get_sql_function(
-                        inner_statement.c.quantity
-                    ).label("quantity"),
-                    customer_aggregation_function.get_sql_function(
-                        inner_statement.c.total
+                    func.coalesce(daily_aggregated.c.quantity, 0).label("quantity"),
+                    func.coalesce(
+                        func.sum(daily_aggregated.c.quantity).over(
+                            order_by=timestamp_column
+                        ),
+                        0,
                     ).label("total"),
                 )
-                .join(
-                    inner_statement,
-                    onclause=inner_statement.c.timestamp == timestamp_column,
+                .select_from(
+                    timestamp_series.join(
+                        daily_aggregated,
+                        onclause=daily_aggregated.c.day == truncated_timestamp,
+                        isouter=True,
+                    )
                 )
-                .group_by(timestamp_column)
+                .order_by(timestamp_column.asc())
+            )
+        else:
+            daily_metrics = cte(
+                select(
+                    day_column.label("day"),
+                    meter.aggregation.get_sql_column(Event).label("quantity"),
+                )
+                .where(and_(*event_clauses))
+                .group_by(day_column)
+            )
+            statement = (
+                select(
+                    timestamp_column.label("timestamp"),
+                    func.coalesce(daily_metrics.c.quantity, 0).label("quantity"),
+                    func.coalesce(
+                        func.sum(daily_metrics.c.quantity).over(
+                            order_by=timestamp_column
+                        ),
+                        0,
+                    ).label("total"),
+                )
+                .select_from(
+                    timestamp_series.join(
+                        daily_metrics,
+                        onclause=daily_metrics.c.day == truncated_timestamp,
+                        isouter=True,
+                    )
+                )
                 .order_by(timestamp_column.asc())
             )
 

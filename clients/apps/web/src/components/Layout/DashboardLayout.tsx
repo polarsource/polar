@@ -80,7 +80,7 @@ const MobileNav = ({
   organizations,
 }: {
   type?: 'organization' | 'account'
-  organization: schemas['Organization']
+  organization?: schemas['Organization']
   organizations: schemas['Organization'][]
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)

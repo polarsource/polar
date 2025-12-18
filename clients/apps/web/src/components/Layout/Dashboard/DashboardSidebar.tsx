@@ -45,7 +45,7 @@ export const DashboardSidebar = ({
   organizations,
 }: {
   type?: 'organization' | 'account'
-  organization: schemas['Organization']
+  organization?: schemas['Organization']
   organizations: schemas['Organization'][]
 }) => {
   const router = useRouter()
@@ -90,7 +90,7 @@ export const DashboardSidebar = ({
             : 'flex-row items-center justify-between',
         )}
       >
-        <PolarLogotype size={32} href={`/dashboard/${organization.slug}`} />
+        <PolarLogotype size={32} href={organization ? `/dashboard/${organization.slug}` : '/dashboard'} />
         <motion.div
           key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
           className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
@@ -104,7 +104,7 @@ export const DashboardSidebar = ({
       </SidebarHeader>
 
       <SidebarContent className="gap-4 px-2 py-4">
-        {type === 'organization' && (
+        {type === 'organization' && organization && (
           <>
             <button
               onClick={() => setSearchOpen(true)}
@@ -144,7 +144,7 @@ export const DashboardSidebar = ({
           transition={{ duration: 1 }}
         >
           {type === 'account' && <AccountNavigation />}
-          {type === 'organization' && (
+          {type === 'organization' && organization && (
             <OrganizationNavigation organization={organization} />
           )}
         </motion.div>
@@ -176,21 +176,21 @@ export const DashboardSidebar = ({
           )}
         </Link>
         <Separator />
-        {type === 'organization' && (
+        {type === 'organization' && organization && (
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton>
                     <Avatar
-                      name={organization?.name}
-                      avatar_url={organization?.avatar_url}
+                      name={organization.name}
+                      avatar_url={organization.avatar_url}
                       className="h-6 w-6"
                     />
                     {!isCollapsed && (
                       <>
                         <span className="min-w-0 truncate">
-                          {organization?.name}
+                          {organization.name}
                         </span>
                         <KeyboardArrowDown
                           className="ml-auto"

@@ -43,17 +43,27 @@ const team = [
     title: 'Customer Support Specialist',
     image: '/assets/team/isac.jpg',
   },
+  {
+    name: 'Sebastian Ekström',
+    title: 'Software Engineer',
+    image: '/assets/team/sebastian.jpg',
+  },
+  {
+    name: 'Victoria Bolin',
+    title: 'Founder Associate',
+    image: '/assets/team/victoria.jpg',
+  },
 ]
 
 export const CompanySection = ({ active }: { active: boolean }) => {
   return (
     <Section
       active={active}
-      header={{ index: '05', name: 'Company' }}
+      header={{ index: '01', name: 'Company' }}
       title="Small team, big ambitions"
       context={
         <div className="flex flex-col gap-y-8">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
             {team.map((profile) => (
               <Profile key={profile.name} {...profile} />
             ))}
@@ -94,7 +104,7 @@ const Profile = ({ name, title, image }: ProfileProps) => {
   return (
     <div className="relative flex flex-col gap-y-4">
       <Image
-        className="aspect-square size-64 flex-1 shrink-0"
+        className="aspect-square w-full md:w-[200px]"
         src={image}
         alt={name}
         width={200}

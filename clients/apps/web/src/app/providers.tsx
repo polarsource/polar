@@ -16,8 +16,10 @@ export { NavigationHistoryProvider }
 
 export function PolarPostHogProvider({
   children,
+  distinctId,
 }: {
   children: React.ReactNode
+  distinctId: string
 }) {
   useEffect(() => {
     if (!CONFIG.POSTHOG_TOKEN) {
@@ -29,8 +31,11 @@ export function PolarPostHogProvider({
       api_host: '/ingest',
       defaults: '2025-05-24', // this enables automatic pageview tracking
       persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
+      bootstrap: {
+        distinctID: distinctId,
+      },
     })
-  }, [])
+  }, [distinctId])
 
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>
 }

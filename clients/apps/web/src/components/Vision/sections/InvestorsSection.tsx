@@ -10,7 +10,7 @@ export const InvestorsSection = ({
   return (
     <Section
       active={active}
-      header={{ index: '06', name: 'Investors' }}
+      header={{ index: '03', name: 'Investors' }}
       title="Investors, Angels & Advisors"
       context={
         <div className="flex flex-col gap-12 md:flex-row">

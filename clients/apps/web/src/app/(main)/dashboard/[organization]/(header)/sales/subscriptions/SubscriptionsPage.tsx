@@ -110,10 +110,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
       | DataTableSortingState
       | ((old: DataTableSortingState) => DataTableSortingState),
   ) => {
-    const updatedSorting =
+    let updatedSorting =
       typeof updaterOrValue === 'function'
         ? updaterOrValue(sorting)
         : updaterOrValue
+
+    // Add secondary sort on cancel_at_period_end when sorting by status
+    const statusSort = updatedSorting.find((s) => s.id === 'status')
+    if (statusSort) {
+      const hasSecondarySortOnCancelAtPeriodEnd = updatedSorting.some(
+        (s) => s.id === 'ends_at',
+      )
+      if (!hasSecondarySortOnCancelAtPeriodEnd) {
+        updatedSorting = [
+          statusSort,
+          { id: 'ends_at', desc: statusSort.desc },
+          ...updatedSorting.filter((s) => s.id !== 'status'),
+        ]
+      }
+    }
 
     router.push(
       `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(

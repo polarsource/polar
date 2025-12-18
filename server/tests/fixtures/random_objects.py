@@ -33,6 +33,7 @@ from polar.models import (
     DiscountProduct,
     Dispute,
     Event,
+    EventHyper,
     EventType,
     IssueReward,
     LegacyRecurringProductPriceCustom,
@@ -1746,8 +1747,11 @@ async def create_event(
     metadata: dict[str, str | int | bool | float | Any] | None = None,
     event_type: EventType | None = None,
 ) -> Event:
+    ts = timestamp or utc_now()
+    event_id = uuid.uuid4()
     event = Event(
-        timestamp=timestamp or utc_now(),
+        id=event_id,
+        timestamp=ts,
         source=source,
         name=name,
         customer_id=customer.id if customer else None,
@@ -1759,6 +1763,23 @@ async def create_event(
         event_type_id=event_type.id if event_type else None,
     )
     await save_fixture(event)
+
+    event_hyper = EventHyper(
+        id=event_id,
+        timestamp=ts,
+        ingested_at=utc_now(),
+        source=source,
+        name=name,
+        customer_id=customer.id if customer else None,
+        external_customer_id=external_customer_id,
+        external_id=external_id,
+        parent_id=parent_id,
+        organization_id=organization.id,
+        user_metadata=metadata or {},
+        event_type_id=event_type.id if event_type else None,
+    )
+    await save_fixture(event_hyper)
+
     return event
 
 

@@ -22,7 +22,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
-from polar.models.event import Event
+from polar.models.event_hyper import EventHyper
 from polar.models.subscription import CustomerCancellationReason
 
 from .queries import MetricQuery
@@ -790,8 +790,8 @@ class CostsMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(
-            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
-        ).filter(Event.user_metadata["_cost"].is_not(None))
+            EventHyper.user_metadata["_cost"]["amount"].as_numeric(17, 12)
+        ).filter(EventHyper.user_metadata["_cost"].is_not(None))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -809,8 +809,8 @@ class CumulativeCostsMetric(SQLMetric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(
-            Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)
-        ).filter(Event.user_metadata["_cost"].is_not(None))
+            EventHyper.user_metadata["_cost"]["amount"].as_numeric(17, 12)
+        ).filter(EventHyper.user_metadata["_cost"].is_not(None))
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -877,12 +877,14 @@ class CostPerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[float]:
-        total_customers = func.count(func.distinct(Event.customer_id)) + func.count(
-            func.distinct(Event.external_customer_id)
-        )
+        total_customers = func.count(
+            func.distinct(EventHyper.customer_id)
+        ) + func.count(func.distinct(EventHyper.external_customer_id))
 
         total_costs = func.sum(
-            func.coalesce(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0)
+            func.coalesce(
+                EventHyper.user_metadata["_cost"]["amount"].as_numeric(17, 12), 0
+            )
         )
 
         return type_coerce(
@@ -1015,8 +1017,8 @@ class ActiveUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        return func.count(func.distinct(Event.customer_id)) + func.count(
-            func.distinct(Event.external_customer_id)
+        return func.count(func.distinct(EventHyper.customer_id)) + func.count(
+            func.distinct(EventHyper.external_customer_id)
         )
 
     @classmethod

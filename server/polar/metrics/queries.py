@@ -23,7 +23,7 @@ from polar.models import (
     Checkout,
     CheckoutProduct,
     Customer,
-    Event,
+    EventHyper,
     Order,
     Organization,
     Product,
@@ -577,11 +577,13 @@ def _get_readable_cost_events_statement(
     organization_id: Sequence[uuid.UUID] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[tuple[uuid.UUID]]:
-    statement = select(Event.id).where(Event.user_metadata["_cost"].is_not(None))
+    statement = select(EventHyper.id).where(
+        EventHyper.user_metadata["_cost"].is_not(None)
+    )
 
     if is_user(auth_subject):
         statement = statement.where(
-            Event.organization_id.in_(
+            EventHyper.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
                     UserOrganization.deleted_at.is_(None),
@@ -589,20 +591,22 @@ def _get_readable_cost_events_statement(
             )
         )
     elif is_organization(auth_subject):
-        statement = statement.where(Event.organization_id == auth_subject.subject.id)
+        statement = statement.where(
+            EventHyper.organization_id == auth_subject.subject.id
+        )
 
     if organization_id is not None:
-        statement = statement.where(Event.organization_id.in_(organization_id))
+        statement = statement.where(EventHyper.organization_id.in_(organization_id))
 
     if customer_id is not None:
         statement = statement.join(
             Customer,
             onclause=or_(
-                Event.customer_id == Customer.id,
+                EventHyper.customer_id == Customer.id,
                 and_(
                     Customer.external_id.is_not(None),
-                    Event.external_customer_id == Customer.external_id,
-                    Event.organization_id == Customer.organization_id,
+                    EventHyper.external_customer_id == Customer.external_id,
+                    EventHyper.organization_id == Customer.organization_id,
                 ),
             ),
         ).where(Customer.id.in_(customer_id))
@@ -626,7 +630,7 @@ def get_events_metrics_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    day_column = interval.sql_date_trunc(Event.timestamp)
+    day_column = interval.sql_date_trunc(EventHyper.timestamp)
 
     statement = (
         select(
@@ -639,10 +643,10 @@ def get_events_metrics_cte(
                 if metric.query == MetricQuery.events
             ],
         )
-        .select_from(Event)
+        .select_from(EventHyper)
         .where(
-            Event.timestamp >= start_timestamp,
-            Event.timestamp <= end_timestamp,
+            EventHyper.timestamp >= start_timestamp,
+            EventHyper.timestamp <= end_timestamp,
         )
         .group_by(day_column)
     )
@@ -650,14 +654,13 @@ def get_events_metrics_cte(
     if bounds is not None:
         start_timestamp, end_timestamp = bounds
         statement = statement.where(
-            Event.timestamp >= start_timestamp,
-            Event.timestamp <= end_timestamp,
+            EventHyper.timestamp >= start_timestamp,
+            EventHyper.timestamp <= end_timestamp,
         )
-    # _get_readable_events_statement
 
     if is_user(auth_subject):
         statement = statement.where(
-            Event.organization_id.in_(
+            EventHyper.organization_id.in_(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
                     UserOrganization.deleted_at.is_(None),
@@ -665,20 +668,22 @@ def get_events_metrics_cte(
             )
         )
     elif is_organization(auth_subject):
-        statement = statement.where(Event.organization_id == auth_subject.subject.id)
+        statement = statement.where(
+            EventHyper.organization_id == auth_subject.subject.id
+        )
 
     if organization_id is not None:
-        statement = statement.where(Event.organization_id.in_(organization_id))
+        statement = statement.where(EventHyper.organization_id.in_(organization_id))
 
     if customer_id is not None:
         statement = statement.join(
             Customer,
             onclause=or_(
-                Event.customer_id == Customer.id,
+                EventHyper.customer_id == Customer.id,
                 and_(
                     Customer.external_id.is_not(None),
-                    Event.external_customer_id == Customer.external_id,
-                    Event.organization_id == Customer.organization_id,
+                    EventHyper.external_customer_id == Customer.external_id,
+                    EventHyper.organization_id == Customer.organization_id,
                 ),
             ),
         ).where(Customer.id.in_(customer_id))

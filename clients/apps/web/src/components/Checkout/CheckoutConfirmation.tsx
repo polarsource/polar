@@ -1,20 +1,20 @@
 'use client'
 
+import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
+import { usePostHog } from '@/hooks/posthog'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
+import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-
-import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
-import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { PolarCore } from '@polar-sh/sdk/core'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
@@ -110,9 +110,30 @@ export const CheckoutConfirmation = ({
   maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
   const router = useRouter()
+  const posthog = usePostHog()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { status, organization } = checkout
+  const hasTrackedCompletion = useRef(false)
+
+  useEffect(() => {
+    if (status === 'succeeded' && !hasTrackedCompletion.current) {
+      hasTrackedCompletion.current = true
+      posthog.capture('storefront:subscriptions:checkout:complete', {
+        organization_slug: organization.slug,
+        product_id: checkout.productId,
+        amount: checkout.amount,
+        embed,
+      })
+    }
+  }, [
+    status,
+    organization.slug,
+    checkout.productId,
+    checkout.amount,
+    embed,
+    posthog,
+  ])
 
   const updateCheckout = useCallback(async () => {
     const { ok, value } = await checkoutsClientGet(client, {

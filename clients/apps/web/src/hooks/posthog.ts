@@ -50,6 +50,7 @@ type Verb =
   | 'done'
   | 'open'
   | 'close'
+  | 'complete'
 
 export type EventName = `${Surface}:${Category}:${Noun}:${Verb}`
 

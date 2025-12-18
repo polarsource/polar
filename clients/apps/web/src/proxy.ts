@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { nanoid } from 'nanoid'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -7,6 +8,9 @@ import { createServerSideAPI } from './utils/client'
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
+const DISTINCT_ID_COOKIE = 'polar_distinct_id'
+const DISTINCT_ID_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
+
 const AUTHENTICATED_ROUTES = [
   new RegExp('^/start(/.*)?'),
   new RegExp('^/dashboard(/.*)?'),
@@ -14,6 +18,20 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/settings(/.*)?'),
   new RegExp('^/oauth2(/.*)?'),
 ]
+
+const setDistinctIdCookie = (
+  request: NextRequest,
+  response: NextResponse,
+): void => {
+  if (!request.cookies.get(DISTINCT_ID_COOKIE)) {
+    response.cookies.set(DISTINCT_ID_COOKIE, `anon_${nanoid()}`, {
+      maxAge: DISTINCT_ID_COOKIE_MAX_AGE,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    })
+  }
+}
 
 const isForwardedRoute = (request: NextRequest): boolean => {
   if (request.nextUrl.pathname.startsWith('/docs/')) {
@@ -170,7 +188,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const headers = user ? { 'x-polar-user': JSON.stringify(user) } : undefined
-  return NextResponse.next({ headers })
+  const response = NextResponse.next({ headers })
+
+  setDistinctIdCookie(request, response)
+
+  return response
 }
 
 export const config = {

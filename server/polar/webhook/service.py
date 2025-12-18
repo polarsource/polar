@@ -1,7 +1,6 @@
-import base64
 import datetime
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Literal, cast, overload
 from uuid import UUID
 
@@ -9,7 +8,6 @@ import structlog
 from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
-from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -51,7 +49,6 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.webhook.eventstream import publish_webhook_event
 from polar.webhook.repository import (
     WebhookDeliveryRepository,
     WebhookEndpointRepository,
@@ -738,39 +735,18 @@ class WebhookService:
                 events.append(event_type)
                 await session.flush()
                 enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
+                # Publish webhook event to eventstream for CLI listeners
+                enqueue_job(
+                    "webhook_event.publish",
+                    webhook_event_id=event_type.id,
+                    organization_id=target.id,
+                )
             except UnsupportedTarget as e:
                 # Log the error but do not raise to not fail the whole request
                 log.error(e.message)
                 continue
             except SkipEvent:
                 continue
-
-        # Publish webhook event to eventstream for CLI listeners
-        try:
-            ts = utc_now()
-
-            b64secret = base64.b64encode(
-                event.webhook_endpoint.secret.encode("utf-8")
-            ).decode("utf-8")
-
-            # Sign the payload
-            wh = StandardWebhook(b64secret)
-            signature = wh.sign(str(event.id), ts, event.payload)
-
-            headers: Mapping[str, str] = {
-                "user-agent": "polar.sh webhooks",
-                "content-type": "application/json",
-                "webhook-id": str(event.id),
-                "webhook-timestamp": str(int(ts.timestamp())),
-                "webhook-signature": signature,
-            }
-            await publish_webhook_event(
-                payload=event.payload,
-                headers=headers,
-                organization_id=target.id,
-            )
-        except Exception as e:
-            log.warning("Failed to publish webhook to eventstream", error=str(e))
 
         return events
 

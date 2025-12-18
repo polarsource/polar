@@ -22,7 +22,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
-from polar.email.sender import DEFAULT_REPLY_TO_EMAIL_ADDRESS, EmailFromReply
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
@@ -30,6 +29,8 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 from .account import Account
 
 if TYPE_CHECKING:
+    from polar.email.sender import EmailFromReply
+
     from .organization_review import OrganizationReview
     from .product import Product
 
@@ -382,10 +383,11 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor()}"
 
     @property
-    def email_from_reply(self) -> EmailFromReply:
+    def email_from_reply(self) -> "EmailFromReply":
         return {
             "from_name": f"{self.name} (via {settings.EMAIL_FROM_NAME})",
             "from_email_addr": f"{self.slug}@{settings.EMAIL_FROM_DOMAIN}",
             "reply_to_name": self.name,
-            "reply_to_email_addr": self.email or DEFAULT_REPLY_TO_EMAIL_ADDRESS,
+            "reply_to_email_addr": self.email
+            or settings.EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS,
         }

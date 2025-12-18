@@ -16,8 +16,8 @@ log: Logger = structlog.get_logger()
 
 DEFAULT_FROM_NAME = settings.EMAIL_FROM_NAME
 DEFAULT_FROM_EMAIL_ADDRESS = f"{settings.EMAIL_FROM_LOCAL}@{settings.EMAIL_FROM_DOMAIN}"
-DEFAULT_REPLY_TO_NAME = "Polar Support"
-DEFAULT_REPLY_TO_EMAIL_ADDRESS = "support@polar.sh"
+DEFAULT_REPLY_TO_NAME = settings.EMAIL_DEFAULT_REPLY_TO_NAME
+DEFAULT_REPLY_TO_EMAIL_ADDRESS = settings.EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS
 
 
 def to_ascii_email(email: str) -> str:

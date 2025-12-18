@@ -234,9 +234,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
 
       setStartDate(customerCreatedAt)
       setEndDate(now)
-      setInterval(getNextValidInterval(interval, customerCreatedAt, now))
+      setInterval((prev) => getNextValidInterval(prev, customerCreatedAt, now))
     }
-  }, [customer, setStartDate, setEndDate, interval, setInterval])
+  }, [customer, setStartDate, setEndDate, setInterval])
 
   return (
     <MasterDetailLayoutContent

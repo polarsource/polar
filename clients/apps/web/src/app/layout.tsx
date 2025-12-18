@@ -2,6 +2,7 @@ import '../styles/globals.css'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { getExperimentNames } from '@/experiments'
+import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
 import { UserContextProvider } from '@/providers/auth'
@@ -104,7 +105,10 @@ export default async function RootLayout({
     }
   }
 
-  const experimentVariants = await getExperiments(getExperimentNames())
+  const distinctId = await getDistinctId()
+  const experimentVariants = await getExperiments(getExperimentNames(), {
+    distinctId,
+  })
 
   return (
     <html
@@ -151,7 +155,7 @@ export default async function RootLayout({
             user={authenticatedUser}
             userOrganizations={userOrganizations}
           >
-            <PolarPostHogProvider>
+            <PolarPostHogProvider distinctId={distinctId}>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
                   <NavigationHistoryProvider>

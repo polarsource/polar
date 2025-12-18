@@ -36,9 +36,16 @@ export const EditProductPage = ({
   )
   const totalBenefitCount = benefitsQuery.data?.pagination?.total_count ?? 0
 
-  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    schemas['Benefit']['id'][]
-  >(product.benefits.map((benefit) => benefit.id) ?? [])
+  // Store full benefit objects instead of just IDs to avoid lookup issues
+  const [enabledBenefits, setEnabledBenefits] = useState<schemas['Benefit'][]>(
+    product.benefits ?? [],
+  )
+
+  // Derive IDs from the benefit objects
+  const enabledBenefitIds = useMemo(
+    () => enabledBenefits.map((b) => b.id),
+    [enabledBenefits],
+  )
 
   const form = useForm<ProductEditOrCreateForm>({
     defaultValues: {
@@ -126,38 +133,20 @@ export const EditProductPage = ({
     ],
   )
 
-  const onSelectBenefit = useCallback(
-    (benefit: schemas['Benefit']) => {
-      setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
-    },
-    [setEnabledBenefitIds],
-  )
+  const onSelectBenefit = useCallback((benefit: schemas['Benefit']) => {
+    console.log({ benefit })
+    setEnabledBenefits((benefits) => [...benefits, benefit])
+  }, [])
 
-  const onRemoveBenefit = useCallback(
-    (benefit: schemas['Benefit']) => {
-      setEnabledBenefitIds((benefits) =>
-        benefits.filter((b) => b !== benefit.id),
-      )
-    },
-    [setEnabledBenefitIds],
-  )
+  const onRemoveBenefit = useCallback((benefit: schemas['Benefit']) => {
+    setEnabledBenefits((benefits) =>
+      benefits.filter((b) => b.id !== benefit.id),
+    )
+  }, [])
 
-  const onReorderBenefits = useCallback(
-    (benefits: schemas['Benefit'][]) => {
-      setEnabledBenefitIds(benefits.map((b) => b.id))
-    },
-    [setEnabledBenefitIds],
-  )
-
-  const enabledBenefits = useMemo(
-    () =>
-      enabledBenefitIds
-        .map((id) => organizationBenefits.find((benefit) => benefit.id === id))
-        .filter(
-          (benefit): benefit is schemas['Benefit'] => benefit !== undefined,
-        ),
-    [organizationBenefits, enabledBenefitIds],
-  )
+  const onReorderBenefits = useCallback((benefits: schemas['Benefit'][]) => {
+    setEnabledBenefits(benefits)
+  }, [])
 
   const benefitsAdded = useMemo(
     () =>

@@ -32,9 +32,14 @@ from ..schemas.subscription import (
 class CustomerSubscriptionError(PolarError): ...
 
 
-class UpdateSubscriptionNotAllowed(CustomerSubscriptionError):
+class UpdateSubscriptionPlanNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
-        super().__init__("Updating subscription is not allowed.", 403)
+        super().__init__("Updating subscription plan is not allowed.", 403)
+
+
+class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Updating subscription seats is not allowed.", 403)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -134,10 +139,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         *,
         updates: CustomerSubscriptionUpdate,
     ) -> Subscription:
+        organization = subscription.product.organization
         if isinstance(updates, CustomerSubscriptionUpdateProduct):
-            organization = subscription.product.organization
-            if not organization.allow_customer_updates:
-                raise UpdateSubscriptionNotAllowed()
+            if not organization.customer_portal_subscription_update_plan:
+                raise UpdateSubscriptionPlanNotAllowed()
 
             return await self.update_product(
                 session,
@@ -146,7 +151,8 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         if isinstance(updates, CustomerSubscriptionUpdateSeats):
-            organization = subscription.product.organization
+            if not organization.customer_portal_subscription_update_seats:
+                raise UpdateSubscriptionSeatsNotAllowed()
 
             return await subscription_service.update_seats(
                 session,

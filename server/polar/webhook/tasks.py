@@ -15,7 +15,14 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.webhook.repository import WebhookEventRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, enqueue_job
+from polar.worker import (
+    AsyncSessionMaker,
+    HTTPXMiddleware,
+    TaskPriority,
+    actor,
+    can_retry,
+    enqueue_job,
+)
 
 from .service import webhook as webhook_service
 
@@ -99,64 +106,63 @@ async def _webhook_event_send(
         webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
     )
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(
-                event.webhook_endpoint.url,
-                content=event.payload,
-                headers=headers,
-                timeout=20.0,
+    client = HTTPXMiddleware.get()
+    try:
+        response = await client.post(
+            event.webhook_endpoint.url,
+            content=event.payload,
+            headers=headers,
+            timeout=20.0,
+        )
+        delivery.http_code = response.status_code
+        delivery.response = (
+            # Limit to first 2048 characters to avoid bloating the DB
+            response.text[:2048] if response.text else None
+        )
+        event.last_http_code = response.status_code
+        response.raise_for_status()
+    # Error
+    except (httpx.HTTPError, SSLError) as e:
+        bound_log.info("An error occurred while sending a webhook", error=e)
+
+        if (
+            isinstance(e, httpx.HTTPStatusError)
+            and e.response.status_code == 429
+            and "discord" in event.webhook_endpoint.url.lower()
+        ):
+            rate_limit_headers = {
+                k: v
+                for k, v in e.response.headers.items()
+                if k.lower().startswith("x-ratelimit-") or k.lower() == "retry-after"
+            }
+            bound_log.warning(
+                "Discord rate limit exceeded",
+                rate_limit_headers=rate_limit_headers,
+                response_body=e.response.text[:2048] if e.response.text else None,
             )
-            delivery.http_code = response.status_code
-            delivery.response = (
-                # Limit to first 2048 characters to avoid bloating the DB
-                response.text[:2048] if response.text else None
-            )
-            event.last_http_code = response.status_code
-            response.raise_for_status()
-        # Error
-        except (httpx.HTTPError, SSLError) as e:
-            bound_log.info("An error occurred while sending a webhook", error=e)
 
-            if (
-                isinstance(e, httpx.HTTPStatusError)
-                and e.response.status_code == 429
-                and "discord" in event.webhook_endpoint.url.lower()
-            ):
-                rate_limit_headers = {
-                    k: v
-                    for k, v in e.response.headers.items()
-                    if k.lower().startswith("x-ratelimit-")
-                    or k.lower() == "retry-after"
-                }
-                bound_log.warning(
-                    "Discord rate limit exceeded",
-                    rate_limit_headers=rate_limit_headers,
-                    response_body=e.response.text[:2048] if e.response.text else None,
-                )
+        delivery.succeeded = False
+        if delivery.response is None:
+            delivery.response = str(e)
 
-            delivery.succeeded = False
-            if delivery.response is None:
-                delivery.response = str(e)
-
-            # Permanent failure
-            if not can_retry():
-                event.succeeded = False
-                enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
-            # Retry
-            else:
-                raise Retry() from e
-        # Success
+        # Permanent failure
+        if not can_retry():
+            event.succeeded = False
+            enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
+        # Retry
         else:
-            delivery.succeeded = True
-            event.succeeded = True
-            enqueue_job("webhook_event.success", webhook_event_id=webhook_event_id)
-        # Either way, save the delivery
-        finally:
-            assert delivery.succeeded is not None
-            session.add(delivery)
-            session.add(event)
-            await session.commit()
+            raise Retry() from e
+    # Success
+    else:
+        delivery.succeeded = True
+        event.succeeded = True
+        enqueue_job("webhook_event.success", webhook_event_id=webhook_event_id)
+    # Either way, save the delivery
+    finally:
+        assert delivery.succeeded is not None
+        session.add(delivery)
+        session.add(event)
+        await session.commit()
 
 
 @actor(actor_name="webhook_event.success", priority=TaskPriority.HIGH)

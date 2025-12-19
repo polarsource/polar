@@ -273,6 +273,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
     )
 
+    @property
+    def allow_customer_updates(self) -> bool:
+        return self.customer_portal_settings["subscription"]["update_plan"]
+
     #
     # Feature Flags
     #

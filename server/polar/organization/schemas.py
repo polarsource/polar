@@ -214,6 +214,9 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     proration_behavior: SubscriptionProrationBehavior = Field(
         description="Proration behavior applied when customer updates their subscription from the portal.",
     )
+    allow_customer_updates: bool = Field(
+        description="Whether customers can update their subscriptions from the customer portal.",
+    )
 
     # Deprecated attributes
     bio: SkipJsonSchema[str | None] = Field(..., deprecated="")

@@ -66,6 +66,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "19.2.3",
     "@types/react-dom": "19.2.3",
+    "prettier": "^3.7.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tsup": "^8.5.1",

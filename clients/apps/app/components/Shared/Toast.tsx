@@ -67,7 +67,7 @@ const getTypeConfig = (
     case 'info':
     default:
       return {
-        backgroundColor: colors.primary,
+        backgroundColor: colors.card,
         iconColor: colors.text,
         textColorKey: 'text',
       }

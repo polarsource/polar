@@ -63,12 +63,15 @@ const CustomerSubscriptionDetails = ({
 
   const organization = subscription.product.organization
 
+  const showSubscriptionUpdates =
+    organization.customer_portal_settings.subscription.update_plan === true
+
   const uncancelSubscription = useCustomerUncancelSubscription(api)
   const router = useRouter()
 
   const primaryAction = useMemo(() => {
     if (
-      organization.allow_customer_updates &&
+      showSubscriptionUpdates &&
       !isCanceled &&
       subscription.status !== 'trialing'
     ) {
@@ -98,7 +101,13 @@ const CustomerSubscriptionDetails = ({
     }
 
     return null
-  }, [subscription, isCanceled, organization, uncancelSubscription, router])
+  }, [
+    subscription,
+    isCanceled,
+    showSubscriptionUpdates,
+    uncancelSubscription,
+    router,
+  ])
 
   const subscriptionBaseAmount = useMemo(() => {
     const price = subscription.product.prices.find(

@@ -86,9 +86,9 @@ const ORGANIZATION: schemas['CustomerOrganization'] = {
   created_at: new Date().toISOString(),
   modified_at: null,
   avatar_url: '/assets/acme.jpg',
-  allow_customer_updates: true,
   proration_behavior: 'prorate',
   // @ts-expect-error - deprecated hidden fields
+  allow_customer_updates: true,
   website: null,
   socials: [],
   status: 'active',

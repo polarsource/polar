@@ -69,6 +69,11 @@ const CustomerPortalSubscription = ({
     (price) => price.amount_type === 'seat_based',
   )
 
+  // Check customer portal settings for seat management visibility
+  const portalSettings =
+    subscription.product.organization.customer_portal_settings
+  const showSeatManagement = portalSettings.subscription.update_seats === true
+
   const { data: seatsData, isLoading: isLoadingSeats } = useCustomerSeats(
     api,
     hasSeatBasedPricing ? { subscriptionId: subscription.id } : undefined,
@@ -242,7 +247,7 @@ const CustomerPortalSubscription = ({
         </Button>
       )}
 
-      {hasSeatBasedPricing && (
+      {hasSeatBasedPricing && showSeatManagement && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <h3 className="text-lg">Seat Management</h3>

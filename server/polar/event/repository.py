@@ -28,6 +28,7 @@ from polar.config import settings
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.sorting import Sorting
+from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import (
     BillingEntry,
@@ -525,6 +526,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         aggregate_fields: Sequence[str] = ("cost.amount",),
         sorting: Sequence[tuple[str, bool]] = (("total", True),),
         timestamp_series: Any = None,
+        interval: TimeInterval | None = None,
+        timezone: str | None = None,
     ) -> Sequence[dict[str, Any]]:
         """
         Get aggregate statistics grouped by root event name across all hierarchies.
@@ -540,17 +543,35 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             aggregate_fields: List of user_metadata field paths to aggregate
             sorting: List of (property, is_desc) tuples for sorting
             timestamp_series: Optional CTE for time bucketing. If provided, stats are grouped by timestamp.
+            interval: Time interval for bucketing (required when timestamp_series is provided)
+            timezone: Timezone for date_trunc (required when timestamp_series is provided)
 
         Returns:
             List of dicts containing name, label, occurrences, and statistics for each field.
             If timestamp_series is provided, also includes timestamp for each row.
         """
-        root_events_subquery = statement.where(
-            and_(Event.parent_id.is_(None), Event.source == EventSource.user)
-        ).subquery()
+        root_events_subquery = (
+            statement.where(
+                and_(Event.parent_id.is_(None), Event.source == EventSource.user)
+            )
+            .order_by(None)
+            .subquery()
+        )
 
         all_events = aliased(Event, name="all_events")
         customer = aliased(Customer, name="customer")
+
+        bucket_expr: ColumnElement[datetime] | None = None
+        if (
+            timestamp_series is not None
+            and interval is not None
+            and timezone is not None
+        ):
+            bucket_expr = func.date_trunc(
+                interval.value,
+                literal_column("root_event.timestamp"),
+                timezone,
+            )
 
         per_root_select_exprs: list[ColumnElement[Any]] = [
             literal_column("root_event.id").label("root_id"),
@@ -562,10 +583,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             ),
         ]
 
-        if timestamp_series is not None:
-            per_root_select_exprs.append(
-                literal_column("root_event.timestamp").label("root_timestamp")
-            )
+        if bucket_expr is not None:
+            per_root_select_exprs.append(bucket_expr.label("bucket"))
 
         for field_path in aggregate_fields:
             field_parts = field_path.split(".")
@@ -587,8 +606,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             literal_column("customer.id"),
             literal_column("root_event.external_customer_id"),
         ]
-        if timestamp_series is not None:
-            group_by_exprs.append(literal_column("root_event.timestamp"))
+        if bucket_expr is not None:
+            group_by_exprs.append(bucket_expr)
 
         per_root_query = (
             select(*per_root_select_exprs)
@@ -616,50 +635,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if timestamp_series is not None:
             timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-            timestamp_with_next = (
-                select(
-                    timestamp_column.label("bucket_start"),
-                    func.lead(timestamp_column)
-                    .over(order_by=timestamp_column)
-                    .label("bucket_end"),
-                ).select_from(timestamp_series)
-            ).subquery("timestamp_with_next")
-
-            bucketed_columns = [
-                timestamp_with_next.c.bucket_start.label("bucket"),
-                per_root_subquery.c.root_name,
-                per_root_subquery.c.root_org_id,
-                per_root_subquery.c.customer_id,
-                per_root_subquery.c.external_customer_id,
-            ]
-            for field_path in aggregate_fields:
-                safe_field_name = field_path.replace(".", "_")
-                bucketed_columns.append(
-                    getattr(per_root_subquery.c, f"{safe_field_name}_total")
-                )
-
-            bucketed_subquery = (
-                select(*bucketed_columns)
-                .select_from(timestamp_with_next)
-                .outerjoin(
-                    per_root_subquery,
-                    and_(
-                        per_root_subquery.c.root_timestamp
-                        >= timestamp_with_next.c.bucket_start,
-                        or_(
-                            timestamp_with_next.c.bucket_end.is_(None),
-                            per_root_subquery.c.root_timestamp
-                            < timestamp_with_next.c.bucket_end,
-                        ),
-                    ),
-                )
-            ).subquery("bucketed")
-
             aggregation_exprs = []
             for field_path in aggregate_fields:
                 safe_field_name = field_path.replace(".", "_")
                 total_col: ColumnElement[Any] = getattr(
-                    bucketed_subquery.c, f"{safe_field_name}_total"
+                    per_root_subquery.c, f"{safe_field_name}_total"
                 )
 
                 aggregation_exprs.extend(
@@ -682,40 +662,45 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
             stats_query = (
                 select(
-                    bucketed_subquery.c.bucket.label("timestamp"),
-                    bucketed_subquery.c.root_name.label("name"),
+                    timestamp_column.label("timestamp"),
+                    per_root_subquery.c.root_name.label("name"),
                     event_type.id.label("event_type_id"),
                     event_type.label.label("label"),
                     func.count(
                         getattr(
-                            bucketed_subquery.c,
+                            per_root_subquery.c,
                             f"{aggregate_fields[0].replace('.', '_')}_total",
                         )
                     ).label("occurrences"),
                     (
-                        func.count(bucketed_subquery.c.customer_id.distinct())
+                        func.count(per_root_subquery.c.customer_id.distinct())
                         + func.count(
                             case(
                                 (
-                                    bucketed_subquery.c.customer_id.is_(None),
-                                    bucketed_subquery.c.external_customer_id,
+                                    per_root_subquery.c.customer_id.is_(None),
+                                    per_root_subquery.c.external_customer_id,
                                 )
                             ).distinct()
                         )
                     ).label("customers"),
                     *aggregation_exprs,
                 )
-                .select_from(bucketed_subquery)
+                .select_from(
+                    timestamp_series.outerjoin(
+                        per_root_subquery,
+                        per_root_subquery.c.bucket == timestamp_column,
+                    )
+                )
                 .outerjoin(
                     event_type,
                     and_(
-                        event_type.name == bucketed_subquery.c.root_name,
-                        event_type.organization_id == bucketed_subquery.c.root_org_id,
+                        event_type.name == per_root_subquery.c.root_name,
+                        event_type.organization_id == per_root_subquery.c.root_org_id,
                     ),
                 )
                 .group_by(
-                    bucketed_subquery.c.bucket,
-                    bucketed_subquery.c.root_name,
+                    timestamp_column,
+                    per_root_subquery.c.root_name,
                     event_type.id,
                     event_type.label,
                 )

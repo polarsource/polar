@@ -7848,11 +7848,6 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-      /**
-       * Allow Customer Updates
-       * @description Whether customers can update their subscriptions from the customer portal.
-       */
-      allow_customer_updates: boolean
     }
     /**
      * BenefitType
@@ -9155,11 +9150,6 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-      /**
-       * Allow Customer Updates
-       * @description Whether customers can update their subscriptions from the customer portal.
-       */
-      allow_customer_updates: boolean
     }
     /**
      * CheckoutPriceCreate
@@ -12988,11 +12978,8 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
-      /**
-       * Allow Customer Updates
-       * @description Whether customers can update their subscriptions from the customer portal.
-       */
-      allow_customer_updates: boolean
+      /** @description Settings related to the customer portal */
+      customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
     }
     /**
      * CustomerOrganizationData
@@ -13096,6 +13083,18 @@ export interface components {
       account_id: string
       /** Account Username */
       account_username: string | null
+    }
+    /** CustomerPortalSubscriptionSettings */
+    CustomerPortalSubscriptionSettings: {
+      /** Update Seats */
+      update_seats: boolean
+      /** Update Plan */
+      update_plan: boolean
+    }
+    /** CustomerPortalUsageSettings */
+    CustomerPortalUsageSettings: {
+      /** Show */
+      show: boolean
     }
     /**
      * CustomerProduct
@@ -19202,11 +19201,6 @@ export interface components {
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
       /**
-       * Allow Customer Updates
-       * @description Whether customers can update their subscriptions from the customer portal.
-       */
-      allow_customer_updates: boolean
-      /**
        * Email
        * @description Public support email.
        */
@@ -19238,6 +19232,8 @@ export interface components {
       notification_settings: components['schemas']['OrganizationNotificationSettings']
       /** @description Settings related to customer emails */
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
+      /** @description Settings related to the customer portal */
+      customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
     }
     /** OrganizationAccessToken */
     OrganizationAccessToken: {
@@ -19460,6 +19456,9 @@ export interface components {
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
         | null
+      customer_portal_settings?:
+        | components['schemas']['OrganizationCustomerPortalSettings']
+        | null
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -19479,6 +19478,11 @@ export interface components {
       subscription_uncanceled: boolean
       /** Subscription Updated */
       subscription_updated: boolean
+    }
+    /** OrganizationCustomerPortalSettings */
+    OrganizationCustomerPortalSettings: {
+      usage: components['schemas']['CustomerPortalUsageSettings']
+      subscription: components['schemas']['CustomerPortalSubscriptionSettings']
     }
     /**
      * OrganizationDeletionBlockedReason
@@ -19859,6 +19863,9 @@ export interface components {
         | null
       customer_email_settings?:
         | components['schemas']['OrganizationCustomerEmailSettings']
+        | null
+      customer_portal_settings?:
+        | components['schemas']['OrganizationCustomerPortalSettings']
         | null
     }
     /**
@@ -23008,6 +23015,10 @@ export interface components {
       | '-started_at'
       | 'current_period_end'
       | '-current_period_end'
+      | 'ended_at'
+      | '-ended_at'
+      | 'ends_at'
+      | '-ends_at'
       | 'amount'
       | '-amount'
       | 'product'
@@ -40045,6 +40056,10 @@ export const subscriptionSortPropertyValues: ReadonlyArray<
   '-started_at',
   'current_period_end',
   '-current_period_end',
+  'ended_at',
+  '-ended_at',
+  'ends_at',
+  '-ends_at',
   'amount',
   '-amount',
   'product',

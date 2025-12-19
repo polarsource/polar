@@ -19,7 +19,6 @@ from polar.routing import APIRouter
 
 log = structlog.get_logger()
 
-
 router = APIRouter(prefix="/cli", tags=["cli", APITag.private])
 
 
@@ -43,10 +42,10 @@ async def transform_webhook_events(
                 if webhook_payload and webhook_event_id:
                     ts = utc_now()
 
+                    secret = str(organization_id).replace("-", "")
+
                     # Use organization_id as the signing secret
-                    b64secret = base64.b64encode(
-                        organization_id.encode("utf-8")
-                    ).decode("utf-8")
+                    b64secret = base64.b64encode(secret.encode("utf-8")).decode("utf-8")
 
                     # Sign the payload
                     wh = StandardWebhook(b64secret)
@@ -86,12 +85,14 @@ async def listen(
     )
 
     async def first_event_wrapper():
+        secret = str(auth_subject.subject.id).replace("-", "")
+
         # Send a first event announcing connection established
         yield json.dumps(
             {
                 "key": "connected",
                 "ts": str(utc_now()),
-                "secret": str(auth_subject.subject.id),
+                "secret": secret,
             }
         )
 

@@ -89,6 +89,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.posthog import posthog
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -1226,6 +1227,11 @@ class CheckoutService:
         )
 
         await self._after_checkout_updated(session, checkout)
+
+        posthog.capture(
+            distinct_id=str(uuid.uuid4()),
+            event="server:checkout:complete",
+        )
 
         return checkout
 

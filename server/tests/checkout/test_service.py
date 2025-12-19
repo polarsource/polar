@@ -125,6 +125,13 @@ def order_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture(autouse=True)
+def posthog_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock()
+    mocker.patch("polar.checkout.service.posthog", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mock = AsyncMock(spec=calculate_tax)
     mocker.patch("polar.checkout.service.calculate_tax", new=mock)
@@ -4472,6 +4479,22 @@ class TestHandleSuccess:
         assert len(trial_redemptions) == 1
         trial_redemption = trial_redemptions[0]
         assert trial_redemption.customer_id == customer.id
+
+    async def test_posthog_event(
+        self,
+        posthog_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        posthog_mock.capture.assert_called_once()
+        call_kwargs = posthog_mock.capture.call_args.kwargs
+        assert call_kwargs["event"] == "server:checkout:complete"
+        assert "distinct_id" in call_kwargs
 
 
 @pytest.mark.asyncio

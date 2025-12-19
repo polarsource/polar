@@ -368,6 +368,8 @@ class EventService:
             aggregate_fields,
             hierarchy_stats_sorting,
             timestamp_series=timestamp_series_cte,
+            interval=interval,
+            timezone=str(timezone),
         )
 
         result = await session.execute(select(timestamp_series_cte.c.timestamp))

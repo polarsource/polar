@@ -13,30 +13,28 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import { BenefitRevocationGracePeriod } from './BenefitRevocationGracePeriod'
-import { ProrationBehavior } from './ProrationBehavior'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-interface OrganizationSubscriptionSettingsProps {
+interface OrganizationCustomerPortalSettingsProps {
   organization: schemas['Organization']
 }
 
-const OrganizationSubscriptionSettings: React.FC<
-  OrganizationSubscriptionSettingsProps
+const OrganizationCustomerPortalSettings: React.FC<
+  OrganizationCustomerPortalSettingsProps
 > = ({ organization }) => {
-  const form = useForm<schemas['OrganizationSubscriptionSettings']>({
-    defaultValues: organization.subscription_settings,
+  const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
+    defaultValues: organization.customer_portal_settings,
   })
   const { control, setError, reset } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (
-    subscription_settings: schemas['OrganizationSubscriptionSettings'],
+    customer_portal_settings: schemas['OrganizationCustomerPortalSettings'],
   ) => {
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: {
-        subscription_settings,
+        customer_portal_settings,
       },
     })
 
@@ -48,14 +46,14 @@ const OrganizationSubscriptionSettings: React.FC<
       }
 
       toast({
-        title: 'Subscription Settings Update Failed',
-        description: `Error updating subscription settings: ${error.detail}`,
+        title: 'Customer Portal Settings Update Failed',
+        description: `Error updating customer portal settings: ${error.detail}`,
       })
 
       return
     }
 
-    reset(data.subscription_settings)
+    reset(data.customer_portal_settings)
   }
 
   useAutoSave({
@@ -73,12 +71,12 @@ const OrganizationSubscriptionSettings: React.FC<
       >
         <SettingsGroup>
           <SettingsGroupItem
-            title="Allow multiple subscriptions"
-            description="Customers can have multiple active subscriptions at the same time."
+            title="Show metered usage"
+            description="Show customer usage in the portal (API endpoints unaffected)"
           >
             <FormField
               control={control}
-              name="allow_multiple_subscriptions"
+              name="usage.show"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -87,7 +85,6 @@ const OrganizationSubscriptionSettings: React.FC<
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -95,18 +92,18 @@ const OrganizationSubscriptionSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
-            title="Proration"
-            description="Determines how to bill customers when they change their subscription"
+            title="Enable subscription seat management"
+            description="Allow customers to assign and manage seats for their subscriptions."
           >
             <FormField
               control={control}
-              name="proration_behavior"
+              name="subscription.update_seats"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <ProrationBehavior
-                      value={field.value}
-                      onValueChange={field.onChange}
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage />
@@ -116,33 +113,12 @@ const OrganizationSubscriptionSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
-            title="Grace period for benefit revocation"
-            description="How long to wait before revoking benefits during payment retries"
+            title="Enable subscription plan changes"
+            description="Allow customers to change their subscription plan from the portal."
           >
             <FormField
               control={control}
-              name="benefit_revocation_grace_period"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <BenefitRevocationGracePeriod
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(Number(value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            title="Prevent trial abuse"
-            description="When enabled, customers who previously had a trial on any of your products won't be eligible for another trial."
-          >
-            <FormField
-              control={control}
-              name="prevent_trial_abuse"
+              name="subscription.update_plan"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
@@ -162,4 +138,4 @@ const OrganizationSubscriptionSettings: React.FC<
   )
 }
 
-export default OrganizationSubscriptionSettings
+export default OrganizationCustomerPortalSettings

@@ -18,28 +18,35 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['CustomerOrganization']) => [
-  {
-    href: `/${organization.slug}/portal/overview`,
-    label: 'Overview',
-    isActive: (path: string) => path.includes('/overview'),
-  },
-  {
-    href: `/${organization.slug}/portal/orders`,
-    label: 'Orders',
-    isActive: (path: string) => path.includes('/orders'),
-  },
-  {
-    href: `/${organization.slug}/portal/usage`,
-    label: 'Usage',
-    isActive: (path: string) => path.includes('/usage'),
-  },
-  {
-    href: `/${organization.slug}/portal/settings`,
-    label: 'Billing',
-    isActive: (path: string) => path.includes('/settings'),
-  },
-]
+const links = (organization: schemas['CustomerOrganization']) => {
+  const portalSettings = organization.customer_portal_settings
+  return [
+    {
+      href: `/${organization.slug}/portal/overview`,
+      label: 'Overview',
+      isActive: (path: string) => path.includes('/overview'),
+    },
+    {
+      href: `/${organization.slug}/portal/orders`,
+      label: 'Orders',
+      isActive: (path: string) => path.includes('/orders'),
+    },
+    ...(portalSettings.usage.show
+      ? [
+          {
+            href: `/${organization.slug}/portal/usage`,
+            label: 'Usage',
+            isActive: (path: string) => path.includes('/usage'),
+          },
+        ]
+      : []),
+    {
+      href: `/${organization.slug}/portal/settings`,
+      label: 'Billing',
+      isActive: (path: string) => path.includes('/settings'),
+    },
+  ]
+}
 
 export const Navigation = ({
   organization,

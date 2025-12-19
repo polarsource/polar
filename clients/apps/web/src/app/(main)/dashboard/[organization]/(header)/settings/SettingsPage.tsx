@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
+import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
@@ -30,6 +31,11 @@ export default function ClientPage({
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
           <OrganizationSubscriptionSettings organization={org} />
+        </Section>
+
+        <Section id="customer_portal">
+          <SectionDescription title="Customer Portal" />
+          <OrganizationCustomerPortalSettings organization={org} />
         </Section>
 
         <Section id="customer_emails">

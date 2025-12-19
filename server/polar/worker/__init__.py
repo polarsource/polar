@@ -27,6 +27,7 @@ from ._enqueue import (
     enqueue_job,
 )
 from ._health import HealthMiddleware
+from ._httpx import HTTPXMiddleware
 from ._memory import MemoryMonitorMiddleware
 from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
@@ -178,6 +179,7 @@ broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
+broker.add_middleware(HTTPXMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
 broker.add_middleware(LogContextMiddleware())
@@ -246,6 +248,7 @@ def actor[**P, R](
 __all__ = [
     "AsyncSessionMaker",
     "CronTrigger",
+    "HTTPXMiddleware",
     "JobQueueManager",
     "RedisMiddleware",
     "TaskPriority",

@@ -29,6 +29,7 @@ from polar.kit.schemas import (
 )
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
+    OrganizationCustomerPortalSettings,
     OrganizationNotificationSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
@@ -213,9 +214,6 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     proration_behavior: SubscriptionProrationBehavior = Field(
         description="Proration behavior applied when customer updates their subscription from the portal.",
     )
-    allow_customer_updates: bool = Field(
-        description="Whether customers can update their subscriptions from the customer portal.",
-    )
 
     # Deprecated attributes
     bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
@@ -318,6 +316,9 @@ class Organization(OrganizationBase):
     customer_email_settings: OrganizationCustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
+    customer_portal_settings: OrganizationCustomerPortalSettings = Field(
+        description="Settings related to the customer portal",
+    )
 
 
 class OrganizationCreate(Schema):
@@ -340,6 +341,7 @@ class OrganizationCreate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -362,6 +364,7 @@ class OrganizationUpdate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
 
 
 class OrganizationPaymentStep(Schema):

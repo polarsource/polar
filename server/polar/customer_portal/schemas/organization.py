@@ -3,6 +3,7 @@ from pydantic import Field
 from polar.benefit.schemas import BenefitPublic
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import Schema
+from polar.models.organization import OrganizationCustomerPortalSettings
 from polar.organization.schemas import (
     OrganizationPublicBase,
 )
@@ -23,7 +24,10 @@ class CustomerProduct(ProductBase):
     )
 
 
-class CustomerOrganization(OrganizationPublicBase): ...
+class CustomerOrganization(OrganizationPublicBase):
+    customer_portal_settings: OrganizationCustomerPortalSettings = Field(
+        description="Settings related to the customer portal",
+    )
 
 
 class CustomerOrganizationData(Schema):

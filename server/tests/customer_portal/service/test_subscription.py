@@ -4,8 +4,14 @@ from datetime import datetime
 import pytest
 
 from polar.auth.models import AuthSubject
-from polar.customer_portal.schemas.subscription import CustomerSubscriptionUpdateProduct
-from polar.customer_portal.service.subscription import UpdateSubscriptionNotAllowed
+from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionUpdateProduct,
+    CustomerSubscriptionUpdateSeats,
+)
+from polar.customer_portal.service.subscription import (
+    UpdateSubscriptionPlanNotAllowed,
+    UpdateSubscriptionSeatsNotAllowed,
+)
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
 )
@@ -127,17 +133,27 @@ class TestUpdate:
         product_second: Product,
         organization: Organization,
     ) -> None:
-        organization.subscription_settings = {
-            **organization.subscription_settings,
-            "allow_customer_updates": False,
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                "update_seats": False,
+                "update_plan": False,
+            },
         }
         await save_fixture(organization)
 
-        with pytest.raises(UpdateSubscriptionNotAllowed):
+        with pytest.raises(UpdateSubscriptionPlanNotAllowed):
             await customer_subscription_service.update(
                 session,
                 subscription,
                 updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
+            )
+
+        with pytest.raises(UpdateSubscriptionSeatsNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionUpdateSeats(seats=100),
             )
 
     @pytest.mark.keep_session_state

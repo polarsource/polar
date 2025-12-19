@@ -64,6 +64,7 @@ _default_notification_settings: OrganizationNotificationSettings = {
 
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
+    # Legacy - to be removed separately
     allow_customer_updates: bool
     proration_behavior: SubscriptionProrationBehavior
     benefit_revocation_grace_period: int
@@ -108,6 +109,29 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_revoked": True,
     "subscription_uncanceled": True,
     "subscription_updated": True,
+}
+
+
+class CustomerPortalUsageSettings(TypedDict):
+    show: bool
+
+
+class CustomerPortalSubscriptionSettings(TypedDict):
+    update_seats: bool
+    update_plan: bool
+
+
+class OrganizationCustomerPortalSettings(TypedDict):
+    usage: CustomerPortalUsageSettings
+    subscription: CustomerPortalSubscriptionSettings
+
+
+_default_customer_portal_settings: OrganizationCustomerPortalSettings = {
+    "usage": {"show": True},
+    "subscription": {
+        "update_seats": True,
+        "update_plan": True,
+    },
 }
 
 
@@ -245,6 +269,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_customer_email_settings
     )
 
+    customer_portal_settings: Mapped[OrganizationCustomerPortalSettings] = (
+        mapped_column(JSONB, nullable=False, default=_default_customer_portal_settings)
+    )
+
     #
     # Feature Flags
     #
@@ -313,10 +341,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.subscription_settings["allow_multiple_subscriptions"]
 
     @property
-    def allow_customer_updates(self) -> bool:
-        return self.subscription_settings["allow_customer_updates"]
-
-    @property
     def proration_behavior(self) -> SubscriptionProrationBehavior:
         return SubscriptionProrationBehavior(
             self.subscription_settings["proration_behavior"]
@@ -333,6 +357,18 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def invoice_numbering(self) -> InvoiceNumbering:
         return InvoiceNumbering(self.order_settings["invoice_numbering"])
+
+    @property
+    def customer_portal_subscription_update_seats(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get(
+            "update_seats", True
+        )
+
+    @property
+    def customer_portal_subscription_update_plan(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get(
+            "update_plan", True
+        )
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

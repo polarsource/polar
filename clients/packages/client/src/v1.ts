@@ -7848,6 +7848,11 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
     }
     /**
      * BenefitType
@@ -9150,6 +9155,11 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
     }
     /**
      * CheckoutPriceCreate
@@ -12978,6 +12988,11 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
     }
@@ -19200,6 +19215,11 @@ export interface components {
       avatar_url: string | null
       /** @description Proration behavior applied when customer updates their subscription from the portal. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Allow Customer Updates
+       * @description Whether customers can update their subscriptions from the customer portal.
+       */
+      allow_customer_updates: boolean
       /**
        * Email
        * @description Public support email.

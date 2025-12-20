@@ -31084,8 +31084,6 @@ export interface operations {
         email?: string | null
         /** @description Filter by name, email, or external ID. */
         query?: string | null
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -31123,10 +31121,7 @@ export interface operations {
   }
   'customers:create': {
     parameters: {
-      query?: {
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
-      }
+      query?: never
       header?: never
       path?: never
       cookie?: never
@@ -31191,10 +31186,7 @@ export interface operations {
   }
   'customers:get': {
     parameters: {
-      query?: {
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
-      }
+      query?: never
       header?: never
       path: {
         /** @description The customer ID. */
@@ -31274,10 +31266,7 @@ export interface operations {
   }
   'customers:update': {
     parameters: {
-      query?: {
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
-      }
+      query?: never
       header?: never
       path: {
         /** @description The customer ID. */
@@ -31322,10 +31311,7 @@ export interface operations {
   }
   'customers:get_external': {
     parameters: {
-      query?: {
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
-      }
+      query?: never
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -31405,10 +31391,7 @@ export interface operations {
   }
   'customers:update_external': {
     parameters: {
-      query?: {
-        /** @description Include members in the response. Only populated when set to true. */
-        include_members?: boolean
-      }
+      query?: never
       header?: never
       path: {
         /** @description The customer external ID. */

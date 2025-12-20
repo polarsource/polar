@@ -130,7 +130,7 @@ module "test" {
 
   workers = {
     worker-test = {
-      start_command      = "uv run dramatiq -p 4 -t 8 -f polar.worker.scheduler:start polar.worker.run"
+      start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
       tag                = "latest"
       dramatiq_prom_port = "10000"
     }

@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
-from pydantic.json_schema import SkipJsonSchema
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
@@ -67,9 +66,10 @@ async def list(
     query: str | None = Query(
         None, description="Filter by name, email, or external ID."
     ),
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerWithMembers]:
@@ -189,9 +189,10 @@ async def export(
 async def get(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CustomerWithMembers:
@@ -220,9 +221,10 @@ async def get(
 async def get_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CustomerWithMembers:
@@ -310,9 +312,10 @@ async def get_state_external(
 async def create(
     customer_create: CustomerCreate,
     auth_subject: auth.CustomerWrite,
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerWithMembers:
@@ -348,9 +351,10 @@ async def update(
     id: CustomerID,
     customer_update: CustomerUpdate,
     auth_subject: auth.CustomerWrite,
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerWithMembers:
@@ -385,9 +389,10 @@ async def update_external(
     external_id: ExternalCustomerID,
     customer_update: CustomerUpdateExternalID,
     auth_subject: auth.CustomerWrite,
-    include_members: SkipJsonSchema[bool] = Query(
+    include_members: bool = Query(
         False,
         description="Include members in the response. Only populated when set to true.",
+        include_in_schema=False,
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerWithMembers:

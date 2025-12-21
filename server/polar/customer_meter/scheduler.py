@@ -17,9 +17,11 @@ from polar.models import Customer
 from polar.postgres import create_sync_engine
 
 
-def enqueue_update_customer(customer_id: uuid.UUID) -> None:
+def enqueue_update_customer(
+    customer_id: uuid.UUID, meters_dirtied_at: datetime.datetime | None = None
+) -> None:
     actor = dramatiq.get_broker().get_actor("customer_meter.update_customer")
-    actor.send(customer_id=customer_id)
+    actor.send(customer_id=customer_id, meters_dirtied_at=meters_dirtied_at)
 
 
 ORG_ID = "b3caa8b6-a64b-4c7c-94ad-03f70cc06841"
@@ -132,7 +134,7 @@ class CustomerMeterJobStore(BaseJobStore):
                     "trigger": trigger,
                     "executor": self.executor,
                     "func": enqueue_update_customer,
-                    "args": (customer_id,),
+                    "args": (customer_id, meters_dirtied_at),
                     "kwargs": {},
                     "id": f"customers:meter_update:{customer_id}",
                     "name": None,

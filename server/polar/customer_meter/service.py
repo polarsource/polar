@@ -91,7 +91,11 @@ class CustomerMeterService:
         return await repository.get_one_or_none(statement)
 
     async def update_customer(
-        self, session: AsyncSession, locker: Locker, customer: Customer
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meters_dirtied_at: datetime | None = None,
     ) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
@@ -106,7 +110,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, locker, customer, meter
+                session, locker, customer, meter, meters_dirtied_at=meters_dirtied_at
             )
             updated = updated or meter_updated
 
@@ -125,6 +129,7 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
+        meters_dirtied_at: datetime | None = None,
     ) -> tuple[CustomerMeter | None, bool]:
         async with locker.lock(
             f"customer_meter:{customer.id}:{meter.id}",
@@ -145,10 +150,8 @@ class CustomerMeterService:
             # minus a small buffer. This avoids scanning all historical events
             # when checking if there are new events to process.
             ingested_at_lower_bound: datetime | None = None
-            if customer.meters_dirtied_at is not None:
-                ingested_at_lower_bound = customer.meters_dirtied_at - timedelta(
-                    minutes=1
-                )
+            if meters_dirtied_at is not None:
+                ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
 
             last_event = await self._get_latest_current_window_event(
                 session, customer, meter, ingested_at_lower_bound

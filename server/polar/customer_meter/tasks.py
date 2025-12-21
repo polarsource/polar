@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from opentelemetry import trace
 
@@ -26,7 +27,9 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
     max_retries=1,
     min_backoff=30_000,
 )
-async def update_customer(customer_id: uuid.UUID) -> None:
+async def update_customer(
+    customer_id: uuid.UUID, meters_dirtied_at: datetime | None = None
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id)
@@ -39,4 +42,6 @@ async def update_customer(customer_id: uuid.UUID) -> None:
         redis = RedisMiddleware.get()
         locker = Locker(redis)
 
-        await customer_meter_service.update_customer(session, locker, customer)
+        await customer_meter_service.update_customer(
+            session, locker, customer, meters_dirtied_at
+        )

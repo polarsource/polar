@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -90,7 +91,11 @@ class CustomerMeterService:
         return await repository.get_one_or_none(statement)
 
     async def update_customer(
-        self, session: AsyncSession, locker: Locker, customer: Customer
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        customer: Customer,
+        meters_dirtied_at: datetime | None = None,
     ) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
@@ -105,7 +110,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, locker, customer, meter
+                session, locker, customer, meter, meters_dirtied_at=meters_dirtied_at
             )
             updated = updated or meter_updated
 
@@ -124,6 +129,7 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
+        meters_dirtied_at: datetime | None = None,
     ) -> tuple[CustomerMeter | None, bool]:
         async with locker.lock(
             f"customer_meter:{customer.id}:{meter.id}",
@@ -140,8 +146,15 @@ class CustomerMeterService:
                     return customer_meter, False
                 customer_meter.activated_at = utc_now()
 
+            # Optimization: only look for events ingested after meters_dirtied_at
+            # minus a small buffer. This avoids scanning all historical events
+            # when checking if there are new events to process.
+            ingested_at_lower_bound: datetime | None = None
+            if meters_dirtied_at is not None:
+                ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
+
             last_event = await self._get_latest_current_window_event(
-                session, customer, meter
+                session, customer, meter, ingested_at_lower_bound
             )
 
             if customer_meter is None:
@@ -209,7 +222,11 @@ class CustomerMeterService:
         return max(0, min(int(balance), rollover_units))
 
     async def _get_latest_current_window_event(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        ingested_at_lower_bound: datetime | None = None,
     ) -> Event | None:
         """
         Get the most recent event in the current meter window.
@@ -220,7 +237,12 @@ class CustomerMeterService:
         )
 
         by_customer_id = self._build_latest_event_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=False
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=False,
+            ingested_at_lower_bound=ingested_at_lower_bound,
         )
 
         # No union required when no external_id
@@ -231,7 +253,12 @@ class CustomerMeterService:
         # then merge results. This avoids slow BitmapOr scans that Postgres
         # uses for OR clauses on different indexed columns.
         by_external_id = self._build_latest_event_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=True
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=True,
+            ingested_at_lower_bound=ingested_at_lower_bound,
         )
         union_statement = union_all(by_customer_id, by_external_id)
         union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
@@ -339,15 +366,15 @@ class CustomerMeterService:
         meter: Meter,
         meter_reset_event: Event | None,
         by_external_id: bool = False,
+        ingested_at_lower_bound: datetime | None = None,
     ) -> Select[tuple[Event]]:
         """Build a LIMIT 1 statement for getting the latest event."""
-        return (
-            self._build_events_statement(
-                event_repository, customer, meter, meter_reset_event, by_external_id
-            )
-            .order_by(Event.ingested_at.desc())
-            .limit(1)
+        statement = self._build_events_statement(
+            event_repository, customer, meter, meter_reset_event, by_external_id
         )
+        if ingested_at_lower_bound is not None:
+            statement = statement.where(Event.ingested_at >= ingested_at_lower_bound)
+        return statement.order_by(Event.ingested_at.desc()).limit(1)
 
     async def _get_usage_quantity(
         self, session: AsyncSession, customer: Customer, meter: Meter

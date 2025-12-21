@@ -1,10 +1,7 @@
 'use client'
 
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
-import {
-  benefitsDisplayNames,
-  resolveBenefitIcon,
-} from '@/components/Benefit/utils'
+import { benefitsDisplayNames, resolveBenefitIcon, } from '@/components/Benefit/utils'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
@@ -27,12 +24,7 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import {
-  parseAsBoolean,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-} from 'nuqs'
+import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState, } from 'nuqs'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -45,7 +37,7 @@ type TTypeFilter =
   | 'license_keys'
   | 'meter_credit'
 
-const typeFilterDropdownData: { label: string; value: TTypeFilter }[] = [
+const TYPE_FILTER_DROPDOWN_DATA: { label: string; value: TTypeFilter }[] = [
   {
     label: 'All',
     value: 'all',
@@ -96,16 +88,11 @@ export const BenefitListSidebar = ({
 
   const [typeFilter, setTypeFilter] = useQueryState(
     'type',
-    parseAsStringLiteral([
-      'custom',
-      'discord',
-      'github_repository',
-      'downloadables',
-      'license_keys',
-      'meter_credit',
-      'all',
-    ] as const),
+    parseAsStringLiteral(
+      TYPE_FILTER_DROPDOWN_DATA.map((i) => i.value),
+    ).withDefault('all'),
   )
+
   const [query, setQuery] = useQueryState('query', parseAsString)
 
   const [createBenefitQuerystring, setCreateBenefitQuerystring] = useQueryState(
@@ -172,7 +159,7 @@ export const BenefitListSidebar = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {typeFilterDropdownData.map((item) => (
+                {TYPE_FILTER_DROPDOWN_DATA.map((item) => (
                   <DropdownMenuItem
                     key={item.value}
                     onClick={() => setTypeFilter(item.value)}

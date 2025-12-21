@@ -13,10 +13,18 @@ import { useInViewport } from '@/hooks/utils'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ArrowDownward from '@mui/icons-material/ArrowDownward'
 import ArrowUpward from '@mui/icons-material/ArrowUpward'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import FilterList from '@mui/icons-material/FilterList'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -27,6 +35,46 @@ import {
 } from 'nuqs'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+type TTypeFilter =
+  | 'all'
+  | 'custom'
+  | 'discord'
+  | 'github_repository'
+  | 'downloadables'
+  | 'license_keys'
+  | 'meter_credit'
+
+const typeFilterDropdownData: { label: string; value: TTypeFilter }[] = [
+  {
+    label: 'All',
+    value: 'all',
+  },
+  {
+    label: 'Custom',
+    value: 'custom',
+  },
+  {
+    label: 'Discord',
+    value: 'discord',
+  },
+  {
+    label: 'GitHub Repository',
+    value: 'github_repository',
+  },
+  {
+    label: 'Downloadables',
+    value: 'downloadables',
+  },
+  {
+    label: 'License Keys',
+    value: 'license_keys',
+  },
+  {
+    label: 'Meter Credit',
+    value: 'meter_credit',
+  },
+]
 
 export const BenefitListSidebar = ({
   organization,
@@ -46,6 +94,18 @@ export const BenefitListSidebar = ({
     ] as const).withDefault('-created_at'),
   )
 
+  const [typeFilter, setTypeFilter] = useQueryState(
+    'type',
+    parseAsStringLiteral([
+      'custom',
+      'discord',
+      'github_repository',
+      'downloadables',
+      'license_keys',
+      'meter_credit',
+      'all',
+    ] as const),
+  )
   const [query, setQuery] = useQueryState('query', parseAsString)
 
   const [createBenefitQuerystring, setCreateBenefitQuerystring] = useQueryState(
@@ -58,6 +118,7 @@ export const BenefitListSidebar = ({
     {
       query: query ?? undefined,
       sorting: [sorting],
+      type: typeFilter === 'all' ? undefined : typeFilter,
     },
   )
 
@@ -104,6 +165,29 @@ export const BenefitListSidebar = ({
         <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
           <div>Benefits</div>
           <div className="flex flex-row items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" className="h-6 w-6" variant="ghost">
+                  <FilterList fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {typeFilterDropdownData.map((item) => (
+                  <DropdownMenuItem
+                    key={item.value}
+                    onClick={() => setTypeFilter(item.value)}
+                  >
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        typeFilter !== item.value && 'invisible',
+                      )}
+                    />
+                    <span>{item.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"

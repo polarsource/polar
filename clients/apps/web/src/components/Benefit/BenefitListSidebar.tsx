@@ -1,7 +1,10 @@
 'use client'
 
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
-import { benefitsDisplayNames, resolveBenefitIcon, } from '@/components/Benefit/utils'
+import {
+  benefitsDisplayNames,
+  resolveBenefitIcon,
+} from '@/components/Benefit/utils'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
@@ -24,7 +27,12 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { parseAsBoolean, parseAsString, parseAsStringLiteral, useQueryState, } from 'nuqs'
+import {
+  parseAsBoolean,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

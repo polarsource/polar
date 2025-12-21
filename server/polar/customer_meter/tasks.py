@@ -28,7 +28,7 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
     min_backoff=30_000,
 )
 async def update_customer(
-    customer_id: uuid.UUID, meters_dirtied_at: datetime | None = None
+    customer_id: uuid.UUID, meters_dirtied_at: str | None = None
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
@@ -41,7 +41,9 @@ async def update_customer(
 
         redis = RedisMiddleware.get()
         locker = Locker(redis)
-
+        meters_dirtied = (
+            datetime.fromisoformat(meters_dirtied_at) if meters_dirtied_at else None
+        )
         await customer_meter_service.update_customer(
-            session, locker, customer, meters_dirtied_at
+            session, locker, customer, meters_dirtied
         )

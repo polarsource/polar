@@ -129,12 +129,15 @@ class CustomerMeterJobStore(BaseJobStore):
             for result in results.yield_per(250):
                 customer_id, meters_dirtied_at = result._tuple()
                 trigger = DateTrigger(meters_dirtied_at, datetime.UTC)
+                meters_dirtied = (
+                    meters_dirtied_at.isoformat() if meters_dirtied_at else None
+                )
                 job_kwargs = {
                     **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
                     "executor": self.executor,
                     "func": enqueue_update_customer,
-                    "args": (customer_id, meters_dirtied_at),
+                    "args": (customer_id, meters_dirtied),
                     "kwargs": {},
                     "id": f"customers:meter_update:{customer_id}",
                     "name": None,

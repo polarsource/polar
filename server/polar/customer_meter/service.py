@@ -273,6 +273,7 @@ class CustomerMeterService:
             meter_reset_event_ingested_at=(
                 meter_reset_event.ingested_at.isoformat() if meter_reset_event else None
             ),
+            ingested_at_lower_bound=ingested_at_lower_bound,
         ):
             result = await session.execute(
                 select(Event).from_statement(union_statement)

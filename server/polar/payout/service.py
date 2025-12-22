@@ -52,7 +52,7 @@ class InsufficientBalance(PayoutError):
     def __init__(self, account: Account, balance: int) -> None:
         self.account = account
         self.balance = balance
-        message = "Your account has an insufficient balance to make a payout."
+        message = "You have an insufficient balance to make a payout."
         super().__init__(message, 400)
 
 
@@ -66,7 +66,7 @@ class UnderReviewAccount(PayoutError):
 class NotReadyAccount(PayoutError):
     def __init__(self, account: Account) -> None:
         self.account = account
-        message = "Your account is not ready."
+        message = "Your payout account is not ready yet. Complete the setup to receive payouts."
         super().__init__(message, 403)
 
 

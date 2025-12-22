@@ -1,4 +1,4 @@
-from typing import Any, Literal, cast
+from typing import Any, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -376,10 +376,8 @@ class TestRevokeBenefit:
 
 @pytest.mark.asyncio
 class TestEnqueueBenefitsGrants:
-    @pytest.mark.parametrize("task", ["grant", "revoke"])
-    async def test_subscription_scope(
+    async def test_grant_no_existing_grants(
         self,
-        task: Literal["grant", "revoke"],
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -388,6 +386,7 @@ class TestEnqueueBenefitsGrants:
         customer: Customer,
         subscription: Subscription,
     ) -> None:
+        """Test that all benefits are enqueued when there are no existing grants."""
         enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
 
         product = await set_product_benefits(
@@ -395,13 +394,13 @@ class TestEnqueueBenefitsGrants:
         )
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, task, customer, product, subscription=subscription
+            session, "grant", customer, product, subscription=subscription
         )
 
         enqueue_job_mock.assert_has_calls(
             [
                 call(
-                    f"benefit.{task}",
+                    "benefit.grant",
                     customer_id=customer.id,
                     benefit_id=benefit.id,
                     member_id=None,
@@ -410,6 +409,158 @@ class TestEnqueueBenefitsGrants:
                 for benefit in benefits
             ]
         )
+
+    async def test_grant_skips_already_granted_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        """Test that already granted benefits are skipped."""
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        # Grant the first benefit
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefits[0]
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        # Should only enqueue remaining benefits (not the already granted one)
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "benefit.grant",
+                    customer_id=customer.id,
+                    benefit_id=benefit.id,
+                    member_id=None,
+                    subscription_id=subscription.id,
+                )
+                for benefit in benefits[1:]
+            ]
+        )
+        # Verify the granted benefit was NOT enqueued
+        for c in enqueue_job_mock.call_args_list:
+            if c[0][0] == "benefit.grant":
+                assert c[1]["benefit_id"] != benefits[0].id
+
+    async def test_grant_skips_errored_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        """Test that benefits with errors (e.g., BenefitActionRequiredError) are skipped."""
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        # Create a grant with an error for the first benefit
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefits[0]
+        )
+        grant.set_grant_failed(BenefitActionRequiredError("Connect GitHub"))
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        # Should only enqueue remaining benefits (not the errored one)
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "benefit.grant",
+                    customer_id=customer.id,
+                    benefit_id=benefit.id,
+                    member_id=None,
+                    subscription_id=subscription.id,
+                )
+                for benefit in benefits[1:]
+            ]
+        )
+        # Verify the errored benefit was NOT enqueued
+        for c in enqueue_job_mock.call_args_list:
+            if c[0][0] == "benefit.grant":
+                assert c[1]["benefit_id"] != benefits[0].id
+
+    async def test_revoke_only_granted_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        """Test that only granted benefits are revoked."""
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        # Grant only the first benefit
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefits[0]
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, product, subscription=subscription
+        )
+
+        # Should only enqueue revoke for the granted benefit
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.revoke",
+            customer_id=customer.id,
+            benefit_id=benefits[0].id,
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+
+    async def test_revoke_no_grants_enqueues_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        """Test that no revoke jobs are enqueued when there are no grants."""
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_not_called()
 
     async def test_outdated_grants(
         self,

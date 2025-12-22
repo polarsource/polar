@@ -364,12 +364,32 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         member_id: UUID | None = None,
         **scope: Unpack[BenefitGrantScope],
     ) -> None:
-        # Get granted benefits that are not part of this product.
-        # It happens if the subscription has been upgraded/downgraded.
         repository = BenefitGrantRepository.from_session(session)
-        outdated_grants = await repository.list_outdated_grants(product, **scope)
 
-        for benefit in product.benefits:
+        # Get existing grants for this customer and scope to avoid redundant jobs
+        existing_grants = await repository.list_by_customer_and_scope(customer, **scope)
+        granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
+        # Don't retry grants that failed due to required customer action -
+        # they should only be retried when the customer takes that action
+        errored_benefit_ids = {
+            g.benefit_id
+            for g in existing_grants
+            if g.error and g.error.get("type") == BenefitActionRequiredError.__name__
+        }
+
+        if task == "grant":
+            benefits_to_process = [
+                b
+                for b in product.benefits
+                if b.id not in granted_benefit_ids and b.id not in errored_benefit_ids
+            ]
+        else:
+            # Only revoke benefits that are actually granted
+            benefits_to_process = [
+                b for b in product.benefits if b.id in granted_benefit_ids
+            ]
+
+        for benefit in benefits_to_process:
             enqueue_job(
                 f"benefit.{task}",
                 customer_id=customer.id,
@@ -378,6 +398,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 **scope_to_args(scope),
             )
 
+        # Get granted benefits that are not part of this product.
+        # It happens if the subscription has been upgraded/downgraded.
+        outdated_grants = await repository.list_outdated_grants(product, **scope)
         for outdated_grant in outdated_grants:
             enqueue_job(
                 "benefit.revoke",

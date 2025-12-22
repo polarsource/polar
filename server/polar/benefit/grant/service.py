@@ -374,7 +374,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         errored_benefit_ids = {
             g.benefit_id
             for g in existing_grants
-            if g.error and g.error.get("type") == "BenefitActionRequiredError"
+            if g.error and g.error.get("type") == BenefitActionRequiredError.__name__
         }
 
         if task == "grant":

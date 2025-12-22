@@ -330,12 +330,12 @@ export const GitHubRepositoryBenefitForm = ({
           {selectedRepository?.org?.plan_name &&
           !selectedRepository?.org?.is_free ? (
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-              This organization is currently on the{' '}
+              This organization is currently on the GitHub{' '}
               <span className="capitalize">
                 {selectedRepository?.org?.plan_name}
-              </span>
-              &apos;s plan.{' '}
-              <strong>
+              </span>{' '}
+              plan.{' '}
+              <strong className="font-medium">
                 Each subscriber will take a seat and GitHub will bill you for
                 them. Make sure your pricing is covering those fees!
               </strong>
@@ -343,8 +343,8 @@ export const GitHubRepositoryBenefitForm = ({
           ) : (
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
               We can&apos;t check the GitHub billing plan for this organization.
-              If you&apos;re on a paid plan{' '}
-              <strong>
+              If you&apos;re on a paid plan,{' '}
+              <strong className="font-medium">
                 each subscriber will take a seat and GitHub will bill you for
                 them.
               </strong>

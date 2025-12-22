@@ -103,16 +103,12 @@ async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> 
         try:
             await order_service.trigger_payment(session, order, payment_method)
         except CardPaymentFailed:
-            # Card errors should not be retried - initiate dunning process
+            # Card errors should not be retried - they will be handled by the dunning process
+            # Log the failure but don't retry the task
             log.info(
-                "Card payment failed, initiating dunning process",
+                "Card payment failed, not retrying - will be handled by dunning",
                 order_id=order_id,
             )
-            # Re-fetch order to get latest state (may have been modified by trigger_payment)
-            await session.refresh(order)
-            # Initiate dunning if not already handled (e.g., by InvalidRequestError path)
-            if order.next_payment_attempt_at is None and order.subscription is not None:
-                await order_service.handle_payment_failure(session, order)
             return
         except (
             stripe_lib.APIConnectionError,

@@ -1566,7 +1566,8 @@ class OrderService:
         await webhook_service.send(session, organization, event_type, order)
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
-        enqueue_job("order.confirmation_email", order.id)
+        # Confirmation email is sent in _on_order_paid when payment completes
+        # (for both immediately-paid orders and orders that become paid later)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:
@@ -1595,6 +1596,10 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        # Send confirmation email when order becomes paid
+        # (for orders created as pending, e.g. subscription cycles)
+        enqueue_job("order.confirmation_email", order.id)
 
         await self.send_webhook(session, order, WebhookEventType.order_paid)
 

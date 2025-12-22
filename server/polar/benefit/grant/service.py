@@ -371,7 +371,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
         # Don't retry grants that failed due to required customer action -
         # they should only be retried when the customer takes that action
-        errored_benefit_ids = {g.benefit_id for g in existing_grants if g.error}
+        errored_benefit_ids = {
+            g.benefit_id
+            for g in existing_grants
+            if g.error and g.error.get("type") == "BenefitActionRequiredError"
+        }
 
         if task == "grant":
             benefits_to_process = [

@@ -1,4 +1,4 @@
-from typing import Any, Literal, cast
+from typing import Any, cast
 from unittest.mock import MagicMock, call
 
 import pytest

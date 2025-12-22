@@ -130,6 +130,18 @@ class BenefitGrantRepository(
         ).options(*options)
         return await self.get_all(statement)
 
+    async def list_by_customer_and_scope(
+        self,
+        customer: Customer,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> Sequence[BenefitGrant]:
+        statement = self.get_base_statement().where(
+            BenefitGrant.customer_id == customer.id,
+            BenefitGrant.scope == scope,
+            BenefitGrant.deleted_at.is_(None),
+        )
+        return await self.get_all(statement)
+
     async def list_outdated_grants(
         self, product: Product, **scope: Unpack[BenefitGrantScope]
     ) -> Sequence[BenefitGrant]:

@@ -50,7 +50,6 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_events
 
 from .repository import EventRepository
-from .system import SystemEvent
 from .schemas import (
     EventCreateCustomer,
     EventName,
@@ -61,6 +60,7 @@ from .schemas import (
     StatisticsPeriod,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
+from .system import SystemEvent
 
 log: Logger = structlog.get_logger()
 

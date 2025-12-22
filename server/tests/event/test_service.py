@@ -23,7 +23,11 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Customer,
@@ -1176,7 +1180,7 @@ class TestAggregateFieldsDoNotPersist:
 
 @pytest.mark.asyncio
 class TestIngested:
-    async def test_basic(
+    async def test_basic_no_meters(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1184,6 +1188,7 @@ class TestIngested:
         customer: Customer,
         customer_second: Customer,
     ) -> None:
+        """When org has no meters, meters_dirtied_at should not be set."""
         events = [
             await create_event(
                 save_fixture,
@@ -1213,8 +1218,44 @@ class TestIngested:
 
         await event_service.ingested(session, [event.id for event in events])
 
+        # No meters in org, so meters_dirtied_at should not be set
+        assert customer.meters_dirtied_at is None
+        assert customer_second.meters_dirtied_at is None
+
+    async def test_basic_with_meters(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """When org has meters, meters_dirtied_at should be set for user events."""
+        meter = Meter(
+            name="Test Meter",
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="test"
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+        )
+        await save_fixture(meter)
+
+        event = await create_event(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            source=EventSource.user,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer)
         assert customer.meters_dirtied_at is not None
-        assert customer_second.meters_dirtied_at is not None
 
     async def test_auto_enable_revops_for_cost_events(
         self,

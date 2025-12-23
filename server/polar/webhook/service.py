@@ -301,6 +301,21 @@ class WebhookService:
                 endpoint, update_dict={"enabled": False}, flush=True
             )
 
+            # Mark all pending events as skipped
+            pending_events = await webhook_event_repository.get_pending_by_endpoint(
+                endpoint.id
+            )
+            for pending_event in pending_events:
+                pending_event.skipped = True
+                session.add(pending_event)
+
+            if pending_events:
+                log.info(
+                    "Marked pending events as skipped",
+                    webhook_endpoint_id=endpoint.id,
+                    count=len(pending_events),
+                )
+
             # Send email to all organization members
             organization_id = endpoint.organization_id
             user_organizations = await user_organization_service.list_by_org(

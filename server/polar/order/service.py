@@ -91,7 +91,7 @@ from polar.transaction.service.platform_fee import (
 from polar.wallet.repository import WalletTransactionRepository
 from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job, make_bulk_job_delay_calculator
+from polar.worker import calculate_bulk_job_delay, enqueue_job
 
 from .repository import OrderRepository
 from .schemas import OrderInvoice, OrderUpdate
@@ -1434,7 +1434,6 @@ class OrderService:
             base_statement.with_only_columns(func.count())
         )
         total_count = count_result.scalar_one()
-        calculate_delay = make_bulk_job_delay_calculator(total_count)
 
         orders = await session.stream_scalars(
             base_statement,
@@ -1448,7 +1447,7 @@ class OrderService:
                 customer_id=order.customer_id,
                 product_id=product.id,
                 order_id=order.id,
-                delay=calculate_delay(index),
+                delay=calculate_bulk_job_delay(index, total_count),
             )
             index += 1
 

@@ -21,11 +21,10 @@ from polar.observability import metrics as _prometheus_metrics
 
 from ._encoder import JSONEncoder
 from ._enqueue import (
-    BulkJobDelayCalculator,
     JobQueueManager,
+    calculate_bulk_job_delay,
     enqueue_events,
     enqueue_job,
-    make_bulk_job_delay_calculator,
 )
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
@@ -248,7 +247,6 @@ def actor[**P, R](
 
 __all__ = [
     "AsyncSessionMaker",
-    "BulkJobDelayCalculator",
     "CronTrigger",
     "HTTPXMiddleware",
     "JobQueueManager",
@@ -256,10 +254,10 @@ __all__ = [
     "TaskPriority",
     "TaskQueue",
     "actor",
+    "calculate_bulk_job_delay",
     "can_retry",
     "enqueue_events",
     "enqueue_job",
     "get_retries",
-    "make_bulk_job_delay_calculator",
     "scheduler_middleware",
 ]

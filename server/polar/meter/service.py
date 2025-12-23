@@ -45,7 +45,7 @@ from polar.subscription.repository import (
     CustomerSubscriptionProductPrice,
     SubscriptionProductPriceRepository,
 )
-from polar.worker import enqueue_job, make_bulk_job_delay_calculator
+from polar.worker import enqueue_job
 
 from .repository import MeterRepository
 from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
@@ -422,17 +422,8 @@ class MeterService:
     async def enqueue_billing(self, session: AsyncSession) -> None:
         repository = MeterRepository.from_session(session)
         statement = repository.get_base_statement().order_by(Meter.created_at.asc())
-
-        count_result = await session.execute(statement.with_only_columns(func.count()))
-        total_count = count_result.scalar_one()
-        calculate_delay = make_bulk_job_delay_calculator(
-            total_count, max_spread_ms=180_000, allow_spill=False
-        )
-
-        index = 0
         async for meter in repository.stream(statement):
-            enqueue_job("meter.billing_entries", meter.id, delay=calculate_delay(index))
-            index += 1
+            enqueue_job("meter.billing_entries", meter.id)
 
     async def _create_subscription_holder_billing_entry(
         self,

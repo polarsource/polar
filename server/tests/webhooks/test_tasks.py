@@ -167,3 +167,38 @@ class TestOnEventFailed:
         # Endpoint should remain disabled
         await session.refresh(webhook_endpoint_organization)
         assert webhook_endpoint_organization.enabled is False
+
+    async def test_disables_endpoint_ignoring_pending_events(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        # Create threshold number of failed events
+        events = []
+        for i in range(settings.WEBHOOK_FAILURE_THRESHOLD):
+            event = WebhookEvent(
+                webhook_endpoint_id=webhook_endpoint_organization.id,
+                type=WebhookEventType.customer_created,
+                payload='{"foo":"bar"}',
+                succeeded=False,
+            )
+            await save_fixture(event)
+            events.append(event)
+
+        # Add some pending events (succeeded=None) - these should be ignored
+        for i in range(5):
+            pending_event = WebhookEvent(
+                webhook_endpoint_id=webhook_endpoint_organization.id,
+                type=WebhookEventType.customer_created,
+                payload='{"foo":"bar"}',
+                succeeded=None,
+            )
+            await save_fixture(pending_event)
+
+        # Trigger the failure handler on one of the failed events
+        await webhook_service.on_event_failed(session, events[-1].id)
+
+        # Check that the endpoint is disabled (pending events should not block this)
+        await session.refresh(webhook_endpoint_organization)
+        assert webhook_endpoint_organization.enabled is False

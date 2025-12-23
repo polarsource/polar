@@ -4,14 +4,13 @@ import itertools
 import time
 import uuid
 from collections import defaultdict
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from typing import Any, Self
 
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
 
-from polar.config import settings
 from polar.logging import Logger
 from polar.redis import Redis
 
@@ -197,12 +196,22 @@ def enqueue_events(*event_ids: uuid.UUID) -> None:
     job_queue_manager.enqueue_events(*event_ids)
 
 
-def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
-    """Calculate delay in milliseconds for bulk job spreading.
+type BulkJobDelayCalculator = Callable[[int], int | None]
+
+
+def make_bulk_job_delay_calculator(
+    total_count: int,
+    *,
+    threshold: int = 50,
+    target_delay_ms: int = 200,
+    min_delay_ms: int = 50,
+    max_spread_ms: int = 300_000,
+) -> BulkJobDelayCalculator:
+    """Create a delay calculator for bulk job spreading.
 
     When enqueueing many jobs at once (e.g., granting benefits to all customers
-    of a product), this function calculates the appropriate delay for each job
-    to spread them out over time and prevent queue saturation.
+    of a product), this function returns a calculator that computes the appropriate
+    delay for each job to spread them out over time and prevent queue saturation.
 
     The delay logic:
     1. If count <= threshold: no delay
@@ -214,27 +223,27 @@ def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
     rather than using sub-50ms delays which would be meaningless.
 
     Args:
-        index: The 0-based index of the current item in the batch.
         total_count: The total number of items in the batch.
+        threshold: Only spread if count exceeds this value (default: 50).
+        target_delay_ms: Target delay between jobs in milliseconds (default: 200).
+        min_delay_ms: Minimum delay floor in milliseconds (default: 50).
+        max_spread_ms: Maximum total spread time in milliseconds (default: 300,000 = 5 minutes).
 
     Returns:
-        The delay in milliseconds, or None if no delay is needed
-        (below threshold or first item).
+        A function that takes an index and returns the delay in milliseconds,
+        or None if no delay is needed (below threshold or first item).
     """
-    if total_count <= settings.BULK_JOBS_SPREAD_THRESHOLD:
-        return None
-    if index == 0:
-        return None
-
-    target_delay_ms = settings.BULK_JOBS_SPREAD_TARGET_DELAY_MS
-    min_delay_ms = settings.BULK_JOBS_SPREAD_MIN_DELAY_MS
-    max_spread_ms = settings.BULK_JOBS_SPREAD_MAX_MS
+    if total_count <= threshold:
+        return lambda index: None
 
     if total_count * target_delay_ms <= max_spread_ms:
-        # Use target delay - we fit within max spread
         delay_per_item = target_delay_ms
     else:
-        # Compress to fit, but enforce minimum floor
         delay_per_item = max(min_delay_ms, int(max_spread_ms / total_count))
 
-    return int(index * delay_per_item)
+    def calculate_delay(index: int) -> int | None:
+        if index == 0:
+            return None
+        return int(index * delay_per_item)
+
+    return calculate_delay

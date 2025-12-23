@@ -90,7 +90,7 @@ from polar.product.guard import (
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job, make_bulk_job_delay_calculator
+from polar.worker import calculate_bulk_job_delay, enqueue_job
 
 from .repository import SubscriptionRepository
 from .schemas import (
@@ -2161,7 +2161,6 @@ class SubscriptionService:
             base_statement.with_only_columns(func.count())
         )
         total_count = count_result.scalar_one()
-        calculate_delay = make_bulk_job_delay_calculator(total_count)
 
         subscriptions = await session.stream_scalars(
             base_statement,
@@ -2172,7 +2171,7 @@ class SubscriptionService:
             await self.enqueue_benefits_grants(
                 session,
                 subscription,
-                delay=calculate_delay(index),
+                delay=calculate_bulk_job_delay(index, total_count),
             )
             index += 1
 

@@ -2074,10 +2074,11 @@ class TestHandlePayment:
         assert updated_order.status == OrderStatus.paid
         assert updated_order.tax_transaction_processor_id == "tax_txn_456"
 
-        # Verify enqueue_job was called to balance the order
-        enqueue_job_mock.assert_called_once_with(
+        # Verify enqueue_job was called to balance the order and send confirmation email
+        enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id="stripe_payment_123"
         )
+        enqueue_job_mock.assert_any_call("order.confirmation_email", order.id)
 
         # Verify stripe tax transaction was created
         stripe_service_mock.create_tax_transaction.assert_called_once_with(

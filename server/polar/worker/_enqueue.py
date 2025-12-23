@@ -235,39 +235,41 @@ def make_bulk_job_delay_calculator(
         A function that takes an index and returns the delay in milliseconds,
         or None if no delay is needed (below threshold or first item).
     """
+    def linear_calculator(delay_per_item: int) -> BulkJobDelayCalculator:
+        def calculate_delay(index: int) -> int | None:
+            delay = index * delay_per_item
+            return delay or None
+
+        return calculate_delay
+
     if total_count <= threshold:
         return lambda index: None
 
     if total_count * target_delay_ms <= max_spread_ms:
-        delay_per_item = target_delay_ms
-    else:
-        compressed_delay = int(max_spread_ms / total_count)
+        return linear_calculator(target_delay_ms)
 
-        if compressed_delay >= min_delay_ms:
-            delay_per_item = compressed_delay
-        elif allow_spill:
-            delay_per_item = min_delay_ms
+    compressed_delay = max_spread_ms // total_count
+
+    if compressed_delay >= min_delay_ms:
+        return linear_calculator(compressed_delay)
+
+    if allow_spill:
+        return linear_calculator(min_delay_ms)
+
+    # Batch items to stay within max_spread, using all available slots
+    # Extra items go to earlier batches: 17 items / 5 slots = 4-4-3-3-3
+    num_slots = (max_spread_ms // min_delay_ms) + 1  # +1 for the zero-delay slot
+    base = total_count // num_slots
+    remainder = total_count % num_slots
+    full_slot_size = base + 1
+    full_slots_items = remainder * full_slot_size
+
+    def calculate_delay_batched(index: int) -> int | None:
+        if index < full_slots_items:
+            slot = index // full_slot_size
         else:
-            # Batch items to stay within max_spread, using all available slots
-            # Extra items go to earlier batches: 17 items / 5 slots = 4-4-3-3-3
-            num_slots = (max_spread_ms // min_delay_ms) + 1  # +1 for the zero-delay slot
-            base = total_count // num_slots
-            remainder = total_count % num_slots
-            full_slot_size = base + 1
-            full_slots_items = remainder * full_slot_size
-
-            def calculate_delay_batched(index: int) -> int | None:
-                if index < full_slots_items:
-                    slot = index // full_slot_size
-                else:
-                    slot = remainder + (index - full_slots_items) // base
-                delay = slot * min_delay_ms
-                return delay or None
-
-            return calculate_delay_batched
-
-    def calculate_delay(index: int) -> int | None:
-        delay = int(index * delay_per_item)
+            slot = remainder + (index - full_slots_items) // base
+        delay = slot * min_delay_ms
         return delay or None
 
-    return calculate_delay
+    return calculate_delay_batched

@@ -1,7 +1,6 @@
 import contextlib
 import contextvars
 import itertools
-import math
 import time
 import uuid
 from collections import defaultdict
@@ -249,12 +248,19 @@ def make_bulk_job_delay_calculator(
         elif allow_spill:
             delay_per_item = min_delay_ms
         else:
-            # Batch items to stay within max_spread
+            # Batch items to stay within max_spread, using all available slots
+            # Extra items go to earlier batches: 15 items / 4 slots = 4-4-4-3
             num_slots = max_spread_ms // min_delay_ms
-            items_per_slot = math.ceil(total_count / num_slots)
+            base = total_count // num_slots
+            remainder = total_count % num_slots
+            full_slot_size = base + 1
+            full_slots_items = remainder * full_slot_size
 
             def calculate_delay_batched(index: int) -> int | None:
-                slot = index // items_per_slot
+                if index < full_slots_items:
+                    slot = index // full_slot_size
+                else:
+                    slot = remainder + (index - full_slots_items) // base
                 return int((slot + 1) * min_delay_ms)
 
             return calculate_delay_batched

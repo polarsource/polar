@@ -250,16 +250,12 @@ def make_bulk_job_delay_calculator(
             delay_per_item = min_delay_ms
         else:
             # Batch items to stay within max_spread
-            num_slots = (max_spread_ms // min_delay_ms) + 1
+            num_slots = max_spread_ms // min_delay_ms
             items_per_slot = math.ceil(total_count / num_slots)
 
             def calculate_delay_batched(index: int) -> int | None:
-                if index == 0:
-                    return None
                 slot = index // items_per_slot
-                if slot == 0:
-                    return None
-                return int(slot * min_delay_ms)
+                return int((slot + 1) * min_delay_ms)
 
             return calculate_delay_batched
 

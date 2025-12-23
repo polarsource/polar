@@ -202,7 +202,6 @@ type BulkJobDelayCalculator = Callable[[int], int | None]
 def make_bulk_job_delay_calculator(
     total_count: int,
     *,
-    threshold: int = 50,
     target_delay_ms: int = 200,
     min_delay_ms: int = 50,
     max_spread_ms: int = 300_000,
@@ -215,16 +214,14 @@ def make_bulk_job_delay_calculator(
     delay for each job to spread them out over time and prevent queue saturation.
 
     The delay logic:
-    1. If count <= threshold: no delay
-    2. If count * target_delay <= max_spread: use target_delay (200ms)
-    3. If calculated delay >= min_delay: compress to fit in max_spread
-    4. If calculated delay < min_delay:
+    1. If count * target_delay <= max_spread: use target_delay (200ms)
+    2. If calculated delay >= min_delay: compress to fit in max_spread
+    3. If calculated delay < min_delay:
        - allow_spill=True: use min_delay, accepting that total time exceeds max_spread
        - allow_spill=False: batch items together to stay within max_spread
 
     Args:
         total_count: The total number of items in the batch.
-        threshold: Only spread if count exceeds this value (default: 50).
         target_delay_ms: Target delay between jobs in milliseconds (default: 200).
         min_delay_ms: Minimum delay floor in milliseconds (default: 50).
         max_spread_ms: Maximum total spread time in milliseconds (default: 300,000 = 5 minutes).
@@ -233,7 +230,7 @@ def make_bulk_job_delay_calculator(
 
     Returns:
         A function that takes an index and returns the delay in milliseconds,
-        or None if no delay is needed (below threshold or first item).
+        or None if no delay is needed (first item).
     """
     def linear_calculator(delay_per_item: int) -> BulkJobDelayCalculator:
         def calculate_delay(index: int) -> int | None:
@@ -241,9 +238,6 @@ def make_bulk_job_delay_calculator(
             return delay or None
 
         return calculate_delay
-
-    if total_count <= threshold:
-        return lambda index: None
 
     if total_count * target_delay_ms <= max_spread_ms:
         return linear_calculator(target_delay_ms)

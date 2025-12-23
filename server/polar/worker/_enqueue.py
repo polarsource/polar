@@ -4,14 +4,13 @@ import itertools
 import time
 import uuid
 from collections import defaultdict
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from typing import Any, Self
 
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
 
-from polar.config import settings
 from polar.logging import Logger
 from polar.redis import Redis
 
@@ -197,44 +196,76 @@ def enqueue_events(*event_ids: uuid.UUID) -> None:
     job_queue_manager.enqueue_events(*event_ids)
 
 
-def calculate_bulk_job_delay(index: int, total_count: int) -> int | None:
-    """Calculate delay in milliseconds for bulk job spreading.
+type BulkJobDelayCalculator = Callable[[int], int | None]
+
+
+def make_bulk_job_delay_calculator(
+    total_count: int,
+    *,
+    target_delay_ms: int = 200,
+    min_delay_ms: int = 50,
+    max_spread_ms: int = 300_000,
+    allow_spill: bool = True,
+) -> BulkJobDelayCalculator:
+    """Create a delay calculator for bulk job spreading.
 
     When enqueueing many jobs at once (e.g., granting benefits to all customers
-    of a product), this function calculates the appropriate delay for each job
-    to spread them out over time and prevent queue saturation.
+    of a product), this function returns a calculator that computes the appropriate
+    delay for each job to spread them out over time and prevent queue saturation.
 
     The delay logic:
-    1. If count <= threshold: no delay
-    2. If count * target_delay <= max_spread: use target_delay (200ms)
-    3. If calculated delay >= min_delay: compress to fit in max_spread
-    4. If calculated delay < min_delay: use min_delay (50ms floor)
-
-    For very large batches (>6000 items), we accept exceeding max_spread
-    rather than using sub-50ms delays which would be meaningless.
+    1. If count * target_delay <= max_spread: use target_delay (200ms)
+    2. If calculated delay >= min_delay: compress to fit in max_spread
+    3. If calculated delay < min_delay:
+       - allow_spill=True: use min_delay, accepting that total time exceeds max_spread
+       - allow_spill=False: batch items together to stay within max_spread
 
     Args:
-        index: The 0-based index of the current item in the batch.
         total_count: The total number of items in the batch.
+        target_delay_ms: Target delay between jobs in milliseconds (default: 200).
+        min_delay_ms: Minimum delay floor in milliseconds (default: 50).
+        max_spread_ms: Maximum total spread time in milliseconds (default: 300,000 = 5 minutes).
+        allow_spill: If True, respects min_delay even if total time exceeds max_spread.
+            If False, batches items together to stay within max_spread (default: True).
 
     Returns:
-        The delay in milliseconds, or None if no delay is needed
-        (below threshold or first item).
+        A function that takes an index and returns the delay in milliseconds,
+        or None if no delay is needed (first item).
     """
-    if total_count <= settings.BULK_JOBS_SPREAD_THRESHOLD:
-        return None
-    if index == 0:
-        return None
 
-    target_delay_ms = settings.BULK_JOBS_SPREAD_TARGET_DELAY_MS
-    min_delay_ms = settings.BULK_JOBS_SPREAD_MIN_DELAY_MS
-    max_spread_ms = settings.BULK_JOBS_SPREAD_MAX_MS
+    def linear_calculator(delay_per_item: int) -> BulkJobDelayCalculator:
+        def calculate_delay(index: int) -> int | None:
+            delay = index * delay_per_item
+            return delay or None
+
+        return calculate_delay
 
     if total_count * target_delay_ms <= max_spread_ms:
-        # Use target delay - we fit within max spread
-        delay_per_item = target_delay_ms
-    else:
-        # Compress to fit, but enforce minimum floor
-        delay_per_item = max(min_delay_ms, int(max_spread_ms / total_count))
+        return linear_calculator(target_delay_ms)
 
-    return int(index * delay_per_item)
+    compressed_delay = max_spread_ms // total_count
+
+    if compressed_delay >= min_delay_ms:
+        return linear_calculator(compressed_delay)
+
+    if allow_spill:
+        return linear_calculator(min_delay_ms)
+
+    # Batch items to stay within max_spread, using all available slots
+    # Extra items go to earlier batches: 17 items / 5 slots = 4-4-3-3-3
+    num_slots = (max_spread_ms // min_delay_ms) + 1  # +1 for the zero-delay slot
+    base_slot_size = total_count // num_slots
+    spill_slot_size = base_slot_size + 1
+
+    num_spill_slots = total_count % num_slots
+    spill_slot_switch_index = num_spill_slots * spill_slot_size
+
+    def calculate_delay_batched(index: int) -> int | None:
+        if index < spill_slot_switch_index:
+            slot = index // spill_slot_size
+        else:
+            slot = num_spill_slots + (index - spill_slot_switch_index) // base_slot_size
+        delay = slot * min_delay_ms
+        return delay or None
+
+    return calculate_delay_batched

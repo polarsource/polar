@@ -232,6 +232,7 @@ def make_bulk_job_delay_calculator(
         A function that takes an index and returns the delay in milliseconds,
         or None if no delay is needed (first item).
     """
+
     def linear_calculator(delay_per_item: int) -> BulkJobDelayCalculator:
         def calculate_delay(index: int) -> int | None:
             delay = index * delay_per_item
@@ -253,16 +254,17 @@ def make_bulk_job_delay_calculator(
     # Batch items to stay within max_spread, using all available slots
     # Extra items go to earlier batches: 17 items / 5 slots = 4-4-3-3-3
     num_slots = (max_spread_ms // min_delay_ms) + 1  # +1 for the zero-delay slot
-    base = total_count // num_slots
-    remainder = total_count % num_slots
-    full_slot_size = base + 1
-    full_slots_items = remainder * full_slot_size
+    base_slot_size = total_count // num_slots
+    spill_slot_size = base_slot_size + 1
+
+    num_spill_slots = total_count % num_slots
+    spill_slot_switch_index = num_spill_slots * spill_slot_size
 
     def calculate_delay_batched(index: int) -> int | None:
-        if index < full_slots_items:
-            slot = index // full_slot_size
+        if index < spill_slot_switch_index:
+            slot = index // spill_slot_size
         else:
-            slot = remainder + (index - full_slots_items) // base
+            slot = num_spill_slots + (index - spill_slot_switch_index) // base_slot_size
         delay = slot * min_delay_ms
         return delay or None
 

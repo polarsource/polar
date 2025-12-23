@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from sqlalchemy import (
@@ -103,11 +103,18 @@ class OAuthAccount(RecordModel):
 
 class User(RecordModel):
     __tablename__ = "users"
-    __table_args__ = (
-        Index(
-            "ix_users_email_case_insensitive", func.lower(Column("email")), unique=True
-        ),
-    )
+
+    @declared_attr.directive
+    def __table_args__(cls) -> tuple[Index]:
+        _deleted_at_column = cast(Column[datetime | None], cls.deleted_at)
+        return (
+            Index(
+                "ix_users_email_case_insensitive",
+                func.lower(cls.email),
+                unique=True,
+                postgresql_where=(_deleted_at_column.is_(None)),
+            ),
+        )
 
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

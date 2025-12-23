@@ -1,6 +1,7 @@
 import contextlib
 import contextvars
 import itertools
+import math
 import time
 import uuid
 from collections import defaultdict
@@ -206,6 +207,7 @@ def make_bulk_job_delay_calculator(
     target_delay_ms: int = 200,
     min_delay_ms: int = 50,
     max_spread_ms: int = 300_000,
+    allow_spill: bool = True,
 ) -> BulkJobDelayCalculator:
     """Create a delay calculator for bulk job spreading.
 
@@ -217,10 +219,9 @@ def make_bulk_job_delay_calculator(
     1. If count <= threshold: no delay
     2. If count * target_delay <= max_spread: use target_delay (200ms)
     3. If calculated delay >= min_delay: compress to fit in max_spread
-    4. If calculated delay < min_delay: use min_delay (50ms floor)
-
-    For very large batches (>6000 items), we accept exceeding max_spread
-    rather than using sub-50ms delays which would be meaningless.
+    4. If calculated delay < min_delay:
+       - allow_spill=True: use min_delay, accepting that total time exceeds max_spread
+       - allow_spill=False: batch items together to stay within max_spread
 
     Args:
         total_count: The total number of items in the batch.
@@ -228,6 +229,8 @@ def make_bulk_job_delay_calculator(
         target_delay_ms: Target delay between jobs in milliseconds (default: 200).
         min_delay_ms: Minimum delay floor in milliseconds (default: 50).
         max_spread_ms: Maximum total spread time in milliseconds (default: 300,000 = 5 minutes).
+        allow_spill: If True, respects min_delay even if total time exceeds max_spread.
+            If False, batches items together to stay within max_spread (default: True).
 
     Returns:
         A function that takes an index and returns the delay in milliseconds,
@@ -239,7 +242,26 @@ def make_bulk_job_delay_calculator(
     if total_count * target_delay_ms <= max_spread_ms:
         delay_per_item = target_delay_ms
     else:
-        delay_per_item = max(min_delay_ms, int(max_spread_ms / total_count))
+        compressed_delay = int(max_spread_ms / total_count)
+
+        if compressed_delay >= min_delay_ms:
+            delay_per_item = compressed_delay
+        elif allow_spill:
+            delay_per_item = min_delay_ms
+        else:
+            # Batch items to stay within max_spread
+            num_slots = (max_spread_ms // min_delay_ms) + 1
+            items_per_slot = math.ceil(total_count / num_slots)
+
+            def calculate_delay_batched(index: int) -> int | None:
+                if index == 0:
+                    return None
+                slot = index // items_per_slot
+                if slot == 0:
+                    return None
+                return int(slot * min_delay_ms)
+
+            return calculate_delay_batched
 
     def calculate_delay(index: int) -> int | None:
         if index == 0:

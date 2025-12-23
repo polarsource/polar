@@ -202,3 +202,46 @@ class TestOnEventFailed:
         # Check that the endpoint is disabled (pending events should not block this)
         await session.refresh(webhook_endpoint_organization)
         assert webhook_endpoint_organization.enabled is False
+
+    async def test_marks_pending_events_as_skipped_when_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        webhook_endpoint_organization: WebhookEndpoint,
+    ) -> None:
+        # Create threshold number of failed events
+        events = []
+        for i in range(settings.WEBHOOK_FAILURE_THRESHOLD):
+            event = WebhookEvent(
+                webhook_endpoint_id=webhook_endpoint_organization.id,
+                type=WebhookEventType.customer_created,
+                payload='{"foo":"bar"}',
+                succeeded=False,
+            )
+            await save_fixture(event)
+            events.append(event)
+
+        # Add some pending events (succeeded=None)
+        pending_events = []
+        for i in range(3):
+            pending_event = WebhookEvent(
+                webhook_endpoint_id=webhook_endpoint_organization.id,
+                type=WebhookEventType.customer_created,
+                payload='{"foo":"bar"}',
+                succeeded=None,
+                skipped=False,
+            )
+            await save_fixture(pending_event)
+            pending_events.append(pending_event)
+
+        # Trigger the failure handler
+        await webhook_service.on_event_failed(session, events[-1].id)
+
+        # Check that the endpoint is disabled
+        await session.refresh(webhook_endpoint_organization)
+        assert webhook_endpoint_organization.enabled is False
+
+        # Check that pending events are now marked as skipped
+        for pending_event in pending_events:
+            await session.refresh(pending_event)
+            assert pending_event.skipped is True

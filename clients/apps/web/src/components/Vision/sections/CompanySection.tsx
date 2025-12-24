@@ -9,7 +9,7 @@ const team = [
     image: '/assets/team/birk.png',
   },
   {
-    name: 'Francois Voron',
+    name: 'François Voron',
     title: 'Software Engineer',
     image: '/assets/team/francois.png',
   },

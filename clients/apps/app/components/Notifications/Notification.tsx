@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
+  MaintainerAccountCreditsGrantedNotificationPayload,
   MaintainerAccountReviewedNotificationPayload,
   MaintainerAccountUnderReviewNotificationPayload,
   MaintainerCreateAccountNotificationPayload,
@@ -23,6 +24,7 @@ export interface NotificationProps {
     | MaintainerCreateAccountNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
+    | MaintainerAccountCreditsGrantedNotificationPayload
 }
 
 export const Notification = ({
@@ -75,6 +77,8 @@ export const Notification = ({
             color={theme.colors.text}
           />
         )
+      case 'MaintainerAccountCreditsGrantedNotification':
+        return <MaterialIcons name="bolt" size={20} color={theme.colors.text} />
       default:
         return (
           <MaterialIcons
@@ -98,6 +102,8 @@ export const Notification = ({
         return 'Account Reviewed'
       case 'MaintainerCreateAccountNotification':
         return 'New Account Created'
+      case 'MaintainerAccountCreditsGrantedNotification':
+        return 'Credits Granted'
       default:
         return 'New Notification'
     }
@@ -121,10 +127,14 @@ export const Notification = ({
         return 'Your account has been reviewed'
       case 'MaintainerCreateAccountNotification':
         return 'A new account has been created'
+      case 'MaintainerAccountCreditsGrantedNotification':
+        const { organization_name, amount } =
+          payload as MaintainerAccountCreditsGrantedNotificationPayload
+        return `${organization_name} has received ${formatCurrencyAndAmount(amount)} in fee credits!`
       default:
         return 'A new notification has been created'
     }
-  }, [type])
+  }, [type, payload])
 
   return (
     <Box flexDirection="row" gap="spacing-16" style={style}>

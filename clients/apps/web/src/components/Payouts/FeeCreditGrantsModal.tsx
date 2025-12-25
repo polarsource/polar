@@ -43,22 +43,31 @@ export const FeeCreditGrantsModal = ({
             </p>
           </div>
           {credits?.length && credits.length > 0 ? (
-            <List className="flex flex-col gap-4" size="small">
-              {credits?.map((credit) => (
-                <ListItem key={credit.id} size="small">
-                  <div className="flex flex-row items-baseline gap-4">
-                    <h2>{credit.title}</h2>
-                    <span className="dark:text-polar-500 text-gray-500">
-                      {new Date(credit.granted_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                  <span>{formatCurrencyAndAmount(credit.amount, 'usd')}</span>
-                </ListItem>
-              ))}
+            <List className="flex flex-col" size="small">
+              {credits
+                ?.sort(
+                  (a, b) =>
+                    new Date(b.granted_at).getTime() -
+                    new Date(a.granted_at).getTime(),
+                )
+                .map((credit) => (
+                  <ListItem key={credit.id} className="p-4" size="small">
+                    <div className="flex flex-row items-baseline gap-4">
+                      <h2>{credit.title}</h2>
+                      <span className="dark:text-polar-500 text-gray-500">
+                        {new Date(credit.granted_at).toLocaleDateString(
+                          'en-US',
+                          {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          },
+                        )}
+                      </span>
+                    </div>
+                    <span>{formatCurrencyAndAmount(credit.amount, 'usd')}</span>
+                  </ListItem>
+                ))}
             </List>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 p-8">

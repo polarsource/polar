@@ -17,6 +17,7 @@ class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
+    maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -172,15 +173,38 @@ class MaintainerCreateAccountNotification(NotificationBase):
     payload: MaintainerCreateAccountNotificationPayload
 
 
+class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+    amount: int
+
+    @computed_field
+    def formatted_amount(self) -> str:
+        return format_currency(self.amount / 100, "USD", locale="en_US")
+
+    def subject(self) -> str:
+        return f"{self.organization_name} has received {self.formatted_amount} in fee credits!"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_credits_granted"
+
+
+class MaintainerAccountCreditsGrantedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_account_credits_granted]
+    payload: MaintainerAccountCreditsGrantedNotificationPayload
+
+
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerCreateAccountNotificationPayload
+    | MaintainerAccountCreditsGrantedNotificationPayload
 )
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
-    | MaintainerCreateAccountNotification,
+    | MaintainerCreateAccountNotification
+    | MaintainerAccountCreditsGrantedNotification,
     Discriminator(discriminator="type"),
 ]

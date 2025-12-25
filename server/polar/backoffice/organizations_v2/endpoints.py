@@ -2104,6 +2104,7 @@ async def grant_credit(
             title=title,
             expires_at=expires_at,
             notes=str(notes) if notes else None,
+            organization=organization,
         )
 
         await add_toast(

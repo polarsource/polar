@@ -336,15 +336,21 @@ class SubscriptionProductPriceRepository(
                     joinedload(Subscription.customer),
                     joinedload(Subscription.subscription_product_prices).options(
                         joinedload(SubscriptionProductPrice.product_price),
-                        # Load the back-reference to satisfy lazy='raise_on_sql'
-                        # This points to the same Subscription already being loaded above
-                        joinedload(SubscriptionProductPrice.subscription),
                     ),
                 )
             )
             .limit(1)
         )
-        return await self.session.scalar(statement)
+        seat = await self.session.scalar(statement)
+
+        # Manually set the back-reference to avoid a redundant JOIN that would cause
+        # discount subqueries to be duplicated (lazy='raise_on_sql' on the relationship
+        # requires the subscription to be set before accessing spp.subscription)
+        if seat is not None and seat.subscription is not None:
+            for spp in seat.subscription.subscription_product_prices:
+                spp.subscription = seat.subscription
+
+        return seat
 
     def _find_metered_price_in_subscription(
         self, subscription: Subscription, meter_id: UUID

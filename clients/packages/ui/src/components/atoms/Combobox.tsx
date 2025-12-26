@@ -95,7 +95,7 @@ export function Combobox<T>({
             'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:border-gray-300 hover:bg-white',
             selectedItem
               ? 'text-foreground hover:text-foreground'
-              : 'text-foreground/50 hover:text-foreground/50',
+              : 'text-gray-500 hover:text-gray-500 dark:text-polar-500 dark:hover:text-polar-500',
             className,
           )}
         >

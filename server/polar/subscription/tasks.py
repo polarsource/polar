@@ -1,6 +1,7 @@
 import uuid
 
 import structlog
+from sqlalchemy import text
 from sqlalchemy.orm import selectinload
 
 from polar.exceptions import PolarTaskError
@@ -94,6 +95,7 @@ async def subscription_update_product_benefits_grants(
 @actor(actor_name="subscription.update_meters", priority=TaskPriority.LOW)
 async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
+        await session.execute(text("SET work_mem = '32MB'"))
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
             subscription_id,

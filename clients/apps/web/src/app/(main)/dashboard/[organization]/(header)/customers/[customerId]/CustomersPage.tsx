@@ -142,6 +142,7 @@ const CustomerHeader = ({
             : undefined
         }
         onDateChange={onDateChange}
+        maxDate={endOfToday()}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

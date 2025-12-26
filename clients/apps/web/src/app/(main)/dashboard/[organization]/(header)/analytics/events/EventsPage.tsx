@@ -241,6 +241,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 <DateRangePicker
                   date={dateRange}
                   onDateChange={onDateRangeChange}
+                  maxDate={endOfToday()}
                   className="w-full"
                 />
               </div>

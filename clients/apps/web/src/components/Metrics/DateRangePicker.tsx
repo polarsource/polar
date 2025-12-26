@@ -34,70 +34,82 @@ import { twMerge } from 'tailwind-merge'
 
 const intervals = (
   organization: schemas['Organization'],
-): DateRangeInterval[] => [
-  {
-    slug: 'today',
-    label: 'Today',
-    value: [startOfToday(), endOfToday()],
-  },
-  {
-    slug: 'yesterday',
-    label: 'Yesterday',
-    value: [startOfYesterday(), endOfYesterday()],
-  },
-  {
-    slug: 'thisWeek',
-    label: 'This Week',
-    value: [startOfWeek(new Date()), endOfWeek(new Date())],
-  },
-  {
-    slug: 'thisMonth',
-    label: 'This Month',
-    value: [startOfMonth(new Date()), endOfMonth(new Date())],
-  },
-  {
-    slug: 'lastMonth',
-    label: 'Last Month',
-    value: [
-      startOfMonth(subMonths(new Date(), 1)),
-      endOfMonth(subMonths(new Date(), 1)),
-    ],
-  },
-  {
-    slug: 'last3Months',
-    label: 'Last 3 Months',
-    value: [subMonths(startOfToday(), 3), endOfToday()],
-  },
-  {
-    slug: 'thisYear',
-    label: 'This Year',
-    value: [startOfYear(new Date()), endOfYear(new Date())],
-  },
-  {
-    slug: 'lastYear',
-    label: 'Last Year',
-    value: [
-      startOfYear(subYears(new Date(), 1)),
-      endOfYear(subYears(new Date(), 1)),
-    ],
-  },
-  {
-    slug: 'allTime',
-    label: 'All Time',
-    value: [startOfDay(new Date(organization.created_at)), endOfToday()],
-  },
-]
+  maxDate?: Date,
+): DateRangeInterval[] => {
+  const capEndDate = (date: Date): Date => {
+    if (!maxDate) return date
+    return date > maxDate ? maxDate : date
+  }
+
+  return [
+    {
+      slug: 'today',
+      label: 'Today',
+      value: [startOfToday(), capEndDate(endOfToday())],
+    },
+    {
+      slug: 'yesterday',
+      label: 'Yesterday',
+      value: [startOfYesterday(), capEndDate(endOfYesterday())],
+    },
+    {
+      slug: 'thisWeek',
+      label: 'This Week',
+      value: [startOfWeek(new Date()), capEndDate(endOfWeek(new Date()))],
+    },
+    {
+      slug: 'thisMonth',
+      label: 'This Month',
+      value: [startOfMonth(new Date()), capEndDate(endOfMonth(new Date()))],
+    },
+    {
+      slug: 'lastMonth',
+      label: 'Last Month',
+      value: [
+        startOfMonth(subMonths(new Date(), 1)),
+        capEndDate(endOfMonth(subMonths(new Date(), 1))),
+      ],
+    },
+    {
+      slug: 'last3Months',
+      label: 'Last 3 Months',
+      value: [subMonths(startOfToday(), 3), capEndDate(endOfToday())],
+    },
+    {
+      slug: 'thisYear',
+      label: 'This Year',
+      value: [startOfYear(new Date()), capEndDate(endOfYear(new Date()))],
+    },
+    {
+      slug: 'lastYear',
+      label: 'Last Year',
+      value: [
+        startOfYear(subYears(new Date(), 1)),
+        capEndDate(endOfYear(subYears(new Date(), 1))),
+      ],
+    },
+    {
+      slug: 'allTime',
+      label: 'All Time',
+      value: [
+        startOfDay(new Date(organization.created_at)),
+        capEndDate(endOfToday()),
+      ],
+    },
+  ]
+}
 
 const dateToInterval = (
   date: DateRange,
   organization: schemas['Organization'],
+  maxDate?: Date,
 ) => {
   // Compare dates by their date-only representation (ignoring time)
   // to handle cases where times differ after roundtripping through query params
   const fromDate = format(date.from, 'yyyy-MM-dd')
   const toDate = format(date.to, 'yyyy-MM-dd')
 
-  return intervals(organization).find((interval) => {
+  return intervals(organization, maxDate).find((interval) => {
     const intervalFromDate = format(interval.value[0], 'yyyy-MM-dd')
     const intervalToDate = format(interval.value[1], 'yyyy-MM-dd')
     return fromDate === intervalFromDate && toDate === intervalToDate
@@ -113,6 +125,7 @@ interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
   onDateChange: (v: DateRange) => void
   minDate?: Date
+  maxDate?: Date
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -120,9 +133,12 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   date,
   onDateChange,
   minDate,
+  maxDate,
 }) => {
   const { organization } = useContext(OrganizationContext)
-  const interval = date ? dateToInterval(date, organization) : undefined
+  const interval = date
+    ? dateToInterval(date, organization, maxDate)
+    : undefined
 
   return (
     <div
@@ -141,7 +157,10 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             mode="range"
             defaultMonth={date?.to}
             selected={date}
-            disabled={minDate ? { before: minDate } : undefined}
+            disabled={[
+              ...(minDate ? [{ before: minDate }] : []),
+              ...(maxDate ? [{ after: maxDate }] : []),
+            ]}
             onSelect={(v) => {
               onDateChange({
                 from: startOfDay(v?.from ?? new Date()),
@@ -178,6 +197,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 to: int.value[1],
               })
             }}
+            maxDate={maxDate}
           />
         </PopoverContent>
       </Popover>
@@ -204,17 +224,19 @@ interface DateRangeInterval {
 interface DateRangeIntervalProps {
   interval: DateRangeInterval | undefined
   onIntervalChange: (interval: DateRangeInterval) => void
+  maxDate?: Date
 }
 
 const DateRangeIntervals = ({
   interval,
   onIntervalChange,
+  maxDate,
 }: DateRangeIntervalProps) => {
   const { organization } = useContext(OrganizationContext)
 
   return (
     <div className="flex w-full flex-col gap-1">
-      {intervals(organization).map((int) => (
+      {intervals(organization, maxDate).map((int) => (
         <div
           key={int.slug}
           onClick={() => onIntervalChange(int)}

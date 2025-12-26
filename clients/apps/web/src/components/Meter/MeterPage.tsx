@@ -21,7 +21,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
+import { endOfMonth, endOfToday, startOfMonth, subMonths } from 'date-fns'
 import { useCallback, useContext, useMemo, useState } from 'react'
 import DateRangePicker from '../Metrics/DateRangePicker'
 import IntervalPicker, { getNextValidInterval } from '../Metrics/IntervalPicker'
@@ -114,6 +114,7 @@ export const MeterPage = ({
                 <DateRangePicker
                   date={dateRange}
                   onDateChange={onDateChange}
+                  maxDate={endOfToday()}
                   className="w-full"
                 />
               </div>

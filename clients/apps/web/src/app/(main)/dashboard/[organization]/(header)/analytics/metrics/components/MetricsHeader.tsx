@@ -7,6 +7,7 @@ import IntervalPicker, {
 import ProductSelect from '@/components/Products/ProductSelect'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { endOfToday } from 'date-fns/endOfToday'
 import { subMonths } from 'date-fns/subMonths'
 import {
   createParser,
@@ -114,6 +115,7 @@ export function MetricsHeader({
           date={dateRange}
           onDateChange={onDateChange}
           minDate={minDate}
+          maxDate={endOfToday()}
           className="w-full"
         />
       </div>

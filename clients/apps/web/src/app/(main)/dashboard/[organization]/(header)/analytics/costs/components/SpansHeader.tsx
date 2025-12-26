@@ -3,6 +3,7 @@
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { schemas } from '@polar-sh/client'
+import { endOfToday } from 'date-fns'
 
 interface SpansHeaderProps {
   dateRange: { from: Date; to: Date }
@@ -32,7 +33,11 @@ export function SpansHeader({
         />
       </div>
       <div>
-        <DateRangePicker date={dateRange} onDateChange={onDateRangeChange} />
+        <DateRangePicker
+          date={dateRange}
+          onDateChange={onDateRangeChange}
+          maxDate={endOfToday()}
+        />
       </div>
     </div>
   )

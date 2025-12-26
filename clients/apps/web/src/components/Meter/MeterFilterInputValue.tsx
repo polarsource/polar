@@ -32,13 +32,16 @@ const EventNameInput = ({ field, organizationId }: EventNameInputProps) => {
       }),
     )
 
+    if (field.value && !matches.find((item) => item.name === field.value)) {
+      matches.push({ name: field.value, custom: true })
+    }
+
     if (query && !matches.find((item) => item.name === query)) {
-      // No custom option needed
       matches.push({ name: query, custom: true })
     }
 
     return matches
-  }, [eventNames, query])
+  }, [eventNames, query, field.value])
 
   const selectedItem = items.find((item) => item.name === field.value) || null
 

@@ -41,7 +41,12 @@ const CountryPicker = ({
 }) => {
   const countryMap = getCountryList(allowedCountries as TCountryCode[])
   return (
-    <Select onValueChange={onChange} value={value} autoComplete={autoComplete} disabled={disabled}>
+    <Select
+      onValueChange={onChange}
+      value={value}
+      autoComplete={autoComplete}
+      disabled={disabled}
+    >
       <SelectTrigger className={className} disabled={disabled}>
         <SelectValue
           placeholder="Country"

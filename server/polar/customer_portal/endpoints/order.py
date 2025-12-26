@@ -12,7 +12,6 @@ from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.order.service import (
-    InvoiceBillingAddressUpdateError,
     MissingInvoiceBillingDetails,
     NotPaidOrder,
     PaymentAlreadyInProgress,
@@ -114,13 +113,7 @@ async def get(
     "/{id}",
     summary="Update Order",
     response_model=CustomerOrder,
-    responses={
-        404: OrderNotFound,
-        422: {
-            "description": "Cannot update billing address country/state after order is paid.",
-            "model": InvoiceBillingAddressUpdateError.schema(),
-        },
-    },
+    responses={404: OrderNotFound},
 )
 async def update(
     id: OrderID,

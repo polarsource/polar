@@ -28,7 +28,7 @@ from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
 from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -223,16 +223,6 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
-class InvoiceBillingAddressUpdateError(OrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = (
-            "Cannot update billing address country or state after order is paid, "
-            "as VAT was calculated based on the original address."
-        )
-        super().__init__(message, 422)
-
-
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
@@ -355,14 +345,35 @@ class OrderService:
             new_address = order_update.billing_address
             existing_address = order.billing_address
 
-            # Check if country or state is being changed
-            new_country = new_address.country if new_address else None
+            new_country = str(new_address.country) if new_address else None
             new_state = new_address.state if new_address else None
-            existing_country = existing_address.get("country") if existing_address else None
-            existing_state = existing_address.get("state") if existing_address else None
+            existing_country = (
+                str(existing_address.country) if existing_address else None
+            )
+            existing_state = existing_address.state if existing_address else None
 
-            if new_country != existing_country or new_state != existing_state:
-                raise InvoiceBillingAddressUpdateError(order)
+            if new_country != existing_country:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "billing_address", "country"),
+                            "msg": "Cannot change country after order is paid.",
+                            "input": new_country,
+                        }
+                    ]
+                )
+            if new_state != existing_state:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "billing_address", "state"),
+                            "msg": "Cannot change state after order is paid.",
+                            "input": new_state,
+                        }
+                    ]
+                )
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(

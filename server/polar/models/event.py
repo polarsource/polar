@@ -140,6 +140,12 @@ class Event(Model, MetadataMixin):
             "external_customer_id",
             postgresql_ops={"external_customer_id": "text_pattern_ops"},
         ),
+        Index(
+            "ix_events_organization_id_source_id",
+            "organization_id",
+            "source",
+            "id",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

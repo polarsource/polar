@@ -48,7 +48,9 @@ class AccountSection:
     ):
         self.org = organization
         self.credits = credits or []
-        self.available_balance = self.org.account.credit_balance
+        self.available_balance = (
+            self.org.account.credit_balance if self.org.account else 0
+        )
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
@@ -135,7 +137,7 @@ class AccountSection:
                             with tag.div(classes="grid grid-cols-2 gap-3"):
                                 # Charges enabled
                                 charges_enabled = (
-                                    account.charges_enabled
+                                    account.is_charges_enabled
                                     if hasattr(account, "charges_enabled")
                                     else False
                                 )
@@ -152,7 +154,7 @@ class AccountSection:
 
                                 # Payouts enabled
                                 payouts_enabled = (
-                                    account.payouts_enabled
+                                    account.is_payouts_enabled
                                     if hasattr(account, "payouts_enabled")
                                     else False
                                 )

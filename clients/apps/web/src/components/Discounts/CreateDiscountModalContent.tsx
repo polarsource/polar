@@ -52,7 +52,7 @@ const CreateDiscountModalContent = ({
       }
       toast({
         title: 'Discount Created',
-        description: `Discount ${discount.code} was created successfully`,
+        description: `Discount ${discount.name} was created successfully`,
       })
       onDiscountCreated(discount)
     },

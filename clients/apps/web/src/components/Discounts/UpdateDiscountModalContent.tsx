@@ -53,7 +53,7 @@ const UpdateDiscountModalContent = ({
       }
       toast({
         title: 'Discount Updated',
-        description: `Discount ${discount.code} was updated successfully`,
+        description: `Discount ${discount.name} was updated successfully`,
       })
       onDiscountUpdated(discount)
     },

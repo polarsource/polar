@@ -211,7 +211,11 @@ class BillingEntryService:
         units = await meter_service.get_quantity(
             session,
             meter,
-            events_statement.where(Event.source == EventSource.user),
+            events_statement.where(
+                # Combining these two WHERE clauses allows us to hit a composite index
+                Event.organization_id == meter.organization_id,
+                Event.source == EventSource.user,
+            ),
         )
         credit_events_statement = events_statement.where(
             Event.is_meter_credit.is_(True)
@@ -258,7 +262,11 @@ class BillingEntryService:
         units = await meter_service.get_quantity(
             session,
             meter,
-            events_statement.where(Event.source == EventSource.user),
+            events_statement.where(
+                # Combining these two WHERE clauses allows us to hit a composite index
+                Event.organization_id == meter.organization_id,
+                Event.source == EventSource.user,
+            ),
         )
         credit_events_statement = events_statement.where(
             Event.is_meter_credit.is_(True)

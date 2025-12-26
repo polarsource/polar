@@ -26,7 +26,11 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Order as OrderSchema
 from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderUpdate
-from .service import MissingInvoiceBillingDetails, NotPaidOrder
+from .service import (
+    InvoiceBillingAddressUpdateError,
+    MissingInvoiceBillingDetails,
+    NotPaidOrder,
+)
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
@@ -173,7 +177,13 @@ async def get(
     "/{id}",
     summary="Update Order",
     response_model=OrderSchema,
-    responses={404: OrderNotFound},
+    responses={
+        404: OrderNotFound,
+        422: {
+            "description": "Cannot update billing address country/state after order is paid.",
+            "model": InvoiceBillingAddressUpdateError.schema(),
+        },
+    },
 )
 async def update(
     id: OrderID,

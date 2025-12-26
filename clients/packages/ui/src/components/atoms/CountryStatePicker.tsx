@@ -84,6 +84,7 @@ const CountryStatePicker = ({
   autoComplete,
   itemClassName,
   contentClassName,
+  disabled,
 }: {
   className?: string
   contentClassName?: string
@@ -92,6 +93,7 @@ const CountryStatePicker = ({
   onChange: (value: string) => void
   country?: string
   autoComplete?: string
+  disabled?: boolean
 }) => {
   if (country === 'US' || country === 'CA') {
     const states = country === 'US' ? US_STATES : CA_PROVINCES
@@ -100,8 +102,9 @@ const CountryStatePicker = ({
         onValueChange={onChange}
         value={value}
         autoComplete={autoComplete}
+        disabled={disabled}
       >
-        <SelectTrigger className={className}>
+        <SelectTrigger className={className} disabled={disabled}>
           <SelectValue
             placeholder={country === 'US' ? 'State' : 'Province'}
             // Avoids issues due to browser automatic translation
@@ -133,6 +136,7 @@ const CountryStatePicker = ({
       placeholder="State / Province"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
     />
   )
 }

@@ -734,6 +734,56 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/members/leave': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Leave Organization
+     * @description Leave an organization.
+     *
+     *     Users can only leave an organization if they are not the admin
+     *     and there is at least one other member.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:leave_organization']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/members/{user_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Remove Member
+     * @description Remove a member from an organization.
+     *
+     *     Only organization admins can remove members.
+     *     Admins cannot remove themselves.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    delete: operations['organizations:remove_member']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/ai-validation': {
     parameters: {
       query?: never
@@ -4501,7 +4551,11 @@ export interface webhooks {
     put?: never
     /**
      * subscription.uncanceled
-     * @description Sent when a subscription is uncanceled.
+     * @description Sent when a customer revokes a pending cancellation.
+     *
+     *     When a customer cancels with "at period end", they retain access until the
+     *     subscription would renew. During this time, they can change their mind and
+     *     undo the cancellation. This event is triggered when they do so.
      *
      *     **Discord & Slack support:** Full
      */
@@ -19617,15 +19671,27 @@ export interface components {
     /** OrganizationMember */
     OrganizationMember: {
       /**
+       * User Id
+       * Format: uuid
+       * @description The ID of the user.
+       */
+      user_id: string
+      /**
        * Created At
        * Format: date-time
-       * @description The time the OrganizationMember was creatd.
+       * @description The time the OrganizationMember was created.
        */
       created_at: string
       /** Email */
       email: string
       /** Avatar Url */
       avatar_url: string | null
+      /**
+       * Is Admin
+       * @description Whether the user is an admin of the organization.
+       * @default false
+       */
+      is_admin: boolean
     }
     /** OrganizationMemberInvite */
     OrganizationMemberInvite: {
@@ -24910,7 +24976,11 @@ export interface components {
     }
     /**
      * WebhookSubscriptionUncanceledPayload
-     * @description Sent when a subscription is uncanceled.
+     * @description Sent when a customer revokes a pending cancellation.
+     *
+     *     When a customer cancels with "at period end", they retain access until the
+     *     subscription would renew. During this time, they can change their mind and
+     *     undo the cancellation. This event is triggered when they do so.
      *
      *     **Discord & Slack support:** Full
      */
@@ -26416,6 +26486,101 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationMember']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:leave_organization': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successfully left the organization. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Cannot leave organization (admin or only member). */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:remove_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        user_id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member successfully removed. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not authorized to remove members. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

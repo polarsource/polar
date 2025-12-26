@@ -30,6 +30,34 @@ export const useInviteOrganizationMember = (id: string) =>
     },
   })
 
+export const useLeaveOrganization = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.DELETE('/v1/organizations/{id}/members/leave', {
+        params: { path: { id } },
+      })
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizations'],
+      })
+    },
+  })
+
+export const useRemoveOrganizationMember = (organizationId: string) =>
+  useMutation({
+    mutationFn: (userId: string) => {
+      return api.DELETE('/v1/organizations/{id}/members/{user_id}', {
+        params: { path: { id: organizationId, user_id: userId } },
+      })
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationMembers', organizationId],
+      })
+    },
+  })
+
 export const useListOrganizations = (
   params: operations['organizations:list']['parameters']['query'],
   enabled: boolean = true,

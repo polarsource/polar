@@ -57,6 +57,16 @@ class UserOrganizationService:
         res = await session.execute(stmt)
         return res.scalars().unique().all()
 
+    async def get_member_count(self, session: AsyncReadSession, org_id: UUID) -> int:
+        """Get the count of active members in an organization."""
+        stmt = sql.select(func.count(UserOrganization.user_id)).where(
+            UserOrganization.organization_id == org_id,
+            UserOrganization.deleted_at.is_(None),
+        )
+        res = await session.execute(stmt)
+        count = res.scalar()
+        return count if count else 0
+
     async def list_by_user_id(
         self, session: AsyncSession, user_id: UUID
     ) -> Sequence[UserOrganization]:

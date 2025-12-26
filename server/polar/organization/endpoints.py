@@ -312,6 +312,8 @@ async def members(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""
+    from polar.organization.repository import OrganizationRepository
+
     organization = await organization_service.get(session, auth_subject, id)
 
     if organization is None:
@@ -319,8 +321,21 @@ async def members(
 
     members = await user_organization_service.list_by_org(session, id)
 
+    # Get admin user to set is_admin flag
+    org_repo = OrganizationRepository.from_session(session)
+    admin_user = await org_repo.get_admin_user(session, organization)
+    admin_user_id = admin_user.id if admin_user else None
+
+    # Build response with is_admin flag
+    member_items = []
+    for m in members:
+        member_data = OrganizationMember.model_validate(m)
+        if admin_user_id and m.user_id == admin_user_id:
+            member_data.is_admin = True
+        member_items.append(member_data)
+
     return ListResource(
-        items=[OrganizationMember.model_validate(m) for m in members],
+        items=member_items,
         pagination=Pagination(total_count=len(members), max_page=1),
     )
 
@@ -391,6 +406,113 @@ async def invite_member(
 
     response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)
+
+
+@router.delete(
+    "/{id}/members/leave",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=[APITag.private],
+    responses={
+        204: {"description": "Successfully left the organization."},
+        403: {
+            "description": "Cannot leave organization (admin or only member).",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+)
+async def leave_organization(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWriteUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Leave an organization.
+
+    Users can only leave an organization if they are not the admin
+    and there is at least one other member.
+    """
+    from polar.organization.repository import OrganizationRepository
+
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    user = auth_subject.subject
+
+    # Check if user is the admin
+    org_repo = OrganizationRepository.from_session(session)
+    admin_user = await org_repo.get_admin_user(session, organization)
+
+    if admin_user and admin_user.id == user.id:
+        raise NotPermitted("Organization admins cannot leave the organization.")
+
+    # Check if user is the only member
+    member_count = await user_organization_service.get_member_count(session, id)
+    if member_count <= 1:
+        raise NotPermitted("Cannot leave organization as the only member.")
+
+    # Remove the user from the organization
+    await user_organization_service.remove_member(session, user.id, organization.id)
+
+
+@router.delete(
+    "/{id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=[APITag.private],
+    responses={
+        204: {"description": "Member successfully removed."},
+        403: {
+            "description": "Not authorized to remove members.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+)
+async def remove_member(
+    id: OrganizationID,
+    user_id: str,
+    auth_subject: auth.OrganizationsWriteUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Remove a member from an organization.
+
+    Only organization admins can remove members.
+    Admins cannot remove themselves.
+    """
+    from uuid import UUID as UUID_TYPE
+
+    from polar.organization.repository import OrganizationRepository
+    from polar.user_organization.service import (
+        CannotRemoveOrganizationAdmin,
+        UserNotMemberOfOrganization,
+    )
+
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    # Check if current user is the admin
+    org_repo = OrganizationRepository.from_session(session)
+    admin_user = await org_repo.get_admin_user(session, organization)
+
+    if not admin_user or admin_user.id != auth_subject.subject.id:
+        raise NotPermitted("Only organization admins can remove members.")
+
+    try:
+        target_user_id = UUID_TYPE(user_id)
+    except ValueError:
+        raise ResourceNotFound()
+
+    try:
+        await user_organization_service.remove_member_safe(
+            session, target_user_id, organization.id
+        )
+    except UserNotMemberOfOrganization:
+        raise ResourceNotFound()
+    except CannotRemoveOrganizationAdmin:
+        raise NotPermitted("Cannot remove the organization admin.")
 
 
 @router.post(

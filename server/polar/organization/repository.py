@@ -14,7 +14,7 @@ from polar.kit.repository import (
 from polar.kit.repository.base import Options
 from polar.models import Account, Customer, Organization, User, UserOrganization
 from polar.models.organization_review import OrganizationReview
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession
 
 from .sorting import OrganizationSortProperty
 
@@ -161,7 +161,7 @@ class OrganizationRepository(
         return statement
 
     async def get_admin_user(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> User | None:
         """Get the admin user of the organization from the associated account."""
         if not organization.account_id:

@@ -112,7 +112,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       name: string | undefined,
       item?: { color?: string },
     ) => {
-      if (!value || !name) {
+      if (value === undefined || value === null || !name) {
         return null
       }
       if (valueFormatter) {

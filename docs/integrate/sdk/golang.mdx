@@ -2,6 +2,57 @@
 title: "Go SDK"
 sidebarTitle: "Go"
 icon: golang
+description: SDK for Golang
 ---
 
-Documentation coming soon.
+## Examples
+
+- [With Go (Gin)](https://github.com/polarsource/examples/tree/main/with-golang-gin)
+
+## Installation
+
+```bash
+go get github.com/polarsource/polar-go
+```
+
+## Quickstart
+
+```go icon="golang" main.go
+package main
+
+import (
+	"context"
+	polargo "github.com/polarsource/polar-go"
+	"log"
+	"os"
+)
+
+func main() {
+	ctx := context.Background()
+
+	s := polargo.New(
+		polargo.WithSecurity(os.Getenv("POLAR_ACCESS_TOKEN")),
+	)
+
+	res, err := s.Organizations.List(ctx, nil, polargo.Pointer[int64](1), polargo.Pointer[int64](10), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.ListResourceOrganization != nil {
+		for {
+			// handle items
+
+			res, err = res.Next()
+
+			if err != nil {
+				// handle error
+			}
+
+			if res == nil {
+				break
+			}
+		}
+	}
+}
+
+```

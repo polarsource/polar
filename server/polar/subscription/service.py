@@ -1230,6 +1230,17 @@ class SubscriptionService:
             )
 
         if discount is None:
+            # If discount was never applied, soft delete the redemption to return the slot
+            if (
+                subscription.discount is not None
+                and subscription.discount_applied_at is None
+            ):
+                discount_redemption_repository = DiscountRedemptionRepository.from_session(session)
+                redemption = await discount_redemption_repository.get_by_subscription_and_discount(
+                    subscription.id, subscription.discount.id
+                )
+                if redemption is not None:
+                    await discount_redemption_repository.soft_delete(redemption)
             return await _update_discount(session, subscription, None)
 
         async with discount_service.redeem_discount(

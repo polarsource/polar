@@ -2,12 +2,18 @@ from uuid import UUID
 
 from sqlalchemy import select, update
 
-from polar.kit.repository import RepositoryBase, RepositoryIDMixin
+from polar.kit.repository import (
+    RepositoryBase,
+    RepositoryIDMixin,
+    RepositorySoftDeletionMixin,
+)
 from polar.models import DiscountRedemption
 
 
 class DiscountRedemptionRepository(
-    RepositoryBase[DiscountRedemption], RepositoryIDMixin[DiscountRedemption, UUID]
+    RepositorySoftDeletionMixin[DiscountRedemption],
+    RepositoryBase[DiscountRedemption],
+    RepositoryIDMixin[DiscountRedemption, UUID],
 ):
     model = DiscountRedemption
 

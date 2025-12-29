@@ -447,4 +447,10 @@ def _discount_set(
     oldvalue: "Discount | None",
     initiator: Event,
 ) -> None:
-    target.update_amount_and_currency(target.subscription_product_prices, value)
+    # Only auto-update amount when discount is REMOVED.
+    # When discount is ADDED mid-subscription, amount should only update
+    # when the discount is actually applied to a billing entry (in cycle()).
+    # For new subscriptions, the _prices_replaced listener handles the update
+    # (that's why checkout sets discount BEFORE prices).
+    if value is None:
+        target.update_amount_and_currency(target.subscription_product_prices, value)

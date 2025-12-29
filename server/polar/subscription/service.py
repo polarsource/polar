@@ -576,8 +576,10 @@ class SubscriptionService:
         subscription.status = status
         subscription.payment_method = payment_method
         subscription.product = product
-        subscription.subscription_product_prices = subscription_product_prices
+        # Set discount BEFORE prices so that _prices_replaced listener
+        # correctly calculates amount with the discount
         subscription.discount = checkout.discount
+        subscription.subscription_product_prices = subscription_product_prices
         subscription.checkout = checkout
         subscription.user_metadata = checkout.user_metadata
         subscription.custom_field_data = checkout.custom_field_data
@@ -753,6 +755,12 @@ class SubscriptionService:
                     first_billing_entry_with_discount.id
                 )
                 session.add(discount_redemption)
+
+                # Now that the discount is actually applied, update subscription.amount
+                # to reflect the discounted price
+                subscription.update_amount_and_currency(
+                    subscription.subscription_product_prices, subscription.discount
+                )
 
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active

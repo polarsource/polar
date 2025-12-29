@@ -44,6 +44,30 @@ def upgrade() -> None:
         ondelete="SET NULL",
     )
 
+    # Backfill first_applied_at for existing "once" discount redemptions
+    # that have already been applied to a billing entry
+    op.execute("""
+        UPDATE discount_redemptions dr
+        SET
+            first_applied_at = be.created_at,
+            first_applied_billing_entry_id = be.id
+        FROM (
+            SELECT DISTINCT ON (be.subscription_id, be.discount_id)
+                be.id,
+                be.subscription_id,
+                be.discount_id,
+                be.created_at
+            FROM billing_entries be
+            WHERE be.discount_id IS NOT NULL
+              AND be.deleted_at IS NULL
+            ORDER BY be.subscription_id, be.discount_id, be.created_at ASC
+        ) be
+        JOIN discounts d ON d.id = be.discount_id
+        WHERE dr.subscription_id = be.subscription_id
+          AND dr.discount_id = be.discount_id
+          AND d.duration = 'once'
+    """)
+
 
 def downgrade() -> None:
     op.drop_constraint(

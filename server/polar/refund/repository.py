@@ -63,6 +63,7 @@ class RefundRepository(
         return (
             joinedload(Refund.organization),
             joinedload(Refund.dispute),
+            joinedload(Refund.order),
         )
 
     def get_sorting_clause(self, property: RefundSortProperty) -> SortingClause:

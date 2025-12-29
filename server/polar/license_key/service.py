@@ -44,6 +44,7 @@ class LicenseKeyService:
         pagination: PaginationParams,
         organization_id: Sequence[UUID] | None = None,
         benefit_id: Sequence[UUID] | None = None,
+        customer_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         repository = LicenseKeyRepository.from_session(session)
         statement = (
@@ -57,6 +58,9 @@ class LicenseKeyService:
 
         if benefit_id is not None:
             statement = statement.where(LicenseKey.benefit_id.in_(benefit_id))
+
+        if customer_id is not None:
+            statement = statement.where(LicenseKey.customer_id.in_(customer_id))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

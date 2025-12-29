@@ -2,6 +2,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -50,6 +51,9 @@ async def list(
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."
     ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[LicenseKeyRead]:
     """Get license keys connected to the given organization & filters."""
@@ -58,6 +62,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         benefit_id=benefit_id,
+        customer_id=customer_id,
         pagination=pagination,
     )
 

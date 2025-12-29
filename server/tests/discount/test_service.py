@@ -611,12 +611,12 @@ class TestCodeCaseInsensitivity:
 
 @pytest.mark.asyncio
 class TestIsRepetitionExpired:
-    async def test_once_not_trialing(
+    async def test_once_not_used_yet(
         self,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that 'once' discount expires immediately when not trialing."""
+        """Test that 'once' discount is not expired when it hasn't been used yet."""
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -626,15 +626,15 @@ class TestIsRepetitionExpired:
         )
 
         now = utc_now()
-        # For non-trialing subscriptions, 'once' discount should expire after first use
-        assert discount.is_repetition_expired(now, now, False) is True
+        # When first_applied_at is None, discount hasn't been used yet
+        assert discount.is_repetition_expired(now, now, first_applied_at=None) is False
 
-    async def test_once_was_trialing(
+    async def test_once_already_used(
         self,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that 'once' discount does NOT expire when transitioning from trial."""
+        """Test that 'once' discount expires after it has been used."""
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -644,8 +644,31 @@ class TestIsRepetitionExpired:
         )
 
         now = utc_now()
-        # When transitioning from trial, 'once' discount should still apply
-        assert discount.is_repetition_expired(now, now, True) is False
+        next_period = now + timedelta(days=30)
+        # When first_applied_at is set, the discount has been used and should be expired
+        assert discount.is_repetition_expired(now, next_period, first_applied_at=now) is True
+
+    async def test_once_mid_subscription_discount(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that 'once' discount works when applied mid-subscription."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        discount_applied_at = utc_now()
+        next_period = discount_applied_at + timedelta(days=30)
+
+        # First use: not expired (first_applied_at=None)
+        assert discount.is_repetition_expired(discount_applied_at, discount_applied_at, first_applied_at=None) is False
+        # After first use: expired (first_applied_at is set)
+        assert discount.is_repetition_expired(discount_applied_at, next_period, first_applied_at=discount_applied_at) is True
 
     async def test_forever_never_expires(
         self,
@@ -663,9 +686,9 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         future = now + timedelta(days=365)
-        # Forever discounts never expire
-        assert discount.is_repetition_expired(now, future, False) is False
-        assert discount.is_repetition_expired(now, future, True) is False
+        # Forever discounts never expire, regardless of first_applied_at
+        assert discount.is_repetition_expired(now, future, first_applied_at=None) is False
+        assert discount.is_repetition_expired(now, future, first_applied_at=now) is False
 
     async def test_repeating_expires_after_duration(
         self,
@@ -687,8 +710,31 @@ class TestIsRepetitionExpired:
         after_duration = now + timedelta(days=120)  # ~4 months
 
         # Should not expire within duration
-        assert discount.is_repetition_expired(now, within_duration, False) is False
+        assert discount.is_repetition_expired(now, within_duration) is False
         # Should expire after duration
-        assert discount.is_repetition_expired(now, after_duration, False) is True
-        # was_trialing should not affect repeating discounts
-        assert discount.is_repetition_expired(now, after_duration, True) is True
+        assert discount.is_repetition_expired(now, after_duration) is True
+
+    async def test_repeating_mid_subscription_discount(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that 'repeating' discount works when applied mid-subscription."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+
+        # Discount applied now (mid-subscription)
+        discount_applied_at = utc_now()
+        within_duration = discount_applied_at + timedelta(days=60)  # ~2 months after discount applied
+        after_duration = discount_applied_at + timedelta(days=120)  # ~4 months after discount applied
+
+        # Should not expire within duration from when discount was applied
+        assert discount.is_repetition_expired(discount_applied_at, within_duration) is False
+        # Should expire after duration from when discount was applied
+        assert discount.is_repetition_expired(discount_applied_at, after_duration) is True

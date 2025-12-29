@@ -657,12 +657,37 @@ class SubscriptionService:
                 )
 
             # Check if discount is still applicable
+            discount_redemption = None
             if subscription.discount is not None:
-                assert subscription.started_at is not None
+                # Get the discount redemption to know when the discount was applied
+                discount_redemption_repository = DiscountRedemptionRepository.from_session(
+                    session
+                )
+                discount_redemption = (
+                    await discount_redemption_repository.get_by_subscription_and_discount(
+                        subscription.id, subscription.discount.id
+                    )
+                )
+                # Use the redemption's created_at as the discount start date
+                # Fall back to subscription start if no redemption found (shouldn't happen)
+                discount_started_at = (
+                    discount_redemption.created_at
+                    if discount_redemption is not None
+                    else subscription.started_at
+                )
+                assert discount_started_at is not None
+
+                # For "once" discounts, check first_applied_at to see if already used
+                first_applied_at = (
+                    discount_redemption.first_applied_at
+                    if discount_redemption is not None
+                    else None
+                )
+
                 if subscription.discount.is_repetition_expired(
-                    subscription.started_at,
+                    discount_started_at,
                     subscription.current_period_start,
-                    previous_status == SubscriptionStatus.trialing,
+                    first_applied_at,
                 ):
                     subscription.discount = None
 
@@ -684,6 +709,7 @@ class SubscriptionService:
             )
             # Add a billing entry for a new period
             billing_entry_repository = BillingEntryRepository.from_session(session)
+            first_billing_entry_with_discount = None
             for subscription_product_price in subscription.subscription_product_prices:
                 product_price = subscription_product_price.product_price
                 if is_static_price(product_price):
@@ -693,7 +719,7 @@ class SubscriptionService:
                             subscription_product_price.amount
                         )
 
-                    await billing_entry_repository.create(
+                    billing_entry = await billing_entry_repository.create(
                         BillingEntry(
                             start_timestamp=subscription.current_period_start,
                             end_timestamp=subscription.current_period_end,
@@ -709,6 +735,24 @@ class SubscriptionService:
                             event=event,
                         ),
                     )
+                    # Track the first billing entry with discount for first_applied_at
+                    if (
+                        subscription.discount is not None
+                        and first_billing_entry_with_discount is None
+                    ):
+                        first_billing_entry_with_discount = billing_entry
+
+            # Mark the discount as applied if this is the first time
+            if (
+                discount_redemption is not None
+                and discount_redemption.first_applied_at is None
+                and first_billing_entry_with_discount is not None
+            ):
+                discount_redemption.first_applied_at = utc_now()
+                discount_redemption.first_applied_billing_entry_id = (
+                    first_billing_entry_with_discount.id
+                )
+                session.add(discount_redemption)
 
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
@@ -1772,12 +1816,36 @@ class SubscriptionService:
 
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
         if subscription.discount is not None:
-            assert subscription.started_at is not None
             assert subscription.current_period_end is not None
+            # Get the discount redemption to know when the discount was applied
+            discount_redemption_repository = DiscountRedemptionRepository.from_session(
+                session
+            )
+            discount_redemption = (
+                await discount_redemption_repository.get_by_subscription_and_discount(
+                    subscription.id, subscription.discount.id
+                )
+            )
+            # Use the redemption's created_at as the discount start date
+            # Fall back to subscription start if no redemption found (shouldn't happen)
+            discount_started_at = (
+                discount_redemption.created_at
+                if discount_redemption is not None
+                else subscription.started_at
+            )
+            assert discount_started_at is not None
+
+            # For "once" discounts, check first_applied_at to see if already used
+            first_applied_at = (
+                discount_redemption.first_applied_at
+                if discount_redemption is not None
+                else None
+            )
+
             if not subscription.discount.is_repetition_expired(
-                subscription.started_at,
+                discount_started_at,
                 subscription.current_period_end,
-                subscription.status == SubscriptionStatus.trialing,
+                first_applied_at,
             ):
                 applicable_discount = subscription.discount
 

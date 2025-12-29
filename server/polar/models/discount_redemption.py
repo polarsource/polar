@@ -1,13 +1,14 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Discount, Subscription
+    from polar.models import BillingEntry, Checkout, Discount, Subscription
 
 
 class DiscountRedemption(RecordModel):
@@ -38,3 +39,22 @@ class DiscountRedemption(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
+
+    first_applied_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """
+    When the discount was first applied to a billing entry.
+
+    For "once" discounts, this is used to determine if the discount has been
+    used up. If set, the discount has already been applied to a billing cycle
+    and should not apply to future cycles.
+    """
+
+    first_applied_billing_entry_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("billing_entries.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def first_applied_billing_entry(cls) -> Mapped["BillingEntry | None"]:
+        return relationship("BillingEntry", lazy="raise")

@@ -690,12 +690,12 @@ class TestIsRepetitionExpired:
         assert discount.is_repetition_expired(now, future, first_applied_at=None) is False
         assert discount.is_repetition_expired(now, future, first_applied_at=now) is False
 
-    async def test_repeating_expires_after_duration(
+    async def test_repeating_not_yet_applied(
         self,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that 'repeating' discount expires after specified months."""
+        """Test that 'repeating' discount is not expired when not yet applied."""
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -706,20 +706,17 @@ class TestIsRepetitionExpired:
         )
 
         now = utc_now()
-        within_duration = now + timedelta(days=30)  # ~1 month
-        after_duration = now + timedelta(days=120)  # ~4 months
+        future = now + timedelta(days=365)
 
-        # Should not expire within duration
-        assert discount.is_repetition_expired(now, within_duration) is False
-        # Should expire after duration
-        assert discount.is_repetition_expired(now, after_duration) is True
+        # When first_applied_at is None, discount is not expired (not yet used)
+        assert discount.is_repetition_expired(now, future, first_applied_at=None) is False
 
-    async def test_repeating_mid_subscription_discount(
+    async def test_repeating_expires_after_duration(
         self,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that 'repeating' discount works when applied mid-subscription."""
+        """Test that 'repeating' discount expires after specified months from first use."""
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -729,12 +726,40 @@ class TestIsRepetitionExpired:
             organization=organization,
         )
 
-        # Discount applied now (mid-subscription)
-        discount_applied_at = utc_now()
-        within_duration = discount_applied_at + timedelta(days=60)  # ~2 months after discount applied
-        after_duration = discount_applied_at + timedelta(days=120)  # ~4 months after discount applied
+        first_applied = utc_now()
+        within_duration = first_applied + timedelta(days=60)  # ~2 months
+        after_duration = first_applied + timedelta(days=120)  # ~4 months
 
-        # Should not expire within duration from when discount was applied
-        assert discount.is_repetition_expired(discount_applied_at, within_duration) is False
-        # Should expire after duration from when discount was applied
-        assert discount.is_repetition_expired(discount_applied_at, after_duration) is True
+        # Should not expire within duration from first application
+        assert discount.is_repetition_expired(first_applied, within_duration, first_applied_at=first_applied) is False
+        # Should expire after duration from first application
+        assert discount.is_repetition_expired(first_applied, after_duration, first_applied_at=first_applied) is True
+
+    async def test_repeating_mid_subscription_discount(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that 'repeating' discount counts duration from first billing entry, not when added."""
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5_000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+
+        # Discount added to subscription mid-cycle
+        discount_added_at = utc_now()
+        # But first applied to billing entry 2 weeks later (next billing cycle)
+        first_applied = discount_added_at + timedelta(days=14)
+
+        # Duration counts from first_applied, not discount_added_at
+        within_duration = first_applied + timedelta(days=60)  # ~2 months from first use
+        after_duration = first_applied + timedelta(days=120)  # ~4 months from first use
+
+        # Should not expire within duration from when first applied
+        assert discount.is_repetition_expired(discount_added_at, within_duration, first_applied_at=first_applied) is False
+        # Should expire after duration from when first applied
+        assert discount.is_repetition_expired(discount_added_at, after_duration, first_applied_at=first_applied) is True

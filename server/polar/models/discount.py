@@ -146,27 +146,34 @@ class Discount(MetadataMixin, RecordModel):
 
         Args:
             discount_started_at: When the discount was applied to the subscription
-                (from DiscountRedemption.created_at)
+                (from DiscountRedemption.created_at). Used as fallback if first_applied_at
+                is not set.
             current_period_start: The start of the billing period to check
-            first_applied_at: For "once" discounts, when the discount was first applied
-                to a billing entry (from DiscountRedemption.first_applied_at).
-                If set, the discount has been used and should expire.
+            first_applied_at: When the discount was first applied to a billing entry
+                (from DiscountRedemption.first_applied_at). Used to determine expiration
+                for "once" and "repeating" discounts.
 
         Returns:
             True if the discount should no longer apply, False if it should still apply
         """
         if self.duration == DiscountDuration.once:
-            # "once" discount applies only to the first billing entry after it was applied
+            # "once" discount applies only to the first billing entry
             # It's expired if it has already been used (first_applied_at is set)
             return first_applied_at is not None
+
         if self.duration == DiscountDuration.forever:
             return False
+
         if self.duration_in_months is None:
             return False
 
-        # For repeating discounts, calculate expiration from when discount was applied
+        # For repeating discounts, calculate expiration from when discount was
+        # first applied to a billing entry. If not yet applied, it's not expired.
+        if first_applied_at is None:
+            return False
+
         # -1 because the first month counts as a first repetition
-        end_at = discount_started_at + relativedelta(months=self.duration_in_months - 1)
+        end_at = first_applied_at + relativedelta(months=self.duration_in_months - 1)
         return current_period_start > end_at
 
     __mapper_args__ = {

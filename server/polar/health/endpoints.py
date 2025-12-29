@@ -14,6 +14,7 @@ router = APIRouter(tags=["health"], include_in_schema=False)
 async def healthz(
     session: AsyncSession = Depends(get_db_session), redis: Redis = Depends(get_redis)
 ) -> dict[str, str]:
+    raise Exception("Test from François")
     try:
         await session.execute(select(1))
     except SQLAlchemyError as e:

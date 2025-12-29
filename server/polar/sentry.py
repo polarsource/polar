@@ -12,6 +12,8 @@ from sentry_sdk.integrations.excepthook import ExcepthookIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.modules import ModulesIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from sentry_sdk.integrations.threading import ThreadingIntegration
 
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
@@ -54,6 +56,10 @@ def configure_sentry() -> None:
                 level=logging.INFO,  # Capture info and above as breadcrumbs
                 event_level=None,
             ),
+            ThreadingIntegration(),
+            # Both Starlette and FastAPI integrations are needed
+            # See: https://docs.sentry.io/platforms/python/integrations/fastapi/#options
+            StarletteIntegration(transaction_style="endpoint"),
             FastApiIntegration(transaction_style="endpoint"),
             DramatiqIntegration(),
         ],

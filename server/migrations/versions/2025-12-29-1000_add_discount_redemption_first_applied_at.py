@@ -44,7 +44,7 @@ def upgrade() -> None:
         ondelete="SET NULL",
     )
 
-    # Backfill first_applied_at for existing "once" discount redemptions
+    # Backfill first_applied_at for existing discount redemptions
     # that have already been applied to a billing entry
     op.execute("""
         UPDATE discount_redemptions dr
@@ -62,10 +62,8 @@ def upgrade() -> None:
               AND be.deleted_at IS NULL
             ORDER BY be.subscription_id, be.discount_id, be.created_at ASC
         ) be
-        JOIN discounts d ON d.id = be.discount_id
         WHERE dr.subscription_id = be.subscription_id
           AND dr.discount_id = be.discount_id
-          AND d.duration = 'once'
     """)
 
 

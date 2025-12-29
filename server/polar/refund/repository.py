@@ -12,7 +12,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Refund, UserOrganization
+from polar.models import Order, Refund, UserOrganization
 
 from .sorting import RefundSortProperty
 
@@ -63,7 +63,10 @@ class RefundRepository(
         return (
             joinedload(Refund.organization),
             joinedload(Refund.dispute),
-            joinedload(Refund.order),
+            joinedload(Refund.order).options(
+                joinedload(Order.customer),
+                joinedload(Order.product),
+            ),
         )
 
     def get_sorting_clause(self, property: RefundSortProperty) -> SortingClause:

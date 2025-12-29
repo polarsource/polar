@@ -266,7 +266,7 @@ class Refund(MetadataMixin, RecordModel):
             tax_amount=tax_amount,
             currency=stripe_refund.currency,
             failure_reason=failure_reason,
-            destination_details=stripe_refund.destination_details or {},
+            destination_details=getattr(stripe_refund, "destination_details", {}),
             payment=payment,
             order=order,
             subscription=order.subscription,

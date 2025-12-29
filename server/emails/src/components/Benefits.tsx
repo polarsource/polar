@@ -29,14 +29,14 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
   const { type, description, properties } = benefit
   return (
     <Section className="mb-[12px] rounded-lg border border-solid border-gray-200 p-[12px]">
-      <div className="ml-[12px] mr-[32px] inline-flex items-start">
-        <div className="bg-brand mr-[18px] flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full text-[12px] font-semibold leading-none text-white">
+      <div className="mr-[32px] ml-[12px] inline-flex items-start">
+        <div className="bg-brand border-box mr-[18px] flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full p-[6px] text-[12px] leading-none font-semibold text-white">
           <BenefitIcon benefit={benefit} width={12} height={12} />
         </div>
         <div>
           <Heading
             as="h2"
-            className="mb-[8px] mt-[0px] text-[18px] text-gray-900"
+            className="mt-[0px] mb-[8px] text-[18px] text-gray-900"
           >
             {description}
           </Heading>

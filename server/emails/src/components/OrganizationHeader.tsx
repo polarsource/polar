@@ -27,7 +27,7 @@ const Header = ({ organization }: HeaderProps) => (
             <Img
               alt={organization.name}
               src={organization.avatar_url}
-              className="size-8"
+              className="size-8 overflow-hidden rounded-full object-cover"
             />
           </Column>
         )}

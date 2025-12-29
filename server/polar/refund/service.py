@@ -322,7 +322,9 @@ class RefundService:
                 "failure_reason": RefundFailureReason.from_stripe(
                     getattr(stripe_refund, "failure_reason", None)
                 ),
-                "destination_details": stripe_refund.destination_details or {},
+                "destination_details": getattr(
+                    stripe_refund, "destination_details", {}
+                ),
                 "processor_receipt_number": stripe_refund.receipt_number,
             },
         )

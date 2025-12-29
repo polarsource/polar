@@ -30,7 +30,7 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
   return (
     <Section className="mb-[12px] rounded-lg border border-solid border-gray-200 p-[12px]">
       <div className="mr-[32px] ml-[12px] inline-flex items-start">
-        <div className="bg-brand border-box mr-[18px] flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full p-[6px] text-[12px] leading-none font-semibold text-white">
+        <div className="bg-brand mr-[18px] flex h-[12px] w-[12px] shrink-0 items-center justify-center rounded-full p-[6px] text-[12px] leading-none font-semibold text-white">
           <BenefitIcon benefit={benefit} width={12} height={12} />
         </div>
         <div>

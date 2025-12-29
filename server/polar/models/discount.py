@@ -137,7 +137,6 @@ class Discount(MetadataMixin, RecordModel):
 
     def is_repetition_expired(
         self,
-        discount_started_at: datetime,
         current_period_start: datetime,
         first_applied_at: datetime | None = None,
     ) -> bool:
@@ -145,9 +144,6 @@ class Discount(MetadataMixin, RecordModel):
         Check if a discount's repetitions have expired for a given billing period.
 
         Args:
-            discount_started_at: When the discount was applied to the subscription
-                (from DiscountRedemption.created_at). Used as fallback if first_applied_at
-                is not set.
             current_period_start: The start of the billing period to check
             first_applied_at: When the discount was first applied to a billing entry
                 (from DiscountRedemption.first_applied_at). Used to determine expiration

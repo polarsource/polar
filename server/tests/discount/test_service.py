@@ -627,7 +627,7 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         # When first_applied_at is None, discount hasn't been used yet
-        assert discount.is_repetition_expired(now, now, first_applied_at=None) is False
+        assert discount.is_repetition_expired(now, first_applied_at=None) is False
 
     async def test_once_already_used(
         self,
@@ -646,7 +646,7 @@ class TestIsRepetitionExpired:
         now = utc_now()
         next_period = now + timedelta(days=30)
         # When first_applied_at is set, the discount has been used and should be expired
-        assert discount.is_repetition_expired(now, next_period, first_applied_at=now) is True
+        assert discount.is_repetition_expired(next_period, first_applied_at=now) is True
 
     async def test_once_mid_subscription_discount(
         self,
@@ -666,9 +666,9 @@ class TestIsRepetitionExpired:
         next_period = discount_applied_at + timedelta(days=30)
 
         # First use: not expired (first_applied_at=None)
-        assert discount.is_repetition_expired(discount_applied_at, discount_applied_at, first_applied_at=None) is False
+        assert discount.is_repetition_expired(discount_applied_at, first_applied_at=None) is False
         # After first use: expired (first_applied_at is set)
-        assert discount.is_repetition_expired(discount_applied_at, next_period, first_applied_at=discount_applied_at) is True
+        assert discount.is_repetition_expired(next_period, first_applied_at=discount_applied_at) is True
 
     async def test_forever_never_expires(
         self,
@@ -687,8 +687,8 @@ class TestIsRepetitionExpired:
         now = utc_now()
         future = now + timedelta(days=365)
         # Forever discounts never expire, regardless of first_applied_at
-        assert discount.is_repetition_expired(now, future, first_applied_at=None) is False
-        assert discount.is_repetition_expired(now, future, first_applied_at=now) is False
+        assert discount.is_repetition_expired(future, first_applied_at=None) is False
+        assert discount.is_repetition_expired(future, first_applied_at=now) is False
 
     async def test_repeating_not_yet_applied(
         self,
@@ -709,7 +709,7 @@ class TestIsRepetitionExpired:
         future = now + timedelta(days=365)
 
         # When first_applied_at is None, discount is not expired (not yet used)
-        assert discount.is_repetition_expired(now, future, first_applied_at=None) is False
+        assert discount.is_repetition_expired(future, first_applied_at=None) is False
 
     async def test_repeating_expires_after_duration(
         self,
@@ -731,9 +731,9 @@ class TestIsRepetitionExpired:
         after_duration = first_applied + timedelta(days=120)  # ~4 months
 
         # Should not expire within duration from first application
-        assert discount.is_repetition_expired(first_applied, within_duration, first_applied_at=first_applied) is False
+        assert discount.is_repetition_expired(within_duration, first_applied_at=first_applied) is False
         # Should expire after duration from first application
-        assert discount.is_repetition_expired(first_applied, after_duration, first_applied_at=first_applied) is True
+        assert discount.is_repetition_expired(after_duration, first_applied_at=first_applied) is True
 
     async def test_repeating_mid_subscription_discount(
         self,
@@ -760,6 +760,6 @@ class TestIsRepetitionExpired:
         after_duration = first_applied + timedelta(days=120)  # ~4 months from first use
 
         # Should not expire within duration from when first applied
-        assert discount.is_repetition_expired(discount_added_at, within_duration, first_applied_at=first_applied) is False
+        assert discount.is_repetition_expired(within_duration, first_applied_at=first_applied) is False
         # Should expire after duration from when first applied
-        assert discount.is_repetition_expired(discount_added_at, after_duration, first_applied_at=first_applied) is True
+        assert discount.is_repetition_expired(after_duration, first_applied_at=first_applied) is True

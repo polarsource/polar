@@ -740,9 +740,6 @@ class SubscriptionService:
                 and first_billing_entry_with_discount is not None
             ):
                 discount_redemption.first_applied_at = utc_now()
-                discount_redemption.first_applied_billing_entry_id = (
-                    first_billing_entry_with_discount.id
-                )
                 session.add(discount_redemption)
 
                 # Now that the discount is actually applied, update subscription.amount

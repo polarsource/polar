@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import BillingEntry, Checkout, Discount, Subscription
+    from polar.models import Checkout, Discount, Subscription
 
 
 class DiscountRedemption(RecordModel):
@@ -50,11 +50,3 @@ class DiscountRedemption(RecordModel):
     used up. If set, the discount has already been applied to a billing cycle
     and should not apply to future cycles.
     """
-
-    first_applied_billing_entry_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("billing_entries.id", ondelete="set null"), nullable=True
-    )
-
-    @declared_attr
-    def first_applied_billing_entry(cls) -> Mapped["BillingEntry | None"]:
-        return relationship("BillingEntry", lazy="raise")

@@ -27,33 +27,14 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
-    op.add_column(
-        "discount_redemptions",
-        sa.Column(
-            "first_applied_billing_entry_id",
-            sa.Uuid(),
-            nullable=True,
-        ),
-    )
-    op.create_foreign_key(
-        "fk_discount_redemptions_first_applied_billing_entry",
-        "discount_redemptions",
-        "billing_entries",
-        ["first_applied_billing_entry_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
 
     # Backfill first_applied_at for existing discount redemptions
     # that have already been applied to a billing entry
     op.execute("""
         UPDATE discount_redemptions dr
-        SET
-            first_applied_at = be.created_at,
-            first_applied_billing_entry_id = be.id
+        SET first_applied_at = be.created_at
         FROM (
             SELECT DISTINCT ON (be.subscription_id, be.discount_id)
-                be.id,
                 be.subscription_id,
                 be.discount_id,
                 be.created_at
@@ -68,10 +49,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_discount_redemptions_first_applied_billing_entry",
-        "discount_redemptions",
-        type_="foreignkey",
-    )
-    op.drop_column("discount_redemptions", "first_applied_billing_entry_id")
     op.drop_column("discount_redemptions", "first_applied_at")

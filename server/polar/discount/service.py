@@ -370,7 +370,8 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.max_redemptions is not None:
             statement = select(func.count(DiscountRedemption.id)).where(
-                DiscountRedemption.discount_id == discount.id
+                DiscountRedemption.discount_id == discount.id,
+                DiscountRedemption.deleted_at.is_(None),
             )
             result = await session.execute(statement)
             redemptions_count = result.scalar_one()

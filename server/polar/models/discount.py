@@ -122,7 +122,10 @@ class Discount(MetadataMixin, RecordModel):
 
         return column_property(
             select(func.count(DiscountRedemption.id))
-            .where(DiscountRedemption.discount_id == cls.id)
+            .where(
+                DiscountRedemption.discount_id == cls.id,
+                DiscountRedemption.deleted_at.is_(None),
+            )
             .correlate_except(DiscountRedemption)
             .scalar_subquery()
         )

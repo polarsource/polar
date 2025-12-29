@@ -1707,6 +1707,18 @@ class SubscriptionService:
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
+
+            # If discount was never applied, soft delete the redemption to return the slot
+            if (
+                subscription.discount is not None
+                and subscription.discount_applied_at is None
+            ):
+                discount_redemption_repository = DiscountRedemptionRepository.from_session(session)
+                redemption = await discount_redemption_repository.get_by_subscription_and_discount(
+                    subscription.id, subscription.discount.id
+                )
+                if redemption is not None:
+                    await discount_redemption_repository.soft_delete(redemption)
         else:
             subscription.cancel_at_period_end = True
             subscription.ends_at = subscription.current_period_end

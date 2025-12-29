@@ -138,15 +138,15 @@ class Discount(MetadataMixin, RecordModel):
     def is_repetition_expired(
         self,
         current_period_start: datetime,
-        first_applied_at: datetime | None = None,
+        discount_applied_at: datetime | None = None,
     ) -> bool:
         """
         Check if a discount's repetitions have expired for a given billing period.
 
         Args:
             current_period_start: The start of the billing period to check
-            first_applied_at: When the discount was first applied to a billing entry
-                (from DiscountRedemption.first_applied_at). Used to determine expiration
+            discount_applied_at: When the discount was first applied to a billing entry
+                (from Subscription.discount_applied_at). Used to determine expiration
                 for "once" and "repeating" discounts.
 
         Returns:
@@ -154,8 +154,8 @@ class Discount(MetadataMixin, RecordModel):
         """
         if self.duration == DiscountDuration.once:
             # "once" discount applies only to the first billing entry
-            # It's expired if it has already been used (first_applied_at is set)
-            return first_applied_at is not None
+            # It's expired if it has already been used (discount_applied_at is set)
+            return discount_applied_at is not None
 
         if self.duration == DiscountDuration.forever:
             return False
@@ -165,11 +165,11 @@ class Discount(MetadataMixin, RecordModel):
 
         # For repeating discounts, calculate expiration from when discount was
         # first applied to a billing entry. If not yet applied, it's not expired.
-        if first_applied_at is None:
+        if discount_applied_at is None:
             return False
 
         # -1 because the first month counts as a first repetition
-        end_at = first_applied_at + relativedelta(months=self.duration_in_months - 1)
+        end_at = discount_applied_at + relativedelta(months=self.duration_in_months - 1)
         return current_period_start > end_at
 
     __mapper_args__ = {

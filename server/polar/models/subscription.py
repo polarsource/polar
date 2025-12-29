@@ -217,6 +217,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def discount(cls) -> Mapped["Discount | None"]:
         return relationship("Discount", lazy="joined")
 
+    discount_applied_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """When the discount was first applied to a billing entry."""
+
     meters: Mapped[list[SubscriptionMeter]] = relationship(
         SubscriptionMeter,
         order_by="SubscriptionMeter.created_at",
@@ -447,6 +452,9 @@ def _discount_set(
     oldvalue: "Discount | None",
     initiator: Event,
 ) -> None:
+    # Reset discount_applied_at when discount changes (will be set when first applied)
+    target.discount_applied_at = None
+
     # Only auto-update amount when discount is REMOVED.
     # When discount is ADDED mid-subscription, amount should only update
     # when the discount is actually applied to a billing entry (in cycle()).

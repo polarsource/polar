@@ -626,8 +626,8 @@ class TestIsRepetitionExpired:
         )
 
         now = utc_now()
-        # When first_applied_at is None, discount hasn't been used yet
-        assert discount.is_repetition_expired(now, first_applied_at=None) is False
+        # When discount_applied_at is None, discount hasn't been used yet
+        assert discount.is_repetition_expired(now, discount_applied_at=None) is False
 
     async def test_once_already_used(
         self,
@@ -645,8 +645,8 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         next_period = now + timedelta(days=30)
-        # When first_applied_at is set, the discount has been used and should be expired
-        assert discount.is_repetition_expired(next_period, first_applied_at=now) is True
+        # When discount_applied_at is set, the discount has been used and should be expired
+        assert discount.is_repetition_expired(next_period, discount_applied_at=now) is True
 
     async def test_once_mid_subscription_discount(
         self,
@@ -662,13 +662,13 @@ class TestIsRepetitionExpired:
             organization=organization,
         )
 
-        discount_applied_at = utc_now()
-        next_period = discount_applied_at + timedelta(days=30)
+        applied_at = utc_now()
+        next_period = applied_at + timedelta(days=30)
 
-        # First use: not expired (first_applied_at=None)
-        assert discount.is_repetition_expired(discount_applied_at, first_applied_at=None) is False
-        # After first use: expired (first_applied_at is set)
-        assert discount.is_repetition_expired(next_period, first_applied_at=discount_applied_at) is True
+        # First use: not expired (discount_applied_at=None)
+        assert discount.is_repetition_expired(applied_at, discount_applied_at=None) is False
+        # After first use: expired (discount_applied_at is set)
+        assert discount.is_repetition_expired(next_period, discount_applied_at=applied_at) is True
 
     async def test_forever_never_expires(
         self,
@@ -686,9 +686,9 @@ class TestIsRepetitionExpired:
 
         now = utc_now()
         future = now + timedelta(days=365)
-        # Forever discounts never expire, regardless of first_applied_at
-        assert discount.is_repetition_expired(future, first_applied_at=None) is False
-        assert discount.is_repetition_expired(future, first_applied_at=now) is False
+        # Forever discounts never expire, regardless of discount_applied_at
+        assert discount.is_repetition_expired(future, discount_applied_at=None) is False
+        assert discount.is_repetition_expired(future, discount_applied_at=now) is False
 
     async def test_repeating_not_yet_applied(
         self,
@@ -708,8 +708,8 @@ class TestIsRepetitionExpired:
         now = utc_now()
         future = now + timedelta(days=365)
 
-        # When first_applied_at is None, discount is not expired (not yet used)
-        assert discount.is_repetition_expired(future, first_applied_at=None) is False
+        # When discount_applied_at is None, discount is not expired (not yet used)
+        assert discount.is_repetition_expired(future, discount_applied_at=None) is False
 
     async def test_repeating_expires_after_duration(
         self,
@@ -726,14 +726,14 @@ class TestIsRepetitionExpired:
             organization=organization,
         )
 
-        first_applied = utc_now()
-        within_duration = first_applied + timedelta(days=60)  # ~2 months
-        after_duration = first_applied + timedelta(days=120)  # ~4 months
+        applied_at = utc_now()
+        within_duration = applied_at + timedelta(days=60)  # ~2 months
+        after_duration = applied_at + timedelta(days=120)  # ~4 months
 
         # Should not expire within duration from first application
-        assert discount.is_repetition_expired(within_duration, first_applied_at=first_applied) is False
+        assert discount.is_repetition_expired(within_duration, discount_applied_at=applied_at) is False
         # Should expire after duration from first application
-        assert discount.is_repetition_expired(after_duration, first_applied_at=first_applied) is True
+        assert discount.is_repetition_expired(after_duration, discount_applied_at=applied_at) is True
 
     async def test_repeating_mid_subscription_discount(
         self,
@@ -753,13 +753,13 @@ class TestIsRepetitionExpired:
         # Discount added to subscription mid-cycle
         discount_added_at = utc_now()
         # But first applied to billing entry 2 weeks later (next billing cycle)
-        first_applied = discount_added_at + timedelta(days=14)
+        applied_at = discount_added_at + timedelta(days=14)
 
-        # Duration counts from first_applied, not discount_added_at
-        within_duration = first_applied + timedelta(days=60)  # ~2 months from first use
-        after_duration = first_applied + timedelta(days=120)  # ~4 months from first use
+        # Duration counts from applied_at, not discount_added_at
+        within_duration = applied_at + timedelta(days=60)  # ~2 months from first use
+        after_duration = applied_at + timedelta(days=120)  # ~4 months from first use
 
         # Should not expire within duration from when first applied
-        assert discount.is_repetition_expired(within_duration, first_applied_at=first_applied) is False
+        assert discount.is_repetition_expired(within_duration, discount_applied_at=applied_at) is False
         # Should expire after duration from when first applied
-        assert discount.is_repetition_expired(after_duration, first_applied_at=first_applied) is True
+        assert discount.is_repetition_expired(after_duration, discount_applied_at=applied_at) is True

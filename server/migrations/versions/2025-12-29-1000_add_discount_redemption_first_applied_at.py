@@ -1,4 +1,4 @@
-"""Add first_applied_at to discount_redemptions
+"""Add discount_applied_at to subscriptions
 
 Revision ID: 9d5e6f7a8b9c
 Revises: 8c4a2b3d5e6f
@@ -20,19 +20,19 @@ depends_on: tuple[str] | None = None
 
 def upgrade() -> None:
     op.add_column(
-        "discount_redemptions",
+        "subscriptions",
         sa.Column(
-            "first_applied_at",
+            "discount_applied_at",
             sa.TIMESTAMP(timezone=True),
             nullable=True,
         ),
     )
 
-    # Backfill first_applied_at for existing discount redemptions
-    # that have already been applied to a billing entry
+    # Backfill discount_applied_at for subscriptions that have a discount
+    # and have already had it applied to a billing entry
     op.execute("""
-        UPDATE discount_redemptions dr
-        SET first_applied_at = be.created_at
+        UPDATE subscriptions s
+        SET discount_applied_at = be.created_at
         FROM (
             SELECT DISTINCT ON (be.subscription_id, be.discount_id)
                 be.subscription_id,
@@ -43,10 +43,10 @@ def upgrade() -> None:
               AND be.deleted_at IS NULL
             ORDER BY be.subscription_id, be.discount_id, be.created_at ASC
         ) be
-        WHERE dr.subscription_id = be.subscription_id
-          AND dr.discount_id = be.discount_id
+        WHERE s.id = be.subscription_id
+          AND s.discount_id = be.discount_id
     """)
 
 
 def downgrade() -> None:
-    op.drop_column("discount_redemptions", "first_applied_at")
+    op.drop_column("subscriptions", "discount_applied_at")

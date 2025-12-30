@@ -255,8 +255,12 @@ class RefundService:
         self, session: AsyncSession, stripe_refund: stripe_lib.Refund
     ) -> Refund:
         repository = RefundRepository.from_session(session)
+        order_repository = OrderRepository.from_session(session)
         refund = await repository.get_by_processor_id(
-            stripe_refund.id, options=repository.get_eager_options()
+            stripe_refund.id,
+            options=repository.get_eager_options(
+                order_options=order_repository.get_eager_options()
+            ),
         )
 
         if refund is not None:

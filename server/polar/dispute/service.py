@@ -135,11 +135,21 @@ class DisputeService:
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
 
+        new_status = DisputeStatus.from_stripe(stripe_dispute.status)
+
+        # Dispute that we tried to prevent but too late: we need to reopen it
+        # The associated refund will be marked as failed through refund.failed
+        if (
+            dispute.status == DisputeStatus.prevented
+            and new_status not in DisputeStatus.closed_statuses()
+        ):
+            dispute.status = new_status
         # ⚠️ If the dispute is handled via Verifi RDR network, Stripe will see
         # it as a "lost" dispute, even if we issued a refund through ChargebackStop.
         # Detect this case, keep the dispute as "prevented", and create a refund.
-        if dispute.status == DisputeStatus.prevented or is_rapid_resolution_dispute(
-            stripe_dispute
+        elif new_status in DisputeStatus.closed_statuses() and (
+            dispute.status == DisputeStatus.prevented
+            or is_rapid_resolution_dispute(stripe_dispute)
         ):
             dispute.status = DisputeStatus.prevented
             if from_alert or not was_closed:  # Make sure we didn't already handle it
@@ -151,7 +161,7 @@ class DisputeService:
                 )
                 await self._revoke(session, dispute)
         elif not was_closed:
-            dispute.status = DisputeStatus.from_stripe(stripe_dispute.status)
+            dispute.status = new_status
             # If won or lost, record the transactions
             if dispute.resolved:
                 await dispute_transaction_service.create_dispute(

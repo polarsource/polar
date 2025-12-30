@@ -325,6 +325,56 @@ class TestUpsertFromStripe:
         dispute_transaction_service_mock.create_dispute.assert_not_awaited()
         refund_service_mock.create_from_dispute.assert_not_awaited()
 
+    async def test_update_failed_refund_open_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        refund_service_mock: MagicMock,
+    ) -> None:
+        """
+        Check that we handle the case where the alert processor issues a refund
+        to prevent the dispute, but a bit too late: the refund fails and the dispute
+        is escalated by Stripe.
+        """
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute_balance_transaction = build_stripe_balance_transaction(
+            amount=-order.due_amount,
+            reporting_category="dispute",
+            fee=1500,
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[stripe_dispute_balance_transaction],
+        )
+        await create_dispute(
+            save_fixture,
+            order,
+            payment,
+            status=DisputeStatus.prevented,
+            payment_processor=PaymentProcessor.stripe,
+            payment_processor_id=stripe_dispute.id,
+            alert_processor=DisputeAlertProcessor.chargeback_stop,
+            alert_processor_id="CHARGEBACK_STOP_ALERT_ID",
+        )
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.status == DisputeStatus.needs_response
+
+        dispute_transaction_service_mock.create_dispute.assert_not_awaited()
+        refund_service_mock.create_from_dispute.assert_not_awaited()
+
     async def test_update_closed_rapid_resolution_dispute(
         self,
         save_fixture: SaveFixture,

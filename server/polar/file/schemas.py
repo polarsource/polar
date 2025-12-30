@@ -143,12 +143,9 @@ class FileDownload(S3FileDownload):
             storage_version=file.storage_version,
             is_uploaded=file.is_uploaded,
             created_at=file.created_at,
+            checksum_sha256_base64=file.checksum_sha256_base64,
+            checksum_sha256_hex=file.checksum_sha256_hex,
         )
-        if file.checksum_sha256_base64 and file.checksum_sha256_hex:
-            file_dict.update(
-                checksum_sha256_base64=file.checksum_sha256_base64,
-                checksum_sha256_hex=file.checksum_sha256_hex,
-            )
 
         return cls(
             **file_dict,

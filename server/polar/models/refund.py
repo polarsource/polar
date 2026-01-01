@@ -240,7 +240,7 @@ class Refund(MetadataMixin, RecordModel):
 
     @classmethod
     def from_stripe(
-        cls, stripe_refund: stripe_lib.Refund, order: Order, payment: Payment
+        cls, stripe_refund: stripe_lib.Refund, order: "Order", payment: "Payment"
     ) -> Self:
         amount, tax_amount = order.calculate_refunded_tax_from_total(
             stripe_refund.amount

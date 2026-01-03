@@ -79,6 +79,28 @@ export const useInfiniteCheckoutLinks = (
   })
 }
 
+export const useCheckoutLinkCreate = (organizationId: string | undefined) => {
+  const { polar } = usePolarClient()
+
+  return useMutation({
+    mutationFn: (data: schemas['CheckoutLinkCreateProducts']) =>
+      unwrap(
+        polar.POST('/v1/checkout-links/', {
+          body: data,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['checkout_links', organizationId],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['infinite', 'checkout_links', organizationId],
+      })
+    },
+  })
+}
+
 export const useCheckoutLinkUpdate = (
   organizationId: string | undefined,
   id: string,

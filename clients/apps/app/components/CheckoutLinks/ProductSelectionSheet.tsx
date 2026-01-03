@@ -105,7 +105,8 @@ export const ProductSelectionSheet = ({
       handleIndicatorStyle={{
         backgroundColor: theme.colors.subtext,
       }}
-      topInset={insets.top}
+      enableDynamicSizing={false}
+      topInset={insets.bottom}
       backdropComponent={(props) => (
         <BottomSheetBackdrop
           {...props}

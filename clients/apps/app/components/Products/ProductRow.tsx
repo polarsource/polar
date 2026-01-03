@@ -21,7 +21,7 @@ export const ProductRow = ({ product, style }: ProductRowProps) => {
 
   return (
     <Link
-      href={`/catalogue/products/${product.id}`}
+      href={`/products/${product.id}`}
       style={[
         {
           padding: theme.spacing['spacing-16'],

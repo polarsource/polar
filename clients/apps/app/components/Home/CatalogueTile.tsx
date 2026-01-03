@@ -33,7 +33,7 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
   })
 
   return (
-    <Tile href="/catalogue">
+    <Tile href="/products">
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
           <Text variant="body" color="subtext">

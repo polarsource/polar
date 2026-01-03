@@ -1,4 +1,3 @@
-import { CustomerCard } from '@/components/Customers/CustomerCard'
 import { AnimatedHeader } from '@/components/Home/AnimatedHeader'
 import { CatalogueTile } from '@/components/Home/CatalogueTile'
 import { FinanceTile } from '@/components/Home/FinanceTile'
@@ -10,6 +9,7 @@ import { Banner } from '@/components/Shared/Banner'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
 import { EmptyState } from '@/components/Shared/EmptyState'
+import { LinkList } from '@/components/Shared/LinkList'
 import { Text } from '@/components/Shared/Text'
 import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
@@ -39,7 +39,7 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import { RefreshControl, ScrollView } from 'react-native'
+import { RefreshControl } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 
@@ -287,50 +287,27 @@ function HomeContent() {
                 />
               )}
             </Box>
-          </Box>
-
-          <Box gap="spacing-24" flexDirection="column" flex={1}>
-            <Box
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="space-between"
-              paddingHorizontal="spacing-16"
-            >
-              <Text variant="title">Recent Customers</Text>
-              <Link href="/customers" asChild>
-                <Button size="small" variant="secondary">
-                  View All
-                </Button>
-              </Link>
-            </Box>
-
-            {flatCustomers && flatCustomers.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  flexDirection: 'row',
-                  gap: theme.spacing['spacing-16'],
-                  paddingHorizontal: theme.spacing['spacing-16'],
-                }}
-                contentOffset={{ x: -theme.spacing['spacing-16'], y: 0 }}
-              >
-                {isLoadingCustomers
-                  ? Array.from({ length: 4 }).map((_, i) => (
-                      <CustomerCard key={i} loading />
-                    ))
-                  : flatCustomers.map((customer) => (
-                      <CustomerCard key={customer.id} customer={customer} />
-                    ))}
-              </ScrollView>
-            ) : (
-              <Box flex={1} paddingHorizontal="spacing-16">
-                <EmptyState
-                  title="No Customers"
-                  description="No customers found for this organization"
-                />
-              </Box>
-            )}
+            <LinkList
+              items={[
+                {
+                  title: 'Customers',
+                  meta: `${flatCustomers.length}`,
+                  link: '/customers',
+                },
+                {
+                  title: 'Products',
+                  link: '/products',
+                },
+                {
+                  title: 'Subscriptions',
+                  link: '/subscriptions',
+                },
+                {
+                  title: 'Checkout Links',
+                  link: '/checkout-links',
+                },
+              ]}
+            />
           </Box>
         </Animated.ScrollView>
 

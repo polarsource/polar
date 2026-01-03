@@ -683,7 +683,7 @@ class TestIsRepetitionExpired:
         )
 
         now = utc_now()
-        within_duration = now + timedelta(days=60)  # ~2 months
+        within_duration = now + timedelta(days=30)  # ~1 month
         after_duration = now + timedelta(days=120)  # ~4 months
 
         # Should not expire within duration

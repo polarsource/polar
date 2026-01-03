@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import joinedload
@@ -24,13 +25,18 @@ class MeterDoesNotExist(MeterTaskError):
     actor_name="meter.enqueue_billing",
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
+    max_age=timedelta(minutes=5).total_seconds() * 1000,
 )
 async def meter_enqueue_billing() -> None:
     async with AsyncSessionMaker() as session:
         await meter_service.enqueue_billing(session)
 
 
-@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW)
+@actor(
+    actor_name="meter.billing_entries",
+    priority=TaskPriority.LOW,
+    max_age=timedelta(minutes=5).total_seconds() * 1000,
+)
 async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)

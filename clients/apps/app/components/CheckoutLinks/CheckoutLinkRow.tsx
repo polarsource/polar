@@ -26,7 +26,7 @@ export const CheckoutLinkRow = ({
 
   return (
     <Link
-      href={`/catalogue/checkout-links/${checkoutLink.id}`}
+      href={`/checkout-links/${checkoutLink.id}`}
       style={[
         {
           padding: theme.spacing['spacing-16'],

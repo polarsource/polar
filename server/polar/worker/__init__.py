@@ -165,6 +165,7 @@ broker = RedisBroker(
             middleware.ShutdownNotifications,
         )
     ],
+    dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
 )
 
 broker.add_middleware(

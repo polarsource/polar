@@ -34,11 +34,7 @@ async def meter_enqueue_billing() -> None:
         await meter_service.enqueue_billing(session)
 
 
-@actor(
-    actor_name="meter.billing_entries",
-    priority=TaskPriority.LOW,
-    max_age=MAX_AGE_MILLISECONDS,
-)
+@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW)
 async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)

@@ -420,6 +420,114 @@ class TestGetQuantities:
         assert result.total == 600
 
     @pytest.mark.parametrize(
+        ("aggregation_func", "expected_daily_quantities", "expected_total"),
+        [
+            # For max: total should be max across all days, not sum of daily maxes
+            # Day 1: max(10, 20) = 20, Day 2: (none) = 0, Day 3: max(15, 5) = 15
+            # Total should be max(20, 0, 15) = 20, NOT sum(20 + 0 + 15) = 35
+            pytest.param(
+                AggregationFunction.max, [20, 0, 15], 20, id="max aggregation"
+            ),
+            # For min: total should be min across all days (excluding zeros from empty days)
+            # This is tricky - min with zeros is debatable, but the key is it shouldn't sum
+            pytest.param(
+                AggregationFunction.min, [10, 0, 5], 0, id="min aggregation"
+            ),
+            # For sum: total should be sum across all days (this is summable, so sum is correct)
+            pytest.param(
+                AggregationFunction.sum, [30, 0, 20], 50, id="sum aggregation"
+            ),
+        ],
+    )
+    async def test_interval_non_summable_aggregation(
+        self,
+        aggregation_func: AggregationFunction,
+        expected_daily_quantities: list[int],
+        expected_total: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Test that total is computed correctly for non-summable aggregations over multiple days.
+
+        Regression test for bug introduced in commit 668ea64 where the total was always
+        computed using SUM, even for non-summable aggregations like MAX, MIN, AVG.
+        """
+        past_timestamp = utc_now() - timedelta(days=1)
+        today_timestamp = utc_now()
+        future_timestamp = utc_now() + timedelta(days=1)
+
+        # Day 1 (past): two events with values 10 and 20
+        await create_event(
+            save_fixture,
+            timestamp=past_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 10, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=past_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+
+        # Day 2 (today): no events
+
+        # Day 3 (future): two events with values 15 and 5
+        await create_event(
+            save_fixture,
+            timestamp=future_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 15, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=future_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Token Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(func=aggregation_func, property="tokens"),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=past_timestamp,
+            end_timestamp=future_timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(result.quantities) == 3
+
+        [yesterday_quantity, today_quantity, tomorrow_quantity] = result.quantities
+
+        assert yesterday_quantity.quantity == expected_daily_quantities[0]
+        assert today_quantity.quantity == expected_daily_quantities[1]
+        assert tomorrow_quantity.quantity == expected_daily_quantities[2]
+
+        # This is the key assertion - total should use the meter's aggregation,
+        # not always SUM
+        assert result.total == expected_total
+
+    @pytest.mark.parametrize(
         "property",
         [
             pytest.param("model", id="not a numeric property"),

@@ -53,7 +53,7 @@ resource "render_env_group" "backend" {
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                               = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                           = { value = var.backend_secrets.sentry_dsn }
-      POLAR_EVENTS_DUAL_WRITE_ENABLED            = { value = "true" }
+      POLAR_EVENTS_DUAL_WRITE_ENABLED            = { value = "false" }
     },
     var.backend_config.user_session_cookie_key != "" ? {
       POLAR_USER_SESSION_COOKIE_KEY = { value = var.backend_config.user_session_cookie_key }

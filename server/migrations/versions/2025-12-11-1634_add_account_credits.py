@@ -1,7 +1,7 @@
 """Add new account_credits table and ability to set fee_credit on campaigns
 
 Revision ID: 5ec10e43a3b3
-Revises: 916e176efd47
+Revises: e87a34881c93
 Create Date: 2025-12-10 19:57:56.844683
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "5ec10e43a3b3"
-down_revision = "916e176efd47"
+down_revision = "412c2088be03"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

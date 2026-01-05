@@ -1,7 +1,7 @@
 """account_credits indexes and metadata nullability
 
 Revision ID: 24bb42b493d7
-Revises: 916e176efd47
+Revises: 0a8d663cc43d
 Create Date: 2025-12-25 23:42:28.931540
 
 """
@@ -16,7 +16,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "24bb42b493d7"
-down_revision = "916e176efd47"
+down_revision = "0a8d663cc43d"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

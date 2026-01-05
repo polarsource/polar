@@ -631,7 +631,16 @@ async def approve_denied_dialog(
         )
 
     with modal("Approve Denied Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:approve_denied_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
             with tag.p(classes="font-semibold"):
                 text("Approve this previously denied organization")
 
@@ -662,17 +671,8 @@ async def approve_denied_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with tag.form(
-                    hx_post=str(
-                        request.url_for(
-                            "organizations-v2:approve_denied_dialog",
-                            organization_id=organization_id,
-                        )
-                    ),
-                    hx_target="#modal",
-                ):
-                    with button(variant="primary"):
-                        text("Approve Organization")
+                with button(variant="primary", type="submit"):
+                    text("Approve Organization")
 
     return None
 
@@ -720,7 +720,16 @@ async def unblock_approve_dialog(
         )
 
     with modal("Unblock & Approve Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations-v2:unblock_approve_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
             with tag.p(classes="font-semibold"):
                 text("Unblock and approve this organization")
 
@@ -751,17 +760,8 @@ async def unblock_approve_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with tag.form(
-                    hx_post=str(
-                        request.url_for(
-                            "organizations-v2:unblock_approve_dialog",
-                            organization_id=organization_id,
-                        )
-                    ),
-                    hx_target="#modal",
-                ):
-                    with button(variant="primary"):
-                        text("Unblock & Approve")
+                with button(variant="primary", type="submit"):
+                    text("Unblock & Approve")
 
     return None
 

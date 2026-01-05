@@ -22,6 +22,7 @@ export const getCostsSearchParams = (
   startDate: string,
   endDate: string,
   interval: string,
+  customerIds: string[] = [],
 ): string => {
   const params = new URLSearchParams()
   if (startDate !== getDefaultStartDate()) {
@@ -32,6 +33,9 @@ export const getCostsSearchParams = (
   }
   if (interval !== DEFAULT_INTERVAL) {
     params.set('interval', interval)
+  }
+  if (customerIds.length > 0) {
+    customerIds.forEach((id) => params.append('customerIds', id))
   }
   return params.toString()
 }

@@ -154,7 +154,7 @@ export interface DashboardBodyProps {
   children?: React.ReactNode
   className?: string
   wrapperClassName?: string
-  title?: JSX.Element | string
+  title?: JSX.Element | string | null
   contextView?: React.ReactNode
   contextViewClassName?: string
   contextViewPlacement?: 'left' | 'right'
@@ -196,26 +196,29 @@ export const DashboardBody = ({
       <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-xs">
         <div
           className={twMerge(
-            'flex h-full w-full flex-col',
+            'flex h-full w-full flex-col gap-8 pt-8',
             wrapperClassName,
             wide ? '' : 'max-w-(--breakpoint-xl)',
           )}
         >
-          <div className="flex flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:gap-x-4 md:py-8">
-            {!title || typeof parsedTitle === 'string' ? (
-              <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
-                {title ?? current?.title}
-              </h4>
-            ) : (
-              parsedTitle
-            )}
+          {(title !== null || !!header) && (
+            <div className="flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between md:gap-x-4">
+              {title !== null &&
+                (!title || typeof parsedTitle === 'string' ? (
+                  <h4 className="text-2xl font-medium whitespace-nowrap dark:text-white">
+                    {title ?? current?.title}
+                  </h4>
+                ) : (
+                  parsedTitle
+                ))}
 
-            {header ? (
-              header
-            ) : isCollapsed && currentRoute && 'subs' in currentRoute ? (
-              <SubNav items={currentRoute.subs ?? []} />
-            ) : null}
-          </div>
+              {header ? (
+                header
+              ) : isCollapsed && currentRoute && 'subs' in currentRoute ? (
+                <SubNav items={currentRoute.subs ?? []} />
+              ) : null}
+            </div>
+          )}
 
           <motion.div
             className={twMerge('flex w-full flex-col pb-8', className)}

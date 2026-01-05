@@ -19,6 +19,42 @@ import { useCallback, useId, useMemo, useState } from 'react'
 import type { ExternalMouseEvents } from 'recharts/types/chart/types'
 import type { AxisTick } from 'recharts/types/util/types'
 
+const MinHeightBar = (props: {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  fill?: string
+  radius?: number
+  opacity?: number
+}) => {
+  const {
+    x = 0,
+    y = 0,
+    width = 0,
+    height = 0,
+    fill,
+    radius = 1,
+    opacity = 1,
+  } = props
+  const minHeight = 4
+  const actualHeight = height === 0 ? minHeight : height
+  const actualY = height === 0 ? y - minHeight : y
+
+  return (
+    <rect
+      x={x}
+      y={actualY}
+      width={width}
+      height={actualHeight}
+      fill={fill}
+      rx={radius}
+      ry={radius}
+      opacity={opacity}
+    />
+  )
+}
+
 export interface GenericChartSeries {
   key: string
   label: string
@@ -212,6 +248,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           vertical={true}
           stroke={isDark ? '#222225' : '#ccc'}
           strokeDasharray="6 6"
+          syncWithTicks={true}
         />
       ) : undefined
 
@@ -297,16 +334,17 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {series
             .slice()
             .reverse()
-            .map((s, index) => (
+            .map((s) => (
               <Bar
                 key={s.key}
                 dataKey={s.key}
                 fill={`var(--color-${s.key})`}
-                radius={1}
-                maxBarSize={index === series.length - 1 ? 16 : 10}
+                radius={4}
+                maxBarSize={32}
                 opacity={
                   activeSeries === null || activeSeries === s.key ? 1 : 0.3
                 }
+                shape={<MinHeightBar />}
               />
             ))}
         </BarChart>

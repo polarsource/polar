@@ -1,35 +1,20 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { formatSubCentCurrency } from '@/utils/formatters'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { useEventTypes } from '@/hooks/queries/event_types'
+import { useInfiniteEvents } from '@/hooks/queries/events'
+import { fromISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { subMonths } from 'date-fns'
-import {
-  BadgeDollarSignIcon,
-  CircleUserRound,
-  MousePointerClickIcon,
-} from 'lucide-react'
-import Link from 'next/link'
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
-import { CostsBandedSparkline } from './components/CostsBandedSparkline'
-import { SpansHeader } from './components/SpansHeader'
-import { SpansTitle } from './components/SpansTitle'
-import {
-  DEFAULT_INTERVAL,
-  getCostsSearchParams,
-  getDefaultEndDate,
-  getDefaultStartDate,
-} from './utils'
-
-type TimeSeriesField = 'average' | 'p10' | 'p90' | 'p99'
+import { endOfDay, subMonths } from 'date-fns'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
+import { useMemo } from 'react'
+import CostsEventsTable from './[spanId]/CostsEventsTable'
+import { getDefaultEndDate, getDefaultStartDate } from './utils'
 
 interface ClientPageProps {
   organization: schemas['Organization']
 }
 
+type TimeSeriesField = 'average' | 'p10' | 'p90' | 'p99'
 const getTimeSeriesValues = (
   periods: schemas['StatisticsPeriod'][],
   eventName: schemas['EventStatistics']['name'],
@@ -53,11 +38,11 @@ const getTimeSeriesValues = (
 }
 
 export default function ClientPage({ organization }: ClientPageProps) {
-  const [startDateISOString, setStartDateISOString] = useQueryState(
+  const [startDateISOString] = useQueryState(
     'startDate',
     parseAsString.withDefault(getDefaultStartDate()),
   )
-  const [endDateISOString, setEndDateISOString] = useQueryState(
+  const [endDateISOString] = useQueryState(
     'endDate',
     parseAsString.withDefault(getDefaultEndDate()),
   )
@@ -67,171 +52,63 @@ export default function ClientPage({ organization }: ClientPageProps) {
     const startDate = startDateISOString
       ? fromISODate(startDateISOString)
       : subMonths(today, 1)
-    const endDate = endDateISOString ? fromISODate(endDateISOString) : today
+    const endDate = endDateISOString
+      ? endOfDay(fromISODate(endDateISOString))
+      : today
     return [startDate, endDate]
   }, [startDateISOString, endDateISOString])
 
-  const [interval, setInterval] = useQueryState(
-    'interval',
-    parseAsStringLiteral([
-      'hour',
-      'day',
-      'week',
-      'month',
-      'year',
-    ] as const).withDefault(DEFAULT_INTERVAL),
+  const { data: eventTypesData } = useEventTypes(organization.id, {
+    sorting: ['-last_seen'],
+    root_events: true,
+    source: 'user',
+  })
+
+  const eventTypes = eventTypesData?.items || []
+
+  const [customerIds] = useQueryState(
+    'customerIds',
+    parseAsArrayOf(parseAsString),
   )
 
-  const { data: costData, isLoading } = useEventHierarchyStats(
-    organization.id,
-    {
-      start_date: startDateISOString,
-      end_date: endDateISOString,
-      interval,
-      aggregate_fields: ['_cost.amount'],
-      sorting: ['-total'],
-    },
-  )
+  const {
+    data: eventsData,
+    isLoading: isEventsLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteEvents(organization.id, {
+    limit: 50,
+    sorting: ['-timestamp'],
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+    customer_id: customerIds,
+    // @ts-expect-error - event_type_id is intentionally excluded from public schema
+    aggregate_fields: ['_cost.amount'],
+    name: eventTypes.map((et) => et.name),
+  })
 
-  const dateRange = useMemo(
-    () => ({ from: startDate, to: endDate }),
-    [startDate, endDate],
-  )
-
-  const onDateRangeChange = useCallback(
-    (dateRange: { from: Date; to: Date }) => {
-      setStartDateISOString(toISODate(dateRange.from))
-      setEndDateISOString(toISODate(dateRange.to))
-    },
-    [setStartDateISOString, setEndDateISOString],
-  )
-
-  const onIntervalChange = useCallback(
-    (newInterval: schemas['TimeInterval']) => {
-      setInterval(newInterval)
-    },
-    [setInterval],
-  )
+  const events = useMemo(() => {
+    if (!eventsData) return []
+    return eventsData.pages.flatMap((page) => page.items)
+  }, [eventsData])
 
   return (
-    <DashboardBody
-      title={<SpansTitle organization={organization} />}
-      header={
-        <SpansHeader
-          dateRange={dateRange}
-          interval={interval}
-          startDate={startDate}
-          endDate={endDate}
-          onDateRangeChange={onDateRangeChange}
-          onIntervalChange={onIntervalChange}
-        />
-      }
-    >
-      <div className="flex flex-col gap-y-6">
-        {!isLoading && costData?.totals.length === 0 && (
-          <p className="dark:text-polar-400 dark:bg-polar-800 flex items-center justify-center rounded-2xl bg-gray-50 p-12 text-center text-sm text-gray-500">
-            No cost data available for the selected date range
-          </p>
-        )}
-        {(costData?.totals ?? []).map((totals) => (
-          <EventStatisticsCard
-            key={totals.name}
-            periods={costData?.periods || []}
-            eventStatistics={totals}
-            organization={organization}
-            startDate={startDateISOString}
-            endDate={endDateISOString}
-            interval={interval}
-          />
-        ))}
+    <div className="">
+      <div className="mb-12 flex flex-row items-center justify-between gap-y-4">
+        <h3 className="text-2xl font-medium whitespace-nowrap dark:text-white">
+          Events
+        </h3>
       </div>
-    </DashboardBody>
-  )
-}
 
-function EventStatisticsCard({
-  periods,
-  eventStatistics,
-  organization,
-  startDate,
-  endDate,
-  interval,
-}: {
-  periods: schemas['StatisticsPeriod'][]
-  eventStatistics: schemas['EventStatistics']
-  organization: schemas['Organization']
-  startDate: string
-  endDate: string
-  interval: string
-}) {
-  const averageCostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'average')
-  }, [periods, eventStatistics.name])
-
-  const p10CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p10')
-  }, [periods, eventStatistics.name])
-
-  const p90CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p90')
-  }, [periods, eventStatistics.name])
-
-  const p99CostValues = useMemo(() => {
-    return getTimeSeriesValues(periods, eventStatistics.name, 'p99')
-  }, [periods, eventStatistics.name])
-
-  const searchString = getCostsSearchParams(startDate, endDate, interval)
-
-  return (
-    <Link
-      href={`/dashboard/${organization.slug}/analytics/costs/${eventStatistics.event_type_id}${searchString ? `?${searchString}` : ''}`}
-      className="dark:bg-polar-700 dark:hover:border-polar-600 dark:border-polar-700 @container flex cursor-pointer flex-col justify-between gap-4 rounded-2xl border border-gray-100 p-4 transition-colors hover:border-gray-200 md:flex-row"
-    >
-      <div className="flex flex-col justify-between gap-1.5">
-        <h2 className="text-lg/5 font-medium">
-          {eventStatistics.label ?? eventStatistics.name}
-        </h2>
-        <dl className="dark:text-polar-500 flex max-w-sm items-center gap-5 font-mono text-gray-500">
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            <dt>
-              <MousePointerClickIcon className="size-5" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.occurrences}</dd>
-          </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            <dt>
-              <CircleUserRound className="size-5" strokeWidth={1.5} />
-            </dt>
-            <dd>{eventStatistics.customers}</dd>
-          </div>
-          <div className="flex flex-1 items-center justify-start gap-1.5 text-sm">
-            {eventStatistics.totals?._cost_amount !== undefined && (
-              <>
-                <dt>
-                  <BadgeDollarSignIcon className="size-5" strokeWidth={1.5} />
-                </dt>
-                <dd>
-                  {formatSubCentCurrency(
-                    Number(eventStatistics.totals?._cost_amount),
-                    'usd',
-                  )}
-                </dd>
-              </>
-            )}
-          </div>
-        </dl>
-      </div>
-      <div className="dark:bg-polar-800 -m-2 flex max-w-80 flex-1 flex-col rounded-lg bg-gray-50 p-1">
-        <CostsBandedSparkline
-          average={averageCostValues}
-          p10={p10CostValues}
-          p90={p90CostValues}
-          p99={p99CostValues}
-          trendUpIsBad={true}
-          height={60}
-          className="pointer-events-none"
-        />
-      </div>
-    </Link>
+      <CostsEventsTable
+        organization={organization}
+        spanId={''}
+        events={events}
+        eventTypes={eventTypes}
+        hasNextPage={hasNextPage}
+        fetchNextPage={fetchNextPage}
+      />
+    </div>
   )
 }

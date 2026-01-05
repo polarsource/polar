@@ -482,6 +482,17 @@ class BalanceDisputeEvent(SystemEventBase):
     )
 
 
+class BalanceDisputeReversalEvent(SystemEventBase):
+    """An event created by Polar when a dispute is won and funds are reinstated."""
+
+    name: Literal[SystemEventEnum.balance_dispute_reversal] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BalanceDisputeMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 SystemEvent = Annotated[
     MeterCreditEvent
     | MeterResetEvent
@@ -506,7 +517,8 @@ SystemEvent = Annotated[
     | BalanceOrderEvent
     | BalanceRefundEvent
     | BalanceRefundReversalEvent
-    | BalanceDisputeEvent,
+    | BalanceDisputeEvent
+    | BalanceDisputeReversalEvent,
     Discriminator("name"),
     SetSchemaReference("SystemEvent"),
     ClassName("SystemEvent"),

@@ -8,6 +8,7 @@ from polar.models.event import EventSource
 from polar.models.transaction import PlatformFeeType, TransactionType
 from scripts.backfill_balance_events import (
     create_missing_balance_dispute_events,
+    create_missing_balance_dispute_reversal_events,
     create_missing_balance_order_events,
     create_missing_balance_refund_events,
     create_missing_balance_refund_reversal_events,
@@ -494,6 +495,135 @@ class TestCreateMissingBalanceDisputeEvents:
         await save_fixture(existing_event)
 
         created = await create_missing_balance_dispute_events(
+            session, batch_size=10, rate_limit_delay=0
+        )
+
+        assert created == 0
+
+
+@pytest.mark.asyncio
+class TestCreateMissingBalanceDisputeReversalEvents:
+    async def test_creates_events_for_dispute_reversal_transactions_without_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order=order, payment=payment)
+
+        dispute_reversal_transaction = Transaction(
+            type=TransactionType.dispute_reversal,
+            processor=dispute.payment_processor,
+            currency="usd",
+            amount=1000,
+            account_currency="usd",
+            account_amount=1000,
+            tax_amount=0,
+            dispute=dispute,
+            order=order,
+            presentment_currency="usd",
+            presentment_amount=1000,
+        )
+        dispute_reversal_transaction.payment_customer = customer
+        dispute_reversal_transaction.payment_organization = organization
+        await save_fixture(dispute_reversal_transaction)
+
+        processor_fee = Transaction(
+            type=TransactionType.processor_fee,
+            processor=dispute.payment_processor,
+            currency="usd",
+            amount=-1500,
+            account_currency="usd",
+            account_amount=-1500,
+            tax_amount=0,
+            incurred_by_transaction=dispute_reversal_transaction,
+        )
+        await save_fixture(processor_fee)
+
+        created = await create_missing_balance_dispute_reversal_events(
+            session, batch_size=10, rate_limit_delay=0
+        )
+
+        assert created == 1
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.balance_dispute_reversal
+        )
+
+        assert len(events) == 1
+        event = events[0]
+        assert event.customer_id == customer.id
+        assert event.organization_id == organization.id
+        assert event.user_metadata["transaction_id"] == str(
+            dispute_reversal_transaction.id
+        )
+        assert event.user_metadata["dispute_id"] == str(dispute.id)
+        assert event.user_metadata["amount"] == dispute_reversal_transaction.amount
+        assert event.user_metadata["currency"] == dispute_reversal_transaction.currency
+        assert (
+            event.user_metadata["tax_amount"] == dispute_reversal_transaction.tax_amount
+        )
+        assert event.user_metadata["tax_country"] == ""
+        assert event.user_metadata["tax_state"] == ""
+        assert event.user_metadata["fee"] == 1500
+
+    async def test_skips_transactions_with_existing_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order=order, payment=payment)
+
+        dispute_reversal_transaction = Transaction(
+            type=TransactionType.dispute_reversal,
+            processor=dispute.payment_processor,
+            currency="usd",
+            amount=1000,
+            account_currency="usd",
+            account_amount=1000,
+            tax_amount=0,
+            dispute=dispute,
+            order=order,
+            presentment_currency="usd",
+            presentment_amount=1000,
+        )
+        dispute_reversal_transaction.payment_customer = customer
+        dispute_reversal_transaction.payment_organization = organization
+        await save_fixture(dispute_reversal_transaction)
+
+        existing_event = Event(
+            name=SystemEvent.balance_dispute_reversal,
+            source=EventSource.system,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            user_metadata={
+                "transaction_id": str(dispute_reversal_transaction.id),
+                "dispute_id": str(dispute.id),
+                "amount": dispute_reversal_transaction.amount,
+                "currency": dispute_reversal_transaction.currency,
+            },
+        )
+        await save_fixture(existing_event)
+
+        created = await create_missing_balance_dispute_reversal_events(
             session, batch_size=10, rate_limit_delay=0
         )
 

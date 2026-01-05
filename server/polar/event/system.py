@@ -35,6 +35,7 @@ class SystemEvent(StrEnum):
     balance_refund = "balance.refund"
     balance_refund_reversal = "balance.refund_reversal"
     balance_dispute = "balance.dispute"
+    balance_dispute_reversal = "balance.dispute_reversal"
 
 
 SYSTEM_EVENT_LABELS: dict[str, str] = {
@@ -60,6 +61,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "balance.order": "Balance Order",
     "balance.refund": "Balance Refund",
     "balance.dispute": "Balance Dispute",
+    "balance.dispute_reversal": "Balance Dispute Reversal",
 }
 
 
@@ -424,6 +426,13 @@ class BalanceDisputeEvent(Event):
         user_metadata: Mapped[BalanceDisputeMetadata]  # type: ignore[assignment]
 
 
+class BalanceDisputeReversalEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_dispute_reversal]]
+        user_metadata: Mapped[BalanceDisputeMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -616,6 +625,15 @@ def build_system_event(
 @overload
 def build_system_event(
     name: Literal[SystemEvent.balance_dispute],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceDisputeMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_dispute_reversal],
     customer: Customer,
     organization: Organization,
     metadata: BalanceDisputeMetadata,

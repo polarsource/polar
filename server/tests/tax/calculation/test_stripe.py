@@ -5,7 +5,8 @@ import pytest
 import stripe as stripe_lib
 
 from polar.kit.address import Address, CountryAlpha2
-from polar.tax.calculation import TaxCode, calculate_tax
+from polar.tax.calculation import TaxCode
+from polar.tax.calculation.stripe import calculate_tax as stripe_calculate_tax
 
 
 @pytest.fixture
@@ -21,7 +22,7 @@ def sample_address() -> Address:
 
 
 @pytest.mark.asyncio
-class TestCalculateTaxRateLimit:
+class TestStripeCalculateTax:
     async def test_rate_limit_swallowed_in_sandbox(
         self, sample_address: Address
     ) -> None:
@@ -39,7 +40,7 @@ class TestCalculateTaxRateLimit:
                 "polar.tax.calculation.stripe.settings.is_sandbox", return_value=True
             ),
         ):
-            result = await calculate_tax(
+            result = await stripe_calculate_tax(
                 identifier=uuid.uuid4(),
                 currency="usd",
                 amount=1000,
@@ -52,6 +53,7 @@ class TestCalculateTaxRateLimit:
             assert result["amount"] == 0
             assert result["taxability_reason"] is None
             assert result["tax_rate"] is None
+            assert result["processor_id"] is not None
             assert result["processor_id"].startswith("taxcalc_sandbox_")
 
     async def test_rate_limit_raised_in_production(
@@ -72,7 +74,7 @@ class TestCalculateTaxRateLimit:
             ),
         ):
             with pytest.raises(stripe_lib.RateLimitError):
-                await calculate_tax(
+                await stripe_calculate_tax(
                     identifier=uuid.uuid4(),
                     currency="usd",
                     amount=1000,

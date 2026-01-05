@@ -422,16 +422,17 @@ class TestGetQuantities:
     @pytest.mark.parametrize(
         ("aggregation_func", "expected_daily_quantities", "expected_total"),
         [
-            # For max: total should be max across all days, not sum of daily maxes
-            # Day 1: max(10, 20) = 20, Day 2: (none) = 0, Day 3: max(15, 5) = 15
-            # Total should be max(20, 0, 15) = 20, NOT sum(20 + 0 + 15) = 35
+            # For max: total should be max across all days with data (NULLs from empty days are ignored)
+            # Day 1: max(10, 20) = 20, Day 2: NULL (no events), Day 3: max(15, 5) = 15
+            # Total: max(20, NULL, 15) = 20, NOT sum(20 + 0 + 15) = 35
             pytest.param(
                 AggregationFunction.max, [20, 0, 15], 20, id="max aggregation"
             ),
-            # For min: total should be min across all days (excluding zeros from empty days)
-            # This is tricky - min with zeros is debatable, but the key is it shouldn't sum
+            # For min: total should be min across all days with data (NULLs from empty days are ignored)
+            # Day 1: min(10, 20) = 10, Day 2: NULL (no events), Day 3: min(15, 5) = 5
+            # Total: min(10, NULL, 5) = 5 (SQL MIN ignores NULLs)
             pytest.param(
-                AggregationFunction.min, [10, 0, 5], 0, id="min aggregation"
+                AggregationFunction.min, [10, 0, 5], 5, id="min aggregation"
             ),
             # For sum: total should be sum across all days (this is summable, so sum is correct)
             pytest.param(

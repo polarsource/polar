@@ -1,5 +1,6 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
+import { resolveCheckoutLocale } from '@/i18n/utils'
 import { getServerURL } from '@/utils/api'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
@@ -13,11 +14,19 @@ export default async function Page(props: {
     embed?: string
     theme?: 'light' | 'dark'
     customer_session_token?: string
+    locale?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed, theme, customer_session_token } = searchParams
+  const {
+    embed,
+    theme,
+    customer_session_token,
+    locale: searchParamLocale,
+  } = searchParams
+
+  const locale = await resolveCheckoutLocale(searchParamLocale)
 
   const params = await props.params
 
@@ -68,6 +77,7 @@ export default async function Page(props: {
         embed={embed === 'true'}
         theme={theme}
         customerSessionToken={customer_session_token}
+        locale={locale}
       />
     </CheckoutLayout>
   )

@@ -5,6 +5,10 @@ import { usePostHog } from '@/hooks/posthog'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
+import {
+  getTranslations,
+  type SupportedLocale,
+} from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -30,9 +34,11 @@ const isIntegrationError = (
 const StripeRequiresAction = ({
   stripe,
   checkout,
+  confirmPaymentLabel,
 }: {
   stripe: Stripe | null
   checkout: CheckoutPublic
+  confirmPaymentLabel: string
 }) => {
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -84,7 +90,7 @@ const StripeRequiresAction = ({
         onClick={() => handleNextAction(stripe)}
         loading={pendingHandling}
       >
-        Confirm payment
+        {confirmPaymentLabel}
       </Button>
     )
   }
@@ -99,6 +105,7 @@ export interface CheckoutConfirmationProps {
   customerSessionToken?: string
   disabled?: boolean
   maxWaitingTimeMs?: number
+  locale?: SupportedLocale
 }
 
 export const CheckoutConfirmation = ({
@@ -108,9 +115,11 @@ export const CheckoutConfirmation = ({
   customerSessionToken,
   disabled,
   maxWaitingTimeMs = 15000,
+  locale = 'en',
 }: CheckoutConfirmationProps) => {
   const router = useRouter()
   const posthog = usePostHog()
+  const t = useMemo(() => getTranslations(locale), [locale])
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { status, organization } = checkout
@@ -194,21 +203,22 @@ export const CheckoutConfirmation = ({
           name={organization.name}
         />
         <h1 className="text-2xl font-medium">
-          {status === 'confirmed' && 'We are processing your order'}
-          {status === 'succeeded' && 'Your order was successful!'}
-          {status === 'failed' &&
-            'A problem occurred while processing your order'}
+          {status === 'confirmed' && t.confirmation.processing}
+          {status === 'succeeded' && t.confirmation.success}
+          {status === 'failed' && t.confirmation.failed}
         </h1>
         <p className="dark:text-polar-500 text-gray-500">
-          {status === 'confirmed' &&
-            'Please wait while we are listening for those webhooks.'}
+          {status === 'confirmed' && t.confirmation.waitingWebhooks}
           {status === 'succeeded' && (
             <>
               {hasProductCheckout(checkout) &&
-                `You're now eligible for the benefits of ${checkout.product.name}.`}
+                t.confirmation.eligible.replace(
+                  '{productName}',
+                  checkout.product.name,
+                )}
             </>
           )}
-          {status === 'failed' && 'Please try again or contact support.'}
+          {status === 'failed' && t.confirmation.tryAgain}
         </p>
         {status === 'confirmed' && (
           <div className="flex items-center justify-center">
@@ -216,7 +226,11 @@ export const CheckoutConfirmation = ({
               <Elements stripe={stripePromise}>
                 <ElementsConsumer>
                   {({ stripe }) => (
-                    <StripeRequiresAction stripe={stripe} checkout={checkout} />
+                    <StripeRequiresAction
+                      stripe={stripe}
+                      checkout={checkout}
+                      confirmPaymentLabel={t.confirmation.confirmPayment}
+                    />
                   )}
                 </ElementsConsumer>
               </Elements>
@@ -233,19 +247,11 @@ export const CheckoutConfirmation = ({
                 checkout={checkout}
                 customerSessionToken={customerSessionToken}
                 maxWaitingTimeMs={maxWaitingTimeMs}
+                locale={locale}
               />
             )}
-            <p className="dark:text-polar-500 text-center text-xs text-gray-500">
-              This order was processed by our online reseller & Merchant of
-              Record, Polar, who also handles order-related inquiries and
-              returns.
-            </p>
           </>
         )}
-      </div>
-      <div className="dark:text-polar-500 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-500">
-        <span>Powered by</span>
-        <LogoType className="h-5" />
       </div>
     </ShadowBox>
   )

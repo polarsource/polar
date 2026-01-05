@@ -346,16 +346,24 @@ class MeterService:
         day_column = interval.sql_date_trunc(Event.timestamp)
         truncated_timestamp = interval.sql_date_trunc(timestamp_column)
 
-        # Determine the appropriate SQL function for the running total calculation.
-        # For summable aggregations (count, sum), we can sum the daily values.
-        # For non-summable aggregations (max, min), we must use the same aggregation
-        # function to get the correct total (e.g., max of daily maxes = overall max).
-        # Note: avg and unique require special handling that's not implemented here -
-        # avg would need weighted averages, unique would need to avoid double counting.
-        if meter.aggregation.is_summable():
-            total_agg_func = AggregationFunction.sum.get_sql_function
-        else:
-            total_agg_func = meter.aggregation.func.get_sql_function
+        # Determine if we can use the optimized CTE path for the total calculation.
+        # - Summable aggregations (count, sum): sum of daily values = correct total
+        # - Max/Min: max/min of daily values = correct total
+        # - Avg/Unique: cannot be computed from daily aggregates, need direct query
+        use_optimized_total = (
+            meter.aggregation.is_summable()
+            or meter.aggregation.func
+            in (
+                AggregationFunction.max,
+                AggregationFunction.min,
+            )
+        )
+
+        if use_optimized_total:
+            if meter.aggregation.is_summable():
+                total_agg_func = AggregationFunction.sum.get_sql_function
+            else:
+                total_agg_func = meter.aggregation.func.get_sql_function
 
         if customer_aggregation_function is not None:
             daily_metrics = cte(
@@ -375,16 +383,29 @@ class MeterService:
                     ).label("quantity"),
                 ).group_by(daily_metrics.c.day)
             )
+
+            if use_optimized_total:
+                total_column = func.coalesce(
+                    total_agg_func(daily_aggregated.c.quantity).over(
+                        order_by=timestamp_column
+                    ),
+                    0,
+                )
+            else:
+                # For avg/unique: compute total directly over all events via subquery
+                # This is slower but necessary for correctness
+                total_subquery = (
+                    select(meter.aggregation.get_sql_column(Event))
+                    .where(and_(*event_clauses))
+                    .scalar_subquery()
+                )
+                total_column = func.coalesce(total_subquery, 0)
+
             statement = (
                 select(
                     timestamp_column.label("timestamp"),
                     func.coalesce(daily_aggregated.c.quantity, 0).label("quantity"),
-                    func.coalesce(
-                        total_agg_func(daily_aggregated.c.quantity).over(
-                            order_by=timestamp_column
-                        ),
-                        0,
-                    ).label("total"),
+                    total_column.label("total"),
                 )
                 .select_from(
                     timestamp_series.join(
@@ -404,16 +425,29 @@ class MeterService:
                 .where(and_(*event_clauses))
                 .group_by(day_column)
             )
+
+            if use_optimized_total:
+                total_column = func.coalesce(
+                    total_agg_func(daily_metrics.c.quantity).over(
+                        order_by=timestamp_column
+                    ),
+                    0,
+                )
+            else:
+                # For avg/unique: compute total directly over all events via subquery
+                # This is slower but necessary for correctness
+                total_subquery = (
+                    select(meter.aggregation.get_sql_column(Event))
+                    .where(and_(*event_clauses))
+                    .scalar_subquery()
+                )
+                total_column = func.coalesce(total_subquery, 0)
+
             statement = (
                 select(
                     timestamp_column.label("timestamp"),
                     func.coalesce(daily_metrics.c.quantity, 0).label("quantity"),
-                    func.coalesce(
-                        total_agg_func(daily_metrics.c.quantity).over(
-                            order_by=timestamp_column
-                        ),
-                        0,
-                    ).label("total"),
+                    total_column.label("total"),
                 )
                 .select_from(
                     timestamp_series.join(

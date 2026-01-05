@@ -21,6 +21,7 @@ from polar.meter.aggregation import (
     AggregationFunction,
     CountAggregation,
     PropertyAggregation,
+    UniqueAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate, MeterUpdate
@@ -443,6 +444,14 @@ class TestGetQuantities:
             pytest.param(
                 AggregationFunction.sum, [30, 0, 20], 50, id="sum aggregation"
             ),
+            # For avg: total should be the true average across ALL events, not avg of daily avgs
+            # Day 1: avg(10, 20) = 15, Day 2: NULL (no events), Day 3: avg(15, 5) = 10
+            # True average: (10 + 20 + 15 + 5) / 4 = 12.5
+            # Wrong (avg of avgs): (15 + 10) / 2 = 12.5 -- happens to match in this case!
+            # Let's verify with the actual events: 4 events total
+            pytest.param(
+                AggregationFunction.avg, [15, 0, 10], 12.5, id="avg aggregation"
+            ),
         ],
     )
     async def test_interval_non_summable_aggregation(
@@ -538,6 +547,153 @@ class TestGetQuantities:
         # This is the key assertion - total should use the meter's aggregation,
         # not always SUM
         assert result.total == expected_total
+
+    async def test_avg_aggregation_with_unequal_event_counts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Test that avg total is the true average, not average of daily averages.
+
+        With unequal event counts per day, avg of avgs differs from true avg:
+        - Day 1: 3 events [10, 10, 10] → daily avg = 10
+        - Day 2: 1 event [50] → daily avg = 50
+        - True average: (10 + 10 + 10 + 50) / 4 = 20
+        - Wrong (avg of daily avgs): (10 + 50) / 2 = 30
+        """
+        past_timestamp = utc_now() - timedelta(days=1)
+        future_timestamp = utc_now() + timedelta(days=1)
+
+        # Day 1: 3 events with value 10 each
+        for _ in range(3):
+            await create_event(
+                save_fixture,
+                timestamp=past_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+
+        # Day 2: 1 event with value 50
+        await create_event(
+            save_fixture,
+            timestamp=future_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 50, "model": "lite"},
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Token Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.avg, property="tokens"
+            ),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=past_timestamp,
+            end_timestamp=future_timestamp,
+            interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
+        )
+
+        assert len(result.quantities) == 3
+
+        [day1, day2, day3] = result.quantities
+        assert day1.quantity == 10  # avg(10, 10, 10) = 10
+        assert day2.quantity == 0  # no events
+        assert day3.quantity == 50  # avg(50) = 50
+
+        # True average: (10 + 10 + 10 + 50) / 4 = 20
+        # If we wrongly computed avg of daily avgs: (10 + 50) / 2 = 30
+        assert result.total == 20
+
+    async def test_unique_aggregation_across_days(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Test that unique total counts distinct values across all days.
+
+        Same value appearing on multiple days should only be counted once:
+        - Day 1: user_ids ["a", "b", "c"] → daily unique = 3
+        - Day 2: user_ids ["b", "c", "d"] → daily unique = 3
+        - True unique across all days: ["a", "b", "c", "d"] = 4
+        - Wrong (sum of daily uniques): 3 + 3 = 6
+        """
+        past_timestamp = utc_now() - timedelta(days=1)
+        future_timestamp = utc_now() + timedelta(days=1)
+
+        # Day 1: users a, b, c
+        for user_id in ["a", "b", "c"]:
+            await create_event(
+                save_fixture,
+                timestamp=past_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"user_id": user_id, "model": "lite"},
+            )
+
+        # Day 2: users b, c, d (b and c overlap with day 1)
+        for user_id in ["b", "c", "d"]:
+            await create_event(
+                save_fixture,
+                timestamp=future_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"user_id": user_id, "model": "lite"},
+            )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Unique Users",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=UniqueAggregation(property="user_id"),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=past_timestamp,
+            end_timestamp=future_timestamp,
+            interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
+        )
+
+        assert len(result.quantities) == 3
+
+        [day1, day2, day3] = result.quantities
+        assert day1.quantity == 3  # unique(a, b, c) = 3
+        assert day2.quantity == 0  # no events
+        assert day3.quantity == 3  # unique(b, c, d) = 3
+
+        # True unique: count(distinct a, b, c, d) = 4
+        # If we wrongly summed daily uniques: 3 + 3 = 6
+        assert result.total == 4
 
     @pytest.mark.parametrize(
         "property",

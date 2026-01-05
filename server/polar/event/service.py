@@ -39,6 +39,7 @@ from polar.models import (
     CustomerMeter,
     Event,
     EventClosure,
+    Meter,
     Organization,
     User,
     UserOrganization,
@@ -59,6 +60,7 @@ from .schemas import (
     StatisticsPeriod,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
+from .system import SystemEvent
 
 log: Logger = structlog.get_logger()
 
@@ -723,20 +725,54 @@ class EventService:
             .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
-        customers: set[Customer] = set()
+        customers_for_meters: set[Customer] = set()
         organization_ids_for_revops: set[uuid.UUID] = set()
+
+        # System events that are relevant for meter calculations
+        meter_relevant_system_events = {
+            SystemEvent.meter_credited,
+            SystemEvent.meter_reset,
+        }
+
         for event in events:
             if event.customer:
-                customers.add(event.customer)
+                # Only track customers for meter processing if the event is relevant:
+                # - User events (source=user)
+                # - Meter-related system events (meter_credited, meter_reset)
+                if event.source == EventSource.user or (
+                    event.source == EventSource.system
+                    and event.name in meter_relevant_system_events
+                ):
+                    customers_for_meters.add(event.customer)
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
 
-        await self._activate_matching_customer_meters(
-            session, repository, event_ids, customers
-        )
+        # Only process meters if there are customers from relevant events
+        if customers_for_meters:
+            # Check which organizations actually have meters
+            organization_ids = {c.organization_id for c in customers_for_meters}
+            orgs_with_meters_statement = (
+                select(Meter.organization_id)
+                .where(
+                    Meter.organization_id.in_(organization_ids),
+                    Meter.archived_at.is_(None),
+                )
+                .distinct()
+            )
+            result = await session.execute(orgs_with_meters_statement)
+            orgs_with_meters = set(result.scalars().all())
 
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.touch_meters(customers)
+            # Only process customers in organizations that have meters
+            customers_to_process = {
+                c for c in customers_for_meters if c.organization_id in orgs_with_meters
+            }
+            if customers_to_process:
+                await self._activate_matching_customer_meters(
+                    session, repository, event_ids, customers_to_process
+                )
+
+                customer_repository = CustomerRepository.from_session(session)
+                await customer_repository.touch_meters(customers_to_process)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

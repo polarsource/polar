@@ -123,12 +123,6 @@ export type MaintainerNewProductSaleNotificationPayload = {
   organization_name: string
 }
 
-export type MaintainerAccountCreditsGrantedNotificationPayload = {
-  organization_name: string
-  amount: number
-  title: string
-}
-
 export type Notification = {
   id: string
   created_at: string
@@ -138,14 +132,12 @@ export type Notification = {
     | 'MaintainerCreateAccount'
     | 'MaintainerNewPaidSubscription'
     | 'MaintainerNewProductSale'
-    | 'MaintainerAccountCreditsGrantedNotification'
   payload:
     | MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerCreateAccountNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
-    | MaintainerAccountCreditsGrantedNotificationPayload
 }
 
 export const useListNotifications = (): UseQueryResult<

@@ -239,30 +239,6 @@ const MaintainerCreateAccount = ({
   )
 }
 
-const MaintainerAccountCreditsGranted = ({
-  n,
-}: {
-  n: schemas['MaintainerAccountCreditsGrantedNotification']
-}) => {
-  const { payload } = n
-  return (
-    <Item n={n} iconClasses="bg-blue-200 text-blue-500">
-      {{
-        text: (
-          <>
-            {payload.organization_name} has received{' '}
-            <span className="font-bold">
-              ${getCentsInDollarString(payload.amount)}
-            </span>{' '}
-            in fee credits!
-          </>
-        ),
-        icon: <BoltOutlined fontSize="small" />,
-      }}
-    </Item>
-  )
-}
-
 export const Notification = ({
   n,
 }: {
@@ -278,9 +254,6 @@ export const Notification = ({
 
     case 'MaintainerCreateAccountNotification':
       return <MaintainerCreateAccount n={n} />
-
-    case 'MaintainerAccountCreditsGrantedNotification':
-      return <MaintainerAccountCreditsGranted n={n} />
   }
 }
 

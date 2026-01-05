@@ -17345,36 +17345,6 @@ export interface components {
       return_to?: string | null
       attribution?: components['schemas']['UserSignupAttribution'] | null
     }
-    /** MaintainerAccountCreditsGrantedNotification */
-    MaintainerAccountCreditsGrantedNotification: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'MaintainerAccountCreditsGrantedNotification'
-      payload: components['schemas']['MaintainerAccountCreditsGrantedNotificationPayload']
-    }
-    /** MaintainerAccountCreditsGrantedNotificationPayload */
-    MaintainerAccountCreditsGrantedNotificationPayload: {
-      /** Organization Name */
-      organization_name: string
-      /** Amount */
-      amount: number
-      /** Title */
-      title: string
-      /** Formatted Amount */
-      readonly formatted_amount: string
-    }
     /** MaintainerCreateAccountNotification */
     MaintainerCreateAccountNotification: {
       /**
@@ -18338,7 +18308,6 @@ export interface components {
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerCreateAccountNotification']
-        | components['schemas']['MaintainerAccountCreditsGrantedNotification']
       )[]
       /** Last Read Notification Id */
       last_read_notification_id: string | null
@@ -39801,9 +39770,6 @@ export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
 export const licenseKeyStatusValues: ReadonlyArray<
   components['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
-export const maintainerAccountCreditsGrantedNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
-> = ['MaintainerAccountCreditsGrantedNotification']
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
   components['schemas']['MaintainerCreateAccountNotification']['type']
 > = ['MaintainerCreateAccountNotification']

@@ -9,13 +9,7 @@ from sqlalchemy.orm import joinedload
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
-from polar.models import Account, AccountCredit, Campaign, Organization
-from polar.notifications.notification import (
-    MaintainerAccountCreditsGrantedNotificationPayload,
-    NotificationType,
-)
-from polar.notifications.service import PartialNotification
-from polar.notifications.service import notifications as notifications_service
+from polar.models import Account, AccountCredit, Campaign
 from polar.postgres import AsyncReadSession, AsyncSession
 
 
@@ -71,7 +65,6 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
         expires_at: datetime | None = None,
         notes: str | None = None,
         user_metadata: dict[str, Any] | None = None,
-        organization: Organization | None = None,
     ) -> AccountCredit:
         meta = user_metadata if user_metadata else {}
         credit = AccountCredit(
@@ -91,20 +84,6 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
         session.add(account)
 
         await session.flush()
-
-        if organization:
-            await notifications_service.send_to_org_members(
-                session,
-                org_id=organization.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_account_credits_granted,
-                    payload=MaintainerAccountCreditsGrantedNotificationPayload(
-                        organization_name=organization.name,
-                        amount=amount,
-                    ),
-                ),
-            )
-
         return credit
 
     async def revoke(

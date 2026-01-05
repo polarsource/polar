@@ -20,7 +20,6 @@ from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
 from polar.account.service import account as account_service
-from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
 from polar.auth.scope import Scope
 from polar.auth.service import auth as auth_service
@@ -483,9 +482,8 @@ async def get_organization_detail(
             elif section == "account":
                 account_credits: Sequence[AccountCredit] = []
                 if organization.account:
-                    credit_repository = AccountCreditRepository.from_session(session)
-                    account_credits = await credit_repository.get_all_by_account(
-                        organization.account.id
+                    account_credits = await account_credit_service.get_all(
+                        session, organization.account
                     )
                 account_section = AccountSection(
                     organization,
@@ -2230,9 +2228,8 @@ async def revoke_credit(
         raise HTTPException(status_code=400, detail="Organization has no account")
 
     # Get the credit
-    credit_repository = AccountCreditRepository.from_session(session)
-    credit = await credit_repository.get_by_id_and_account(
-        credit_id, organization.account.id
+    credit = await account_credit_service.get_by_id(
+        session, credit_id, account=organization.account
     )
 
     if not credit:

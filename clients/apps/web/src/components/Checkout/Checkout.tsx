@@ -15,7 +15,11 @@ import {
   type ProductCheckoutPublic,
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
-import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
+import {
+  type SupportedLocale,
+  useCheckout,
+  useCheckoutForm,
+} from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -37,12 +41,14 @@ export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
   merchantAvatarVariant?: ExperimentVariant<'checkout_merchant_avatar_experiment'>
+  locale?: SupportedLocale
 }
 
 const Checkout = ({
   embed: _embed,
   theme: _theme,
   merchantAvatarVariant = 'control',
+  locale,
 }: CheckoutProps) => {
   const { client } = useCheckout()
   const {
@@ -225,6 +231,7 @@ const Checkout = ({
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          locale={locale}
         />
       </ShadowBox>
     )
@@ -290,6 +297,7 @@ const Checkout = ({
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          locale={locale}
         />
       </div>
     </ShadowBoxOnMd>

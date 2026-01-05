@@ -1,0 +1,56 @@
+{
+  "form": {
+    "email": "E-mail",
+    "cardholderName": "Naam kaarthouder",
+    "billingAddress": "Factuuradres",
+    "businessPurchase": "Ik koop als bedrijf",
+    "businessName": "Bedrijfsnaam",
+    "taxId": "BTW-nummer",
+    "discountCode": "Kortingscode",
+    "optional": "Optioneel",
+    "apply": "Toepassen",
+    "line1": "Adresregel 1",
+    "line2": "Adresregel 2",
+    "postalCode": "Postcode",
+    "city": "Plaats",
+    "required": "Dit veld is verplicht"
+  },
+  "pricing": {
+    "subtotal": "Subtotaal",
+    "taxableAmount": "Belastbaar bedrag",
+    "taxes": "Belastingen",
+    "total": "Totaal",
+    "every": "Elke",
+    "additionalMeteredUsage": "Extra verbruikskosten",
+    "free": "Gratis",
+    "forFirstInterval": "voor de eerste",
+    "forFirstMonths": "voor de eerste {count} maanden",
+    "forFirstYears": "voor de eerste {count} jaren",
+    "trial": "proefperiode",
+    "trialPlural": "proefperiode",
+    "trialEnds": "Proefperiode eindigt"
+  },
+  "buttons": {
+    "startTrial": "Start proefperiode",
+    "subscribe": "Abonneren",
+    "pay": "Betalen",
+    "submit": "Verzenden"
+  },
+  "footer": {
+    "merchantInfo": "Deze bestelling wordt verwerkt door onze online reseller & Merchant of Record, Polar, die ook bestellingsgerelateerde vragen en retouren afhandelt.",
+    "poweredBy": "Mogelijk gemaakt door"
+  },
+  "errors": {
+    "paymentsUnavailable": "Betalingen zijn momenteel niet beschikbaar"
+  },
+  "confirmation": {
+    "processing": "We verwerken uw bestelling",
+    "success": "Uw bestelling is gelukt!",
+    "failed": "Er is een probleem opgetreden bij het verwerken van uw bestelling",
+    "waitingWebhooks": "Even geduld terwijl we naar de webhooks luisteren.",
+    "eligible": "U komt nu in aanmerking voor de voordelen van {productName}.",
+    "tryAgain": "Probeer het opnieuw of neem contact op met support.",
+    "confirmPayment": "Bevestig betaling",
+    "grantingBenefits": "Voordelen worden toegekend..."
+  }
+}

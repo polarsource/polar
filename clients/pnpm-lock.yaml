@@ -323,6 +323,9 @@ importers:
       '@polar-sh/client':
         specifier: workspace:*
         version: link:../../packages/client
+      '@polar-sh/i18n':
+        specifier: workspace:^
+        version: link:../../packages/i18n
       '@polar-sh/mdx':
         specifier: workspace:*
         version: link:../../packages/mdx
@@ -615,6 +618,9 @@ importers:
 
   packages/checkout:
     dependencies:
+      '@polar-sh/i18n':
+        specifier: workspace:^
+        version: link:../i18n
       '@polar-sh/sdk':
         specifier: ^0.42.1
         version: 0.42.1
@@ -716,6 +722,22 @@ importers:
       typescript-eslint:
         specifier: ^8.50.0
         version: 8.50.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+
+  packages/i18n:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.3
+    devDependencies:
+      '@types/react':
+        specifier: 19.2.3
+        version: 19.2.3
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
 
   packages/mdx:
     dependencies:

@@ -92,6 +92,7 @@ class EmbedCheckout {
    *
    * @param url A Checkout Link.
    * @param theme The theme of the embedded checkout. Defaults to `light`.
+   * @param locale The locale of the embedded checkout. Defaults to browser detection.
 
    * @returns A promise that resolves to an instance of EmbedCheckout.
    * The promise resolves when the embedded checkout is fully loaded.
@@ -99,6 +100,7 @@ class EmbedCheckout {
   public static async create(
     url: string,
     theme?: 'light' | 'dark',
+    locale?: string,
   ): Promise<EmbedCheckout> {
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
@@ -144,6 +146,9 @@ class EmbedCheckout {
     if (theme) {
       parsedURL.searchParams.set('theme', theme)
     }
+    if (locale) {
+      parsedURL.searchParams.set('locale', locale)
+    }
     const embedURL = parsedURL.toString()
 
     // Create iframe
@@ -182,10 +187,11 @@ class EmbedCheckout {
    * The Checkout Link is either the `href` attribute for a link element or the value of `data-polar-checkout` attribute.
    *
    * The theme can be optionally set using the `data-polar-checkout-theme` attribute.
+   * The locale can be optionally set using the `data-polar-checkout-locale` attribute.
    *
    * @example
    * ```html
-   * <a href="https://buy.polar.sh/polar_cl_123" data-polar-checkout data-polar-checkout-theme="dark">Checkout</a>
+   * <a href="https://buy.polar.sh/polar_cl_123" data-polar-checkout data-polar-checkout-theme="dark" data-polar-checkout-locale="nl">Checkout</a>
    * ```
    */
   public static init(): void {
@@ -291,7 +297,9 @@ class EmbedCheckout {
       | 'light'
       | 'dark'
       | undefined
-    EmbedCheckout.create(url, theme)
+    const locale =
+      checkoutElement.getAttribute('data-polar-checkout-locale') || undefined
+    EmbedCheckout.create(url, theme, locale)
   }
 
   /**

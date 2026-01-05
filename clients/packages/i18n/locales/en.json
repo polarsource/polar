@@ -1,0 +1,56 @@
+{
+  "form": {
+    "email": "Email",
+    "cardholderName": "Cardholder name",
+    "billingAddress": "Billing address",
+    "businessPurchase": "I'm purchasing as a business",
+    "businessName": "Business name",
+    "taxId": "Tax ID",
+    "discountCode": "Discount code",
+    "optional": "Optional",
+    "apply": "Apply",
+    "line1": "Line 1",
+    "line2": "Line 2",
+    "postalCode": "Postal code",
+    "city": "City",
+    "required": "This field is required"
+  },
+  "pricing": {
+    "subtotal": "Subtotal",
+    "taxableAmount": "Taxable amount",
+    "taxes": "Taxes",
+    "total": "Total",
+    "every": "Every",
+    "additionalMeteredUsage": "Additional metered usage",
+    "free": "Free",
+    "forFirstInterval": "for the first",
+    "forFirstMonths": "for the first {count} months",
+    "forFirstYears": "for the first {count} years",
+    "trial": "trial",
+    "trialPlural": "trial",
+    "trialEnds": "Trial ends"
+  },
+  "buttons": {
+    "startTrial": "Start Trial",
+    "subscribe": "Subscribe",
+    "pay": "Pay",
+    "submit": "Submit"
+  },
+  "footer": {
+    "merchantInfo": "This order is processed by our online reseller & Merchant of Record, Polar, who also handles order-related inquiries and returns.",
+    "poweredBy": "Powered by"
+  },
+  "errors": {
+    "paymentsUnavailable": "Payments are currently unavailable"
+  },
+  "confirmation": {
+    "processing": "We are processing your order",
+    "success": "Your order was successful!",
+    "failed": "A problem occurred while processing your order",
+    "waitingWebhooks": "Please wait while we are listening for those webhooks.",
+    "eligible": "You're now eligible for the benefits of {productName}.",
+    "tryAgain": "Please try again or contact support.",
+    "confirmPayment": "Confirm payment",
+    "grantingBenefits": "Granting benefits..."
+  }
+}

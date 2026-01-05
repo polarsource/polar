@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.account_credit.service import account_credit_service
-from polar.models import Account, Organization
+from polar.models import Account, AccountCredit, Organization
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     NotificationType,

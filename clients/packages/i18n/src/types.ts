@@ -22,6 +22,11 @@ export interface CheckoutTranslations {
     postalCode: string
     city: string
     required: string
+    country: string
+    state: string
+    province: string
+    stateOrProvince: string
+    included: string
   }
   pricing: {
     subtotal: string
@@ -37,6 +42,25 @@ export interface CheckoutTranslations {
     trial: string
     trialPlural: string
     trialEnds: string
+    payWhatYouWant: string
+    perUnit: string
+    perSeat: string
+    numberOfSeats: string
+    billed: string
+    oneTimePurchase: string
+    interval: {
+      day: string
+      week: string
+      month: string
+      year: string
+    }
+    frequency: {
+      daily: string
+      weekly: string
+      monthly: string
+      yearly: string
+      every: string
+    }
   }
   buttons: {
     startTrial: string

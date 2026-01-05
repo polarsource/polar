@@ -1,3 +1,4 @@
+import { getTranslations, type SupportedLocale } from '@polar-sh/i18n'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
 
@@ -9,6 +10,7 @@ interface AmountLabelProps {
   currency: string
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
+  locale?: SupportedLocale
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -16,14 +18,23 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   currency,
   interval,
   intervalCount,
+  locale = 'en',
 }) => {
+  const t = useMemo(() => getTranslations(locale), [locale])
+
   const intervalDisplay = useMemo(() => {
     if (!interval) {
       return ''
     }
-    const formatted = formatRecurringInterval(interval, intervalCount, 'short')
+    const formatted = formatRecurringInterval(
+      interval,
+      intervalCount,
+      'short',
+      t.pricing.interval,
+      locale,
+    )
     return formatted ? ` / ${formatted}` : ''
-  }, [interval, intervalCount])
+  }, [interval, intervalCount, t.pricing.interval, locale])
 
   const minimumFractionDigits = useMemo(
     // Show 0 decimals if a round number, show default decimals (2 for USD) otherwise

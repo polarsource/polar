@@ -599,6 +599,11 @@ const BaseCheckoutForm = ({
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
+                                labels={{
+                                  state: t.form.state,
+                                  province: t.form.province,
+                                  stateOrProvince: t.form.stateOrProvince,
+                                }}
                               />
                               <FormMessage />
                             </>
@@ -629,6 +634,7 @@ const BaseCheckoutForm = ({
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
+                                placeholder={t.form.country}
                               />
                               <FormMessage />
                             </>
@@ -783,6 +789,7 @@ const BaseCheckoutForm = ({
                         currency={checkout.currency}
                         interval={interval}
                         intervalCount={intervalCount}
+                        locale={locale}
                       />
                     </DetailRow>
 
@@ -824,6 +831,7 @@ const BaseCheckoutForm = ({
                           currency={checkout.currency}
                           interval={interval}
                           intervalCount={intervalCount}
+                          locale={locale}
                         />
                         {formattedDiscountDuration && (
                           <span className="text-xs font-normal text-gray-500">
@@ -843,7 +851,7 @@ const BaseCheckoutForm = ({
                         title={meteredPrice.meter.name}
                         key={meteredPrice.id}
                       >
-                        <MeteredPriceLabel price={meteredPrice} />
+                        <MeteredPriceLabel price={meteredPrice} locale={locale} />
                       </DetailRow>
                     ))}
                   </>

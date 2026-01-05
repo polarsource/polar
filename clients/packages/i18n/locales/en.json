@@ -13,7 +13,12 @@
     "line2": "Line 2",
     "postalCode": "Postal code",
     "city": "City",
-    "required": "This field is required"
+    "required": "This field is required",
+    "country": "Country",
+    "state": "State",
+    "province": "Province",
+    "stateOrProvince": "State / Province",
+    "included": "Included"
   },
   "pricing": {
     "subtotal": "Subtotal",
@@ -21,14 +26,33 @@
     "taxes": "Taxes",
     "total": "Total",
     "every": "Every",
-    "additionalMeteredUsage": "Additional metered usage",
+    "additionalMeteredUsage": "+ Additional metered usage",
     "free": "Free",
     "forFirstInterval": "for the first",
     "forFirstMonths": "for the first {count} months",
     "forFirstYears": "for the first {count} years",
     "trial": "trial",
     "trialPlural": "trial",
-    "trialEnds": "Trial ends"
+    "trialEnds": "Trial ends",
+    "payWhatYouWant": "Pay what you want",
+    "perUnit": "/ unit",
+    "perSeat": "per seat",
+    "numberOfSeats": "Number of seats",
+    "billed": "Billed {frequency}",
+    "oneTimePurchase": "One-time purchase",
+    "interval": {
+      "day": "dy",
+      "week": "wk",
+      "month": "mo",
+      "year": "yr"
+    },
+    "frequency": {
+      "daily": "daily",
+      "weekly": "weekly",
+      "monthly": "monthly",
+      "yearly": "yearly",
+      "every": "every {ordinal} {interval}"
+    }
   },
   "buttons": {
     "startTrial": "Start Trial",

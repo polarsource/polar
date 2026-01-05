@@ -1,5 +1,6 @@
 'use client'
 
+import { getTranslations, type SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -9,7 +10,7 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { Fragment, useCallback } from 'react'
+import { Fragment, useCallback, useMemo } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import {
   formatRecurringFrequency,
@@ -22,13 +23,16 @@ interface CheckoutProductSwitcherProps {
   update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
+  locale?: SupportedLocale
 }
 
 const CheckoutProductSwitcher = ({
   checkout,
   update,
   themePreset,
+  locale = 'en',
 }: CheckoutProductSwitcherProps) => {
+  const t = useMemo(() => getTranslations(locale), [locale])
   const {
     product: selectedProduct,
     productPrice: selectedPrice,
@@ -71,11 +75,16 @@ const CheckoutProductSwitcher = ({
     const intervalCount = product.recurringIntervalCount
 
     if (interval) {
-      const recurringLabel = formatRecurringFrequency(interval, intervalCount)
-      return `Billed ${recurringLabel}`
+      const recurringLabel = formatRecurringFrequency(
+        interval,
+        intervalCount,
+        t.pricing.frequency,
+        locale,
+      )
+      return t.pricing.billed.replace('{frequency}', recurringLabel)
     }
 
-    return `One-time purchase`
+    return t.pricing.oneTimePurchase
   }
 
   return (
@@ -105,7 +114,11 @@ const CheckoutProductSwitcher = ({
                   />
                   <div className="flex grow flex-row items-center justify-between text-sm">
                     <div>{product.name}</div>
-                    <ProductPriceLabel product={product} price={price} />
+                    <ProductPriceLabel
+                      product={product}
+                      price={price}
+                      locale={locale}
+                    />
                   </div>
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">
@@ -137,6 +150,7 @@ const CheckoutProductSwitcher = ({
                 <ProductPriceLabel
                   product={product}
                   price={prices[product.id][0]}
+                  locale={locale}
                 />
               </div>
             </div>

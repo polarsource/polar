@@ -291,7 +291,7 @@ function HomeContent() {
               items={[
                 {
                   title: 'Customers',
-                  meta: `${flatCustomers.length}`,
+                  meta: `${customers?.pages[0].pagination.total_count}`,
                   link: '/customers',
                 },
                 {

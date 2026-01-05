@@ -13,6 +13,7 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
+import ProductPill from '../Products/ProductPill'
 
 const getTransactionMeta = (transaction: schemas['Transaction']) => {
   if (transaction.order) {
@@ -56,16 +57,17 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 
   return (
     <div className="flex items-start gap-2">
-      <div className="flex flex-row gap-4">
+      <div className="flex flex-row gap-2">
         <div className="text-sm">{transactionMeta.type}</div>
         {transactionMeta.meta && (
           <>
+            <div>—</div>
             {'product' in transactionMeta.meta &&
               transactionMeta.meta.product && (
                 <>
-                  <span className="dark:text-polar-500 truncate text-sm text-gray-500">
-                    {transactionMeta.meta.product.name}
-                  </span>
+                  <div>
+                    <ProductPill product={transactionMeta.meta.product} />
+                  </div>
                 </>
               )}
             {'issue_reference' in transactionMeta.meta && (
@@ -81,16 +83,16 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 export const platformFeesDisplayNames: {
   [key in schemas['PlatformFeeType']]: string
 } = {
-  payment: 'Payment Fee',
-  international_payment: 'International Payment Fee',
-  subscription: 'Subscription Fee',
-  invoice: 'Invoice Fee',
-  cross_border_transfer: 'Cross-border Transfer Payout Fee',
-  payout: 'Payout Fee',
-  account: 'Active Payout Account Fee',
-  dispute: 'Dispute Fee',
-  platform: 'Polar Fee',
-  fee_credit: 'Fee Credit',
+  payment: 'Payment fee',
+  international_payment: 'International payment fee',
+  subscription: 'Subscription fee',
+  invoice: 'Invoice fee',
+  cross_border_transfer: 'Cross-border transfer payout fee',
+  payout: 'Payout fee',
+  account: 'Active payout account fee',
+  dispute: 'Dispute fee',
+  platform: 'Polar fee',
+  fee_credit: 'Fee credit ✨',
 }
 
 interface TransactionsListProps {
@@ -150,8 +152,7 @@ const TransactionsList = ({
         } else if (transaction.platform_fee_type) {
           return (
             <div className="flex gap-x-4">
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="text-sm">→</span>
+              <div className="flex flex-col gap-y-1">
                 <h3 className="text-sm">
                   {platformFeesDisplayNames[transaction.platform_fee_type]}
                 </h3>

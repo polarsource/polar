@@ -18,11 +18,11 @@ else
     echo "Python dependencies up to date"
 fi
 
-# Build email templates for this architecture
+# Build email templates for this architecture (API only to avoid race conditions)
 # The binary must be built for the container's architecture (Linux), not host (macOS)
 ARCH=$(uname -m)
 EMAIL_MARKER="emails/bin/.built-${ARCH}"
-if [[ ! -f "$EMAIL_MARKER" ]]; then
+if [[ "${1:-api}" == "api" ]] && [[ ! -f "$EMAIL_MARKER" ]]; then
     echo "Building email templates for ${ARCH}..."
     cd emails
     # Clean previous builds (may be from different architecture)
@@ -39,6 +39,12 @@ if [[ ! -f "$EMAIL_MARKER" ]]; then
     touch "bin/.built-${ARCH}"
     cd ..
     echo "Email templates built for ${ARCH}"
+elif [[ "${1:-api}" == "worker" ]] && [[ ! -f "$EMAIL_MARKER" ]]; then
+    echo "Waiting for API to build email templates..."
+    while [[ ! -f "$EMAIL_MARKER" ]]; do
+        sleep 2
+    done
+    echo "Email templates ready"
 else
     echo "Email templates already built for ${ARCH}"
 fi

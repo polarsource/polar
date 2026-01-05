@@ -20,6 +20,12 @@ INSTANCE=$(( (CONDUCTOR_PORT - 55000) / 10 ))
 
 cd "$ROOT_DIR"
 
+# Generate environment files if needed
+if [[ ! -f "server/.env" ]]; then
+    echo "Generating environment files..."
+    ./dev/setup-environment
+fi
+
 # Start all services in detached mode
 ./dev/docker-dev -i "$INSTANCE" -d
 

@@ -1,7 +1,7 @@
 """Add composite index on events (organization_id, source, id)
 
 Revision ID: 8c4a2b3d5e6f
-Revises: 916e176efd47
+Revises: 24bb42b493d7
 Create Date: 2025-12-26 10:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8c4a2b3d5e6f"
-down_revision = "916e176efd47"
+down_revision = "24bb42b493d7"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

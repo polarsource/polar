@@ -66,7 +66,7 @@ resource "render_postgres" "db" {
   name           = "db"
   database_name  = "polar_cpit"
   database_user  = "polar_cpit_user"
-  plan           = "pro_16gb"
+  plan           = "pro_32gb"
   region         = "ohio"
   version        = "15"
   disk_size_gb   = 150

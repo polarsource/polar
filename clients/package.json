@@ -20,7 +20,7 @@
     "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "turbo": "^2.6.3"
+    "turbo": "^2.7.2"
   },
   "resolutions": {
     "sharp": "0.33.3"
@@ -31,7 +31,7 @@
       "@types/react-dom": "19.2.3"
     }
   },
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.27.0",
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

@@ -13,7 +13,12 @@
     "line2": "Adresregel 2",
     "postalCode": "Postcode",
     "city": "Plaats",
-    "required": "Dit veld is verplicht"
+    "required": "Dit veld is verplicht",
+    "country": "Land",
+    "state": "Staat",
+    "province": "Provincie",
+    "stateOrProvince": "Staat / Provincie",
+    "included": "Inbegrepen"
   },
   "pricing": {
     "subtotal": "Subtotaal",
@@ -21,14 +26,33 @@
     "taxes": "Belastingen",
     "total": "Totaal",
     "every": "Elke",
-    "additionalMeteredUsage": "Extra verbruikskosten",
+    "additionalMeteredUsage": "+ Extra verbruikskosten",
     "free": "Gratis",
     "forFirstInterval": "voor de eerste",
     "forFirstMonths": "voor de eerste {count} maanden",
     "forFirstYears": "voor de eerste {count} jaren",
     "trial": "proefperiode",
     "trialPlural": "proefperiode",
-    "trialEnds": "Proefperiode eindigt"
+    "trialEnds": "Proefperiode eindigt",
+    "payWhatYouWant": "Betaal wat je wilt",
+    "perUnit": "/ eenheid",
+    "perSeat": "per zetel",
+    "numberOfSeats": "Aantal zetels",
+    "billed": "Gefactureerd {frequency}",
+    "oneTimePurchase": "Eenmalige aankoop",
+    "interval": {
+      "day": "dg",
+      "week": "wk",
+      "month": "p.m.",
+      "year": "p.j."
+    },
+    "frequency": {
+      "daily": "dagelijks",
+      "weekly": "wekelijks",
+      "monthly": "maandelijks",
+      "yearly": "jaarlijks",
+      "every": "elke {ordinal}e {interval}"
+    }
   },
   "buttons": {
     "startTrial": "Start proefperiode",

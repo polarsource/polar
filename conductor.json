@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "setup": "$CONDUCTOR_ROOT_PATH/dev/conductor-setup",
+    "run": "$CONDUCTOR_ROOT_PATH/dev/conductor-run",
+    "archive": "$CONDUCTOR_ROOT_PATH/dev/conductor-archive"
+  }
+}

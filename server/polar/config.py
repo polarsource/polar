@@ -217,6 +217,9 @@ class Settings(BaseSettings):
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
 
+    # Numeral
+    NUMERAL_API_KEY: str | None = None
+
     # Open Collective
     OPEN_COLLECTIVE_PERSONAL_TOKEN: str | None = None
 

@@ -22,6 +22,11 @@ class TaxCode(StrEnum):
             case TaxCode.general_electronically_supplied_services:
                 return "txcd_10000000"
 
+    def to_numeral(self) -> str:
+        match self:
+            case TaxCode.general_electronically_supplied_services:
+                return "SAAS_GENERAL"
+
 
 class TaxabilityReason(StrEnum):
     standard_rated = "standard_rated"
@@ -69,7 +74,7 @@ class TaxRate(TypedDict):
 
 
 class TaxCalculation(TypedDict):
-    processor_id: str
+    processor_id: str | None
     amount: int
     taxability_reason: TaxabilityReason | None
     tax_rate: TaxRate | None

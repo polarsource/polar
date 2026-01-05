@@ -5,7 +5,7 @@ from .base import (
     TaxCode,
     TaxRate,
 )
-from .stripe import calculate_tax
+from .numeral import calculate_tax
 
 __all__ = [
     "TaxCalculation",

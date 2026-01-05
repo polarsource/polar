@@ -68,6 +68,7 @@ Actions:
   restart   Restart services
   build     Build or rebuild services
   shell     Open a shell in a service container
+  cleanup   Stop services and remove all volumes (fresh start)
 
 Services:
   api       Backend API server
@@ -131,7 +132,7 @@ while [[ $# -gt 0 ]]; do
             print_usage
             exit 0
             ;;
-        up|down|logs|ps|restart|build|shell)
+        up|down|logs|ps|restart|build|shell|cleanup)
             ACTION="$1"
             shift
             ;;
@@ -299,6 +300,13 @@ case $ACTION in
         print_info "Opening shell in $SERVICE container..."
         # shellcheck disable=SC2086
         $COMPOSE_CMD exec "$SERVICE" /bin/bash
+        ;;
+
+    cleanup)
+        check_docker
+        print_info "Cleaning up Polar development environment (instance $INSTANCE)..."
+        $COMPOSE_CMD down -v --remove-orphans
+        print_success "Environment cleaned up (containers and volumes removed)"
         ;;
 
     *)

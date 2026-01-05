@@ -2,6 +2,8 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
+from sqlalchemy import delete
+
 from polar.kit.repository import (
     RepositoryBase,
     RepositoryIDMixin,
@@ -43,6 +45,12 @@ class ExternalEventRepository(
         if older_than is not None:
             statement = statement.where(ExternalEvent.created_at < older_than)
         return await self.get_all(statement)
+
+    async def delete_before(self, before: datetime) -> None:
+        statement = delete(ExternalEvent).where(
+            ExternalEvent.handled_at.is_not(None), ExternalEvent.created_at < before
+        )
+        await self.session.execute(statement)
 
     def get_sorting_clause(self, property: ExternalEventSortProperty) -> SortingClause:
         match property:

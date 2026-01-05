@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks'
 import { usePostHog } from '@/hooks/posthog'
 import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -344,10 +345,20 @@ export const OrganizationStep = ({
                 >
                   Create
                 </Button>
-                {hasExistingOrg && (
+                {hasExistingOrg ? (
                   <Link href={`/dashboard`} className="w-full">
                     <Button variant="secondary" fullWidth>
                       Back to Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link
+                    href={`${CONFIG.BASE_URL}/v1/auth/logout`}
+                    prefetch={false}
+                    className="w-full"
+                  >
+                    <Button variant="secondary" fullWidth>
+                      Logout
                     </Button>
                   </Link>
                 )}

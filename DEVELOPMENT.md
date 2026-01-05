@@ -83,6 +83,17 @@ Your browser will open a new page and you'll be prompted to **create a GitHub Ap
 >
 > The script will automatically use your external GitHub Codespace URL.
 
+**Shared secrets (multi-worktree development)**
+
+If you work with multiple Git worktrees, secrets (GitHub, Stripe) are automatically shared via `~/.config/polar/secrets.env`:
+
+1. Run `./dev/setup-environment` in your first worktree
+2. If you set up a GitHub App with `--setup-github-app`, credentials are saved automatically to the central file
+3. For Stripe, edit `~/.config/polar/secrets.env` and add your keys (see template at `dev/secrets.env.template`)
+4. Run `./dev/setup-environment` in each additional worktree - secrets are merged automatically
+
+You can override the secrets file location with `POLAR_SECRETS_FILE` environment variable.
+
 **Optional: setup Stripe**
 
 > [!NOTE]

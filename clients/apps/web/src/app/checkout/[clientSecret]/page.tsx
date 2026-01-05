@@ -1,5 +1,5 @@
 import { getExperiment } from '@/experiments/server'
-import { getServerURL } from '@/utils/api'
+import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
   CheckoutProvider,
@@ -83,7 +83,7 @@ export default async function Page(props: {
   return (
     <CheckoutProvider
       clientSecret={checkout.clientSecret}
-      serverURL={getServerURL()}
+      serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider>
         <CheckoutPage

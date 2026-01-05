@@ -1,4 +1,4 @@
-import { getServerURL } from '@/utils/api'
+import { getPublicServerURL } from '@/utils/api'
 import { operations } from '@polar-sh/client'
 
 export const getGitHubAuthorizeURL = (
@@ -13,7 +13,7 @@ export const getGitHubAuthorizeURL = (
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
-  return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
 
 export const getGoogleAuthorizeURL = (
@@ -28,7 +28,7 @@ export const getGoogleAuthorizeURL = (
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
-  return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }
 
 export const getAppleAuthorizeURL = (
@@ -43,7 +43,7 @@ export const getAppleAuthorizeURL = (
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
-  return `${getServerURL()}/v1/integrations/apple/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/apple/authorize?${searchParams}`
 }
 
 export const getBotDiscordAuthorizeURL = (
@@ -55,7 +55,7 @@ export const getBotDiscordAuthorizeURL = (
   if (params.return_to) {
     searchParams.set('return_to', params.return_to)
   }
-  return `${getServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
 }
 
 export const getGitHubRepositoryBenefitAuthorizeURL = (
@@ -67,5 +67,5 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
   if (params.return_to) {
     searchParams.set('return_to', params.return_to)
   }
-  return `${getServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
 }

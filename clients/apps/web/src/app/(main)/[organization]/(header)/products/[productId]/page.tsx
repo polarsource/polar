@@ -1,4 +1,4 @@
-import { getServerURL } from '@/utils/api'
+import { getPublicServerURL } from '@/utils/api'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { isCrawler } from '@/utils/crawlers'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
@@ -92,7 +92,7 @@ export default async function Page(props: {
   return (
     <CheckoutProvider
       clientSecret={checkout.client_secret}
-      serverURL={getServerURL()}
+      serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider>
         <ProductPage />

@@ -1,0 +1,80 @@
+{
+  "form": {
+    "email": "E-post",
+    "cardholderName": "Kortinnehavarens namn",
+    "billingAddress": "Faktureringsadress",
+    "businessPurchase": "Jag köper som företag",
+    "businessName": "Företagsnamn",
+    "taxId": "Organisationsnummer",
+    "discountCode": "Rabattkod",
+    "optional": "Valfritt",
+    "apply": "Använd",
+    "line1": "Adressrad 1",
+    "line2": "Adressrad 2",
+    "postalCode": "Postnummer",
+    "city": "Stad",
+    "required": "Detta fält är obligatoriskt",
+    "country": "Land",
+    "state": "Delstat",
+    "province": "Provins",
+    "stateOrProvince": "Delstat / Provins",
+    "included": "Inkluderat"
+  },
+  "pricing": {
+    "subtotal": "Delsumma",
+    "taxableAmount": "Beskattningsbart belopp",
+    "taxes": "Skatter",
+    "total": "Totalt",
+    "every": "Varje",
+    "additionalMeteredUsage": "+ Ytterligare mätbar användning",
+    "free": "Gratis",
+    "forFirstInterval": "för den första",
+    "forFirstMonths": "för de första {count} månaderna",
+    "forFirstYears": "för de första {count} åren",
+    "trial": "provperiod",
+    "trialPlural": "provperiod",
+    "trialEnds": "Provperioden slutar",
+    "payWhatYouWant": "Betala vad du vill",
+    "perUnit": "/ enhet",
+    "perSeat": "per licens",
+    "numberOfSeats": "Antal licenser",
+    "billed": "Faktureras {frequency}",
+    "oneTimePurchase": "Engångsköp",
+    "interval": {
+      "day": "dg",
+      "week": "ve",
+      "month": "mån",
+      "year": "år"
+    },
+    "frequency": {
+      "daily": "dagligen",
+      "weekly": "veckovis",
+      "monthly": "månadsvis",
+      "yearly": "årsvis",
+      "every": "var {ordinal} {interval}"
+    }
+  },
+  "buttons": {
+    "startTrial": "Starta provperiod",
+    "subscribe": "Prenumerera",
+    "pay": "Betala",
+    "submit": "Skicka"
+  },
+  "footer": {
+    "merchantInfo": "Denna beställning hanteras av vår onlineåterförsäljare och betalningsansvarige, Polar, som även hanterar orderrelaterade förfrågningar och returer.",
+    "poweredBy": "Drivs av"
+  },
+  "errors": {
+    "paymentsUnavailable": "Betalningar är för närvarande otillgängliga"
+  },
+  "confirmation": {
+    "processing": "Vi behandlar din beställning",
+    "success": "Din beställning genomfördes!",
+    "failed": "Ett problem uppstod vid behandlingen av din beställning",
+    "waitingWebhooks": "Vänta medan vi lyssnar efter webhooks.",
+    "eligible": "Du har nu tillgång till förmånerna för {productName}.",
+    "tryAgain": "Försök igen eller kontakta supporten.",
+    "confirmPayment": "Bekräfta betalning",
+    "grantingBenefits": "Tilldelar förmåner..."
+  }
+}

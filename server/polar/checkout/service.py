@@ -342,17 +342,11 @@ class CheckoutService:
 
         # Validate seats for seat-based pricing
         if is_seat_price(price):
-            if checkout_create.seats is None or checkout_create.seats < 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "seats"),
-                            "msg": "Seats is required for seat-based pricing.",
-                            "input": checkout_create.seats,
-                        }
-                    ]
-                )
+            if checkout_create.seats is None:
+                # Default to minimum seats if not specified
+                minimum_seats = price.get_minimum_seats()
+                checkout_create.seats = minimum_seats
+            self._validate_seat_limits(price, checkout_create.seats)
         elif checkout_create.seats is not None:
             raise PolarRequestValidationError(
                 [
@@ -411,8 +405,9 @@ class CheckoutService:
                 )
         elif is_seat_price(price):
             # Calculate amount based on seat count
-            seats = checkout_create.seats or 1
-            amount = price.calculate_amount(seats)
+            # seats is guaranteed to be set above when is_seat_price(price) is True
+            assert checkout_create.seats is not None
+            amount = price.calculate_amount(checkout_create.seats)
             currency = price.price_currency
         else:
             amount = 0
@@ -596,17 +591,11 @@ class CheckoutService:
 
         # Validate seats for seat-based pricing
         if is_seat_price(price):
-            if checkout_create.seats is None or checkout_create.seats < 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "seats"),
-                            "msg": "Seats is required for seat-based pricing.",
-                            "input": checkout_create.seats,
-                        }
-                    ]
-                )
+            if checkout_create.seats is None:
+                # Default to minimum seats if not specified
+                minimum_seats = price.get_minimum_seats()
+                checkout_create.seats = minimum_seats
+            self._validate_seat_limits(price, checkout_create.seats)
         elif checkout_create.seats is not None:
             raise PolarRequestValidationError(
                 [
@@ -633,8 +622,9 @@ class CheckoutService:
             )
         elif is_seat_price(price):
             # Calculate amount based on seat count
-            seats = checkout_create.seats or 1
-            amount = price.calculate_amount(seats)
+            # seats is guaranteed to be set above when is_seat_price(price) is True
+            assert checkout_create.seats is not None
+            amount = price.calculate_amount(checkout_create.seats)
             currency = price.price_currency
         elif is_currency_price(price):
             currency = price.price_currency
@@ -760,8 +750,8 @@ class CheckoutService:
                 or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
         elif is_seat_price(price):
-            # Default to 1 seat for checkout links with seat-based pricing
-            seats = 1
+            # Default to minimum seats for checkout links with seat-based pricing
+            seats = price.get_minimum_seats()
             amount = price.calculate_amount(seats)
             currency = price.price_currency
         elif is_currency_price(price):
@@ -1710,7 +1700,11 @@ class CheckoutService:
                 checkout.currency = price.price_currency
                 checkout.seats = None
             elif is_seat_price(price):
-                seats = checkout.seats or checkout_update.seats or 1
+                # Use minimum_seats as default if no seats are set
+                minimum_seats = price.get_minimum_seats()
+                seats = checkout.seats or checkout_update.seats or minimum_seats
+                # Validate seat limits for the new price
+                self._validate_seat_limits(price, seats)
                 checkout.seats = seats
                 checkout.amount = price.calculate_amount(seats)
                 checkout.currency = price.price_currency
@@ -1742,6 +1736,7 @@ class CheckoutService:
             and checkout_update.seats is not None
             and is_seat_price(checkout.product_price)
         ):
+            self._validate_seat_limits(checkout.product_price, checkout_update.seats)
             checkout.seats = checkout_update.seats
             checkout.amount = checkout.product_price.calculate_amount(
                 checkout_update.seats
@@ -2050,6 +2045,45 @@ class CheckoutService:
                         "msg": "Amount is above maximum.",
                         "input": amount,
                         "ctx": {"le": price.maximum_amount},
+                    }
+                ]
+            )
+
+    def _validate_seat_limits(
+        self,
+        price: ProductPrice,
+        seats: int,
+        loc: tuple[str, ...] = ("body", "seats"),
+    ) -> None:
+        """Validate that a seat count is within the min/max bounds for a seat-based price."""
+        if not is_seat_price(price):
+            return
+
+        minimum_seats = price.get_minimum_seats()
+        maximum_seats = price.get_maximum_seats()
+
+        if seats < minimum_seats:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "greater_than_equal",
+                        "loc": loc,
+                        "msg": f"Minimum {minimum_seats} seats required.",
+                        "input": seats,
+                        "ctx": {"ge": minimum_seats},
+                    }
+                ]
+            )
+
+        if maximum_seats is not None and seats > maximum_seats:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "less_than_equal",
+                        "loc": loc,
+                        "msg": f"Maximum {maximum_seats} seats allowed.",
+                        "input": seats,
+                        "ctx": {"le": maximum_seats},
                     }
                 ]
             )

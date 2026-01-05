@@ -1,10 +1,11 @@
 'use client'
 
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
@@ -20,6 +21,15 @@ const CheckoutSeatSelector = ({
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [autoCorrectAttempted, setAutoCorrectAttempted] = useState(false)
+
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof HTTPValidationError && err.detail?.[0]?.msg) {
+      return err.detail[0].msg
+    }
+    return 'Failed to update seats'
+  }
 
   // Check if the product has seat-based pricing
   const productPrice = checkout.productPrice
@@ -29,19 +39,53 @@ const CheckoutSeatSelector = ({
     return null
   }
 
-  const seats = checkout.seats || 1
+  // Get seat limits from the tiers
+  // The minimum comes from the first tier's min_seats, maximum from the last tier's max_seats
+  const seatTiers = productPrice.seatTiers
+  const tiers = seatTiers?.tiers ?? []
+  const sortedTiers = [...tiers].sort((a, b) => a.minSeats - b.minSeats)
+  const minimumSeats = sortedTiers[0]?.minSeats ?? 1
+  const maximumSeats = sortedTiers[sortedTiers.length - 1]?.maxSeats ?? null
+  const hasMaximumLimit = maximumSeats !== null
+
+  // Display seats clamped to at least the minimum
+  const displaySeats = Math.max(checkout.seats || minimumSeats, minimumSeats)
+  // Track whether the checkout needs to be corrected
+  const needsSeatCorrection =
+    checkout.seats !== null &&
+    checkout.seats !== undefined &&
+    checkout.seats < minimumSeats
+
   const netAmount = checkout.netAmount || 0
   const currency = productPrice.priceCurrency
   const pricePerSeat = checkout.pricePerSeat || 0
 
+  // Auto-correct seat count if it's below the minimum (only attempt once)
+  useEffect(() => {
+    if (needsSeatCorrection && !isUpdating && !autoCorrectAttempted) {
+      setAutoCorrectAttempted(true)
+      update({ seats: minimumSeats } as CheckoutUpdatePublic).catch((err) => {
+        setError(getErrorMessage(err))
+      })
+    }
+  }, [
+    needsSeatCorrection,
+    minimumSeats,
+    isUpdating,
+    update,
+    autoCorrectAttempted,
+  ])
+
   const handleUpdateSeats = async (newSeats: number) => {
-    if (newSeats < 1 || newSeats > 1000 || isUpdating) return
+    if (newSeats < minimumSeats || isUpdating) return
+    if (hasMaximumLimit && newSeats > maximumSeats) return
 
     setIsUpdating(true)
+    setError(null)
     try {
       await update({ seats: newSeats } as CheckoutUpdatePublic)
-    } catch (error) {
-      console.error('Failed to update seats:', error)
+    } catch (err) {
+      setError(getErrorMessage(err))
     } finally {
       setIsUpdating(false)
     }
@@ -59,9 +103,9 @@ const CheckoutSeatSelector = ({
     const newSeats = parseInt(inputValue, 10)
     if (
       !isNaN(newSeats) &&
-      newSeats >= 1 &&
-      newSeats <= 1000 &&
-      newSeats !== seats
+      newSeats >= minimumSeats &&
+      (!hasMaximumLimit || newSeats <= maximumSeats) &&
+      newSeats !== displaySeats
     ) {
       handleUpdateSeats(newSeats)
     }
@@ -80,8 +124,22 @@ const CheckoutSeatSelector = ({
 
   const handleSeatClick = () => {
     setIsEditing(true)
-    setInputValue(seats.toString())
+    setInputValue(displaySeats.toString())
   }
+
+  // Build seat limit description
+  const getSeatLimitText = () => {
+    if (minimumSeats > 1 && hasMaximumLimit) {
+      return `${minimumSeats} - ${maximumSeats} seats`
+    } else if (minimumSeats > 1) {
+      return `Minimum ${minimumSeats} seats`
+    } else if (hasMaximumLimit) {
+      return `Maximum ${maximumSeats} seats`
+    }
+    return null
+  }
+
+  const seatLimitText = getSeatLimitText()
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,8 +160,8 @@ const CheckoutSeatSelector = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleUpdateSeats(seats - 1)}
-            disabled={seats <= 1 || isUpdating || isEditing}
+            onClick={() => handleUpdateSeats(displaySeats - 1)}
+            disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
             className="h-10 w-10 rounded-full disabled:opacity-40"
             aria-label="Decrease seats"
           >
@@ -126,8 +184,8 @@ const CheckoutSeatSelector = ({
               onBlur={handleInputBlur}
               onKeyDown={handleInputKeyDown}
               autoFocus
-              min={1}
-              max={1000}
+              min={minimumSeats}
+              max={hasMaximumLimit ? maximumSeats : undefined}
               className="h-auto max-w-[4.5rem] min-w-[3.5rem] py-1.5 text-center text-2xl font-light tabular-nums"
             />
           ) : (
@@ -139,14 +197,18 @@ const CheckoutSeatSelector = ({
               aria-label="Click to edit seat count"
               title="Click to edit"
             >
-              <span>{seats}</span>
+              <span>{displaySeats}</span>
             </button>
           )}
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleUpdateSeats(seats + 1)}
-            disabled={seats >= 1000 || isUpdating || isEditing}
+            onClick={() => handleUpdateSeats(displaySeats + 1)}
+            disabled={
+              (hasMaximumLimit && displaySeats >= maximumSeats) ||
+              isUpdating ||
+              isEditing
+            }
             className="h-10 w-10 rounded-full disabled:opacity-40"
             aria-label="Increase seats"
           >
@@ -165,6 +227,14 @@ const CheckoutSeatSelector = ({
             </svg>
           </Button>
         </div>
+        {seatLimitText && (
+          <p className="dark:text-polar-400 text-xs text-gray-500">
+            {seatLimitText}
+          </p>
+        )}
+        {error && (
+          <p className="text-destructive-foreground text-sm">{error}</p>
+        )}
       </div>
 
       <MeteredPricesDisplay checkout={checkout} />

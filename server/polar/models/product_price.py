@@ -374,6 +374,22 @@ class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
     def calculate_amount(self, seats: int) -> int:
         return self.get_price_per_seat(seats) * seats
 
+    def get_minimum_seats(self) -> int:
+        """Get the minimum number of seats allowed, derived from first tier's min_seats."""
+        tiers = self.seat_tiers.get("tiers", [])
+        if not tiers:
+            return 1
+        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
+        return sorted_tiers[0]["min_seats"]
+
+    def get_maximum_seats(self) -> int | None:
+        """Get the maximum number of seats allowed, derived from last tier's max_seats."""
+        tiers = self.seat_tiers.get("tiers", [])
+        if not tiers:
+            return None
+        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
+        return sorted_tiers[-1].get("max_seats")
+
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.seat_based,
         "polymorphic_load": "inline",

@@ -21043,7 +21043,7 @@ export interface components {
        */
       price_currency: string
       /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers']
+      seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
     }
     /**
      * ProductPriceSeatBasedCreate
@@ -21062,7 +21062,7 @@ export interface components {
        */
       price_currency: string
       /** @description Tiered pricing based on seat quantity */
-      seat_tiers: components['schemas']['ProductPriceSeatTiers']
+      seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
     }
     /**
      * ProductPriceSeatTier
@@ -21088,13 +21088,42 @@ export interface components {
     /**
      * ProductPriceSeatTiers
      * @description List of pricing tiers for seat-based pricing.
+     *
+     *     The minimum and maximum seat limits are derived from the tiers:
+     *     - minimum_seats = first tier's min_seats
+     *     - maximum_seats = last tier's max_seats (None for unlimited)
      */
-    ProductPriceSeatTiers: {
+    'ProductPriceSeatTiers-Input': {
       /**
        * Tiers
        * @description List of pricing tiers
        */
       tiers: components['schemas']['ProductPriceSeatTier'][]
+    }
+    /**
+     * ProductPriceSeatTiers
+     * @description List of pricing tiers for seat-based pricing.
+     *
+     *     The minimum and maximum seat limits are derived from the tiers:
+     *     - minimum_seats = first tier's min_seats
+     *     - maximum_seats = last tier's max_seats (None for unlimited)
+     */
+    'ProductPriceSeatTiers-Output': {
+      /**
+       * Tiers
+       * @description List of pricing tiers
+       */
+      tiers: components['schemas']['ProductPriceSeatTier'][]
+      /**
+       * Minimum Seats
+       * @description Minimum number of seats required for purchase, derived from first tier.
+       */
+      readonly minimum_seats: number
+      /**
+       * Maximum Seats
+       * @description Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
+       */
+      readonly maximum_seats: number | null
     }
     /**
      * ProductPriceSource

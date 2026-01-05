@@ -330,6 +330,64 @@ async def checkout_seat_based(
     return await create_checkout(save_fixture, products=[product_seat_based], seats=5)
 
 
+@pytest_asyncio.fixture
+async def product_seat_based_with_min(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Product with seat-based pricing requiring minimum 3 seats."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000, minimum_seats=3
+    )
+    product.prices = [price]
+    return product
+
+
+@pytest_asyncio.fixture
+async def product_seat_based_with_max(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Product with seat-based pricing with maximum 10 seats."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000, maximum_seats=10
+    )
+    product.prices = [price]
+    return product
+
+
+@pytest_asyncio.fixture
+async def product_seat_based_with_min_max(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Product with seat-based pricing requiring 2-20 seats."""
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[],
+    )
+    price = await create_product_price_seat_unit(
+        save_fixture,
+        product=product,
+        price_per_seat=1000,
+        minimum_seats=2,
+        maximum_seats=20,
+    )
+    product.prices = [price]
+    return product
+
+
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.auth
@@ -1549,28 +1607,28 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_seat_based_price_without_seats(
+    async def test_seat_based_price_without_seats_defaults_to_minimum(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_seat_based: Product,
     ) -> None:
+        """Test that omitting seats defaults to minimum_seats (1 for standard fixture)."""
         price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
 
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.create(
-                session,
-                CheckoutPriceCreate(
-                    product_price_id=price.id,
-                ),
-                auth_subject,
-            )
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+            ),
+            auth_subject,
+        )
 
-        errors = e.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("body", "seats")
-        assert "required" in errors[0]["msg"].lower()
+        # Should default to minimum_seats (1 for standard seat-based product)
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.amount == price.calculate_amount(checkout.seats)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1654,6 +1712,179 @@ class TestCreate:
 
         assert checkout.seats == seats
         assert checkout.amount == price.calculate_amount(seats)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_with_minimum_seats_below_limit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_min: Product,
+    ) -> None:
+        """Test that checkout with seats below minimum fails."""
+        price = product_seat_based_with_min.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        assert price.get_minimum_seats() == 3
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=price.id,
+                    seats=2,  # Below minimum of 3
+                ),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "minimum" in errors[0]["msg"].lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_with_minimum_seats_at_limit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_min: Product,
+    ) -> None:
+        """Test that checkout with seats at minimum succeeds."""
+        price = product_seat_based_with_min.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                seats=3,  # At minimum
+            ),
+            auth_subject,
+        )
+
+        assert checkout.seats == 3
+        assert checkout.amount == price.calculate_amount(3)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_with_maximum_seats_above_limit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        """Test that checkout with seats above maximum fails."""
+        price = product_seat_based_with_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        assert price.get_maximum_seats() == 10
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=price.id,
+                    seats=15,  # Above maximum of 10
+                ),
+                auth_subject,
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "maximum" in errors[0]["msg"].lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_with_maximum_seats_at_limit(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        """Test that checkout with seats at maximum succeeds."""
+        price = product_seat_based_with_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                seats=10,  # At maximum
+            ),
+            auth_subject,
+        )
+
+        assert checkout.seats == 10
+        assert checkout.amount == price.calculate_amount(10)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_with_min_max_in_range(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        """Test that checkout with seats in valid range succeeds."""
+        price = product_seat_based_with_min_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+        assert price.get_minimum_seats() == 2
+        assert price.get_maximum_seats() == 20
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                seats=10,  # Within range 2-20
+            ),
+            auth_subject,
+        )
+
+        assert checkout.seats == 10
+        assert checkout.amount == price.calculate_amount(10)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_seat_based_defaults_to_minimum_when_not_provided(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_seat_based_with_min: Product,
+    ) -> None:
+        """Test that checkout defaults to minimum seats when not provided."""
+        price = product_seat_based_with_min.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        # Use products create without specifying seats
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_seat_based_with_min.id],
+            ),
+            auth_subject,
+        )
+
+        # Should default to minimum_seats (3)
+        assert checkout.seats == 3
+        assert checkout.amount == price.calculate_amount(3)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1877,23 +2108,25 @@ class TestClientCreate:
         assert checkout.amount == price.calculate_amount(7)
         assert checkout.currency == price.price_currency
 
-    async def test_seat_based_price_without_seats(
+    async def test_seat_based_price_without_seats_defaults_to_minimum(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         product_seat_based: Product,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.client_create(
-                session,
-                CheckoutCreatePublic(product_id=product_seat_based.id),
-                auth_subject,
-            )
+        """Test that omitting seats defaults to minimum_seats."""
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
 
-        errors = e.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("body", "seats")
-        assert "required" in errors[0]["msg"].lower()
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_seat_based.id),
+            auth_subject,
+        )
+
+        # Should default to minimum_seats (1 for standard seat-based product)
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.amount == price.calculate_amount(checkout.seats)
 
     @pytest.mark.parametrize("seats", [1, 3, 15])
     async def test_seat_based_price_amount_calculation(
@@ -3111,6 +3344,93 @@ class TestUpdate:
 
         assert updated_checkout.product == product_one_time
         assert updated_checkout.seats is None
+
+    async def test_update_seats_below_minimum(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_seat_based_with_min: Product,
+    ) -> None:
+        """Test that updating seats below minimum fails."""
+        price = product_seat_based_with_min.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based_with_min],
+            seats=5,  # Start with valid seat count
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.update(
+                session,
+                locker,
+                checkout,
+                CheckoutUpdate(seats=1),  # Below minimum of 3
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "minimum" in errors[0]["msg"].lower()
+
+    async def test_update_seats_above_maximum(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        """Test that updating seats above maximum fails."""
+        price = product_seat_based_with_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based_with_max],
+            seats=5,  # Start with valid seat count
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.update(
+                session,
+                locker,
+                checkout,
+                CheckoutUpdate(seats=15),  # Above maximum of 10
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "seats")
+        assert "maximum" in errors[0]["msg"].lower()
+
+    async def test_update_seats_within_limits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        """Test that updating seats within limits succeeds."""
+        price = product_seat_based_with_min_max.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based_with_min_max],
+            seats=5,  # Start within range 2-20
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(seats=15),  # Still within range
+        )
+
+        assert updated_checkout.seats == 15
+        assert updated_checkout.amount == price.calculate_amount(15)
 
     async def test_trial_update(
         self,

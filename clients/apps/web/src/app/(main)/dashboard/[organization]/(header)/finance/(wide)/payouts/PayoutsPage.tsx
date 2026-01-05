@@ -269,7 +269,7 @@ export default function ClientPage({
 
   return (
     <PayoutProvider>
-      <div className="flex flex-col gap-y-8">
+      <div className="flex flex-col gap-y-6">
         <AccountBanner organization={organization} />
         {account && (
           <AccountBalance account={account} organization={organization} />

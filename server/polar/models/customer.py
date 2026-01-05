@@ -31,8 +31,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
-from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.utils import utc_now
+from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant

@@ -3,11 +3,11 @@ from datetime import datetime
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.integrations.aws.s3 import S3Service
-from polar.kit.tax import TaxabilityReason
 from polar.kit.utils import utc_now
 from polar.models import Account, Order, Payout
 from polar.models.transaction import PlatformFeeType
 from polar.postgres import AsyncSession
+from polar.tax.calculation import TaxabilityReason
 from polar.transaction.repository import TransactionRepository
 
 from .generator import (

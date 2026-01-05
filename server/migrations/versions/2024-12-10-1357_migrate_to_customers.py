@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
 from polar.kit.address import AddressType
-from polar.kit.tax import TaxIDType
+from polar.tax.tax_id import TaxIDType
 
 # revision identifiers, used by Alembic.
 revision = "e47b6d16d3e0"

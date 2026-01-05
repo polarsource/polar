@@ -13,15 +13,11 @@ from sqlalchemy import select
 from sqlalchemy.util.typing import TypedDict
 
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.kit.tax import (
-    TaxabilityReason,
-    TaxID,
-    TaxIDFormat,
-    TaxRate,
-    from_stripe_tax_rate,
-)
 from polar.models import Order
 from polar.postgres import create_async_engine
+from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.calculation.stripe import from_stripe_tax_rate
+from polar.tax.tax_id import TaxID, TaxIDFormat
 
 cli = typer.Typer()
 

@@ -26,9 +26,9 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.metadata import MetadataMixin
-from polar.kit.tax import TaxCode
 from polar.kit.trial import TrialConfigurationMixin
 from polar.models.product_price import ProductPriceAmountType, ProductPriceType
+from polar.tax.calculation import TaxCode
 
 from .product_price import ProductPrice
 

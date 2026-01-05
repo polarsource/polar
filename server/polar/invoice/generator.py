@@ -14,9 +14,9 @@ from pydantic import BaseModel
 
 from polar.config import Environment, settings
 from polar.kit.address import Address
-from polar.kit.tax import TaxabilityReason, TaxRate
 from polar.kit.utils import utc_now
 from polar.models import Order
+from polar.tax.calculation import TaxabilityReason, TaxRate
 
 
 def format_currency(amount: int, currency: str) -> str:

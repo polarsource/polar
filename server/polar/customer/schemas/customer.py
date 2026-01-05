@@ -21,9 +21,9 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
-from polar.kit.tax import TaxID
 from polar.member import Member, OwnerCreate
 from polar.organization.schemas import OrganizationID
+from polar.tax.tax_id import TaxID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
 ExternalCustomerID = Annotated[str, Path(description="The customer external ID.")]

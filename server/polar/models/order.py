@@ -29,8 +29,9 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
-from polar.kit.tax import TaxabilityReason, TaxID, TaxIDType, TaxRate
 from polar.models.order_item import OrderItem
+from polar.tax.calculation import TaxabilityReason, TaxRate
+from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from polar.models import (

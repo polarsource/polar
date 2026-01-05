@@ -10,10 +10,10 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
-from polar.kit.tax import InvalidTaxID, to_stripe_tax_id, validate_tax_id
 from polar.models import Customer, PaymentMethod
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
 
 from ..repository.payment_method import CustomerPaymentMethodRepository
 from ..schemas.customer import (

@@ -41,12 +41,6 @@ from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
-from polar.kit.tax import (
-    IncompleteTaxLocation,
-    TaxabilityReason,
-    TaxIDFormat,
-    calculate_tax,
-)
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.locker import Locker
@@ -82,6 +76,9 @@ from polar.postgres import AsyncSession
 from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
+from polar.tax.calculation import TaxabilityReason, calculate_tax
+from polar.tax.calculation.base import TaxCalculationError
+from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -879,9 +876,7 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.side_effect = IncompleteTaxLocation(
-            stripe_lib.InvalidRequestError("ERROR", "ERROR")
-        )
+        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -2858,9 +2853,7 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = IncompleteTaxLocation(
-            stripe_lib.InvalidRequestError("ERROR", "ERROR")
-        )
+        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
 
         checkout = await checkout_service.update(
             session,
@@ -3689,9 +3682,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = IncompleteTaxLocation(
-            stripe_lib.InvalidRequestError("ERROR", "ERROR")
-        )
+        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
@@ -4369,9 +4360,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = IncompleteTaxLocation(
-            stripe_lib.InvalidRequestError("ERROR", "ERROR")
-        )
+        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
 
         # Verify this is a setup intent scenario
         assert checkout_discount_percentage_100.is_payment_required is False

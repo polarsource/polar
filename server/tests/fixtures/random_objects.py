@@ -13,7 +13,6 @@ from typing_extensions import TypeIs
 
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.address import Address
-from polar.kit.tax import TaxID
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import Aggregation, CountAggregation
@@ -106,6 +105,7 @@ from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
 
 

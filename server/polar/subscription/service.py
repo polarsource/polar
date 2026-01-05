@@ -48,7 +48,6 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
@@ -89,6 +88,7 @@ from polar.product.guard import (
 )
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.tax.calculation import calculate_tax
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 

@@ -24,7 +24,6 @@ from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
-from polar.kit.tax import TaxabilityReason, TaxCalculation, TaxID, calculate_tax
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -63,6 +62,8 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
 from polar.subscription.service import SubscriptionService
+from polar.tax.calculation import TaxabilityReason, TaxCalculation, calculate_tax
+from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,

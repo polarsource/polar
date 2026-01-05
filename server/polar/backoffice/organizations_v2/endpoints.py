@@ -8,7 +8,6 @@ This module provides a modern, three-column layout with:
 - Keyboard shortcuts and accessibility improvements
 """
 
-from collections.abc import Sequence
 from datetime import UTC, datetime
 
 import structlog
@@ -20,7 +19,6 @@ from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
 from polar.account.service import account as account_service
-from polar.account_credit.service import account_credit_service
 from polar.auth.scope import Scope
 from polar.auth.service import auth as auth_service
 from polar.backoffice.organizations.analytics import (
@@ -36,7 +34,7 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationSocialsForm,
 )
 from polar.enums import AccountType
-from polar.models import AccountCredit, Organization, User, UserOrganization
+from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -49,7 +47,6 @@ from polar.transaction.service.transaction import transaction as transaction_ser
 from ..components import button, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
-from ..toast import add_toast
 from .views.detail_view import OrganizationDetailView
 from .views.list_view import OrganizationListView
 from .views.modals import DeleteStripeModal, DisconnectStripeModal
@@ -480,15 +477,7 @@ async def get_organization_detail(
                 with team_section.render(request):
                     pass
             elif section == "account":
-                account_credits: Sequence[AccountCredit] = []
-                if organization.account:
-                    account_credits = await account_credit_service.get_all(
-                        session, organization.account
-                    )
-                account_section = AccountSection(
-                    organization,
-                    credits=account_credits,
-                )
+                account_section = AccountSection(organization)
                 with account_section.render(request):
                     pass
             elif section == "files":
@@ -2031,273 +2020,6 @@ async def delete_stripe_account(
 # - GET /{organization_id}/deny-dialog
 # - GET /{organization_id}/plain-thread
 # - etc.
-
-
-# =============================================================================
-# Fee Credit Management Endpoints
-# =============================================================================
-
-
-@router.api_route(
-    "/{organization_id}/grant-credit",
-    name="organizations-v2:grant_credit",
-    methods=["GET", "POST"],
-    response_model=None,
-)
-async def grant_credit(
-    request: Request,
-    organization_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> HXRedirectResponse | None:
-    """Grant fee credits to an organization's account."""
-    from datetime import datetime
-
-    repository = OrganizationRepository(session)
-    organization = await repository.get_by_id(
-        organization_id, options=(joinedload(Organization.account),)
-    )
-
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
-    if request.method == "POST":
-        form_data = await request.form()
-
-        # Parse title (required)
-        title = str(form_data.get("title", "")).strip()
-        if not title:
-            await add_toast(request, "Title is required", "error")
-            return None
-
-        # Parse amount (convert dollars to cents)
-        try:
-            amount_str = form_data.get("amount", "0")
-            amount_dollars = float(str(amount_str))
-            amount_cents = int(amount_dollars * 100)
-        except (ValueError, TypeError):
-            amount_dollars = 0
-            amount_cents = 0
-
-        if amount_cents <= 0:
-            await add_toast(request, "Amount must be greater than 0", "error")
-            return None
-
-        # Parse optional expiration date
-        expires_at = None
-        expires_str = form_data.get("expires_at")
-        if expires_str:
-            try:
-                expires_at = datetime.fromisoformat(str(expires_str))
-            except ValueError:
-                pass
-
-        notes = form_data.get("notes") or None
-
-        # Create the credit
-        await account_credit_service.grant(
-            session,
-            account=organization.account,
-            amount=amount_cents,
-            title=title,
-            expires_at=expires_at,
-            notes=str(notes) if notes else None,
-        )
-
-        await add_toast(
-            request,
-            f"Granted ${amount_dollars:.2f} in fee credits",
-            "success",
-        )
-
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
-            )
-            + "?section=account",
-        )
-
-    # GET: Show modal form
-    with modal("Grant Fee Credit", open=True):
-        with tag.form(
-            hx_post=str(
-                request.url_for(
-                    "organizations-v2:grant_credit", organization_id=organization_id
-                )
-            ),
-        ):
-            with tag.div(classes="space-y-4"):
-                # Title field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Title")
-                    with tag.input(
-                        type="text",
-                        name="title",
-                        placeholder="Fee Credit",
-                        classes="input input-bordered w-full",
-                        required=True,
-                    ):
-                        pass
-                    with tag.div(classes="text-xs text-base-content/60 mt-1"):
-                        text("Public title shown to the customer")
-
-                # Amount field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Amount (USD)")
-                    with tag.input(
-                        type="number",
-                        name="amount",
-                        step="0.01",
-                        min="0.01",
-                        placeholder="100.00",
-                        classes="input input-bordered w-full",
-                        required=True,
-                    ):
-                        pass
-                    with tag.div(classes="text-xs text-base-content/60 mt-1"):
-                        text("Enter amount in dollars (e.g., 100.00 for $100)")
-
-                # Expiration date field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Expires At (optional)")
-                    with tag.input(
-                        type="datetime-local",
-                        name="expires_at",
-                        classes="input input-bordered w-full",
-                    ):
-                        pass
-
-                # Notes field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Notes (optional)")
-                    with tag.textarea(
-                        name="notes",
-                        placeholder="Reason for granting credit...",
-                        classes="textarea textarea-bordered w-full",
-                        rows="2",
-                    ):
-                        pass
-
-            # Action buttons
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with button(variant="primary", type="submit"):
-                    text("Grant Credit")
-
-    return None
-
-
-@router.api_route(
-    "/{organization_id}/credits/{credit_id}/revoke",
-    name="organizations-v2:revoke_credit",
-    methods=["GET", "POST"],
-    response_model=None,
-)
-async def revoke_credit(
-    request: Request,
-    organization_id: UUID4,
-    credit_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> HXRedirectResponse | None:
-    """Revoke a fee credit."""
-    repository = OrganizationRepository(session)
-    organization = await repository.get_by_id(
-        organization_id, options=(joinedload(Organization.account),)
-    )
-
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    if not organization.account:
-        raise HTTPException(status_code=400, detail="Organization has no account")
-
-    # Get the credit
-    credit = await account_credit_service.get_by_id(
-        session, credit_id, account=organization.account
-    )
-
-    if not credit:
-        raise HTTPException(status_code=404, detail="Credit not found")
-
-    if request.method == "POST":
-        from polar.account_credit.service import CreditAlreadyRevokedError
-
-        try:
-            await account_credit_service.revoke(
-                session, credit, account=organization.account
-            )
-            await add_toast(request, "Credit has been revoked", "success")
-        except CreditAlreadyRevokedError:
-            await add_toast(request, "Credit was already revoked", "warning")
-
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for(
-                    "organizations-v2:detail", organization_id=organization_id
-                )
-            )
-            + "?section=account",
-        )
-
-    # GET: Show confirmation modal
-    remaining = credit.remaining
-    with modal("Revoke Credit", open=True):
-        with tag.div(classes="space-y-4"):
-            with tag.p():
-                text("Are you sure you want to revoke this credit?")
-
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.div(classes="grid grid-cols-2 gap-2 text-sm"):
-                    with tag.div(classes="text-base-content/60"):
-                        text("Original Amount:")
-                    with tag.div(classes="font-semibold"):
-                        text(f"${credit.amount / 100:.2f}")
-                    with tag.div(classes="text-base-content/60"):
-                        text("Remaining Balance:")
-                    with tag.div(classes="font-semibold text-error"):
-                        text(f"${remaining / 100:.2f}")
-
-            if remaining > 0:
-                with tag.div(classes="alert alert-warning"):
-                    with tag.span():
-                        text(
-                            f"This credit still has ${remaining / 100:.2f} remaining. "
-                            "Revoking it will prevent further use."
-                        )
-
-        with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
-                with button(ghost=True):
-                    text("Cancel")
-            with button(
-                variant="error",
-                hx_post=str(
-                    request.url_for(
-                        "organizations-v2:revoke_credit",
-                        organization_id=organization_id,
-                        credit_id=credit_id,
-                    )
-                ),
-            ):
-                text("Revoke Credit")
-
-    return None
 
 
 __all__ = ["router"]

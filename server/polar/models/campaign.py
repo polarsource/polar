@@ -4,7 +4,6 @@ from sqlalchemy import (
     TIMESTAMP,
     Integer,
     String,
-    Text,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -24,9 +23,7 @@ from polar.kit.metadata import MetadataMixin
 class Campaign(MetadataMixin, RecordModel):
     __tablename__ = "campaigns"
 
-    code: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True, unique=True
-    )
+    code: Mapped[str] = mapped_column(String, nullable=False, index=True, unique=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
 
     starts_at: Mapped[datetime | None] = mapped_column(
@@ -44,7 +41,3 @@ class Campaign(MetadataMixin, RecordModel):
         Integer, nullable=True, default=None
     )
     fee_fixed: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    fee_credit: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    fee_credit_title: Mapped[str] = mapped_column(String, nullable=True)
-
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)

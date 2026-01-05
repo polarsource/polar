@@ -13,6 +13,10 @@ class PaymentProcessor(StrEnum):
     stripe = "stripe"
 
 
+class TaxProcessor(StrEnum):
+    stripe = "stripe"
+
+
 class AccountType(StrEnum):
     stripe = "stripe"
     manual = "manual"

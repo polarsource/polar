@@ -23,9 +23,11 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
+from polar.enums import TaxProcessor
 from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.tax import TaxabilityReason, TaxID, TaxIDType, TaxRate
 from polar.models.order_item import OrderItem
@@ -133,6 +135,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
     tax_rate: Mapped[TaxRate | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None
+    )
+    tax_processor: Mapped[TaxProcessor | None] = mapped_column(
+        StringEnum(TaxProcessor), default=None, nullable=True
     )
     tax_calculation_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

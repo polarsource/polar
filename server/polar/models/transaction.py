@@ -5,7 +5,9 @@ from uuid import UUID
 from sqlalchemy import BigInteger, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.enums import TaxProcessor
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -216,6 +218,10 @@ class Transaction(RecordModel):
     """Amount of tax in the presentment currency collected by Polar for this payment."""
     presentment_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     """Currency in which the customer made the payment."""
+    tax_processor: Mapped[TaxProcessor | None] = mapped_column(
+        StringEnum(TaxProcessor), default=None, nullable=True
+    )
+    """Tax processor used to calculate and collect tax for this payment."""
     tax_filing_amount: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     """Amount of tax filed to the jurisdiction by Polar for this payment."""
     tax_filing_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)

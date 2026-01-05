@@ -1607,28 +1607,28 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_seat_based_price_without_seats(
+    async def test_seat_based_price_without_seats_defaults_to_minimum(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_seat_based: Product,
     ) -> None:
+        """Test that omitting seats defaults to minimum_seats (1 for standard fixture)."""
         price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
 
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.create(
-                session,
-                CheckoutPriceCreate(
-                    product_price_id=price.id,
-                ),
-                auth_subject,
-            )
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+            ),
+            auth_subject,
+        )
 
-        errors = e.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("body", "seats")
-        assert "required" in errors[0]["msg"].lower()
+        # Should default to minimum_seats (1 for standard seat-based product)
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.amount == price.calculate_amount(checkout.seats)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2108,23 +2108,25 @@ class TestClientCreate:
         assert checkout.amount == price.calculate_amount(7)
         assert checkout.currency == price.price_currency
 
-    async def test_seat_based_price_without_seats(
+    async def test_seat_based_price_without_seats_defaults_to_minimum(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         product_seat_based: Product,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.client_create(
-                session,
-                CheckoutCreatePublic(product_id=product_seat_based.id),
-                auth_subject,
-            )
+        """Test that omitting seats defaults to minimum_seats."""
+        price = product_seat_based.prices[0]
+        assert isinstance(price, ProductPriceSeatUnit)
 
-        errors = e.value.errors()
-        assert len(errors) == 1
-        assert errors[0]["loc"] == ("body", "seats")
-        assert "required" in errors[0]["msg"].lower()
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_seat_based.id),
+            auth_subject,
+        )
+
+        # Should default to minimum_seats (1 for standard seat-based product)
+        assert checkout.seats == price.get_minimum_seats()
+        assert checkout.amount == price.calculate_amount(checkout.seats)
 
     @pytest.mark.parametrize("seats", [1, 3, 15])
     async def test_seat_based_price_amount_calculation(

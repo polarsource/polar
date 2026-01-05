@@ -430,7 +430,7 @@ class TestCreateCheckout:
         assert json["product_price"]["id"] == str(price.id)
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
-    async def test_seat_based_missing_seats(
+    async def test_seat_based_missing_seats_defaults_to_minimum(
         self,
         api_prefix: str,
         save_fixture: SaveFixture,
@@ -438,6 +438,7 @@ class TestCreateCheckout:
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
+        """Test that omitting seats defaults to minimum_seats."""
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -457,10 +458,12 @@ class TestCreateCheckout:
             },
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 201
 
         json = response.json()
-        assert any(error["loc"] == ["body", "seats"] for error in json["detail"])
+        # Should default to minimum_seats (1 for standard seat-based product)
+        assert json["seats"] == 1
+        assert json["amount"] == 1500 * 1
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid_ad_hoc_prices(

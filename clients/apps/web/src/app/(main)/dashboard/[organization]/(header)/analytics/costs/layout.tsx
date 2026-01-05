@@ -9,7 +9,7 @@ export default async function Layout({
   params,
 }: {
   children: React.ReactNode
-  params: { organization: string }
+  params: Promise<{ organization: string }>
 }) {
   const resolvedParams = await params
   const organizationSlug = resolvedParams.organization

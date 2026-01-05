@@ -92,7 +92,6 @@ export const platformFeesDisplayNames: {
   account: 'Active payout account fee',
   dispute: 'Dispute fee',
   platform: 'Polar fee',
-  fee_credit: 'Fee credit ✨',
 }
 
 interface TransactionsListProps {

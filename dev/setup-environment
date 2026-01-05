@@ -255,6 +255,8 @@ def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
             "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET": github_app[
                 "client_secret"
             ],
+            # Frontend env vars (used by Docker web container)
+            "NEXT_PUBLIC_GITHUB_APP_NAMESPACE": github_app["slug"],
         }
     )
 

@@ -12,6 +12,6 @@ export const getServerURL = (path?: string): string => {
 // For browser-facing URLs (auth redirects, props to client components)
 export const getPublicServerURL = (path?: string): string => {
   path = path || ''
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+  const baseURL = process.env.NEXT_PUBLIC_API_URL
   return `${baseURL}${path}`
 }

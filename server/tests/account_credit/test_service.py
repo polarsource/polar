@@ -3,7 +3,6 @@ from unittest.mock import ANY
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
 from polar.models import Account, Organization
 from polar.notifications.notification import (
@@ -170,8 +169,7 @@ class TestGetActive:
             title="Credit 2",
         )
 
-        repository = AccountCreditRepository.from_session(session)
-        active_credits = await repository.get_active(account.id)
+        active_credits = await account_credit_service.get_active(session, account)
         assert len(active_credits) == 2
         assert credit1.id in [c.id for c in active_credits]
         assert credit2.id in [c.id for c in active_credits]
@@ -179,6 +177,6 @@ class TestGetActive:
         # Revoke one credit
         await account_credit_service.revoke(session, credit=credit1, account=account)
 
-        active_credits = await repository.get_active(account.id)
+        active_credits = await account_credit_service.get_active(session, account)
         assert len(active_credits) == 1
         assert active_credits[0].id == credit2.id

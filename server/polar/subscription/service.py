@@ -193,7 +193,18 @@ class BelowMinimumSeats(SubscriptionError):
         self.subscription = subscription
         self.minimum_seats = minimum_seats
         self.requested_seats = requested_seats
-        message = f"Minimum seat count is {minimum_seats} based on pricing tiers."
+        message = f"Minimum {minimum_seats} seats required."
+        super().__init__(message, 400)
+
+
+class AboveMaximumSeats(SubscriptionError):
+    def __init__(
+        self, subscription: Subscription, maximum_seats: int, requested_seats: int
+    ) -> None:
+        self.subscription = subscription
+        self.maximum_seats = maximum_seats
+        self.requested_seats = requested_seats
+        message = f"Maximum {maximum_seats} seats allowed."
         super().__init__(message, 400)
 
 
@@ -220,16 +231,6 @@ class SubscriptionService:
             if isinstance(spp.product_price, ProductPriceSeatUnit):
                 return spp.product_price
         return None
-
-    def _get_minimum_seats_from_tiers(self, seat_price: ProductPriceSeatUnit) -> int:
-        """Get the absolute minimum seats from the first tier."""
-        if seat_price.seat_tiers is None:
-            return 1
-        tiers = seat_price.seat_tiers["tiers"]
-        if not tiers:
-            return 1
-        sorted_tiers = sorted(tiers, key=lambda t: t["min_seats"])
-        return sorted_tiers[0]["min_seats"]
 
     @staticmethod
     def _calculate_time_proration(
@@ -1315,10 +1316,9 @@ class SubscriptionService:
         Validates:
         - Subscription is seat-based
         - Subscription is active
-        - New seat count >= minimum from pricing tiers
+        - New seat count >= minimum seats
+        - New seat count <= maximum seats (if set)
         - New seat count >= currently assigned seats
-
-
         """
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
@@ -1327,9 +1327,13 @@ class SubscriptionService:
         if seat_price is None:
             raise NotASeatBasedSubscription(subscription)
 
-        minimum_seats = self._get_minimum_seats_from_tiers(seat_price)
+        minimum_seats = seat_price.get_minimum_seats()
         if seats < minimum_seats:
             raise BelowMinimumSeats(subscription, minimum_seats, seats)
+
+        maximum_seats = seat_price.get_maximum_seats()
+        if maximum_seats is not None and seats > maximum_seats:
+            raise AboveMaximumSeats(subscription, maximum_seats, seats)
 
         assigned_count = await seat_service.count_assigned_seats_for_subscription(
             session, subscription

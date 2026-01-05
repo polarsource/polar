@@ -2,7 +2,14 @@ import builtins
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, Tag, computed_field, field_validator
+from pydantic import (
+    UUID4,
+    Discriminator,
+    Field,
+    Tag,
+    computed_field,
+    field_validator,
+)
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
 
@@ -182,6 +189,10 @@ class ProductPriceSeatTier(Schema):
 class ProductPriceSeatTiers(Schema):
     """
     List of pricing tiers for seat-based pricing.
+
+    The minimum and maximum seat limits are derived from the tiers:
+    - minimum_seats = first tier's min_seats
+    - maximum_seats = last tier's max_seats (None for unlimited)
     """
 
     tiers: list[ProductPriceSeatTier] = Field(
@@ -200,9 +211,9 @@ class ProductPriceSeatTiers(Schema):
         # Sort by min_seats
         sorted_tiers = sorted(v, key=lambda t: t.min_seats)
 
-        # Ensure first tier starts at 1
-        if sorted_tiers[0].min_seats != 1:
-            raise ValueError("First tier must start at min_seats=1")
+        # First tier must start at >= 1
+        if sorted_tiers[0].min_seats < 1:
+            raise ValueError("First tier must start at min_seats >= 1")
 
         # Validate continuous ranges without gaps/overlaps
         for i in range(len(sorted_tiers) - 1):
@@ -220,15 +231,31 @@ class ProductPriceSeatTiers(Schema):
                     + f"tier ending at {current.max_seats} and tier starting at {next_tier.min_seats}"
                 )
 
-        # Ensure last tier has unlimited max_seats
-        last_tier = sorted_tiers[-1]
-        if last_tier.max_seats is not None:
-            raise ValueError(
-                "Last tier must have unlimited max_seats (None). "
-                + f"Currently set to {last_tier.max_seats}."
-            )
-
         return sorted_tiers
+
+    @computed_field(
+        description="Minimum number of seats required for purchase, derived from first tier."
+    )
+    def minimum_seats(self) -> int:
+        """Get minimum seats from the first tier.
+
+        Note: tiers are guaranteed to be sorted by the validator.
+        """
+        if not self.tiers:
+            return 1
+        return self.tiers[0].min_seats
+
+    @computed_field(
+        description="Maximum number of seats allowed for purchase, derived from last tier. None for unlimited."
+    )
+    def maximum_seats(self) -> int | None:
+        """Get maximum seats from the last tier.
+
+        Note: tiers are guaranteed to be sorted by the validator.
+        """
+        if not self.tiers:
+            return None
+        return self.tiers[-1].max_seats
 
 
 class ProductPriceSeatBasedCreate(ProductPriceCreateBase):

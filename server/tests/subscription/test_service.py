@@ -67,6 +67,7 @@ from polar.subscription.schemas import (
     SubscriptionCreateExternalCustomer,
 )
 from polar.subscription.service import (
+    AboveMaximumSeats,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
     InactiveSubscription,
@@ -2556,6 +2557,132 @@ class TestUpdateSeats:
 
         assert exc_info.value.minimum_seats == 1
         assert exc_info.value.requested_seats == 0
+
+    async def test_below_custom_minimum_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Product with custom minimum of 3 seats (from tier's min_seats)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        seat_price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 3, "max_seats": None, "price_per_seat": 1000},
+                ],
+            },
+            product=product,
+        )
+        await save_fixture(seat_price)
+        product.prices.append(seat_price)
+        await save_fixture(product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Try to set seats below custom minimum
+        with pytest.raises(BelowMinimumSeats) as exc_info:
+            await subscription_service.update_seats(session, subscription, seats=2)
+
+        assert exc_info.value.minimum_seats == 3
+        assert exc_info.value.requested_seats == 2
+
+    async def test_above_maximum_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Product with maximum 10 seats (from tier's max_seats)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        seat_price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
+                ],
+            },
+            product=product,
+        )
+        await save_fixture(seat_price)
+        product.prices.append(seat_price)
+        await save_fixture(product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Try to set seats above maximum
+        with pytest.raises(AboveMaximumSeats) as exc_info:
+            await subscription_service.update_seats(session, subscription, seats=15)
+
+        assert exc_info.value.maximum_seats == 10
+        assert exc_info.value.requested_seats == 15
+
+    async def test_seats_within_custom_limits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Given: Product with custom limits 2-20 seats (from tier's min_seats and max_seats)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        seat_price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "tiers": [
+                    {"min_seats": 2, "max_seats": 20, "price_per_seat": 1000},
+                ],
+            },
+            product=product,
+        )
+        await save_fixture(seat_price)
+        product.prices.append(seat_price)
+        await save_fixture(product)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+        )
+
+        # When: Update seats within limits
+        updated = await subscription_service.update_seats(
+            session, subscription, seats=15
+        )
+        await session.flush()
+
+        # Then: Successfully updated
+        assert updated.seats == 15
+        assert updated.amount == 15000
 
     async def test_not_seat_based_subscription(
         self,

@@ -536,18 +536,29 @@ async def create_product_price_seat_unit(
     *,
     product: Product,
     price_per_seat: int = 1000,
+    minimum_seats: int = 1,
+    maximum_seats: int | None = None,
 ) -> ProductPriceSeatUnit:
+    """Create a seat-based price with a single tier.
+
+    Args:
+        price_per_seat: Price per seat in cents.
+        minimum_seats: Minimum seats allowed (first tier's min_seats).
+        maximum_seats: Maximum seats allowed (last tier's max_seats). None for unlimited.
+    """
+    seat_tiers: dict[str, typing.Any] = {
+        "tiers": [
+            {
+                "min_seats": minimum_seats,
+                "max_seats": maximum_seats,
+                "price_per_seat": price_per_seat,
+            }
+        ]
+    }
+
     price = ProductPriceSeatUnit(
         price_currency="usd",
-        seat_tiers={
-            "tiers": [
-                {
-                    "min_seats": 1,
-                    "max_seats": None,
-                    "price_per_seat": price_per_seat,
-                }
-            ]
-        },
+        seat_tiers=seat_tiers,
         product=product,
     )
     assert price.amount_type == ProductPriceAmountType.seat_based

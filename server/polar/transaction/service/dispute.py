@@ -186,12 +186,10 @@ class DisputeTransactionService(BaseTransactionService):
         if dispute_reversal_transaction is not None:
             all_fees += dispute_reversal_fees
 
-        polar_fees: int = 0
         try:
-            fee_transactions = await self._create_dispute_fees_balances(
+            await self._create_dispute_fees_balances(
                 session, payment_transaction=payment_transaction, dispute_fees=all_fees
             )
-            polar_fees = sum(f[1].amount for f in fee_transactions)
         except NotBalancedPaymentTransaction:
             log.warning(
                 "Dispute fees balances could not be created for payment transaction",
@@ -220,7 +218,7 @@ class DisputeTransactionService(BaseTransactionService):
                     "tax_amount": settlement_tax_amount,
                     "tax_state": payment_transaction.tax_state,
                     "tax_country": payment_transaction.tax_country,
-                    "fee": polar_fees,
+                    "fee": sum(-fee.amount for fee in dispute_fees),
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
@@ -235,6 +233,40 @@ class DisputeTransactionService(BaseTransactionService):
                     metadata=metadata,
                 )
                 await event_service.create_event(session, balance_dispute_event)
+
+                if dispute_reversal_transaction is not None:
+                    assert dispute_reversal_transaction.presentment_amount is not None
+                    assert dispute_reversal_transaction.presentment_currency is not None
+
+                    reversal_metadata: BalanceDisputeMetadata = {
+                        "transaction_id": str(dispute_reversal_transaction.id),
+                        "dispute_id": str(dispute.id),
+                        "amount": dispute_reversal_transaction.amount,
+                        "currency": dispute_reversal_transaction.currency,
+                        "presentment_amount": dispute_reversal_transaction.presentment_amount,
+                        "presentment_currency": dispute_reversal_transaction.presentment_currency,
+                        "tax_amount": -settlement_tax_amount,
+                        "tax_state": payment_transaction.tax_state,
+                        "tax_country": payment_transaction.tax_country,
+                        "fee": sum(-fee.amount for fee in dispute_reversal_fees),
+                    }
+                    if order is not None:
+                        reversal_metadata["order_id"] = str(order.id)
+                        reversal_metadata["product_id"] = str(order.product_id)
+                        if order.subscription_id is not None:
+                            reversal_metadata["subscription_id"] = str(
+                                order.subscription_id
+                            )
+
+                    balance_dispute_reversal_event = build_system_event(
+                        SystemEvent.balance_dispute_reversal,
+                        customer=customer,
+                        organization=organization,
+                        metadata=reversal_metadata,
+                    )
+                    await event_service.create_event(
+                        session, balance_dispute_reversal_event
+                    )
             except Exception as e:
                 log.error("Could not save balance.dispute transaction", error=str(e))
 

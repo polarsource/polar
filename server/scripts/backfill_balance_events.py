@@ -522,6 +522,136 @@ async def create_missing_balance_dispute_events(
     return created_count
 
 
+async def create_missing_balance_dispute_reversal_events(
+    session: AsyncSession,
+    batch_size: int,
+    rate_limit_delay: float,
+) -> int:
+    """
+    Create balance.dispute_reversal events for dispute_reversal transactions that don't have one.
+    """
+    typer.echo("\n=== Creating missing balance.dispute_reversal events ===")
+
+    existing_tx_ids_result = await session.execute(
+        select(Event.user_metadata["transaction_id"].as_string())
+        .where(
+            Event.name == SystemEvent.balance_dispute_reversal,
+            Event.source == EventSource.system,
+        )
+        .distinct()
+    )
+    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
+    typer.echo(f"Found {len(existing_tx_ids)} existing balance.dispute_reversal events")
+
+    all_tx_ids_result = await session.execute(
+        select(Transaction.id).where(
+            Transaction.type == TransactionType.dispute_reversal,
+            Transaction.dispute_id.is_not(None),
+        )
+    )
+    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+
+    missing_tx_ids = [
+        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
+    ]
+    total_to_create = len(missing_tx_ids)
+
+    if total_to_create == 0:
+        typer.echo("No missing balance.dispute_reversal events to create")
+        return 0
+
+    typer.echo(
+        f"Found {total_to_create} dispute_reversal transactions without balance.dispute_reversal events"
+    )
+
+    created_count = 0
+
+    with Progress() as progress:
+        task = progress.add_task(
+            "[cyan]Creating balance.dispute_reversal events...", total=total_to_create
+        )
+
+        for i in range(0, total_to_create, batch_size):
+            batch_ids = missing_tx_ids[i : i + batch_size]
+
+            statement = (
+                select(Transaction)
+                .where(Transaction.id.in_(batch_ids))
+                .options(
+                    selectinload(Transaction.dispute).selectinload(Dispute.order),
+                    selectinload(Transaction.payment_customer),
+                    selectinload(Transaction.payment_organization),
+                    selectinload(Transaction.incurred_transactions),
+                )
+            )
+
+            result = await session.execute(statement)
+            transactions = result.scalars().all()
+
+            if not transactions:
+                break
+
+            events = []
+            for tx in transactions:
+                if tx.dispute is None:
+                    typer.echo(f"Warning: Transaction {tx.id} has no dispute")
+                    continue
+                if tx.payment_customer is None or tx.payment_organization is None:
+                    typer.echo(
+                        f"Warning: Transaction {tx.id} has no payment_customer or payment_organization"
+                    )
+                    continue
+
+                assert tx.presentment_amount is not None
+                assert tx.presentment_currency is not None
+
+                reversal_fee = sum(-fee.amount for fee in tx.incurred_transactions)
+
+                metadata: BalanceDisputeMetadata = {
+                    "transaction_id": str(tx.id),
+                    "dispute_id": str(tx.dispute.id),
+                    "amount": tx.amount,
+                    "currency": tx.currency,
+                    "presentment_amount": tx.presentment_amount,
+                    "presentment_currency": tx.presentment_currency,
+                    "tax_amount": tx.tax_amount,
+                    "tax_country": tx.tax_country or "",
+                    "tax_state": tx.tax_state or "",
+                    "fee": reversal_fee,
+                }
+                if tx.order_id is not None:
+                    metadata["order_id"] = str(tx.order_id)
+                if tx.dispute.order is not None:
+                    if tx.dispute.order.product_id is not None:
+                        metadata["product_id"] = str(tx.dispute.order.product_id)
+                    if tx.dispute.order.subscription_id is not None:
+                        metadata["subscription_id"] = str(
+                            tx.dispute.order.subscription_id
+                        )
+
+                events.append(
+                    {
+                        "name": SystemEvent.balance_dispute_reversal,
+                        "source": EventSource.system,
+                        "timestamp": tx.created_at,
+                        "customer_id": tx.payment_customer.id,
+                        "organization_id": tx.payment_organization.id,
+                        "user_metadata": metadata,
+                    }
+                )
+
+            if events:
+                await EventRepository.from_session(session).insert_batch(events)
+                await session.commit()
+                created_count += len(events)
+
+            progress.update(task, advance=len(transactions))
+            await asyncio.sleep(rate_limit_delay)
+
+    typer.echo(f"Created {created_count} balance.dispute_reversal events")
+    return created_count
+
+
 async def create_missing_balance_refund_reversal_events(
     session: AsyncSession,
     batch_size: int,
@@ -690,6 +820,12 @@ async def run_backfill(
         )
 
         results[
+            "balance_dispute_reversal_created"
+        ] = await create_missing_balance_dispute_reversal_events(
+            session, batch_size, rate_limit_delay
+        )
+
+        results[
             "balance_refund_reversal_created"
         ] = await create_missing_balance_refund_reversal_events(
             session, batch_size, rate_limit_delay
@@ -729,7 +865,8 @@ async def backfill(
     1. balance.order events for payment transactions
     2. balance.refund events for refund transactions
     3. balance.dispute events for dispute transactions
-    4. balance.refund_reversal events for refund_reversal transactions
+    4. balance.dispute_reversal events for dispute_reversal transactions
+    5. balance.refund_reversal events for refund_reversal transactions
     """
     logging.config.dictConfig(
         {

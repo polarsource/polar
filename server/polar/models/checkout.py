@@ -28,7 +28,6 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataColumn, MetadataMixin
-from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import (
@@ -36,6 +35,7 @@ from polar.product.guard import (
     is_free_price,
     is_metered_price,
 )
+from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
 from .discount import Discount

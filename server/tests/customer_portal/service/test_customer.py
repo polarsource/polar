@@ -8,9 +8,9 @@ from polar.customer_portal.service.customer import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
-from polar.kit.tax import TaxIDFormat
 from polar.models import Organization
 from polar.postgres import AsyncSession
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 

@@ -6,11 +6,11 @@ Create Date: 2024-09-27 17:27:44.293334
 
 """
 
+# Polar Custom Imports
 import sqlalchemy as sa
 from alembic import op
 
-# Polar Custom Imports
-import polar.kit.tax
+from polar.tax.tax_id import TaxIDType
 
 # revision identifiers, used by Alembic.
 revision = "e4473617a8e9"
@@ -25,7 +25,7 @@ def upgrade() -> None:
         "checkouts",
         sa.Column(
             "customer_tax_id",
-            polar.kit.tax.TaxIDType(astext_type=sa.Text()),
+            TaxIDType(astext_type=sa.Text()),
             nullable=True,
         ),
     )

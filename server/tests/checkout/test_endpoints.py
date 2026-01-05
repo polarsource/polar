@@ -15,7 +15,6 @@ from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
-from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
 from polar.models import (
     Checkout,
@@ -31,6 +30,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
+from polar.tax.calculation import calculate_tax
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (

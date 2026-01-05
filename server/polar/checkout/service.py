@@ -51,15 +51,6 @@ from polar.kit.crypto import generate_token
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.tax import (
-    InvalidTaxID,
-    TaxCalculationError,
-    TaxCode,
-    TaxID,
-    calculate_tax,
-    to_stripe_tax_id,
-    validate_tax_id,
-)
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
@@ -101,6 +92,8 @@ from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
+from polar.tax.calculation import TaxCalculationError, TaxCode, calculate_tax
+from polar.tax.tax_id import InvalidTaxID, TaxID, to_stripe_tax_id, validate_tax_id
 from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -952,7 +945,7 @@ class CheckoutService:
                 {
                     "type": "value_error",
                     "loc": ("body", "customer_billing_address"),
-                    "msg": e.message,
+                    "msg": e.message,  # pyright: ignore
                     "input": None,
                 }
             )

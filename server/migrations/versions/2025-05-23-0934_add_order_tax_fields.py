@@ -10,8 +10,6 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-from polar.kit.tax import TaxIDType
-
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.

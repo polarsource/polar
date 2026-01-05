@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from babel.numbers import format_currency
 
-from polar.kit.tax import TaxID
+from polar.tax.tax_id import TaxID
 
 
 def datetime(value: dt) -> str:

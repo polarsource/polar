@@ -13,8 +13,8 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.tax import TaxID
 from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
+from polar.tax.tax_id import TaxID
 
 
 class CustomerPortalOAuthAccount(Schema):

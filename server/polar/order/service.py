@@ -37,15 +37,6 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.tax import (
-    IncompleteTaxLocation,
-    InvalidTaxLocation,
-    TaxabilityReason,
-    TaxCalculation,
-    TaxRate,
-    calculate_tax,
-    from_stripe_tax_rate_details,
-)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -81,6 +72,14 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import is_custom_price, is_seat_price, is_static_price
 from polar.subscription.service import subscription as subscription_service
+from polar.tax.calculation import (
+    TaxabilityReason,
+    TaxCalculation,
+    TaxCalculationError,
+    TaxRate,
+    calculate_tax,
+)
+from polar.tax.calculation.stripe import from_stripe_tax_rate_details
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -627,7 +626,7 @@ class OrderService:
                         [tax_id] if tax_id is not None else [],
                         subscription.tax_exempted,
                     )
-                except (IncompleteTaxLocation, InvalidTaxLocation):
+                except TaxCalculationError:
                     log.warning(
                         "Failed to calculate tax for subscription order due to invalid or incomplete address",
                         subscription_id=subscription.id,

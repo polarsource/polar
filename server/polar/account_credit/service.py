@@ -1,10 +1,6 @@
-from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 from uuid import UUID
-
-from sqlalchemy import asc, select
-from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceServiceReader
@@ -16,7 +12,9 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.postgres import AsyncReadSession, AsyncSession
+from polar.postgres import AsyncSession
+
+from .repository import AccountCreditRepository
 
 
 class AccountCreditError(PolarError): ...
@@ -126,29 +124,6 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
         await session.flush()
         return credit
 
-    async def get_active(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        account: Account,
-    ) -> Sequence[AccountCredit]:
-        now = utc_now()
-        stmt = (
-            select(AccountCredit)
-            .where(
-                AccountCredit.account_id == account.id,
-                (
-                    (AccountCredit.expires_at.is_(None))
-                    | (AccountCredit.expires_at > now)
-                ),
-                AccountCredit.revoked_at.is_(None),
-                AccountCredit.deleted_at.is_(None),
-                AccountCredit.amount > AccountCredit.used,
-            )
-            .order_by(asc(AccountCredit.granted_at))
-        )
-        result = await session.execute(stmt)
-        return result.scalars().all()
-
     async def apply_to_fee(
         self,
         session: AsyncSession,
@@ -158,7 +133,8 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
         if fee_amount <= 0 or account.credit_balance <= 0:
             return (0, [])
 
-        active_credits = await self.get_active(session, account)
+        repository = AccountCreditRepository.from_session(session)
+        active_credits = await repository.get_active(account.id)
         if not active_credits:
             # Update account.credit_balance to reflect expired credits (no longer active)
             account.credit_balance = 0
@@ -189,43 +165,6 @@ class AccountCreditService(ResourceServiceReader[AccountCredit]):
 
         await session.flush()
         return (amount_applied, credits_used)
-
-    async def get_all(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        account: Account,
-        *,
-        include_deleted: bool = False,
-    ) -> Sequence[AccountCredit]:
-        stmt = (
-            select(AccountCredit)
-            .where(AccountCredit.account_id == account.id)
-            .options(joinedload(AccountCredit.campaign))
-            .order_by(AccountCredit.granted_at.desc())
-        )
-
-        if not include_deleted:
-            stmt = stmt.where(AccountCredit.deleted_at.is_(None))
-
-        result = await session.execute(stmt)
-        return result.scalars().unique().all()
-
-    async def get_by_id(
-        self,
-        session: AsyncSession,
-        credit_id: UUID,
-        *,
-        account: Account | None = None,
-    ) -> AccountCredit | None:
-        stmt = select(AccountCredit).where(
-            AccountCredit.id == credit_id,
-            AccountCredit.deleted_at.is_(None),
-        )
-        if account is not None:
-            stmt = stmt.where(AccountCredit.account_id == account.id)
-
-        result = await session.execute(stmt)
-        return result.scalars().one_or_none()
 
 
 account_credit_service = AccountCreditService(AccountCredit)

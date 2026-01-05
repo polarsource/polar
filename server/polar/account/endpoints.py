@@ -2,8 +2,8 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
+from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
-from polar.account_credit.service import account_credit_service
 from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, ResourceNotFound
@@ -143,5 +143,6 @@ async def get_credits(
     if account is None:
         raise ResourceNotFound()
 
-    credits = await account_credit_service.get_active(session, account)
+    credit_repository = AccountCreditRepository.from_session(session)
+    credits = await credit_repository.get_active(account.id)
     return [AccountCreditSchema.model_validate(credit) for credit in credits]

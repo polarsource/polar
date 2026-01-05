@@ -24,7 +24,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxProcessor
 from polar.event.service import event as event_service
 from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
@@ -561,7 +561,11 @@ class OrderService:
                 checkout.tax_processor_id, str(order.id)
             )
             await repository.update(
-                order, update_dict={"tax_transaction_processor_id": transaction.id}
+                order,
+                update_dict={
+                    "tax_processor": checkout.tax_processor,
+                    "tax_transaction_processor_id": transaction.id,
+                },
             )
 
         await self._on_order_created(session, order)
@@ -687,6 +691,7 @@ class OrderService:
                     taxability_reason=taxability_reason,
                     tax_id=tax_id,
                     tax_rate=tax_rate,
+                    tax_processor=TaxProcessor.stripe,
                     tax_calculation_processor_id=tax_calculation_processor_id,
                     invoice_number=invoice_number,
                     customer=customer,
@@ -883,7 +888,11 @@ class OrderService:
                 wallet_transaction.tax_calculation_processor_id, str(order.id)
             )
             await repository.update(
-                order, update_dict={"tax_transaction_processor_id": transaction.id}
+                order,
+                update_dict={
+                    "tax_processor": wallet_transaction.tax_processor,
+                    "tax_transaction_processor_id": transaction.id,
+                },
             )
 
         await self._on_order_created(session, order)

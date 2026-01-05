@@ -23,9 +23,10 @@ from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relatio
 
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxProcessor
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
@@ -126,6 +127,9 @@ class Checkout(
     seats: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    tax_processor: Mapped[TaxProcessor | None] = mapped_column(
+        StringEnum(TaxProcessor), default=TaxProcessor.stripe, nullable=True
+    )
     tax_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

@@ -6,7 +6,9 @@ from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
+from polar.enums import TaxProcessor
 from polar.kit.db.models import IDModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
@@ -27,6 +29,9 @@ class WalletTransaction(IDModel):
         Uuid, ForeignKey("wallets.id", ondelete="restrict"), index=True
     )
 
+    tax_processor: Mapped[TaxProcessor | None] = mapped_column(
+        StringEnum(TaxProcessor), default=TaxProcessor.stripe, nullable=True
+    )
     tax_amount: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, default=None
     )

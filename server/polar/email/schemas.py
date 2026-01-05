@@ -6,7 +6,6 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Discriminator, TypeAdapter
 
 from polar.notifications.notification import (
-    MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
@@ -42,7 +41,6 @@ class EmailTemplate(StrEnum):
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
     notification_create_account = "notification_create_account"
-    notification_credits_granted = "notification_credits_granted"
 
 
 class SubscriptionEmail(SubscriptionBase): ...
@@ -324,13 +322,6 @@ class NotificationCreateAccountEmail(BaseModel):
     props: MaintainerCreateAccountNotificationPayload
 
 
-class NotificationCreditsGrantedEmail(BaseModel):
-    template: Literal[EmailTemplate.notification_credits_granted] = (
-        EmailTemplate.notification_credits_granted
-    )
-    props: MaintainerAccountCreditsGrantedNotificationPayload
-
-
 class OrganizationAccountUnlinkProps(EmailProps):
     organization_kept_name: str
     organizations_unlinked: list[str]
@@ -367,8 +358,7 @@ Email = Annotated[
     | WebhookEndpointDisabledEmail
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
-    | NotificationCreateAccountEmail
-    | NotificationCreditsGrantedEmail,
+    | NotificationCreateAccountEmail,
     Discriminator("template"),
 ]
 

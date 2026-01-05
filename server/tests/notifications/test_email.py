@@ -5,7 +5,6 @@ import pytest
 
 from polar.models.order import OrderBillingReasonInternal
 from polar.notifications.notification import (
-    MaintainerAccountCreditsGrantedNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
@@ -78,16 +77,6 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
 
 
 @pytest.mark.asyncio
-async def test_MaintainerAccountCreditsGrantedNotification() -> None:
-    n = MaintainerAccountCreditsGrantedNotificationPayload(
-        organization_name="Test Org",
-        amount=5000,
-    )
-
-    await check_diff(n.render())
-
-
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "payload",
     [
@@ -112,10 +101,6 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
             tier_price_amount=500,
             tier_organization_name="{{ 123456 * 9 }}",
             tier_price_recurring_interval="month",
-        ),
-        MaintainerAccountCreditsGrantedNotificationPayload(
-            organization_name="{{ 123456 * 9 }}",
-            amount=5000,
         ),
     ],
 )

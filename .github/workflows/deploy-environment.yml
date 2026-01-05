@@ -106,7 +106,7 @@ jobs:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 
       - name: Sentry Release
-        uses: getsentry/action-release@v3.4.0
+        uses: getsentry/action-release@v3.5.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

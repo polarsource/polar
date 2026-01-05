@@ -36,6 +36,12 @@ jobs:
           tflint_version: latest
           cache: true
 
+      - name: Cache TFLint plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-plugins-${{ hashFiles('terraform/.tflint.hcl') }}
+
       - name: Init TFLint
         working-directory: ./terraform
         run: tflint --init

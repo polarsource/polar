@@ -141,7 +141,7 @@ resource "aws_s3_bucket_cors_configuration" "public_files" {
 
   cors_rule {
     allowed_headers = ["*"]
-    allowed_methods = ["PUT", "HEAD"]
+    allowed_methods = ["GET", "PUT", "HEAD"]
     allowed_origins = var.allowed_origins
     expose_headers  = ["ETag"]
   }

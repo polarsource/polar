@@ -33,9 +33,7 @@ def upgrade() -> None:
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column(
-            "user_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True
-        ),
+        sa.Column("user_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
@@ -70,9 +68,7 @@ def upgrade() -> None:
         sa.Column("credit_balance", sa.Integer(), nullable=False, server_default="0"),
     )
     op.add_column("campaigns", sa.Column("fee_credit", sa.Integer(), nullable=True))
-    op.add_column(
-        "campaigns", sa.Column("fee_credit_title", sa.String(), nullable=True)
-    )
+    op.add_column("campaigns", sa.Column("fee_credit_title", sa.String(), nullable=True))
     op.add_column("campaigns", sa.Column("notes", sa.Text(), nullable=True))
     op.alter_column("campaigns", "code", existing_type=sa.VARCHAR(), nullable=True)
     # ### end Alembic commands ###

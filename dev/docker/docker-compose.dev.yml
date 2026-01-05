@@ -7,6 +7,10 @@
 # For multiple isolated instances, use: ./dev/docker-dev -i <instance_number>
 # Each instance uses different ports (offset by 100 * instance_number)
 
+# Load environment variables from server/.env
+x-common-env-file: &common-env-file
+  - ../../server/.env
+
 x-common-backend-env: &common-backend-env
   POLAR_ENV: development
   POLAR_LOG_LEVEL: DEBUG
@@ -44,13 +48,9 @@ x-common-backend-env: &common-backend-env
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
   # OAuth insecure transport for development
   AUTHLIB_INSECURE_TRANSPORT: "true"
-  # Optional integrations (set __UNSET__ for disabled features)
-  POLAR_GITHUB_CLIENT_ID: ${POLAR_GITHUB_CLIENT_ID:-__UNSET__}
-  POLAR_GITHUB_CLIENT_SECRET: ${POLAR_GITHUB_CLIENT_SECRET:-__UNSET__}
-  POLAR_STRIPE_SECRET_KEY: ${POLAR_STRIPE_SECRET_KEY:-__UNSET__}
-  POLAR_STRIPE_PUBLISHABLE_KEY: ${POLAR_STRIPE_PUBLISHABLE_KEY:-__UNSET__}
-  POLAR_STRIPE_WEBHOOK_SECRET: ${POLAR_STRIPE_WEBHOOK_SECRET:-__UNSET__}
-  POLAR_STRIPE_CONNECT_WEBHOOK_SECRET: ${POLAR_STRIPE_CONNECT_WEBHOOK_SECRET:-__UNSET__}
+  # Note: Secrets like POLAR_GITHUB_CLIENT_ID, POLAR_STRIPE_* are loaded from
+  # env_file (server/.env) and NOT set here. Setting them here with ${VAR:-default}
+  # would read from the HOST shell, not from env_file.
   # Prometheus (optional)
   POLAR_PROMETHEUS_REMOTE_WRITE_URL: ${POLAR_PROMETHEUS_REMOTE_WRITE_URL:-}
 
@@ -155,6 +155,7 @@ services:
     build:
       context: ../..
       dockerfile: dev/docker/Dockerfile.api.dev
+    env_file: *common-env-file
     environment:
       <<: *common-backend-env
     volumes: *api-volumes
@@ -173,6 +174,7 @@ services:
     build:
       context: ../..
       dockerfile: dev/docker/Dockerfile.api.dev
+    env_file: *common-env-file
     environment:
       <<: *common-backend-env
     volumes: *worker-volumes
@@ -191,6 +193,7 @@ services:
     build:
       context: ../..
       dockerfile: dev/docker/Dockerfile.web.dev
+    env_file: *common-env-file
     environment:
       # Node memory limit to prevent OOM
       NODE_OPTIONS: "--max-old-space-size=3072"
@@ -198,8 +201,8 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
       NEXT_PUBLIC_BACKOFFICE_URL: http://localhost:${API_PORT:-8000}/backoffice
-      NEXT_PUBLIC_STRIPE_KEY: ${POLAR_STRIPE_PUBLISHABLE_KEY:-__UNSET__}
-      NEXT_PUBLIC_GITHUB_APP_NAMESPACE: ${POLAR_GITHUB_APP_NAMESPACE:-__UNSET__}
+      # Note: NEXT_PUBLIC_STRIPE_KEY and NEXT_PUBLIC_GITHUB_APP_NAMESPACE
+      # must be set in server/.env (they're loaded via env_file)
       # POLAR_API_URL is for server-side requests (container-to-container)
       POLAR_API_URL: http://api:8000
       S3_PUBLIC_IMAGES_BUCKET_PROTOCOL: http

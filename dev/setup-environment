@@ -16,6 +16,7 @@ import os
 import pathlib
 import queue
 import random
+import shutil
 import string
 import typing
 import urllib.parse
@@ -29,6 +30,12 @@ from yaspin.spinners import Spinners
 
 ROOT_PATH = pathlib.Path(__file__).parent.parent
 IS_CODESPACES = os.getenv("CODESPACES", "false") == "true"
+SECRETS_FILE_PATH = pathlib.Path(
+    os.environ.get(
+        "POLAR_SECRETS_FILE",
+        pathlib.Path.home() / ".config" / "polar" / "secrets.env",
+    )
+)
 SETUP_PAGE = """
 <form id="setup-form" action="https://github.com/settings/apps/new" method="post">
  Register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
@@ -206,6 +213,59 @@ def _register_github_app(code: str) -> dict[str, typing.Any]:
     return response.json()
 
 
+def _load_central_secrets() -> dict[str, str]:
+    """Load secrets from central file if it exists."""
+    if SECRETS_FILE_PATH.exists():
+        return {k: v for k, v in dotenv_values(SECRETS_FILE_PATH).items() if v}
+    return {}
+
+
+def _ensure_secrets_file() -> bool:
+    """Create secrets file from template if it doesn't exist. Returns True if created."""
+    if SECRETS_FILE_PATH.exists():
+        return False
+
+    SECRETS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    template_path = ROOT_PATH / "dev" / "secrets.env.template"
+    if template_path.exists():
+        shutil.copy(template_path, SECRETS_FILE_PATH)
+    else:
+        with open(SECRETS_FILE_PATH, "w") as f:
+            f.write("# Polar Development Secrets\n")
+            f.write("# See dev/secrets.env.template for all options\n")
+    return True
+
+
+def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
+    """Save GitHub App credentials to central secrets file."""
+    _ensure_secrets_file()
+    secrets = _load_central_secrets()
+    secrets.update(
+        {
+            "POLAR_GITHUB_APP_NAMESPACE": github_app["slug"],
+            "POLAR_GITHUB_CLIENT_ID": github_app["client_id"],
+            "POLAR_GITHUB_CLIENT_SECRET": github_app["client_secret"],
+            "POLAR_GITHUB_APP_WEBHOOK_SECRET": github_app["webhook_secret"],
+            "POLAR_GITHUB_APP_IDENTIFIER": str(github_app["id"]),
+            "POLAR_GITHUB_APP_PRIVATE_KEY": github_app["pem"],
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE": github_app["slug"],
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER": str(github_app["id"]),
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY": github_app["pem"],
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_ID": github_app["client_id"],
+            "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET": github_app[
+                "client_secret"
+            ],
+        }
+    )
+
+    with open(SECRETS_FILE_PATH, "w") as f:
+        f.write("# Polar Development Secrets\n")
+        f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
+        for key, value in secrets.items():
+            delimiter = "'" if '"' in str(value) else '"'
+            f.write(f"{key}={delimiter}{value}{delimiter}\n")
+
+
 def _write_env_file(
     template_file_path: pathlib.Path,
     env_file_path: pathlib.Path,
@@ -223,6 +283,21 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
     template_file_path = ROOT_PATH / "server" / ".env.template"
     env_file_path = ROOT_PATH / "server" / ".env"
     replacements: dict[str, str] = {}
+
+    # Load central secrets first (can be overridden by explicit values below)
+    central_secrets = _load_central_secrets()
+    replacements = {**replacements, **central_secrets}
+
+    # Map backend secrets to frontend env vars (used by Docker web container)
+    if "POLAR_STRIPE_PUBLISHABLE_KEY" in replacements:
+        replacements["NEXT_PUBLIC_STRIPE_KEY"] = replacements[
+            "POLAR_STRIPE_PUBLISHABLE_KEY"
+        ]
+    if "POLAR_GITHUB_APP_NAMESPACE" in replacements:
+        replacements["NEXT_PUBLIC_GITHUB_APP_NAMESPACE"] = replacements[
+            "POLAR_GITHUB_APP_NAMESPACE"
+        ]
+
     if IS_CODESPACES:
         replacements = {
             **replacements,
@@ -253,6 +328,8 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
             "POLAR_GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET": github_app[
                 "client_secret"
             ],
+            # Also set frontend env vars
+            "NEXT_PUBLIC_GITHUB_APP_NAMESPACE": github_app["slug"],
         }
     _write_env_file(template_file_path, env_file_path, replacements)
 
@@ -347,6 +424,16 @@ if __name__ == "__main__":
         text="Setting up environment files...",
         spinner=Spinners.dots,
     ) as spinner:
+        # Ensure central secrets file exists
+        if _ensure_secrets_file():
+            spinner.write(f"📝 Created {SECRETS_FILE_PATH}")
+            spinner.write("   Edit this file with your credentials (Stripe, etc.)")
+
+        # Load existing secrets info
+        central_secrets = _load_central_secrets()
+        if central_secrets:
+            spinner.write(f"📂 Loading secrets from {SECRETS_FILE_PATH}")
+
         github_app = None
         if options.setup_github_app:
             manifest = _get_github_app_manifest(
@@ -359,6 +446,10 @@ if __name__ == "__main__":
             code = _get_github_app_code(options.github_setup_port, manifest)
             spinner.text = "Registering the GitHub App..."
             github_app = _register_github_app(code)
+            # Save GitHub App credentials to central secrets for future worktrees
+            _save_github_app_to_secrets(github_app)
+            spinner.write(f"✅ GitHub App credentials saved to {SECRETS_FILE_PATH}")
+
         spinner.text = "Writing environment files..."
         _write_server_env_file(github_app)
         _write_apps_web_env_file(github_app)

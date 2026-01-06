@@ -97,7 +97,7 @@ const AuthorizePage = ({
               {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
                 <ListItem
                   key={key}
-                  className="flex flex-col items-start gap-y-1 py-3 text-sm"
+                  className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
                   size="small"
                 >
                   <h3 className="font-medium capitalize">
@@ -119,7 +119,7 @@ const AuthorizePage = ({
           </div>
           <div className="grid w-full grid-cols-2 gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               className="grow"
               type="submit"
               name="action"

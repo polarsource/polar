@@ -1,7 +1,7 @@
 """Add discount_applied_at to subscriptions
 
 Revision ID: 9d5e6f7a8b9c
-Revises: 8c4a2b3d5e6f
+Revises: 3d212567b9a6
 Create Date: 2025-12-29 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9d5e6f7a8b9c"
-down_revision = "8c4a2b3d5e6f"
+down_revision = "3d212567b9a6"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

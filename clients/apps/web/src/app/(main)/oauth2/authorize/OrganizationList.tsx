@@ -7,15 +7,26 @@ import { useState } from 'react'
 
 const OrganizationList = ({
   organizations,
-  buildOrganizationSelectionURL,
+  searchParams,
 }: {
   organizations: schemas['AuthorizeOrganization'][]
-  buildOrganizationSelectionURL: (
-    organization: schemas['AuthorizeOrganization'],
-  ) => string
+  searchParams: Record<string, string>
 }) => {
   const router = useRouter()
   const [loadingOrgId, setLoadingOrgId] = useState<string | null>(null)
+
+  const buildOrganizationSelectionURL = (
+    organization: schemas['AuthorizeOrganization'],
+  ) => {
+    const updatedSearchParams = {
+      ...searchParams,
+      sub: organization.id,
+    }
+    const serializedSearchParams = new URLSearchParams(
+      updatedSearchParams,
+    ).toString()
+    return `?${serializedSearchParams}`
+  }
 
   const handleOrgClick = (organization: schemas['AuthorizeOrganization']) => {
     setLoadingOrgId(organization.id)

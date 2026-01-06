@@ -15,19 +15,6 @@ const OrganizationSelectionPage = ({
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
   const actionURL = `${getServerURL()}/v1/oauth2/consent?${serializedSearchParams}`
 
-  const buildOrganizationSelectionURL = (
-    organization: schemas['AuthorizeOrganization'],
-  ) => {
-    const updatedSearchParams = {
-      ...searchParams,
-      sub: organization.id,
-    }
-    const serializedSearchParams = new URLSearchParams(
-      updatedSearchParams,
-    ).toString()
-    return `?${serializedSearchParams}`
-  }
-
   const clientName = client.client_name || client.client_id
   const hasTerms = client.policy_uri || client.tos_uri
 
@@ -52,7 +39,7 @@ const OrganizationSelectionPage = ({
           </div>
           <OrganizationList
             organizations={organizations}
-            buildOrganizationSelectionURL={buildOrganizationSelectionURL}
+            searchParams={searchParams}
           />
           <div className="grid w-full">
             <Button

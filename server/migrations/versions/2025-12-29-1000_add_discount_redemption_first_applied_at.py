@@ -29,22 +29,23 @@ def upgrade() -> None:
     )
 
     # Backfill discount_applied_at for subscriptions that have a discount
-    # and have already had it applied to a billing entry
+    # and have already had it applied to an order
     op.execute("""
         UPDATE subscriptions s
-        SET discount_applied_at = be.created_at
+        SET discount_applied_at = o.created_at
         FROM (
-            SELECT DISTINCT ON (be.subscription_id, be.discount_id)
-                be.subscription_id,
-                be.discount_id,
-                be.created_at
-            FROM billing_entries be
-            WHERE be.discount_id IS NOT NULL
-              AND be.deleted_at IS NULL
-            ORDER BY be.subscription_id, be.discount_id, be.created_at ASC
-        ) be
-        WHERE s.id = be.subscription_id
-          AND s.discount_id = be.discount_id
+            SELECT DISTINCT ON (o.subscription_id, o.discount_id)
+                o.subscription_id,
+                o.discount_id,
+                o.created_at
+            FROM orders o
+            WHERE o.subscription_id IS NOT NULL
+              AND o.discount_id IS NOT NULL
+              AND o.deleted_at IS NULL
+            ORDER BY o.subscription_id, o.discount_id, o.created_at ASC
+        ) o
+        WHERE s.id = o.subscription_id
+          AND s.discount_id = o.discount_id
     """)
 
 

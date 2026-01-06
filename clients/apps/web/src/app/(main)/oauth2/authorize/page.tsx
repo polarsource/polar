@@ -1,5 +1,4 @@
 import { getServerURL } from '@/utils/api'
-import { schemas } from '@polar-sh/client'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AuthorizeErrorPage from './AuthorizeErrorPage'
@@ -22,14 +21,6 @@ const getAuthorizeResponse = async (
       Cookie: cookieStore.toString(),
     },
   })
-}
-
-const getScopeDisplayNames = async (): Promise<
-  Record<schemas['Scope'], string>
-> => {
-  const response = await fetch(`${getServerURL()}/openapi.json`)
-  const openAPISchema = await response.json()
-  return openAPISchema.components.schemas.Scope.enumNames
 }
 
 export default async function Page(props: {
@@ -82,11 +73,9 @@ export default async function Page(props: {
         />
       )
     } else {
-      const scopeDisplayNames = await getScopeDisplayNames()
       return (
         <AuthorizePage
           authorizeResponse={data}
-          scopeDisplayNames={scopeDisplayNames}
           searchParams={searchParams}
         />
       )

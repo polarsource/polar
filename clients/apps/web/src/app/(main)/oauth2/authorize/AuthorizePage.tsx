@@ -28,14 +28,12 @@ const groupScopes = (scopes: schemas['Scope'][]) => {
 }
 
 const AuthorizePage = ({
-  authorizeResponse: { client, scopes, sub_type, sub },
-  scopeDisplayNames,
+  authorizeResponse: { client, scopes, sub_type, sub, scope_display_names },
   searchParams,
 }: {
   authorizeResponse:
     | schemas['AuthorizeResponseUser']
     | schemas['AuthorizeResponseOrganization']
-  scopeDisplayNames: Record<schemas['Scope'], string>
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
@@ -111,7 +109,7 @@ const AuthorizePage = ({
                         key={scope}
                         className="dark:text-polar-500 text-sm text-gray-500"
                       >
-                        {scopeDisplayNames[scope]}
+                        {scope_display_names[scope]}
                       </li>
                     ))}
                   </ul>

@@ -2,9 +2,8 @@ import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import Link from 'next/link'
+import OrganizationList from './OrganizationList'
 
 const OrganizationSelectionPage = ({
   authorizeResponse: { client, organizations },
@@ -51,23 +50,10 @@ const OrganizationSelectionPage = ({
             <span className="font-medium">{clientName}</span> wants to access
             one of your Polar organizations. Select one:
           </div>
-          <div className="flex w-full flex-col gap-2">
-            {organizations.map((organization) => (
-              <Link
-                key={organization.id}
-                href={buildOrganizationSelectionURL(organization)}
-              >
-                <div className="dark:bg-polar-700 dark:hover:bg-polar-600 flex w-full flex-row items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-3 text-sm transition-colors hover:border-gray-300 dark:border-white/5 dark:hover:border-white/5">
-                  <Avatar
-                    className="h-8 w-8"
-                    avatar_url={organization.avatar_url}
-                    name={organization.slug}
-                  />
-                  {organization.slug}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <OrganizationList
+            organizations={organizations}
+            buildOrganizationSelectionURL={buildOrganizationSelectionURL}
+          />
           <div className="grid w-full">
             <Button
               variant="secondary"

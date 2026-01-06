@@ -35,6 +35,7 @@ from polar.product.guard import (
     is_free_price,
     is_metered_price,
 )
+from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
@@ -128,7 +129,13 @@ class Checkout(
 
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
-        StringEnum(TaxProcessor), default=TaxProcessor.stripe, nullable=True
+        StringEnum(TaxProcessor), default=None, nullable=True
+    )
+    tax_rate: Mapped[TaxRate | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
+    taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
+        String, nullable=True, default=None
     )
     tax_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

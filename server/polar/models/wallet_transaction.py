@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
@@ -10,6 +11,7 @@ from polar.enums import TaxProcessor
 from polar.kit.db.models import IDModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
+from polar.tax.calculation import TaxabilityReason, TaxRate
 
 if TYPE_CHECKING:
     from .order import Order
@@ -30,10 +32,16 @@ class WalletTransaction(IDModel):
     )
 
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
-        StringEnum(TaxProcessor), default=TaxProcessor.stripe, nullable=True
+        StringEnum(TaxProcessor), default=None, nullable=True
     )
     tax_amount: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, default=None
+    )
+    tax_rate: Mapped[TaxRate | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
+    taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
+        String, nullable=True, default=None
     )
     tax_calculation_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None

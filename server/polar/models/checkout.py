@@ -228,9 +228,7 @@ class Checkout(
     customer_tax_id: Mapped[TaxID | None] = mapped_column(
         TaxIDType, nullable=True, default=None
     )
-    customer_locale: Mapped[str | None] = mapped_column(
-        String(10), nullable=True, default=None
-    )
+    locale: Mapped[str | None] = mapped_column(String(10), nullable=True, default=None)
     customer_metadata: Mapped[MetadataColumn]
 
     # Only set when a checkout is attached to an existing subscription (free-to-paid upgrades).

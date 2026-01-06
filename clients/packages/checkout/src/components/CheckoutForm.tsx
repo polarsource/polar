@@ -280,6 +280,15 @@ const BaseCheckoutForm = ({
     }
   }, [checkout, resetField])
 
+  // Sync locale to checkout if it differs from the resolved locale (e.g., from querystring)
+  useEffect(() => {
+    if (locale && locale !== checkout.locale) {
+      update({ locale }).catch(() => {})
+    }
+    // Only run on mount - we don't want to re-sync if checkout updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const formattedDiscountDuration = useMemo(() => {
     if (!checkout.discount) {
       return ''

@@ -240,6 +240,7 @@ class CheckoutCreateBase(
     success_url: SuccessURL = None
     return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
+    locale: Locale = None
 
 
 class CheckoutPriceCreate(CheckoutCreateBase):
@@ -328,15 +329,12 @@ class CheckoutCreatePublic(Schema):
     )
 
 
-CustomerLocale = Annotated[
+Locale = Annotated[
     str | None,
     Field(
         default=None,
         max_length=10,
-        description=(
-            "Locale of the customer, used for translations. "
-            "E.g. 'en', 'nl', 'sv'."
-        ),
+        description="Locale for translations. E.g. 'en', 'nl', 'sv'.",
     ),
 ]
 
@@ -373,7 +371,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_locale: CustomerLocale = None
+    locale: Locale = None
 
 
 class CheckoutUpdate(
@@ -572,6 +570,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     customer_billing_address: CustomerBillingAddress | None
     customer_tax_id: str | None = Field(
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
+    )
+    locale: str | None = Field(
+        default=None, description="Locale for translations."
     )
 
     payment_processor_metadata: dict[str, str]

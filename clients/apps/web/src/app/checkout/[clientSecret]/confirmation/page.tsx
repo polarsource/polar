@@ -18,6 +18,7 @@ export default async function Page(props: {
   }>
 }) {
   const searchParams = await props.searchParams
+  const params = await props.params
 
   const {
     embed,
@@ -25,11 +26,6 @@ export default async function Page(props: {
     customer_session_token,
     locale: searchParamLocale,
   } = searchParams
-
-  const locale = await resolveCheckoutLocale(searchParamLocale)
-
-  const params = await props.params
-
   const { clientSecret } = params
 
   const client = new PolarCore({ serverURL: getServerURL() })
@@ -69,6 +65,8 @@ export default async function Page(props: {
   if (checkout.status === 'open') {
     redirect(checkout.url)
   }
+
+  const locale = await resolveCheckoutLocale(searchParamLocale, checkout.locale)
 
   return (
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>

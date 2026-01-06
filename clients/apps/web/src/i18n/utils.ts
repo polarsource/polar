@@ -33,11 +33,19 @@ function getLocaleFromAcceptLanguage(
 
 export async function resolveCheckoutLocale(
   searchParamLocale?: string,
+  checkoutLocale?: string | null,
 ): Promise<SupportedLocale> {
+  // 1. Query param takes priority
   if (searchParamLocale && isSupportedLocale(searchParamLocale)) {
     return searchParamLocale
   }
 
+  // 2. Checkout's locale (forced or inherited from customer)
+  if (checkoutLocale && isSupportedLocale(checkoutLocale)) {
+    return checkoutLocale
+  }
+
+  // 3. Accept-Language header
   const headersList = await headers()
   const acceptLanguage = headersList.get('accept-language')
 

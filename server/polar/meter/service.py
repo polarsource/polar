@@ -346,7 +346,7 @@ class MeterService:
         # Note: avg and unique require special handling that's not implemented here -
         # avg would need weighted averages, unique would need to avoid double counting.
         if meter.aggregation.is_summable():
-            total_agg_func = func.sum
+            total_agg_func = AggregationFunction.sum.get_sql_function
         else:
             total_agg_func = meter.aggregation.func.get_sql_function
 

@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from typing import Literal
 from unittest.mock import AsyncMock
 
 import pytest
@@ -431,9 +432,7 @@ class TestGetQuantities:
             # For min: total should be min across all days with data (NULLs from empty days are ignored)
             # Day 1: min(10, 20) = 10, Day 2: NULL (no events), Day 3: min(15, 5) = 5
             # Total: min(10, NULL, 5) = 5 (SQL MIN ignores NULLs)
-            pytest.param(
-                AggregationFunction.min, [10, 0, 5], 5, id="min aggregation"
-            ),
+            pytest.param(AggregationFunction.min, [10, 0, 5], 5, id="min aggregation"),
             # For sum: total should be sum across all days (this is summable, so sum is correct)
             pytest.param(
                 AggregationFunction.sum, [30, 0, 20], 50, id="sum aggregation"
@@ -442,7 +441,12 @@ class TestGetQuantities:
     )
     async def test_interval_non_summable_aggregation(
         self,
-        aggregation_func: AggregationFunction,
+        aggregation_func: Literal[
+            AggregationFunction.sum,
+            AggregationFunction.max,
+            AggregationFunction.min,
+            AggregationFunction.avg,
+        ],
         expected_daily_quantities: list[int],
         expected_total: int,
         save_fixture: SaveFixture,

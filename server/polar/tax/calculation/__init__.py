@@ -1,11 +1,24 @@
+from polar.enums import TaxProcessor
+
 from .base import (
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationError,
     TaxCode,
     TaxRate,
+    TaxServiceProtocol,
 )
-from .numeral import calculate_tax
+from .numeral import numeral_tax_service
+from .stripe import stripe_tax_service
+
+
+def get_tax_service(processor: TaxProcessor) -> TaxServiceProtocol:
+    match processor:
+        case TaxProcessor.stripe:
+            return stripe_tax_service
+        case TaxProcessor.numeral:
+            return numeral_tax_service
+
 
 __all__ = [
     "TaxCalculation",
@@ -13,5 +26,5 @@ __all__ = [
     "TaxCode",
     "TaxRate",
     "TaxabilityReason",
-    "calculate_tax",
+    "get_tax_service",
 ]

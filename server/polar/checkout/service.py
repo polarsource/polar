@@ -92,7 +92,7 @@ from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.tax.calculation import TaxCalculationError, TaxCode, calculate_tax
+from polar.tax.calculation import TaxCalculationError, TaxCode, get_tax_service
 from polar.tax.tax_id import InvalidTaxID, TaxID, to_stripe_tax_id, validate_tax_id
 from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
@@ -444,6 +444,7 @@ class CheckoutService:
             subscription=subscription,
             customer=customer,
             custom_field_data=custom_field_data,
+            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
@@ -639,6 +640,7 @@ class CheckoutService:
             customer=None,
             subscription=None,
             customer_email=checkout_create.customer_email,
+            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
         )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
@@ -787,6 +789,7 @@ class CheckoutService:
             payment_processor=checkout_link.payment_processor,
             success_url=checkout_link.success_url,
             user_metadata=checkout_link.user_metadata,
+            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
         )
 
         # Handle query parameter prefill
@@ -1881,8 +1884,10 @@ class CheckoutService:
             return checkout
 
         if checkout.customer_billing_address is not None:
+            assert checkout.tax_processor is not None
+            tax_service = get_tax_service(checkout.tax_processor)
             try:
-                tax_calculation = await calculate_tax(
+                tax_calculation = await tax_service.calculate(
                     checkout.id,
                     checkout.currency,
                     checkout.net_amount,
@@ -1897,9 +1902,13 @@ class CheckoutService:
                 )
                 checkout.tax_amount = tax_calculation["amount"]
                 checkout.tax_processor_id = tax_calculation["processor_id"]
+                checkout.taxability_reason = tax_calculation["taxability_reason"]
+                checkout.tax_rate = tax_calculation["tax_rate"]
             except TaxCalculationError:
                 checkout.tax_amount = None
                 checkout.tax_processor_id = None
+                checkout.taxability_reason = None
+                checkout.tax_rate = None
                 raise
             finally:
                 session.add(checkout)

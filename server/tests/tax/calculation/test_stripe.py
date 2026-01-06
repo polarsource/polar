@@ -6,7 +6,7 @@ import stripe as stripe_lib
 
 from polar.kit.address import Address, CountryAlpha2
 from polar.tax.calculation import TaxCode
-from polar.tax.calculation.stripe import calculate_tax as stripe_calculate_tax
+from polar.tax.calculation.stripe import stripe_tax_service
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ class TestStripeCalculateTax:
                 "polar.tax.calculation.stripe.settings.is_sandbox", return_value=True
             ),
         ):
-            result = await stripe_calculate_tax(
+            result = await stripe_tax_service.calculate(
                 identifier=uuid.uuid4(),
                 currency="usd",
                 amount=1000,
@@ -74,7 +74,7 @@ class TestStripeCalculateTax:
             ),
         ):
             with pytest.raises(stripe_lib.RateLimitError):
-                await stripe_calculate_tax(
+                await stripe_tax_service.calculate(
                     identifier=uuid.uuid4(),
                     currency="usd",
                     amount=1000,

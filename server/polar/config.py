@@ -9,6 +9,7 @@ from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from polar.enums import TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.jwk import JWKSFile
 
@@ -387,6 +388,8 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Third retry after 14 days (2 + 5 + 7)
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
+
+    DEFAULT_TAX_PROCESSOR: TaxProcessor = TaxProcessor.stripe
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

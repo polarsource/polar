@@ -11,7 +11,12 @@ from typing import Any, Literal, Unpack
 import pytest_asyncio
 from typing_extensions import TypeIs
 
-from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    AccountType,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+    TaxProcessor,
+)
 from polar.kit.address import Address
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -105,6 +110,7 @@ from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
 
@@ -1398,6 +1404,7 @@ async def create_checkout(
         seats=seats,
         require_billing_address=require_billing_address,
         customer_billing_address=customer_billing_address,
+        tax_processor=TaxProcessor.stripe,
     )
     await save_fixture(checkout)
     return checkout
@@ -2105,6 +2112,8 @@ async def create_wallet_transaction(
     wallet: Wallet,
     amount: int,
     tax_amount: int = 0,
+    taxability_reason: TaxabilityReason | None = None,
+    tax_rate: TaxRate | None = None,
     tax_calculation_processor_id: str | None = None,
 ) -> WalletTransaction:
     wallet_transaction = WalletTransaction(
@@ -2112,7 +2121,10 @@ async def create_wallet_transaction(
         amount=amount,
         currency=wallet.currency,
         tax_amount=tax_amount,
+        tax_processor=TaxProcessor.stripe,
         tax_calculation_processor_id=tax_calculation_processor_id,
+        taxability_reason=taxability_reason,
+        tax_rate=tax_rate,
     )
     await save_fixture(wallet_transaction)
     return wallet_transaction

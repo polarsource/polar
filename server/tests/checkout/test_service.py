@@ -76,7 +76,7 @@ from polar.postgres import AsyncSession
 from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
-from polar.tax.calculation import TaxabilityReason, calculate_tax
+from polar.tax.calculation import TaxabilityReason
 from polar.tax.calculation.base import TaxCalculationError
 from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
@@ -123,10 +123,16 @@ def order_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
-    mock = AsyncMock(spec=calculate_tax)
-    mocker.patch("polar.checkout.service.calculate_tax", new=mock)
-    mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
-    return mock
+    mock = mocker.patch("polar.checkout.service.get_tax_service")
+    mock.return_value.calculate = AsyncMock(
+        return_value={
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": {},
+        }
+    )
+    return mock.return_value.calculate
 
 
 @pytest.fixture
@@ -923,6 +929,8 @@ class TestCreate:
 
         assert checkout.tax_amount == 100
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
+        assert checkout.taxability_reason == TaxabilityReason.standard_rated
+        assert checkout.tax_rate == {}  # type: ignore
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -2866,6 +2874,8 @@ class TestUpdate:
 
         assert checkout.tax_amount is None
         assert checkout.tax_processor_id is None
+        assert checkout.taxability_reason is None
+        assert checkout.tax_rate is None
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
@@ -2894,6 +2904,8 @@ class TestUpdate:
 
         assert checkout.tax_amount == 100
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
+        assert checkout.taxability_reason == TaxabilityReason.standard_rated
+        assert checkout.tax_rate == {}  # type: ignore
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 

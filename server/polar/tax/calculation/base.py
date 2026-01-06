@@ -1,7 +1,11 @@
+import uuid
 from enum import StrEnum
-from typing import Literal, TypedDict
+from typing import Literal, Protocol, TypedDict, overload
 
 from polar.exceptions import PolarError
+from polar.kit.address import Address
+
+from ..tax_id import TaxID
 
 
 class TaxCalculationError(PolarError):
@@ -62,6 +66,17 @@ class TaxabilityReason(StrEnum):
 
         return cls(stripe_reason)
 
+    @classmethod
+    def from_numeral(cls, note: str, customer_exempt: bool) -> "TaxabilityReason":
+        if customer_exempt:
+            return TaxabilityReason.customer_exempt
+        elif "reverse charge" in note:
+            return TaxabilityReason.reverse_charge
+        elif "no_collection" in note:
+            return TaxabilityReason.not_collecting
+
+        return TaxabilityReason.standard_rated
+
 
 class TaxRate(TypedDict):
     rate_type: Literal["percentage"] | Literal["fixed"]
@@ -78,3 +93,34 @@ class TaxCalculation(TypedDict):
     amount: int
     taxability_reason: TaxabilityReason | None
     tax_rate: TaxRate | None
+
+
+class TaxServiceProtocol(Protocol):
+    async def calculate(
+        self,
+        identifier: uuid.UUID | str,
+        currency: str,
+        amount: int,
+        tax_code: TaxCode,
+        address: Address,
+        tax_ids: list[TaxID],
+        customer_exempt: bool,
+    ) -> TaxCalculation: ...
+
+    async def record(self, calculation_id: str, reference: str) -> str: ...
+
+    @overload
+    async def revert(
+        self, transaction_id: str, reference: str, total_amount: int, tax_amount: int
+    ) -> str: ...
+
+    @overload
+    async def revert(self, transaction_id: str, reference: str) -> str: ...
+
+    async def revert(
+        self,
+        transaction_id: str,
+        reference: str,
+        total_amount: int | None = None,
+        tax_amount: int | None = None,
+    ) -> str: ...

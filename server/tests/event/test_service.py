@@ -1407,15 +1407,8 @@ class TestIngested:
 
 @pytest.mark.asyncio
 class TestSystemEvents:
-    @pytest.fixture
-    def stripe_service_mock(self, mocker: Any) -> Any:
-        mock = mocker.patch("polar.order.service.stripe_service")
-        mock.create_tax_transaction.return_value = None
-        return mock
-
     async def test_order_paid_one_time(
         self,
-        stripe_service_mock: Any,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product_one_time: Product,
@@ -1461,7 +1454,6 @@ class TestSystemEvents:
 
     async def test_order_paid_subscription(
         self,
-        stripe_service_mock: Any,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
@@ -1501,7 +1493,6 @@ class TestSystemEvents:
 
     async def test_order_paid_with_discount(
         self,
-        stripe_service_mock: Any,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,

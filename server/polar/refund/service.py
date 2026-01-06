@@ -35,6 +35,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
+from polar.tax.calculation import get_tax_service
 from polar.transaction.service.refund import (
     RefundTransactionAlreadyExistsError,
     RefundTransactionDoesNotExistError,
@@ -445,24 +446,21 @@ class RefundService:
                 and order.tax_transaction_processor_id
                 and order.tax_amount > 0
             ):
+                assert order.tax_processor is not None
+                tax_service = get_tax_service(order.tax_processor)
                 if refund.total_amount >= order.total_amount:
-                    tax_transaction_processor = (
-                        await stripe_service.revert_tax_transaction(
-                            order.tax_transaction_processor_id,
-                            mode="full",
-                            reference=str(refund.id),
-                        )
+                    transaction_id = await tax_service.revert(
+                        order.tax_transaction_processor_id,
+                        reference=str(refund.id),
                     )
                 else:
-                    tax_transaction_processor = (
-                        await stripe_service.revert_tax_transaction(
-                            order.tax_transaction_processor_id,
-                            mode="partial",
-                            reference=str(refund.id),
-                            amount=-refund.total_amount,
-                        )
+                    transaction_id = await tax_service.revert(
+                        order.tax_transaction_processor_id,
+                        reference=str(refund.id),
+                        total_amount=refund.total_amount,
+                        tax_amount=refund.tax_amount,
                     )
-                refund.tax_transaction_processor_id = tax_transaction_processor.id
+                refund.tax_transaction_processor_id = transaction_id
                 session.add(refund)
 
         return transaction

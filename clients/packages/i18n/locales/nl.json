@@ -76,5 +76,68 @@
     "tryAgain": "Probeer het opnieuw of neem contact op met support.",
     "confirmPayment": "Bevestig betaling",
     "grantingBenefits": "Voordelen worden toegekend..."
+  },
+  "email": {
+    "common": {
+      "accessPurchase": "Naar mijn aankoop",
+      "manageSubscription": "Beheer mijn abonnement",
+      "viewSubscription": "Bekijk mijn abonnement",
+      "completePayment": "Betaling voltooien",
+      "troubleWithButton": "Als de knop hierboven niet werkt, kopieer en plak dan de onderstaande URL in uw webbrowser."
+    },
+    "orderConfirmation": {
+      "subject": "Bedankt voor uw bestelling!",
+      "preview": "Bedankt voor uw bestelling van {description}!",
+      "heading": "Bedankt voor uw bestelling!",
+      "processed": "Uw bestelling van {description} is nu verwerkt."
+    },
+    "subscriptionConfirmation": {
+      "subject": "Uw abonnement op {product} is nu actief",
+      "preview": "Bedankt voor uw abonnement op {product}!",
+      "heading": "Bedankt voor uw abonnement!",
+      "active": "Uw abonnement op {product} is nu actief."
+    },
+    "subscriptionCycled": {
+      "subject": "Uw abonnement op {product} is verlengd",
+      "preview": "Uw abonnement op {product} is verlengd",
+      "heading": "Uw abonnement is verlengd",
+      "renewed": "Uw abonnement op {product} is verlengd."
+    },
+    "subscriptionCancellation": {
+      "subject": "Uw abonnement op {product} is opgezegd",
+      "preview": "Uw abonnement op {product} is opgezegd",
+      "heading": "Uw abonnement is opgezegd",
+      "sorryToSeeYouGo": "Jammer dat u vertrekt! Uw abonnement op {product} blijft actief tot {endDate}, daarna wordt het beëindigd.",
+      "changeYourMind": "Als u van gedachten verandert, kunt u uw abonnement op elk moment vóór de einddatum verlengen.",
+      "benefitsContinue": "In de tussentijd behoudt u toegang tot de volgende voordelen:"
+    },
+    "subscriptionPastDue": {
+      "subject": "Uw betaling voor {product} is achterstallig",
+      "preview": "Uw betaling voor {product} is achterstallig",
+      "heading": "Uw abonnementsbetaling is achterstallig",
+      "paymentFailed": "We konden uw betaling voor uw {product} abonnement niet verwerken. Uw abonnement is nu achterstallig en de toegang tot voordelen is tijdelijk opgeschort.",
+      "updatePayment": "Om de toegang tot uw abonnementsvoordelen te herstellen, werk uw betaalmethode bij en voltooi de betaling."
+    },
+    "subscriptionRevoked": {
+      "subject": "Uw abonnement op {product} is nu beëindigd",
+      "preview": "Uw abonnement op {product} is nu beëindigd",
+      "heading": "Uw abonnement is nu beëindigd",
+      "thankYou": "Bedankt dat u abonnee was van {product}.",
+      "welcomeBack": "We hopen u in de toekomst weer te zien - u bent altijd welkom terug."
+    },
+    "subscriptionUncanceled": {
+      "subject": "Uw abonnement op {product} is niet langer opgezegd",
+      "preview": "Uw abonnement op {product} is niet langer opgezegd",
+      "heading": "Uw abonnement is niet langer opgezegd",
+      "noLongerCanceled": "Uw abonnement op {product} is niet langer opgezegd."
+    },
+    "subscriptionUpdated": {
+      "subject": "Uw abonnement is bijgewerkt naar {product}",
+      "preview": "Uw abonnement is bijgewerkt naar {product}",
+      "heading": "Uw abonnement is bijgewerkt",
+      "changedTo": "Uw abonnement is succesvol gewijzigd naar {product}.",
+      "immediateWithCharge": "De wijzigingen gaan direct in. Het pro-rata bedrag is als onderdeel van deze update in rekening gebracht.",
+      "immediateNextCycle": "De wijzigingen gaan direct in. Het pro-rata bedrag wordt verrekend in uw volgende factureringsperiode."
+    }
   }
 }

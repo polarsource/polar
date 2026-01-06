@@ -2302,6 +2302,7 @@ class SubscriptionService:
                 "template": template_name,
                 "props": {
                     "email": subscription.customer.email,
+                    "locale": customer.locale or "en",
                     "organization": organization,
                     "product": product,
                     "subscription": subscription,

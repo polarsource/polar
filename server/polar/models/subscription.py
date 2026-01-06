@@ -218,10 +218,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     """
     Timestamp when the discount was first applied to a billing cycle.
-
-    This is used to determine when repeating discounts should expire.
-    It remains null until the discount is actually used in a billing cycle,
-    at which point it's set to that cycle's start date.
     """
 
     @declared_attr

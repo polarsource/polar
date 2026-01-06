@@ -197,7 +197,7 @@ class NumeralTaxService(TaxServiceProtocol):
                         amount_currency=None,
                         display_name="",
                         country=address.country,
-                        state=address.state,
+                        state=address.get_unprefixed_state(),
                     ),
                 )
             error_field = error_response["error"]["error_meta"]["field"]
@@ -211,7 +211,7 @@ class NumeralTaxService(TaxServiceProtocol):
         tax_rate = from_numeral_tax_jurisdiction(
             tax_jurisdiction,
             country=address.country,
-            state=address.state,
+            state=address.get_unprefixed_state(),
             currency=currency,
         )
 

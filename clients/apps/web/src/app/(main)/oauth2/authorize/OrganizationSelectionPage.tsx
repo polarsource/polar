@@ -35,7 +35,6 @@ const OrganizationSelectionPage = ({
   return (
     <form method="post" action={actionURL}>
       <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
-        <div id="polar-bg-gradient"></div>
         <div className="flex w-80 flex-col items-center gap-6">
           <div className="flex flex-row items-center gap-2">
             <LogoType className="h-10" />

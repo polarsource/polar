@@ -76,5 +76,68 @@
     "tryAgain": "Please try again or contact support.",
     "confirmPayment": "Confirm payment",
     "grantingBenefits": "Granting benefits..."
+  },
+  "email": {
+    "common": {
+      "accessPurchase": "Access my purchase",
+      "manageSubscription": "Manage my subscription",
+      "viewSubscription": "View my subscription",
+      "completePayment": "Complete Payment",
+      "troubleWithButton": "If you're having trouble with the button above, copy and paste the URL below into your web browser."
+    },
+    "orderConfirmation": {
+      "subject": "Thank you for your order!",
+      "preview": "Thank you for your order of {description}!",
+      "heading": "Thank you for your order!",
+      "processed": "Your order of {description} is now processed."
+    },
+    "subscriptionConfirmation": {
+      "subject": "Your subscription to {product} is now active",
+      "preview": "Thank you for your subscription to {product}!",
+      "heading": "Thank you for your subscription!",
+      "active": "Your subscription to {product} is now active."
+    },
+    "subscriptionCycled": {
+      "subject": "Your subscription to {product} has been renewed",
+      "preview": "Your subscription to {product} has been renewed",
+      "heading": "Your subscription has been renewed",
+      "renewed": "Your subscription to {product} has been renewed."
+    },
+    "subscriptionCancellation": {
+      "subject": "Your subscription to {product} has been canceled",
+      "preview": "Your subscription to {product} has been canceled",
+      "heading": "Your subscription has been canceled",
+      "sorryToSeeYouGo": "We're sorry to see you go! Your subscription to {product} will remain active until {endDate}, after which it will be canceled.",
+      "changeYourMind": "If you change your mind, you can renew your subscription anytime before the end date.",
+      "benefitsContinue": "Meanwhile, you will continue to have access to the following benefits:"
+    },
+    "subscriptionPastDue": {
+      "subject": "Your {product} subscription payment is past due",
+      "preview": "Your {product} subscription payment is past due",
+      "heading": "Your subscription payment is past due",
+      "paymentFailed": "We were unable to process your payment for your {product} subscription. Your subscription is now past due and access to benefits has been temporarily suspended.",
+      "updatePayment": "To restore access to your subscription benefits, please update your payment method and complete the payment."
+    },
+    "subscriptionRevoked": {
+      "subject": "Your subscription to {product} has now ended",
+      "preview": "Your subscription to {product} has now ended",
+      "heading": "Your subscription has now ended",
+      "thankYou": "Thank you for being a subscriber of {product}.",
+      "welcomeBack": "We hope to see you again in the future - you're always welcome back."
+    },
+    "subscriptionUncanceled": {
+      "subject": "Your subscription to {product} is now uncanceled",
+      "preview": "Your subscription to {product} is now uncanceled",
+      "heading": "Your subscription is now uncanceled",
+      "noLongerCanceled": "Your subscription to {product} is no longer canceled."
+    },
+    "subscriptionUpdated": {
+      "subject": "Your subscription has been updated to {product}",
+      "preview": "Your subscription has been updated to {product}",
+      "heading": "Your subscription has been updated",
+      "changedTo": "Your subscription has been successfully changed to {product}.",
+      "immediateWithCharge": "The changes take effect immediately. The pro-rated amount has been charged to your account as part of this update.",
+      "immediateNextCycle": "The changes take effect immediately. The pro-rated amount will be reflected on your next billing cycle."
+    }
   }
 }

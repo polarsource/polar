@@ -49,6 +49,9 @@ CustomerNameInput = Annotated[
 ]
 
 
+_locale_description = "The locale of the customer, used for translations."
+
+
 class CustomerCreate(MetadataInputMixin, Schema):
     external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
         default=None,
@@ -61,6 +64,12 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    locale: str | None = Field(
+        default=None,
+        max_length=10,
+        description=_locale_description,
+        examples=["en", "nl", "sv"],
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -85,6 +94,12 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    locale: str | None = Field(
+        default=None,
+        max_length=10,
+        description=_locale_description,
+        examples=["en", "nl", "sv"],
+    )
 
 
 class CustomerUpdate(CustomerUpdateBase):
@@ -117,6 +132,11 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     name: str | None = Field(description=_name_description, examples=[_name_example])
     billing_address: Address | None
     tax_id: TaxID | None
+    locale: str | None = Field(
+        default=None,
+        description="The locale of the customer, used for translations.",
+        examples=["en", "nl", "sv"],
+    )
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the customer.",
         examples=[ORGANIZATION_ID_EXAMPLE],

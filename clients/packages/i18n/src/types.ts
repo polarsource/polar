@@ -85,4 +85,69 @@ export interface CheckoutTranslations {
     confirmPayment: string
     grantingBenefits: string
   }
+  email: EmailTranslations
+}
+
+export interface EmailTranslations {
+  common: {
+    accessPurchase: string
+    manageSubscription: string
+    viewSubscription: string
+    completePayment: string
+    troubleWithButton: string
+  }
+  orderConfirmation: {
+    subject: string
+    preview: string
+    heading: string
+    processed: string
+  }
+  subscriptionConfirmation: {
+    subject: string
+    preview: string
+    heading: string
+    active: string
+  }
+  subscriptionCycled: {
+    subject: string
+    preview: string
+    heading: string
+    renewed: string
+  }
+  subscriptionCancellation: {
+    subject: string
+    preview: string
+    heading: string
+    sorryToSeeYouGo: string
+    changeYourMind: string
+    benefitsContinue: string
+  }
+  subscriptionPastDue: {
+    subject: string
+    preview: string
+    heading: string
+    paymentFailed: string
+    updatePayment: string
+  }
+  subscriptionRevoked: {
+    subject: string
+    preview: string
+    heading: string
+    thankYou: string
+    welcomeBack: string
+  }
+  subscriptionUncanceled: {
+    subject: string
+    preview: string
+    heading: string
+    noLongerCanceled: string
+  }
+  subscriptionUpdated: {
+    subject: string
+    preview: string
+    heading: string
+    changedTo: string
+    immediateWithCharge: string
+    immediateNextCycle: string
+  }
 }

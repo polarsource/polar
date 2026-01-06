@@ -1,4 +1,9 @@
 import {
+  getEmailTranslations,
+  isSupportedLocale,
+  type SupportedLocale,
+} from '../i18n'
+import {
   Heading,
   Hr,
   Link,
@@ -23,49 +28,56 @@ export function SubscriptionUpdated({
   subscription,
   order,
   url,
-}: schemas['SubscriptionUpdatedProps']) {
+  locale = 'en',
+}: schemas['SubscriptionUpdatedProps'] & { locale?: string }) {
+  const safeLocale: SupportedLocale = isSupportedLocale(locale) ? locale : 'en'
+  const t = getEmailTranslations(safeLocale)
+
   return (
     <Wrapper>
-      <Preview>Your subscription has been updated to {product.name}</Preview>
+      <Preview>
+        {t.subscriptionUpdated.preview.replace('{product}', product.name)}
+      </Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
         <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription has been updated
+          {t.subscriptionUpdated.heading}
         </Heading>
         <BodyText>
-          Your subscription has been successfully changed to{' '}
-          <span className="font-bold">{product.name}</span>.
+          {t.subscriptionUpdated.changedTo
+            .split('{product}')
+            .map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <span className="font-bold">{product.name}</span>
+                </span>
+              ) : (
+                part
+              ),
+            )}
         </BodyText>
       </Section>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
-        <Button href={url}>View my subscription</Button>
+        <Button href={url}>{t.common.viewSubscription}</Button>
       </Section>
       <Hr />
       {order ? (
         <>
           <Section>
-            <BodyText>
-              The changes take effect immediately. The pro-rated amount has been
-              charged to your account as part of this update.
-            </BodyText>
+            <BodyText>{t.subscriptionUpdated.immediateWithCharge}</BodyText>
           </Section>
           <OrderSummary order={order} />
         </>
       ) : (
         <Section>
-          <BodyText>
-            The changes take effect immediately. The pro-rated amount will be
-            reflected on your next billing cycle.
-          </BodyText>
+          <BodyText>{t.subscriptionUpdated.immediateNextCycle}</BodyText>
         </Section>
       )}
 
       <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
-          below into your web browser.
-        </Text>
+        <Text className="text-sm text-gray-600">{t.common.troubleWithButton}</Text>
         <Text className="text-sm">
           <Link href={url} className="text-blue-600 underline">
             {url}
@@ -87,6 +99,7 @@ SubscriptionUpdated.PreviewProps = {
   },
   order,
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+  locale: 'en',
 }
 
 export default SubscriptionUpdated

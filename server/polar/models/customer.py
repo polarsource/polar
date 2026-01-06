@@ -180,6 +180,8 @@ class Customer(MetadataMixin, RecordModel):
 
     invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
+    locale: Mapped[str | None] = mapped_column(String(10), nullable=True, default=None)
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),

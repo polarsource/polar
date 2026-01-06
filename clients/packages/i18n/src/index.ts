@@ -4,6 +4,7 @@ export {
   isSupportedLocale,
   type SupportedLocale,
   type CheckoutTranslations,
+  type EmailTranslations,
 } from './types'
 
 export { getTranslations } from './context'

@@ -76,5 +76,68 @@
     "tryAgain": "Försök igen eller kontakta supporten.",
     "confirmPayment": "Bekräfta betalning",
     "grantingBenefits": "Tilldelar förmåner..."
+  },
+  "email": {
+    "common": {
+      "accessPurchase": "Gå till mitt köp",
+      "manageSubscription": "Hantera min prenumeration",
+      "viewSubscription": "Visa min prenumeration",
+      "completePayment": "Slutför betalning",
+      "troubleWithButton": "Om du har problem med knappen ovan, kopiera och klistra in URL:en nedan i din webbläsare."
+    },
+    "orderConfirmation": {
+      "subject": "Tack för din beställning!",
+      "preview": "Tack för din beställning av {description}!",
+      "heading": "Tack för din beställning!",
+      "processed": "Din beställning av {description} är nu behandlad."
+    },
+    "subscriptionConfirmation": {
+      "subject": "Din prenumeration på {product} är nu aktiv",
+      "preview": "Tack för din prenumeration på {product}!",
+      "heading": "Tack för din prenumeration!",
+      "active": "Din prenumeration på {product} är nu aktiv."
+    },
+    "subscriptionCycled": {
+      "subject": "Din prenumeration på {product} har förnyats",
+      "preview": "Din prenumeration på {product} har förnyats",
+      "heading": "Din prenumeration har förnyats",
+      "renewed": "Din prenumeration på {product} har förnyats."
+    },
+    "subscriptionCancellation": {
+      "subject": "Din prenumeration på {product} har avslutats",
+      "preview": "Din prenumeration på {product} har avslutats",
+      "heading": "Din prenumeration har avslutats",
+      "sorryToSeeYouGo": "Tråkigt att du lämnar oss! Din prenumeration på {product} förblir aktiv till {endDate}, därefter avslutas den.",
+      "changeYourMind": "Om du ändrar dig kan du förnya din prenumeration när som helst före slutdatumet.",
+      "benefitsContinue": "Under tiden kommer du fortsatt ha tillgång till följande förmåner:"
+    },
+    "subscriptionPastDue": {
+      "subject": "Din betalning för {product} är försenad",
+      "preview": "Din betalning för {product} är försenad",
+      "heading": "Din prenumerationsbetalning är försenad",
+      "paymentFailed": "Vi kunde inte behandla din betalning för din {product}-prenumeration. Din prenumeration är nu försenad och tillgången till förmåner har tillfälligt pausats.",
+      "updatePayment": "För att återställa tillgången till dina prenumerationsförmåner, uppdatera din betalningsmetod och slutför betalningen."
+    },
+    "subscriptionRevoked": {
+      "subject": "Din prenumeration på {product} har nu avslutats",
+      "preview": "Din prenumeration på {product} har nu avslutats",
+      "heading": "Din prenumeration har nu avslutats",
+      "thankYou": "Tack för att du var prenumerant på {product}.",
+      "welcomeBack": "Vi hoppas att vi ses igen i framtiden - du är alltid välkommen tillbaka."
+    },
+    "subscriptionUncanceled": {
+      "subject": "Din prenumeration på {product} är inte längre avslutad",
+      "preview": "Din prenumeration på {product} är inte längre avslutad",
+      "heading": "Din prenumeration är inte längre avslutad",
+      "noLongerCanceled": "Din prenumeration på {product} är inte längre avslutad."
+    },
+    "subscriptionUpdated": {
+      "subject": "Din prenumeration har uppdaterats till {product}",
+      "preview": "Din prenumeration har uppdaterats till {product}",
+      "heading": "Din prenumeration har uppdaterats",
+      "changedTo": "Din prenumeration har ändrats till {product}.",
+      "immediateWithCharge": "Ändringarna träder i kraft omedelbart. Det proportionella beloppet har debiterats ditt konto som en del av denna uppdatering.",
+      "immediateNextCycle": "Ändringarna träder i kraft omedelbart. Det proportionella beloppet kommer att återspeglas på din nästa faktureringscykel."
+    }
   }
 }

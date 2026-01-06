@@ -1,3 +1,8 @@
+import {
+  getEmailTranslations,
+  isSupportedLocale,
+  type SupportedLocale,
+} from '../i18n'
 import { Heading, Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
@@ -13,31 +18,42 @@ export function SubscriptionRevoked({
   product,
   subscription,
   url,
-}: schemas['SubscriptionRevokedProps']) {
+  locale = 'en',
+}: schemas['SubscriptionRevokedProps'] & { locale?: string }) {
+  const safeLocale: SupportedLocale = isSupportedLocale(locale) ? locale : 'en'
+  const t = getEmailTranslations(safeLocale)
+
   return (
     <Wrapper>
-      <Preview>Your subscription to {product.name} has now ended</Preview>
+      <Preview>
+        {t.subscriptionRevoked.preview.replace('{product}', product.name)}
+      </Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
         <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Your subscription has now ended
+          {t.subscriptionRevoked.heading}
         </Heading>
         <BodyText>
-          Thank you for being a subscriber of{' '}
-          <span className="font-bold">{product.name}</span>.
+          {t.subscriptionRevoked.thankYou
+            .split('{product}')
+            .map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <span className="font-bold">{product.name}</span>
+                </span>
+              ) : (
+                part
+              ),
+            )}
         </BodyText>
-        <BodyText>
-          We hope to see you again in the future - you're always welcome back.
-        </BodyText>
+        <BodyText>{t.subscriptionRevoked.welcomeBack}</BodyText>
       </Section>
       <Section className="my-8 text-center">
-        <Button href={url}>View subscription</Button>
+        <Button href={url}>{t.common.viewSubscription}</Button>
       </Section>
       <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
-          below into your web browser.
-        </Text>
+        <Text className="text-sm text-gray-600">{t.common.troubleWithButton}</Text>
         <Text className="text-sm">
           <Link href={url} className="text-blue-600 underline">
             {url}
@@ -58,6 +74,7 @@ SubscriptionRevoked.PreviewProps = {
     status: 'canceled',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+  locale: 'en',
 }
 
 export default SubscriptionRevoked

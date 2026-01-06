@@ -328,6 +328,19 @@ class CheckoutCreatePublic(Schema):
     )
 
 
+CustomerLocale = Annotated[
+    str | None,
+    Field(
+        default=None,
+        max_length=10,
+        description=(
+            "Locale of the customer, used for translations. "
+            "E.g. 'en', 'nl', 'sv'."
+        ),
+    ),
+]
+
+
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     product_id: UUID4 | None = Field(
         default=None,
@@ -360,6 +373,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_locale: CustomerLocale = None
 
 
 class CheckoutUpdate(

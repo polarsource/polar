@@ -57,7 +57,7 @@ class NumeralTaxCalculationErrorMeta(TypedDict):
 class NumeralTaxCalculationErrorObject(TypedDict):
     error_code: NotRequired[str]
     error_message: str
-    error_meta: NumeralTaxCalculationErrorMeta
+    error_meta: NotRequired[NumeralTaxCalculationErrorMeta]
 
 
 class NumeralTaxCalculationErrorResponse(TypedDict):
@@ -200,8 +200,10 @@ class NumeralTaxService(TaxServiceProtocol):
                         state=address.get_unprefixed_state(),
                     ),
                 )
-            error_field = error_response["error"]["error_meta"]["field"]
-            if error_field.startswith("customer.address"):
+            error_meta = error_response["error"].get("error_meta")
+            if error_meta is not None and error_meta["field"].startswith(
+                "customer.address"
+            ):
                 raise TaxCalculationError("Invalid address provided") from e
             raise
 

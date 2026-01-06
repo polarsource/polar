@@ -2,6 +2,7 @@ import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { NotificationCreateAccount } from './notification_create_account'
+import { NotificationCreditsGranted } from './notification_credits_granted'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
@@ -48,6 +49,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
   notification_create_account: NotificationCreateAccount,
+  notification_credits_granted: NotificationCreditsGranted,
 }
 
 export default TEMPLATES

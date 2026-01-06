@@ -8492,6 +8492,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -8614,6 +8619,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -9489,6 +9499,11 @@ export interface components {
        */
       embed_origin?: string | null
       /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
+      /**
        * Product Price Id
        * Format: uuid4
        * @description ID of the product price to checkout.
@@ -9714,6 +9729,11 @@ export interface components {
        */
       embed_origin?: string | null
       /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
+      /**
        * Product Id
        * Format: uuid4
        * @description ID of the product to checkout. First available price will be selected.
@@ -9854,6 +9874,11 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /**
        * Products
        * @description List of product IDs available to select at that checkout. The first one will be selected by default.
@@ -10083,6 +10108,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -10340,6 +10370,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -10448,6 +10483,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -10568,6 +10608,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -11897,6 +11942,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -12333,6 +12386,14 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
@@ -13639,6 +13700,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -14333,6 +14402,14 @@ export interface components {
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
@@ -14369,6 +14446,14 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
     }
     /**
      * CustomerUpdatedEvent
@@ -14565,6 +14650,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -16953,6 +17046,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -18866,6 +18967,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -22812,6 +22921,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4

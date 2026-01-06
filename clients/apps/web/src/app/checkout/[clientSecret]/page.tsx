@@ -21,13 +21,9 @@ export default async function Page(props: {
   }>
 }) {
   const searchParams = await props.searchParams
-
-  const { embed: _embed, theme, locale: searchParamLocale } = searchParams
-
-  const locale = await resolveCheckoutLocale(searchParamLocale)
-
   const params = await props.params
 
+  const { embed: _embed, theme, locale: searchParamLocale } = searchParams
   const { clientSecret } = params
 
   const embed = _embed === 'true'
@@ -82,6 +78,8 @@ export default async function Page(props: {
   if (checkout.status !== 'open') {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
+
+  const locale = await resolveCheckoutLocale(searchParamLocale, checkout.locale)
 
   const merchantAvatarVariant = await getExperiment(
     'checkout_merchant_avatar_experiment',

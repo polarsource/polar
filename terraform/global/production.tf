@@ -307,3 +307,11 @@ resource "tfe_variable" "backend_app_review_otp_code" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "numeral_api_key_production" {
+  key             = "numeral_api_key_production"
+  category        = "terraform"
+  description     = "Numeral API Key for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}

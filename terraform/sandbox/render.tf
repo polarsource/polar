@@ -121,6 +121,7 @@ module "sandbox" {
     auth_cookie_domain                   = "polar.sh"
     auth_cookie_key                      = "polar_sandbox_session"
     invoices_additional_info             = ""
+    default_tax_processor                = "numeral"
   }
 
   backend_secrets = {
@@ -134,6 +135,7 @@ module "sandbox" {
     secret                   = var.backend_secret_sandbox
     sentry_dsn               = var.backend_sentry_dsn_sandbox
     jwks                     = var.backend_jwks_sandbox
+    numeral_api_key          = var.numeral_api_key_sandbox
   }
 
   aws_s3_config = {

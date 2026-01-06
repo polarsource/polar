@@ -121,6 +121,7 @@ variable "backend_config" {
     auth_cookie_domain                   = string               # "polar.sh"
     auth_cookie_key                      = optional(string, "") # "polar.sh"
     invoices_additional_info             = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    default_tax_processor                = optional(string, "stripe")
   })
 }
 
@@ -146,6 +147,7 @@ variable "backend_secrets" {
     app_review_email               = optional(string, "")
     app_review_otp_code            = optional(string, "")
     chargeback_stop_webhook_secret = optional(string, "")
+    numeral_api_key                = optional(string, "")
   })
   sensitive = true
 }

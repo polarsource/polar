@@ -243,3 +243,11 @@ resource "tfe_variable" "logfire_token_worker_test" {
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "numeral_api_key_test" {
+  key             = "numeral_api_key"
+  category        = "terraform"
+  description     = "Numeral API Key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

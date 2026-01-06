@@ -187,6 +187,7 @@ module "production" {
     organizations_billing_engine_default = "1"
     auth_cookie_domain                   = "polar.sh"
     invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    default_tax_processor                = "stripe"
   }
 
   backend_secrets = {
@@ -209,6 +210,7 @@ module "production" {
     app_review_email               = var.backend_app_review_email
     app_review_otp_code            = var.backend_app_review_otp_code
     chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
+    numeral_api_key                = var.numeral_api_key_production
   }
 
   aws_s3_config = {

@@ -227,3 +227,11 @@ resource "tfe_variable" "stripe_webhook_secret_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "numeral_api_key_sandbox" {
+  key             = "numeral_api_key_sandbox"
+  category        = "terraform"
+  description     = "Numeral API Key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

@@ -74,10 +74,7 @@ export default async function Page(props: {
       )
     } else {
       return (
-        <AuthorizePage
-          authorizeResponse={data}
-          searchParams={searchParams}
-        />
+        <AuthorizePage authorizeResponse={data} searchParams={searchParams} />
       )
     }
   }

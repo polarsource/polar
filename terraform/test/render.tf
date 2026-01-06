@@ -162,6 +162,7 @@ module "test" {
     organizations_billing_engine_default = "1"
     auth_cookie_domain                   = "test.polar.sh"
     invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    default_tax_processor                = "numeral"
   }
 
   backend_secrets = {
@@ -175,6 +176,7 @@ module "test" {
     secret                   = var.backend_secret
     sentry_dsn               = var.backend_sentry_dsn
     jwks                     = var.backend_jwks
+    numeral_api_key          = var.numeral_api_key
   }
 
   aws_s3_config = {

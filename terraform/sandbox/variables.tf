@@ -241,3 +241,9 @@ variable "logfire_token_worker" {
   type        = string
   sensitive   = true
 }
+
+variable "numeral_api_key_sandbox" {
+  description = "Numeral API Key for sandbox"
+  type        = string
+  sensitive   = true
+}

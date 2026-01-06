@@ -301,3 +301,9 @@ variable "backend_chargebackstop_webhook_secret_production" {
   type        = string
   sensitive   = true
 }
+
+variable "numeral_api_key_production" {
+  description = "Numeral API Key for production"
+  type        = string
+  sensitive   = true
+}

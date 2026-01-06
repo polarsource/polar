@@ -240,3 +240,9 @@ variable "prometheus_remote_write_interval" {
   type        = number
   sensitive   = false
 }
+
+variable "numeral_api_key" {
+  description = "Numeral API Key"
+  type        = string
+  sensitive   = true
+}

@@ -4,6 +4,7 @@ from collections.abc import Sequence
 import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.config import settings
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -14,7 +15,7 @@ from polar.models.payment_method import PaymentMethod
 from polar.models.wallet import WalletType
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.tax.calculation import TaxCode, calculate_tax
+from polar.tax.calculation import TaxabilityReason, TaxCode, TaxRate, get_tax_service
 
 from .repository import WalletRepository, WalletTransactionRepository
 from .sorting import WalletSortProperty
@@ -113,11 +114,15 @@ class WalletService:
         billing_address = customer.billing_address
 
         # Calculate tax
+        tax_processor = settings.DEFAULT_TAX_PROCESSOR
         tax_amount = 0
+        taxability_reason: TaxabilityReason | None = None
+        tax_rate: TaxRate | None = None
         tax_calculation_processor_id: str | None = None
         if billing_address is not None:
+            tax_service = get_tax_service(tax_processor)
             tax_id = customer.tax_id
-            tax_calculation = await calculate_tax(
+            tax_calculation = await tax_service.calculate(
                 f"top_up:{wallet.id}:{uuid.uuid4()}",
                 wallet.currency,
                 amount,
@@ -128,12 +133,16 @@ class WalletService:
             )
             tax_calculation_processor_id = tax_calculation["processor_id"]
             tax_amount = tax_calculation["amount"]
+            taxability_reason = tax_calculation["taxability_reason"]
+            tax_rate = tax_calculation["tax_rate"]
 
         transaction = await self.create_transaction(
             session,
             wallet,
             amount,
             tax_amount=tax_amount,
+            taxability_reason=taxability_reason,
+            tax_rate=tax_rate,
             tax_calculation_processor_id=tax_calculation_processor_id,
             flush=True,
         )
@@ -174,6 +183,8 @@ class WalletService:
         amount: int,
         *,
         tax_amount: int | None = None,
+        taxability_reason: TaxabilityReason | None = None,
+        tax_rate: TaxRate | None = None,
         tax_calculation_processor_id: str | None = None,
         order: Order | None = None,
         flush: bool = False,
@@ -185,6 +196,8 @@ class WalletService:
                 amount=amount,
                 wallet=wallet,
                 tax_amount=tax_amount,
+                taxability_reason=taxability_reason,
+                tax_rate=tax_rate,
                 tax_calculation_processor_id=tax_calculation_processor_id,
                 order=order,
             ),

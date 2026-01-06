@@ -15,6 +15,7 @@ class PaymentProcessor(StrEnum):
 
 class TaxProcessor(StrEnum):
     stripe = "stripe"
+    numeral = "numeral"
 
 
 class AccountType(StrEnum):

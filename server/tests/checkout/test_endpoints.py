@@ -30,7 +30,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
-from polar.tax.calculation import calculate_tax
+from polar.tax.calculation.base import TaxabilityReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -62,10 +62,16 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
-    mock = AsyncMock(spec=calculate_tax)
-    mocker.patch("polar.checkout.service.calculate_tax", new=mock)
-    mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
-    return mock
+    mock = mocker.patch("polar.checkout.service.get_tax_service")
+    mock.return_value.calculate = AsyncMock(
+        return_value={
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": {},
+        },
+    )
+    return mock.return_value.calculate
 
 
 @pytest_asyncio.fixture

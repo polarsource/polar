@@ -88,7 +88,7 @@ from polar.product.guard import (
 )
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.tax.calculation import calculate_tax
+from polar.tax.calculation import get_tax_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -1793,7 +1793,8 @@ class SubscriptionService:
             and subscription.product.is_tax_applicable
             and subscription.customer.billing_address is not None
         ):
-            tax = await calculate_tax(
+            tax_service = get_tax_service(settings.DEFAULT_TAX_PROCESSOR)
+            tax = await tax_service.calculate(
                 subscription.id,
                 subscription.currency,
                 taxable_amount,

@@ -24,7 +24,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email
-from polar.enums import PaymentProcessor, TaxProcessor
+from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
 from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
@@ -77,9 +77,8 @@ from polar.tax.calculation import (
     TaxCalculation,
     TaxCalculationError,
     TaxRate,
-    calculate_tax,
+    get_tax_service,
 )
-from polar.tax.calculation.stripe import from_stripe_tax_rate_details
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -489,29 +488,6 @@ class OrderService:
 
         discount_amount = checkout.discount_amount
 
-        # Retrieve tax data
-        tax_amount = checkout.tax_amount or 0
-        taxability_reason = None
-        tax_rate: TaxRate | None = None
-        tax_id = customer.tax_id
-        if checkout.tax_processor_id is not None:
-            calculation = await stripe_service.get_tax_calculation(
-                checkout.tax_processor_id
-            )
-            assert tax_amount == calculation.tax_amount_exclusive
-            assert len(calculation.tax_breakdown) > 0
-            if len(calculation.tax_breakdown) > 1:
-                log.warning(
-                    "Multiple tax breakdowns found for checkout",
-                    checkout_id=checkout.id,
-                    calculation_id=calculation.id,
-                )
-            breakdown = calculation.tax_breakdown[0]
-            taxability_reason = TaxabilityReason.from_stripe(
-                breakdown.taxability_reason, tax_amount
-            )
-            tax_rate = from_stripe_tax_rate_details(breakdown.tax_rate_details)
-
         organization = checkout.organization
         invoice_number = await organization_service.get_next_invoice_number(
             session, organization, customer
@@ -523,14 +499,14 @@ class OrderService:
                 status=OrderStatus.paid,
                 subtotal_amount=checkout.amount,
                 discount_amount=discount_amount,
-                tax_amount=tax_amount,
+                tax_amount=checkout.tax_amount or 0,
                 currency=checkout.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
-                taxability_reason=taxability_reason,
-                tax_id=tax_id,
-                tax_rate=tax_rate,
+                tax_id=customer.tax_id,
+                taxability_reason=checkout.taxability_reason,
+                tax_rate=checkout.tax_rate,
                 invoice_number=invoice_number,
                 customer=customer,
                 product=checkout.product,
@@ -556,14 +532,16 @@ class OrderService:
 
         # Record tax transaction
         if checkout.tax_processor_id is not None:
-            transaction = await stripe_service.create_tax_transaction(
+            assert checkout.tax_processor is not None
+            tax_service = get_tax_service(checkout.tax_processor)
+            transaction_id = await tax_service.record(
                 checkout.tax_processor_id, str(order.id)
             )
             await repository.update(
                 order,
                 update_dict={
                     "tax_processor": checkout.tax_processor,
-                    "tax_transaction_processor_id": transaction.id,
+                    "tax_transaction_processor_id": transaction_id,
                 },
             )
 
@@ -602,6 +580,7 @@ class OrderService:
                 discount_amount = discount.get_discount_amount(discountable_amount)
 
             # Calculate tax
+            tax_processor = settings.DEFAULT_TAX_PROCESSOR
             tax_calculation: TaxCalculation | None = None
             taxable_amount = subtotal_amount - discount_amount
             tax_amount = 0
@@ -615,8 +594,9 @@ class OrderService:
                 and product.is_tax_applicable
                 and billing_address is not None
             ):
+                tax_service = get_tax_service(tax_processor)
                 try:
-                    tax_calculation = await calculate_tax(
+                    tax_calculation = await tax_service.calculate(
                         order_id,
                         subscription.currency,
                         # Stripe doesn't support calculating negative tax amounts
@@ -690,7 +670,7 @@ class OrderService:
                     taxability_reason=taxability_reason,
                     tax_id=tax_id,
                     tax_rate=tax_rate,
-                    tax_processor=TaxProcessor.stripe,
+                    tax_processor=tax_processor,
                     tax_calculation_processor_id=tax_calculation_processor_id,
                     invoice_number=invoice_number,
                     customer=customer,
@@ -817,23 +797,6 @@ class OrderService:
 
         subtotal_amount = sum(item.amount for item in items)
 
-        # Retrieve tax data
-        tax_amount = wallet_transaction.tax_amount or 0
-        taxability_reason = None
-        tax_rate: TaxRate | None = None
-        tax_id = customer.tax_id
-        if wallet_transaction.tax_calculation_processor_id is not None:
-            calculation = await stripe_service.get_tax_calculation(
-                wallet_transaction.tax_calculation_processor_id
-            )
-            assert tax_amount == calculation.tax_amount_exclusive
-            assert len(calculation.tax_breakdown) > 0
-            breakdown = calculation.tax_breakdown[0]
-            taxability_reason = TaxabilityReason.from_stripe(
-                breakdown.taxability_reason, tax_amount
-            )
-            tax_rate = from_stripe_tax_rate_details(breakdown.tax_rate_details)
-
         invoice_number = await organization_service.get_next_invoice_number(
             session, wallet.organization, wallet.customer
         )
@@ -844,15 +807,15 @@ class OrderService:
                 status=OrderStatus.paid,
                 subtotal_amount=subtotal_amount,
                 discount_amount=0,
-                tax_amount=tax_amount,
+                tax_amount=wallet_transaction.tax_amount or 0,
                 applied_balance_amount=0,
                 currency=wallet.currency,
                 billing_reason=OrderBillingReasonInternal.purchase,
                 billing_name=customer.billing_name,
                 billing_address=billing_address,
-                taxability_reason=taxability_reason,
-                tax_id=tax_id,
-                tax_rate=tax_rate,
+                tax_id=customer.tax_id,
+                taxability_reason=wallet_transaction.taxability_reason,
+                tax_rate=wallet_transaction.tax_rate,
                 invoice_number=invoice_number,
                 customer=customer,
                 items=items,
@@ -883,14 +846,16 @@ class OrderService:
 
         # Record tax transaction
         if wallet_transaction.tax_calculation_processor_id is not None:
-            transaction = await stripe_service.create_tax_transaction(
+            assert wallet_transaction.tax_processor is not None
+            tax_service = get_tax_service(wallet_transaction.tax_processor)
+            transaction_id = await tax_service.record(
                 wallet_transaction.tax_calculation_processor_id, str(order.id)
             )
             await repository.update(
                 order,
                 update_dict={
                     "tax_processor": wallet_transaction.tax_processor,
-                    "tax_transaction_processor_id": transaction.id,
+                    "tax_transaction_processor_id": transaction_id,
                 },
             )
 
@@ -1232,10 +1197,12 @@ class OrderService:
             order.tax_calculation_processor_id is not None
             and order.tax_transaction_processor_id is None
         ):
-            transaction = await stripe_service.create_tax_transaction(
+            assert order.tax_processor is not None
+            tax_service = get_tax_service(order.tax_processor)
+            transaction_id = await tax_service.record(
                 order.tax_calculation_processor_id, str(order.id)
             )
-            update_dict["tax_transaction_processor_id"] = transaction.id
+            update_dict["tax_transaction_processor_id"] = transaction_id
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)

@@ -2,9 +2,11 @@ import uuid
 from typing import Literal, NotRequired, TypedDict
 
 import httpx
+import structlog
 
 from polar.config import settings
 from polar.kit.address import Address
+from polar.logging import Logger
 
 from ..tax_id import TaxID
 from .base import (
@@ -15,6 +17,8 @@ from .base import (
     TaxRate,
     TaxServiceProtocol,
 )
+
+log: Logger = structlog.get_logger()
 
 
 class NumeralTaxId(TypedDict):
@@ -183,6 +187,7 @@ class NumeralTaxService(TaxServiceProtocol):
             response = await self.client.post("/tax/calculations", json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            log.debug("Numeral tax calculation error: %s", e.response.text)
             error_response: NumeralTaxCalculationErrorResponse = e.response.json()
             error_code = error_response["error"].get("error_code")
             if error_code == "invalid_country_code":
@@ -205,6 +210,9 @@ class NumeralTaxService(TaxServiceProtocol):
                 "customer.address"
             ):
                 raise TaxCalculationError("Invalid address provided") from e
+            error_message = error_response["error"]["error_message"]
+            if "address_zip_code" in error_message:
+                raise TaxCalculationError("Invalid postal code provided") from e
             raise
 
         calculation: NumeralTaxCalculationResponse = response.json()

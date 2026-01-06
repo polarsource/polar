@@ -5,6 +5,7 @@ import structlog
 from sqlalchemy import select
 
 from polar.account.repository import AccountRepository
+from polar.account_credit.service import account_credit_service
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
@@ -202,7 +203,57 @@ class PlatformFeeTransactionService(BaseTransactionService):
             )
             fees_balances.append(fee_balances)
 
+        if account.credit_balance <= 0:
+            return fees_balances
+
+        total_fees = sum(abs(outgoing.amount) for outgoing, _ in fees_balances)
+        if total_fees <= 0:
+            return fees_balances
+
+        credit_balances = await self._apply_fee_credits(
+            session,
+            account=account,
+            fee_amount=total_fees,
+            balance_transactions=balance_transactions,
+        )
+        if credit_balances is not None:
+            fees_balances.append(credit_balances)
+
         return fees_balances
+
+    async def _apply_fee_credits(
+        self,
+        session: AsyncSession,
+        *,
+        account: Account,
+        fee_amount: int,
+        balance_transactions: tuple[Transaction, Transaction],
+    ) -> tuple[Transaction, Transaction] | None:
+        outgoing, incoming = balance_transactions
+
+        amount_applied, credits_used = await account_credit_service.apply_to_fee(
+            session, account, fee_amount
+        )
+        if amount_applied <= 0:
+            return None
+
+        credit_balances = await balance_transaction_service.create_reversal_balance(
+            session,
+            balance_transactions=balance_transactions,
+            amount=-amount_applied,
+            platform_fee_type=PlatformFeeType.fee_credit,
+            outgoing_incurred_by=incoming,
+            incoming_incurred_by=outgoing,
+        )
+
+        log.info(
+            "Applied payment fee credits",
+            account_id=str(account.id),
+            fee_amount=fee_amount,
+            credit_applied=amount_applied,
+            credits_used=[str(c.id) for c in credits_used],
+        )
+        return credit_balances
 
     async def _is_international_payment_transaction(
         self, session: AsyncSession, payment_transaction_id: UUID

@@ -213,6 +213,17 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )
 
+    discount_applied_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """
+    Timestamp when the discount was first applied to a billing cycle.
+
+    This is used to determine when repeating discounts should expire.
+    It remains null until the discount is actually used in a billing cycle,
+    at which point it's set to that cycle's start date.
+    """
+
     @declared_attr
     def discount(cls) -> Mapped["Discount | None"]:
         return relationship("Discount", lazy="joined")
@@ -448,3 +459,7 @@ def _discount_set(
     initiator: Event,
 ) -> None:
     target.update_amount_and_currency(target.subscription_product_prices, value)
+    # Reset discount_applied_at when discount changes so the new discount's
+    # expiration will be tracked from its first use in a billing cycle
+    if value != oldvalue:
+        target.discount_applied_at = None

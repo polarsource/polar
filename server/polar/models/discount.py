@@ -137,21 +137,32 @@ class Discount(MetadataMixin, RecordModel):
 
     def is_repetition_expired(
         self,
-        started_at: datetime,
+        discount_applied_at: datetime,
         current_period_start: datetime,
-        trial_ended: bool = False,
     ) -> bool:
+        """
+        Check if a discount's repetition has expired for the current billing cycle.
+
+        Args:
+            discount_applied_at: The timestamp when the discount was first applied
+                to a billing cycle. This should be the cycle's start date.
+            current_period_start: The start date of the current billing period.
+
+        Returns:
+            True if the discount should no longer apply to this cycle.
+        """
         if self.duration == DiscountDuration.once:
-            # If transitioning from trial to active, this is the first billed cycle
-            # so the discount should still apply
-            return not trial_ended
+            # "once" discounts only apply to the first billing cycle where applied
+            # They're expired if current period is after the period when first applied
+            return current_period_start > discount_applied_at
         if self.duration == DiscountDuration.forever:
             return False
         if self.duration_in_months is None:
             return False
 
+        # For repeating discounts, calculate expiration from when discount was first applied
         # -1 because the first month counts as a first repetition
-        end_at = started_at + relativedelta(months=self.duration_in_months - 1)
+        end_at = discount_applied_at + relativedelta(months=self.duration_in_months - 1)
         return current_period_start > end_at
 
     __mapper_args__ = {

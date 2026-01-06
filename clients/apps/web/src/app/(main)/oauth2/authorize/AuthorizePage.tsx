@@ -28,14 +28,12 @@ const groupScopes = (scopes: schemas['Scope'][]) => {
 }
 
 const AuthorizePage = ({
-  authorizeResponse: { client, scopes, sub_type, sub },
-  scopeDisplayNames,
+  authorizeResponse: { client, scopes, sub_type, sub, scope_display_names },
   searchParams,
 }: {
   authorizeResponse:
     | schemas['AuthorizeResponseUser']
     | schemas['AuthorizeResponseOrganization']
-  scopeDisplayNames: Record<schemas['Scope'], string>
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
@@ -99,7 +97,7 @@ const AuthorizePage = ({
               {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
                 <ListItem
                   key={key}
-                  className="flex flex-col items-start gap-y-1 py-3 text-sm"
+                  className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
                   size="small"
                 >
                   <h3 className="font-medium capitalize">
@@ -111,7 +109,7 @@ const AuthorizePage = ({
                         key={scope}
                         className="dark:text-polar-500 text-sm text-gray-500"
                       >
-                        {scopeDisplayNames[scope]}
+                        {scope_display_names[scope]}
                       </li>
                     ))}
                   </ul>
@@ -121,7 +119,7 @@ const AuthorizePage = ({
           </div>
           <div className="grid w-full grid-cols-2 gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               className="grow"
               type="submit"
               name="action"

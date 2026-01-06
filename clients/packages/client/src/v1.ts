@@ -5593,6 +5593,75 @@ export interface components {
       sub: components['schemas']['AuthorizeOrganization'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /**
+       * Scope Display Names
+       * @default {
+       *       "openid": "OpenID",
+       *       "profile": "Read your profile",
+       *       "email": "Read your email address",
+       *       "web:read": "Web Read Access",
+       *       "web:write": "Web Write Access",
+       *       "user:read": "User Read",
+       *       "user:write": "Delete your user account",
+       *       "organizations:read": "Read your organizations",
+       *       "organizations:write": "Create or modify organizations",
+       *       "custom_fields:read": "Read custom fields",
+       *       "custom_fields:write": "Create or modify custom fields",
+       *       "discounts:read": "Read discounts",
+       *       "discounts:write": "Create or modify discounts",
+       *       "checkout_links:read": "Read checkout links",
+       *       "checkout_links:write": "Create or modify checkout links",
+       *       "checkouts:read": "Read checkout sessions",
+       *       "checkouts:write": "Create or modify checkout sessions",
+       *       "transactions:read": "Read transactions",
+       *       "transactions:write": "Create or modify transactions",
+       *       "payouts:read": "Read payouts",
+       *       "payouts:write": "Create or modify payouts",
+       *       "products:read": "Read products",
+       *       "products:write": "Create or modify products",
+       *       "benefits:read": "Read benefits",
+       *       "benefits:write": "Create or modify benefits",
+       *       "events:read": "Read events",
+       *       "events:write": "Create events",
+       *       "meters:read": "Read meters",
+       *       "meters:write": "Create or modify meters",
+       *       "files:read": "Read file uploads",
+       *       "files:write": "Create or modify file uploads",
+       *       "subscriptions:read": "Read subscriptions made on your organizations",
+       *       "subscriptions:write": "Create or modify subscriptions made on your organizations",
+       *       "customers:read": "Read customers",
+       *       "customers:write": "Create or modify customers",
+       *       "members:read": "Read members",
+       *       "members:write": "Create or modify members",
+       *       "wallets:read": "Read wallets",
+       *       "wallets:write": "Create or modify wallets",
+       *       "disputes:read": "Read disputes",
+       *       "customer_meters:read": "Read customer meters",
+       *       "customer_sessions:write": "Create or modify customer sessions",
+       *       "customer_seats:read": "Read customer seats",
+       *       "customer_seats:write": "Create or modify customer seats",
+       *       "orders:read": "Read orders made on your organizations",
+       *       "orders:write": "Modify orders made on your organizations",
+       *       "refunds:read": "Read refunds made on your organizations",
+       *       "refunds:write": "Create or modify refunds",
+       *       "payments:read": "Read payments made on your organizations",
+       *       "metrics:read": "Read metrics",
+       *       "webhooks:read": "Read webhooks",
+       *       "webhooks:write": "Create or modify webhooks",
+       *       "external_organizations:read": "Read external organizations",
+       *       "license_keys:read": "Read license keys",
+       *       "license_keys:write": "Modify license keys",
+       *       "customer_portal:read": "Read your orders, subscriptions and benefits",
+       *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
+       *       "notifications:read": "Read notifications",
+       *       "notifications:write": "Mark notifications as read",
+       *       "notification_recipients:read": "Read notification recipients",
+       *       "notification_recipients:write": "Create or modify notification recipients"
+       *     }
+       */
+      scope_display_names: {
+        [key: string]: string
+      }
       /** Organizations */
       organizations: components['schemas']['AuthorizeOrganization'][]
     }
@@ -5607,6 +5676,75 @@ export interface components {
       sub: components['schemas']['AuthorizeUser'] | null
       /** Scopes */
       scopes: components['schemas']['Scope'][]
+      /**
+       * Scope Display Names
+       * @default {
+       *       "openid": "OpenID",
+       *       "profile": "Read your profile",
+       *       "email": "Read your email address",
+       *       "web:read": "Web Read Access",
+       *       "web:write": "Web Write Access",
+       *       "user:read": "User Read",
+       *       "user:write": "Delete your user account",
+       *       "organizations:read": "Read your organizations",
+       *       "organizations:write": "Create or modify organizations",
+       *       "custom_fields:read": "Read custom fields",
+       *       "custom_fields:write": "Create or modify custom fields",
+       *       "discounts:read": "Read discounts",
+       *       "discounts:write": "Create or modify discounts",
+       *       "checkout_links:read": "Read checkout links",
+       *       "checkout_links:write": "Create or modify checkout links",
+       *       "checkouts:read": "Read checkout sessions",
+       *       "checkouts:write": "Create or modify checkout sessions",
+       *       "transactions:read": "Read transactions",
+       *       "transactions:write": "Create or modify transactions",
+       *       "payouts:read": "Read payouts",
+       *       "payouts:write": "Create or modify payouts",
+       *       "products:read": "Read products",
+       *       "products:write": "Create or modify products",
+       *       "benefits:read": "Read benefits",
+       *       "benefits:write": "Create or modify benefits",
+       *       "events:read": "Read events",
+       *       "events:write": "Create events",
+       *       "meters:read": "Read meters",
+       *       "meters:write": "Create or modify meters",
+       *       "files:read": "Read file uploads",
+       *       "files:write": "Create or modify file uploads",
+       *       "subscriptions:read": "Read subscriptions made on your organizations",
+       *       "subscriptions:write": "Create or modify subscriptions made on your organizations",
+       *       "customers:read": "Read customers",
+       *       "customers:write": "Create or modify customers",
+       *       "members:read": "Read members",
+       *       "members:write": "Create or modify members",
+       *       "wallets:read": "Read wallets",
+       *       "wallets:write": "Create or modify wallets",
+       *       "disputes:read": "Read disputes",
+       *       "customer_meters:read": "Read customer meters",
+       *       "customer_sessions:write": "Create or modify customer sessions",
+       *       "customer_seats:read": "Read customer seats",
+       *       "customer_seats:write": "Create or modify customer seats",
+       *       "orders:read": "Read orders made on your organizations",
+       *       "orders:write": "Modify orders made on your organizations",
+       *       "refunds:read": "Read refunds made on your organizations",
+       *       "refunds:write": "Create or modify refunds",
+       *       "payments:read": "Read payments made on your organizations",
+       *       "metrics:read": "Read metrics",
+       *       "webhooks:read": "Read webhooks",
+       *       "webhooks:write": "Create or modify webhooks",
+       *       "external_organizations:read": "Read external organizations",
+       *       "license_keys:read": "Read license keys",
+       *       "license_keys:write": "Modify license keys",
+       *       "customer_portal:read": "Read your orders, subscriptions and benefits",
+       *       "customer_portal:write": "Create or modify your orders, subscriptions and benefits",
+       *       "notifications:read": "Read notifications",
+       *       "notifications:write": "Mark notifications as read",
+       *       "notification_recipients:read": "Read notification recipients",
+       *       "notification_recipients:write": "Create or modify notification recipients"
+       *     }
+       */
+      scope_display_names: {
+        [key: string]: string
+      }
     }
     /** AuthorizeUser */
     AuthorizeUser: {

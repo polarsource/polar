@@ -15,7 +15,12 @@ from pydantic import (
     TypeAdapter,
 )
 
-from polar.auth.scope import SCOPES_SUPPORTED, Scope, scope_to_list
+from polar.auth.scope import (
+    SCOPES_SUPPORTED,
+    SCOPES_SUPPORTED_DISPLAY_NAMES,
+    Scope,
+    scope_to_list,
+)
 from polar.kit.schemas import Schema, TimestampedSchema
 
 from .sub_type import SubType
@@ -96,6 +101,9 @@ class AuthorizeResponseBase(Schema):
     sub_type: SubType
     sub: AuthorizeUser | AuthorizeOrganization | None
     scopes: Scopes
+    scope_display_names: dict[str, str] = Field(
+        default={s.value: name for s, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()}
+    )
 
 
 class AuthorizeResponseUser(AuthorizeResponseBase):

@@ -24,7 +24,6 @@ export default async function Page(props: {
       method="POST"
       action={`${CONFIG.BASE_URL}/v1/email-update/verify?${urlSearchParams.toString()}`}
     >
-      <div id="polar-bg-gradient"></div>
       <div className="flex w-80 flex-col items-center gap-4">
         <LogoIcon size={60} className="mb-6 text-blue-500 dark:text-blue-400" />
         <div className="dark:text-polar-400 text-center text-gray-500">

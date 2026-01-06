@@ -1110,6 +1110,93 @@ class TestCycle:
         # Verify discount is NOW removed (used up after first billing cycle)
         assert second_cycle_subscription.discount is None
 
+    async def test_trial_end_with_repeating_discount(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that repeating discounts applied during checkout with trial
+        are properly tracked from the first billing cycle after trial ends."""
+        # Create a 3-month repeating discount
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+
+        # Create trialing subscription with the discount
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+
+        # Verify initial state: discount is set but discount_applied_at is None
+        # (discount hasn't been applied to a billing cycle yet)
+        assert subscription.discount == discount
+        assert subscription.discount_applied_at is None
+        assert subscription.status == SubscriptionStatus.trialing
+
+        # Cycle 1: Trial ends, first billing cycle
+        first_billing_subscription = await subscription_service.cycle(
+            session, subscription
+        )
+
+        # Verify discount_applied_at is now set to the first billing period start
+        assert first_billing_subscription.discount == discount
+        assert first_billing_subscription.discount_applied_at is not None
+        assert (
+            first_billing_subscription.discount_applied_at
+            == first_billing_subscription.current_period_start
+        )
+        assert first_billing_subscription.status == SubscriptionStatus.active
+
+        # Cycle 2: Second billing cycle (2nd month of discount)
+        second_billing_subscription = await subscription_service.cycle(
+            session, first_billing_subscription
+        )
+        assert second_billing_subscription.discount == discount
+
+        # Cycle 3: Third billing cycle (3rd month of discount)
+        third_billing_subscription = await subscription_service.cycle(
+            session, second_billing_subscription
+        )
+        assert third_billing_subscription.discount == discount
+
+        # Cycle 4: Fourth billing cycle - discount should now be expired
+        fourth_billing_subscription = await subscription_service.cycle(
+            session, third_billing_subscription
+        )
+        assert fourth_billing_subscription.discount is None
+
+        # Verify billing entries - 3 should have discount, 1 should not
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 4
+
+        # First 3 entries should have discount applied
+        assert cycle_entries[0].discount == discount
+        assert cycle_entries[1].discount == discount
+        assert cycle_entries[2].discount == discount
+        # Fourth entry should have no discount
+        assert cycle_entries[3].discount is None
+
 
 @pytest.mark.asyncio
 class TestRevoke:

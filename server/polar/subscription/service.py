@@ -717,7 +717,8 @@ class SubscriptionService:
                         subscription.discount_applied_at = utc_now()
                         # Now that the discount is actually applied, update subscription.amount
                         subscription.update_amount_and_currency(
-                            subscription.subscription_product_prices, subscription.discount
+                            subscription.subscription_product_prices,
+                            subscription.discount,
                         )
 
         if previous_status == SubscriptionStatus.trialing:
@@ -1235,7 +1236,9 @@ class SubscriptionService:
                 subscription.discount is not None
                 and subscription.discount_applied_at is None
             ):
-                discount_redemption_repository = DiscountRedemptionRepository.from_session(session)
+                discount_redemption_repository = (
+                    DiscountRedemptionRepository.from_session(session)
+                )
                 redemption = await discount_redemption_repository.get_by_subscription_and_discount(
                     subscription.id, subscription.discount.id
                 )
@@ -1713,7 +1716,9 @@ class SubscriptionService:
                 subscription.discount is not None
                 and subscription.discount_applied_at is None
             ):
-                discount_redemption_repository = DiscountRedemptionRepository.from_session(session)
+                discount_redemption_repository = (
+                    DiscountRedemptionRepository.from_session(session)
+                )
                 redemption = await discount_redemption_repository.get_by_subscription_and_discount(
                     subscription.id, subscription.discount.id
                 )

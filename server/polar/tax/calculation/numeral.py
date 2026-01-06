@@ -1,5 +1,5 @@
 import uuid
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 import httpx
 
@@ -55,7 +55,7 @@ class NumeralTaxCalculationErrorMeta(TypedDict):
 
 
 class NumeralTaxCalculationErrorObject(TypedDict):
-    error_code: str
+    error_code: NotRequired[str]
     error_message: str
     error_meta: NumeralTaxCalculationErrorMeta
 
@@ -184,7 +184,7 @@ class NumeralTaxService(TaxServiceProtocol):
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             error_response: NumeralTaxCalculationErrorResponse = e.response.json()
-            error_code = error_response["error"]["error_code"]
+            error_code = error_response["error"].get("error_code")
             if error_code == "invalid_country_code":
                 return TaxCalculation(
                     processor_id=None,

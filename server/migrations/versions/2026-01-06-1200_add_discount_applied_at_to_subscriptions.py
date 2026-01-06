@@ -24,6 +24,28 @@ def upgrade() -> None:
         sa.Column("discount_applied_at", sa.TIMESTAMP(timezone=True), nullable=True),
     )
 
+    # Backfill discount_applied_at for existing subscriptions with discounts
+    # by finding the first order that used the discount
+    op.execute(
+        """
+        UPDATE subscriptions s
+        SET discount_applied_at = o.created_at
+        FROM (
+            SELECT DISTINCT ON (o.subscription_id, o.discount_id)
+                o.subscription_id,
+                o.discount_id,
+                o.created_at
+            FROM orders o
+            WHERE o.subscription_id IS NOT NULL
+              AND o.discount_id IS NOT NULL
+              AND o.deleted_at IS NULL
+            ORDER BY o.subscription_id, o.discount_id, o.created_at ASC
+        ) o
+        WHERE s.id = o.subscription_id
+          AND s.discount_id = o.discount_id
+        """
+    )
+
 
 def downgrade() -> None:
     op.drop_column("subscriptions", "discount_applied_at")

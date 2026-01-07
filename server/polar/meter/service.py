@@ -422,7 +422,9 @@ class MeterService:
     async def enqueue_billing(self, session: AsyncSession) -> None:
         repository = MeterRepository.from_session(session)
 
-        base_statement = repository.get_base_statement()
+        base_statement = repository.get_base_statement().where(
+            Meter.archived_at.is_(None)
+        )
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())
         )

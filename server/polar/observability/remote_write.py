@@ -199,22 +199,28 @@ def _run_push_loop(
     password: str | None,
     interval: int,
     shutdown_event: threading.Event,
+    include_queue_metrics: bool = True,
 ) -> None:
     headers: dict[str, str] = {}
     if username and password:
         credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
         headers["Authorization"] = f"Basic {credentials}"
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    loop: asyncio.AbstractEventLoop | None = None
+    redis: Redis | None = None
 
-    redis = create_redis("worker")
+    if include_queue_metrics:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        redis = create_redis("worker")
+
     try:
         with httpx.Client(timeout=httpx.Timeout(30.0, connect=5.0)) as client:
             while not shutdown_event.is_set():
                 start_time = time.monotonic()
                 try:
-                    loop.run_until_complete(_update_queue_metrics(redis))
+                    if include_queue_metrics and loop and redis:
+                        loop.run_until_complete(_update_queue_metrics(redis))
                     _push_metrics(client, url, headers)
                 except Exception as e:
                     log.error(
@@ -229,11 +235,19 @@ def _run_push_loop(
                 if sleep_time > 0:
                     shutdown_event.wait(sleep_time)
     finally:
-        loop.run_until_complete(redis.close())
-        loop.close()
+        if loop and redis:
+            loop.run_until_complete(redis.close())
+            loop.close()
 
 
-def start_remote_write_pusher() -> bool:
+def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
+    """
+    Start the background thread that pushes metrics to Prometheus.
+
+    Args:
+        include_queue_metrics: If True, collect Redis queue metrics (for workers).
+                               If False, only push standard prometheus metrics (for API).
+    """
     global _pusher_thread, _shutdown_event
 
     with _start_lock:
@@ -261,6 +275,7 @@ def start_remote_write_pusher() -> bool:
                 settings.PROMETHEUS_REMOTE_WRITE_PASSWORD,
                 settings.PROMETHEUS_REMOTE_WRITE_INTERVAL,
                 _shutdown_event,
+                include_queue_metrics,
             ),
             daemon=True,
             name="prometheus-remote-write",

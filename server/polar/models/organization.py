@@ -6,7 +6,6 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
-    Boolean,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -283,9 +282,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     feature_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
-    )
-    subscriptions_billing_engine: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=settings.ORGANIZATIONS_BILLING_ENGINE_DEFAULT
     )
 
     #

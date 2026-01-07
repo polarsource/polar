@@ -9,6 +9,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.models import Event, Organization
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
@@ -189,3 +190,55 @@ class TestPropertyAggregation:
         )
 
         assert await _get_aggregation_result(session, aggregation) == 3.0
+
+
+class TestAggregationMatches:
+    def test_count_always_matches(self, organization: Organization) -> None:
+        agg = CountAggregation()
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert agg.matches(event) is True
+
+    def test_property_matches_number(self, organization: Organization) -> None:
+        agg = PropertyAggregation(func=AggregationFunction.sum, property="amount")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"amount": 100},
+        )
+        assert agg.matches(event) is True
+
+    def test_property_not_matches_string(self, organization: Organization) -> None:
+        agg = PropertyAggregation(func=AggregationFunction.sum, property="amount")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"amount": "invalid"},
+        )
+        assert agg.matches(event) is False
+
+    def test_property_not_matches_missing(self, organization: Organization) -> None:
+        agg = PropertyAggregation(func=AggregationFunction.sum, property="amount")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert agg.matches(event) is False
+
+    def test_unique_always_matches(self, organization: Organization) -> None:
+        agg = UniqueAggregation(property="user_id")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert agg.matches(event) is True

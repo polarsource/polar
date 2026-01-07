@@ -25,7 +25,7 @@ MAX_AGE_MILLISECONDS = 5 * 60 * 1000  # 5 minutes
 
 @actor(
     actor_name="meter.enqueue_billing",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
     priority=TaskPriority.LOW,
     max_age=MAX_AGE_MILLISECONDS,
 )

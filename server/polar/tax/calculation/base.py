@@ -16,6 +16,12 @@ class TaxCalculationError(PolarError):
         super().__init__(message)
 
 
+class InvalidTaxIDError(TaxCalculationError):
+    def __init__(self) -> None:
+        message = "The provided tax ID is invalid."
+        super().__init__(message)
+
+
 class TaxCode(StrEnum):
     general_electronically_supplied_services = (
         "general_electronically_supplied_services"

@@ -10,6 +10,7 @@ from polar.logging import Logger
 
 from ..tax_id import TaxID
 from .base import (
+    InvalidTaxIDError,
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationError,
@@ -210,9 +211,11 @@ class NumeralTaxService(TaxServiceProtocol):
                 "customer.address"
             ):
                 raise TaxCalculationError("Invalid address provided") from e
-            error_message = error_response["error"]["error_message"]
+            error_message = error_response["error"]["error_message"].lower()
             if "address_zip_code" in error_message:
                 raise TaxCalculationError("Invalid postal code provided") from e
+            if "vat id" in error_message:
+                raise InvalidTaxIDError() from e
             raise
 
         calculation: NumeralTaxCalculationResponse = response.json()

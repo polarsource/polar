@@ -62,6 +62,16 @@ class OrganizationDetailView:
                 active=current_section == "account",
             ),
             Tab(
+                "Files",
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=self.org.id
+                    )
+                )
+                + "?section=files",
+                active=current_section == "files",
+            ),
+            Tab(
                 "Settings",
                 str(
                     request.url_for(
@@ -189,9 +199,11 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        # Quick approve with default threshold
-                        max_threshold = (self.org.next_review_threshold or 25000000) * 2
-                        max_threshold_display = f"${max_threshold / 100:,.0f}"
+                        # Quick approve with doubled threshold
+                        # Use current threshold (in cents) or $250 default, then double it
+                        current_threshold = self.org.next_review_threshold or 25000
+                        next_threshold = current_threshold * 2
+                        next_threshold_display = f"${next_threshold / 100:,.0f}"
 
                         with tag.div(classes="w-full"):
                             with button(
@@ -204,10 +216,10 @@ class OrganizationDetailView:
                                         organization_id=self.org.id,
                                     )
                                 )
-                                + f"?threshold={max_threshold}",
-                                hx_confirm=f"Approve this organization with {max_threshold_display} threshold?",
+                                + f"?threshold={next_threshold}",
+                                hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                             ):
-                                text(f"Approve ({max_threshold_display})")
+                                text(f"Approve ({next_threshold_display})")
 
                         # Custom approve with input
                         approve_url = str(
@@ -371,10 +383,14 @@ class OrganizationDetailView:
             ):
                 text("← Back to Organizations")
 
-            with tag.div(classes="flex items-center justify-between"):
-                with tag.div():
-                    with tag.h1(classes="text-3xl font-bold flex items-center gap-3"):
+            with tag.div(classes="flex items-center justify-between gap-4"):
+                with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
+                    with tag.h1(
+                        classes="text-3xl font-bold truncate",
+                        title=self.org.name,
+                    ):
                         text(self.org.name)
+                    with tag.div(classes="flex-shrink-0"):
                         with status_badge(self.org.status):
                             pass
 

@@ -34,7 +34,11 @@ from polar.backoffice.organizations.forms import (
     UpdateOrganizationSocialsForm,
 )
 from polar.enums import AccountType
+from polar.file.repository import FileRepository
+from polar.file.sorting import FileSortProperty
+from polar.kit.sorting import Sorting
 from polar.models import Organization, User, UserOrganization
+from polar.models.file import FileServiceTypes
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -481,8 +485,17 @@ async def get_organization_detail(
                 with account_section.render(request):
                     pass
             elif section == "files":
-                # TODO: Fetch files from repository
-                files_section = FilesSection(organization, files=[])
+                # Fetch downloadable files from repository
+                file_sorting: list[Sorting[FileSortProperty]] = [
+                    (FileSortProperty.created_at, True)
+                ]
+                file_repository = FileRepository(session)
+                files = await file_repository.get_all_by_organization(
+                    organization.id,
+                    service=FileServiceTypes.downloadable,
+                    sorting=file_sorting,
+                )
+                files_section = FilesSection(organization, files=list(files))
                 with files_section.render(request):
                     pass
             elif section == "history":
@@ -577,8 +590,7 @@ async def deny_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with button(
-                    variant="error",
+                with tag.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:deny_dialog",
@@ -586,7 +598,8 @@ async def deny_dialog(
                         )
                     ),
                 ):
-                    text("Deny Organization")
+                    with button(variant="error", type="submit"):
+                        text("Deny Organization")
 
     return None
 
@@ -827,8 +840,7 @@ async def block_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with button(
-                    variant="error",
+                with tag.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:block_dialog",
@@ -836,7 +848,8 @@ async def block_dialog(
                         )
                     ),
                 ):
-                    text("Block Organization")
+                    with button(variant="error", type="submit"):
+                        text("Block Organization")
 
     return None
 
@@ -1729,8 +1742,7 @@ async def delete_dialog(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with button(
-                    variant="error",
+                with tag.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:delete_dialog",
@@ -1738,7 +1750,8 @@ async def delete_dialog(
                         )
                     ),
                 ):
-                    text("Delete Organization")
+                    with button(variant="error", type="submit"):
+                        text("Delete Organization")
 
     return None
 

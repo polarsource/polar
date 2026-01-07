@@ -30,7 +30,17 @@ export const useOAuthConfig = () => {
     },
   }
 
-  const scopes = ['openid', 'profile', 'email', 'web:read', 'web:write']
+  const scopes = [
+    'openid',
+    'profile',
+    'email',
+    'web:read',
+    'web:write',
+    'notifications:read',
+    'notifications:write',
+    'notification_recipients:read',
+    'notification_recipients:write',
+  ]
 
   return {
     scopes,

@@ -103,25 +103,24 @@ variable "openai_secrets" {
 variable "backend_config" {
   description = "Backend environment configuration (non-sensitive)"
   type = object({
-    environment                          = optional(string, null) # Default to the environment variable
-    base_url                             = string                 # "https://api.polar.sh"
-    backoffice_host                      = optional(string, null) # "backoffice.polar.sh"
-    user_session_cookie_domain           = string                 # "polar.sh"
-    user_session_cookie_key              = optional(string, "")
-    debug                                = string               # "0"
-    email_sender                         = string               # "resend"
-    email_from_name                      = string               # "Polar"
-    email_from_domain                    = string               # "notifications.polar.sh"
-    frontend_base_url                    = string               # "https://polar.sh"
-    checkout_base_url                    = string               # "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = string               # "/etc/secrets/jwks.json"
-    log_level                            = string               # "INFO"
-    testing                              = string               # "0"
-    organizations_billing_engine_default = string               # "1"
-    auth_cookie_domain                   = string               # "polar.sh"
-    auth_cookie_key                      = optional(string, "") # "polar.sh"
-    invoices_additional_info             = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor                = optional(string, "stripe")
+    environment                = optional(string, null) # Default to the environment variable
+    base_url                   = string                 # "https://api.polar.sh"
+    backoffice_host            = optional(string, null) # "backoffice.polar.sh"
+    user_session_cookie_domain = string                 # "polar.sh"
+    user_session_cookie_key    = optional(string, "")
+    debug                      = string               # "0"
+    email_sender               = string               # "resend"
+    email_from_name            = string               # "Polar"
+    email_from_domain          = string               # "notifications.polar.sh"
+    frontend_base_url          = string               # "https://polar.sh"
+    checkout_base_url          = string               # "https://buy.polar.sh/{client_secret}"
+    jwks_path                  = string               # "/etc/secrets/jwks.json"
+    log_level                  = string               # "INFO"
+    testing                    = string               # "0"
+    auth_cookie_domain         = string               # "polar.sh"
+    auth_cookie_key            = optional(string, "") # "polar.sh"
+    invoices_additional_info   = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    default_tax_processor      = optional(string, "stripe")
   })
 }
 

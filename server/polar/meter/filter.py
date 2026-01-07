@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from annotated_types import Ge, Le, MaxLen
 from pydantic import AfterValidator, BaseModel, ConfigDict
@@ -16,6 +18,9 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+
+if TYPE_CHECKING:
+    from polar.models import Event
 
 # PostgreSQL int4 range limits
 INT_MIN_VALUE = -2_147_483_648
@@ -125,6 +130,39 @@ class FilterClause(BaseModel):
             return 1 if self.value else 0
         return self.value
 
+    def matches(self, event: Event) -> bool:
+        if self.property == "name":
+            actual_value: Any = event.name
+        elif self.property == "source":
+            actual_value = event.source
+        elif self.property == "timestamp":
+            actual_value = int(event.timestamp.timestamp())
+        else:
+            actual_value = event.user_metadata.get(self.property)
+            if actual_value is None:
+                return False
+
+        return self._compare(actual_value, self.value)
+
+    def _compare(self, actual: Any, expected: str | int | bool) -> bool:
+        if self.operator == FilterOperator.eq:
+            return actual == expected
+        elif self.operator == FilterOperator.ne:
+            return actual != expected
+        elif self.operator == FilterOperator.gt:
+            return actual > expected
+        elif self.operator == FilterOperator.gte:
+            return actual >= expected
+        elif self.operator == FilterOperator.lt:
+            return actual < expected
+        elif self.operator == FilterOperator.lte:
+            return actual <= expected
+        elif self.operator == FilterOperator.like:
+            return str(expected) in str(actual)
+        elif self.operator == FilterOperator.not_like:
+            return str(expected) not in str(actual)
+        return False
+
 
 class FilterConjunction(StrEnum):
     and_ = "and"
@@ -133,7 +171,7 @@ class FilterConjunction(StrEnum):
 
 class Filter(BaseModel):
     conjunction: FilterConjunction
-    clauses: list["FilterClause | Filter"]
+    clauses: list[FilterClause | Filter]
 
     model_config = ConfigDict(
         # IMPORTANT: this ensures FastAPI doesn't generate `-Input` for output schemas
@@ -146,6 +184,12 @@ class Filter(BaseModel):
         ]
         conjunction = and_ if self.conjunction == FilterConjunction.and_ else or_
         return conjunction(*sql_clauses or (true(),))
+
+    def matches(self, event: Event) -> bool:
+        results = [clause.matches(event) for clause in self.clauses]
+        if self.conjunction == FilterConjunction.and_:
+            return all(results) if results else True
+        return any(results) if results else True
 
 
 class FilterType(TypeDecorator[Any]):

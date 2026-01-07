@@ -7,6 +7,7 @@ from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event, Organization
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
@@ -292,3 +293,121 @@ class TestFilter:
 
         assert len(matching_events) == 1
         assert matching_events[0].id == events[1].id
+
+
+class TestFilterClauseMatches:
+    def test_matches_name_eq(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="name", operator=FilterOperator.eq, value="test.event"
+        )
+        event = Event(
+            name="test.event",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert clause.matches(event) is True
+
+    def test_matches_name_ne(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="name", operator=FilterOperator.eq, value="other.event"
+        )
+        event = Event(
+            name="test.event",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert clause.matches(event) is False
+
+    def test_matches_metadata_string(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="category", operator=FilterOperator.eq, value="api"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"category": "api"},
+        )
+        assert clause.matches(event) is True
+
+    def test_matches_metadata_missing(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="category", operator=FilterOperator.eq, value="api"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert clause.matches(event) is False
+
+    def test_matches_metadata_number_gt(self, organization: Organization) -> None:
+        clause = FilterClause(property="amount", operator=FilterOperator.gt, value=100)
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"amount": 150},
+        )
+        assert clause.matches(event) is True
+
+
+class TestFilterMatches:
+    def test_matches_and_conjunction_all_true(self, organization: Organization) -> None:
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value="test"),
+                FilterClause(
+                    property="category", operator=FilterOperator.eq, value="api"
+                ),
+            ],
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"category": "api"},
+        )
+        assert filter.matches(event) is True
+
+    def test_matches_and_conjunction_one_false(
+        self, organization: Organization
+    ) -> None:
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value="test"),
+                FilterClause(
+                    property="category", operator=FilterOperator.eq, value="other"
+                ),
+            ],
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"category": "api"},
+        )
+        assert filter.matches(event) is False
+
+    def test_matches_or_conjunction(self, organization: Organization) -> None:
+        filter = Filter(
+            conjunction=FilterConjunction.or_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value="test"),
+                FilterClause(
+                    property="name", operator=FilterOperator.eq, value="other"
+                ),
+            ],
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert filter.matches(event) is True

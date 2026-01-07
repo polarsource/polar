@@ -39,6 +39,11 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
+from polar.observability.api_remote_write import (
+    start_api_remote_write_pusher,
+    stop_api_remote_write_pusher,
+)
+from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import (
     AsyncSessionMiddleware,
@@ -109,6 +114,11 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
+    # Start HTTP metrics pusher (if configured)
+    metrics_enabled = start_api_remote_write_pusher()
+    if metrics_enabled:
+        log.info("api_prometheus_remote_write_enabled")
+
     async_engine = async_read_engine = create_async_engine("app")
     async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(
         async_engine
@@ -149,6 +159,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         "ip_geolocation_client": ip_geolocation_client,
     }
 
+    # Stop HTTP metrics pusher
+    stop_api_remote_write_pusher()
+
     await redis.close(True)
     await async_engine.dispose()
     if async_read_engine is not async_engine:
@@ -176,6 +189,8 @@ def create_app() -> FastAPI:
         app.add_middleware(AsyncSessionMiddleware)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(LogCorrelationIdMiddleware)
+    if not settings.is_testing():
+        app.add_middleware(HttpMetricsMiddleware)
 
     configure_cors(app)
 

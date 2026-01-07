@@ -641,7 +641,14 @@ class TestAssignSeat:
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that assign_seat creates a member when member_model_enabled is true."""
+        """Test that assign_seat creates a member when member_model_enabled is true.
+
+        When member_model_enabled=True:
+        - seat.customer_id = billing customer (subscription owner)
+        - seat.member_id = member created under billing customer
+        - seat.email = email of the seat member
+        - No separate Customer is created for the seat member
+        """
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -667,25 +674,22 @@ class TestAssignSeat:
         subscription = await create_subscription_with_seats(
             save_fixture, product=product, customer=billing_customer, seats=5
         )
-        # Seat customer (to be assigned a seat)
-        seat_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="seat@example.com",
-        )
 
         seat = await seat_service.assign_seat(
             session, subscription, email="seat@example.com"
         )
 
-        assert seat.customer_id == seat_customer.id
+        # customer_id should be the billing customer (purchaser), not a new customer
+        assert seat.customer_id == billing_customer.id
         assert seat.member_id is not None
+        assert seat.email == "seat@example.com"
 
         # Verify member was created with correct properties
         await session.refresh(seat, ["member"])
         assert seat.member is not None
-        assert seat.member.customer_id == seat_customer.id
-        assert seat.member.email == seat_customer.email
+        # Member is created under the billing customer
+        assert seat.member.customer_id == billing_customer.id
+        assert seat.member.email == "seat@example.com"
         assert seat.member.organization_id == organization.id
 
     @pytest.mark.asyncio

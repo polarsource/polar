@@ -255,6 +255,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
+      accessorKey: 'ends_at',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Ends At" />
+      ),
+      cell: ({ row: { original: discount } }) => {
+        return discount.ends_at ? (
+          <FormattedDateTime datetime={discount.ends_at} resolution="day" />
+        ) : (
+          '—'
+        )
+      },
+    },
+    {
       id: 'actions',
       enableSorting: false,
       cell: ({ row: { original: discount } }) => (

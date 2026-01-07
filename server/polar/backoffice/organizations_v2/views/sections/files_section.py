@@ -2,14 +2,14 @@
 
 import contextlib
 from collections.abc import Generator
-from typing import Any
 
 from fastapi import Request
 from tagflow import tag, text
 
-from polar.models import Organization
+from polar.file.service import file as file_service
+from polar.models import File, Organization
 
-from ....components import button, card, empty_state
+from ....components import card, empty_state
 
 
 class FilesSection:
@@ -18,7 +18,7 @@ class FilesSection:
     def __init__(
         self,
         organization: Organization,
-        files: list[Any] | None = None,
+        files: list[File] | None = None,
     ):
         self.org = organization
         self.files = files or []
@@ -43,7 +43,7 @@ class FilesSection:
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):
                     with tag.h2(classes="text-lg font-bold"):
-                        text("Uploaded Files")
+                        text("Downloadable Files")
                     with tag.div(classes="text-sm text-base-content/60"):
                         text(f"{len(self.files)} file(s)")
 
@@ -66,6 +66,11 @@ class FilesSection:
 
                             with tag.tbody():
                                 for file in self.files:
+                                    # Generate presigned download URL
+                                    download_url, _ = (
+                                        file_service.generate_download_url(file)
+                                    )
+
                                     with tag.tr():
                                         with tag.td():
                                             with tag.div(classes="font-medium"):
@@ -92,17 +97,17 @@ class FilesSection:
                                             )
 
                                         with tag.td():
-                                            with button(
-                                                variant="secondary",
-                                                size="sm",
-                                                ghost=True,
-                                                hx_get=f"/backoffice/organizations/{self.org.id}/files/{file.id}/download",
+                                            with tag.a(
+                                                href=download_url,
+                                                target="_blank",
+                                                rel="noopener noreferrer",
+                                                classes="btn btn-sm btn-ghost",
                                             ):
                                                 text("Download")
                 else:
                     with empty_state(
                         "No Files",
-                        "This organization hasn't uploaded any files yet.",
+                        "This organization hasn't uploaded any downloadable files yet.",
                     ):
                         pass
 

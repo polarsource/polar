@@ -72,13 +72,13 @@ class TeamSection:
                                         variant="secondary",
                                         size="sm",
                                         ghost=True,
-                                        hx_get=str(
+                                        hx_post=str(
                                             request.url_for(
-                                                "organizations-v2:impersonate",
-                                                organization_id=self.org.id,
-                                                user_id=member.user_id,
+                                                "backoffice:start_impersonation",
                                             )
                                         ),
+                                        hx_vals=f'{{"user_id": "{member.user_id}"}}',
+                                        hx_confirm="Are you sure you want to impersonate this user?",
                                     ):
                                         text("Impersonate")
 

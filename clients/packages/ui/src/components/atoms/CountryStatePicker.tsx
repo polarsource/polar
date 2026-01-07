@@ -76,6 +76,12 @@ const CA_PROVINCES: Record<string, string> = {
   'CA-SK': 'Saskatchewan',
 }
 
+interface CountryStatePickerLabels {
+  state?: string
+  province?: string
+  stateOrProvince?: string
+}
+
 const CountryStatePicker = ({
   className,
   value,
@@ -84,6 +90,7 @@ const CountryStatePicker = ({
   autoComplete,
   itemClassName,
   contentClassName,
+  labels,
 }: {
   className?: string
   contentClassName?: string
@@ -92,7 +99,12 @@ const CountryStatePicker = ({
   onChange: (value: string) => void
   country?: string
   autoComplete?: string
+  labels?: CountryStatePickerLabels
 }) => {
+  const stateLabel = labels?.state ?? 'State'
+  const provinceLabel = labels?.province ?? 'Province'
+  const stateOrProvinceLabel = labels?.stateOrProvince ?? 'State / Province'
+
   if (country === 'US' || country === 'CA') {
     const states = country === 'US' ? US_STATES : CA_PROVINCES
     return (
@@ -103,7 +115,7 @@ const CountryStatePicker = ({
       >
         <SelectTrigger className={className}>
           <SelectValue
-            placeholder={country === 'US' ? 'State' : 'Province'}
+            placeholder={country === 'US' ? stateLabel : provinceLabel}
             // Avoids issues due to browser automatic translation
             // https://github.com/shadcn-ui/ui/issues/852
             translate="no"
@@ -130,7 +142,7 @@ const CountryStatePicker = ({
   return (
     <Input
       type="text"
-      placeholder="State / Province"
+      placeholder={stateOrProvinceLabel}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />

@@ -1,4 +1,9 @@
 import {
+  getEmailTranslations,
+  isSupportedLocale,
+  type SupportedLocale,
+} from '../i18n'
+import {
   Heading,
   Hr,
   Link,
@@ -22,18 +27,34 @@ export function OrderConfirmation({
   product,
   order,
   url,
-}: schemas['OrderConfirmationProps']) {
+  locale = 'en',
+}: schemas['OrderConfirmationProps'] & { locale?: string }) {
+  const safeLocale: SupportedLocale = isSupportedLocale(locale) ? locale : 'en'
+  const t = getEmailTranslations(safeLocale)
+
   return (
     <Wrapper>
-      <Preview>Thank you for your order of {order.description}!</Preview>
+      <Preview>
+        {t.orderConfirmation.preview.replace('{description}', order.description)}
+      </Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-12">
         <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Thank you for your order!
+          {t.orderConfirmation.heading}
         </Heading>
         <BodyText>
-          Your order of <span className="font-bold">{order.description}</span>{' '}
-          is now processed.
+          {t.orderConfirmation.processed
+            .split('{description}')
+            .map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <span className="font-bold">{order.description}</span>
+                </span>
+              ) : (
+                part
+              ),
+            )}
         </BodyText>
       </Section>
       {product && (
@@ -42,7 +63,7 @@ export function OrderConfirmation({
             <Benefits benefits={product.benefits} />
           )}
           <Section className="my-8 text-center">
-            <Button href={url}>Access my purchase</Button>
+            <Button href={url}>{t.common.accessPurchase}</Button>
           </Section>
         </>
       )}
@@ -50,10 +71,7 @@ export function OrderConfirmation({
       <OrderSummary order={order} />
       <Hr />
       <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
-          below into your web browser.
-        </Text>
+        <Text className="text-sm text-gray-600">{t.common.troubleWithButton}</Text>
         <Text className="text-sm">
           <Link href={url} className="text-blue-600 underline">
             {url}
@@ -71,6 +89,7 @@ OrderConfirmation.PreviewProps = {
   product,
   order,
   url: 'https://polar.sh/acme-inc/portal/orders/12345',
+  locale: 'en',
 }
 
 export default OrderConfirmation

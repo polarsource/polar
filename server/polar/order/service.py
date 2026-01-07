@@ -1358,6 +1358,7 @@ class OrderService:
                 "template": template_name,
                 "props": {
                     "email": customer.email,
+                    "locale": customer.locale or "en",
                     "organization": organization,
                     "product": product,
                     "order": order,

@@ -1,6 +1,8 @@
+import { getTranslations, type SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import { useMemo } from 'react'
 import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
@@ -8,12 +10,16 @@ import MeteredPriceLabel from './MeteredPriceLabel'
 interface ProductPriceLabelProps {
   product: CheckoutProduct
   price: ProductPrice | LegacyRecurringProductPrice
+  locale?: SupportedLocale
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
+  locale = 'en',
 }) => {
+  const t = useMemo(() => getTranslations(locale), [locale])
+
   if (price.amountType === 'fixed') {
     return (
       <AmountLabel
@@ -25,18 +31,21 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             : product.recurringInterval
         }
         intervalCount={product.recurringIntervalCount}
+        locale={locale}
       />
     )
   } else if (price.amountType === 'custom') {
-    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+    return (
+      <div className="text-[min(1em,24px)]">{t.pricing.payWhatYouWant}</div>
+    )
   } else if (price.amountType === 'free') {
-    return <div className="text-[min(1em,24px)]">Free</div>
+    return <div className="text-[min(1em,24px)]">{t.pricing.free}</div>
   } else if (price.amountType === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">
         {price.meter.name}
         {' — '}
-        <MeteredPriceLabel price={price} />
+        <MeteredPriceLabel price={price} locale={locale} />
       </div>
     )
   }

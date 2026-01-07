@@ -1,23 +1,27 @@
 'use client'
 
+import { getTranslations, type SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
   update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
+  locale?: SupportedLocale
 }
 
 const CheckoutSeatSelector = ({
   checkout,
   update,
+  locale = 'en',
 }: CheckoutSeatSelectorProps) => {
+  const t = useMemo(() => getTranslations(locale), [locale])
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState('')
@@ -149,13 +153,14 @@ const CheckoutSeatSelector = ({
           {formatCurrencyAndAmount(netAmount, currency, 0)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrencyAndAmount(pricePerSeat, currency, 0)} per seat
+          {formatCurrencyAndAmount(pricePerSeat, currency, 0)}{' '}
+          {t.pricing.perSeat}
         </p>
       </div>
 
       {/* Seat Selector */}
       <div className="flex flex-col gap-2">
-        <label className="text-lg">Number of seats</label>
+        <label className="text-lg">{t.pricing.numberOfSeats}</label>
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -237,7 +242,7 @@ const CheckoutSeatSelector = ({
         )}
       </div>
 
-      <MeteredPricesDisplay checkout={checkout} />
+      <MeteredPricesDisplay checkout={checkout} locale={locale} />
     </div>
   )
 }

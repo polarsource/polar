@@ -1,4 +1,5 @@
 import { getExperiment } from '@/experiments/server'
+import { resolveCheckoutLocale } from '@/i18n/utils'
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
@@ -13,14 +14,16 @@ import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
+  searchParams: Promise<{
+    embed?: string
+    theme?: 'light' | 'dark'
+    locale?: string
+  }>
 }) {
   const searchParams = await props.searchParams
-
-  const { embed: _embed, theme } = searchParams
-
   const params = await props.params
 
+  const { embed: _embed, theme, locale: searchParamLocale } = searchParams
   const { clientSecret } = params
 
   const embed = _embed === 'true'
@@ -76,6 +79,8 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
+  const locale = await resolveCheckoutLocale(searchParamLocale, checkout.locale)
+
   const merchantAvatarVariant = await getExperiment(
     'checkout_merchant_avatar_experiment',
   )
@@ -90,6 +95,7 @@ export default async function Page(props: {
           theme={theme}
           embed={embed}
           merchantAvatarVariant={merchantAvatarVariant}
+          locale={locale}
         />
       </CheckoutFormProvider>
     </CheckoutProvider>

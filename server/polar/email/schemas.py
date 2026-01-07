@@ -57,6 +57,7 @@ class OrderEmail(OrderBase):
 
 class EmailProps(BaseModel):
     email: str
+    locale: str = "en"
 
 
 class LoginCodeProps(EmailProps):

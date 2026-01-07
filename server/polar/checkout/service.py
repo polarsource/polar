@@ -490,6 +490,10 @@ class CheckoutService:
             ):
                 checkout.is_business_customer = True
 
+            # Inherit locale from customer if not explicitly set
+            if checkout.locale is None and checkout.customer.locale is not None:
+                checkout.locale = checkout.customer.locale
+
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {
                 **(checkout.payment_processor_metadata or {}),
@@ -2173,6 +2177,8 @@ class CheckoutService:
             customer.billing_address = checkout.customer_billing_address
         if checkout.customer_tax_id is not None:
             customer.tax_id = checkout.customer_tax_id
+        if checkout.locale is not None:
+            customer.locale = checkout.locale
 
         customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {

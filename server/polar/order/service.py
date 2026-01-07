@@ -28,7 +28,7 @@ from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
 from polar.event.system import OrderPaidMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -337,6 +337,42 @@ class OrderService:
         order: Order,
         order_update: OrderUpdate | CustomerOrderUpdate,
     ) -> Order:
+        # Validate that country/state cannot be changed after order is paid
+        # because VAT was calculated based on the original address
+        if order.paid and order_update.billing_address is not None:
+            new_address = order_update.billing_address
+            existing_address = order.billing_address
+
+            new_country = str(new_address.country) if new_address else None
+            new_state = new_address.state if new_address else None
+            existing_country = (
+                str(existing_address.country) if existing_address else None
+            )
+            existing_state = existing_address.state if existing_address else None
+
+            if new_country != existing_country:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "billing_address", "country"),
+                            "msg": "Cannot change country after order is paid.",
+                            "input": new_country,
+                        }
+                    ]
+                )
+            if new_state != existing_state:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "billing_address", "state"),
+                            "msg": "Cannot change state after order is paid.",
+                            "input": new_state,
+                        }
+                    ]
+                )
+
         repository = OrderRepository.from_session(session)
         order = await repository.update(
             order, update_dict=order_update.model_dump(exclude_unset=True)

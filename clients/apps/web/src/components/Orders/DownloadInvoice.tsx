@@ -341,6 +341,7 @@ const DownloadInvoice = ({
                           country={country}
                           value={field.value || ''}
                           onChange={field.onChange}
+                          disabled={order.paid}
                         />
                         <FormMessage />
                       </>
@@ -361,6 +362,7 @@ const DownloadInvoice = ({
                           value={field.value || undefined}
                           onChange={field.onChange}
                           allowedCountries={enums.addressInputCountryValues}
+                          disabled={order.paid}
                         />
                         <FormMessage />
                       </>

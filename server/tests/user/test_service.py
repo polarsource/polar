@@ -2,13 +2,22 @@ import pytest
 from sqlalchemy import select
 
 from polar.kit.utils import utc_now
-from polar.models import OAuthAccount, Organization, User, UserOrganization
+from polar.models import (
+    NotificationRecipient,
+    OAuthAccount,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.user.schemas import UserDeletionBlockedReason
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_oauth_account
+from tests.fixtures.random_objects import (
+    create_notification_recipient,
+    create_oauth_account,
+)
 
 
 @pytest.mark.asyncio
@@ -153,3 +162,39 @@ class TestRequestDeletion:
 
         result = await session.execute(stmt)
         assert len(result.scalars().all()) == 0
+
+    async def test_notification_recipients_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        """Notification recipients are soft-deleted when user is deleted."""
+        await create_notification_recipient(
+            save_fixture, user=user, expo_push_token="ExponentPushToken[token1]"
+        )
+        await create_notification_recipient(
+            save_fixture, user=user, expo_push_token="ExponentPushToken[token2]"
+        )
+
+        stmt = select(NotificationRecipient).where(
+            NotificationRecipient.user_id == user.id,
+            NotificationRecipient.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        assert len(result.scalars().all()) == 2
+
+        deletion_result = await user_service.request_deletion(session, user)
+
+        assert deletion_result.deleted is True
+
+        result = await session.execute(stmt)
+        assert len(result.scalars().all()) == 0
+
+        stmt_all = select(NotificationRecipient).where(
+            NotificationRecipient.user_id == user.id,
+        )
+        result = await session.execute(stmt_all)
+        recipients = result.scalars().all()
+        assert len(recipients) == 2
+        assert all(r.deleted_at is not None for r in recipients)

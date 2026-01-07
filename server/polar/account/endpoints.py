@@ -2,6 +2,8 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
+from polar.account_credit.repository import AccountCreditRepository
+from polar.account_credit.schemas import AccountCredit as AccountCreditSchema
 from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, ResourceNotFound
@@ -129,3 +131,18 @@ async def dashboard_link(
         raise InternalServerError("Failed to create link")
 
     return link
+
+
+@router.get("/accounts/{id}/credits", response_model=list[AccountCreditSchema])
+async def get_credits(
+    id: UUID,
+    auth_subject: WebUserRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[AccountCreditSchema]:
+    account = await account_service.get(session, auth_subject, id)
+    if account is None:
+        raise ResourceNotFound()
+
+    credit_repository = AccountCreditRepository.from_session(session)
+    credits = await credit_repository.get_active(account.id)
+    return [AccountCreditSchema.model_validate(credit) for credit in credits]

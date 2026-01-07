@@ -39,6 +39,8 @@ from polar.models import (
     CustomerMeter,
     Event,
     EventClosure,
+    Meter,
+    MeterEvent,
     Organization,
     User,
     UserOrganization,
@@ -59,6 +61,7 @@ from .schemas import (
     StatisticsPeriod,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
+from .system import SystemEvent
 
 log: Logger = structlog.get_logger()
 
@@ -731,6 +734,8 @@ class EventService:
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
 
+        await self._create_meter_events(session, events)
+
         await self._activate_matching_customer_meters(
             session, repository, event_ids, customers
         )
@@ -741,6 +746,57 @@ class EventService:
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)
             await organization_repository.enable_revops(organization_ids_for_revops)
+
+    async def _create_meter_events(
+        self, session: AsyncSession, events: Sequence[Event]
+    ) -> None:
+        if not events:
+            return
+
+        events_by_org: dict[uuid.UUID, list[Event]] = {}
+        for event in events:
+            events_by_org.setdefault(event.organization_id, []).append(event)
+
+        meter_repository = MeterRepository.from_session(session)
+        meter_event_rows: list[dict[str, Any]] = []
+
+        for org_id, org_events in events_by_org.items():
+            meters = await meter_repository.get_all(
+                meter_repository.get_base_statement().where(
+                    Meter.organization_id == org_id,
+                    Meter.archived_at.is_(None),
+                )
+            )
+
+            for event in org_events:
+                for meter in meters:
+                    if self._event_matches_meter(event, meter):
+                        meter_event_rows.append(
+                            {
+                                "meter_id": meter.id,
+                                "event_id": event.id,
+                                "customer_id": event.customer_id,
+                                "external_customer_id": event.external_customer_id,
+                                "organization_id": event.organization_id,
+                                "ingested_at": event.ingested_at,
+                                "timestamp": event.timestamp,
+                            }
+                        )
+
+        if meter_event_rows:
+            await session.execute(
+                insert(MeterEvent).values(meter_event_rows).on_conflict_do_nothing()
+            )
+
+    def _event_matches_meter(self, event: Event, meter: Meter) -> bool:
+        if (
+            event.source == EventSource.system
+            and event.name in (SystemEvent.meter_credited, SystemEvent.meter_reset)
+            and event.user_metadata.get("meter_id") == str(meter.id)
+        ):
+            return True
+
+        return meter.filter.matches(event) and meter.aggregation.matches(event)
 
     async def _activate_matching_customer_meters(
         self,

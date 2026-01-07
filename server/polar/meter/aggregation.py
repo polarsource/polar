@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import (
@@ -12,6 +14,9 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+
+if TYPE_CHECKING:
+    from polar.models import Event
 
 
 class AggregationFunction(StrEnum):
@@ -54,6 +59,9 @@ class CountAggregation(BaseModel):
         """
         return True
 
+    def matches(self, event: Event) -> bool:
+        return True
+
 
 def _strip_metadata_prefix(value: str) -> str:
     prefix = "metadata."
@@ -92,6 +100,12 @@ class PropertyAggregation(BaseModel):
         """
         return self.func == AggregationFunction.sum
 
+    def matches(self, event: Event) -> bool:
+        if self.property in ("name", "source", "timestamp"):
+            return True
+        value = event.user_metadata.get(self.property)
+        return isinstance(value, int | float)
+
 
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
@@ -111,6 +125,9 @@ class UniqueAggregation(BaseModel):
         could appear in multiple groups).
         """
         return False
+
+    def matches(self, event: Event) -> bool:
+        return True
 
 
 _Aggregation = CountAggregation | PropertyAggregation | UniqueAggregation

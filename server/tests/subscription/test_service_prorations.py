@@ -318,8 +318,6 @@ class TestUpdateProductProrations:
         )
 
         with freezegun.freeze_time(cycle_start) as frozen_time:
-            # We're not using Stripe
-            assert organization.subscriptions_billing_engine is True
             # Assert default setting: "Invoice later"
             assert (
                 organization.subscription_settings["proration_behavior"]
@@ -697,9 +695,6 @@ class TestUpdateProductProrations:
         await session.flush()
 
         with freezegun.freeze_time(cycle_start) as frozen_time:
-            # We're not using Stripe
-            assert organization.subscriptions_billing_engine is True
-
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -757,9 +752,6 @@ class TestUpdateProductProrations:
         ]
 
         with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
-            # We're not using Stripe
-            assert organization.subscriptions_billing_engine is True
-
             # Create 3 subscriptions starting June 1st, June 2nd, June 3rd respectively
             subscriptions = []
             for i in range(3):
@@ -898,9 +890,6 @@ class TestUpdateProductProrations:
         ]
 
         with freezegun.freeze_time(cycle_start) as frozen_time:
-            # We're not using Stripe
-            assert organization.subscriptions_billing_engine is True
-
             subscription = await create_active_subscription(
                 save_fixture,
                 product=products[0],

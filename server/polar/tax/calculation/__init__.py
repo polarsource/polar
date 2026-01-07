@@ -1,6 +1,7 @@
 from polar.enums import TaxProcessor
 
 from .base import (
+    InvalidTaxIDError,
     TaxabilityReason,
     TaxCalculation,
     TaxCalculationError,
@@ -21,6 +22,7 @@ def get_tax_service(processor: TaxProcessor) -> TaxServiceProtocol:
 
 
 __all__ = [
+    "InvalidTaxIDError",
     "TaxCalculation",
     "TaxCalculationError",
     "TaxCode",

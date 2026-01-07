@@ -127,19 +127,6 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
         address=customer.billing_address,
     )
 
-    mock.get_tax_rate.return_value = stripe_lib.TaxRate.construct_from(
-        {
-            "id": "STRIPE_TAX_RATE_ID",
-            "rate_type": "percentage",
-            "percentage": 20.0,
-            "flat_amount": None,
-            "display_name": "VAT",
-            "country": "FR",
-            "state": None,
-        },
-        key=None,
-    )
-
     return mock
 
 
@@ -809,6 +796,16 @@ class TestCreateSubscriptionOrder:
         assert order.status == OrderStatus.pending
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
+
+        calculate_tax_mock.assert_called_once_with(
+            order.id,
+            subscription.currency,
+            order.net_amount,
+            product.tax_code,
+            customer.billing_address,
+            [],
+            False,
+        )
 
         assert billing_entry.amount is not None
         assert order.tax_amount == polar_round(billing_entry.amount * 0.20)

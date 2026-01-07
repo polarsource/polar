@@ -25,7 +25,7 @@ MAX_AGE_MILLISECONDS = 5 * 60 * 1000  # 5 minutes
 
 @actor(
     actor_name="meter.enqueue_billing",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
     priority=TaskPriority.LOW,
     max_age=MAX_AGE_MILLISECONDS,
 )
@@ -43,5 +43,9 @@ async def meter_billing_entries(meter_id: uuid.UUID) -> None:
         )
         if meter is None:
             raise MeterDoesNotExist(meter_id)
+
+        # Skip archived meters
+        if meter.archived_at is not None:
+            return
 
         await meter_service.create_billing_entries(session, meter)

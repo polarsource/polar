@@ -22,9 +22,11 @@ export default async function Page(props: {
     params.organization,
   )
 
-  const { pagination, sorting } = parseSearchParams(searchParams, [
-    { id: 'created_at', desc: true },
-  ])
+  const { pagination, sorting } = parseSearchParams(
+    searchParams,
+    [{ id: 'created_at', desc: true }],
+    50,
+  )
 
   return (
     <PayoutsPage

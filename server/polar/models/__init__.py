@@ -1,6 +1,7 @@
 from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
+from .account_credit import AccountCredit
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
@@ -33,6 +34,7 @@ from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
 from .member import Member, MemberRole
 from .meter import Meter
+from .meter_event import MeterEvent
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
@@ -84,6 +86,7 @@ from .webhook_event import WebhookEvent
 
 __all__ = [
     "Account",
+    "AccountCredit",
     "Benefit",
     "BenefitGrant",
     "BillingEntry",
@@ -121,6 +124,7 @@ __all__ = [
     "Member",
     "MemberRole",
     "Meter",
+    "MeterEvent",
     "Model",
     "Notification",
     "NotificationRecipient",

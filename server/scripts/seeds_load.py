@@ -60,7 +60,6 @@ class OrganizationDict(TypedDict):
     website: str
     bio: str
     status: NotRequired[OrganizationStatus]
-    subscriptions_billing_engine: NotRequired[bool]
     details: NotRequired[OrganizationDetails]
     products: NotRequired[list["ProductDict"]]
     benefits: NotRequired[dict[str, "BenefitDict"]]
@@ -228,7 +227,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "website": "https://meltedsql.com",
             "bio": "Your go-to solution for SQL database management and optimization.",
             "status": OrganizationStatus.ACTIVE,
-            "subscriptions_billing_engine": True,
             "details": {
                 "about": "We make beautiful SQL management products for macOS.",
                 "intended_use": "Well have a checkout on our website granting a download link and license key.",
@@ -536,9 +534,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.details = org_data.get("details", {})  # type: ignore
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
-        organization.subscriptions_billing_engine = org_data.get(
-            "subscriptions_billing_engine", False
-        )
         session.add(organization)
 
         # Create OrganizationReview with PASS verdict for ACTIVE organizations

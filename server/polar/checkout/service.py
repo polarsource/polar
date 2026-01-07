@@ -35,7 +35,6 @@ from polar.event.system import (
     build_checkout_event,
 )
 from polar.exceptions import (
-    BadRequest,
     NotPermitted,
     PaymentNotReady,
     PolarError,
@@ -1017,14 +1016,6 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
-
-        if (
-            checkout.trial_end is not None
-            and not checkout.organization.subscriptions_billing_engine
-        ):
-            raise BadRequest(
-                "Trials are not supported on susbcriptions managed by Stripe."
-            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(

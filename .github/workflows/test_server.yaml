@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   changes:
@@ -15,15 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       server: ${{ steps.filter.outputs.server }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          list-files: json
           filters: |
             server:
               - 'server/**'
               - '.github/workflows/test_server.yaml'
+            migrations:
+              - 'server/migrations/versions/**'
 
   linters:
     name: "Server: Linters 📝"
@@ -64,6 +70,87 @@ jobs:
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
         run: uv run task lint_types
+
+  migration-check:
+    name: "Server: Migration Check 📚"
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for disallowed files
+        id: check
+        env:
+          SERVER_FILES: ${{ needs.changes.outputs.server_files }}
+        run: |
+          DISALLOWED=""
+          for file in $(echo "$SERVER_FILES" | jq -r '.[]'); do
+            # Allow: migrations, models, and the workflow file itself
+            if [[ "$file" == server/migrations/* ]]; then
+              continue
+            fi
+            if [[ "$file" == server/polar/models/* ]]; then
+              continue
+            fi
+            if [[ "$file" == .github/* ]]; then
+              continue
+            fi
+            DISALLOWED="$DISALLOWED$file\n"
+          done
+
+          if [ -n "$DISALLOWED" ]; then
+            echo "has_disallowed=true" >> $GITHUB_OUTPUT
+            FILES_LIST=$(echo -e "$DISALLOWED" | sed '/^$/d' | sed 's/^/- `/' | sed 's/$/`/')
+            echo "files_list<<EOF" >> $GITHUB_OUTPUT
+            echo "$FILES_LIST" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_disallowed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v4
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "<!-- __MIGRATION_CHECK -->"
+
+      - name: Create or update failure comment
+        if: steps.check.outputs.has_disallowed == 'true'
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __MIGRATION_CHECK -->
+            ## ⚠️ Migration Isolation Check Failed
+
+            This PR contains database migrations along with other code changes. To ensure safe deployments, please split this into separate PRs,
+            or verify that your changes will not break. Keep in mind that the API is deployed before the workers.
+
+            1. **Migration PR**: Only model changes and the migration file
+            2. **Code PR**: All other changes (can be merged after migration PR)
+
+            ### Files that should be in a separate PR:
+            ${{ steps.check.outputs.files_list }}
+
+            ### Why?
+            Migrations are deployed separately and run before code changes. Mixing them can cause deployment issues if the new code depends on the migration.
+
+      - name: Delete resolved comment
+        if: steps.check.outputs.has_disallowed == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }}
+            })
+
+      - name: Fail check
+        if: steps.check.outputs.has_disallowed == 'true'
+        run: exit 1
 
   test:
     name: "Server: Tests 🐍"

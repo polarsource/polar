@@ -379,8 +379,6 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
-    ORGANIZATIONS_BILLING_ENGINE_DEFAULT: bool = True
-
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
         timedelta(days=2),  # First retry after 2 days

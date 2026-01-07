@@ -34,6 +34,7 @@ from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
 from .member import Member, MemberRole
 from .meter import Meter
+from .meter_event import MeterEvent
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
@@ -123,6 +124,7 @@ __all__ = [
     "Member",
     "MemberRole",
     "Meter",
+    "MeterEvent",
     "Model",
     "Notification",
     "NotificationRecipient",

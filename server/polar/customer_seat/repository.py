@@ -59,6 +59,59 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
                 container.id, customer_id, options=options
             )
 
+    async def get_by_container_and_email(
+        self,
+        container: SeatContainer,
+        email: str,
+        *,
+        options: Options = (),
+    ) -> CustomerSeat | None:
+        """Get seat by container and email (for member_model_enabled path)."""
+        if isinstance(container, Subscription):
+            return await self.get_by_subscription_and_email(
+                container.id, email, options=options
+            )
+        else:
+            return await self.get_by_order_and_email(
+                container.id, email, options=options
+            )
+
+    async def get_by_subscription_and_email(
+        self,
+        subscription_id: UUID,
+        email: str,
+        *,
+        options: Options = (),
+    ) -> CustomerSeat | None:
+        """Get seat by subscription ID and email."""
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.subscription_id == subscription_id,
+                func.lower(CustomerSeat.email) == email.lower(),
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_order_and_email(
+        self,
+        order_id: UUID,
+        email: str,
+        *,
+        options: Options = (),
+    ) -> CustomerSeat | None:
+        """Get seat by order ID and email."""
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.order_id == order_id,
+                func.lower(CustomerSeat.email) == email.lower(),
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_revoked_seat_by_container(
         self,
         container: SeatContainer,
@@ -362,6 +415,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
                 joinedload(Order.customer).joinedload(Customer.organization),
             ),
             joinedload(CustomerSeat.customer),
+            joinedload(CustomerSeat.member),
         )
 
     def get_eager_options_with_prices(self) -> Options:

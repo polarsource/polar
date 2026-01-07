@@ -172,22 +172,21 @@ module "production" {
   }
 
   backend_config = {
-    base_url                             = "https://api.polar.sh"
-    backoffice_host                      = "backoffice.polar.sh"
-    user_session_cookie_domain           = "polar.sh"
-    debug                                = "0"
-    email_sender                         = "resend"
-    email_from_name                      = "Polar"
-    email_from_domain                    = "notifications.polar.sh"
-    frontend_base_url                    = "https://polar.sh"
-    checkout_base_url                    = "https://buy.polar.sh/{client_secret}"
-    jwks_path                            = "/etc/secrets/jwks.json"
-    log_level                            = "INFO"
-    testing                              = "0"
-    organizations_billing_engine_default = "1"
-    auth_cookie_domain                   = "polar.sh"
-    invoices_additional_info             = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor                = "stripe"
+    base_url                   = "https://api.polar.sh"
+    backoffice_host            = "backoffice.polar.sh"
+    user_session_cookie_domain = "polar.sh"
+    debug                      = "0"
+    email_sender               = "resend"
+    email_from_name            = "Polar"
+    email_from_domain          = "notifications.polar.sh"
+    frontend_base_url          = "https://polar.sh"
+    checkout_base_url          = "https://buy.polar.sh/{client_secret}"
+    jwks_path                  = "/etc/secrets/jwks.json"
+    log_level                  = "INFO"
+    testing                    = "0"
+    auth_cookie_domain         = "polar.sh"
+    invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
+    default_tax_processor      = "stripe"
   }
 
   backend_secrets = {

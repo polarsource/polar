@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
+import logfire
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
@@ -16,7 +17,7 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
@@ -35,6 +36,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
     Product,
     ProductPriceMeteredUnit,
     SubscriptionProductPrice,
@@ -466,9 +468,10 @@ class MeterService:
             BillingEntry.from_metered_event(customer, subscription_product_price, event)
         )
 
-    async def create_billing_entries(
+    async def _create_billing_entries_old(
         self, session: AsyncSession, meter: Meter
-    ) -> Sequence[BillingEntry]:
+    ) -> tuple[Sequence[BillingEntry], Sequence[uuid.UUID], Event | None]:
+        """Old implementation using JSONB filters on events table."""
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_base_statement()
@@ -498,11 +501,12 @@ class MeterService:
             uuid.UUID, CustomerSubscriptionProductPrice | None
         ] = {}
 
-        entries: list[BillingEntry] = []
-        updated_subscriptions: set[uuid.UUID] = set()
+        entries = []
+        event_ids = []
         last_event: Event | None = None
         async for event in event_repository.stream(statement):
             last_event = event
+            event_ids.append(event.id)
             customer = event.customer
             assert customer is not None
 
@@ -530,11 +534,102 @@ class MeterService:
                 customer_price.subscription_product_price,
             )
             entries.append(entry)
+
+        return entries, event_ids, last_event
+
+    async def _create_billing_entries_new(
+        self, session: AsyncSession, meter: Meter
+    ) -> tuple[Sequence[uuid.UUID], Event | None]:
+        """New implementation using meter_events table."""
+        event_repository = EventRepository.from_session(session)
+        BillableCustomer = aliased(Customer)
+        statement = (
+            event_repository.get_base_statement()
+            .join(MeterEvent, MeterEvent.event_id == Event.id)
+            .join(
+                BillableCustomer,
+                or_(
+                    BillableCustomer.id == MeterEvent.customer_id,
+                    and_(
+                        MeterEvent.customer_id.is_(None),
+                        BillableCustomer.external_id == MeterEvent.external_customer_id,
+                        BillableCustomer.organization_id == MeterEvent.organization_id,
+                    ),
+                ),
+            )
+            .where(MeterEvent.meter_id == meter.id)
+            .order_by(MeterEvent.ingested_at.asc())
+        )
+        last_billed_event = meter.last_billed_event
+        if last_billed_event is not None:
+            statement = statement.where(
+                MeterEvent.ingested_at > last_billed_event.ingested_at
+            )
+
+        event_ids = []
+        last_event: Event | None = None
+        async for event in event_repository.stream(statement):
+            last_event = event
+            event_ids.append(event.id)
+
+        return event_ids, last_event
+
+    async def create_billing_entries(
+        self, session: AsyncSession, meter: Meter
+    ) -> Sequence[BillingEntry]:
+        last_billed_event = meter.last_billed_event
+
+        with logfire.span("create_billing_entries.old", meter_id=str(meter.id)):
+            (
+                entries,
+                old_event_ids,
+                old_last_event,
+            ) = await self._create_billing_entries_old(session, meter)
+            logfire.info(
+                "Old implementation completed",
+                event_count=len(old_event_ids),
+                last_event_id=str(old_last_event.id) if old_last_event else None,
+            )
+
+        with logfire.span("create_billing_entries.new", meter_id=str(meter.id)):
+            new_event_ids, new_last_event = await self._create_billing_entries_new(
+                session, meter
+            )
+            logfire.info(
+                "New implementation completed",
+                event_count=len(new_event_ids),
+                last_event_id=str(new_last_event.id) if new_last_event else None,
+            )
+
+        old_set: set[uuid.UUID] = set(old_event_ids)
+        new_set: set[uuid.UUID] = set(new_event_ids)
+        if old_set != new_set:
+            only_in_old = old_set - new_set
+            only_in_new = new_set - old_set
+            logfire.error(
+                "Billing entries mismatch between old and new implementations",
+                meter_id=str(meter.id),
+                old_count=len(old_event_ids),
+                new_count=len(new_event_ids),
+                only_in_old_count=len(only_in_old),
+                only_in_new_count=len(only_in_new),
+                only_in_old=[str(e) for e in list(only_in_old)[:10]],
+                only_in_new=[str(e) for e in list(only_in_new)[:10]],
+            )
+        else:
+            logfire.info(
+                "Billing entries match between implementations",
+                meter_id=str(meter.id),
+                count=len(old_event_ids),
+            )
+
+        updated_subscriptions: set[uuid.UUID] = set()
+        for entry in entries:
             if entry.subscription is not None:
                 updated_subscriptions.add(entry.subscription.id)
 
         meter.last_billed_event = (
-            last_event if last_event is not None else last_billed_event
+            old_last_event if old_last_event is not None else last_billed_event
         )
         session.add(meter)
 

@@ -89,6 +89,7 @@ from polar.product.guard import (
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.tax.calculation import get_tax_service
+from polar.tax.calculation.base import TaxCalculationError
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -1794,19 +1795,27 @@ class SubscriptionService:
             and subscription.customer.billing_address is not None
         ):
             tax_service = get_tax_service(settings.DEFAULT_TAX_PROCESSOR)
-            tax = await tax_service.calculate(
-                subscription.id,
-                subscription.currency,
-                taxable_amount,
-                subscription.product.tax_code,
-                subscription.customer.billing_address,
-                [subscription.customer.tax_id]
-                if subscription.customer.tax_id is not None
-                else [],
-                subscription.tax_exempted,
-            )
-
-            tax_amount = tax["amount"]
+            try:
+                tax = await tax_service.calculate(
+                    subscription.id,
+                    subscription.currency,
+                    taxable_amount,
+                    subscription.product.tax_code,
+                    subscription.customer.billing_address,
+                    [subscription.customer.tax_id]
+                    if subscription.customer.tax_id is not None
+                    else [],
+                    subscription.tax_exempted,
+                )
+            except TaxCalculationError:
+                log.warning(
+                    "Failed to calculate tax for subscription due to invalid or incomplete address",
+                    subscription_id=subscription.id,
+                    customer_id=subscription.customer_id,
+                )
+                tax_amount = 0
+            else:
+                tax_amount = tax["amount"]
 
         total = taxable_amount + tax_amount
 

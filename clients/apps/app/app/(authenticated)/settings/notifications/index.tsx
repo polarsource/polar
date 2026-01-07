@@ -13,6 +13,7 @@ import {
 } from '@/hooks/polar/organizations'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { useToast } from '@/providers/ToastProvider'
 import { schemas } from '@polar-sh/client'
 import * as Notifications from 'expo-notifications'
 import { getPermissionsAsync } from 'expo-notifications'
@@ -126,6 +127,7 @@ const usePushNotifications = () => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(false)
 
+  const toast = useToast()
   const { expoPushToken } = useNotifications()
   const { data: notificationRecipient } = useGetNotificationRecipient(
     expoPushToken ?? undefined,
@@ -146,14 +148,28 @@ const usePushNotifications = () => {
     const status = await Notifications.requestPermissionsAsync()
 
     if (status.granted) {
-      const token = await Notifications.getExpoPushTokenAsync()
-      if (token.data) {
-        await createNotificationRecipient(token.data)
+      try {
+        const token = await Notifications.getExpoPushTokenAsync()
+        if (token.data) {
+          await createNotificationRecipient(token.data)
+          setPushNotificationsEnabled(true)
+          return
+        }
+      } catch (error: any) {
+        if (error?.response?.status === 422) {
+          setPushNotificationsEnabled(true)
+          return
+        }
+        const status = error?.response?.status
+        const message = error?.error?.detail?.[0]?.msg || error?.message
+        toast.showError(
+          `Failed to enable push notifications${status ? ` (${status})` : ''}${message ? `: ${message}` : ''}`,
+        )
       }
     }
 
     setPushNotificationsEnabled(status.granted)
-  }, [createNotificationRecipient])
+  }, [createNotificationRecipient, toast])
 
   const disablePushNotifications = useCallback(async () => {
     if (notificationRecipient?.id) {

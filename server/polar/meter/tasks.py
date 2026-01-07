@@ -44,4 +44,8 @@ async def meter_billing_entries(meter_id: uuid.UUID) -> None:
         if meter is None:
             raise MeterDoesNotExist(meter_id)
 
+        # Skip archived meters
+        if meter.archived_at is not None:
+            return
+
         await meter_service.create_billing_entries(session, meter)

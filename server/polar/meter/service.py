@@ -148,6 +148,8 @@ class MeterService:
             meter, update_dict={"last_billed_event": last_billed_event}
         )
 
+        enqueue_job("meter.backfill_events", meter.id)
+
         return meter
 
     async def update(

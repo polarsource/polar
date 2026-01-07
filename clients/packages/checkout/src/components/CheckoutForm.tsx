@@ -94,6 +94,8 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  hidePricingSummary?: boolean
+  hideDiscountCode?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +109,8 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  hidePricingSummary,
+  hideDiscountCode,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -333,10 +337,10 @@ const BaseCheckoutForm = ({
     }
 
     if (checkout.isPaymentFormRequired) {
-      return interval ? 'Subscribe' : 'Pay'
+      return interval ? 'Subscribe' : 'Pay now'
     }
 
-    return 'Submit'
+    return 'Continue'
   }, [checkout, interval])
 
   return (
@@ -688,7 +692,7 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
-              {checkout.allowDiscountCodes && checkout.isDiscountApplicable && (
+              {!hideDiscountCode && checkout.allowDiscountCodes && checkout.isDiscountApplicable && (
                 <FormField
                   control={control}
                   name="discountCode"
@@ -768,7 +772,7 @@ const BaseCheckoutForm = ({
                   ),
                 )}
             </div>
-            {!checkout.isFreeProductPrice && (
+            {!hidePricingSummary && !checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
                 {checkout.currency ? (
                   <>
@@ -929,6 +933,8 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  hidePricingSummary?: boolean
+  hideDiscountCode?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

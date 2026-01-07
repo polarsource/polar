@@ -14,4 +14,10 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
+  checkout_v2_experiment: {
+    description:
+      'Shopify-inspired checkout design to increase conversion rate',
+    variants: ['control', 'treatment'] as const,
+    defaultVariant: 'control',
+  },
 } as const

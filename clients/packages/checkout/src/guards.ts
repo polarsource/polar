@@ -2,6 +2,8 @@ import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutpr
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 
+export { hasLegacyRecurringPrices } from './utils/product'
+
 interface ProductCheckoutMixin {
   product_id: string
   product: CheckoutProduct

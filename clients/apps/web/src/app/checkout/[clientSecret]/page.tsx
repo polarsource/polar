@@ -76,9 +76,10 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
-  const merchantAvatarVariant = await getExperiment(
-    'checkout_merchant_avatar_experiment',
-  )
+  const [merchantAvatarVariant, checkoutV2Variant] = await Promise.all([
+    getExperiment('checkout_merchant_avatar_experiment'),
+    getExperiment('checkout_v2_experiment'),
+  ])
 
   return (
     <CheckoutProvider
@@ -90,6 +91,7 @@ export default async function Page(props: {
           theme={theme}
           embed={embed}
           merchantAvatarVariant={merchantAvatarVariant}
+          checkoutV2Variant={checkoutV2Variant}
         />
       </CheckoutFormProvider>
     </CheckoutProvider>

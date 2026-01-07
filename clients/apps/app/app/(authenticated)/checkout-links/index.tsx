@@ -67,11 +67,18 @@ export default function Index() {
           title: 'Checkout Links',
           headerRight: () => (
             <Touchable onPress={() => router.push('/checkout-links/new')}>
-              <MaterialIcons
-                name="add"
-                size={24}
-                color={theme.colors.monochromeInverted}
-              />
+              <Box
+                width={36}
+                height={36}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <MaterialIcons
+                  name="add"
+                  size={24}
+                  color={theme.colors.monochromeInverted}
+                />
+              </Box>
             </Touchable>
           ),
         }}

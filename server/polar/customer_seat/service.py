@@ -15,6 +15,7 @@ from polar.customer_session.service import (
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
+from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Customer,
@@ -271,14 +272,11 @@ class SeatService:
             # Do NOT create Customer for seat member, only create Member
             # customer_id on seat = billing customer (purchaser)
 
-            # Validate that only email is provided (customer_id and external_customer_id not allowed)
-            if customer_id or external_customer_id:
+            # Validate: only email allowed, customer_id and external_customer_id not supported
+            if not email or customer_id or external_customer_id:
                 raise InvalidSeatAssignmentRequest(
-                    "customer_id and external_customer_id are not supported when member_model_enabled is true. Use email instead."
-                )
-            if not email:
-                raise InvalidSeatAssignmentRequest(
-                    "email is required when member_model_enabled is true"
+                    "Only email is supported when member_model_enabled is true. "
+                    "customer_id and external_customer_id are not allowed."
                 )
 
             seat_member_email = email
@@ -645,14 +643,9 @@ class SeatService:
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)
         seat.invitation_token = None
-
-        if member_model_enabled:
-            # NEW PATH: Keep customer_id (billing customer), clear member_id and email
-            seat.member_id = None
-            seat.email = None
-        else:
-            # OLD PATH: Clear customer_id (seat member customer)
-            seat.customer_id = None
+        seat.customer_id = None
+        seat.member_id = None
+        seat.email = None
 
         await session.flush()
 
@@ -891,8 +884,6 @@ class SeatService:
         Returns:
             Member entity for the seat member
         """
-        from polar.member.repository import MemberRepository
-
         member_repository = MemberRepository.from_session(session)
 
         # Check if member already exists under this customer with this email

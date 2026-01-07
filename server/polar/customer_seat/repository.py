@@ -411,7 +411,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
                 joinedload(Subscription.customer),
             ),
             joinedload(CustomerSeat.order).options(
-                joinedload(Order.product),
+                joinedload(Order.product).joinedload(Product.organization),
                 joinedload(Order.customer).joinedload(Customer.organization),
             ),
             joinedload(CustomerSeat.customer),

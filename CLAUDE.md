@@ -142,6 +142,7 @@ docker compose up -d  # Start PostgreSQL, Redis, Minio
 - Include HTTP status codes in custom exceptions
 - Use dependency injection for database sessions
 - All DB queries should be in the Repository class. Use the right repository class.
+- Always place imports at the top of files, not inside functions or methods.
 
 In most cases, you should never call `session.commit()` directly in business logic. We have established patterns for that: the API backend automatically commits the session at the end of each request, and background workers commit the session at the end of each task. It avoids to have a database in an inconsistent state in case of exceptions. If you have a `session.commit()` in your code, it's likely a mistake. Otherwise, please explicitly document why it's necessary.
 

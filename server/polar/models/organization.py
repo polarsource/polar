@@ -285,6 +285,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     #
+    # Currency settings
+    default_presentment_currency: Mapped[str | None] = mapped_column(
+        String(3), nullable=True, default="usd"
+    )
+
+    #
     # Fields synced from GitHub
     #
 

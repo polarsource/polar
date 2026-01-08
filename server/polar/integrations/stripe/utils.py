@@ -12,6 +12,7 @@ def get_expandable_id(expandable: ExpandableField[StripeObject]) -> str:
 
 
 def get_fingerprint(payment_method: stripe_lib.PaymentMethod) -> str | None:
-    if payment_method.card is not None:
-        return payment_method.card.fingerprint
+    card: stripe_lib.PaymentMethod.Card | None = getattr(payment_method, "card", None)
+    if card is not None:
+        return getattr(card, "fingerprint", None)
     return None

@@ -4166,8 +4166,13 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.billing_name == "Example Inc"
 
+    @pytest.mark.parametrize(
+        "payment_method",
+        [SimpleNamespace(), SimpleNamespace(card={}), SimpleNamespace(cashapp={})],
+    )
     async def test_valid_trial(
         self,
+        payment_method: SimpleNamespace,
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -4179,14 +4184,17 @@ class TestConfirm:
         organization.subscription_settings["prevent_trial_abuse"] = True
         await save_fixture(organization)
 
-        checkout_recurring_fixed.trial_end = utc_now() + timedelta(days=14)
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
         await save_fixture(checkout_recurring_fixed)
 
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
-        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded", payment_method={}
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            payment_method=payment_method,
         )
         checkout = await checkout_service.confirm(
             session,

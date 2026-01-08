@@ -847,7 +847,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0 + on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)",
+              "expr": "max by (endpoint, method) (polar_slo_p99_target_seconds)",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -857,43 +857,67 @@
           "title": "All Endpoint Health",
           "transformations": [
             {
-              "id": "seriesToColumns",
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "groupBy",
               "options": {
-                "byField": "endpoint"
+                "fields": {
+                  "endpoint": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "method": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Value #Availability": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Latency": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Rate": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Errors": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #IsCritical": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  }
+                }
               }
             },
             {
               "id": "organize",
               "options": {
                 "excludeByName": {
-                  "Time": true,
-                  "Time 1": true,
-                  "Time 2": true,
-                  "Time 3": true,
-                  "Time 4": true,
-                  "Time 5": true,
-                  "method 2": true,
-                  "method 3": true,
-                  "method 4": true,
-                  "method 5": true
+                  "Time": true
                 },
                 "indexByName": {
                   "endpoint": 0,
-                  "method 1": 1,
-                  "Value #IsCritical": 2,
-                  "Value #Availability": 3,
-                  "Value #Latency": 4,
-                  "Value #Rate": 5,
-                  "Value #Errors": 6
+                  "method": 1,
+                  "Value #IsCritical (lastNotNull)": 2,
+                  "Value #Availability (lastNotNull)": 3,
+                  "Value #Latency (lastNotNull)": 4,
+                  "Value #Rate (lastNotNull)": 5,
+                  "Value #Errors (lastNotNull)": 6
                 },
                 "renameByName": {
-                  "Value #Availability": "Availability %",
-                  "Value #Errors": "5xx Errors",
-                  "Value #Latency": "p99 Latency",
-                  "Value #Rate": "Request Rate",
-                  "Value #IsCritical": "Critical",
+                  "Value #Availability (lastNotNull)": "Availability %",
+                  "Value #Errors (lastNotNull)": "5xx Errors",
+                  "Value #Latency (lastNotNull)": "p99 Latency",
+                  "Value #Rate (lastNotNull)": "Request Rate",
+                  "Value #IsCritical (lastNotNull)": "Critical",
                   "endpoint": "Endpoint",
-                  "method 1": "Method"
+                  "method": "Method"
                 }
               }
             }

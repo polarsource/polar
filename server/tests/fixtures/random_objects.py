@@ -1045,6 +1045,13 @@ async def create_subscription(
         seats=seats,
         past_due_at=past_due_at,
     )
+
+    # For non-trial subscriptions with a discount, set discount_applied_at to simulate
+    # the behavior of create_or_update_from_checkout where the discount is applied
+    # to the first payment at checkout time. Set this explicitly after constructor
+    # to ensure it's not cleared by the discount "set" event listener.
+    if discount is not None and trial_start is None:
+        subscription.discount_applied_at = current_period_start
     await save_fixture(subscription)
 
     return subscription

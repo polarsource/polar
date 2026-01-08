@@ -453,3 +453,7 @@ def _discount_set(
     initiator: Event,
 ) -> None:
     target.update_amount_and_currency(target.subscription_product_prices, value)
+    # Reset discount_applied_at when discount changes so the new discount's
+    # expiration will be tracked from its first use in a billing cycle
+    if value != oldvalue:
+        target.discount_applied_at = None

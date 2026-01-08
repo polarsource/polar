@@ -1,11 +1,16 @@
 import uuid
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy import func, select
 
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
-from polar.meter.tasks import MeterDoesNotExist, meter_backfill_events
+from polar.meter.tasks import (
+    BACKFILL_BATCH_SIZE,
+    MeterDoesNotExist,
+    meter_backfill_events,
+)
 from polar.models import MeterEvent, Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -22,6 +27,7 @@ class TestMeterBackfillEvents:
 
     async def test_backfills_matching_events(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -65,7 +71,11 @@ class TestMeterBackfillEvents:
 
         session.expunge_all()
 
+        enqueue_job_mock = mocker.patch("polar.meter.tasks.enqueue_job")
+
         await meter_backfill_events(meter.id)
+
+        enqueue_job_mock.assert_not_called()
 
         count_result = await session.execute(
             select(func.count())
@@ -126,3 +136,48 @@ class TestMeterBackfillEvents:
         )
         meter_events_count = count_result.scalar_one()
         assert meter_events_count == 1
+
+    async def test_enqueues_next_batch_when_batch_full(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+
+        for _ in range(BACKFILL_BATCH_SIZE):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                name="test.event",
+            )
+
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name",
+                        operator=FilterOperator.eq,
+                        value="test.event",
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+        )
+
+        session.expunge_all()
+
+        enqueue_job_mock = mocker.patch("polar.meter.tasks.enqueue_job")
+
+        await meter_backfill_events(meter.id)
+
+        enqueue_job_mock.assert_called_once()
+        call_args = enqueue_job_mock.call_args
+        assert call_args[0][0] == "meter.backfill_events"
+        assert call_args[0][1] == meter.id
+        assert call_args[1]["last_ingested_at"] is not None

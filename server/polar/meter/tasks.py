@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
@@ -10,7 +11,7 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Event, Meter, MeterEvent
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 
 class MeterTaskError(PolarTaskError): ...
@@ -59,52 +60,58 @@ BACKFILL_INSERT_CHUNK_SIZE = 500
 
 
 @actor(actor_name="meter.backfill_events", priority=TaskPriority.LOW)
-async def meter_backfill_events(meter_id: uuid.UUID) -> None:
-    """Backfill meter_events for a newly created meter from historical events."""
+async def meter_backfill_events(
+    meter_id: uuid.UUID,
+    last_ingested_at: str | None = None,
+) -> None:
+    """Backfill meter_events for a meter from historical events."""
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
         meter = await repository.get_by_id(meter_id)
         if meter is None:
             raise MeterDoesNotExist(meter_id)
 
-        last_event_id: uuid.UUID | None = None
+        statement = (
+            select(Event)
+            .where(Event.organization_id == meter.organization_id)
+            .order_by(Event.ingested_at)
+            .limit(BACKFILL_BATCH_SIZE)
+        )
+        if last_ingested_at is not None:
+            cursor_timestamp = datetime.fromisoformat(last_ingested_at)
+            statement = statement.where(Event.ingested_at > cursor_timestamp)
 
-        while True:
-            statement = (
-                select(Event)
-                .where(Event.organization_id == meter.organization_id)
-                .order_by(Event.id)
-                .limit(BACKFILL_BATCH_SIZE)
+        result = await session.execute(statement)
+        events = list(result.scalars().all())
+
+        if not events:
+            return
+
+        meter_event_rows = [
+            {
+                "meter_id": meter.id,
+                "event_id": event.id,
+                "customer_id": event.customer_id,
+                "external_customer_id": event.external_customer_id,
+                "organization_id": event.organization_id,
+                "ingested_at": event.ingested_at,
+                "timestamp": event.timestamp,
+            }
+            for event in events
+            if event_service._event_matches_meter(event, meter)
+        ]
+
+        if meter_event_rows:
+            for i in range(0, len(meter_event_rows), BACKFILL_INSERT_CHUNK_SIZE):
+                chunk = meter_event_rows[i : i + BACKFILL_INSERT_CHUNK_SIZE]
+                await session.execute(
+                    insert(MeterEvent).values(chunk).on_conflict_do_nothing()
+                )
+
+        if len(events) == BACKFILL_BATCH_SIZE:
+            last_event = events[-1]
+            enqueue_job(
+                "meter.backfill_events",
+                meter_id,
+                last_ingested_at=last_event.ingested_at.isoformat(),
             )
-            if last_event_id is not None:
-                statement = statement.where(Event.id > last_event_id)
-
-            result = await session.execute(statement)
-            events = list(result.scalars().all())
-
-            if not events:
-                break
-
-            last_event_id = events[-1].id
-
-            meter_event_rows = [
-                {
-                    "meter_id": meter.id,
-                    "event_id": event.id,
-                    "customer_id": event.customer_id,
-                    "external_customer_id": event.external_customer_id,
-                    "organization_id": event.organization_id,
-                    "ingested_at": event.ingested_at,
-                    "timestamp": event.timestamp,
-                }
-                for event in events
-                if event_service._event_matches_meter(event, meter)
-            ]
-
-            if meter_event_rows:
-                for i in range(0, len(meter_event_rows), BACKFILL_INSERT_CHUNK_SIZE):
-                    chunk = meter_event_rows[i : i + BACKFILL_INSERT_CHUNK_SIZE]
-                    await session.execute(
-                        insert(MeterEvent).values(chunk).on_conflict_do_nothing()
-                    )
-                await session.commit()

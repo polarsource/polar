@@ -1,5 +1,6 @@
 import uuid
 
+from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
@@ -15,9 +16,15 @@ from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.models import Organization
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import (
+    OrganizationStatus,
+    OrganizationTier,
+    TIER_PREMIUM_THRESHOLD_CENTS,
+)
+from polar.models.transaction import TransactionType
+from polar.transaction.service import transaction as transaction_service
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 from .repository import OrganizationRepository
 
@@ -166,3 +173,53 @@ async def organization_deletion_requested(
         await plain_service.create_organization_deletion_thread(
             session, organization, user, blocked_reasons
         )
+
+
+@actor(
+    actor_name="organization.sync_plain_tiers",
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),  # Run hourly
+    priority=TaskPriority.LOW,
+)
+async def organization_sync_plain_tiers() -> None:
+    """
+    Sync organization tiers to Plain based on revenue thresholds.
+
+    Runs hourly and updates tiers for all active organizations with revenue
+    above the Premium threshold ($30K).
+    """
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        # Get all active organizations with accounts
+        organizations = await repository.list_active_with_accounts(session)
+
+        for organization in organizations:
+            if organization.account_id is None:
+                continue
+
+            enqueue_job(
+                "organization.sync_plain_tier",
+                organization_id=organization.id,
+            )
+
+
+@actor(actor_name="organization.sync_plain_tier", priority=TaskPriority.LOW)
+async def organization_sync_plain_tier(organization_id: uuid.UUID) -> None:
+    """Sync a single organization's tier to Plain based on their revenue."""
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        if organization.account_id is None:
+            return
+
+        # Get the organization's total revenue
+        transfers_sum = await transaction_service.get_transactions_sum(
+            session, organization.account_id, type=TransactionType.balance
+        )
+
+        # Only sync to Plain if revenue is above the Premium threshold
+        if transfers_sum >= TIER_PREMIUM_THRESHOLD_CENTS:
+            tier = OrganizationTier.from_revenue(transfers_sum)
+            await plain_service.update_organization_tier(organization, tier)

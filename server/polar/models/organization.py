@@ -134,6 +134,28 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
 }
 
 
+class OrganizationTier(StrEnum):
+    """Organization service tier based on revenue thresholds."""
+
+    FREE = "free"
+    PREMIUM = "premium"
+    VIP = "vip"
+
+    @classmethod
+    def from_revenue(cls, revenue_cents: int) -> "OrganizationTier":
+        """Determine the tier based on revenue in cents."""
+        if revenue_cents >= TIER_VIP_THRESHOLD_CENTS:
+            return cls.VIP
+        elif revenue_cents >= TIER_PREMIUM_THRESHOLD_CENTS:
+            return cls.PREMIUM
+        return cls.FREE
+
+
+# Tier thresholds in cents
+TIER_PREMIUM_THRESHOLD_CENTS = 30_000_00  # $30,000
+TIER_VIP_THRESHOLD_CENTS = 50_000_00  # $50,000
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"

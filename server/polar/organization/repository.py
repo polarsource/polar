@@ -13,6 +13,7 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.models import Account, Customer, Organization, User, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncReadSession
 
@@ -191,6 +192,17 @@ class OrganizationRepository(
             org.feature_settings = {**org.feature_settings, "revops_enabled": True}
             self.session.add(org)
         await self.session.flush()
+
+    async def list_active_with_accounts(
+        self, session: AsyncReadSession
+    ) -> Sequence[Organization]:
+        """List all active organizations that have an account set."""
+        statement = self.get_base_statement().where(
+            Organization.status == OrganizationStatus.ACTIVE,
+            Organization.account_id.is_not(None),
+            Organization.blocked_at.is_(None),
+        )
+        return await self.get_all(statement)
 
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):

@@ -29,12 +29,16 @@ from plain_client import (
     CustomerIdentifierInput,
     EmailAddressInput,
     Plain,
+    TenantIdentifierInput,
     ThreadsFilter,
+    TierIdentifierInput,
+    UpdateTenantTierInput,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
     UpsertCustomerUpsertCustomer,
+    UpsertTenantInput,
 )
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
@@ -49,7 +53,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import OrganizationStatus, OrganizationTier
 from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -1574,6 +1578,94 @@ class PlainService:
                 )
 
             return thread_result.thread.id
+
+    async def update_organization_tier(
+        self,
+        organization: Organization,
+        tier: OrganizationTier,
+    ) -> None:
+        """
+        Update the organization's tier in Plain.
+
+        This creates/updates a tenant for the organization and assigns the appropriate
+        tier based on the organization's revenue.
+
+        Tier mapping (using external_id):
+        - FREE: No tier assigned (removes tier if previously set)
+        - PREMIUM: premium tier
+        - VIP: vip tier
+        """
+        if not self.enabled:
+            log.info(
+                "Plain integration disabled, skipping tier update",
+                organization_id=organization.id,
+                tier=tier,
+            )
+            return
+
+        log.info(
+            "Updating organization tier in Plain",
+            organization_id=organization.id,
+            organization_slug=organization.slug,
+            tier=tier,
+        )
+
+        async with self._get_plain_client() as plain:
+            # First, upsert the tenant for this organization
+            tenant_result = await plain.upsert_tenant(
+                UpsertTenantInput(
+                    identifier=TenantIdentifierInput(
+                        external_id=str(organization.id),
+                    ),
+                    name=organization.name or organization.slug,
+                    external_id=str(organization.id),
+                )
+            )
+
+            if tenant_result.error is not None:
+                log.error(
+                    "Failed to upsert tenant in Plain",
+                    organization_id=organization.id,
+                    error=tenant_result.error.message,
+                )
+                return
+
+            if tenant_result.tenant is None:
+                log.error(
+                    "No tenant returned from Plain upsert",
+                    organization_id=organization.id,
+                )
+                return
+
+            # Now update the tenant's tier
+            # For FREE tier, we set tier_identifier to None to remove the tier
+            tier_identifier: TierIdentifierInput | None = None
+            if tier != OrganizationTier.FREE:
+                tier_identifier = TierIdentifierInput(external_id=tier.value)
+
+            tier_result = await plain.update_tenant_tier(
+                UpdateTenantTierInput(
+                    tenant_identifier=TenantIdentifierInput(
+                        tenant_id=tenant_result.tenant.id,
+                    ),
+                    tier_identifier=tier_identifier,
+                )
+            )
+
+            if tier_result.error is not None:
+                log.error(
+                    "Failed to update tenant tier in Plain",
+                    organization_id=organization.id,
+                    tier=tier,
+                    error=tier_result.error.message,
+                )
+                return
+
+            log.info(
+                "Successfully updated organization tier in Plain",
+                organization_id=organization.id,
+                tier=tier,
+            )
 
 
 plain = PlainService()

@@ -145,23 +145,26 @@ class FilterClause(BaseModel):
         return self._compare(actual_value, self.value)
 
     def _compare(self, actual: Any, expected: str | int | bool) -> bool:
-        if self.operator == FilterOperator.eq:
-            return actual == expected
-        elif self.operator == FilterOperator.ne:
-            return actual != expected
-        elif self.operator == FilterOperator.gt:
-            return actual > expected
-        elif self.operator == FilterOperator.gte:
-            return actual >= expected
-        elif self.operator == FilterOperator.lt:
-            return actual < expected
-        elif self.operator == FilterOperator.lte:
-            return actual <= expected
-        elif self.operator == FilterOperator.like:
-            return str(expected) in str(actual)
-        elif self.operator == FilterOperator.not_like:
-            return str(expected) not in str(actual)
-        return False
+        try:
+            if self.operator == FilterOperator.eq:
+                return actual == expected
+            elif self.operator == FilterOperator.ne:
+                return actual != expected
+            elif self.operator == FilterOperator.gt:
+                return actual > expected
+            elif self.operator == FilterOperator.gte:
+                return actual >= expected
+            elif self.operator == FilterOperator.lt:
+                return actual < expected
+            elif self.operator == FilterOperator.lte:
+                return actual <= expected
+            elif self.operator == FilterOperator.like:
+                return str(expected) in str(actual)
+            elif self.operator == FilterOperator.not_like:
+                return str(expected) not in str(actual)
+            return False
+        except TypeError:
+            return False
 
 
 class FilterConjunction(StrEnum):

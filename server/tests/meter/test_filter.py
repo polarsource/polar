@@ -354,6 +354,18 @@ class TestFilterClauseMatches:
         )
         assert clause.matches(event) is True
 
+    def test_matches_type_mismatch_returns_false(
+        self, organization: Organization
+    ) -> None:
+        clause = FilterClause(property="name", operator=FilterOperator.gte, value=1)
+        event = Event(
+            name="test.event",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={},
+        )
+        assert clause.matches(event) is False
+
 
 class TestFilterMatches:
     def test_matches_and_conjunction_all_true(self, organization: Organization) -> None:

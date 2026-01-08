@@ -11,6 +11,8 @@ import asyncio
 import base64
 import fcntl
 import math
+import os
+import socket
 import struct
 import threading
 import time
@@ -28,6 +30,12 @@ from polar.redis import Redis, create_redis
 from polar.worker._queue_metrics import collect_queue_metrics
 
 log = structlog.get_logger()
+
+_INSTANCE_ID = (
+    os.environ.get("RENDER_INSTANCE_ID")
+    or os.environ.get("HOSTNAME")
+    or socket.gethostname()
+)
 
 _pusher_thread: threading.Thread | None = None
 _shutdown_event: threading.Event | None = None
@@ -103,12 +111,17 @@ def _collect_metrics() -> Generator[tuple[list[tuple[str, str]], float], None, N
     multiprocess.MultiProcessCollector(registry)
 
     env_label = settings.ENV.value if settings.ENV else "unknown"
+    instance_label = _INSTANCE_ID
 
     metric: Metric
     for metric in registry.collect():
         sample: Sample
         for sample in metric.samples:
-            labels = [("__name__", sample.name), ("env", env_label)]
+            labels = [
+                ("__name__", sample.name),
+                ("env", env_label),
+                ("instance", instance_label),
+            ]
             labels.extend(sample.labels.items())
             yield labels, sample.value
 

@@ -287,22 +287,6 @@ class TestMiddlewareIntegration:
 
         assert HttpMetricsMiddleware is not None
 
-    def test_middleware_normalizes_path(self, prometheus_tmpdir: str) -> None:
-        """Test middleware path normalization method."""
-        from polar.observability.http_middleware import HttpMetricsMiddleware
-
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
-
-        # Test UUID normalization
-        result = middleware._normalize_path(
-            "/v1/checkouts/550e8400-e29b-41d4-a716-446655440000"
-        )
-        assert result == "/v1/checkouts/{id}"
-
-        # Test numeric ID normalization
-        result = middleware._normalize_path("/v1/orders/12345")
-        assert result == "/v1/orders/{id}"
-
     def test_middleware_denies_healthz(self, prometheus_tmpdir: str) -> None:
         """Test that middleware denies /healthz."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
@@ -332,12 +316,12 @@ class TestMiddlewareIntegration:
         assert result == "/v1/checkouts/{id}"
 
     def test_middleware_route_without_path_attr(self, prometheus_tmpdir: str) -> None:
-        """Test fallback when route object has no path attribute."""
+        """Test that unmatched routes return None (no metrics)."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
         middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
 
-        # Route object without path attribute
+        # Route object without path attribute (or no route at all)
         mock_route = MagicMock(spec=[])  # Empty spec = no attributes
 
         scope = {
@@ -347,8 +331,8 @@ class TestMiddlewareIntegration:
         }
 
         result = middleware._get_path_template(scope)
-        # Should fall back to normalized path
-        assert result == "/v1/orders/{id}"
+        # Should return None to skip metrics (prevents cardinality explosion)
+        assert result is None
 
     def test_middleware_prefix_deny(self, prometheus_tmpdir: str) -> None:
         """Test that paths starting with denied prefixes are blocked."""
@@ -388,7 +372,8 @@ class TestMiddlewareIntegration:
 
         scope = {"path": "", "type": "http"}
         result = middleware._get_path_template(scope)
-        assert result == ""
+        # No route matched, returns None to skip metrics
+        assert result is None
 
     def test_middleware_missing_path(self, prometheus_tmpdir: str) -> None:
         """Test middleware when path is missing from scope."""
@@ -398,7 +383,22 @@ class TestMiddlewareIntegration:
 
         scope = {"type": "http"}  # No path key
         result = middleware._get_path_template(scope)
-        assert result == ""  # scope.get("path", "") returns ""
+        # No route matched, returns None to skip metrics
+        assert result is None
+
+    def test_middleware_unknown_route_returns_none(
+        self, prometheus_tmpdir: str
+    ) -> None:
+        """Test that unknown routes return None (no metrics exported)."""
+        from polar.observability.http_middleware import HttpMetricsMiddleware
+
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+
+        # Simulate an unknown route - no route object in scope
+        scope = {"path": "/v1/unknown", "type": "http"}
+        result = middleware._get_path_template(scope)
+        # Should return None to prevent cardinality explosion
+        assert result is None
 
 
 class TestMiddlewareASGIBehavior:

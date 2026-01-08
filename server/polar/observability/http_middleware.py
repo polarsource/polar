@@ -9,7 +9,6 @@ Path normalization strategy:
 2. Fallback: Regex normalization for 404s and unmatched routes
 """
 
-import re
 import time
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -57,28 +56,9 @@ class HttpMetricsMiddleware:
         if route and hasattr(route, "path"):
             return route.path  # e.g., "/v1/checkouts/{id}"
 
-        # Fallback: Regex normalization for unmatched routes (404s, etc.)
-        return self._normalize_path(path)
-
-    def _normalize_path(self, path: str) -> str:
-        """
-        Fallback normalization for paths not matched by FastAPI router.
-
-        Used for 404s, static files, and other unmatched routes.
-        Normalizes common ID patterns to prevent metric cardinality explosion.
-        """
-        # UUID pattern (e.g., 550e8400-e29b-41d4-a716-446655440000)
-        path = re.sub(
-            r"/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
-            r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-            "/{id}",
-            path,
-        )
-        # Numeric IDs (e.g., /123)
-        path = re.sub(r"/\d+(?=/|$)", "/{id}", path)
-        # Long alphanumeric tokens (20+ chars, e.g., client secrets)
-        path = re.sub(r"/[A-Za-z0-9_-]{20,}(?=/|$)", "/{token}", path)
-        return path
+        # No route matched (404 on unknown path) - skip metrics
+        # to prevent cardinality explosion from bots/attackers
+        return None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":

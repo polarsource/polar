@@ -42,6 +42,7 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
         tier_organization_name="myorg",
         tier_organization_slug="myorg",
         tier_price_recurring_interval="month",
+        subscription_id="a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     )
 
     await check_diff(n.render())
@@ -114,6 +115,7 @@ async def test_MaintainerAccountCreditsGrantedNotification() -> None:
             tier_organization_name="{{ 123456 * 9 }}",
             tier_organization_slug="{{ 123456 * 9 }}",
             tier_price_recurring_interval="month",
+            subscription_id="{{ 123456 * 9 }}",
         ),
         MaintainerAccountCreditsGrantedNotificationPayload(
             organization_name="{{ 123456 * 9 }}",

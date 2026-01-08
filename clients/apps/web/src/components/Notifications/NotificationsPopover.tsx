@@ -164,17 +164,25 @@ const MaintainerNewPaidSubscription = ({
   n: schemas['MaintainerNewPaidSubscriptionNotification']
 }) => {
   const { payload } = n
+  const href =
+    payload.tier_organization_slug && payload.subscription_id
+      ? `/dashboard/${payload.tier_organization_slug}/sales/subscriptions/${payload.subscription_id}`
+      : payload.tier_organization_slug
+        ? `/dashboard/${payload.tier_organization_slug}/sales/subscriptions`
+        : null
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
       {{
         text: (
           <>
             {payload.subscriber_name} is now subscribing to{' '}
-            <InternalLink
-              href={`/dashboard/${payload.tier_organization_slug}/sales/subscriptions`}
-            >
-              <>{payload.tier_name}</>
-            </InternalLink>{' '}
+            {href ? (
+              <InternalLink href={href}>
+                <>{payload.tier_name}</>
+              </InternalLink>
+            ) : (
+              <span className="font-bold">{payload.tier_name}</span>
+            )}{' '}
             {payload.tier_price_amount !== null && (
               <>
                 (${getCentsInDollarString(payload.tier_price_amount)}/
@@ -195,17 +203,25 @@ const MaintainerNewProductSale = ({
   n: schemas['MaintainerNewProductSaleNotification']
 }) => {
   const { payload } = n
+  const href =
+    payload.organization_slug && payload.order_id
+      ? `/dashboard/${payload.organization_slug}/sales/${payload.order_id}`
+      : payload.organization_slug
+        ? `/dashboard/${payload.organization_slug}/sales`
+        : null
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
       {{
         text: (
           <>
             {payload.customer_name} just purchased{' '}
-            <InternalLink
-              href={`/dashboard/${payload.organization_slug}/sales`}
-            >
-              <>{payload.product_name}</>
-            </InternalLink>{' '}
+            {href ? (
+              <InternalLink href={href}>
+                <>{payload.product_name}</>
+              </InternalLink>
+            ) : (
+              <span className="font-bold">{payload.product_name}</span>
+            )}{' '}
             (${getCentsInDollarString(payload.product_price_amount)})
           </>
         ),

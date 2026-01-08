@@ -23,22 +23,6 @@ if [[ ! -f "server/.env" ]] || [[ ! -f "clients/apps/web/.env.local" ]]; then
     ./dev/setup-environment
 fi
 
-# Start infrastructure services
-echo "Starting infrastructure services..."
-./dev/docker-dev -i "$INSTANCE" -d db redis minio minio-setup
-
-# Wait for services to be ready
-echo "Waiting for services to be ready..."
-sleep 10
-
-# Start API to run migrations (startup.sh handles migrations automatically)
-echo "Starting API service (this will run migrations)..."
-./dev/docker-dev -i "$INSTANCE" -d api
-
-# Wait for API to be ready
-echo "Waiting for API to be ready..."
-sleep 15
-
 echo ""
 echo "============================================"
 echo "  Setup complete for instance $INSTANCE"

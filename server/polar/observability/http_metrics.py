@@ -1,8 +1,8 @@
 """
 HTTP request metrics for SLI/SLO monitoring.
 
-These metrics track all HTTP endpoints (except those in METRICS_DENY_LIST)
-for availability and latency SLIs.
+These metrics track all HTTP endpoints (except those in METRICS_DENY_LIST
+or belonging to METRICS_EXCLUDED_APPS) for availability and latency SLIs.
 
 Metrics:
 - polar_http_request_total: Counter of total requests by endpoint, method, status_code
@@ -10,8 +10,12 @@ Metrics:
 """
 
 import os
+from typing import TYPE_CHECKING
 
 from polar.config import settings
+
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp
 
 # Setup multiprocess prometheus directory before importing prometheus_client
 # This enables metrics to be shared across API server processes
@@ -31,6 +35,16 @@ METRICS_DENY_LIST: set[str] = {
     "/.well-known/openid-configuration",
     "/.well-known/jwks.json",
 }
+
+# Apps to EXCLUDE from metrics (e.g., backoffice)
+# Use exclude_app_from_metrics() to register apps
+METRICS_EXCLUDED_APPS: set["ASGIApp"] = set()
+
+
+def exclude_app_from_metrics(app: "ASGIApp") -> None:
+    """Register an app to be excluded from HTTP metrics."""
+    METRICS_EXCLUDED_APPS.add(app)
+
 
 # HTTP request counter for availability SLI
 # Labels:

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
 
@@ -82,6 +83,15 @@ export const CustomerPortalOrders = ({
 
               return (
                 <span className="flex justify-end gap-2">
+                  {order.paid && (
+                    <DownloadInvoicePortal
+                      customerSessionToken={customerSessionToken}
+                      order={order}
+                      onInvoiceGenerated={() => {}}
+                      variant="secondary"
+                      size="sm"
+                    />
+                  )}
                   <Button
                     variant="secondary"
                     onClick={() => {

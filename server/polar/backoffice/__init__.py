@@ -3,6 +3,8 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request
 from tagflow import tag, text
 
+from polar.observability.http_metrics import exclude_app_from_metrics
+
 from .accounts.endpoints import router as accounts_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
@@ -30,6 +32,9 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+
+# Exclude backoffice from HTTP metrics (not sent to Grafana Cloud)
+exclude_app_from_metrics(app)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TagflowMiddleware)
 

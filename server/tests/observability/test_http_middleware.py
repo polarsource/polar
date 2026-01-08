@@ -638,3 +638,68 @@ class TestMiddlewareASGIBehavior:
             )
 
             assert any(m.get("status") == status for m in captured)
+
+    def test_middleware_excludes_app(self, prometheus_tmpdir: str) -> None:
+        """Test that middleware excludes apps registered with exclude_app_from_metrics."""
+        from polar.observability.http_metrics import (
+            METRICS_EXCLUDED_APPS,
+            exclude_app_from_metrics,
+        )
+        from polar.observability.http_middleware import HttpMetricsMiddleware
+
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+
+        # Create a mock app
+        mock_app = MagicMock()
+
+        # Before excluding, scope with this app should not be denied
+        mock_route = MagicMock()
+        mock_route.path = "/some/path"
+
+        scope = {"path": "/some/path", "type": "http", "app": mock_app, "route": mock_route}
+        result = middleware._get_path_template(scope)
+        assert result == "/some/path"  # Should return the path
+
+        # Register the app as excluded
+        exclude_app_from_metrics(mock_app)
+
+        try:
+            # After excluding, scope with this app should return None
+            result = middleware._get_path_template(scope)
+            assert result is None  # Should be excluded
+        finally:
+            # Clean up to avoid affecting other tests
+            METRICS_EXCLUDED_APPS.discard(mock_app)
+
+    def test_middleware_excluded_app_with_valid_route(
+        self, prometheus_tmpdir: str
+    ) -> None:
+        """Test that excluded apps are skipped even with valid routes."""
+        from polar.observability.http_metrics import (
+            METRICS_EXCLUDED_APPS,
+            exclude_app_from_metrics,
+        )
+        from polar.observability.http_middleware import HttpMetricsMiddleware
+
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+
+        # Create a mock app and register it as excluded
+        mock_app = MagicMock()
+        exclude_app_from_metrics(mock_app)
+
+        try:
+            # Even with a valid route, excluded app should return None
+            mock_route = MagicMock()
+            mock_route.path = "/v1/checkouts/{id}"
+
+            scope = {
+                "path": "/v1/checkouts/123",
+                "type": "http",
+                "app": mock_app,
+                "route": mock_route,
+            }
+            result = middleware._get_path_template(scope)
+            assert result is None  # Should be excluded
+        finally:
+            # Clean up
+            METRICS_EXCLUDED_APPS.discard(mock_app)

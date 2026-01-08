@@ -17,6 +17,7 @@ from polar.observability.http_metrics import (
     HTTP_REQUEST_DURATION_SECONDS,
     HTTP_REQUEST_TOTAL,
     METRICS_DENY_LIST,
+    METRICS_EXCLUDED_APPS,
 )
 
 
@@ -38,8 +39,13 @@ class HttpMetricsMiddleware:
         Primary: Uses scope["route"].path set by FastAPI after routing.
         Fallback: Regex normalization for 404s/unmatched routes.
 
-        Returns None for deny-listed paths (no metrics recorded).
+        Returns None for deny-listed paths or excluded apps (no metrics recorded).
         """
+        # Check if app is excluded (e.g., backoffice)
+        app = scope.get("app")
+        if app is not None and app in METRICS_EXCLUDED_APPS:
+            return None
+
         path = scope.get("path", "")
 
         # Check deny list (exact match and prefix)

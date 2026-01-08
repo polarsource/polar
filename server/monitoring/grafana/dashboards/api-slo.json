@@ -847,7 +847,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max by (endpoint, method) (polar_slo_p99_target_seconds)",
+              "expr": "sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0 + on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",

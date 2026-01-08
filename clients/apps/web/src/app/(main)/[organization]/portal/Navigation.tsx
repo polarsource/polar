@@ -3,10 +3,19 @@
 import {
   useAuthenticatedCustomer,
   useCustomerPortalSession,
+  useCustomerPortalSessionCustomers,
+  useCustomerPortalSessionSwitch,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import UnfoldMore from '@mui/icons-material/UnfoldMore'
 import { schemas } from '@polar-sh/client'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -16,6 +25,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const links = (organization: schemas['CustomerOrganization']) => {
@@ -62,11 +72,31 @@ export const Navigation = ({
   )
   const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedCustomer } = useAuthenticatedCustomer(api)
+  const { data: customersData } = useCustomerPortalSessionCustomers(api)
+  const switchMutation = useCustomerPortalSessionSwitch(api)
 
   // Hide navigation on routes where portal access is being requested or authenticated
   const hideNav =
     currentPath.endsWith('/portal/request') ||
     currentPath.endsWith('/portal/authenticate')
+
+  const handleSwitchCustomer = useCallback(
+    async (customerId: string) => {
+      const { data, error } = await switchMutation.mutateAsync({
+        customer_id: customerId,
+      })
+
+      if (error || !data) {
+        return
+      }
+
+      // Update URL with new token and navigate
+      const newSearchParams = new URLSearchParams(searchParams.toString())
+      newSearchParams.set('customer_session_token', data.token)
+      router.push(`${currentPath}?${newSearchParams.toString()}`)
+    },
+    [switchMutation, searchParams, router, currentPath],
+  )
 
   if (hideNav) {
     return null
@@ -77,6 +107,8 @@ export const Navigation = ({
   }
 
   const filteredLinks = links(organization)
+  const hasMultipleCustomers =
+    customersData && customersData.customers.length > 1
 
   return (
     <>
@@ -90,12 +122,57 @@ export const Navigation = ({
             <span>Back to {organization.name}</span>
           </Link>
         )}
-        <div className="flex flex-col">
-          <h3>{authenticatedCustomer?.name ?? '—'}</h3>
-          <span className="dark:text-polar-500 text-gray-500">
-            {authenticatedCustomer?.email ?? '—'}
-          </span>
-        </div>
+        {hasMultipleCustomers ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="dark:hover:bg-polar-800 flex w-full flex-row items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-gray-100"
+                disabled={switchMutation.isPending}
+              >
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-medium">
+                    {authenticatedCustomer?.name || 'Unnamed Account'}
+                  </span>
+                  <span className="dark:text-polar-500 truncate text-sm text-gray-500">
+                    {authenticatedCustomer?.email ?? '—'}
+                  </span>
+                </div>
+                <UnfoldMore
+                  fontSize="small"
+                  className="dark:text-polar-500 flex-shrink-0 text-gray-400"
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {customersData.customers.map((customer) => (
+                <DropdownMenuItem
+                  key={customer.id}
+                  onClick={() => handleSwitchCustomer(customer.id)}
+                  disabled={
+                    customer.id === customersData.current_customer_id ||
+                    switchMutation.isPending
+                  }
+                  className="flex flex-col items-start gap-0.5"
+                >
+                  <span className="font-medium">
+                    {customer.name || 'Unnamed Account'}
+                  </span>
+                  <span className="text-xs text-gray-500">{customer.email}</span>
+                  {customer.id === customersData.current_customer_id && (
+                    <span className="text-xs text-blue-500">Current</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="flex flex-col">
+            <h3>{authenticatedCustomer?.name ?? '—'}</h3>
+            <span className="dark:text-polar-500 text-gray-500">
+              {authenticatedCustomer?.email ?? '—'}
+            </span>
+          </div>
+        )}
         <div className="flex flex-col gap-y-1">
           {filteredLinks.map((link) => (
             <Link
@@ -124,9 +201,7 @@ export const Navigation = ({
         }}
       >
         <SelectTrigger className="md:hidden">
-          <SelectValue>
-            {filteredLinks.find(({ href }) => href === currentPath)?.label}
-          </SelectValue>
+          <SelectValue placeholder="Select page" />
         </SelectTrigger>
         <SelectContent>
           {filteredLinks.map((link) => (

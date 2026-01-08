@@ -105,6 +105,52 @@ class MemberRepository(
         result = await session.execute(statement)
         return result.scalars().all()
 
+    async def find_by_email_in_org(
+        self,
+        session: AsyncReadSession,
+        email: str,
+        organization_id: UUID,
+    ) -> Sequence[Member]:
+        """
+        Find all members with a given email across all customers in an organization.
+
+        This is used for member authentication - a single email can be associated
+        with multiple customers (e.g., Alice works for both ACME and Lolo).
+
+        Returns:
+            List of members with matching email in the organization
+        """
+        statement = (
+            select(Member)
+            .where(
+                Member.email == email,
+                Member.organization_id == organization_id,
+                Member.deleted_at.is_(None),
+            )
+            .order_by(Member.created_at)
+        )
+        result = await session.execute(statement)
+        return result.scalars().all()
+
+    async def get_by_member_email_and_customer(
+        self,
+        session: AsyncReadSession,
+        email: str,
+        customer_id: UUID,
+    ) -> Member | None:
+        """
+        Get a member by their email and customer ID.
+
+        Used when switching customers to find the correct member record.
+        """
+        statement = select(Member).where(
+            Member.email == email,
+            Member.customer_id == customer_id,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Member]]:

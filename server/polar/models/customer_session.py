@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -10,6 +11,9 @@ from polar.kit.db.models.base import RecordModel
 from polar.kit.utils import utc_now
 
 from .customer import Customer
+
+if TYPE_CHECKING:
+    from .member import Member
 
 
 def get_expires_at() -> datetime:
@@ -29,9 +33,17 @@ class CustomerSession(RecordModel):
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )
 
+    member_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("members.id", ondelete="set null"), nullable=True, index=True
+    )
+
     @declared_attr
     def customer(cls) -> Mapped[Customer]:
         return relationship(Customer, lazy="joined")
+
+    @declared_attr
+    def member(cls) -> Mapped["Member | None"]:
+        return relationship("Member", lazy="joined")
 
     @property
     def raw_token(self) -> str | None:

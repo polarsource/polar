@@ -166,6 +166,13 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_ids(self, ids: Sequence[UUID]) -> Sequence[Customer]:
+        """Get customers by a list of IDs."""
+        if not ids:
+            return []
+        statement = self.get_base_statement().where(Customer.id.in_(ids))
+        return await self.get_all(statement)
+
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID
     ) -> Customer | None:

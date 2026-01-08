@@ -39,6 +39,104 @@ export const useCustomerPortalSessionAuthenticate = (api: Client) =>
         }),
   })
 
+interface CustomerSessionSelectRequest {
+  selection_token: string
+  customer_id: string
+  email: string
+  organization_id: string
+}
+
+interface CustomerSessionSelectResponse {
+  token: string
+  customer_id: string
+  member_id: string
+}
+
+interface CustomerSessionSwitchResponse {
+  token: string
+  customer_id: string
+  member_id: string
+}
+
+interface CustomerSummary {
+  id: string
+  name: string | null
+  email: string
+}
+
+interface CustomerSessionCustomersResponse {
+  current_customer_id: string
+  customers: CustomerSummary[]
+}
+
+export const useCustomerPortalSessionSelect = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: CustomerSessionSelectRequest) => {
+      // Type assertion needed until client is regenerated with new endpoints
+      const response = await (api as any).POST(
+        '/v1/customer-portal/customer-session/select',
+        { body },
+      )
+      return response as {
+        data: CustomerSessionSelectResponse | undefined
+        error: { detail?: string } | undefined
+      }
+    },
+  })
+
+export const useCustomerPortalSessionSwitch = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: { customer_id: string }) => {
+      // Type assertion needed until client is regenerated with new endpoints
+      const response = await (api as any).POST(
+        '/v1/customer-portal/customer-session/switch',
+        { body },
+      )
+      return response as {
+        data: CustomerSessionSwitchResponse | undefined
+        error: { detail?: string } | undefined
+      }
+    },
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      // Invalidate all customer-related queries after switching
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_portal_session'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_orders'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_benefit_grants'],
+      })
+    },
+  })
+
+export const useCustomerPortalSessionCustomers = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_portal_session_customers'],
+    queryFn: async () => {
+      // Type assertion needed until client is regenerated with new endpoints
+      const response = await (api as any).GET(
+        '/v1/customer-portal/customer-session/customers',
+      )
+      if (response.error) {
+        throw response.error
+      }
+      return response.data as CustomerSessionCustomersResponse
+    },
+    retry: defaultRetry,
+  })
+
 export const useCustomerPortalSession = (api: Client) =>
   useQuery({
     queryKey: ['customer_portal_session'],

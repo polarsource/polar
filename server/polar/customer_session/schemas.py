@@ -6,6 +6,7 @@ from pydantic.aliases import AliasChoices
 
 from polar.customer.schemas.customer import Customer
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.member.schemas import Member
 
 
 class CustomerSessionCreateBase(Schema):
@@ -58,3 +59,17 @@ class CustomerSession(IDSchema, TimestampedSchema):
     customer_portal_url: str
     customer_id: UUID4
     customer: Customer
+    member_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ID of the member this session is for. "
+            "Set when the organization has the member model enabled."
+        ),
+    )
+    member: Member | None = Field(
+        default=None,
+        description=(
+            "The member this session is for. "
+            "Set when the organization has the member model enabled."
+        ),
+    )

@@ -177,25 +177,24 @@ async def organization_deletion_requested(
 
 @actor(
     actor_name="organization.sync_plain_tiers",
-    cron_trigger=CronTrigger.from_crontab("0 * * * *"),  # Run hourly
+    cron_trigger=CronTrigger.from_crontab("0 0 * * *"),  # Run daily at midnight
     priority=TaskPriority.LOW,
 )
 async def organization_sync_plain_tiers() -> None:
     """
     Sync organization tiers to Plain based on revenue thresholds.
 
-    Runs hourly and updates tiers for all active organizations with revenue
+    Runs daily and updates tiers for organizations with revenue
     above the Premium threshold ($30K).
     """
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
-        # Get all active organizations with accounts
-        organizations = await repository.list_active_with_accounts(session)
+        # Get organizations with revenue above the Premium threshold
+        organizations = await repository.list_with_revenue_above_threshold(
+            session, TIER_PREMIUM_THRESHOLD_CENTS
+        )
 
         for organization in organizations:
-            if organization.account_id is None:
-                continue
-
             enqueue_job(
                 "organization.sync_plain_tier",
                 organization_id=organization.id,
@@ -219,7 +218,7 @@ async def organization_sync_plain_tier(organization_id: uuid.UUID) -> None:
             session, organization.account_id, type=TransactionType.balance
         )
 
-        # Only sync to Plain if revenue is above the Premium threshold
-        if transfers_sum >= TIER_PREMIUM_THRESHOLD_CENTS:
-            tier = OrganizationTier.from_revenue(transfers_sum)
+        # Determine tier based on revenue
+        tier = OrganizationTier.from_revenue(transfers_sum)
+        if tier is not None:
             await plain_service.update_organization_tier(organization, tier)

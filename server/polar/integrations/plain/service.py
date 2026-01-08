@@ -1591,7 +1591,6 @@ class PlainService:
         tier based on the organization's revenue.
 
         Tier mapping (using external_id):
-        - FREE: No tier assigned (removes tier if previously set)
         - PREMIUM: premium tier
         - VIP: vip tier
         """
@@ -1637,18 +1636,13 @@ class PlainService:
                 )
                 return
 
-            # Now update the tenant's tier
-            # For FREE tier, we set tier_identifier to None to remove the tier
-            tier_identifier: TierIdentifierInput | None = None
-            if tier != OrganizationTier.FREE:
-                tier_identifier = TierIdentifierInput(external_id=tier.value)
-
+            # Update the tenant's tier
             tier_result = await plain.update_tenant_tier(
                 UpdateTenantTierInput(
                     tenant_identifier=TenantIdentifierInput(
                         tenant_id=tenant_result.tenant.id,
                     ),
-                    tier_identifier=tier_identifier,
+                    tier_identifier=TierIdentifierInput(external_id=tier.value),
                 )
             )
 

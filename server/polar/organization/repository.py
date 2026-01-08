@@ -12,9 +12,10 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Account, Customer, Organization, User, UserOrganization
+from polar.models import Account, Customer, Organization, Transaction, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncReadSession
 
 from .sorting import OrganizationSortProperty
@@ -193,14 +194,35 @@ class OrganizationRepository(
             self.session.add(org)
         await self.session.flush()
 
-    async def list_active_with_accounts(
-        self, session: AsyncReadSession
+    async def list_with_revenue_above_threshold(
+        self, session: AsyncReadSession, threshold_cents: int
     ) -> Sequence[Organization]:
-        """List all active organizations that have an account set."""
-        statement = self.get_base_statement().where(
-            Organization.status == OrganizationStatus.ACTIVE,
-            Organization.account_id.is_not(None),
-            Organization.blocked_at.is_(None),
+        """
+        List active organizations with revenue above the given threshold.
+
+        This performs an efficient query that joins organizations with their
+        transaction sums and filters only those above the threshold.
+        """
+        # Subquery to get revenue per account
+        revenue_subquery = (
+            select(
+                Transaction.account_id,
+                func.coalesce(func.sum(Transaction.amount), 0).label("revenue"),
+            )
+            .where(Transaction.type == TransactionType.balance)
+            .group_by(Transaction.account_id)
+            .subquery()
+        )
+
+        statement = (
+            self.get_base_statement()
+            .join(revenue_subquery, Organization.account_id == revenue_subquery.c.account_id)
+            .where(
+                Organization.status == OrganizationStatus.ACTIVE,
+                Organization.account_id.is_not(None),
+                Organization.blocked_at.is_(None),
+                revenue_subquery.c.revenue >= threshold_cents,
+            )
         )
         return await self.get_all(statement)
 

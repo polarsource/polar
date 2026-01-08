@@ -171,7 +171,7 @@ const MaintainerNewPaidSubscription = ({
           <>
             {payload.subscriber_name} is now subscribing to{' '}
             <InternalLink
-              href={`/dashboard/${payload.tier_organization_name}/sales/subscriptions`}
+              href={`/dashboard/${payload.tier_organization_slug}/sales/subscriptions`}
             >
               <>{payload.tier_name}</>
             </InternalLink>{' '}
@@ -202,7 +202,7 @@ const MaintainerNewProductSale = ({
           <>
             {payload.customer_name} just purchased{' '}
             <InternalLink
-              href={`/dashboard/${payload.organization_name}/sales`}
+              href={`/dashboard/${payload.organization_slug}/sales`}
             >
               <>{payload.product_name}</>
             </InternalLink>{' '}

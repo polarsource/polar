@@ -2036,6 +2036,7 @@ class SubscriptionService:
                         tier_price_amount=subscription.amount,
                         tier_price_recurring_interval=subscription.recurring_interval,
                         tier_organization_name=subscription.organization.name,
+                        tier_organization_slug=subscription.organization.slug,
                     ),
                 ),
             )

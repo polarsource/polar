@@ -45,6 +45,7 @@ def exclude_app_from_metrics(app: "ASGIApp") -> None:
     """Register an app to be excluded from HTTP metrics."""
     METRICS_EXCLUDED_APPS.add(app)
 
+
 # HTTP request counter for availability SLI
 # Labels:
 # - endpoint: normalized path template (e.g., "/v1/checkouts/{id}")

@@ -656,7 +656,12 @@ class TestMiddlewareASGIBehavior:
         mock_route = MagicMock()
         mock_route.path = "/some/path"
 
-        scope = {"path": "/some/path", "type": "http", "app": mock_app, "route": mock_route}
+        scope = {
+            "path": "/some/path",
+            "type": "http",
+            "app": mock_app,
+            "route": mock_route,
+        }
         result = middleware._get_path_template(scope)
         assert result == "/some/path"  # Should return the path
 

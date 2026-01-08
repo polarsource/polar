@@ -81,7 +81,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Percentage of endpoints with availability >= 99.9%",
+      "description": "Overall availability across all requests (Target: 99.95%)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -97,11 +97,11 @@
               },
               {
                 "color": "yellow",
-                "value": 90
+                "value": 99.9
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 99.95
               }
             ]
           },
@@ -136,12 +136,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - (count(sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) / sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range])) > 0.001) or vector(0)) / count(sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range]))))",
-          "legendFormat": "Healthy %",
+          "expr": "100 * (1 - ((sum(increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or vector(0)) / sum(increase(polar_http_request_total{env=\"$env\"}[$__range]))))",
+          "legendFormat": "Availability",
           "refId": "A"
         }
       ],
-      "title": "All Endpoints Healthy",
+      "title": "Global Availability (Target: 99.95%)",
       "transformations": [],
       "type": "stat"
     },
@@ -157,8 +157,6 @@
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -188,17 +186,18 @@
       },
       "id": 32,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
       },
       "targets": [
         {
@@ -211,8 +210,8 @@
           "refId": "A"
         }
       ],
-      "title": "Error Budget",
-      "type": "gauge"
+      "title": "Error Budget Remaining",
+      "type": "stat"
     },
     {
       "collapsed": false,

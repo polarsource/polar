@@ -9,11 +9,13 @@ https://prometheus.io/docs/specs/prw/remote_write_spec/
 
 import asyncio
 import base64
+import fcntl
 import math
 import struct
 import threading
 import time
 from collections.abc import Generator
+from typing import IO
 
 import httpx
 import snappy
@@ -30,6 +32,7 @@ log = structlog.get_logger()
 _pusher_thread: threading.Thread | None = None
 _shutdown_event: threading.Event | None = None
 _start_lock = threading.Lock()
+_lock_file: IO[bytes] | None = None
 
 
 def _encode_varint(value: int) -> bytes:
@@ -248,7 +251,7 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
         include_queue_metrics: If True, collect Redis queue metrics (for workers).
                                If False, only push standard prometheus metrics (for API).
     """
-    global _pusher_thread, _shutdown_event
+    global _pusher_thread, _shutdown_event, _lock_file
 
     with _start_lock:
         if _pusher_thread is not None:
@@ -264,6 +267,23 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
                 "prometheus_remote_write_invalid_config",
                 reason="interval must be positive",
             )
+            return False
+
+        # Use file lock to ensure only one process pushes metrics.
+        # This prevents duplicate data when multiple uvicorn workers run.
+        lock_path = settings.WORKER_PROMETHEUS_DIR / ".pusher.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            _lock_file = open(lock_path, "wb")
+            fcntl.flock(_lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (OSError, BlockingIOError):
+            log.info(
+                "prometheus_remote_write_skipped",
+                reason="another process holds the lock",
+            )
+            if _lock_file:
+                _lock_file.close()
+                _lock_file = None
             return False
 
         _shutdown_event = threading.Event()
@@ -291,7 +311,7 @@ def start_remote_write_pusher(*, include_queue_metrics: bool = True) -> bool:
 
 
 def stop_remote_write_pusher(timeout: float = 5.0) -> None:
-    global _pusher_thread, _shutdown_event
+    global _pusher_thread, _shutdown_event, _lock_file
 
     with _start_lock:
         if _pusher_thread is None or _shutdown_event is None:
@@ -311,3 +331,12 @@ def stop_remote_write_pusher(timeout: float = 5.0) -> None:
 
         _pusher_thread = None
         _shutdown_event = None
+
+        # Release the file lock
+        if _lock_file:
+            try:
+                fcntl.flock(_lock_file.fileno(), fcntl.LOCK_UN)
+                _lock_file.close()
+            except OSError:
+                pass
+            _lock_file = None

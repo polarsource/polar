@@ -8,10 +8,11 @@ import asyncio
 import os
 import tempfile
 from collections.abc import Generator
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 import pytest
+from starlette.types import Receive, Scope, Send
 
 
 class TestPathNormalizationDirect:
@@ -416,17 +417,17 @@ class TestMiddlewareASGIBehavior:
 
         app_called = False
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             nonlocal app_called
             app_called = True
 
         middleware = HttpMetricsMiddleware(mock_app)
 
         # Websocket scope
-        scope: dict[str, Any] = {"type": "websocket", "path": "/ws"}
+        scope = cast(Scope, {"type": "websocket", "path": "/ws"})
 
         asyncio.get_event_loop().run_until_complete(
-            middleware(scope, None, None)  # type: ignore
+            middleware(scope, cast(Receive, None), cast(Send, None))
         )
 
         assert app_called is True
@@ -437,17 +438,17 @@ class TestMiddlewareASGIBehavior:
 
         app_called = False
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             nonlocal app_called
             app_called = True
 
         middleware = HttpMetricsMiddleware(mock_app)
 
         # Lifespan scope
-        scope: dict[str, Any] = {"type": "lifespan"}
+        scope = cast(Scope, {"type": "lifespan"})
 
         asyncio.get_event_loop().run_until_complete(
-            middleware(scope, None, None)  # type: ignore
+            middleware(scope, cast(Receive, None), cast(Send, None))
         )
 
         assert app_called is True
@@ -456,19 +457,20 @@ class TestMiddlewareASGIBehavior:
         """Test that status codes are correctly captured."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        captured_status: str | None = None
-
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             await send({"type": "http.response.start", "status": 201})
             await send({"type": "http.response.body", "body": b""})
 
         middleware = HttpMetricsMiddleware(mock_app)
 
-        scope: dict[str, Any] = {
-            "type": "http",
-            "path": "/v1/checkouts",
-            "method": "POST",
-        }
+        scope = cast(
+            Scope,
+            {
+                "type": "http",
+                "path": "/v1/checkouts",
+                "method": "POST",
+            },
+        )
 
         messages_sent: list[dict[str, Any]] = []
 
@@ -476,7 +478,7 @@ class TestMiddlewareASGIBehavior:
             messages_sent.append(message)
 
         asyncio.get_event_loop().run_until_complete(
-            middleware(scope, None, mock_send)  # type: ignore
+            middleware(scope, cast(Receive, None), cast(Send, mock_send))
         )
 
         # Verify the status was captured (201)
@@ -486,22 +488,28 @@ class TestMiddlewareASGIBehavior:
         """Test that metrics are recorded even when app raises exception."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             raise ValueError("Test exception")
 
         middleware = HttpMetricsMiddleware(mock_app)
 
-        scope: dict[str, Any] = {
-            "type": "http",
-            "path": "/v1/checkouts",
-            "method": "GET",
-        }
+        scope = cast(
+            Scope,
+            {
+                "type": "http",
+                "path": "/v1/checkouts",
+                "method": "GET",
+            },
+        )
+
+        async def noop_send(message: dict[str, Any]) -> None:
+            pass
 
         # The middleware should record metrics in finally block
         # and then re-raise the exception
         with pytest.raises(ValueError, match="Test exception"):
             asyncio.get_event_loop().run_until_complete(
-                middleware(scope, None, lambda m: None)  # type: ignore
+                middleware(scope, cast(Receive, None), cast(Send, noop_send))
             )
 
     def test_default_status_code_on_exception(self, prometheus_tmpdir: str) -> None:
@@ -511,21 +519,27 @@ class TestMiddlewareASGIBehavior:
         # This tests that status_code starts as "500" (line 89 in middleware)
         # and stays that way if app crashes before sending response
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             # Crash before sending any response
             raise RuntimeError("App crashed")
 
         middleware = HttpMetricsMiddleware(mock_app)
 
-        scope: dict[str, Any] = {
-            "type": "http",
-            "path": "/v1/test",
-            "method": "GET",
-        }
+        scope = cast(
+            Scope,
+            {
+                "type": "http",
+                "path": "/v1/test",
+                "method": "GET",
+            },
+        )
+
+        async def noop_send(message: dict[str, Any]) -> None:
+            pass
 
         with pytest.raises(RuntimeError):
             asyncio.get_event_loop().run_until_complete(
-                middleware(scope, None, lambda m: None)  # type: ignore
+                middleware(scope, cast(Receive, None), cast(Send, noop_send))
             )
 
         # Can't directly assert the status_code was "500" without mocking metrics
@@ -535,32 +549,35 @@ class TestMiddlewareASGIBehavior:
         """Test that missing method in scope results in UNKNOWN."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             await send({"type": "http.response.start", "status": 200})
             await send({"type": "http.response.body", "body": b""})
 
         middleware = HttpMetricsMiddleware(mock_app)
 
         # Scope without method
-        scope: dict[str, Any] = {
-            "type": "http",
-            "path": "/v1/test",
-            # No "method" key
-        }
+        scope = cast(
+            Scope,
+            {
+                "type": "http",
+                "path": "/v1/test",
+                # No "method" key
+            },
+        )
 
         async def mock_send(message: dict[str, Any]) -> None:
             pass
 
         # Should not crash - method defaults to "UNKNOWN"
         asyncio.get_event_loop().run_until_complete(
-            middleware(scope, None, mock_send)  # type: ignore
+            middleware(scope, cast(Receive, None), cast(Send, mock_send))
         )
 
     def test_various_http_methods(self, prometheus_tmpdir: str) -> None:
         """Test that various HTTP methods are handled correctly."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
+        async def mock_app(scope: Scope, receive: Receive, send: Send) -> None:
             await send({"type": "http.response.start", "status": 200})
             await send({"type": "http.response.body", "body": b""})
 
@@ -572,15 +589,18 @@ class TestMiddlewareASGIBehavior:
             pass
 
         for method in methods:
-            scope: dict[str, Any] = {
-                "type": "http",
-                "path": "/v1/test",
-                "method": method,
-            }
+            scope = cast(
+                Scope,
+                {
+                    "type": "http",
+                    "path": "/v1/test",
+                    "method": method,
+                },
+            )
 
             # Should not crash for any method
             asyncio.get_event_loop().run_until_complete(
-                middleware(scope, None, noop_send)
+                middleware(scope, cast(Receive, None), cast(Send, noop_send))
             )
 
     def test_various_status_codes(self, prometheus_tmpdir: str) -> None:
@@ -591,17 +611,22 @@ class TestMiddlewareASGIBehavior:
 
         for status in status_codes:
 
-            async def mock_app(scope: dict[str, Any], receive: Any, send: Any) -> None:
-                await send({"type": "http.response.start", "status": status})
+            async def mock_app(
+                scope: Scope, receive: Receive, send: Send, _status: int = status
+            ) -> None:
+                await send({"type": "http.response.start", "status": _status})
                 await send({"type": "http.response.body", "body": b""})
 
             middleware = HttpMetricsMiddleware(mock_app)
 
-            scope: dict[str, Any] = {
-                "type": "http",
-                "path": "/v1/test",
-                "method": "GET",
-            }
+            scope = cast(
+                Scope,
+                {
+                    "type": "http",
+                    "path": "/v1/test",
+                    "method": "GET",
+                },
+            )
 
             captured: list[dict[str, Any]] = []
 
@@ -609,7 +634,7 @@ class TestMiddlewareASGIBehavior:
                 captured.append(message)
 
             asyncio.get_event_loop().run_until_complete(
-                middleware(scope, None, mock_send)
+                middleware(scope, cast(Receive, None), cast(Send, mock_send))
             )
 
             assert any(m.get("status") == status for m in captured)

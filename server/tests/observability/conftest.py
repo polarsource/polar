@@ -7,7 +7,6 @@ connection attempts.
 """
 
 import os
-from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -24,21 +23,21 @@ def setup_prometheus_test_env(tmp_path_factory: pytest.TempPathFactory) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def empty_test_bucket(worker_id: str) -> Iterator[Any]:
+def empty_test_bucket(worker_id: str) -> Any:
     """Override the main test bucket fixture to avoid Minio connections.
 
     The observability tests don't need S3/Minio access.
     """
-    yield None
+    return None
 
 
 @pytest.fixture(scope="session", autouse=True)
-def initialize_test_database(worker_id: str) -> Iterator[None]:
+def initialize_test_database(worker_id: str) -> None:
     """Override the main database fixture to avoid PostgreSQL connections.
 
     The observability tests don't need database access.
     """
-    yield None
+    return None
 
 
 @pytest.fixture(autouse=True)
@@ -60,9 +59,9 @@ def set_job_queue_manager_context() -> None:
 
 
 @pytest.fixture(autouse=True)
-def current_message() -> Iterator[Any]:
+def current_message() -> Any:
     """Override the main current message fixture.
 
     The observability tests don't need dramatiq messages.
     """
-    yield None
+    return None

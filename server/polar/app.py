@@ -39,11 +39,11 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
+from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.observability.remote_write import (
     start_remote_write_pusher,
     stop_remote_write_pusher,
 )
-from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import (
     AsyncSessionMiddleware,

@@ -64,7 +64,7 @@ export const IOSAppBanner = () => {
           alt="Download on the App Store"
           width={120}
           height={40}
-          className="dark:brightness-0 dark:invert"
+          className="dark:brightness-100 dark:invert"
         />
       </Link>
     </div>

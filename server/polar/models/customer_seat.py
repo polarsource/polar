@@ -84,6 +84,8 @@ class CustomerSeat(RecordModel):
         index=True,
     )
 
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True, default=None)
+
     invitation_token: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, index=True
     )

@@ -31,29 +31,27 @@ const sanitizeUrl = (url: string): string | null => {
 
 type DeletableElement =
   | 'tabs'
-  | 'headers'
-  | 'preview'
-  | 'response'
-  | 'timing'
   | 'requestRow'
   | 'bottomBar'
   | 'trafficLights'
   | 'titleBar'
   | 'resizeHandle'
+  | 'consoleHistory'
+  | 'consoleInput'
+  | 'windowBorder'
   | 'everything'
 
 const deletionSequence: { element: DeletableElement; message: string }[] = [
   { element: 'tabs', message: 'rm -rf /usr/share/tabs/*' },
-  { element: 'headers', message: 'rm -rf /var/lib/headers' },
-  { element: 'preview', message: 'rm -rf /home/user/previews' },
-  { element: 'response', message: 'rm -rf /etc/responses' },
-  { element: 'timing', message: 'rm -rf /var/log/timing' },
   { element: 'requestRow', message: 'rm -rf /srv/requests' },
   { element: 'bottomBar', message: 'rm -rf /usr/local/statusbar' },
   { element: 'resizeHandle', message: 'rm -rf /dev/resize' },
   { element: 'trafficLights', message: 'rm -rf /System/TrafficLights.app' },
   { element: 'titleBar', message: 'rm -rf /usr/bin/windowmanager' },
-  { element: 'everything', message: 'rm -rf / ... done.' },
+  { element: 'consoleHistory', message: 'rm -rf /var/log/*' },
+  { element: 'consoleInput', message: 'rm -rf /dev/stdin' },
+  { element: 'windowBorder', message: 'rm -rf /usr/lib/libshadow.so' },
+  { element: 'everything', message: 'rm -rf /boot ... bye!' },
 ]
 
 const consoleCommands: Record<string, string | string[]> = {
@@ -61,10 +59,11 @@ const consoleCommands: Record<string, string | string[]> = {
     'Available commands:',
     '  help          - Show this help message',
     '  ls            - List directory contents',
+    '  cat <file>    - Read file contents',
     '  exit          - Exit',
     '  clear         - Clear console',
-    '  git blame     - Find who broke it',
-    '  apply         - Work with us <3',
+    '  git blame     - Show what author last modified each line of a file',
+    '  apply         - Work with us',
   ],
   'find page':
     'find: No results found. The page has ascended to a higher plane.',
@@ -92,13 +91,12 @@ const consoleCommands: Record<string, string | string[]> = {
   'git blame':
     'Line 1: (You, 2 minutes ago) "just a little friday deploy no problem"',
   apply:
-    '\nSkills detected:\n  ✓ Can find 404 pages\n  ✓ Curious\n  ✓ Persistent (still here)\n\nStatus: Impressed.\n\nApply → https://polar.sh/careers',
+    "We're always looking for curious people.\n\nApply → https://polar.sh/careers",
   jobs: 'Visit https://polar.sh/careers',
   hire: 'Visit https://polar.sh/careers',
   careers: 'Visit https://polar.sh/careers',
   'npm install':
     'Installing dependencies...\nadded 1,247 packages in 3m\n\n12 vulnerabilities (4 moderate, 8 high)\n\nPage still not found.',
-  'rm -rf /': 'Permission denied. Nice try though. Maybe try sudo?',
   'curl localhost':
     'curl: (7) Failed to connect to localhost port 80: Connection refused\n...because the page does not exist.',
   ping: 'PING page (127.0.0.1): 56 data bytes\nRequest timeout for icmp_seq 0\nRequest timeout for icmp_seq 1\nRequest timeout for icmp_seq 2\n--- page ping statistics ---\n3 packets transmitted, 0 packets received, 100.0% packet loss',
@@ -134,6 +132,36 @@ const ResponseInspector = () => {
     new Set(),
   )
   const [isDeleting, setIsDeleting] = useState(false)
+  const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 })
+  const [windowClosed, setWindowClosed] = useState(false)
+
+  const handleCloseWindow = useCallback(() => {
+    if (windowClosed) return
+    setWindowClosed(true)
+    // Slide back after a moment
+    setTimeout(() => {
+      setWindowClosed(false)
+    }, 1500)
+  }, [windowClosed])
+
+  const triggerShake = useCallback(() => {
+    const shakeSequence = [
+      { x: -3, y: 0 },
+      { x: 3, y: -1 },
+      { x: -2, y: 1 },
+      { x: 2, y: 0 },
+      { x: 0, y: 0 },
+    ]
+    let i = 0
+    const shake = () => {
+      if (i < shakeSequence.length) {
+        setShakeOffset(shakeSequence[i])
+        i++
+        setTimeout(shake, 30)
+      }
+    }
+    shake()
+  }, [])
 
   const startDeletion = useCallback(() => {
     if (isDeleting) return
@@ -149,12 +177,13 @@ const ResponseInspector = () => {
           { type: 'output', text: message },
         ])
         setDeletedElements((prev) => new Set([...prev, element]))
+        triggerShake()
         index++
-        setTimeout(deleteNext, 800 + Math.random() * 400)
+        setTimeout(deleteNext, 1200 + Math.random() * 600)
       }
     }
     deleteNext()
-  }, [isDeleting])
+  }, [isDeleting, triggerShake])
 
   useEffect(() => {
     consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -212,7 +241,12 @@ const ResponseInspector = () => {
 
       if (cmd === 'clear') {
         setConsoleHistory([])
-      } else if (cmd === 'sudo rm -rf /' || cmd === 'sudo rm -rf /*') {
+      } else if (
+        cmd === 'rm -rf /' ||
+        cmd === 'rm -rf /*' ||
+        cmd === 'sudo rm -rf /' ||
+        cmd === 'sudo rm -rf /*'
+      ) {
         setConsoleHistory((prev) => [
           ...prev,
           {
@@ -337,17 +371,14 @@ const ResponseInspector = () => {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black p-4 font-mono text-green-400">
         <div className="space-y-2 text-sm">
-          <p>$ sudo rm -rf /</p>
-          <p>rm: it is extremely discouraged to operate recursively on /</p>
-          <p>rm: use --no-preserve-root to override this failsafe</p>
-          <p className="pt-4 text-gray-500">
-            Just kidding, nothing is deleted!
-          </p>
+          <p className="text-gray-500">$ sudo rm -rf /</p>
+          <p className="pt-4">Well, you did it. You deleted everything.</p>
+          <p className="text-gray-500">That was fun, wasn&apos;t it?</p>
           <Link
             href="/"
             className="inline-block pt-4 text-blue-400 underline hover:text-blue-300"
           >
-            → Go back to Home
+            → Respawn
           </Link>
         </div>
       </div>
@@ -357,12 +388,20 @@ const ResponseInspector = () => {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-white p-4 dark:bg-gray-900">
       <div
-        className="dark:border-polar-700 absolute flex flex-col overflow-hidden rounded-xl border border-gray-200 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:border-gray-700 dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]"
+        className={`absolute flex flex-col overflow-hidden ${
+          deletedElements.has('windowBorder')
+            ? ''
+            : 'dark:border-polar-700 rounded-xl border border-gray-200 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]'
+        }`}
         style={{
           width: size.width,
           height: size.height,
-          transform: `translate(${position.x}px, ${position.y}px)`,
+          transform: `translate(${position.x + shakeOffset.x}px, ${position.y + shakeOffset.y + (windowClosed ? window.innerHeight + 100 : 0)}px)`,
           cursor: isDragging ? 'grabbing' : 'default',
+          transition:
+            shakeOffset.x !== 0 || shakeOffset.y !== 0 || isDragging
+              ? undefined
+              : 'transform 0.4s ease-in-out',
         }}
       >
         {!deletedElements.has('titleBar') && (
@@ -373,7 +412,10 @@ const ResponseInspector = () => {
           >
             {!deletedElements.has('trafficLights') && (
               <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-red-500" />
+                <button
+                  onClick={handleCloseWindow}
+                  className="h-3 w-3 rounded-full bg-red-500 transition-transform hover:scale-110"
+                />
                 <div className="h-3 w-3 rounded-full bg-yellow-500" />
                 <div className="h-3 w-3 rounded-full bg-green-500" />
               </div>
@@ -415,7 +457,7 @@ const ResponseInspector = () => {
         )}
 
         <div className="dark:bg-polar-950 flex-1 overflow-auto bg-white p-4">
-          {activeTab === 'headers' && !deletedElements.has('headers') && (
+          {activeTab === 'headers' && (
             <div className="space-y-4 font-mono text-xs">
               <div>
                 <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">
@@ -550,7 +592,7 @@ const ResponseInspector = () => {
             </div>
           )}
 
-          {activeTab === 'preview' && !deletedElements.has('preview') && (
+          {activeTab === 'preview' && (
             <div className="flex h-full flex-col items-center justify-center">
               <div className="text-6xl font-bold text-red-500">404</div>
               <p className="mt-4 text-gray-600 dark:text-gray-400">
@@ -562,7 +604,7 @@ const ResponseInspector = () => {
             </div>
           )}
 
-          {activeTab === 'response' && !deletedElements.has('response') && (
+          {activeTab === 'response' && (
             <pre className="dark:bg-polar-900 overflow-auto rounded bg-gray-50 p-4 font-mono text-xs leading-relaxed">
               <span className="text-gray-500">{'{\n'}</span>
               <span className="text-purple-600 dark:text-purple-400">
@@ -630,7 +672,7 @@ const ResponseInspector = () => {
             </pre>
           )}
 
-          {activeTab === 'timing' && !deletedElements.has('timing') && (
+          {activeTab === 'timing' && (
             <div className="space-y-4 font-mono text-xs">
               <div className="dark:bg-polar-900 rounded bg-gray-50 p-4">
                 <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">
@@ -702,54 +744,60 @@ const ResponseInspector = () => {
 
           {activeTab === 'console' && (
             <div
-              className="dark:bg-polar-900 flex h-full flex-col rounded bg-gray-900 p-4 font-mono text-xs"
+              className="flex h-full flex-col p-4 font-mono text-xs"
               onClick={() => inputRef.current?.focus()}
             >
-              <div className="flex-1 overflow-auto pb-4">
-                {consoleHistory.map((entry, i) => (
-                  <div
-                    key={i}
-                    className={`whitespace-pre-wrap ${
-                      entry.type === 'input'
-                        ? 'text-green-400'
-                        : 'text-gray-300'
-                    }`}
-                  >
-                    {entry.text.split(/(https?:\/\/[^\s]+)/g).map((part, j) => {
-                      const safeUrl = part.match(/^https?:\/\//)
-                        ? sanitizeUrl(part)
-                        : null
-                      return safeUrl ? (
-                        <a
-                          key={j}
-                          href={safeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 underline hover:text-blue-300"
-                        >
-                          {part}
-                        </a>
-                      ) : (
-                        part
-                      )
-                    })}
-                  </div>
-                ))}
-                <div ref={consoleEndRef} />
-              </div>
-              <div className="flex items-center border-t border-gray-700 pt-3 text-green-400">
-                <span className="mr-2">$</span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={consoleInput}
-                  onChange={(e) => setConsoleInput(e.target.value)}
-                  onKeyDown={handleConsoleKeyDown}
-                  className="flex-1 border-none bg-transparent text-green-400 caret-green-400 shadow-none ring-0 outline-none focus:border-none focus:shadow-none focus:ring-0 focus:outline-none"
-                  spellCheck={false}
-                  autoComplete="off"
-                />
-              </div>
+              {!deletedElements.has('consoleHistory') && (
+                <div className="flex-1 overflow-auto pb-4">
+                  {consoleHistory.map((entry, i) => (
+                    <div
+                      key={i}
+                      className={`whitespace-pre-wrap ${
+                        entry.type === 'input'
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {entry.text
+                        .split(/(https?:\/\/[^\s]+)/g)
+                        .map((part, j) => {
+                          const safeUrl = part.match(/^https?:\/\//)
+                            ? sanitizeUrl(part)
+                            : null
+                          return safeUrl ? (
+                            <a
+                              key={j}
+                              href={safeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              {part}
+                            </a>
+                          ) : (
+                            part
+                          )
+                        })}
+                    </div>
+                  ))}
+                  <div ref={consoleEndRef} />
+                </div>
+              )}
+              {!deletedElements.has('consoleInput') && (
+                <div className="flex items-center border-t border-gray-200 pt-3 text-green-600 dark:border-gray-700 dark:text-green-400">
+                  <span className="mr-2">$</span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={consoleInput}
+                    onChange={(e) => setConsoleInput(e.target.value)}
+                    onKeyDown={handleConsoleKeyDown}
+                    className="flex-1 border-none bg-transparent text-green-600 caret-green-600 shadow-none ring-0 outline-none focus:border-none focus:shadow-none focus:ring-0 focus:outline-none dark:text-green-400 dark:caret-green-400"
+                    spellCheck={false}
+                    autoComplete="off"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

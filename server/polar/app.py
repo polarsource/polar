@@ -44,6 +44,7 @@ from polar.observability.remote_write import (
     start_remote_write_pusher,
     stop_remote_write_pusher,
 )
+from polar.observability.slo import init_slo_metrics
 from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import (
     AsyncSessionMiddleware,
@@ -119,6 +120,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     metrics_enabled = start_remote_write_pusher(include_queue_metrics=False)
     if metrics_enabled:
         log.info("prometheus_remote_write_enabled")
+
+    # Initialize SLO target metrics for critical endpoints
+    init_slo_metrics()
 
     async_engine = async_read_engine = create_async_engine("app")
     async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(

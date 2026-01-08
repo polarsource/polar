@@ -9,31 +9,17 @@
   "links": [],
   "panels": [
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "panels": [],
-      "title": "Global SLO Overview",
-      "type": "row"
-    },
-    {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Critical endpoints passing SLO / Total critical endpoints",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 99,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -43,7 +29,75 @@
               },
               {
                 "color": "yellow",
-                "value": 99.5
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 30,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "100 * (1 - ((count(\n  (\n    histogram_quantile(0.99, sum by (endpoint, method, le) (\n      rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[5m])\n    )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n  )\n  or\n  (\n    (100 * (1 - (\n      sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[5m]))\n      or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0)\n    ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))))\n    < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n  )\n) or vector(0)) / count(max by (endpoint, method) (polar_slo_p99_target_seconds))))",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Critical SLOs Passing",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Overall availability across all requests (Target: 99.95%)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 99.9
               },
               {
                 "color": "green",
@@ -56,26 +110,25 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 1
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 0
       },
-      "id": 2,
+      "id": 31,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
       },
       "targets": [
         {
@@ -83,27 +136,27 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - (sum(increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or vector(0)) / sum(increase(polar_http_request_total{env=\"$env\"}[$__range])))",
+          "expr": "100 * (1 - ((sum(increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or vector(0)) / sum(increase(polar_http_request_total{env=\"$env\"}[$__range]))))",
           "legendFormat": "Availability",
           "refId": "A"
         }
       ],
       "title": "Global Availability (Target: 99.95%)",
-      "type": "gauge"
+      "transformations": [],
+      "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Error budget remaining for the selected time range (based on 99.95% SLO target)",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -126,26 +179,25 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 1
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
       },
-      "id": 3,
+      "id": 32,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
       },
       "targets": [
         {
@@ -159,145 +211,6 @@
         }
       ],
       "title": "Error Budget Remaining",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 0.5
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "histogram_quantile(0.99, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[5m])) by (le))",
-          "legendFormat": "p99",
-          "refId": "A"
-        }
-      ],
-      "title": "Global p99 Latency",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 1
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "count((100 * (1 - ((sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or (sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range])) * 0)) / sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range]))))) < 99.9) or vector(0)",
-          "legendFormat": "Endpoints Below SLO",
-          "refId": "A"
-        }
-      ],
-      "title": "Endpoints Below SLO",
       "type": "stat"
     },
     {
@@ -306,11 +219,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 4
       },
-      "id": 6,
+      "id": 33,
       "panels": [],
-      "title": "Endpoint Health Table",
+      "title": "Current Issues",
       "type": "row"
     },
     {
@@ -318,13 +231,14 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
+      "description": "Endpoints currently breaching their SLO targets. Empty means all healthy!",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "custom": {
-            "align": "auto",
+            "align": "left",
             "cellOptions": {
               "type": "auto"
             },
@@ -345,46 +259,47 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Availability %"
+              "options": "Issue"
             },
             "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 99
-                    },
-                    {
-                      "color": "green",
-                      "value": 99.95
-                    }
-                  ]
-                }
-              },
               {
                 "id": "custom.cellOptions",
                 "value": {
                   "mode": "gradient",
                   "type": "color-background"
                 }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Latency": {
+                        "color": "orange",
+                        "index": 0,
+                        "text": "P99 LATENCY"
+                      },
+                      "Availability": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "AVAILABILITY"
+                      },
+                      "Both": {
+                        "color": "dark-red",
+                        "index": 2,
+                        "text": "BOTH"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "p99 Latency"
+              "options": "Current P99"
             },
             "properties": [
               {
@@ -392,115 +307,86 @@
                 "value": "s"
               },
               {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 0.5
-                    },
-                    {
-                      "color": "red",
-                      "value": 2
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "id": "decimals",
+                "value": 2
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "Request Rate"
+              "options": "Target P99"
             },
             "properties": [
               {
                 "id": "unit",
-                "value": "reqps"
+                "value": "s"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "5xx Errors"
+              "options": "Current Avail"
             },
             "properties": [
               {
                 "id": "unit",
-                "value": "short"
+                "value": "percent"
               },
               {
                 "id": "decimals",
-                "value": 0
+                "value": 2
               },
               {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "match": "null",
+                      "result": {
+                        "color": "text",
+                        "index": 0,
+                        "text": "N/A"
+                      }
                     },
-                    {
-                      "color": "yellow",
-                      "value": 1
-                    },
-                    {
-                      "color": "red",
-                      "value": 10
-                    }
-                  ]
-                }
-              },
+                    "type": "special"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Target Avail"
+            },
+            "properties": [
               {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "id": "unit",
+                "value": "percent"
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 10,
+        "h": 6,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 5
       },
-      "id": 7,
+      "id": 34,
       "options": {
         "cellHeight": "sm",
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
-        "sortBy": [
-          {
-            "desc": false,
-            "displayName": "Availability %"
-          }
-        ]
+        "sortBy": []
       },
       "pluginVersion": "11.0.0",
       "targets": [
@@ -509,52 +395,53 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - ((sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or (sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range])) * 0)) / sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range]))))",
+          "expr": "(\n  histogram_quantile(0.99, sum by (endpoint, method, le) (\n    rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[5m])\n  )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
-          "refId": "Availability"
+          "refId": "P99Breach"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.99, sum by (endpoint, method, le) (rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])))",
+          "expr": "max by (endpoint, method) (polar_slo_p99_target_seconds)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
-          "refId": "Latency"
+          "refId": "P99Target"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))",
+          "expr": "(\n  (100 * (1 - (\n    sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[5m]))\n    or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0)\n  ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))))\n  < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
-          "refId": "Rate"
+          "refId": "AvailBreach"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))",
+          "expr": "max by (endpoint, method) (polar_slo_availability_target)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
-          "refId": "Errors"
+          "refId": "AvailTarget"
         }
       ],
-      "title": "Endpoint Health",
+      "title": "Breaching SLOs (Critical Endpoints)",
       "transformations": [
         {
-          "id": "seriesToColumns",
+          "id": "joinByField",
           "options": {
-            "byField": "endpoint"
+            "byField": "endpoint",
+            "mode": "outer"
           }
         },
         {
@@ -570,14 +457,60 @@
               "method 3": true,
               "method 4": true
             },
-            "indexByName": {},
+            "indexByName": {
+              "endpoint": 0,
+              "method 1": 1,
+              "Value #P99Breach": 2,
+              "Value #P99Target": 3,
+              "Value #AvailBreach": 4,
+              "Value #AvailTarget": 5
+            },
             "renameByName": {
-              "Value #Availability": "Availability %",
-              "Value #Errors": "5xx Errors",
-              "Value #Latency": "p99 Latency",
-              "Value #Rate": "Request Rate",
               "endpoint": "Endpoint",
-              "method 1": "Method"
+              "method 1": "Method",
+              "Value #P99Breach": "Current P99",
+              "Value #P99Target": "Target P99",
+              "Value #AvailBreach": "Current Avail",
+              "Value #AvailTarget": "Target Avail"
+            }
+          }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "isNotNull",
+                  "options": {}
+                },
+                "fieldName": "Current P99"
+              },
+              {
+                "config": {
+                  "id": "isNotNull",
+                  "options": {}
+                },
+                "fieldName": "Current Avail"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Issue",
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "binary": {
+              "left": "Current P99",
+              "operator": ">",
+              "reducer": "sum",
+              "right": "0"
             }
           }
         }
@@ -585,12 +518,422 @@
       "type": "table"
     },
     {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 6,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Availability %"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "color": "text",
+                            "index": 0,
+                            "text": "N/A"
+                          }
+                        },
+                        "type": "special"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 99
+                        },
+                        {
+                          "color": "green",
+                          "value": 99.95
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "p99 Latency"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 0.5
+                        },
+                        {
+                          "color": "red",
+                          "value": 2
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Request Rate"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "reqps"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "5xx Errors"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 1
+                        },
+                        {
+                          "color": "red",
+                          "value": 10
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Critical"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "color": "text",
+                            "index": 0,
+                            "text": "-"
+                          }
+                        },
+                        "type": "special"
+                      },
+                      {
+                        "options": {
+                          "0": {
+                            "color": "text",
+                            "index": 1,
+                            "text": "-"
+                          }
+                        },
+                        "type": "value"
+                      },
+                      {
+                        "options": {
+                          "from": 0.001,
+                          "result": {
+                            "color": "blue",
+                            "index": 2,
+                            "text": "YES"
+                          },
+                          "to": 1000
+                        },
+                        "type": "range"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 7,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": ["sum"],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Availability %"
+              }
+            ]
+          },
+          "pluginVersion": "11.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "100 * (1 - (sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range])) or (sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range])) * 0)) / clamp_min(sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\"}[$__range])), 1))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "Availability"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "histogram_quantile(0.99, sum by (endpoint, method, le) (rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "Latency"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "Rate"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (endpoint, method) (increase(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "Errors"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max by (endpoint, method) (polar_slo_p99_target_seconds)",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "IsCritical"
+            }
+          ],
+          "title": "All Endpoint Health",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "endpoint": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "method": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Value #Availability": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Latency": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Rate": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #Errors": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  },
+                  "Value #IsCritical": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
+                  }
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "indexByName": {
+                  "endpoint": 0,
+                  "method": 1,
+                  "Value #IsCritical (lastNotNull)": 2,
+                  "Value #Availability (lastNotNull)": 3,
+                  "Value #Latency (lastNotNull)": 4,
+                  "Value #Rate (lastNotNull)": 5,
+                  "Value #Errors (lastNotNull)": 6
+                },
+                "renameByName": {
+                  "Value #Availability (lastNotNull)": "Availability %",
+                  "Value #Errors (lastNotNull)": "5xx Errors",
+                  "Value #Latency (lastNotNull)": "p99 Latency",
+                  "Value #Rate (lastNotNull)": "Request Rate",
+                  "Value #IsCritical (lastNotNull)": "Critical",
+                  "endpoint": "Endpoint",
+                  "method": "Method"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "title": "All Endpoints",
+      "type": "row"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 12
       },
       "id": 8,
       "panels": [],
@@ -663,15 +1006,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 13
       },
       "id": 9,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "min"
-          ],
+          "calcs": ["mean", "min"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -755,15 +1095,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 19
+        "y": 13
       },
       "id": 10,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -865,15 +1202,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 21
       },
       "id": 11,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -988,15 +1322,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 21
       },
       "id": 12,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "sum"
-          ],
+          "calcs": ["mean", "sum"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -1021,132 +1352,223 @@
       "type": "timeseries"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 29
       },
       "id": 13,
-      "panels": [],
-      "title": "Error Budget Analysis",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 30
+          },
+          "id": 14,
+          "options": {
+            "legend": {
+              "calcs": ["mean", "max"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "line"
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
             }
           },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
               },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 36
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max"
+              "expr": "(sum(rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[1h])) or vector(0)) / (0.0005 * sum(rate(polar_http_request_total{env=\"$env\"}[1h])))",
+              "legendFormat": "Burn Rate (1h)",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "(sum(rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[6h])) or vector(0)) / (0.0005 * sum(rate(polar_http_request_total{env=\"$env\"}[6h])))",
+              "legendFormat": "Burn Rate (6h)",
+              "refId": "B"
+            }
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "(sum(rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[1h])) or vector(0)) / (0.0005 * sum(rate(polar_http_request_total{env=\"$env\"}[1h])))",
-          "legendFormat": "Burn Rate (1h)",
-          "refId": "A"
+          "title": "Global Error Budget Burn Rate (1 = consuming at allowed rate)",
+          "type": "timeseries"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(sum(rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[6h])) or vector(0)) / (0.0005 * sum(rate(polar_http_request_total{env=\"$env\"}[6h])))",
-          "legendFormat": "Burn Rate (6h)",
-          "refId": "B"
+          "description": "Error budget burn rate for critical endpoints. Values >1 indicate faster than sustainable consumption.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 3
+                  },
+                  {
+                    "color": "red",
+                    "value": 14.4
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 30
+          },
+          "id": 35,
+          "options": {
+            "legend": {
+              "calcs": ["mean", "max"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "(\n  (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[1h])) or vector(0))\n  /\n  ((1 - max by (endpoint, method) (polar_slo_availability_target) / 100) * sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[1h])))\n)",
+              "legendFormat": "{{method}} {{endpoint}} (1h)",
+              "refId": "A"
+            }
+          ],
+          "title": "Critical Endpoints Burn Rate (1h window)",
+          "type": "timeseries"
         }
       ],
-      "title": "Error Budget Burn Rate (1 = consuming at allowed rate)",
-      "type": "timeseries"
+      "title": "Error Budget Analysis",
+      "type": "row"
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": [
-    "polar",
-    "api",
-    "slo",
-    "sli"
-  ],
+  "tags": ["polar", "api", "slo", "sli"],
   "templating": {
     "list": [
       {

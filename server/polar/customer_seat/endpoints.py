@@ -341,12 +341,22 @@ async def get_claim_info(
     if not organization:
         raise ResourceNotFound("Organization not found")
 
+    # Get customer email with priority: seat.email > seat.member.email > seat.customer.email
+    # This handles both member_model_enabled=True (email on seat) and False (email on customer)
+    customer_email = ""
+    if seat.email:
+        customer_email = seat.email
+    elif seat.member:
+        customer_email = seat.member.email
+    elif seat.customer:
+        customer_email = seat.customer.email
+
     return SeatClaimInfo(
         product_name=product.name,
         product_id=product.id,
         organization_name=organization.name,
         organization_slug=organization.slug,
-        customer_email=seat.customer.email if seat.customer else "",
+        customer_email=customer_email,
         can_claim=seat.status == SeatStatus.pending,
     )
 

@@ -168,12 +168,12 @@ async def assign_seat(
         metadata=seat_assign.metadata,
     )
 
-    # Reload seat with customer relationship
+    # Reload seat with customer and member relationships
     seat_repository = CustomerSeatRepository.from_session(session)
     seat_statement = (
         seat_repository.get_base_statement()
         .where(CustomerSeat.id == seat.id)
-        .options(joinedload(CustomerSeat.customer))
+        .options(joinedload(CustomerSeat.customer), joinedload(CustomerSeat.member))
     )
     reloaded_seat = await seat_repository.get_one_or_none(seat_statement)
 

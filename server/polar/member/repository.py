@@ -43,6 +43,24 @@ class MemberRepository(
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_customer_id_and_email(
+        self,
+        customer_id: UUID,
+        email: str,
+    ) -> Member | None:
+        """
+        Get a member by customer ID and email.
+
+        Returns:
+            Member if found, None otherwise
+        """
+        statement = select(Member).where(
+            Member.customer_id == customer_id,
+            Member.email == email,
+            Member.deleted_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)
+
     async def list_by_customer(
         self,
         session: AsyncReadSession,

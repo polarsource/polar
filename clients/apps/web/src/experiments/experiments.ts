@@ -8,9 +8,8 @@
  *
  */
 export const experiments = {
-  checkout_merchant_avatar_experiment: {
-    description:
-      'Replace the merchant avatar with the merchant name in the checkout product info',
+  test_experiment: {
+    description: 'Test experiment',
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },

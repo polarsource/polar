@@ -1,42 +1,27 @@
-import type { ExperimentVariant } from '@/experiments'
 import { markdownOptions } from '@/utils/markdown'
 import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Markdown from 'markdown-to-jsx'
-import { twMerge } from 'tailwind-merge'
 import { Slideshow } from '../Products/Slideshow'
 
 interface CheckoutProductInfoProps {
   organization: CheckoutOrganization
   product: CheckoutProduct
-  merchantAvatarVariant: ExperimentVariant<'checkout_merchant_avatar_experiment'>
 }
 
 const CheckoutProductInfo = ({
   organization,
   product,
-  merchantAvatarVariant,
 }: CheckoutProductInfoProps) => {
-  const isControl = merchantAvatarVariant === 'control'
-
   return (
     <>
-      <div
-        className={twMerge(
-          'flex flex-col',
-          isControl ? 'gap-y-6 md:gap-y-8' : 'gap-y-1',
-        )}
-      >
-        {isControl ? (
-          <Avatar
-            className="h-12 w-12 md:h-16 md:w-16"
-            avatar_url={organization.avatarUrl}
-            name={organization.name}
-          />
-        ) : (
-          <p>{organization.name}</p>
-        )}
+      <div className="flex flex-col gap-y-6 md:gap-y-8">
+        <Avatar
+          className="h-12 w-12 md:h-16 md:w-16"
+          avatar_url={organization.avatarUrl}
+          name={organization.name}
+        />
         {product.name ? (
           <h1 className="text-3xl">{product.name}</h1>
         ) : (

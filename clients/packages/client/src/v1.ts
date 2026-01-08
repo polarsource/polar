@@ -17570,6 +17570,10 @@ export interface components {
       tier_price_recurring_interval: string
       /** Tier Organization Name */
       tier_organization_name: string
+      /** Tier Organization Slug */
+      tier_organization_slug?: string | null
+      /** Subscription Id */
+      subscription_id?: string | null
       /** Formatted Price Amount */
       readonly formatted_price_amount: string
     }

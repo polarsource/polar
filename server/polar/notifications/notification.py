@@ -66,6 +66,8 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_price_amount: int | None
     tier_price_recurring_interval: str
     tier_organization_name: str
+    tier_organization_slug: str | None = None
+    subscription_id: str | None = None
 
     @computed_field
     def formatted_price_amount(self) -> str:

@@ -164,6 +164,28 @@ If you need to ensure that data is flushed to the database, to run constraints o
 - Use existing fixtures and avoid redundant setup
 - Mock external services appropriately
 
+### Documentation
+
+Documentation lives in `docs/` and uses Mintlify. Some documentation is auto-generated, some requires manual updates.
+
+**Auto-generated (no action needed):**
+- API endpoint documentation (generated from OpenAPI/FastAPI routes)
+- Webhook event schemas (generated from `WebhookEventType` enum and Pydantic schemas)
+
+**Manual updates required for:**
+- New features or significant feature changes → `docs/features/`
+- New integration guides or SDK adapters → `docs/guides/` or `docs/integrate/`
+- Customer-facing behavior changes → `docs/changelog/recent.mdx`
+
+**When to update documentation:**
+- Adding a new public API endpoint with novel functionality
+- Adding a new webhook event type (add to `WebhookEventType` enum - docs auto-generate)
+- Changing business behavior that affects how customers use Polar
+- Adding new customer-facing features or configuration options
+- Deprecating or removing functionality
+
+**Claude Code reminder:** When working on public-facing changes, consider whether documentation updates are needed and add a todo item like "Update docs for [feature]" if appropriate. Use judgment based on the scope and customer impact of the change.
+
 ### Load Testing
 
 Polar includes a comprehensive load testing infrastructure for validating payment processing performance and capacity:

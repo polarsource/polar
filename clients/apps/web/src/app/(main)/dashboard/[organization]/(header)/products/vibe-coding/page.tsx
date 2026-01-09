@@ -14,7 +14,7 @@ export default async function Page({
 }: {
   params: { organization: string }
 }) {
-  const api = getServerSideAPI()
+  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

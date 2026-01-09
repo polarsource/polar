@@ -14,12 +14,6 @@
       "permanent": false
     },
     {
-      "source": "/:id",
-      "destination": "https://polar.sh/api/checkout?price=:id",
-      "has": [{ "type": "host", "value": "buy.polar.sh" }],
-      "permanent": false
-    },
-    {
       "source": "/:path*",
       "destination": "https://polar.sh/:path*",
       "has": [{ "type": "host", "value": "buy.polar.sh" }],

@@ -8,7 +8,7 @@ from typing import Any
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import literal, select, tuple_
+from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.config import settings
@@ -47,6 +47,9 @@ def _event_matches_meter(event: Event, meter: Meter) -> bool:
 async def run_backfill(
     batch_size: int = 2000,
     session: AsyncSession | None = None,
+    resume_org_id: uuid.UUID | None = None,
+    resume_timestamp: datetime.datetime | None = None,
+    resume_event_id: uuid.UUID | None = None,
 ) -> dict[str, int]:
     """
     Backfill meter_events table for all meters.
@@ -89,13 +92,25 @@ async def run_backfill(
             f"Found {len(meters)} meters across {len(meters_by_org)} organizations"
         )
 
+        found_resume_org = resume_org_id is None
+
         with Progress() as progress:
             task = progress.add_task("[cyan]Backfilling meter events...", total=None)
 
             for org_id, org_meters in meters_by_org.items():
-                org_inserted = 0
-                last_timestamp: datetime.datetime | None = None
-                last_event_id: uuid.UUID | None = None
+                if not found_resume_org:
+                    if org_id == resume_org_id:
+                        found_resume_org = True
+                        last_timestamp = resume_timestamp
+                        last_event_id = resume_event_id
+                        org_inserted = 0
+                    else:
+                        continue
+                else:
+                    last_timestamp = None
+                    last_event_id = None
+                    org_inserted = 0
+
                 meter_names = ", ".join(m.name for m in org_meters[:3])
                 if len(org_meters) > 3:
                     meter_names += f" (+{len(org_meters) - 3} more)"
@@ -111,8 +126,13 @@ async def run_backfill(
                     )
                     if last_timestamp is not None and last_event_id is not None:
                         statement = statement.where(
-                            tuple_(Event.timestamp, Event.id)
-                            < tuple_(literal(last_timestamp), literal(last_event_id))
+                            or_(
+                                Event.timestamp < last_timestamp,
+                                and_(
+                                    Event.timestamp == last_timestamp,
+                                    Event.id < last_event_id,
+                                ),
+                            )
                         )
 
                     result = await session.execute(statement)
@@ -180,6 +200,11 @@ def drop_all(*args: Any, **kwargs: Any) -> Any:
 @typer_async
 async def backfill_meter_events(
     batch_size: int = typer.Option(2000, help="Number of events to process per batch"),
+    resume_org_id: str = typer.Option(None, help="Organization ID to resume from"),
+    resume_timestamp: str = typer.Option(
+        None, help="Timestamp to resume from (ISO format)"
+    ),
+    resume_event_id: str = typer.Option(None, help="Event ID to resume from"),
 ) -> None:
     """
     Backfill meter_events table for all meters.
@@ -192,7 +217,18 @@ async def backfill_meter_events(
         }
     )
 
-    await run_backfill(batch_size=batch_size)
+    parsed_org_id = uuid.UUID(resume_org_id) if resume_org_id else None
+    parsed_timestamp = (
+        datetime.datetime.fromisoformat(resume_timestamp) if resume_timestamp else None
+    )
+    parsed_event_id = uuid.UUID(resume_event_id) if resume_event_id else None
+
+    await run_backfill(
+        batch_size=batch_size,
+        resume_org_id=parsed_org_id,
+        resume_timestamp=parsed_timestamp,
+        resume_event_id=parsed_event_id,
+    )
 
 
 if __name__ == "__main__":

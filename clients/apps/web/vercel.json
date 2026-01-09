@@ -18,6 +18,12 @@
       "destination": "https://polar.sh/:path*",
       "has": [{ "type": "host", "value": "buy.polar.sh" }],
       "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "https://polar.sh/",
+      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "permanent": false
     }
   ],
   "rewrites": [

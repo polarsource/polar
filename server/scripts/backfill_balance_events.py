@@ -20,7 +20,7 @@ from polar.event.system import (
 )
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
-from polar.models import Dispute, Event, Order, Refund, Transaction
+from polar.models import Customer, Dispute, Event, Order, Refund, Transaction
 from polar.models.event import EventSource
 from polar.models.refund import RefundStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
@@ -448,9 +448,10 @@ async def create_missing_balance_dispute_events(
                 select(Transaction)
                 .where(Transaction.id.in_(batch_ids))
                 .options(
-                    selectinload(Transaction.dispute).selectinload(Dispute.order),
-                    selectinload(Transaction.payment_customer),
-                    selectinload(Transaction.payment_organization),
+                    selectinload(Transaction.dispute)
+                    .selectinload(Dispute.order)
+                    .selectinload(Order.customer)
+                    .selectinload(Customer.organization),
                 )
             )
 
@@ -462,12 +463,13 @@ async def create_missing_balance_dispute_events(
 
             events = []
             for tx in transactions:
-                if tx.dispute is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no dispute")
+                if tx.dispute is None or tx.dispute.order is None:
+                    typer.echo(f"Warning: Transaction {tx.id} has no dispute or order")
                     continue
-                if tx.payment_customer is None or tx.payment_organization is None:
+                customer = tx.dispute.order.customer
+                if customer is None or customer.organization is None:
                     typer.echo(
-                        f"Warning: Transaction {tx.id} has no payment_customer or payment_organization"
+                        f"Warning: Transaction {tx.id} has no customer or organization"
                     )
                     continue
 
@@ -504,8 +506,8 @@ async def create_missing_balance_dispute_events(
                         "name": SystemEvent.balance_dispute,
                         "source": EventSource.system,
                         "timestamp": tx.created_at,
-                        "customer_id": tx.payment_customer.id,
-                        "organization_id": tx.payment_organization.id,
+                        "customer_id": customer.id,
+                        "organization_id": customer.organization.id,
                         "user_metadata": metadata,
                     }
                 )
@@ -578,9 +580,10 @@ async def create_missing_balance_dispute_reversal_events(
                 select(Transaction)
                 .where(Transaction.id.in_(batch_ids))
                 .options(
-                    selectinload(Transaction.dispute).selectinload(Dispute.order),
-                    selectinload(Transaction.payment_customer),
-                    selectinload(Transaction.payment_organization),
+                    selectinload(Transaction.dispute)
+                    .selectinload(Dispute.order)
+                    .selectinload(Order.customer)
+                    .selectinload(Customer.organization),
                     selectinload(Transaction.incurred_transactions),
                 )
             )
@@ -593,12 +596,13 @@ async def create_missing_balance_dispute_reversal_events(
 
             events = []
             for tx in transactions:
-                if tx.dispute is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no dispute")
+                if tx.dispute is None or tx.dispute.order is None:
+                    typer.echo(f"Warning: Transaction {tx.id} has no dispute or order")
                     continue
-                if tx.payment_customer is None or tx.payment_organization is None:
+                customer = tx.dispute.order.customer
+                if customer is None or customer.organization is None:
                     typer.echo(
-                        f"Warning: Transaction {tx.id} has no payment_customer or payment_organization"
+                        f"Warning: Transaction {tx.id} has no customer or organization"
                     )
                     continue
 
@@ -634,8 +638,8 @@ async def create_missing_balance_dispute_reversal_events(
                         "name": SystemEvent.balance_dispute_reversal,
                         "source": EventSource.system,
                         "timestamp": tx.created_at,
-                        "customer_id": tx.payment_customer.id,
-                        "organization_id": tx.payment_organization.id,
+                        "customer_id": customer.id,
+                        "organization_id": customer.organization.id,
                         "user_metadata": metadata,
                     }
                 )

@@ -185,6 +185,18 @@ const nextConfig = {
               ],
               permanent: false,
             },
+            // Catch-all: redirect any other buy.polar.sh paths to polar.sh
+            {
+              source: '/:path*',
+              destination: 'https://polar.sh/:path*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'buy.polar.sh',
+                },
+              ],
+              permanent: false,
+            },
           ]
         : []),
       {

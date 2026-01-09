@@ -10,7 +10,7 @@ from polar.event.system import BalanceDisputeMetadata, SystemEvent, build_system
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
 from polar.logging import Logger
-from polar.models import Dispute, Transaction
+from polar.models import Customer, Dispute, Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 
@@ -95,7 +95,9 @@ class DisputeTransactionService(BaseTransactionService):
         payment_transaction = await payment_transaction_repository.get_by_payment_id(
             dispute.payment_id,
             options=(
-                joinedload(Transaction.payment_customer),
+                joinedload(Transaction.payment_customer).joinedload(
+                    Customer.organization
+                ),
                 joinedload(Transaction.payment_organization),
                 joinedload(Transaction.order),
             ),
@@ -202,9 +204,8 @@ class DisputeTransactionService(BaseTransactionService):
         customer = payment_transaction.payment_customer
         order = payment_transaction.order
         if customer is not None:
-            organization = customer.organization
-
             try:
+                organization = customer.organization
                 assert dispute_transaction.presentment_amount is not None
                 assert dispute_transaction.presentment_currency is not None
 

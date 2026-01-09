@@ -1,10 +1,12 @@
 import { getPublicServerURL } from '@/utils/api'
 import { operations } from '@polar-sh/client'
 
+export type OAuthIntent = 'login' | 'link'
+
 export const getGitHubAuthorizeURL = (
   params: NonNullable<
     operations['integrations_github:integrations.github.authorize']['parameters']['query']
-  >,
+  > & { intent?: OAuthIntent },
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.return_to) {
@@ -12,6 +14,9 @@ export const getGitHubAuthorizeURL = (
   }
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
+  }
+  if (params.intent) {
+    searchParams.set('intent', params.intent)
   }
   return `${getPublicServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
@@ -19,7 +24,7 @@ export const getGitHubAuthorizeURL = (
 export const getGoogleAuthorizeURL = (
   params: NonNullable<
     operations['integrations_google:integrations.google.authorize']['parameters']['query']
-  >,
+  > & { intent?: OAuthIntent },
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.return_to) {
@@ -27,6 +32,9 @@ export const getGoogleAuthorizeURL = (
   }
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
+  }
+  if (params.intent) {
+    searchParams.set('intent', params.intent)
   }
   return `${getPublicServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }
@@ -34,7 +42,7 @@ export const getGoogleAuthorizeURL = (
 export const getAppleAuthorizeURL = (
   params: NonNullable<
     operations['integrations_apple:integrations.apple.authorize']['parameters']['query']
-  >,
+  > & { intent?: OAuthIntent },
 ): string => {
   const searchParams = new URLSearchParams()
   if (params.return_to) {
@@ -42,6 +50,9 @@ export const getAppleAuthorizeURL = (
   }
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
+  }
+  if (params.intent) {
+    searchParams.set('intent', params.intent)
   }
   return `${getPublicServerURL()}/v1/integrations/apple/authorize?${searchParams}`
 }

@@ -1,7 +1,8 @@
 import uuid
-from typing import Any
+from enum import StrEnum
+from typing import Annotated, Any
 
-from fastapi import Depends, Request
+from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
@@ -31,6 +32,11 @@ oauth2_authorize_callback = OAuth2AuthorizeCallback(
 class OAuthCallbackError(PolarRedirectionError): ...
 
 
+class OAuthIntent(StrEnum):
+    login = "login"
+    link = "link"
+
+
 router = APIRouter(
     prefix="/integrations/google",
     tags=["integrations_google", APITag.private],
@@ -43,6 +49,7 @@ async def google_authorize(
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
+    intent: Annotated[OAuthIntent, Query()] = OAuthIntent.login,
 ) -> RedirectResponse:
     state: dict[str, Any] = {}
 
@@ -51,7 +58,7 @@ async def google_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    if is_user(auth_subject):
+    if intent == OAuthIntent.link and is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="google_oauth")

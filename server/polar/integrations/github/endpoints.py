@@ -1,7 +1,8 @@
-from typing import Any
+from enum import StrEnum
+from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import Depends, Header, Request
+from fastapi import Depends, Header, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
@@ -46,12 +47,18 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
         super().__init__(message)
 
 
+class OAuthIntent(StrEnum):
+    login = "login"
+    link = "link"
+
+
 @router.get("/authorize", name="integrations.github.authorize")
 async def github_authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
+    intent: Annotated[OAuthIntent, Query()] = OAuthIntent.login,
     payment_intent_id: str | None = None,
 ) -> RedirectResponse:
     state: dict[str, Any] = {}
@@ -63,7 +70,7 @@ async def github_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    if is_user(auth_subject):
+    if intent == OAuthIntent.link and is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="github_oauth")

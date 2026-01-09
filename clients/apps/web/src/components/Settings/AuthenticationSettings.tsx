@@ -56,7 +56,7 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
   onDisconnect,
   isDisconnecting,
 }) => {
-  const authorizeURL = getGitHubAuthorizeURL({ return_to: returnTo })
+  const authorizeURL = getGitHubAuthorizeURL({ return_to: returnTo, intent: 'link' })
 
   return (
     <AuthenticationMethod
@@ -115,7 +115,7 @@ const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
   onDisconnect,
   isDisconnecting,
 }) => {
-  const authorizeURL = getGoogleAuthorizeURL({ return_to: returnTo })
+  const authorizeURL = getGoogleAuthorizeURL({ return_to: returnTo, intent: 'link' })
 
   return (
     <AuthenticationMethod

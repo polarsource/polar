@@ -1,7 +1,8 @@
 import uuid
-from typing import Any
+from enum import StrEnum
+from typing import Annotated, Any
 
-from fastapi import Depends, Form, Request
+from fastapi import Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import (
     OAuth2AuthorizeCallbackError,
@@ -29,6 +30,11 @@ from .service import apple as apple_service
 class OAuthCallbackError(PolarRedirectionError): ...
 
 
+class OAuthIntent(StrEnum):
+    login = "login"
+    link = "link"
+
+
 router = APIRouter(
     prefix="/integrations/apple",
     tags=["integrations_apple", APITag.private],
@@ -41,6 +47,7 @@ async def apple_authorize(
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
+    intent: Annotated[OAuthIntent, Query()] = OAuthIntent.login,
 ) -> RedirectResponse:
     state: dict[str, Any] = {}
 
@@ -49,7 +56,7 @@ async def apple_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    if is_user(auth_subject):
+    if intent == OAuthIntent.link and is_user(auth_subject):
         state["user_id"] = str(auth_subject.subject.id)
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="apple_oauth")

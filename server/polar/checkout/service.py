@@ -334,6 +334,7 @@ class CheckoutService:
                 product.organization,
                 product,
                 price,
+                currency,
                 discount_id=checkout_create.discount_id,
             )
 
@@ -807,6 +808,7 @@ class CheckoutService:
                     product.organization,
                     product,
                     price,
+                    currency,
                     discount_id=checkout_link.discount_id,
                 )
             # If the discount is not valid, just ignore it
@@ -857,6 +859,7 @@ class CheckoutService:
                         product.organization,
                         product,
                         price,
+                        currency,
                         discount_code=discount_code,
                     )
                     checkout.discount = discount
@@ -1522,6 +1525,7 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
+        currency: str,
         *,
         discount_id: uuid.UUID,
     ) -> Discount: ...
@@ -1533,6 +1537,7 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
+        currency: str,
         *,
         discount_code: str,
     ) -> Discount: ...
@@ -1543,6 +1548,7 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
+        currency: str,
         *,
         discount_id: uuid.UUID | None = None,
         discount_code: str | None = None,
@@ -1564,11 +1570,15 @@ class CheckoutService:
         discount: Discount | None = None
         if discount_id is not None:
             discount = await discount_service.get_by_id_and_organization(
-                session, discount_id, organization, products=[product]
+                session,
+                discount_id,
+                organization,
+                currency=currency,
+                products=[product],
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(
-                session, discount_code, organization, product
+                session, discount_code, organization, product, currency
             )
 
         if discount is None:
@@ -1804,7 +1814,7 @@ class CheckoutService:
         if (
             has_product_checkout(checkout)
             and checkout.discount is not None
-            and not checkout.discount.is_applicable(checkout.product)
+            and not checkout.discount.is_applicable(checkout.product, checkout.currency)
         ):
             checkout.discount = None
 
@@ -1852,6 +1862,7 @@ class CheckoutService:
                     checkout.organization,
                     checkout.product,
                     checkout.product_price,
+                    checkout.currency,
                     discount_id=checkout_update.discount_id,
                 )
             # User explicitly removed the discount
@@ -1870,6 +1881,7 @@ class CheckoutService:
                     checkout.organization,
                     checkout.product,
                     checkout.product_price,
+                    checkout.currency,
                     discount_code=checkout_update.discount_code,
                 )
                 checkout.discount = discount

@@ -45,18 +45,17 @@ SLO_AVAILABILITY_TARGET = Gauge(
 
 CRITICAL_ENDPOINTS: list[tuple[str, str, float, float]] = [
     # Checkout confirmation - critical payment flow
-    # P99 target: 8 seconds (includes Stripe payment processing)
-    # Availability target: 99.95%
-    ("/v1/checkouts/client/{client_secret}/confirm", "POST", 8.0, 99.95),
+    ("/v1/checkouts/client/{client_secret}/confirm", "POST", 5.0, 99.95),
+    # Update checkout - client-side checkout modifications
+    ("/v1/checkouts/client/{client_secret}", "PATCH", 2.0, 99.95),
+    # Checkout link redirect - entry point for checkout links
+    ("/v1/checkout-links/{client_secret}/redirect", "GET", 1.5, 99.95),
+    # Create checkout - API checkout creation
+    ("/v1/checkouts/", "POST", 1.5, 99.95),
     # Get checkout by client secret - public checkout UI read path
-    # P99 target: 500ms
-    # Availability target: 99.95%
-    ("/v1/checkouts/client/{client_secret}", "GET", 0.5, 99.95),
+    ("/v1/checkouts/client/{client_secret}", "GET", 1.2, 99.95),
     # Get checkout by ID - authenticated read path
-    # P99 target: 500ms
-    # Availability target: 99.95%
-    ("/v1/checkouts/{id}", "GET", 0.5, 99.95),
-    # Add more critical endpoints here as needed
+    ("/v1/checkouts/{id}", "GET", 0.3, 99.95),
 ]
 
 

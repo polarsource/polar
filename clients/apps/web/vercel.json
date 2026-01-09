@@ -20,8 +20,14 @@
       "permanent": false
     },
     {
-      "source": "/:path*",
-      "destination": "https://polar.sh/:path*",
+      "source": "/",
+      "destination": "https://polar.sh/",
+      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/:first/:rest*",
+      "destination": "https://polar.sh/:first/:rest*",
       "has": [{ "type": "host", "value": "buy.polar.sh" }],
       "permanent": false
     }

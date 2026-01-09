@@ -215,7 +215,7 @@ module "production" {
   aws_s3_config = {
     region                        = "us-east-2"
     signature_version             = "v4"
-    files_presign_ttl             = "600"
+    files_presign_ttl             = "3600"
     files_public_bucket_name      = "polar-public-files"
     customer_invoices_bucket_name = "polar-customer-invoices"
     payout_invoices_bucket_name   = "polar-payout-invoices"

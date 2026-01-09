@@ -579,6 +579,10 @@ class SubscriptionService:
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.discount = checkout.discount
+        # For non-trial checkouts with a discount, the discount is applied immediately
+        # (the first payment at checkout includes the discount)
+        if checkout.discount is not None and trial_end is None:
+            subscription.discount_applied_at = current_period_start
         subscription.checkout = checkout
         subscription.user_metadata = checkout.user_metadata
         subscription.custom_field_data = checkout.custom_field_data
@@ -659,11 +663,13 @@ class SubscriptionService:
 
             # Check if discount is still applicable
             if subscription.discount is not None:
-                assert subscription.started_at is not None
+                # Set discount_applied_at on first use (when discount is actually applied to a cycle)
+                if subscription.discount_applied_at is None:
+                    subscription.discount_applied_at = subscription.current_period_start
+
                 if subscription.discount.is_repetition_expired(
-                    subscription.started_at,
+                    subscription.discount_applied_at,
                     subscription.current_period_start,
-                    previous_status == SubscriptionStatus.trialing,
                 ):
                     subscription.discount = None
 
@@ -1773,12 +1779,15 @@ class SubscriptionService:
 
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
         if subscription.discount is not None:
-            assert subscription.started_at is not None
             assert subscription.current_period_end is not None
+            # If discount hasn't been applied yet, it will be applied at the next cycle
+            # (current_period_end will become the new current_period_start)
+            discount_applied_at = (
+                subscription.discount_applied_at or subscription.current_period_end
+            )
             if not subscription.discount.is_repetition_expired(
-                subscription.started_at,
+                discount_applied_at,
                 subscription.current_period_end,
-                subscription.status == SubscriptionStatus.trialing,
             ):
                 applicable_discount = subscription.discount
 

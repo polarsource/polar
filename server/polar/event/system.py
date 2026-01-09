@@ -360,8 +360,8 @@ class BalanceOrderMetadata(TypedDict):
     presentment_amount: int
     presentment_currency: str
     tax_amount: int
-    tax_state: NotRequired[str]
-    tax_country: NotRequired[str]
+    tax_state: NotRequired[str | None]
+    tax_country: NotRequired[str | None]
     fee: int
 
 
@@ -384,8 +384,8 @@ class BalanceRefundMetadata(TypedDict):
     presentment_currency: str
     refundable_amount: NotRequired[int]
     tax_amount: int
-    tax_state: NotRequired[str]
-    tax_country: NotRequired[str]
+    tax_state: NotRequired[str | None]
+    tax_country: NotRequired[str | None]
     fee: int
 
 
@@ -414,8 +414,8 @@ class BalanceDisputeMetadata(TypedDict):
     presentment_amount: int
     presentment_currency: str
     tax_amount: int
-    tax_state: NotRequired[str]
-    tax_country: NotRequired[str]
+    tax_state: NotRequired[str | None]
+    tax_country: NotRequired[str | None]
     fee: int
 
 

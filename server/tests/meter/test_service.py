@@ -10,6 +10,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.service import event as event_service
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval
@@ -27,6 +28,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
     Organization,
     Product,
     Subscription,
@@ -836,10 +838,10 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
 
 @pytest_asyncio.fixture
 async def events(
-    save_fixture: SaveFixture, customer: Customer, meter: Meter
+    save_fixture: SaveFixture, session: AsyncSession, customer: Customer, meter: Meter
 ) -> list[Event]:
     timestamp = utc_now()
-    return [
+    events = [
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=1),
@@ -895,6 +897,8 @@ async def events(
             metadata={"units": 10, "meter_id": str(uuid.uuid4())},
         ),
     ]
+    await event_service._create_meter_events(session, events)
+    return events
 
 
 @pytest_asyncio.fixture
@@ -996,6 +1000,72 @@ class TestCreateBillingEntries:
             "subscription.update_meters", metered_subscription.id
         )
 
+    async def test_external_customer_id_resolved_to_customer(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that events with only external_customer_id are billed when customer exists."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="ext_customer_123",
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name",
+                        operator=FilterOperator.eq,
+                        value=METER_TEST_EVENT,
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None)],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await session.refresh(subscription, ["subscription_product_prices"])
+
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=None,
+            external_customer_id="ext_customer_123",
+        )
+
+        meter_event = MeterEvent(
+            meter_id=meter.id,
+            event_id=event.id,
+            customer_id=None,
+            external_customer_id="ext_customer_123",
+            organization_id=organization.id,
+            ingested_at=event.ingested_at,
+            timestamp=event.timestamp,
+        )
+        await save_fixture(meter_event)
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 1
+        assert entries[0].customer == customer
+        assert entries[0].subscription == subscription
+
 
 @pytest.mark.asyncio
 class TestCreateBillingEntriesWithSeats:
@@ -1083,6 +1153,7 @@ class TestCreateBillingEntriesWithSeats:
                 metadata={"tokens": 10, "model": "lite"},
             ),
         ]
+        await event_service._create_meter_events(session, events)
 
         entries = await meter_service.create_billing_entries(session, meter)
 
@@ -1172,6 +1243,7 @@ class TestCreateBillingEntriesWithSeats:
                 metadata={"tokens": 20, "model": "lite"},
             ),
         ]
+        await event_service._create_meter_events(session, events)
 
         entries = await meter_service.create_billing_entries(session, meter)
 
@@ -1290,6 +1362,7 @@ class TestCreateBillingEntriesWithSeats:
                 metadata={"tokens": 15, "model": "lite"},
             ),
         ]
+        await event_service._create_meter_events(session, events)
 
         entries = await meter_service.create_billing_entries(session, meter)
 
@@ -1411,6 +1484,7 @@ class TestCreateBillingEntriesWithSeats:
                 metadata={"tokens": 15, "model": "lite"},
             ),
         ]
+        await event_service._create_meter_events(session, events)
 
         entries = await meter_service.create_billing_entries(session, meter)
 

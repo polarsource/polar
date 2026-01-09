@@ -68,7 +68,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - ((count(\n  (\n    histogram_quantile(0.99, sum by (endpoint, method, le) (\n      rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[5m])\n    )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n  )\n  or\n  (\n    (100 * (1 - (\n      sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[5m]))\n      or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0)\n    ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))))\n    < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n  )\n) or vector(0)) / count(max by (endpoint, method) (polar_slo_p99_target_seconds))))",
+          "expr": "100 * (1 - ((count(\n  (\n    histogram_quantile(0.99, sum by (endpoint, method, le) (\n      rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n    )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n  )\n  or\n  (\n    (100 * (1 - (\n      sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n      or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n    ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n    < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n  )\n) or vector(0)) / count(max by (endpoint, method) (polar_slo_p99_target_seconds))))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -395,7 +395,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(\n  histogram_quantile(0.99, sum by (endpoint, method, le) (\n    rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[5m])\n  )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n)",
+          "expr": "(\n  histogram_quantile(0.99, sum by (endpoint, method, le) (\n    rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n  )) > on(endpoint, method) max by (endpoint, method) (polar_slo_p99_target_seconds)\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -417,7 +417,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(\n  (100 * (1 - (\n    sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[5m]))\n    or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m])) * 0)\n  ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[5m]))))\n  < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n)",
+          "expr": "(\n  (100 * (1 - (\n    sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n    or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n  ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n  < on(endpoint, method) max by (endpoint, method) (polar_slo_availability_target)\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -628,26 +628,86 @@
                   {
                     "id": "decimals",
                     "value": 2
-                  },
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "P99 Status"
+                },
+                "properties": [
                   {
-                    "id": "thresholds",
-                    "value": {
-                      "mode": "absolute",
-                      "steps": [
-                        {
-                          "color": "green",
-                          "value": null
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "-"
+                          }
                         },
-                        {
-                          "color": "yellow",
-                          "value": 0.5
+                        "type": "special"
+                      },
+                      {
+                        "options": {
+                          "match": "nan",
+                          "result": {
+                            "color": "green",
+                            "index": 1,
+                            "text": "-"
+                          }
                         },
-                        {
-                          "color": "red",
-                          "value": 2
-                        }
-                      ]
-                    }
+                        "type": "special"
+                      },
+                      {
+                        "options": {
+                          "match": "null+nan",
+                          "result": {
+                            "color": "green",
+                            "index": 2,
+                            "text": "-"
+                          }
+                        },
+                        "type": "special"
+                      },
+                      {
+                        "options": {
+                          "0": {
+                            "color": "green",
+                            "index": 3,
+                            "text": "-"
+                          }
+                        },
+                        "type": "value"
+                      },
+                      {
+                        "options": {
+                          "from": 1,
+                          "to": 1000000,
+                          "result": {
+                            "color": "green",
+                            "index": 4,
+                            "text": "OK"
+                          }
+                        },
+                        "type": "range"
+                      },
+                      {
+                        "options": {
+                          "from": 0.0000001,
+                          "to": 1,
+                          "result": {
+                            "color": "red",
+                            "index": 5,
+                            "text": "BREACH"
+                          }
+                        },
+                        "type": "range"
+                      }
+                    ]
                   },
                   {
                     "id": "custom.cellOptions",
@@ -655,6 +715,87 @@
                       "mode": "gradient",
                       "type": "color-background"
                     }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Critical"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "color": "text",
+                            "index": 0,
+                            "text": "-"
+                          }
+                        },
+                        "type": "special"
+                      },
+                      {
+                        "options": {
+                          "0": {
+                            "color": "text",
+                            "index": 1,
+                            "text": "-"
+                          }
+                        },
+                        "type": "value"
+                      },
+                      {
+                        "options": {
+                          "from": 0.001,
+                          "result": {
+                            "color": "blue",
+                            "index": 2,
+                            "text": "YES"
+                          },
+                          "to": 1000
+                        },
+                        "type": "range"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "P99 Target"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "match": "null",
+                          "result": {
+                            "color": "text",
+                            "index": 0,
+                            "text": "-"
+                          }
+                        },
+                        "type": "special"
+                      }
+                    ]
                   }
                 ]
               },
@@ -851,6 +992,17 @@
               "instant": true,
               "legendFormat": "__auto",
               "refId": "IsCritical"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max by (endpoint, method) (polar_slo_p99_target_seconds)",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "__auto",
+              "refId": "P99Target"
             }
           ],
           "title": "All Endpoint Health",
@@ -890,6 +1042,10 @@
                   "Value #IsCritical": {
                     "aggregations": ["lastNotNull"],
                     "operation": "aggregate"
+                  },
+                  "Value #P99Target": {
+                    "aggregations": ["lastNotNull"],
+                    "operation": "aggregate"
                   }
                 }
               }
@@ -906,18 +1062,53 @@
                   "Value #IsCritical (lastNotNull)": 2,
                   "Value #Availability (lastNotNull)": 3,
                   "Value #Latency (lastNotNull)": 4,
-                  "Value #Rate (lastNotNull)": 5,
-                  "Value #Errors (lastNotNull)": 6
+                  "Value #P99Target (lastNotNull)": 5,
+                  "Value #Rate (lastNotNull)": 6,
+                  "Value #Errors (lastNotNull)": 7
                 },
                 "renameByName": {
                   "Value #Availability (lastNotNull)": "Availability %",
                   "Value #Errors (lastNotNull)": "5xx Errors",
                   "Value #Latency (lastNotNull)": "p99 Latency",
+                  "Value #P99Target (lastNotNull)": "P99 Target",
                   "Value #Rate (lastNotNull)": "Request Rate",
                   "Value #IsCritical (lastNotNull)": "Critical",
                   "endpoint": "Endpoint",
                   "method": "Method"
                 }
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                },
+                "binary": {
+                  "left": "P99 Target",
+                  "operator": "/",
+                  "right": "p99 Latency"
+                },
+                "alias": "P99 Status"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "Endpoint": 0,
+                  "Method": 1,
+                  "Critical": 2,
+                  "Availability %": 3,
+                  "p99 Latency": 4,
+                  "P99 Target": 5,
+                  "P99 Status": 6,
+                  "Request Rate": 7,
+                  "5xx Errors": 8
+                },
+                "renameByName": {}
               }
             }
           ],
@@ -1654,7 +1845,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Polar API SLO",
+  "title": "Polar API",
   "uid": "polar-api-slo",
   "version": 1,
   "weekStart": ""

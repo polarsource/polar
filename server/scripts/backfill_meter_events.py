@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging.config
 import uuid
 from functools import wraps
@@ -7,7 +8,7 @@ from typing import Any
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import select
+from sqlalchemy import literal, select, tuple_
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.config import settings
@@ -93,6 +94,7 @@ async def run_backfill(
 
             for org_id, org_meters in meters_by_org.items():
                 org_inserted = 0
+                last_timestamp: datetime.datetime | None = None
                 last_event_id: uuid.UUID | None = None
                 meter_names = ", ".join(m.name for m in org_meters[:3])
                 if len(org_meters) > 3:
@@ -104,11 +106,14 @@ async def run_backfill(
                     statement = (
                         select(Event)
                         .where(Event.organization_id == org_id)
-                        .order_by(Event.id)
+                        .order_by(Event.timestamp.desc(), Event.id.desc())
                         .limit(batch_size)
                     )
-                    if last_event_id is not None:
-                        statement = statement.where(Event.id > last_event_id)
+                    if last_timestamp is not None and last_event_id is not None:
+                        statement = statement.where(
+                            tuple_(Event.timestamp, Event.id)
+                            < tuple_(literal(last_timestamp), literal(last_event_id))
+                        )
 
                     result = await session.execute(statement)
                     events = list(result.scalars().all())
@@ -116,6 +121,7 @@ async def run_backfill(
                     if not events:
                         break
 
+                    last_timestamp = events[-1].timestamp
                     last_event_id = events[-1].id
 
                     meter_event_rows = []

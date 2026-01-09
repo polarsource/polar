@@ -58,6 +58,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
+    is_currency_price,
     is_fixed_price,
     is_free_price,
     is_metered_price,
@@ -2002,6 +2003,61 @@ class TestUpdateProduct:
         )
 
         assert updated_subscription.product == metered_only_product
+
+    async def test_unavailable_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="eur",
+        )
+        assert len(subscription.prices) == 1
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+    async def test_available_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="usd",
+        )
+        assert len(subscription.prices) == 1
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert updated_subscription.product == product
+        assert len(updated_subscription.prices) == 1
+        price = updated_subscription.prices[0]
+        assert is_currency_price(price)
+        assert price.price_currency == "usd"
 
 
 @pytest.mark.asyncio

@@ -1002,7 +1002,8 @@ async def create_subscription(
     seats: int | None = None,
     past_due_at: datetime | None = None,
 ) -> Subscription:
-    prices = prices or product.prices
+    currency_prices = PriceSet.from_product(currency, product)
+    prices = prices or currency_prices.prices
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
@@ -1113,6 +1114,7 @@ async def create_active_subscription(
     *,
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
+    currency: str = "usd",
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     tax_exempted: bool = False,
@@ -1129,6 +1131,7 @@ async def create_active_subscription(
         save_fixture,
         product=product,
         prices=prices,
+        currency=currency,
         customer=customer,
         tax_exempted=tax_exempted,
         discount=discount,

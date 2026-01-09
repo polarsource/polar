@@ -1119,7 +1119,7 @@ class SubscriptionService:
                 base_amount = new_price.price_amount
                 discount_amount = 0
                 if subscription.discount and subscription.discount.is_applicable(
-                    new_price.product
+                    new_price.product, subscription.currency
                 ):
                     discount_amount = subscription.discount.get_discount_amount(
                         base_amount
@@ -1538,7 +1538,7 @@ class SubscriptionService:
         # Calculate discount on the delta amount
         discount_amount = 0
         if subscription.discount and subscription.discount.is_applicable(
-            subscription.product
+            subscription.product, subscription.currency
         ):
             discount_amount = subscription.discount.get_discount_amount(
                 abs(base_amount_delta)

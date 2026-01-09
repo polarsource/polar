@@ -101,14 +101,23 @@ In order to properly implement logic for handling subscriptions, you should look
   ></Card>
 
   <Card
+    title="subscription.past_due"
+    icon="link"
+    href="/api-reference/webhooks/subscription.past_due"
+    horizontal
+  >
+    Fired when a subscription payment has failed. The customer can recover by updating their payment method.
+  </Card>
+
+  <Card
     title="subscription.updated"
     icon="link"
     href="/api-reference/webhooks/subscription.updated"
     horizontal
   >
     Use this event if you want to handle cancellations, un-cancellations, etc. The
-    updated event is a catch-all event for `subscription.active` ,
-    `subscription.canceled`, `subscription.uncanceled` and `subscription.revoked`.
+    updated event is a catch-all event for `subscription.active`,
+    `subscription.canceled`, `subscription.uncanceled`, `subscription.past_due` and `subscription.revoked`.
   </Card>
 
   <Card

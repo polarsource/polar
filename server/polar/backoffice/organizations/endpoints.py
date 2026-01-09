@@ -14,7 +14,8 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
-from tagflow import classes, document, tag, text
+from starlette.datastructures import URL
+from tagflow import attr, classes, document, tag, text
 
 from polar.account.service import (
     CannotChangeAdminError,
@@ -1312,6 +1313,8 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
 async def get(
     request: Request,
     id: UUID4,
+    files_page: int = Query(1, ge=1),
+    files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
@@ -1803,7 +1806,7 @@ async def get(
                             pass
 
             # Organization Files Section
-            with tag.div(classes="mt-8"):
+            with tag.div(classes="mt-8", id="files"):
                 with tag.div(classes="flex items-center gap-4 mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text("Downloadable Files")
@@ -1812,10 +1815,12 @@ async def get(
                     (FileSortProperty.created_at, True)
                 ]
                 file_repository = FileRepository.from_session(session)
-                files = await file_repository.get_all_by_organization(
+                files, files_count = await file_repository.paginate_by_organization(
                     organization.id,
                     service=FileServiceTypes.downloadable,
                     sorting=sorting,
+                    limit=files_limit,
+                    page=files_page,
                 )
 
                 with datatable.Datatable[File, FileSortProperty](
@@ -1827,6 +1832,50 @@ async def get(
                     empty_message="No downloadable files found",
                 ).render(request, files, sorting=sorting):
                     pass
+
+                # Custom pagination for files (uses files_page param instead of page)
+                if files_count > 0:
+                    start = (files_page - 1) * files_limit + 1
+                    end = min(files_page * files_limit, files_count)
+
+                    next_url: URL | None = None
+                    if end < files_count:
+                        next_url = request.url.replace_query_params(
+                            **{**request.query_params, "files_page": files_page + 1}
+                        ).replace(fragment="files")
+                    previous_url: URL | None = None
+                    if start > 1:
+                        previous_url = request.url.replace_query_params(
+                            **{**request.query_params, "files_page": files_page - 1}
+                        ).replace(fragment="files")
+
+                    with tag.div(classes="flex justify-between"):
+                        with tag.div(classes="text-sm"):
+                            text("Showing ")
+                            with tag.span(classes="font-bold"):
+                                text(str(start))
+                            text(" to ")
+                            with tag.span(classes="font-bold"):
+                                text(str(end))
+                            text(" of ")
+                            with tag.span(classes="font-bold"):
+                                text(str(files_count))
+                            text(" entries")
+                        with tag.div(classes="join grid grid-cols-2"):
+                            with tag.a(
+                                classes="join-item btn",
+                                href=str(previous_url) if previous_url else "",
+                            ):
+                                if previous_url is None:
+                                    attr("disabled", True)
+                                text("Previous")
+                            with tag.a(
+                                classes="join-item btn",
+                                href=str(next_url) if next_url else "",
+                            ):
+                                if next_url is None:
+                                    attr("disabled", True)
+                                text("Next")
 
 
 @router.get("/{id}/plain_search_url", name="organizations:plain_search_url")

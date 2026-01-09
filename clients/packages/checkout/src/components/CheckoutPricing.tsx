@@ -12,8 +12,10 @@ import ProductPriceLabel from './ProductPriceLabel'
 
 const CheckoutProductAmountLabel = ({
   checkout,
+  layout = 'default',
 }: {
   checkout: ProductCheckoutPublic
+  layout?: 'default' | 'stacked'
 }) => {
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
@@ -21,7 +23,13 @@ const CheckoutProductAmountLabel = ({
   }
 
   return (
-    <div className="flex flex-row justify-between">
+    <div
+      className={
+        layout === 'stacked'
+          ? 'flex flex-row justify-between md:flex-col md:items-start md:gap-y-2'
+          : 'flex flex-row justify-between'
+      }
+    >
       <AmountLabel
         amount={checkout.netAmount}
         currency={checkout.currency}
@@ -52,12 +60,14 @@ interface CheckoutPricingProps {
   checkout: ProductCheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
+  layout?: 'default' | 'stacked'
 }
 
 const CheckoutPricing = ({
   checkout,
   update,
   disabled,
+  layout = 'default',
 }: CheckoutPricingProps) => {
   const { product, productPrice, amount } = checkout
 
@@ -66,7 +76,7 @@ const CheckoutPricing = ({
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light">
           {productPrice.amountType !== 'custom' ? (
-            <CheckoutProductAmountLabel checkout={checkout} />
+            <CheckoutProductAmountLabel checkout={checkout} layout={layout} />
           ) : (
             formatCurrencyNumber(amount, productPrice.priceCurrency, 0)
           )}

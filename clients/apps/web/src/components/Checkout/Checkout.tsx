@@ -1,5 +1,6 @@
 'use client'
 
+import type { ExperimentVariant } from '@/experiments'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -21,6 +22,7 @@ import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/check
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -29,15 +31,22 @@ import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
+  layoutVariant?: ExperimentVariant<'checkout_layout_experiment'>
 }
 
-const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
+const Checkout = ({
+  embed: _embed,
+  theme: _theme,
+  layoutVariant = 'control',
+}: CheckoutProps) => {
+  const isLayoutTreatment = layoutVariant === 'treatment'
   const { client } = useCheckout()
   const {
     checkout,
@@ -225,67 +234,88 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   }
 
   return (
-    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
-      <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
-        {checkout.returnUrl && (
-          <Link
-            href={checkout.returnUrl}
-            className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
-          >
-            <ArrowBackOutlined fontSize="inherit" />
-            <span>Back to {checkout.organization.name}</span>
-          </Link>
+    <div className="flex w-full flex-col gap-y-6">
+      {isLayoutTreatment && (
+        <div className="hidden flex-row items-center gap-x-5 pb-6 md:flex">
+          <Avatar
+            className="h-14 w-14 shadow-sm"
+            avatar_url={checkout.organization.avatarUrl}
+            name={checkout.organization.name}
+          />
+          <span className="text-2xl font-medium text-gray-900 dark:text-white">
+            {checkout.organization.name}
+          </span>
+        </div>
+      )}
+      <ShadowBoxOnMd
+        className={twMerge(
+          'md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent',
+          isLayoutTreatment && 'md:grid-cols-[2fr_3fr]',
         )}
-        {hasProductCheckout(checkout) && (
-          <>
-            <CheckoutProductInfo
-              organization={checkout.organization}
-              product={checkout.product}
-            />
-            <CheckoutProductSwitcher
-              checkout={checkout}
-              update={
-                update as (
-                  data: CheckoutUpdatePublic,
-                ) => Promise<ProductCheckoutPublic>
-              }
-              themePreset={themePreset}
-            />
-            {checkout.productPrice.amountType === 'custom' && (
-              <CheckoutPWYWForm
+      >
+        <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
+          {checkout.returnUrl && (
+            <Link
+              href={checkout.returnUrl}
+              className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
+            >
+              <ArrowBackOutlined fontSize="inherit" />
+              <span>Back to {checkout.organization.name}</span>
+            </Link>
+          )}
+          {hasProductCheckout(checkout) && (
+            <>
+              <CheckoutProductInfo
+                organization={checkout.organization}
+                product={checkout.product}
+                isLayoutTreatment={isLayoutTreatment}
+              />
+              <CheckoutProductSwitcher
                 checkout={checkout}
-                update={update}
-                productPrice={checkout.productPrice as ProductPriceCustom}
+                update={
+                  update as (
+                    data: CheckoutUpdatePublic,
+                  ) => Promise<ProductCheckoutPublic>
+                }
                 themePreset={themePreset}
               />
-            )}
-            <CheckoutCard
-              checkout={checkout}
-              update={
-                update as (
-                  data: CheckoutUpdatePublic,
-                ) => Promise<ProductCheckoutPublic>
-              }
-            />
-          </>
-        )}
-      </div>
-      <div className="flex flex-col gap-y-8 md:p-12">
-        <PaymentNotReadyBanner />
-        <CheckoutForm
-          form={form}
-          checkout={checkout}
-          update={update}
-          confirm={confirm}
-          loading={loading}
-          loadingLabel={label}
-          theme={theme}
-          themePreset={themePreset}
-          disabled={shouldBlockCheckout}
-          isUpdatePending={isUpdatePending}
-        />
-      </div>
-    </ShadowBoxOnMd>
+              {checkout.productPrice.amountType === 'custom' && (
+                <CheckoutPWYWForm
+                  checkout={checkout}
+                  update={update}
+                  productPrice={checkout.productPrice as ProductPriceCustom}
+                  themePreset={themePreset}
+                />
+              )}
+              <CheckoutCard
+                checkout={checkout}
+                update={
+                  update as (
+                    data: CheckoutUpdatePublic,
+                  ) => Promise<ProductCheckoutPublic>
+                }
+                isLayoutTreatment={isLayoutTreatment}
+              />
+            </>
+          )}
+        </div>
+        <div className="flex flex-col gap-y-8 md:p-12">
+          <PaymentNotReadyBanner />
+          <CheckoutForm
+            form={form}
+            checkout={checkout}
+            update={update}
+            confirm={confirm}
+            loading={loading}
+            loadingLabel={label}
+            theme={theme}
+            themePreset={themePreset}
+            disabled={shouldBlockCheckout}
+            isUpdatePending={isUpdatePending}
+          />
+        </div>
+      </ShadowBoxOnMd>
+    </div>
   )
 }
 

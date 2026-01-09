@@ -1,3 +1,4 @@
+import { getExperiment } from '@/experiments/server'
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
@@ -75,13 +76,19 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
+  const layoutVariant = await getExperiment('checkout_layout_experiment')
+
   return (
     <CheckoutProvider
       clientSecret={checkout.clientSecret}
       serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider>
-        <CheckoutPage theme={theme} embed={embed} />
+        <CheckoutPage
+          theme={theme}
+          embed={embed}
+          layoutVariant={layoutVariant}
+        />
       </CheckoutFormProvider>
     </CheckoutProvider>
   )

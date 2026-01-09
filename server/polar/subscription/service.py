@@ -86,6 +86,7 @@ from polar.product.guard import (
     is_free_price,
     is_static_price,
 )
+from polar.product.price_set import PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.tax.calculation import get_tax_service
@@ -402,9 +403,11 @@ class SubscriptionService:
                     "input": subscription_create.product_id,
                 }
             )
-        elif (static_price := product.get_static_price()) and not is_free_price(
-            static_price
-        ):
+        elif (
+            default_price := PriceSet.from_product(
+                product.organization.default_presentment_currency, product
+            ).get_default_price()
+        ) and not is_free_price(default_price):
             errors.append(
                 {
                     "type": "value_error",

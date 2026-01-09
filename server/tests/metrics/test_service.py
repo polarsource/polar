@@ -39,7 +39,7 @@ from tests.fixtures.random_objects import (
 
 class ProductFixture(TypedDict):
     recurring_interval: SubscriptionRecurringInterval | None
-    prices: list[tuple[int] | tuple[None]]
+    prices: list[tuple[int, str] | tuple[None]]
 
 
 class DiscountFixture(TypedDict):
@@ -71,15 +71,15 @@ def _date_to_datetime(date: date) -> datetime:
 PRODUCTS: dict[str, ProductFixture] = {
     "one_time_product": {
         "recurring_interval": None,
-        "prices": [(100_00,)],
+        "prices": [(100_00, "usd")],
     },
     "monthly_subscription": {
         "recurring_interval": SubscriptionRecurringInterval.month,
-        "prices": [(100_00,)],
+        "prices": [(100_00, "usd")],
     },
     "yearly_subscription": {
         "recurring_interval": SubscriptionRecurringInterval.year,
-        "prices": [(1000_00,)],
+        "prices": [(1000_00, "usd")],
     },
     "free_subscription": {
         "recurring_interval": SubscriptionRecurringInterval.month,

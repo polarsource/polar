@@ -61,7 +61,7 @@ async def product_metered_unit(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None)],
+        prices=[(meter, Decimal(100), None, "usd")],
     )
 
 
@@ -526,7 +526,7 @@ class TestCreateOrderItemsFromPending:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter_max, Decimal(10_00), None)],  # $10 per server
+            prices=[(meter_max, Decimal(10_00), None, "usd")],  # $10 per server
         )
         price_a = product_a.prices[0]
 
@@ -567,7 +567,7 @@ class TestCreateOrderItemsFromPending:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter_max, Decimal(15_00), None)],  # $15 per server
+            prices=[(meter_max, Decimal(15_00), None, "usd")],  # $15 per server
         )
         price_b = product_b.prices[0]
 

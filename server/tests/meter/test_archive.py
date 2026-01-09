@@ -25,7 +25,7 @@ async def product_metered_unit(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None)],
+        prices=[(meter, Decimal(100), None, "usd")],
     )
 
 

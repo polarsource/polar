@@ -86,7 +86,7 @@ from polar.product.guard import (
     is_free_price,
     is_static_price,
 )
-from polar.product.price_set import PriceSet
+from polar.product.price_set import NoPricesForCurrency, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.tax.calculation import get_tax_service
@@ -983,9 +983,21 @@ class SubscriptionService:
         assert previous_product.recurring_interval is not None
         assert product.recurring_interval is not None
 
-        prices = product.prices
+        try:
+            currency_prices = PriceSet.from_product(subscription.currency, product)
+        except NoPricesForCurrency as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "This product doesn't have a price for the subscription currency.",
+                        "input": product_id,
+                    }
+                ]
+            ) from e
 
-        for price in prices:
+        for price in currency_prices:
             if is_custom_price(price):
                 raise PolarRequestValidationError(
                     [
@@ -1020,7 +1032,7 @@ class SubscriptionService:
         subscription.product = product
         subscription.subscription_product_prices = [
             SubscriptionProductPrice.from_price(price, seats=subscription.seats)
-            for price in prices
+            for price in currency_prices
         ]
         assert product.recurring_interval is not None
         assert product.recurring_interval_count is not None
@@ -1073,7 +1085,7 @@ class SubscriptionService:
         #
         # Metered prices are ignored for prorations.
         old_static_prices = [p for p in previous_prices if is_static_price(p)]
-        new_static_prices = [p for p in product.prices if is_static_price(p)]
+        new_static_prices = [p for p in currency_prices if is_static_price(p)]
 
         for old_price in old_static_prices:
             # Free prices don't get prorated

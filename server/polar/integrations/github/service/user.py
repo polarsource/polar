@@ -71,10 +71,12 @@ class GithubUserService:
         )
 
         if user is not None:
+            email, _ = await self.fetch_authenticated_user_primary_email(client=client)
             oauth_account = user.get_oauth_account(OAuthPlatform.github)
             assert oauth_account is not None
             oauth_account.access_token = token["access_token"]
             oauth_account.expires_at = token["expires_at"]
+            oauth_account.account_email = email
             oauth_account.account_username = authenticated.login
             session.add(oauth_account)
             return (user, False)

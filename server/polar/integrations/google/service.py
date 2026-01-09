@@ -74,6 +74,7 @@ class GoogleService:
             assert oauth_account is not None
             oauth_account.access_token = token["access_token"]
             oauth_account.expires_at = token["expires_at"]
+            oauth_account.account_email = google_profile["email"]
             oauth_account.account_username = google_profile["email"]
             session.add(oauth_account)
             return (user, False)
@@ -142,6 +143,7 @@ class GoogleService:
 
         oauth_account.access_token = token["access_token"]
         oauth_account.expires_at = token["expires_at"]
+        oauth_account.account_email = google_profile["email"]
         oauth_account.account_username = google_profile["email"]
         session.add(user)
 

@@ -982,6 +982,7 @@ async def create_subscription(
     *,
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
+    currency: str = "usd",
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
@@ -1052,6 +1053,7 @@ async def create_subscription(
         subscription_product_prices=[
             SubscriptionProductPrice.from_price(price, seats=seats) for price in prices
         ],
+        currency=currency,
         discount=discount,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
@@ -1322,6 +1324,18 @@ async def product_recurring_every_second_month(
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
         recurring_interval_count=2,
+    )
+
+
+@pytest_asyncio.fixture
+async def product_recurring_multiple_currencies(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(1000, "usd"), (900, "eur"), (800, "gbp")],
     )
 
 

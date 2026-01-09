@@ -18,11 +18,21 @@ class NoPricesForCurrency(PriceSetError):
 
 
 class PriceSet:
-    __slots__ = ("currency", "prices")
+    __slots__ = ("_iterable", "currency", "prices")
 
     def __init__(self, currency: str, prices: Sequence[ProductPrice]) -> None:
         self.currency = currency
         self.prices = prices
+
+    def __iter__(self) -> Self:
+        self._iterable = iter(self.prices)
+        return self
+
+    def __next__(self) -> ProductPrice:
+        return next(self._iterable)
+
+    def __len__(self) -> int:
+        return len(self.prices)
 
     @classmethod
     def from_product(

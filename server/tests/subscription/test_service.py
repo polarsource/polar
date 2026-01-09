@@ -62,6 +62,7 @@ from polar.product.guard import (
     is_free_price,
     is_metered_price,
 )
+from polar.product.price_set import PriceSet
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
@@ -703,6 +704,42 @@ class TestCreateOrUpdateFromCheckout:
             checkout.client_secret, CheckoutEvent.subscription_created
         )
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    async def test_multi_currencies(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_multiple_currencies: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_multiple_currencies],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            currency="eur",
+        )
+
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
+        )
+
+        assert created is True
+
+        assert subscription.status == SubscriptionStatus.active
+
+        currency_prices = PriceSet.from_prices(
+            "eur", product_recurring_multiple_currencies.prices
+        )
+
+        assert len(subscription.prices) == len(currency_prices)
+        assert subscription.amount == checkout.total_amount
+        assert subscription.payment_method == payment_method
+        assert subscription.currency == "eur"
 
 
 @pytest.mark.asyncio

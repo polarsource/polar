@@ -6,6 +6,169 @@
       "main": false
     }
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/login",
+      "has": [{ "type": "host", "value": "dashboard.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/:client_secret(polar_cl_.*)",
+      "destination": "https://api.polar.sh/v1/checkout-links/:client_secret/redirect",
+      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/:id",
+      "destination": "https://polar.sh/api/checkout?price=:id*",
+      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://polar.sh/:path*",
+      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://polar.sh/:path*",
+      "has": [{ "type": "host", "value": "dashboard.polar.sh" }],
+      "permanent": false
+    },
+    {
+      "source": "/careers",
+      "destination": "https://polar.sh/company",
+      "permanent": false
+    },
+    {
+      "source": "/llms.txt",
+      "destination": "https://polar.sh/docs/llms.txt",
+      "has": [{ "type": "host", "value": "polar.sh" }],
+      "permanent": true
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "https://polar.sh/docs/llms-full.txt",
+      "has": [{ "type": "host", "value": "polar.sh" }],
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "destination": "/start",
+      "has": [
+        { "type": "cookie", "key": "polar_session" },
+        { "type": "host", "value": "polar.sh" }
+      ],
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "https://polar.sh/dashboard/:path*",
+      "missing": [
+        { "type": "host", "value": "polar.sh" },
+        { "type": "header", "key": "x-forwarded-host", "value": "polar.sh" }
+      ],
+      "permanent": false
+    },
+    {
+      "source": "/maintainer",
+      "destination": "/dashboard",
+      "permanent": true
+    },
+    {
+      "source": "/maintainer/:path(.*)",
+      "destination": "/dashboard/:path",
+      "permanent": true
+    },
+    {
+      "source": "/finance",
+      "destination": "/finance/income",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:organization/overview",
+      "destination": "/dashboard/:organization",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/benefits",
+      "destination": "/dashboard/:organization/products/benefits",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/products/overview",
+      "destination": "/dashboard/:organization/products",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/issues",
+      "destination": "/dashboard/:organization/issues/overview",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:organization/promote/issues",
+      "destination": "/dashboard/:organization/issues/badge",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:organization/issues/promote",
+      "destination": "/dashboard/:organization/issues/badge",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:organization/finance",
+      "destination": "/dashboard/:organization/finance/income",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:organization/usage-billing",
+      "destination": "/dashboard/:organization/products/meters",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/usage-billing/meters",
+      "destination": "/dashboard/:organization/products/meters",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/usage-billing/events",
+      "destination": "/dashboard/:organization/analytics/events",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:organization/usage-billing/spans",
+      "destination": "/dashboard/:organization/analytics/costs",
+      "permanent": true
+    },
+    {
+      "source": "/settings",
+      "destination": "/dashboard/account/preferences",
+      "permanent": true
+    },
+    {
+      "source": "/settings/tokens",
+      "destination": "/account/developer",
+      "permanent": false
+    },
+    {
+      "source": "/polarsource/posts",
+      "destination": "/blog",
+      "permanent": false
+    },
+    {
+      "source": "/polarsource/posts/:path(.*)",
+      "destination": "/blog/:path",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://polar.sh/polarsource",
+      "has": [{ "type": "host", "value": "blog.polar.sh" }],
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/_mintlify/api/:path+",

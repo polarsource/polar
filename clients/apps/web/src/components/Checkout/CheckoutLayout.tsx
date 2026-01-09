@@ -30,7 +30,7 @@ const CheckoutLayout: React.FC<
         <PublicLayout
           className={
             isLayoutTreatment
-              ? 'max-w-5xl gap-y-0 py-6 md:py-12'
+              ? 'gap-y-0 py-6 md:max-w-5xl md:py-12'
               : 'gap-y-0 py-6 md:py-12'
           }
           wide={!isLayoutTreatment}

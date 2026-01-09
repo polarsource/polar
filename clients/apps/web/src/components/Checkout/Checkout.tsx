@@ -249,8 +249,8 @@ const Checkout = ({
       )}
       <ShadowBoxOnMd
         className={twMerge(
-          'md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent',
-          isLayoutTreatment ? 'md:grid-cols-[2fr_3fr]' : 'md:auto-cols-fr',
+          'md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent',
+          isLayoutTreatment && 'md:grid-cols-[2fr_3fr]',
         )}
       >
         <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">

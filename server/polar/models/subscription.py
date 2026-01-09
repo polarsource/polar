@@ -213,6 +213,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )
 
+    discount_applied_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """Timestamp when the discount was first applied to a billing cycle."""
+
     @declared_attr
     def discount(cls) -> Mapped["Discount | None"]:
         return relationship("Discount", lazy="joined")

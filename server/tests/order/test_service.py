@@ -1052,14 +1052,14 @@ class TestCreateSubscriptionOrder:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(500,)],
+            prices=[(500, "usd")],
         )
         old_price = cast(ProductPriceFixed, old_product.prices[0])
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(3000,)],
+            prices=[(3000, "usd")],
         )
         new_price = cast(ProductPriceFixed, new_product.prices[0])
 
@@ -1314,7 +1314,7 @@ class TestCreateSubscriptionOrder:
                 save_fixture,
                 organization=organization,
                 recurring_interval=recurring_interval,
-                prices=[(price_amount,)],
+                prices=[(price_amount, "usd")],
             )
             products[key] = product
 

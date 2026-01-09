@@ -308,13 +308,13 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=old_product_param[0],
-            prices=[(old_product_param[1],)],
+            prices=[(old_product_param[1], "usd")],
         )
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=new_product_param[0],
-            prices=[(new_product_param[1],)],
+            prices=[(new_product_param[1], "usd")],
         )
 
         with freezegun.freeze_time(cycle_start) as frozen_time:
@@ -457,7 +457,7 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00,)],
+            prices=[(100_00, "usd")],
         )
         new_product = await create_product(
             save_fixture,
@@ -521,7 +521,7 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00,)],
+            prices=[(100_00, "usd")],
         )
 
         subscription = await create_active_subscription(
@@ -573,7 +573,7 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00,)],
+            prices=[(100_00, "usd")],
         )
 
         # Simulate an archived price
@@ -678,13 +678,13 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(10000,)],
+            prices=[(10000, "usd")],
         )
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(30000,)],
+            prices=[(30000, "usd")],
         )
 
         call_proration, org_proration = proration_behavior
@@ -746,7 +746,7 @@ class TestUpdateProductProrations:
                 save_fixture,
                 organization=organization,
                 recurring_interval=SubscriptionRecurringInterval.month,
-                prices=[(10000 * (i + 1),)],
+                prices=[(10000 * (i + 1), "usd")],
             )
             for i in range(4)
         ]
@@ -884,7 +884,7 @@ class TestUpdateProductProrations:
                 save_fixture,
                 organization=organization,
                 recurring_interval=SubscriptionRecurringInterval.month,
-                prices=[(10000 * (i + 1),)],
+                prices=[(10000 * (i + 1), "usd")],
             )
             for i in range(4)
         ]
@@ -1014,13 +1014,13 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(50), None), (10000,)],
+            prices=[(meter, Decimal(50), None, "usd"), (10000, "usd")],
         )
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(50), None), (30000,)],
+            prices=[(meter, Decimal(50), None, "usd"), (30000, "usd")],
         )
 
         with freezegun.freeze_time(cycle_start) as frozen_time:

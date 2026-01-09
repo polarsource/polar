@@ -22,6 +22,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import InvoiceNumbering, SubscriptionProrationBehavior
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
@@ -287,7 +288,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
     #
     # Currency settings
     #
-    default_presentment_currency: Mapped[str] = mapped_column(
+    default_presentment_currency: Mapped[PresentmentCurrency] = mapped_column(
         String(3), nullable=False, default="usd"
     )
 

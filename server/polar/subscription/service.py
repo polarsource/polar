@@ -453,19 +453,19 @@ class SubscriptionService:
         assert product is not None
         assert customer is not None
 
-        prices = product.prices
         assert product.recurring_interval is not None
         assert product.recurring_interval_count is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count
 
+        currency = product.organization.default_presentment_currency
+        currency_prices = PriceSet.from_product(currency, product)
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in prices:
+        for price in currency_prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(price)
             )
 
-        status = SubscriptionStatus.active
         current_period_start = utc_now()
         current_period_end = recurring_interval.get_next_period(
             current_period_start, recurring_interval_count
@@ -482,6 +482,7 @@ class SubscriptionService:
             product=product,
             customer=customer,
             subscription_product_prices=subscription_product_prices,
+            currency=currency,
             user_metadata=subscription_create.metadata,
         )
 
@@ -520,7 +521,8 @@ class SubscriptionService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        prices = checkout.prices[product.id]
+        currency = checkout.currency
+        currency_prices = PriceSet.from_prices(currency, checkout.prices[product.id])
         recurring_interval: SubscriptionRecurringInterval
         recurring_interval_count: int
         if product.is_legacy_recurring_price:
@@ -534,7 +536,7 @@ class SubscriptionService:
             recurring_interval_count = product.recurring_interval_count
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in prices:
+        for price in currency_prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(
                     price, checkout.amount, checkout.seats
@@ -581,6 +583,7 @@ class SubscriptionService:
         subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
+        subscription.currency = currency
         subscription.discount = checkout.discount
         # For non-trial checkouts with a discount, the discount is applied immediately
         # (the first payment at checkout includes the discount)

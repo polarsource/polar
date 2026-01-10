@@ -2,12 +2,14 @@ import argparse
 import sys
 from typing import Annotated, cast
 
+import httpx
 import ipinfo_db
 import ipinfo_db.reader
 from fastapi import Depends, Request
 
 from polar.config import settings
 
+DOWNLOAD_PATH = "https://ipinfo.io/data/free/country_asn.mmdb?token={token}"
 DATABASE_PATH = (
     settings.IP_GEOLOCATION_DATABASE_DIRECTORY_PATH
     / settings.IP_GEOLOCATION_DATABASE_NAME
@@ -34,8 +36,14 @@ def _download_database(access_token: str) -> None:
     Args:
         access_token: IPInfo access token.
     """
-    client = ipinfo_db.Client(access_token, DATABASE_PATH, replace=True)
-    client.close()
+    with open(DATABASE_PATH, "wb") as db_file:
+        with httpx.Client() as http_client:
+            with http_client.stream(
+                "GET", DOWNLOAD_PATH.format(token=access_token), follow_redirects=True
+            ) as response:
+                response.raise_for_status()
+                for chunk in response.iter_bytes():
+                    db_file.write(chunk)
 
 
 def get_client() -> IPGeolocationClient:

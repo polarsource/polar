@@ -41,6 +41,7 @@ from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.locker import Locker
@@ -73,7 +74,12 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
-from polar.product.guard import is_fixed_price, is_metered_price, is_seat_price
+from polar.product.guard import (
+    is_currency_price,
+    is_fixed_price,
+    is_metered_price,
+    is_seat_price,
+)
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import TaxabilityReason
@@ -281,7 +287,7 @@ async def product_custom_price_minimum(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(MINIMUM_AMOUNT, None, None)],
+        prices=[(MINIMUM_AMOUNT, None, None, "usd")],
     )
 
 
@@ -293,7 +299,7 @@ async def product_custom_price_preset(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(MINIMUM_AMOUNT, None, PRESET_AMOUNT)],
+        prices=[(MINIMUM_AMOUNT, None, PRESET_AMOUNT, "usd")],
     )
 
 
@@ -305,7 +311,7 @@ async def product_custom_price_no_amounts(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(None, None, None)],
+        prices=[(None, None, None, "usd")],
     )
 
 
@@ -676,10 +682,8 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    @pytest.mark.parametrize("amount", [None, 4242])
     async def test_valid_free_price(
         self,
-        amount: int | None,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
@@ -689,9 +693,8 @@ class TestCreate:
         assert isinstance(price, ProductPriceFree)
         checkout = await checkout_service.create(
             session,
-            CheckoutPriceCreate(
-                product_price_id=price.id,
-                amount=amount,
+            CheckoutProductsCreate(
+                products=[product_one_time_free_price.id],
                 metadata={"key": "value"},
             ),
             auth_subject,
@@ -724,8 +727,8 @@ class TestCreate:
 
         checkout = await checkout_service.create(
             session,
-            CheckoutPriceCreate(
-                product_price_id=price.id,
+            CheckoutProductsCreate(
+                products=[product_one_time_custom_price.id],
                 amount=amount,
                 metadata={"key": "value"},
             ),
@@ -1201,6 +1204,103 @@ class TestCreate:
         assert checkout.product == product_one_time
         assert checkout.product_price == product_one_time.prices[0]
         assert checkout.products == [product_one_time]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize(
+        ("ip_country", "expected_currency"),
+        [(None, "usd"), ("FR", "eur"), ("CN", "usd")],
+    )
+    async def test_multi_currencies_auto(
+        self,
+        ip_country: str | None,
+        expected_currency: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time_multiple_currencies: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            checkout_service, "_get_ip_country", return_value=ip_country
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                product_id=product_one_time_multiple_currencies.id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product == product_one_time_multiple_currencies
+        price = checkout.product_price
+        assert price is not None
+        assert is_currency_price(price)
+        assert price.price_currency == expected_currency
+        assert checkout.products == [product_one_time_multiple_currencies]
+        assert checkout.currency == expected_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize(
+        "currency",
+        [PresentmentCurrency.usd, PresentmentCurrency.eur, PresentmentCurrency.gbp],
+    )
+    async def test_multi_currencies_set(
+        self,
+        currency: PresentmentCurrency,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time_multiple_currencies: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductCreate(
+                product_id=product_one_time_multiple_currencies.id,
+                currency=currency,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product == product_one_time_multiple_currencies
+        price = checkout.product_price
+        assert price is not None
+        assert is_currency_price(price)
+        assert price.price_currency == currency
+        assert checkout.products == [product_one_time_multiple_currencies]
+        assert checkout.currency == currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize(
+        "currency",
+        [PresentmentCurrency.sek, PresentmentCurrency.aud],
+    )
+    async def test_multi_currencies_set_unavailable(
+        self,
+        currency: PresentmentCurrency,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time_multiple_currencies: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductCreate(
+                    product_id=product_one_time_multiple_currencies.id,
+                    currency=currency,
+                ),
+                auth_subject,
+            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -2398,6 +2498,41 @@ class TestCheckoutLinkCreate:
         assert checkout.custom_field_data == {"company": "Acme Inc"}
         assert "invalid_field" not in checkout.custom_field_data
 
+    @pytest.mark.parametrize(
+        ("ip_country", "expected_currency"),
+        [(None, "usd"), ("FR", "eur"), ("CN", "usd")],
+    )
+    async def test_multi_currencies_auto(
+        self,
+        ip_country: str | None,
+        expected_currency: str,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        mocker.patch.object(
+            checkout_service, "_get_ip_country", return_value=ip_country
+        )
+
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time_multiple_currencies],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_one_time_multiple_currencies
+        price = checkout.product_price
+        assert price is not None
+        assert is_currency_price(price)
+        assert price.price_currency == expected_currency
+        assert checkout.products == [product_one_time_multiple_currencies]
+        assert checkout.currency == expected_currency
+        assert checkout.success_url == "https://example.com/success"
+        assert checkout.user_metadata == {"key": "value"}
+
 
 @pytest.mark.asyncio
 class TestUpdate:
@@ -2633,7 +2768,7 @@ class TestUpdate:
             save_fixture,
             organization=product.organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(4242,)],
+            prices=[(4242, "usd")],
         )
         checkout_recurring_fixed.checkout_products.append(
             CheckoutProduct(product=new_product, order=1)
@@ -2681,7 +2816,7 @@ class TestUpdate:
             save_fixture,
             organization=product.organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(4242,)],
+            prices=[(4242, "usd")],
         )
 
         checkout_recurring_fixed.checkout_products.append(
@@ -2728,7 +2863,7 @@ class TestUpdate:
             save_fixture,
             organization=product.organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(4242,)],
+            prices=[(4242, "usd")],
         )
 
         checkout_recurring_fixed.checkout_products.append(
@@ -3489,6 +3624,130 @@ class TestUpdate:
         assert updated_checkout.trial_end is None
         assert updated_checkout.active_trial_interval is None
         assert updated_checkout.active_trial_interval_count is None
+
+    async def test_multi_currencies_product_change_same_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        new_product = await create_product(
+            save_fixture,
+            organization=product_one_time_multiple_currencies.organization,
+            recurring_interval=None,
+            prices=[(4242, "eur")],
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies, new_product],
+            product=product_one_time_multiple_currencies,
+            currency="eur",
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(
+                product_id=new_product.id,
+            ),
+        )
+
+        new_price = new_product.prices[0]
+        assert isinstance(new_price, ProductPriceFixed)
+
+        assert updated_checkout.product_price == new_price
+        assert updated_checkout.product == new_product
+        assert updated_checkout.currency == "eur"
+
+    async def test_multi_currencies_product_change_unavailable_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        new_product = await create_product(
+            save_fixture,
+            organization=product_one_time_multiple_currencies.organization,
+            recurring_interval=None,
+            prices=[(4242, "usd")],
+        )
+
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies, new_product],
+            product=product_one_time_multiple_currencies,
+            currency="eur",
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(
+                product_id=new_product.id,
+            ),
+        )
+
+        new_price = new_product.prices[0]
+        assert isinstance(new_price, ProductPriceFixed)
+
+        assert updated_checkout.product_price == new_price
+        assert updated_checkout.product == new_product
+        assert updated_checkout.currency == "usd"
+
+    async def test_multi_currencies_currency_change_available(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies],
+            product=product_one_time_multiple_currencies,
+            currency="eur",
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout,
+            CheckoutUpdate(currency=PresentmentCurrency.usd),
+        )
+
+        assert updated_checkout.product == product_one_time_multiple_currencies
+        price = updated_checkout.product_price
+        assert price is not None
+        assert is_currency_price(price)
+        assert price.price_currency == "usd"
+        assert updated_checkout.currency == "usd"
+
+    async def test_multi_currencies_currency_change_unavailable(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            product=product_one_time,
+            currency="usd",
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                locker,
+                checkout,
+                CheckoutUpdate(currency=PresentmentCurrency.eur),
+            )
 
 
 @pytest.mark.asyncio

@@ -1819,7 +1819,35 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(polar_http_request_total{env=\"$env\"}, endpoint)",
+        "definition": "label_values(polar_http_request_total{env=\"$env\"}, method)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Method",
+        "multi": true,
+        "name": "method",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(polar_http_request_total{env=\"$env\"}, method)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(polar_http_request_total{env=\"$env\", method=~\"$method\"}, endpoint)",
         "hide": 0,
         "includeAll": true,
         "label": "Endpoint",
@@ -1828,7 +1856,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(polar_http_request_total{env=\"$env\"}, endpoint)",
+          "query": "label_values(polar_http_request_total{env=\"$env\", method=~\"$method\"}, endpoint)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

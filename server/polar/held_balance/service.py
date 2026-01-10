@@ -3,11 +3,18 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
+from polar.event.service import event as event_service
+from polar.event.system import (
+    BalanceOrderMetadata,
+    SystemEvent,
+    build_system_event,
+)
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import (
     Account,
     HeldBalance,
+    Order,
     Transaction,
 )
 from polar.models.organization import Organization
@@ -90,6 +97,13 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 )
                 session.add(held_balance.order)
 
+                await self._create_balance_order_event(
+                    session,
+                    payment_transaction=held_balance.payment_transaction,
+                    order=held_balance.order,
+                    fee=held_balance.order.platform_fee_amount,
+                )
+
             await refund_transaction_service.create_reversal_balances_for_payment(
                 session, payment_transaction=held_balance.payment_transaction
             )
@@ -100,6 +114,49 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             await session.delete(held_balance)
 
         return balance_transactions_list
+
+    async def _create_balance_order_event(
+        self,
+        session: AsyncSession,
+        *,
+        payment_transaction: Transaction,
+        order: Order,
+        fee: int,
+    ) -> None:
+        try:
+            await session.refresh(order, ["customer", "organization"])
+            assert payment_transaction.presentment_amount is not None
+            assert payment_transaction.presentment_currency is not None
+
+            metadata: BalanceOrderMetadata = {
+                "transaction_id": str(payment_transaction.id),
+                "order_id": str(order.id),
+                "amount": payment_transaction.amount,
+                "currency": payment_transaction.currency,
+                "presentment_amount": payment_transaction.presentment_amount,
+                "presentment_currency": payment_transaction.presentment_currency,
+                "tax_amount": order.tax_amount,
+                "fee": fee,
+            }
+            if order.tax_rate is not None:
+                if order.tax_rate["country"] is not None:
+                    metadata["tax_country"] = order.tax_rate["country"]
+                if order.tax_rate["state"] is not None:
+                    metadata["tax_state"] = order.tax_rate["state"]
+            if order.subscription_id is not None:
+                metadata["subscription_id"] = str(order.subscription_id)
+            if order.product_id is not None:
+                metadata["product_id"] = str(order.product_id)
+
+            balance_order_event = build_system_event(
+                SystemEvent.balance_order,
+                customer=order.customer,
+                organization=order.organization,
+                metadata=metadata,
+            )
+            await event_service.create_event(session, balance_order_event)
+        except Exception as e:
+            log.error("Could not save balance.order event", error=str(e))
 
 
 held_balance = HeldBalanceService(HeldBalance)

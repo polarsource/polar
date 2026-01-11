@@ -13,11 +13,11 @@ For both `prorate` and `invoice` proration types, the **subscription plan always
 
 ### Invoice Immediately (`invoice`)
 
-The price difference is charged or credited immediately when the subscription is upgraded or downgraded.
+The prorated price difference is charged or credited immediately when the subscription is upgraded or downgraded.
 
 ### Next Invoice (`prorate`)
 
-The price difference is charged or credited on the next invoice on updgrading or downgrading a subscription.
+The prorated price difference is charged or credited on the next invoice on updgrading or downgrading a subscription.
 
 ## How to change the default proration setting using dashboard
 
@@ -72,14 +72,26 @@ You can change the default proration behavior using the [Update Organization API
         
         Make sure to replace:
 
-            - **YOUR_BEARER_TOKEN_HERE** with your API access token
-
             - **subscription_id** with the ID of the subscription you want to update
 
             - **product_id** with the new product ID
 
-            - **invoice | prorate** with the desired proration type (invoice or prorate)
+            - **type_of_proration** with the desired proration type:  
+                        - `invoice`: to charge/credit the prorated price difference immediately  
+                        - `prorate`: to charge/credit the prorated price difference on next invoice 
 <CodeGroup>
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{<subscription_id>} \
+  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "product_id": "<product_id>",
+    "proration_behavior": "type_of_proration"
+  }'
+```
+
 
 ```py Python
 from polar_sdk import Polar
@@ -90,23 +102,13 @@ with Polar(
 
     res = polar.subscriptions.update(id="<subscription_id>", subscription_update={
         "product_id": "<product_id>",
-        "proration_behavior": "<invoice | prorate>"
+        "proration_behavior": "<type_of_proration>"
     })
 
     # Handle response
     print(res)
 ```
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{<subscription_id>} \
-  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "product_id": "<product_id>",
-    "proration_behavior": "invoice | prorate"
-  }'
-```
 </CodeGroup>
     </Step>
 </Steps>
@@ -115,40 +117,30 @@ curl --request PATCH \
 ## Some examples for proration amount calculation
 You can create a subscription with two plan options, one for \$5 and other for \$20 by following [Create Product Variants](https://polar.sh/docs/guides/create-variants).  
 
-For these examples, let's assume that the subscription is for 30 days period and the plan is being changed after 10 days. The proration will then apply the price difference for the remaining 20 days.
+### Case 1: Upgrading the subscription
+You can upgrade a subscription by following the steps outlined in [Subscription Upgrades](https://polar.sh/docs/guides/subscription-upgrades), which explains the process from both the merchant’s and the customer’s perspectives.
 
-| Plan Change | Proration Type | Amount Charged Immediately| Addition to next invoice|
-|:------------:|:----------------:|:----------------:|:----------------------:|
-| \$5 → $20   | prorate        |      $0    | $10 |
-| \$5 → $20   | invoice        | $10         | $0 |
-| \$20 → $5   | prorate        | $0 | -$10 |
-| \$20 → $5   | invoice        | -$10 | -$0 |
+**Example 1: Proration type = `invoice`**
+<img height="200" src="/assets/guides/proration/upgrade_invoice.png" />
+Assuming that the month when the subscription was purchased has 30 days. In case of 31 days, instead of 30th + 1 day, it would be 31st + 1 day = 32nd day.
 
-**Example**: \$5 → \$20 upgrade after 10 days
+**Example 2: Proration type = `prorate`**
+<img height="200" src="/assets/guides/proration/upgrade_prorate.png" />
+Assuming that the month when the subscription was purchased has 30 days. In case of 31 days, instead of 30th + 1 day, it would be 31st + 1 day = 32nd day.
+<Note>
+If the billing interval changes, i.e. daily to monthly or monthly to yearly or vice versa, the proration is always applied as invoice (even if set to prorate).
+</Note>
 
-Total period = 30 days
+### Case 2: Downgrading the subscription 
+You can downgrade a subscription by following the steps outlined in [Subscription Downgrades](https://polar.sh/docs/guides/subscription-downgrades), which explains the process from both the merchant’s and the customer’s perspectives.
 
-Days remaining = 30 - 10 = 20 days
+**Example 1: Proration type = `invoice`**
+<img height="200" src="/assets/guides/proration/downgrade_invoice.png" />
+Assuming that the month when the subscription was purchased has 30 days. In case of 31 days, instead of 30th + 1 day, it would be 31st + 1 day = 32nd day.
 
-Daily cost difference = \$20/30 - \$5/30 = \$0.50 per day
-
-Balance for remaining days = 20 × \$0.50 = \$10
-
-Prorate: \$0 charged now, \$10 added to next invoice
-
-Invoice: \$10 charged immediately, $0 next invoice
-
-**Example**: \$20 → \$5 downgrade after 10 days
-
-Daily difference = \$20/30 - \$5/30 = \$0.50 per day
-
-Remaining days = 20
-
-Total difference = 20 × \$0.50 = \$10 credit
-
-Prorate: \$0 charged now, -\$10 applied in next invoice
-
-Invoice: \$10 credited immediately, \$0 next invoice
+**Example 2: Proration type = `prorate`**
+<img height="200" src="/assets/guides/proration/downgrade_prorate.png" />
+Assuming that the month when the subscription was purchased has 30 days. In case of 31 days, instead of 30th + 1 day, it would be 31st + 1 day = 32nd day.
 
 <Note>
 If the billing interval changes, i.e. daily to monthly or monthly to yearly or vice versa, the proration is always applied as invoice (even if set to prorate).

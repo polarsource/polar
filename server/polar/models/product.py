@@ -158,6 +158,15 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
                 return price
         return None
 
+    def get_static_price(
+        self, *, include_archived: bool = False
+    ) -> "ProductPrice | None":
+        prices = self.all_prices if include_archived else self.prices
+        for price in prices:
+            if price.is_static:
+                return price
+        return None
+
     @property
     def is_legacy_recurring_price(self) -> bool:
         return any(price.is_recurring for price in self.prices)

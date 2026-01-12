@@ -130,8 +130,10 @@ class Discount(MetadataMixin, RecordModel):
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()
 
-    def is_applicable(self, product: "Product", currency: str) -> bool:
-        raise NotImplementedError()
+    def is_applicable(self, product: "Product") -> bool:
+        if len(self.products) == 0:
+            return True
+        return product in self.products
 
     def is_repetition_expired(
         self,
@@ -175,15 +177,6 @@ class DiscountFixed(Discount):
         String(3), nullable=True, use_existing_column=True
     )
 
-    def is_applicable(self, product: "Product", currency: str) -> bool:
-        if self.currency != currency:
-            return False
-
-        if len(self.products) == 0:
-            return True
-
-        return product in self.products
-
     def get_discount_amount(self, amount: int) -> int:
         return min(self.amount, amount)
 
@@ -202,11 +195,6 @@ class DiscountPercentage(Discount):
     def get_discount_amount(self, amount: int) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
         return polar_round(discount_amount_float)
-
-    def is_applicable(self, product: "Product", currency: str) -> bool:
-        if len(self.products) == 0:
-            return True
-        return product in self.products
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.percentage,

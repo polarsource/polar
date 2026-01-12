@@ -58,12 +58,10 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
-    is_currency_price,
     is_fixed_price,
     is_free_price,
     is_metered_price,
 )
-from polar.product.price_set import PriceSet
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
@@ -92,6 +90,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
+    create_product_price_seat_unit,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -704,42 +703,6 @@ class TestCreateOrUpdateFromCheckout:
             checkout.client_secret, CheckoutEvent.subscription_created
         )
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
-
-    async def test_multi_currencies(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_recurring_multiple_currencies: Product,
-        customer: Customer,
-        payment_method: PaymentMethod,
-    ) -> None:
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product_recurring_multiple_currencies],
-            status=CheckoutStatus.confirmed,
-            customer=customer,
-            currency="eur",
-        )
-
-        (
-            subscription,
-            created,
-        ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
-        )
-
-        assert created is True
-
-        assert subscription.status == SubscriptionStatus.active
-
-        currency_prices = PriceSet.from_prices(
-            "eur", product_recurring_multiple_currencies.prices
-        )
-
-        assert len(subscription.prices) == len(currency_prices)
-        assert subscription.amount == checkout.total_amount
-        assert subscription.payment_method == payment_method
-        assert subscription.currency == "eur"
 
 
 @pytest.mark.asyncio
@@ -1467,7 +1430,7 @@ async def update_meters_fixtures(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None, "usd")],
+        prices=[(meter, Decimal(100), None)],
     )
     price = product.prices[0]
     assert is_metered_price(price)
@@ -1687,8 +1650,13 @@ class TestEnqueueBenefitsGrants:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
         )
+        await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            price_per_seat=1000,
+        )
+        await session.refresh(product)
 
         customer = await create_customer(save_fixture, organization=organization)
         subscription = await create_subscription(
@@ -1949,7 +1917,7 @@ class TestUpdateProduct:
             recurring_interval=SubscriptionRecurringInterval.month,
             # Same meter, but the price comes after the fixed price
             # It's important to test that the order of prices does not matter
-            prices=[(3000, "usd"), (meter, Decimal(50), None, "usd")],
+            prices=[(3000,), (meter, Decimal(50), None)],
         )
 
         updated_subscription = await subscription_service.update_product(
@@ -1986,7 +1954,7 @@ class TestUpdateProduct:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None, "usd")],
+            prices=[(meter, Decimal(100), None)],
         )
 
         updated_subscription = await subscription_service.update_product(
@@ -1997,61 +1965,6 @@ class TestUpdateProduct:
         )
 
         assert updated_subscription.product == metered_only_product
-
-    async def test_unavailable_currency(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        product_recurring_multiple_currencies: Product,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product_recurring_multiple_currencies,
-            customer=customer,
-            currency="eur",
-        )
-        assert len(subscription.prices) == 1
-
-        with pytest.raises(PolarRequestValidationError):
-            await subscription_service.update_product(
-                session,
-                subscription,
-                product_id=product.id,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
-
-    async def test_available_currency(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        product_recurring_multiple_currencies: Product,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product_recurring_multiple_currencies,
-            customer=customer,
-            currency="usd",
-        )
-        assert len(subscription.prices) == 1
-
-        updated_subscription = await subscription_service.update_product(
-            session,
-            subscription,
-            product_id=product.id,
-            proration_behavior=SubscriptionProrationBehavior.prorate,
-        )
-
-        assert updated_subscription.product == product
-        assert len(updated_subscription.prices) == 1
-        price = updated_subscription.prices[0]
-        assert is_currency_price(price)
-        assert price.price_currency == "usd"
 
 
 @pytest.mark.asyncio
@@ -2311,7 +2224,7 @@ class TestUpdateTrial:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription(
             save_fixture,
@@ -2506,7 +2419,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],  # $10 per seat
+            prices=[("seat", 1000)],  # $10 per seat
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -2607,7 +2520,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -2656,7 +2569,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -2715,7 +2628,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -2889,7 +2802,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         # Create using create_subscription directly to set seats
         subscription = await create_subscription(
@@ -2929,7 +2842,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         # Create using create_subscription directly to set seats
         subscription = await create_subscription(
@@ -2960,7 +2873,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -2999,7 +2912,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -3034,7 +2947,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -3090,7 +3003,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],  # $10 per seat
+            prices=[("seat", 1000)],  # $10 per seat
         )
         discount = await create_discount(
             save_fixture,
@@ -3160,7 +3073,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],  # $10 per seat
+            prices=[("seat", 1000)],  # $10 per seat
         )
         discount = await create_discount(
             save_fixture,
@@ -3225,7 +3138,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         discount = await create_discount(
             save_fixture,
@@ -3286,7 +3199,7 @@ class TestUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,

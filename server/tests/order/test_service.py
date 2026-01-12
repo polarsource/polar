@@ -62,7 +62,6 @@ from polar.order.service import (
 )
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
-from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import TaxabilityReason, TaxCalculation
 from polar.tax.tax_id import TaxID
@@ -605,48 +604,6 @@ class TestCreateFromCheckoutOneTime:
             checkout.client_secret, CheckoutEvent.order_created
         )
 
-    async def test_multi_currencies(
-        self,
-        publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_one_time_multiple_currencies: Product,
-        customer: Customer,
-    ) -> None:
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product_one_time_multiple_currencies],
-            status=CheckoutStatus.confirmed,
-            customer=customer,
-            currency="eur",
-        )
-
-        order = await order_service.create_from_checkout_one_time(session, checkout)
-
-        assert order.net_amount == checkout.net_amount
-        assert order.discount_amount == 0
-        assert order.billing_reason == OrderBillingReasonInternal.purchase
-        assert order.customer == checkout.customer
-        assert order.product == product_one_time_multiple_currencies
-        assert order.currency == "eur"
-
-        currency_prices = PriceSet.from_product(
-            "eur", product_one_time_multiple_currencies
-        )
-        assert len(order.items) == len(currency_prices.prices)
-
-        enqueue_job_mock.assert_any_call(
-            "benefit.enqueue_benefits_grants",
-            task="grant",
-            customer_id=customer.id,
-            product_id=product_one_time_multiple_currencies.id,
-            order_id=order.id,
-        )
-        publish_checkout_event_mock.assert_awaited_once_with(
-            checkout.client_secret, CheckoutEvent.order_created
-        )
-
 
 @pytest.mark.asyncio
 class TestCreateFromCheckoutSubscription:
@@ -1095,14 +1052,14 @@ class TestCreateSubscriptionOrder:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(500, "usd")],
+            prices=[(500,)],
         )
         old_price = cast(ProductPriceFixed, old_product.prices[0])
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(3000, "usd")],
+            prices=[(3000,)],
         )
         new_price = cast(ProductPriceFixed, new_product.prices[0])
 
@@ -1357,7 +1314,7 @@ class TestCreateSubscriptionOrder:
                 save_fixture,
                 organization=organization,
                 recurring_interval=recurring_interval,
-                prices=[(price_amount, "usd")],
+                prices=[(price_amount,)],
             )
             products[key] = product
 

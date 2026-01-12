@@ -909,7 +909,7 @@ async def product_metered_unit(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None, "usd")],
+        prices=[(meter, Decimal(100), None)],
     )
 
 
@@ -1034,7 +1034,7 @@ class TestCreateBillingEntries:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None, "usd")],
+            prices=[(meter, Decimal(100), None)],
         )
 
         subscription = await create_active_subscription(
@@ -1102,7 +1102,7 @@ class TestCreateBillingEntriesWithSeats:
             save_fixture,
             organization=seat_org,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+            prices=[(meter, Decimal(100), None), ("seat", 1000)],
         )
 
         billing_manager_subscription = await create_subscription_with_seats(
@@ -1202,7 +1202,7 @@ class TestCreateBillingEntriesWithSeats:
             save_fixture,
             organization=seat_org,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
 
         billing_manager_subscription = await create_subscription_with_seats(
@@ -1283,7 +1283,7 @@ class TestCreateBillingEntriesWithSeats:
             save_fixture,
             organization=seat_org,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+            prices=[(meter, Decimal(100), None), ("seat", 1000)],
         )
 
         billing_manager_subscription = await create_subscription_with_seats(
@@ -1411,7 +1411,7 @@ class TestCreateBillingEntriesWithSeats:
             save_fixture,
             organization=seat_org,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+            prices=[(meter, Decimal(100), None), ("seat", 1000)],
         )
 
         billing_manager_subscription = await create_subscription_with_seats(

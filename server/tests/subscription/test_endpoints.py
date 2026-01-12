@@ -721,7 +721,7 @@ class TestSubscriptionUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -758,7 +758,7 @@ class TestSubscriptionUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -809,7 +809,7 @@ class TestSubscriptionUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -888,7 +888,7 @@ class TestSubscriptionUpdateSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,
@@ -931,7 +931,7 @@ class TestSubscriptionUpdateTrial:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            prices=[("seat", 1000)],
         )
         subscription = await create_subscription_with_seats(
             save_fixture,

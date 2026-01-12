@@ -48,6 +48,7 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_checkout_link,
     create_product,
+    create_product_price_seat_unit,
     set_product_benefits,
 )
 
@@ -1670,8 +1671,13 @@ class TestProductProperties:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
         )
+        await create_product_price_seat_unit(
+            save_fixture,
+            product=product_with_seats,
+            price_per_seat=1000,
+        )
+        await session.refresh(product_with_seats)
 
         product_without_seats = await create_product(
             save_fixture,

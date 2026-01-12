@@ -14,14 +14,12 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
-    CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutPriceCreate,
     CheckoutProductCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
-    CustomerIPAddress,
 )
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
@@ -49,7 +47,6 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
-from polar.kit.currency import get_presentment_currency
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -93,7 +90,6 @@ from polar.product.guard import (
     is_fixed_price,
     is_seat_price,
 )
-from polar.product.price_set import NoPricesForCurrency, PriceSet
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
@@ -107,6 +103,7 @@ from polar.worker import enqueue_job
 
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .price import get_default_price
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -269,22 +266,14 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Organization],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        ip_country = self._get_ip_country(
-            ip_geolocation_client, checkout_create.customer_ip_address
-        )
-
         ad_hoc_prices: dict[Product, Sequence[ProductPrice]] = {}
         if isinstance(checkout_create, CheckoutPriceCreate):
-            products, product, price, currency = await self._get_validated_price(
+            products, product, price = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
             )
         elif isinstance(checkout_create, CheckoutProductCreate):
-            products, product, price, currency = await self._get_validated_product(
-                session,
-                auth_subject,
-                checkout_create.product_id,
-                checkout_create.currency,
-                ip_country,
+            products, product, price = await self._get_validated_product(
+                session, auth_subject, checkout_create.product_id
             )
         else:
             products = await self._get_validated_products(
@@ -296,30 +285,10 @@ class CheckoutService:
                 )
 
             product = products[0]
-
-            currency = self._get_currency(
-                checkout_create.currency, product.organization, ip_country
-            )
-
             try:
-                prices = ad_hoc_prices[product]
+                price = get_default_price(ad_hoc_prices[product])
             except KeyError:
-                prices = product.prices
-
-            try:
-                price_set = PriceSet.from_prices(currency, prices)
-                price = price_set.get_default_price()
-            except NoPricesForCurrency as e:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "products", 0),
-                            "msg": "Product is not available in the specified currency.",
-                            "input": checkout_create.products[0],
-                        }
-                    ]
-                ) from e
+                price = get_default_price(product.prices)
 
         if product.organization.is_blocked():
             raise NotPermitted()
@@ -334,7 +303,6 @@ class CheckoutService:
                 product.organization,
                 product,
                 price,
-                currency,
                 discount_id=checkout_create.discount_id,
             )
 
@@ -419,9 +387,12 @@ class CheckoutService:
             )
 
         amount = checkout_create.amount
+        currency = None
         if is_fixed_price(price):
             amount = price.price_amount
+            currency = price.price_currency
         elif is_custom_price(price):
+            currency = price.price_currency
             if amount is None:
                 amount = (
                     price.preset_amount
@@ -433,8 +404,10 @@ class CheckoutService:
             # seats is guaranteed to be set above when is_seat_price(price) is True
             assert checkout_create.seats is not None
             amount = price.calculate_amount(checkout_create.seats)
+            currency = price.price_currency
         else:
             amount = 0
+            currency = price.price_currency if is_currency_price(price) else "usd"
 
         custom_field_data = validate_custom_field_data(
             product.attached_custom_fields,
@@ -482,7 +455,6 @@ class CheckoutService:
                     "products",
                     "prices",
                     "amount",
-                    "currency",
                     "require_billing_address",
                     "customer_billing_address",
                     "customer_tax_id",
@@ -537,7 +509,9 @@ class CheckoutService:
 
         session.add(checkout)
 
-        checkout = await self._update_ip_country(session, checkout, ip_country)
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
         checkout = await self._update_trial_end(checkout)
 
         try:
@@ -609,24 +583,8 @@ class CheckoutService:
                 ]
             )
 
-        ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currency = self._get_currency(None, product.organization, ip_country)
-
-        try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product is not available in the specified currency.",
-                        "input": checkout_create.product_id,
-                    }
-                ]
-            ) from e
-
-        price = currency_prices.get_default_price()
+        # Select the static price in priority, as it determines the amount and specific behavior
+        price = product.get_static_price() or product.prices[0]
 
         # Validate seats for seat-based pricing
         if is_seat_price(price):
@@ -648,9 +606,12 @@ class CheckoutService:
             )
 
         amount = 0
+        currency = "usd"
         if is_fixed_price(price):
             amount = price.price_amount
+            currency = price.price_currency
         elif is_custom_price(price):
+            currency = price.price_currency
             amount = (
                 price.preset_amount
                 or price.minimum_amount
@@ -661,6 +622,9 @@ class CheckoutService:
             # seats is guaranteed to be set above when is_seat_price(price) is True
             assert checkout_create.seats is not None
             amount = price.calculate_amount(checkout_create.seats)
+            currency = price.price_currency
+        elif is_currency_price(price):
+            currency = price.price_currency
 
         checkout = Checkout(
             payment_processor=PaymentProcessor.stripe,
@@ -697,7 +661,9 @@ class CheckoutService:
                 }
 
         checkout.customer_ip_address = ip_address
-        checkout = await self._update_ip_country(session, checkout, ip_country)
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
         checkout = await self._update_trial_end(checkout)
 
         try:
@@ -752,31 +718,17 @@ class CheckoutService:
                 if p.id == product_id:
                     product = p
                     break
-
-        ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currency = self._get_currency(None, product.organization, ip_country)
-
-        try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "products"),
-                        "msg": "Product is not available in the specified currency.",
-                        "input": str(product.id),
-                    }
-                ]
-            ) from e
-
-        price = currency_prices.get_default_price()
+        # Select the static price in priority, as it determines the amount and specific behavior
+        price = product.get_static_price() or product.prices[0]
 
         amount = 0
+        currency = "usd"
         seats = None
         if is_fixed_price(price):
             amount = price.price_amount
+            currency = price.price_currency
         elif is_custom_price(price):
+            currency = price.price_currency
             query_amount_str = query_prefill.get("amount") if query_prefill else None
 
             # Try to parse and validate query amount
@@ -799,6 +751,9 @@ class CheckoutService:
             # Default to minimum seats for checkout links with seat-based pricing
             seats = price.get_minimum_seats()
             amount = price.calculate_amount(seats)
+            currency = price.price_currency
+        elif is_currency_price(price):
+            currency = price.price_currency
 
         discount: Discount | None = None
         if checkout_link.discount_id is not None:
@@ -808,7 +763,6 @@ class CheckoutService:
                     product.organization,
                     product,
                     price,
-                    currency,
                     discount_id=checkout_link.discount_id,
                 )
             # If the discount is not valid, just ignore it
@@ -859,7 +813,6 @@ class CheckoutService:
                         product.organization,
                         product,
                         price,
-                        currency,
                         discount_code=discount_code,
                     )
                     checkout.discount = discount
@@ -910,7 +863,9 @@ class CheckoutService:
 
         session.add(checkout)
 
-        checkout = await self._update_ip_country(session, checkout, ip_country)
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
+        )
         checkout = await self._update_trial_end(checkout)
 
         try:
@@ -1305,7 +1260,7 @@ class CheckoutService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product_price_id: uuid.UUID,
-    ) -> tuple[Sequence[Product], Product, ProductPrice, str]:
+    ) -> tuple[Sequence[Product], Product, ProductPrice]:
         product_price_repository = ProductPriceRepository.from_session(session)
         price = await product_price_repository.get_readable_by_id(
             product_price_id,
@@ -1357,21 +1312,14 @@ class CheckoutService:
                 ]
             )
 
-        if is_currency_price(price):
-            currency = price.price_currency
-        else:
-            currency = product.organization.default_presentment_currency
-
-        return [product], product, price, currency
+        return [product], product, price
 
     async def _get_validated_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product_id: uuid.UUID,
-        currency: str | None,
-        ip_country: str | None,
-    ) -> tuple[Sequence[Product], Product, ProductPrice, str]:
+    ) -> tuple[Sequence[Product], Product, ProductPrice]:
         product = await product_service.get(session, auth_subject, product_id)
 
         if product is None:
@@ -1398,24 +1346,10 @@ class CheckoutService:
                 ]
             )
 
-        currency = self._get_currency(currency, product.organization, ip_country)
-        try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product is not available in the specified currency.",
-                        "input": product_id,
-                    }
-                ]
-            ) from e
+        # Select the static price in priority, as it determines the amount and specific behavior, like PWYW
+        price = product.get_static_price() or product.prices[0]
 
-        price = currency_prices.get_default_price()
-
-        return [product], product, price, currency
+        return [product], product, price
 
     async def _get_validated_products(
         self,
@@ -1525,7 +1459,6 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
-        currency: str,
         *,
         discount_id: uuid.UUID,
     ) -> Discount: ...
@@ -1537,7 +1470,6 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
-        currency: str,
         *,
         discount_code: str,
     ) -> Discount: ...
@@ -1548,7 +1480,6 @@ class CheckoutService:
         organization: Organization,
         product: Product,
         price: ProductPrice,
-        currency: str,
         *,
         discount_id: uuid.UUID | None = None,
         discount_code: str | None = None,
@@ -1570,15 +1501,11 @@ class CheckoutService:
         discount: Discount | None = None
         if discount_id is not None:
             discount = await discount_service.get_by_id_and_organization(
-                session,
-                discount_id,
-                organization,
-                currency=currency,
-                products=[product],
+                session, discount_id, organization, products=[product]
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(
-                session, discount_code, organization, product, currency
+                session, discount_code, organization, product
             )
 
         if discount is None:
@@ -1695,35 +1622,7 @@ class CheckoutService:
         if checkout.status != CheckoutStatus.open:
             raise NotOpenCheckout(checkout)
 
-        updated_currency = (
-            checkout_update.currency
-            if isinstance(checkout_update, CheckoutUpdate)
-            else None
-        )
-
-        # Currency is updated, but not the product, make sure the product supports it
-        if updated_currency and checkout_update.product_id is None:
-            assert checkout.product is not None
-            checkout.currency = updated_currency
-            try:
-                currency_prices = PriceSet.from_product(
-                    updated_currency, checkout.product
-                )
-            except NoPricesForCurrency as e:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "currency"),
-                            "msg": "Product is not available in the specified currency.",
-                            "input": updated_currency,
-                        }
-                    ]
-                ) from e
-            price = currency_prices.get_default_price()
-            checkout = await self._update_price(checkout, checkout_update, price)
-        # Product is updated
-        elif checkout_update.product_id is not None:
+        if checkout_update.product_id is not None:
             product_repository = ProductRepository.from_session(session)
             product = await product_repository.get_by_id_and_checkout(
                 checkout_update.product_id,
@@ -1776,47 +1675,43 @@ class CheckoutService:
                         ]
                     ) from e
             else:
-                # Product and currency are both updated, make sure the product supports it
-                if updated_currency is not None:
-                    try:
-                        currency_prices = PriceSet.from_product(
-                            updated_currency, product
-                        )
-                        checkout.currency = updated_currency
-                    except NoPricesForCurrency:
-                        raise PolarRequestValidationError(
-                            [
-                                {
-                                    "type": "value_error",
-                                    "loc": ("body", "currency"),
-                                    "msg": "Product is not available in the specified currency.",
-                                    "input": updated_currency,
-                                }
-                            ]
-                        )
-                # Only product is updated, try to use the existing currency
-                else:
-                    try:
-                        currency_prices = PriceSet.from_product(
-                            checkout.currency, product
-                        )
-                    # Fallback to default currency if existing currency is not supported
-                    except NoPricesForCurrency:
-                        currency_prices = PriceSet.from_product(
-                            product.organization.default_presentment_currency, product
-                        )
-                        checkout.currency = currency_prices.currency
-                price = currency_prices.get_default_price()
+                price = get_default_price(checkout.prices[product.id])
 
-            checkout = await self._update_price(checkout, checkout_update, price)
+            checkout.product_price = price
+            checkout.amount = 0
+            checkout.currency = "usd"
+            if is_fixed_price(price):
+                checkout.amount = price.price_amount
+                checkout.currency = price.price_currency
+                checkout.seats = None
+            elif is_custom_price(price):
+                checkout.amount = (
+                    price.preset_amount
+                    or price.minimum_amount
+                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                )
+                checkout.currency = price.price_currency
+                checkout.seats = None
+            elif is_seat_price(price):
+                # Use minimum_seats as default if no seats are set
+                minimum_seats = price.get_minimum_seats()
+                seats = checkout.seats or checkout_update.seats or minimum_seats
+                # Validate seat limits for the new price
+                self._validate_seat_limits(price, seats)
+                checkout.seats = seats
+                checkout.amount = price.calculate_amount(seats)
+                checkout.currency = price.price_currency
+            elif is_currency_price(price):
+                checkout.currency = price.price_currency
+                checkout.seats = None
 
-        # When changing product, remove the discount if it's not applicable
-        if (
-            has_product_checkout(checkout)
-            and checkout.discount is not None
-            and not checkout.discount.is_applicable(checkout.product, checkout.currency)
-        ):
-            checkout.discount = None
+            # When changing product, remove the discount if it's not applicable
+            if (
+                has_product_checkout(checkout)
+                and checkout.discount is not None
+                and not checkout.discount.is_applicable(checkout.product)
+            ):
+                checkout.discount = None
 
         if (
             has_product_checkout(checkout)
@@ -1862,7 +1757,6 @@ class CheckoutService:
                     checkout.organization,
                     checkout.product,
                     checkout.product_price,
-                    checkout.currency,
                     discount_id=checkout_update.discount_id,
                 )
             # User explicitly removed the discount
@@ -1881,7 +1775,6 @@ class CheckoutService:
                     checkout.organization,
                     checkout.product,
                     checkout.product_price,
-                    checkout.currency,
                     discount_code=checkout_update.discount_code,
                 )
                 checkout.discount = discount
@@ -1944,16 +1837,14 @@ class CheckoutService:
             )
             checkout.custom_field_data = custom_field_data
 
-        ip_country = self._get_ip_country(
-            ip_geolocation_client, checkout.customer_ip_address
+        checkout = await self._update_checkout_ip_geolocation(
+            session, checkout, ip_geolocation_client
         )
-        checkout = await self._update_ip_country(session, checkout, ip_country)
 
         exclude = {
             "product_id",
             "product_price_id",
             "amount",
-            "currency",
             "customer_billing_address",
             "customer_tax_id",
             "custom_field_data",
@@ -1972,37 +1863,6 @@ class CheckoutService:
         session.add(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
-
-        return checkout
-
-    async def _update_price(
-        self,
-        checkout: Checkout,
-        checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirmStripe,
-        price: ProductPrice,
-    ) -> Checkout:
-        checkout.product_price = price
-        checkout.amount = 0
-        if is_fixed_price(price):
-            checkout.amount = price.price_amount
-            checkout.seats = None
-        elif is_custom_price(price):
-            checkout.amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
-            checkout.seats = None
-        elif is_seat_price(price):
-            # Use minimum_seats as default if no seats are set
-            minimum_seats = price.get_minimum_seats()
-            seats = checkout.seats or checkout_update.seats or minimum_seats
-            # Validate seat limits for the new price
-            self._validate_seat_limits(price, seats)
-            checkout.seats = seats
-            checkout.amount = price.calculate_amount(seats)
-        elif is_currency_price(price):
-            checkout.seats = None
 
         return checkout
 
@@ -2052,46 +1912,29 @@ class CheckoutService:
 
         return checkout
 
-    def _get_ip_country(
+    async def _update_checkout_ip_geolocation(
         self,
+        session: AsyncSession,
+        checkout: Checkout,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
-        ip_address: CustomerIPAddress | str | None,
-    ) -> str | None:
-        if ip_geolocation_client is None:
-            return None
-
-        if ip_address is None:
-            return None
-
-        return ip_geolocation.get_ip_country(ip_geolocation_client, str(ip_address))
-
-    def _get_currency(
-        self,
-        currency: str | None,
-        organization: Organization,
-        ip_country: str | None,
-    ) -> str:
-        if currency is not None:
-            return currency
-
-        currency = organization.default_presentment_currency
-
-        if ip_country is not None:
-            currency = get_presentment_currency(ip_country, currency)
-
-        return currency
-
-    async def _update_ip_country(
-        self, session: AsyncSession, checkout: Checkout, ip_country: str | None
     ) -> Checkout:
-        if ip_country is None:
+        if ip_geolocation_client is None:
+            return checkout
+
+        if checkout.customer_ip_address is None:
             return checkout
 
         if checkout.customer_billing_address is not None:
             return checkout
 
+        country = ip_geolocation.get_ip_country(
+            ip_geolocation_client, checkout.customer_ip_address
+        )
+        if country is None:
+            return checkout
+
         try:
-            address = AddressInput.model_validate({"country": ip_country})
+            address = AddressInput.model_validate({"country": country})
         except PydanticValidationError:
             return checkout
 

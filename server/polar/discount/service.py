@@ -291,7 +291,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization: Organization,
         *,
         products: Sequence[Product] | None = None,
-        currency: str | None = None,
         redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
@@ -305,15 +304,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if currency is not None and isinstance(discount, DiscountFixed):
-            if discount.currency != currency:
-                return None
-
         if products is not None:
-            if len(discount.products) > 0:
-                for product in products:
-                    if product not in discount.products:
-                        return None
+            for product in products:
+                if not discount.is_applicable(product):
+                    return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -350,7 +344,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         code: str,
         organization: Organization,
         product: Product,
-        currency: str | None = None,
         *,
         redeemable: bool = True,
     ) -> Discount | None:
@@ -360,10 +353,6 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount is None:
             return None
-
-        if currency is not None and isinstance(discount, DiscountFixed):
-            if discount.currency != currency:
-                return None
 
         if len(discount.products) > 0 and product not in discount.products:
             return None

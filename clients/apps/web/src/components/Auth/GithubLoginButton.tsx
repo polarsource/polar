@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
-import { getGitHubAuthorizeURL } from '@/utils/auth'
+import { getGitHubAuthorizeLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
@@ -18,7 +18,7 @@ const GithubLoginButton = (props: {
   const posthog = usePostHog()
   const signup = props.signup
 
-  const authorizeURL = getGitHubAuthorizeURL({
+  const authorizeURL = getGitHubAuthorizeLoginURL({
     return_to: props.returnTo,
     attribution: JSON.stringify(signup),
   })

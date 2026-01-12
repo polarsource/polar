@@ -1,9 +1,9 @@
 import { getPublicServerURL } from '@/utils/api'
 import { operations } from '@polar-sh/client'
 
-export const getGitHubAuthorizeURL = (
+export const getGitHubAuthorizeLoginURL = (
   params: NonNullable<
-    operations['integrations_github:integrations.github.authorize']['parameters']['query']
+    operations['integrations_github:integrations_github_login:integrations.github.login.authorize']['parameters']['query']
   >,
 ): string => {
   const searchParams = new URLSearchParams()
@@ -13,7 +13,19 @@ export const getGitHubAuthorizeURL = (
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
-  return `${getPublicServerURL()}/v1/integrations/github/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/github/login/authorize?${searchParams}`
+}
+
+export const getGitHubAuthorizeLinkURL = (
+  params: NonNullable<
+    operations['integrations_github:integrations_github_link:integrations.github.link.authorize']['parameters']['query']
+  >,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
+  }
+  return `${getPublicServerURL()}/v1/integrations/github/link/authorize?${searchParams}`
 }
 
 export const getGoogleAuthorizeLoginURL = (

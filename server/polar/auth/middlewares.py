@@ -5,7 +5,13 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
-from polar.customer_session.service import customer_session as customer_session_service
+from polar.customer_session.service import (
+    CUSTOMER_SESSION_TOKEN_PREFIX,
+)
+from polar.customer_session.service import (
+    customer_session as customer_session_service,
+)
+from polar.kit.crypto import validate_token_checksum
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -15,12 +21,18 @@ from polar.models import (
     PersonalAccessToken,
     UserSession,
 )
-from polar.oauth2.constants import is_registration_token_prefix
+from polar.oauth2.constants import ACCESS_TOKEN_PREFIX, is_registration_token_prefix
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization_access_token.service import (
+    TOKEN_PREFIX as ORGANIZATION_ACCESS_TOKEN_PREFIX,
+)
+from polar.organization_access_token.service import (
     organization_access_token as organization_access_token_service,
+)
+from polar.personal_access_token.service import (
+    TOKEN_PREFIX as PERSONAL_ACCESS_TOKEN_PREFIX,
 )
 from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
@@ -34,6 +46,13 @@ from .scope import Scope
 from .service import auth as auth_service
 
 log: Logger = structlog.get_logger(__name__)
+
+
+def _has_valid_oauth2_token_checksum(token: str) -> bool:
+    for prefix in ACCESS_TOKEN_PREFIX.values():
+        if validate_token_checksum(token, prefix=prefix):
+            return True
+    return False
 
 
 async def get_user_session(
@@ -92,6 +111,30 @@ async def get_customer_session(
     return await customer_session_service.get_by_token(session, value)
 
 
+def _get_token_prefix(token: str) -> str | None:
+    """Return the prefix if the token matches a known token type."""
+    if token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
+        return CUSTOMER_SESSION_TOKEN_PREFIX
+    if token.startswith(ORGANIZATION_ACCESS_TOKEN_PREFIX):
+        return ORGANIZATION_ACCESS_TOKEN_PREFIX
+    if token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
+        return PERSONAL_ACCESS_TOKEN_PREFIX
+    for prefix in ACCESS_TOKEN_PREFIX.values():
+        if token.startswith(prefix):
+            return prefix
+    return None
+
+
+def _log_checksum_mismatch(token_type: str, prefix: str, token_length: int) -> None:
+    """Log an error when a valid token has an invalid checksum."""
+    log.error(
+        "Valid token has invalid checksum",
+        token_type=token_type,
+        token_prefix=prefix,
+        token_length=token_length,
+    )
+
+
 async def get_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
@@ -102,6 +145,10 @@ async def get_auth_subject(
 
         customer_session = await get_customer_session(session, token)
         if customer_session:
+            if not validate_token_checksum(token, prefix=CUSTOMER_SESSION_TOKEN_PREFIX):
+                _log_checksum_mismatch(
+                    "customer_session", CUSTOMER_SESSION_TOKEN_PREFIX, len(token)
+                )
             return AuthSubject(
                 customer_session.customer,
                 {Scope.customer_portal_write},
@@ -110,6 +157,14 @@ async def get_auth_subject(
 
         organization_access_token = await get_organization_access_token(session, token)
         if organization_access_token:
+            if not validate_token_checksum(
+                token, prefix=ORGANIZATION_ACCESS_TOKEN_PREFIX
+            ):
+                _log_checksum_mismatch(
+                    "organization_access_token",
+                    ORGANIZATION_ACCESS_TOKEN_PREFIX,
+                    len(token),
+                )
             return AuthSubject(
                 organization_access_token.organization,
                 organization_access_token.scopes,
@@ -118,10 +173,17 @@ async def get_auth_subject(
 
         oauth2_token = await get_oauth2_token(session, token)
         if oauth2_token:
+            if not _has_valid_oauth2_token_checksum(token):
+                prefix = _get_token_prefix(token)
+                _log_checksum_mismatch("oauth2_token", prefix or "unknown", len(token))
             return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
 
         personal_access_token = await get_personal_access_token(session, token)
         if personal_access_token:
+            if not validate_token_checksum(token, prefix=PERSONAL_ACCESS_TOKEN_PREFIX):
+                _log_checksum_mismatch(
+                    "personal_access_token", PERSONAL_ACCESS_TOKEN_PREFIX, len(token)
+                )
             return AuthSubject(
                 personal_access_token.user,
                 personal_access_token.scopes,

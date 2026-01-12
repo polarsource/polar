@@ -538,7 +538,7 @@ class MeterService:
         return entries, event_ids, last_event
 
     async def _create_billing_entries_new(
-        self, session: AsyncSession, meter: Meter
+        self, session: AsyncSession, meter: Meter, cutoff_time: datetime
     ) -> tuple[Sequence[uuid.UUID], Event | None]:
         """New implementation using meter_events table."""
         event_repository = EventRepository.from_session(session)
@@ -557,7 +557,10 @@ class MeterService:
                     ),
                 ),
             )
-            .where(MeterEvent.meter_id == meter.id)
+            .where(
+                MeterEvent.meter_id == meter.id,
+                MeterEvent.ingested_at <= cutoff_time,
+            )
             .order_by(MeterEvent.ingested_at.asc())
         )
         last_billed_event = meter.last_billed_event
@@ -578,6 +581,7 @@ class MeterService:
         self, session: AsyncSession, meter: Meter
     ) -> Sequence[BillingEntry]:
         last_billed_event = meter.last_billed_event
+        cutoff_time = datetime.now(UTC)
 
         with logfire.span("create_billing_entries.old", meter_id=str(meter.id)):
             (
@@ -593,7 +597,7 @@ class MeterService:
 
         with logfire.span("create_billing_entries.new", meter_id=str(meter.id)):
             new_event_ids, new_last_event = await self._create_billing_entries_new(
-                session, meter
+                session, meter, cutoff_time
             )
             logfire.info(
                 "New implementation completed",

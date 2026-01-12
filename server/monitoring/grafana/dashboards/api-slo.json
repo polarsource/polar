@@ -68,7 +68,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - ((count(\n  (\n    histogram_quantile(0.99, sum by (endpoint, method, le) (\n      rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n    )) > on(endpoint, method) max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d]))\n  )\n  or\n  (\n    (100 * (1 - (\n      sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n      or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n    ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n    < on(endpoint, method) max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[30d]))\n  )\n) or vector(0)) / count(max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d])))))",
+          "expr": "100 * (1 - ((count(\n  (\n    histogram_quantile(0.99, sum by (endpoint, method, le) (\n      rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n    )) > on(endpoint, method) group_left() max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h]))\n  )\n  or\n  (\n    (100 * (1 - (\n      sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n      or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n    ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n    < on(endpoint, method) group_left() max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[1h]))\n  )\n) or vector(0)) / count(max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h])))))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -395,7 +395,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(\n  histogram_quantile(0.99, sum by (endpoint, method, le) (\n    rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n  )) > on(endpoint, method) max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d]))\n)",
+          "expr": "(\n  histogram_quantile(0.99, sum by (endpoint, method, le) (\n    rate(polar_http_request_duration_seconds_bucket{env=\"$env\"}[$__range])\n  )) > on(endpoint, method) group_left() max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h]))\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -406,7 +406,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d]))",
+          "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -417,7 +417,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "(\n  (100 * (1 - (\n    sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n    or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n  ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n  < on(endpoint, method) max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[30d]))\n)",
+          "expr": "(\n  (100 * (1 - (\n    sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[$__range]))\n    or (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range])) * 0)\n  ) / sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[$__range]))))\n  < on(endpoint, method) group_left() max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[1h]))\n)",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -428,7 +428,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[30d]))",
+          "expr": "max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",
@@ -1008,7 +1008,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d]))",
+              "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h]))",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -1019,7 +1019,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[30d]))",
+              "expr": "max by (endpoint, method) (last_over_time(polar_slo_p99_target_seconds{env=\"$env\"}[1h]))",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -1765,7 +1765,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(\n  (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[1h])) or vector(0))\n  /\n  ((1 - max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[30d])) / 100) * sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[1h])))\n)",
+              "expr": "(\n  (sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\", status_code=~\"5..\"}[1h])) or vector(0))\n  /\n  ((1 - max by (endpoint, method) (last_over_time(polar_slo_availability_target{env=\"$env\"}[1h])) / 100) * sum by (endpoint, method) (rate(polar_http_request_total{env=\"$env\"}[1h])))\n)",
               "legendFormat": "{{method}} {{endpoint}} (1h)",
               "refId": "A"
             }

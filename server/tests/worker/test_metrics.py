@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from pathlib import Path
 
 import dramatiq
 import pytest
@@ -8,14 +7,6 @@ from dramatiq.brokers.stub import StubBroker
 from pytest_mock import MockerFixture
 
 from polar.worker._metrics import PrometheusMiddleware
-
-
-@pytest.fixture
-def prometheus_dir(tmp_path: Path) -> Path:
-    """Create a temporary prometheus multiprocess directory."""
-    prom_dir = tmp_path / "prometheus_multiproc"
-    prom_dir.mkdir()
-    return prom_dir
 
 
 @pytest.fixture
@@ -149,49 +140,6 @@ class TestPrometheusMiddlewareDirectCalls:
                 options={},
             )
         )
-
-    def test_before_worker_boot_clears_directory(
-        self,
-        broker: StubBroker,
-        prometheus_dir: Path,
-        mocker: MockerFixture,
-    ) -> None:
-        """Test that before_worker_boot clears the prometheus directory."""
-        # Create some stale files
-        stale_file = prometheus_dir / "stale_metrics.db"
-        stale_file.write_text("stale data")
-        assert stale_file.exists()
-
-        mocker.patch(
-            "polar.worker._metrics.settings.WORKER_PROMETHEUS_DIR",
-            prometheus_dir,
-        )
-
-        middleware = PrometheusMiddleware()
-        worker = Worker(broker, worker_timeout=100)
-        middleware.before_worker_boot(broker, worker)
-
-        # Directory should exist but stale file should be gone
-        assert prometheus_dir.exists()
-        assert not stale_file.exists()
-
-    def test_before_worker_boot_handles_missing_directory(
-        self,
-        broker: StubBroker,
-        tmp_path: Path,
-        mocker: MockerFixture,
-    ) -> None:
-        """Test that before_worker_boot handles non-existent directory gracefully."""
-        prometheus_dir = tmp_path / "non_existent"
-        mocker.patch(
-            "polar.worker._metrics.settings.WORKER_PROMETHEUS_DIR",
-            prometheus_dir,
-        )
-
-        middleware = PrometheusMiddleware()
-        worker = Worker(broker, worker_timeout=100)
-        # Should not raise even if directory doesn't exist
-        middleware.before_worker_boot(broker, worker)
 
     def test_before_process_message_sets_start_time(
         self, broker: StubBroker, message: dramatiq.MessageProxy

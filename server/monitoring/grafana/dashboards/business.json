@@ -13,7 +13,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Current checkout creation rate (checkouts per minute)",
+      "description": "Checkout creation rate compared to 7-day average. 1.0 = matching baseline, <0.8 or >1.2 = significant deviation.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -29,15 +29,23 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.5
               },
               {
                 "color": "green",
-                "value": 1
+                "value": 0.8
+              },
+              {
+                "color": "yellow",
+                "value": 1.2
+              },
+              {
+                "color": "red",
+                "value": 1.5
               }
             ]
           },
-          "unit": "cpm"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -68,12 +76,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_checkout_created_total{env=\"$env\"}[5m])) * 60",
+          "expr": "(sum(rate(polar_checkout_created_total{env=\"$env\"}[5m])) * 60) / clamp_min(avg_over_time((sum(rate(polar_checkout_created_total{env=\"$env\"}[5m])) * 60)[7d:1h]), 0.001)",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Checkout Creation Rate",
+      "title": "Checkout Creation vs Baseline",
       "type": "stat"
     },
     {
@@ -81,7 +89,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Current checkout success rate (succeeded per minute)",
+      "description": "Checkout success rate compared to 7-day average. 1.0 = matching baseline, <0.8 or >1.2 = significant deviation.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -97,15 +105,23 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 0.5
               },
               {
                 "color": "green",
-                "value": 1
+                "value": 0.8
+              },
+              {
+                "color": "yellow",
+                "value": 1.2
+              },
+              {
+                "color": "red",
+                "value": 1.5
               }
             ]
           },
-          "unit": "cpm"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -136,12 +152,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[5m])) * 60",
+          "expr": "(sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[5m])) * 60) / clamp_min(avg_over_time((sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[5m])) * 60)[7d:1h]), 0.001)",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Checkout Success Rate",
+      "title": "Checkout Success vs Baseline",
       "type": "stat"
     },
     {
@@ -149,7 +165,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Percentage of checkouts that succeed (succeeded / created)",
+      "description": "Conversion rate compared to 7-day average. 1.0 = matching baseline, <0.8 or >1.2 = significant deviation.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -165,15 +181,23 @@
               },
               {
                 "color": "yellow",
-                "value": 50
+                "value": 0.5
               },
               {
                 "color": "green",
-                "value": 80
+                "value": 0.8
+              },
+              {
+                "color": "yellow",
+                "value": 1.2
+              },
+              {
+                "color": "red",
+                "value": 1.5
               }
             ]
           },
-          "unit": "percent"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -204,12 +228,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[1h])) / clamp_min(sum(rate(polar_checkout_created_total{env=\"$env\"}[1h])), 0.001))",
+          "expr": "(sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[1h])) / clamp_min(sum(rate(polar_checkout_created_total{env=\"$env\"}[1h])), 0.001)) / clamp_min(avg_over_time((sum(rate(polar_checkout_succeeded_total{env=\"$env\"}[1h])) / clamp_min(sum(rate(polar_checkout_created_total{env=\"$env\"}[1h])), 0.001))[7d:1h]), 0.001)",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "Conversion Rate (1h)",
+      "title": "Conversion vs Baseline",
       "type": "stat"
     },
     {
@@ -522,7 +546,7 @@
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "off"
             }
           },
           "mappings": [],
@@ -532,16 +556,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
                 "color": "green",
-                "value": 80
+                "value": null
               }
             ]
           },
@@ -713,7 +729,7 @@
       "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -935,7 +951,7 @@
           "type": "timeseries"
         }
       ],
-      "title": "Anomaly Detection (for Grafana ML, expand to configure)",
+      "title": "Rate Deviation Analysis",
       "type": "row"
     }
   ],

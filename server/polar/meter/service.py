@@ -13,11 +13,12 @@ from sqlalchemy import (
     asc,
     cte,
     desc,
+    exists,
     func,
     or_,
     select,
 )
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
@@ -542,25 +543,25 @@ class MeterService:
     ) -> tuple[Sequence[uuid.UUID], Event | None]:
         """New implementation using meter_events table."""
         event_repository = EventRepository.from_session(session)
-        BillableCustomer = aliased(Customer)
         statement = (
             event_repository.get_base_statement()
             .join(MeterEvent, MeterEvent.event_id == Event.id)
-            .join(
-                BillableCustomer,
+            .where(
+                MeterEvent.meter_id == meter.id,
                 or_(
-                    BillableCustomer.id == MeterEvent.customer_id,
+                    MeterEvent.customer_id.is_not(None),
                     and_(
-                        MeterEvent.customer_id.is_(None),
-                        BillableCustomer.external_id == MeterEvent.external_customer_id,
-                        BillableCustomer.organization_id == MeterEvent.organization_id,
+                        MeterEvent.external_customer_id.is_not(None),
+                        exists(
+                            select(1).where(
+                                Customer.external_id == MeterEvent.external_customer_id,
+                                Customer.organization_id == MeterEvent.organization_id,
+                            )
+                        ),
                     ),
                 ),
             )
-            .where(
-                MeterEvent.meter_id == meter.id,
-                MeterEvent.ingested_at <= cutoff_time,
-            )
+            .where(MeterEvent.ingested_at <= cutoff_time)
             .order_by(MeterEvent.ingested_at.asc())
         )
         last_billed_event = meter.last_billed_event

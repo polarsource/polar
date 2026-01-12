@@ -9,13 +9,18 @@ as Prometheus metrics. This enables:
 3. Scalable SLO management (add endpoint = add to list, deploy, done)
 
 Usage:
-    Call init_slo_metrics() once on application startup to populate
-    the target metrics.
+    Call start_slo_metrics() on application startup and stop_slo_metrics()
+    on shutdown. Metrics are refreshed every 5 minutes.
 """
 
+import threading
+
+import structlog
 from prometheus_client import Gauge
 
-# SLO target metrics - set once on startup, used for dynamic comparisons
+log = structlog.get_logger()
+
+# SLO target metrics - refreshed periodically for dynamic comparisons
 # These metrics allow dashboard queries and alerts to use group_left joins
 # to compare actual values against per-endpoint targets.
 
@@ -52,13 +57,62 @@ CRITICAL_ENDPOINTS: list[tuple[str, str, float, float]] = [
     ("/v1/checkouts/{id}", "GET", 0.3, 99.95),
 ]
 
+_refresh_thread: threading.Thread | None = None
+_shutdown_event: threading.Event | None = None
 
-def init_slo_metrics() -> None:
+SLO_REFRESH_INTERVAL_SECONDS = 300  # 5 minutes
+
+
+def start_slo_metrics() -> None:
+    """Initialize SLO metrics and start background refresh thread."""
+    global _refresh_thread, _shutdown_event
+
+    # Initialize metrics immediately
+    _set_slo_metrics()
+
+    # Start periodic refresh if not already running
+    if _refresh_thread is not None:
+        return
+
+    _shutdown_event = threading.Event()
+    _refresh_thread = threading.Thread(
+        target=_run_refresh_loop,
+        args=(_shutdown_event,),
+        daemon=True,
+    )
+    _refresh_thread.start()
+    log.info("slo_metrics_started", refresh_interval=SLO_REFRESH_INTERVAL_SECONDS)
+
+
+def stop_slo_metrics() -> None:
+    """Stop the SLO metrics refresh thread."""
+    global _refresh_thread, _shutdown_event
+
+    if _shutdown_event is not None:
+        _shutdown_event.set()
+
+    if _refresh_thread is not None:
+        _refresh_thread.join(timeout=5.0)
+        _refresh_thread = None
+        _shutdown_event = None
+
+    log.info("slo_metrics_stopped")
+
+
+def _run_refresh_loop(shutdown_event: threading.Event) -> None:
+    """Background loop that refreshes SLO metrics periodically."""
+    while not shutdown_event.is_set():
+        shutdown_event.wait(SLO_REFRESH_INTERVAL_SECONDS)
+        if not shutdown_event.is_set():
+            try:
+                _set_slo_metrics()
+            except Exception:
+                log.exception("slo_metrics_refresh_error")
+
+
+def _set_slo_metrics() -> None:
     """
-    Initialize SLO target metrics with configured values.
-
-    Call this once on application startup. The metrics are then available
-    for Prometheus queries that compare actual values against targets.
+    Set SLO target metrics with configured values.
 
     Example PromQL using these metrics:
         # Check if p99 exceeds target for any critical endpoint:

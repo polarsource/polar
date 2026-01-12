@@ -8,7 +8,8 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useCallback } from 'react'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from './ProductForm/ProductForm'
 
 export const ProductMetadataForm = () => {
@@ -22,6 +23,22 @@ export const ProductMetadataForm = () => {
     },
   })
 
+  const watchedMetadata = useWatch({ control, name: 'metadata' })
+
+  const validateUniqueKey = useCallback(
+    (value: string, index: number) => {
+      if (!value) return true
+      const duplicateIndex = watchedMetadata?.findIndex(
+        (item, i) => i !== index && item.key === value,
+      )
+      if (duplicateIndex !== undefined && duplicateIndex !== -1) {
+        return 'Duplicate key'
+      }
+      return true
+    },
+    [watchedMetadata],
+  )
+
   return (
     <FormItem className="flex flex-col gap-6">
       {fields.length > 0 && (
@@ -31,6 +48,9 @@ export const ProductMetadataForm = () => {
               <FormField
                 control={control}
                 name={`metadata.${index}.key`}
+                rules={{
+                  validate: (value: string) => validateUniqueKey(value, index),
+                }}
                 render={({ field }) => (
                   <>
                     <FormControl>

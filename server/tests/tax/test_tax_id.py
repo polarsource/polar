@@ -31,6 +31,10 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("104479084600003", "AE", ("104479084600003", TaxIDFormat.ae_trn)),
         ("104 479 084 600 003", "AE", ("104479084600003", TaxIDFormat.ae_trn)),
         ("104-479-084-600-003", "AE", ("104479084600003", TaxIDFormat.ae_trn)),
+        ("516179157", "IL", ("516179157", TaxIDFormat.il_vat)),
+        ("000000018", "IL", ("000000018", TaxIDFormat.il_vat)),
+        ("039337423", "IL", ("039337423", TaxIDFormat.il_vat)),
+        ("3933742-3", "IL", ("039337423", TaxIDFormat.il_vat)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -48,6 +52,10 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("10447908460000A", "AE"),
         ("10447908460000", "AE"),
         ("1044790846000000", "AE"),
+        ("12345678", "IL"),
+        ("1234567890", "IL"),
+        ("123456789", "IL"),
+        ("516179150", "IL"),
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

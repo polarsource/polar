@@ -299,8 +299,10 @@ class ILVATValidator(ValidatorProtocol):
     Validator for Israeli VAT Number.
 
     Israeli VAT numbers are 9-digit numbers with a Luhn check digit.
-    Unlike company numbers (ח.פ.) which must start with '5', VAT numbers
-    can have different prefixes depending on the entity type.
+    Company numbers (ח.פ.) start with '5', but self-employed individuals
+    can also register for VAT using their identity number.
+    We use stdnum.il.idnr which validates the 9-digit Luhn checksum
+    without prefix restrictions to support both cases.
     """
 
     def validate(self, number: str, country: str) -> str:

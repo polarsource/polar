@@ -1034,7 +1034,7 @@ class TestCreateBillingEntries:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(meter, Decimal(100), None)],
+            prices=[(meter, Decimal(100), None, "usd")],
         )
 
         subscription = await create_active_subscription(

@@ -473,8 +473,16 @@ async def create_missing_balance_dispute_events(
                     )
                     continue
 
-                assert tx.presentment_amount is not None
-                assert tx.presentment_currency is not None
+                presentment_amount = (
+                    tx.presentment_amount
+                    if tx.presentment_amount is not None
+                    else tx.amount
+                )
+                presentment_currency = (
+                    tx.presentment_currency
+                    if tx.presentment_currency is not None
+                    else "usd"
+                )
 
                 order_id_str = str(tx.order_id) if tx.order_id else None
                 metadata: BalanceDisputeMetadata = {
@@ -482,8 +490,8 @@ async def create_missing_balance_dispute_events(
                     "dispute_id": str(tx.dispute.id),
                     "amount": tx.amount,
                     "currency": tx.currency,
-                    "presentment_amount": tx.presentment_amount,
-                    "presentment_currency": tx.presentment_currency,
+                    "presentment_amount": presentment_amount,
+                    "presentment_currency": presentment_currency,
                     "tax_amount": tx.tax_amount,
                     "tax_country": tx.tax_country or "",
                     "tax_state": tx.tax_state or "",
@@ -606,8 +614,16 @@ async def create_missing_balance_dispute_reversal_events(
                     )
                     continue
 
-                assert tx.presentment_amount is not None
-                assert tx.presentment_currency is not None
+                presentment_amount = (
+                    tx.presentment_amount
+                    if tx.presentment_amount is not None
+                    else tx.amount
+                )
+                presentment_currency = (
+                    tx.presentment_currency
+                    if tx.presentment_currency is not None
+                    else "usd"
+                )
 
                 reversal_fee = sum(-fee.amount for fee in tx.incurred_transactions)
 
@@ -616,8 +632,8 @@ async def create_missing_balance_dispute_reversal_events(
                     "dispute_id": str(tx.dispute.id),
                     "amount": tx.amount,
                     "currency": tx.currency,
-                    "presentment_amount": tx.presentment_amount,
-                    "presentment_currency": tx.presentment_currency,
+                    "presentment_amount": presentment_amount,
+                    "presentment_currency": presentment_currency,
                     "tax_amount": tx.tax_amount,
                     "tax_country": tx.tax_country or "",
                     "tax_state": tx.tax_state or "",

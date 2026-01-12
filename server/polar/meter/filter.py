@@ -132,10 +132,16 @@ class FilterClause(BaseModel):
 
     def matches(self, event: Event) -> bool:
         if self.property == "name":
+            if not isinstance(self.value, str):
+                return False
             actual_value: Any = event.name
         elif self.property == "source":
+            if not isinstance(self.value, str):
+                return False
             actual_value = event.source
         elif self.property == "timestamp":
+            if not isinstance(self.value, int):
+                return False
             actual_value = int(event.timestamp.timestamp())
         else:
             actual_value = event.user_metadata.get(self.property)

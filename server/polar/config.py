@@ -122,6 +122,10 @@ class Settings(BaseSettings):
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
     LOGIN_CODE_LENGTH: int = 6
 
+    # Social login session
+    SOCIAL_LOGIN_SESSION_TTL: timedelta = timedelta(minutes=10)
+    SOCIAL_LOGIN_SESSION_COOKIE_KEY: str = "polar_social_login_session"
+
     # App Review bypass (for testing login flow during Apple/Google app reviews)
     APP_REVIEW_EMAIL: str | None = None
     APP_REVIEW_OTP_CODE: str | None = None

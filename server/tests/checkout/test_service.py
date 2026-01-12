@@ -319,17 +319,12 @@ async def product_custom_price_no_amounts(
 async def product_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
-    product = await create_product(
+    return await create_product(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[],
+        prices=[("seat", 1000, "usd")],
     )
-    price = await create_product_price_seat_unit(
-        save_fixture, product=product, price_per_seat=1000
-    )
-    product.prices = [price]
-    return product
 
 
 @pytest_asyncio.fixture

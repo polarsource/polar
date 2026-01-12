@@ -425,11 +425,9 @@ async def create_product(
             | ProductPriceSeatUnit
         )
         if len(price) == 1:
-            (amount,) = price
-            if amount is None:
-                product_price = await create_product_price_free(
-                    save_fixture, product=product
-                )
+            product_price = await create_product_price_free(
+                save_fixture, product=product
+            )
         elif len(price) == 2:
             amount, currency = price
             product_price = await create_product_price_fixed(
@@ -549,7 +547,7 @@ async def create_product_price_metered_unit(
 async def create_product_price_seat_unit(
     save_fixture: SaveFixture,
     *,
-    product: Product,
+    product: Product | None = None,
     price_per_seat: int = 1000,
     minimum_seats: int = 1,
     maximum_seats: int | None = None,

@@ -92,7 +92,6 @@ from tests.fixtures.random_objects import (
     create_event,
     create_meter,
     create_product,
-    create_product_price_seat_unit,
     create_subscription,
     create_subscription_with_seats,
     create_trialing_subscription,
@@ -1688,13 +1687,8 @@ class TestEnqueueBenefitsGrants:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
         )
-        await create_product_price_seat_unit(
-            save_fixture,
-            product=product,
-            price_per_seat=1000,
-        )
-        await session.refresh(product)
 
         customer = await create_customer(save_fixture, organization=organization)
         subscription = await create_subscription(

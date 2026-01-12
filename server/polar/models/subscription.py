@@ -31,7 +31,6 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.product.guard import is_metered_price
 
-from .product_price import HasPriceCurrency
 from .subscription_meter import SubscriptionMeter
 
 if TYPE_CHECKING:
@@ -376,18 +375,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if discount is not None:
             amount -= discount.get_discount_amount(amount)
         self.amount = amount
-
-        currencies = set(
-            price.product_price.price_currency
-            for price in prices
-            if isinstance(price.product_price, HasPriceCurrency)
-        )
-        if len(currencies) == 0:
-            self.currency = "usd"  # FIXME: Main Polar currency
-        elif len(currencies) == 1:
-            self.currency = currencies.pop()
-        else:
-            raise ValueError("Multiple currencies in subscription prices")
 
     def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:
         subscription_meters = self.meters or []

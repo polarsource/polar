@@ -1,40 +1,20 @@
-import glob
-import os
-import shutil
 import time
 from typing import Any
 
 import dramatiq
-import structlog
 
-from polar.config import settings
 from polar.observability import TASK_DURATION, TASK_EXECUTIONS, TASK_RETRIES
 from polar.observability.remote_write import start_remote_write_pusher
-
-log = structlog.get_logger()
 
 
 class PrometheusMiddleware(dramatiq.Middleware):
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        prometheus_dir = settings.WORKER_PROMETHEUS_DIR
-        if prometheus_dir.exists():
-            log.info("clearing_prometheus_multiproc_dir", path=str(prometheus_dir))
-            # Clean up stale .db files from crashed workers first
-            for db_file in glob.glob(str(prometheus_dir / "*.db")):
-                try:
-                    os.remove(db_file)
-                except OSError as e:
-                    log.warning(
-                        "failed_to_remove_prometheus_db_file",
-                        file=db_file,
-                        error=str(e),
-                    )
-            # Remove directory and recreate fresh
-            shutil.rmtree(prometheus_dir, ignore_errors=True)
-
-        prometheus_dir.mkdir(parents=True, exist_ok=True)
+        # Note: We intentionally don't clear the prometheus multiproc directory here.
+        # In production, each deploy is a fresh container image with no stale files.
+        # Clearing here would break Counter metrics because they eagerly create .db
+        # files during import (before this hook runs), and clearing would delete them.
         start_remote_write_pusher()
 
     def before_process_message(

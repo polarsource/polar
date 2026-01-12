@@ -59,7 +59,7 @@ class TestBackfillMeterEvents:
         )
         await save_fixture(event3)
 
-        result = await run_backfill(batch_size=10, session=session)
+        result = await run_backfill(chunk_minutes=60, session=session)
 
         meter_events_count = (
             await session.execute(
@@ -100,7 +100,7 @@ class TestBackfillMeterEvents:
         )
         await save_fixture(event)
 
-        await run_backfill(batch_size=10, session=session)
+        await run_backfill(chunk_minutes=60, session=session)
         first_count = (
             await session.execute(
                 select(func.count())
@@ -109,7 +109,7 @@ class TestBackfillMeterEvents:
             )
         ).scalar_one()
 
-        await run_backfill(batch_size=10, session=session)
+        await run_backfill(chunk_minutes=60, session=session)
         second_count = (
             await session.execute(
                 select(func.count())
@@ -160,7 +160,7 @@ class TestBackfillMeterEvents:
         )
         await save_fixture(invalid_event)
 
-        await run_backfill(batch_size=10, session=session)
+        await run_backfill(chunk_minutes=60, session=session)
 
         meter_events_count = (
             await session.execute(

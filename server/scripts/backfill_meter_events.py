@@ -2,22 +2,22 @@ import asyncio
 import datetime
 import logging.config
 import uuid
+from collections.abc import Iterator
 from functools import wraps
 from typing import Any
 
 import structlog
 import typer
 from rich.progress import Progress
-from sqlalchemy import and_, or_, select
+from sqlalchemy import CursorResult, literal, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.config import settings
-from polar.event.system import SystemEvent
+from polar.event.repository import EventRepository
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.meter.repository import MeterRepository
 from polar.models import Event, Meter, MeterEvent
-from polar.models.event import EventSource
 
 cli = typer.Typer()
 
@@ -30,32 +30,56 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-INSERT_CHUNK_SIZE = 1000
+DEFAULT_CHUNK_MINUTES = 10
 
 
-def _event_matches_meter(event: Event, meter: Meter) -> bool:
-    if (
-        event.source == EventSource.system
-        and event.name in (SystemEvent.meter_credited, SystemEvent.meter_reset)
-        and event.user_metadata.get("meter_id") == str(meter.id)
-    ):
-        return True
+async def get_org_timestamp_range(
+    session: AsyncSession, org_id: uuid.UUID
+) -> tuple[datetime.datetime, datetime.datetime] | None:
+    min_result = await session.execute(
+        select(Event.timestamp)
+        .where(Event.organization_id == org_id)
+        .order_by(Event.timestamp.asc())
+        .limit(1)
+    )
+    min_ts = min_result.scalar_one_or_none()
 
-    return meter.filter.matches(event) and meter.aggregation.matches(event)
+    max_result = await session.execute(
+        select(Event.timestamp)
+        .where(Event.organization_id == org_id)
+        .order_by(Event.timestamp.desc())
+        .limit(1)
+    )
+    max_ts = max_result.scalar_one_or_none()
+
+    if min_ts and max_ts:
+        return min_ts, max_ts
+    return None
+
+
+def generate_time_chunks(
+    start: datetime.datetime,
+    end: datetime.datetime,
+    chunk_minutes: int,
+) -> Iterator[tuple[datetime.datetime, datetime.datetime]]:
+    chunk_duration = datetime.timedelta(minutes=chunk_minutes)
+    current = start
+    while current <= end:
+        chunk_end = current + chunk_duration
+        yield current, chunk_end
+        current = chunk_end
 
 
 async def run_backfill(
-    batch_size: int = 2000,
+    chunk_minutes: int = DEFAULT_CHUNK_MINUTES,
     session: AsyncSession | None = None,
-    resume_org_id: uuid.UUID | None = None,
-    resume_timestamp: datetime.datetime | None = None,
-    resume_event_id: uuid.UUID | None = None,
+    resume_meter_id: uuid.UUID | None = None,
 ) -> dict[str, int]:
     """
     Backfill meter_events table for all meters.
 
-    Scans events by organization using cursor-based pagination (fast primary key scan),
-    checks meter matching in Python, and uses on_conflict_do_nothing for idempotency.
+    Uses time-based chunking with SQL filtering for efficient processing of large event sets.
+    Each chunk processes a bounded time window, ensuring queries complete within timeout.
     """
     engine = None
     own_session = False
@@ -77,6 +101,7 @@ async def run_backfill(
 
     try:
         meter_repository = MeterRepository.from_session(session)
+        event_repository = EventRepository.from_session(session)
 
         meters = await meter_repository.get_all(meter_repository.get_base_statement())
 
@@ -92,94 +117,96 @@ async def run_backfill(
             f"Found {len(meters)} meters across {len(meters_by_org)} organizations"
         )
 
-        found_resume_org = resume_org_id is None
+        found_resume_meter = resume_meter_id is None
+        org_ts_ranges: dict[uuid.UUID, tuple[datetime.datetime, datetime.datetime]] = {}
 
         with Progress() as progress:
-            task = progress.add_task("[cyan]Backfilling meter events...", total=None)
+            task = progress.add_task(
+                "[cyan]Backfilling meter events...", total=len(meters)
+            )
 
-            for org_id, org_meters in meters_by_org.items():
-                if not found_resume_org:
-                    if org_id == resume_org_id:
-                        found_resume_org = True
-                        last_timestamp = resume_timestamp
-                        last_event_id = resume_event_id
-                        org_inserted = 0
+            for meter_idx, meter in enumerate(meters):
+                if not found_resume_meter:
+                    if meter.id == resume_meter_id:
+                        found_resume_meter = True
                     else:
+                        progress.update(task, advance=1)
                         continue
-                else:
-                    last_timestamp = None
-                    last_event_id = None
-                    org_inserted = 0
 
-                meter_names = ", ".join(m.name for m in org_meters[:3])
-                if len(org_meters) > 3:
-                    meter_names += f" (+{len(org_meters) - 3} more)"
-
-                progress.update(task, description=f"[cyan]Org {org_id}: {meter_names}")
-
-                while True:
-                    statement = (
-                        select(Event)
-                        .where(Event.organization_id == org_id)
-                        .order_by(Event.timestamp.desc(), Event.id.desc())
-                        .limit(batch_size)
+                if meter.organization_id not in org_ts_ranges:
+                    ts_range = await get_org_timestamp_range(
+                        session, meter.organization_id
                     )
-                    if last_timestamp is not None and last_event_id is not None:
-                        statement = statement.where(
-                            or_(
-                                Event.timestamp < last_timestamp,
-                                and_(
-                                    Event.timestamp == last_timestamp,
-                                    Event.id < last_event_id,
-                                ),
-                            )
-                        )
+                    if ts_range:
+                        org_ts_ranges[meter.organization_id] = ts_range
 
-                    result = await session.execute(statement)
-                    events = list(result.scalars().all())
+                ts_range = org_ts_ranges.get(meter.organization_id)
+                if not ts_range:
+                    progress.update(task, advance=1)
+                    continue
 
-                    if not events:
-                        break
+                min_ts, max_ts = ts_range
+                meter_clause = event_repository.get_meter_clause(meter)
+                system_clause = event_repository.get_meter_system_clause(meter)
+                meter_inserted = 0
 
-                    last_timestamp = events[-1].timestamp
-                    last_event_id = events[-1].id
-
-                    meter_event_rows = []
-                    for event in events:
-                        for meter in org_meters:
-                            if _event_matches_meter(event, meter):
-                                meter_event_rows.append(
-                                    {
-                                        "meter_id": meter.id,
-                                        "event_id": event.id,
-                                        "customer_id": event.customer_id,
-                                        "external_customer_id": event.external_customer_id,
-                                        "organization_id": event.organization_id,
-                                        "ingested_at": event.ingested_at,
-                                        "timestamp": event.timestamp,
-                                    }
-                                )
-
-                    if meter_event_rows:
-                        for i in range(0, len(meter_event_rows), INSERT_CHUNK_SIZE):
-                            chunk = meter_event_rows[i : i + INSERT_CHUNK_SIZE]
-                            await session.execute(
-                                insert(MeterEvent)
-                                .values(chunk)
-                                .on_conflict_do_nothing()
-                            )
-                        await session.commit()
-                        org_inserted += len(meter_event_rows)
-                        total_inserted += len(meter_event_rows)
-
+                for chunk_start, chunk_end in generate_time_chunks(
+                    min_ts, max_ts, chunk_minutes
+                ):
                     progress.update(
                         task,
-                        description=f"[cyan]Org {org_id}: {org_inserted} meter_events",
+                        description=(
+                            f"[cyan]Meter {meter_idx + 1}/{len(meters)}: {meter.name} "
+                            f"({chunk_start.date()})"
+                        ),
                     )
+
+                    insert_stmt = (
+                        insert(MeterEvent)
+                        .from_select(
+                            [
+                                "meter_id",
+                                "event_id",
+                                "customer_id",
+                                "external_customer_id",
+                                "organization_id",
+                                "ingested_at",
+                                "timestamp",
+                            ],
+                            select(
+                                literal(meter.id).label("meter_id"),
+                                Event.id,
+                                Event.customer_id,
+                                Event.external_customer_id,
+                                Event.organization_id,
+                                Event.ingested_at,
+                                Event.timestamp,
+                            ).where(
+                                Event.organization_id == meter.organization_id,
+                                Event.timestamp >= chunk_start,
+                                Event.timestamp < chunk_end,
+                                or_(meter_clause, system_clause),
+                            ),
+                        )
+                        .on_conflict_do_nothing()
+                    )
+
+                    cursor_result = await session.execute(insert_stmt)
+                    await session.commit()
+                    assert isinstance(cursor_result, CursorResult)
+                    inserted_count = (
+                        cursor_result.rowcount if cursor_result.rowcount >= 0 else 0
+                    )
+                    meter_inserted += inserted_count
+                    total_inserted += inserted_count
 
                 progress.update(
                     task,
-                    description=f"[green]Org {org_id}: {org_inserted} meter_events [done]",
+                    description=(
+                        f"[green]Meter {meter_idx + 1}/{len(meters)}: {meter.name} "
+                        f"({meter_inserted} inserted)"
+                    ),
+                    advance=1,
                 )
 
         typer.echo(f"\nTotal meter_events inserted: {total_inserted}")
@@ -199,15 +226,17 @@ def drop_all(*args: Any, **kwargs: Any) -> Any:
 @cli.command()
 @typer_async
 async def backfill_meter_events(
-    batch_size: int = typer.Option(2000, help="Number of events to process per batch"),
-    resume_org_id: str = typer.Option(None, help="Organization ID to resume from"),
-    resume_timestamp: str = typer.Option(
-        None, help="Timestamp to resume from (ISO format)"
+    chunk_minutes: int = typer.Option(
+        DEFAULT_CHUNK_MINUTES,
+        help="Size of time chunks in minutes (smaller = slower but safer for high-volume orgs)",
     ),
-    resume_event_id: str = typer.Option(None, help="Event ID to resume from"),
+    resume_meter_id: str = typer.Option(None, help="Meter ID to resume from"),
 ) -> None:
     """
     Backfill meter_events table for all meters.
+
+    Uses time-based chunking to process events in bounded windows,
+    ensuring queries complete within timeout even for high-volume organizations.
     """
     structlog.configure(processors=[drop_all])
     logging.config.dictConfig(
@@ -217,17 +246,11 @@ async def backfill_meter_events(
         }
     )
 
-    parsed_org_id = uuid.UUID(resume_org_id) if resume_org_id else None
-    parsed_timestamp = (
-        datetime.datetime.fromisoformat(resume_timestamp) if resume_timestamp else None
-    )
-    parsed_event_id = uuid.UUID(resume_event_id) if resume_event_id else None
+    parsed_meter_id = uuid.UUID(resume_meter_id) if resume_meter_id else None
 
     await run_backfill(
-        batch_size=batch_size,
-        resume_org_id=parsed_org_id,
-        resume_timestamp=parsed_timestamp,
-        resume_event_id=parsed_event_id,
+        chunk_minutes=chunk_minutes,
+        resume_meter_id=parsed_meter_id,
     )
 
 

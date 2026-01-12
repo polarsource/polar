@@ -76,6 +76,10 @@ from polar.models.discount import DiscountDuration
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.observability.checkout_metrics import (
+    CHECKOUT_CREATED_TOTAL,
+    CHECKOUT_SUCCEEDED_TOTAL,
+)
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -1204,6 +1208,8 @@ class CheckoutService:
 
         await self._after_checkout_updated(session, checkout)
 
+        CHECKOUT_SUCCEEDED_TOTAL.inc()
+
         return checkout
 
     async def handle_failure(
@@ -2183,6 +2189,8 @@ class CheckoutService:
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
+        CHECKOUT_CREATED_TOTAL.inc()
+
         metadata = CheckoutCreatedMetadata(
             checkout_id=str(checkout.id),
             checkout_status=checkout.status,

@@ -1,3 +1,7 @@
+from polar.observability.checkout_metrics import (
+    CHECKOUT_CREATED_TOTAL,
+    CHECKOUT_SUCCEEDED_TOTAL,
+)
 from polar.observability.http_metrics import (
     HTTP_REQUEST_DURATION_SECONDS,
     HTTP_REQUEST_TOTAL,
@@ -10,6 +14,9 @@ from polar.observability.metrics import (
 )
 
 __all__ = [
+    # Checkout metrics (anomaly detection)
+    "CHECKOUT_CREATED_TOTAL",
+    "CHECKOUT_SUCCEEDED_TOTAL",
     # HTTP metrics (API server)
     "HTTP_REQUEST_DURATION_SECONDS",
     "HTTP_REQUEST_TOTAL",

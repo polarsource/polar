@@ -1239,7 +1239,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "100 * (1 - (sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\"}[5m])))",
+          "expr": "100 * (1 - (sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\", status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])))",
           "legendFormat": "Availability",
           "refId": "A"
         }
@@ -1328,7 +1328,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.50, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
@@ -1337,7 +1337,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
@@ -1346,7 +1346,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.99, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(polar_http_request_duration_seconds_bucket{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -1435,7 +1435,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\"}[5m])) by (method)",
+          "expr": "sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])) by (method)",
           "legendFormat": "{{method}}",
           "refId": "A"
         }
@@ -1555,7 +1555,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\"}[5m])) by (status_code)",
+          "expr": "sum(rate(polar_http_request_total{env=\"$env\", endpoint=~\"$endpoint\", method=~\"$method\"}[5m])) by (status_code)",
           "legendFormat": "{{status_code}}",
           "refId": "A"
         }

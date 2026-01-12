@@ -86,7 +86,7 @@ from polar.product.guard import (
     is_free_price,
     is_static_price,
 )
-from polar.product.price_set import NoPricesForCurrency, PriceSet
+from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.tax.calculation import get_tax_service
@@ -405,7 +405,7 @@ class SubscriptionService:
             )
         elif (
             default_price := PriceSet.from_product(
-                product.organization.default_presentment_currency, product
+                product, product.organization.default_presentment_currency
             ).get_default_price()
         ) and not is_free_price(default_price):
             errors.append(
@@ -459,7 +459,7 @@ class SubscriptionService:
         recurring_interval_count = product.recurring_interval_count
 
         currency = product.organization.default_presentment_currency
-        currency_prices = PriceSet.from_product(currency, product)
+        currency_prices = PriceSet.from_product(product, currency)
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in currency_prices:
             subscription_product_prices.append(
@@ -522,7 +522,7 @@ class SubscriptionService:
             raise MissingCheckoutCustomer(checkout)
 
         currency = checkout.currency
-        currency_prices = PriceSet.from_prices(currency, checkout.prices[product.id])
+        currency_prices = PriceSet.from_prices(checkout.prices[product.id], currency)
         recurring_interval: SubscriptionRecurringInterval
         recurring_interval_count: int
         if product.is_legacy_recurring_price:
@@ -984,8 +984,8 @@ class SubscriptionService:
         assert product.recurring_interval is not None
 
         try:
-            currency_prices = PriceSet.from_product(subscription.currency, product)
-        except NoPricesForCurrency as e:
+            currency_prices = PriceSet.from_product(product, subscription.currency)
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {

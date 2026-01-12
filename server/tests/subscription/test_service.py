@@ -733,7 +733,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.status == SubscriptionStatus.active
 
         currency_prices = PriceSet.from_prices(
-            "eur", product_recurring_multiple_currencies.prices
+            product_recurring_multiple_currencies.prices, "eur"
         )
 
         assert len(subscription.prices) == len(currency_prices)

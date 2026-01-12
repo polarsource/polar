@@ -632,7 +632,7 @@ class TestCreateFromCheckoutOneTime:
         assert order.currency == "eur"
 
         currency_prices = PriceSet.from_product(
-            "eur", product_one_time_multiple_currencies
+            product_one_time_multiple_currencies, "eur"
         )
         assert len(order.items) == len(currency_prices.prices)
 

@@ -1205,37 +1205,48 @@ class TestCreate:
         AuthSubjectFixture(subject="organization"),
     )
     @pytest.mark.parametrize(
-        ("ip_country", "expected_currency"),
-        [(None, "usd"), ("FR", "eur"), ("CN", "usd")],
+        ("ip_country", "product_currencies", "expected_currency"),
+        [
+            (None, ["usd", "eur"], "usd"),
+            ("FR", ["usd", "eur"], "eur"),
+            ("FR", ["usd"], "usd"),
+            ("CN", ["usd", "eur"], "usd"),
+        ],
     )
     async def test_multi_currencies_auto(
         self,
         ip_country: str | None,
+        product_currencies: list[str],
         expected_currency: str,
+        save_fixture: SaveFixture,
         mocker: MockerFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        product_one_time_multiple_currencies: Product,
+        organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, currency) for currency in product_currencies],
+        )
         mocker.patch.object(
             checkout_service, "_get_ip_country", return_value=ip_country
         )
 
         checkout = await checkout_service.create(
             session,
-            CheckoutProductCreate(
-                product_id=product_one_time_multiple_currencies.id,
-            ),
+            CheckoutProductsCreate(products=[product.id]),
             auth_subject,
         )
 
-        assert checkout.product == product_one_time_multiple_currencies
+        assert checkout.product == product
         price = checkout.product_price
         assert price is not None
         assert is_currency_price(price)
         assert price.price_currency == expected_currency
-        assert checkout.products == [product_one_time_multiple_currencies]
+        assert checkout.products == [product]
         assert checkout.currency == expected_currency
 
     @pytest.mark.auth(
@@ -2494,36 +2505,48 @@ class TestCheckoutLinkCreate:
         assert "invalid_field" not in checkout.custom_field_data
 
     @pytest.mark.parametrize(
-        ("ip_country", "expected_currency"),
-        [(None, "usd"), ("FR", "eur"), ("CN", "usd")],
+        ("ip_country", "product_currencies", "expected_currency"),
+        [
+            (None, ["usd", "eur"], "usd"),
+            ("FR", ["usd", "eur"], "eur"),
+            ("FR", ["usd"], "usd"),
+            ("CN", ["usd", "eur"], "usd"),
+        ],
     )
     async def test_multi_currencies_auto(
         self,
         ip_country: str | None,
+        product_currencies: list[str],
         expected_currency: str,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        product_one_time_multiple_currencies: Product,
+        organization: Organization,
     ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, currency) for currency in product_currencies],
+        )
         mocker.patch.object(
             checkout_service, "_get_ip_country", return_value=ip_country
         )
 
         checkout_link = await create_checkout_link(
             save_fixture,
-            products=[product_one_time_multiple_currencies],
+            products=[product],
             success_url="https://example.com/success",
             user_metadata={"key": "value"},
         )
         checkout = await checkout_service.checkout_link_create(session, checkout_link)
 
-        assert checkout.product == product_one_time_multiple_currencies
+        assert checkout.product == product
         price = checkout.product_price
         assert price is not None
         assert is_currency_price(price)
         assert price.price_currency == expected_currency
-        assert checkout.products == [product_one_time_multiple_currencies]
+        assert checkout.products == [product]
         assert checkout.currency == expected_currency
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}

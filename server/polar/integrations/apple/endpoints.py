@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 from fastapi import Depends, Form, Request
@@ -12,7 +11,7 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
 from polar.config import settings
-from polar.exceptions import PolarRedirectionError
+from polar.exceptions import NotPermitted, PolarRedirectionError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
@@ -35,6 +34,36 @@ router = APIRouter(
 )
 
 
+def set_login_cookie(
+    request: Request, response: RedirectResponse, encoded_state: str
+) -> None:
+    is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
+    secure = False if is_localhost else True
+    response.set_cookie(
+        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
+        value=encoded_state,
+        max_age=int(settings.SOCIAL_LOGIN_SESSION_TTL.total_seconds()),
+        path="/",
+        secure=secure,
+        httponly=True,
+        samesite="none",  # Required since Apple uses form post which is cross-site
+    )
+
+
+def clear_login_cookie(request: Request, response: RedirectResponse) -> None:
+    is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
+    secure = False if is_localhost else True
+    response.set_cookie(
+        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
+        value="",
+        max_age=0,
+        path="/",
+        secure=secure,
+        httponly=True,
+        samesite="none",  # Required since Apple uses form post which is cross-site
+    )
+
+
 @router.get("/authorize", name="integrations.apple.authorize")
 async def apple_authorize(
     request: Request,
@@ -42,15 +71,12 @@ async def apple_authorize(
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
 ) -> RedirectResponse:
-    state: dict[str, Any] = {}
+    if is_user(auth_subject):
+        raise NotPermitted()
 
-    state["return_to"] = return_to
-
+    state: dict[str, Any] = {"return_to": return_to}
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
-
-    if is_user(auth_subject):
-        state["user_id"] = str(auth_subject.subject.id)
 
     encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="apple_oauth")
     redirect_uri = str(request.url_for("integrations.apple.callback"))
@@ -60,7 +86,9 @@ async def apple_authorize(
         state=encoded_state,
         extras_params={"response_mode": "form_post"},
     )
-    return RedirectResponse(authorization_url, 303)
+    response = RedirectResponse(authorization_url, 303)
+    set_login_cookie(request, response, encoded_state)
+    return response
 
 
 @router.post("/callback", name="integrations.apple.callback")
@@ -73,6 +101,9 @@ async def apple_callback(
     error: str | None = Form(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    if is_user(auth_subject):
+        raise NotPermitted()
+
     if code is None or error is not None:
         raise OAuth2AuthorizeCallbackError(
             status_code=400,
@@ -95,8 +126,13 @@ async def apple_callback(
     error_description = token_data.get("error_description")
     if error_description:
         raise OAuthCallbackError(error_description)
+
     if not state:
         raise OAuthCallbackError("No state")
+
+    session_cookie = request.cookies.get(settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY)
+    if session_cookie is None or session_cookie != state:
+        raise OAuthCallbackError("Invalid session cookie")
 
     try:
         state_data = jwt.decode(token=state, secret=settings.SECRET, type="apple_oauth")
@@ -104,7 +140,6 @@ async def apple_callback(
         raise OAuthCallbackError("Invalid state") from e
 
     return_to = state_data.get("return_to", None)
-    state_user_id = state_data.get("user_id")
 
     state_signup_attribution = state_data.get("signup_attribution")
     if state_signup_attribution:
@@ -113,25 +148,14 @@ async def apple_callback(
         )
 
     try:
-        if (
-            is_user(auth_subject)
-            and state_user_id is not None
-            and auth_subject.subject.id == uuid.UUID(state_user_id)
-        ):
-            is_signup = False
-            user = await apple_service.link_user(
-                session, user=auth_subject.subject, token=token_data
-            )
-        else:
-            user, is_signup = await apple_service.get_updated_or_create(
-                session,
-                token=token_data,
-                signup_attribution=state_signup_attribution,
-            )
+        user, is_signup = await apple_service.get_updated_or_create(
+            session,
+            token=token_data,
+            signup_attribution=state_signup_attribution,
+        )
     except AppleServiceError as e:
         raise OAuthCallbackError(e.message, e.status_code, return_to=return_to) from e
 
-    # Event tracking last to ensure business critical data is stored first
     if is_signup:
         posthog.user_signup(user, "apple")
         await loops_service.user_signup(user)
@@ -139,6 +163,8 @@ async def apple_callback(
         posthog.user_login(user, "apple")
         await loops_service.user_update(session, user)
 
-    return await auth_service.get_login_response(
+    response = await auth_service.get_login_response(
         session, request, user, return_to=return_to
     )
+    clear_login_cookie(request, response)
+    return response

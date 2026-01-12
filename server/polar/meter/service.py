@@ -491,6 +491,11 @@ class MeterService:
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
+            logfire.info(
+                "OLD filter values",
+                last_billed_event_id=str(last_billed_event.id),
+                last_billed_event_ingested_at=str(last_billed_event.ingested_at),
+            )
             statement = statement.where(
                 Event.ingested_at > last_billed_event.ingested_at
             )
@@ -566,6 +571,12 @@ class MeterService:
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
+            logfire.info(
+                "NEW filter values",
+                last_billed_event_id=str(last_billed_event.id),
+                last_billed_event_ingested_at=str(last_billed_event.ingested_at),
+                cutoff_time=str(cutoff_time),
+            )
             statement = statement.where(
                 MeterEvent.ingested_at > last_billed_event.ingested_at
             )

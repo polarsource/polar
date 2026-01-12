@@ -16,9 +16,9 @@ export const getGitHubAuthorizeURL = (
   return `${getPublicServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
 
-export const getGoogleAuthorizeURL = (
+export const getGoogleAuthorizeLoginURL = (
   params: NonNullable<
-    operations['integrations_google:integrations.google.authorize']['parameters']['query']
+    operations['integrations_google:integrations_google_login:integrations.google.login.authorize']['parameters']['query']
   >,
 ): string => {
   const searchParams = new URLSearchParams()
@@ -28,7 +28,19 @@ export const getGoogleAuthorizeURL = (
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
   }
-  return `${getPublicServerURL()}/v1/integrations/google/authorize?${searchParams}`
+  return `${getPublicServerURL()}/v1/integrations/google/login/authorize?${searchParams}`
+}
+
+export const getGoogleAuthorizeLinkURL = (
+  params: NonNullable<
+    operations['integrations_google:integrations_google_link:integrations.google.link.authorize']['parameters']['query']
+  >,
+): string => {
+  const searchParams = new URLSearchParams()
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
+  }
+  return `${getPublicServerURL()}/v1/integrations/google/link/authorize?${searchParams}`
 }
 
 export const getAppleAuthorizeURL = (

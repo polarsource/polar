@@ -6,7 +6,7 @@ import {
   useGitHubAccount,
   useGoogleAccount,
 } from '@/hooks'
-import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
+import { getGitHubAuthorizeURL, getGoogleAuthorizeLinkURL } from '@/utils/auth'
 import AlternateEmailOutlined from '@mui/icons-material/AlternateEmailOutlined'
 import GitHub from '@mui/icons-material/GitHub'
 import Google from '@mui/icons-material/Google'
@@ -115,7 +115,7 @@ const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
   onDisconnect,
   isDisconnecting,
 }) => {
-  const authorizeURL = getGoogleAuthorizeURL({ return_to: returnTo })
+  const authorizeURL = getGoogleAuthorizeLinkURL({ return_to: returnTo })
 
   return (
     <AuthenticationMethod

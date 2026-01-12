@@ -141,7 +141,7 @@ class AuthService:
     def _set_user_session_cookie(
         self, request: Request, response: R, value: str, expires: int | datetime
     ) -> R:
-        is_localhost = request.url.hostname in ["127.0.0.1", "localhost"]
+        is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
         secure = False if is_localhost else True
         response.set_cookie(
             settings.USER_SESSION_COOKIE_KEY,

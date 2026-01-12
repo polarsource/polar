@@ -1,6 +1,6 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
@@ -9,7 +9,7 @@ from sqlalchemy.orm import InstanceState
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.event.system import CustomerUpdatedFields, SystemEvent
-from polar.kit.address import Address, AddressDict
+from polar.kit.address import Address
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -105,10 +105,10 @@ class CustomerRepository(
             if changed:
                 if value is None:
                     updated_fields["billing_address"] = None
-                elif isinstance(value, Address):
-                    updated_fields["billing_address"] = value.to_dict()
                 else:
-                    updated_fields["billing_address"] = cast(AddressDict, value)
+                    updated_fields["billing_address"] = Address.model_validate(
+                        value
+                    ).to_dict()
 
             changed, value = _get_changed_value(inspection, "tax_id")
             if changed:

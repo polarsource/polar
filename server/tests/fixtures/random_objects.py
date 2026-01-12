@@ -110,6 +110,8 @@ from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.product.guard import is_currency_price
+from polar.product.price_set import PriceSet
 from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
@@ -356,24 +358,24 @@ async def create_custom_field(
 
 
 type PriceFixtureType = (
-    tuple[int]
-    | tuple[int | None, int | None, int | None]
+    tuple[int, str]
+    | tuple[int | None, int | None, int | None, str]
     | tuple[None]
-    | tuple[Meter, Decimal, int | None]
-    | tuple[Literal["seat"], int]
+    | tuple[Meter, Decimal, int | None, str]
+    | tuple[Literal["seat"], int, str]
 )
 
 
 def _is_metered_price_fixture_type(
     price: PriceFixtureType,
-) -> TypeIs[tuple[Meter, Decimal, int | None]]:
+) -> TypeIs[tuple[Meter, Decimal, int | None, str]]:
     return isinstance(price[0], Meter)
 
 
 def _is_seat_price_fixture_type(
     price: PriceFixtureType,
-) -> TypeIs[tuple[Literal["seat"], int]]:
-    return len(price) == 2 and price[0] == "seat"
+) -> TypeIs[tuple[Literal["seat"], int, str]]:
+    return len(price) == 3 and price[0] == "seat"
 
 
 async def create_product(
@@ -384,7 +386,7 @@ async def create_product(
     recurring_interval_count: int | None = 1,
     name: str = "Product",
     is_archived: bool = False,
-    prices: Sequence[PriceFixtureType] = [(1000,)],
+    prices: Sequence[PriceFixtureType] = [(1000, "usd")],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
@@ -423,36 +425,38 @@ async def create_product(
             | ProductPriceSeatUnit
         )
         if len(price) == 1:
-            (amount,) = price
-            if amount is None:
-                product_price = await create_product_price_free(
-                    save_fixture, product=product
-                )
-            else:
-                product_price = await create_product_price_fixed(
-                    save_fixture, product=product, amount=amount
-                )
+            product_price = await create_product_price_free(
+                save_fixture, product=product
+            )
+        elif len(price) == 2:
+            amount, currency = price
+            product_price = await create_product_price_fixed(
+                save_fixture, product=product, amount=amount, currency=currency
+            )
         elif _is_metered_price_fixture_type(price):
-            meter, unit_amount, cap_amount = price
+            meter, unit_amount, cap_amount, currency = price
             product_price = await create_product_price_metered_unit(
                 save_fixture,
                 product=product,
                 meter=meter,
                 unit_amount=unit_amount,
                 cap_amount=cap_amount,
+                currency=currency,
             )
         elif _is_seat_price_fixture_type(price):
-            _, price_per_seat = price
+            _, price_per_seat, currency = price
             product_price = await create_product_price_seat_unit(
                 save_fixture,
                 product=product,
                 price_per_seat=price_per_seat,
+                currency=currency,
             )
         else:
             (
                 minimum_amount,
                 maximum_amount,
                 preset_amount,
+                currency,
             ) = price
             product_price = await create_product_price_custom(
                 save_fixture,
@@ -460,6 +464,7 @@ async def create_product(
                 minimum_amount=minimum_amount,
                 maximum_amount=maximum_amount,
                 preset_amount=preset_amount,
+                currency=currency,
             )
 
         product.prices.append(product_price)
@@ -473,11 +478,12 @@ async def create_product_price_fixed(
     *,
     product: Product,
     amount: int = 1000,
+    currency: str = "usd",
     is_archived: bool = False,
 ) -> ProductPriceFixed:
     price = ProductPriceFixed(
         price_amount=amount,
-        price_currency="usd",
+        price_currency=currency,
         product=product,
         is_archived=is_archived,
     )
@@ -492,9 +498,10 @@ async def create_product_price_custom(
     minimum_amount: int | None = None,
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
+    currency: str = "usd",
 ) -> ProductPriceCustom:
     price = ProductPriceCustom(
-        price_currency="usd",
+        price_currency=currency,
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         preset_amount=preset_amount,
@@ -523,9 +530,10 @@ async def create_product_price_metered_unit(
     meter: Meter,
     unit_amount: Decimal = Decimal(100),
     cap_amount: int | None = None,
+    currency: str = "usd",
 ) -> ProductPriceMeteredUnit:
     price = ProductPriceMeteredUnit(
-        price_currency="usd",
+        price_currency=currency,
         unit_amount=unit_amount,
         cap_amount=cap_amount,
         meter=meter,
@@ -539,10 +547,11 @@ async def create_product_price_metered_unit(
 async def create_product_price_seat_unit(
     save_fixture: SaveFixture,
     *,
-    product: Product,
+    product: Product | None = None,
     price_per_seat: int = 1000,
     minimum_seats: int = 1,
     maximum_seats: int | None = None,
+    currency: str = "usd",
 ) -> ProductPriceSeatUnit:
     """Create a seat-based price with a single tier.
 
@@ -562,7 +571,7 @@ async def create_product_price_seat_unit(
     }
 
     price = ProductPriceSeatUnit(
-        price_currency="usd",
+        price_currency=currency,
         seat_tiers=seat_tiers,
         product=product,
     )
@@ -646,6 +655,8 @@ async def create_legacy_recurring_product_price(
             product=product,
             is_archived=False,
         )
+    else:
+        raise ValueError("Invalid amount_type")
 
     product_price.type = ProductPriceType.recurring
     product_price.recurring_interval = recurring_interval
@@ -969,6 +980,7 @@ async def create_subscription(
     *,
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
+    currency: str = "usd",
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
@@ -988,7 +1000,8 @@ async def create_subscription(
     seats: int | None = None,
     past_due_at: datetime | None = None,
 ) -> Subscription:
-    prices = prices or product.prices
+    currency_prices = PriceSet.from_product(currency, product)
+    prices = prices or currency_prices.prices
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
@@ -1039,6 +1052,7 @@ async def create_subscription(
         subscription_product_prices=[
             SubscriptionProductPrice.from_price(price, seats=seats) for price in prices
         ],
+        currency=currency,
         discount=discount,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
@@ -1098,6 +1112,7 @@ async def create_active_subscription(
     *,
     product: Product,
     prices: Sequence[ProductPrice] | None = None,
+    currency: str = "usd",
     customer: Customer,
     payment_method: PaymentMethod | None = None,
     tax_exempted: bool = False,
@@ -1114,6 +1129,7 @@ async def create_active_subscription(
         save_fixture,
         product=product,
         prices=prices,
+        currency=currency,
         customer=customer,
         tax_exempted=tax_exempted,
         discount=discount,
@@ -1178,7 +1194,7 @@ async def product_one_time_custom_price(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(None, None, None)],
+        prices=[(None, None, None, "usd")],
     )
 
 
@@ -1195,6 +1211,18 @@ async def product_one_time_free_price(
 
 
 @pytest_asyncio.fixture
+async def product_one_time_multiple_currencies(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(1000, "usd"), (900, "eur"), (800, "gbp")],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_recurring_custom_price(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1202,7 +1230,7 @@ async def product_recurring_custom_price(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(None, None, None)],
+        prices=[(None, None, None, "usd")],
     )
 
 
@@ -1259,7 +1287,7 @@ async def product_recurring_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None)],
+        prices=[(meter, Decimal(100), None, "usd")],
     )
 
 
@@ -1271,7 +1299,7 @@ async def product_recurring_fixed_and_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, Decimal(100), None), (2000,)],
+        prices=[(meter, Decimal(100), None, "usd"), (2000, "usd")],
     )
 
 
@@ -1301,6 +1329,18 @@ async def product_recurring_every_second_month(
 
 
 @pytest_asyncio.fixture
+async def product_recurring_multiple_currencies(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(1000, "usd"), (900, "eur"), (800, "gbp")],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1308,7 +1348,7 @@ async def product_second(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(2000,)],
+        prices=[(2000, "usd")],
     )
 
 
@@ -1359,21 +1399,22 @@ async def create_checkout(
     customer_billing_address: Address | None = None,
 ) -> Checkout:
     product = product or products[0]
-    price = price or product.prices[0]
+    currency = currency or product.organization.default_presentment_currency
+    currency_prices = PriceSet.from_product(currency, product)
+
+    price = price or currency_prices.get_default_price()
+    if is_currency_price(price) and price.price_currency != currency:
+        raise ValueError("Price currency does not match checkout currency")
 
     if isinstance(price, ProductPriceFixed):
         amount = price.price_amount
-        currency = price.price_currency
     elif isinstance(price, ProductPriceCustom):
         amount = amount or 10_00
-        currency = price.price_currency
     elif isinstance(price, ProductPriceSeatUnit):
         seat_count = seats or 1
         amount = price.calculate_amount(seat_count)
-        currency = price.price_currency
     else:
         amount = 0
-        currency = "usd"
 
     trial_end: datetime | None = None
     if trial_interval is not None and trial_interval_count is not None:

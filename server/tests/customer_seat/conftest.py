@@ -21,6 +21,7 @@ from tests.fixtures.random_objects import (
     create_customer_seat,
     create_order_with_seats,
     create_product,
+    create_product_price_seat_unit,
     create_subscription_with_seats,
 )
 
@@ -47,7 +48,12 @@ async def subscription_with_seats(
         save_fixture,
         organization=seat_enabled_organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[("seat", 1000, "usd")],
+        prices=[],  # Empty prices, we'll add seat-based price manually
+    )
+
+    # Add seat-based pricing to the product
+    await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000
     )
 
     return await create_subscription_with_seats(
@@ -123,7 +129,11 @@ async def order_with_seats(
         save_fixture,
         organization=seat_enabled_organization,
         recurring_interval=None,  # One-time purchase
-        prices=[("seat", 1000, "usd")],
+        prices=[],
+    )
+
+    await create_product_price_seat_unit(
+        save_fixture, product=product, price_per_seat=1000
     )
 
     order = await create_order_with_seats(

@@ -14,6 +14,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order_with_seats,
     create_product,
+    create_product_price_seat_unit,
     create_subscription_with_seats,
 )
 
@@ -50,8 +51,9 @@ class TestListSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription for a different customer
         subscription = await create_subscription_with_seats(
@@ -87,8 +89,9 @@ class TestListSeats:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription
         subscription = await create_subscription_with_seats(
@@ -139,8 +142,9 @@ class TestAssignSeat:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription for a different customer
         subscription = await create_subscription_with_seats(
@@ -179,8 +183,9 @@ class TestAssignSeat:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription
         subscription = await create_subscription_with_seats(
@@ -239,8 +244,9 @@ class TestRevokeSeat:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription for different customer
         subscription = await create_subscription_with_seats(
@@ -283,8 +289,9 @@ class TestRevokeSeat:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription
         subscription = await create_subscription_with_seats(
@@ -339,8 +346,9 @@ class TestResendInvitation:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription for different customer
         subscription = await create_subscription_with_seats(
@@ -383,8 +391,9 @@ class TestResendInvitation:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription
         subscription = await create_subscription_with_seats(
@@ -427,8 +436,9 @@ class TestResendInvitation:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription
         subscription = await create_subscription_with_seats(
@@ -491,8 +501,9 @@ class TestListClaimedSubscriptions:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription owned by different customer
         subscription = await create_subscription_with_seats(
@@ -539,8 +550,9 @@ class TestListClaimedSubscriptions:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription owned by the authenticated customer
         owned_subscription = await create_subscription_with_seats(
@@ -572,8 +584,9 @@ class TestListClaimedSubscriptions:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         # Create subscription owned by different customer
         subscription = await create_subscription_with_seats(
@@ -612,15 +625,17 @@ class TestListClaimedSubscriptions:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product1)
 
         product2 = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product2)
 
         # Create subscriptions owned by different customer
         subscription1 = await create_subscription_with_seats(
@@ -682,8 +697,9 @@ class TestListSeatsForOrder:
             save_fixture,
             organization=organization,
             recurring_interval=None,  # One-time purchase
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         order = await create_order_with_seats(
             save_fixture,
@@ -723,8 +739,9 @@ class TestAssignSeatForOrder:
             save_fixture,
             organization=organization,
             recurring_interval=None,  # One-time purchase
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         order = await create_order_with_seats(
             save_fixture,
@@ -774,8 +791,9 @@ class TestRevokeSeatForOrder:
             save_fixture,
             organization=organization,
             recurring_interval=None,  # One-time purchase
-            prices=[("seat", 1000, "usd")],
+            is_archived=False,
         )
+        await create_product_price_seat_unit(save_fixture, product=product)
 
         order = await create_order_with_seats(
             save_fixture,

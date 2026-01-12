@@ -76,7 +76,6 @@ from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import is_custom_price, is_seat_price, is_static_price
-from polar.product.price_set import PriceSet
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     TaxabilityReason,
@@ -481,10 +480,8 @@ class OrderService:
 
         items: list[OrderItem] = []
         if has_product_checkout(checkout):
-            currency_prices = PriceSet.from_prices(
-                checkout.currency, checkout.prices[checkout.product_id]
-            )
-            for price in currency_prices:
+            prices = checkout.prices[checkout.product_id]
+            for price in prices:
                 # Don't create an item for metered prices
                 if not is_static_price(price):
                     continue

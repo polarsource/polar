@@ -38,6 +38,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_organization,
     create_product,
+    create_product_price_seat_unit,
     create_webhook_endpoint,
 )
 
@@ -411,14 +412,18 @@ class TestCreateCheckout:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1500, "usd")],
+            prices=[],
         )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=1500
+        )
+        product.prices = [price]
 
         response = await client.post(
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "products": [str(product.id)],
+                "product_price_id": str(price.id),
                 "seats": 6,
             },
         )
@@ -428,7 +433,7 @@ class TestCreateCheckout:
         json = response.json()
         assert json["seats"] == 6
         assert json["amount"] == 1500 * 6
-        assert json["product_price"]["id"] == str(product.prices[0].id)
+        assert json["product_price"]["id"] == str(price.id)
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_seat_based_missing_seats_defaults_to_minimum(
@@ -444,14 +449,18 @@ class TestCreateCheckout:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1500, "usd")],
+            prices=[],
         )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=1500
+        )
+        product.prices = [price]
 
         response = await client.post(
             f"{api_prefix}/",
             json={
                 "payment_processor": "stripe",
-                "products": [str(product.id)],
+                "product_price_id": str(price.id),
             },
         )
 
@@ -585,8 +594,12 @@ class TestUpdateCheckout:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 2500, "usd")],
+            prices=[],
         )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=2500
+        )
+        product.prices = [price]
 
         checkout = await create_checkout(save_fixture, products=[product], seats=4)
 
@@ -616,8 +629,12 @@ class TestUpdateCheckout:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 3000, "usd")],
+            prices=[],
         )
+        price = await create_product_price_seat_unit(
+            save_fixture, product=product, price_per_seat=3000
+        )
+        product.prices = [price]
 
         checkout = await create_checkout(save_fixture, products=[product], seats=2)
 

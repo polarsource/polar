@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from annotated_types import Ge, Le, MaxLen, MinLen
+from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AliasChoices,
@@ -28,7 +28,6 @@ from polar.discount.schemas import (
 )
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressInput
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
@@ -161,20 +160,6 @@ _customer_metadata_description = METADATA_DESCRIPTION.format(
         "that'll be copied to the created customer."
     )
 )
-CheckoutCurrency = Annotated[
-    PresentmentCurrency,
-    Field(
-        description=(
-            "Currency code of the checkout. "
-            "If set, it must be a supported currency and available on the selected product. "
-            "If not set, the currency will be inferred from the customer's location, with "
-            "fallback to the organization's default currency."
-        ),
-        examples=["usd"],
-    ),
-    MinLen(3),
-    MaxLen(3),
-]
 
 
 class CheckoutCreateBase(
@@ -265,7 +250,6 @@ class CheckoutProductCreate(CheckoutCreateBase):
     to the resulting order and/or subscription.
     """
 
-    currency: CheckoutCurrency | None = None
     product_id: UUID4 = Field(
         description=(
             "ID of the product to checkout. First available price will be selected."
@@ -282,7 +266,6 @@ class CheckoutProductsCreate(CheckoutCreateBase):
     to the resulting order and/or subscription.
     """
 
-    currency: CheckoutCurrency | None = None
     products: list[UUID4] = Field(
         description=(
             "List of product IDs available to select at that checkout. "
@@ -367,7 +350,6 @@ class CheckoutUpdate(
 ):
     """Update an existing checkout session using an access token."""
 
-    currency: CheckoutCurrency | None = None
     discount_id: UUID4 | None = Field(
         default=None, description="ID of the discount to apply to the checkout."
     )

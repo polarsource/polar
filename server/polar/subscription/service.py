@@ -86,7 +86,6 @@ from polar.product.guard import (
     is_free_price,
     is_static_price,
 )
-from polar.product.price_set import NoPricesForCurrency, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.tax.calculation import get_tax_service
@@ -403,11 +402,9 @@ class SubscriptionService:
                     "input": subscription_create.product_id,
                 }
             )
-        elif (
-            default_price := PriceSet.from_product(
-                product.organization.default_presentment_currency, product
-            ).get_default_price()
-        ) and not is_free_price(default_price):
+        elif (static_price := product.get_static_price()) and not is_free_price(
+            static_price
+        ):
             errors.append(
                 {
                     "type": "value_error",
@@ -453,19 +450,19 @@ class SubscriptionService:
         assert product is not None
         assert customer is not None
 
+        prices = product.prices
         assert product.recurring_interval is not None
         assert product.recurring_interval_count is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count
 
-        currency = product.organization.default_presentment_currency
-        currency_prices = PriceSet.from_product(currency, product)
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in currency_prices:
+        for price in prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(price)
             )
 
+        status = SubscriptionStatus.active
         current_period_start = utc_now()
         current_period_end = recurring_interval.get_next_period(
             current_period_start, recurring_interval_count
@@ -482,7 +479,6 @@ class SubscriptionService:
             product=product,
             customer=customer,
             subscription_product_prices=subscription_product_prices,
-            currency=currency,
             user_metadata=subscription_create.metadata,
         )
 
@@ -521,8 +517,7 @@ class SubscriptionService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        currency = checkout.currency
-        currency_prices = PriceSet.from_prices(currency, checkout.prices[product.id])
+        prices = checkout.prices[product.id]
         recurring_interval: SubscriptionRecurringInterval
         recurring_interval_count: int
         if product.is_legacy_recurring_price:
@@ -536,7 +531,7 @@ class SubscriptionService:
             recurring_interval_count = product.recurring_interval_count
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in currency_prices:
+        for price in prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(
                     price, checkout.amount, checkout.seats
@@ -583,7 +578,6 @@ class SubscriptionService:
         subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
-        subscription.currency = currency
         subscription.discount = checkout.discount
         # For non-trial checkouts with a discount, the discount is applied immediately
         # (the first payment at checkout includes the discount)
@@ -983,21 +977,9 @@ class SubscriptionService:
         assert previous_product.recurring_interval is not None
         assert product.recurring_interval is not None
 
-        try:
-            currency_prices = PriceSet.from_product(subscription.currency, product)
-        except NoPricesForCurrency as e:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "This product doesn't have a price for the subscription currency.",
-                        "input": product_id,
-                    }
-                ]
-            ) from e
+        prices = product.prices
 
-        for price in currency_prices:
+        for price in prices:
             if is_custom_price(price):
                 raise PolarRequestValidationError(
                     [
@@ -1032,7 +1014,7 @@ class SubscriptionService:
         subscription.product = product
         subscription.subscription_product_prices = [
             SubscriptionProductPrice.from_price(price, seats=subscription.seats)
-            for price in currency_prices
+            for price in prices
         ]
         assert product.recurring_interval is not None
         assert product.recurring_interval_count is not None
@@ -1085,7 +1067,7 @@ class SubscriptionService:
         #
         # Metered prices are ignored for prorations.
         old_static_prices = [p for p in previous_prices if is_static_price(p)]
-        new_static_prices = [p for p in currency_prices if is_static_price(p)]
+        new_static_prices = [p for p in product.prices if is_static_price(p)]
 
         for old_price in old_static_prices:
             # Free prices don't get prorated
@@ -1134,7 +1116,7 @@ class SubscriptionService:
                 base_amount = new_price.price_amount
                 discount_amount = 0
                 if subscription.discount and subscription.discount.is_applicable(
-                    new_price.product, subscription.currency
+                    new_price.product
                 ):
                     discount_amount = subscription.discount.get_discount_amount(
                         base_amount
@@ -1553,7 +1535,7 @@ class SubscriptionService:
         # Calculate discount on the delta amount
         discount_amount = 0
         if subscription.discount and subscription.discount.is_applicable(
-            subscription.product, subscription.currency
+            subscription.product
         ):
             discount_amount = subscription.discount.get_discount_amount(
                 abs(base_amount_delta)

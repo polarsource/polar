@@ -438,14 +438,6 @@ wheels = [
 ]
 
 [[package]]
-name = "countryinfo"
-version = "0.1.2"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/55/16/9fa55d43ae8ee969b75b3977d45f6640bb6c0e52d9912af11593e112a3cc/countryinfo-0.1.2-py3-none-any.whl", hash = "sha256:fd518b3fd8899f6520518320ac17b67bf410c7db5044c61cb191f802bb85c34d", size = 602240, upload-time = "2020-06-01T15:00:09.025Z" },
-]
-
-[[package]]
 name = "coverage"
 version = "7.11.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1858,7 +1850,6 @@ dependencies = [
     { name = "authlib" },
     { name = "babel" },
     { name = "boto3" },
-    { name = "countryinfo" },
     { name = "cryptography" },
     { name = "dramatiq", extra = ["redis", "watch"] },
     { name = "email-validator" },
@@ -1941,7 +1932,6 @@ requires-dist = [
     { name = "authlib", specifier = ">=1.6.0" },
     { name = "babel", specifier = ">=2.16.0" },
     { name = "boto3", specifier = ">=1.38.30" },
-    { name = "countryinfo", specifier = ">=0.1.2" },
     { name = "cryptography", specifier = ">=43.0.1" },
     { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },

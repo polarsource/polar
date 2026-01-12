@@ -37,7 +37,7 @@ jobs:
           cache: true
 
       - name: Cache TFLint plugins
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.tflint.d/plugins
           key: tflint-plugins-${{ hashFiles('terraform/.tflint.hcl') }}

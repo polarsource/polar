@@ -44,17 +44,11 @@ SLO_AVAILABILITY_TARGET = Gauge(
 # (e.g., "/v1/checkouts/{id}" not "/v1/checkouts/123")
 
 CRITICAL_ENDPOINTS: list[tuple[str, str, float, float]] = [
-    # Checkout confirmation - critical payment flow
-    ("/v1/checkouts/client/{client_secret}/confirm", "POST", 5.0, 99.95),
-    # Checkout link redirect - entry point for checkout links
-    ("/v1/checkout-links/{client_secret}/redirect", "GET", 3.0, 99.95),
-    # Create checkout - API checkout creation
+    ("/v1/checkouts/client/{client_secret}/confirm", "POST", 5.5, 99.95),
+    ("/v1/checkout-links/{client_secret}/redirect", "GET", 2.5, 99.95),
     ("/v1/checkouts/", "POST", 2.5, 99.95),
-    # Update checkout - client-side checkout modifications
-    ("/v1/checkouts/client/{client_secret}", "PATCH", 2.0, 99.95),
-    # Get checkout by client secret - public checkout UI read path
+    ("/v1/checkouts/client/{client_secret}", "PATCH", 2.5, 99.95),
     ("/v1/checkouts/client/{client_secret}", "GET", 1.2, 99.95),
-    # Get checkout by ID - authenticated read path
     ("/v1/checkouts/{id}", "GET", 0.3, 99.95),
 ]
 

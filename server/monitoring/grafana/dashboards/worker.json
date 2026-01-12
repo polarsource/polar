@@ -103,7 +103,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "polar_queue_size",
+          "expr": "max by (queue)(polar_queue_size)",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "polar_queue_oldest_message_age_seconds",
+          "expr": "max by (queue)(polar_queue_oldest_message_age_seconds)",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
@@ -268,7 +268,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(polar_queue_size)",
+          "expr": "sum(max by (queue)(polar_queue_size))",
           "legendFormat": "Total",
           "refId": "A"
         }
@@ -336,7 +336,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "polar_queue_size{queue=\"high_priority\"}",
+          "expr": "max(polar_queue_size{queue=\"high_priority\"})",
           "legendFormat": "High",
           "refId": "A"
         },
@@ -345,7 +345,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "polar_queue_size{queue=\"medium_priority\"}",
+          "expr": "max(polar_queue_size{queue=\"medium_priority\"})",
           "legendFormat": "Medium",
           "refId": "B"
         },
@@ -354,7 +354,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "polar_queue_size{queue=\"low_priority\"}",
+          "expr": "max(polar_queue_size{queue=\"low_priority\"})",
           "legendFormat": "Low",
           "refId": "C"
         }

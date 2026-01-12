@@ -119,15 +119,15 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/github/authorize': {
+  '/v1/integrations/github/login/authorize': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    /** Integrations.Github.Authorize */
-    get: operations['integrations_github:integrations.github.authorize']
+    /** Integrations.Github.Login.Authorize */
+    get: operations['integrations_github:integrations_github_login:integrations.github.login.authorize']
     put?: never
     post?: never
     delete?: never
@@ -136,15 +136,49 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/github/callback': {
+  '/v1/integrations/github/login/callback': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    /** Integrations.Github.Callback */
-    get: operations['integrations_github:integrations.github.callback']
+    /** Integrations.Github.Login.Callback */
+    get: operations['integrations_github:integrations_github_login:integrations.github.login.callback']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/github/link/authorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Github.Link.Authorize */
+    get: operations['integrations_github:integrations_github_link:integrations.github.link.authorize']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/github/link/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Github.Link.Callback */
+    get: operations['integrations_github:integrations_github_link:integrations.github.link.callback']
     put?: never
     post?: never
     delete?: never
@@ -2008,15 +2042,15 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/google/authorize': {
+  '/v1/integrations/google/login/authorize': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    /** Integrations.Google.Authorize */
-    get: operations['integrations_google:integrations.google.authorize']
+    /** Integrations.Google.Login.Authorize */
+    get: operations['integrations_google:integrations_google_login:integrations.google.login.authorize']
     put?: never
     post?: never
     delete?: never
@@ -2025,15 +2059,49 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/integrations/google/callback': {
+  '/v1/integrations/google/login/callback': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    /** Integrations.Google.Callback */
-    get: operations['integrations_google:integrations.google.callback']
+    /** Integrations.Google.Login.Callback */
+    get: operations['integrations_google:integrations_google_login:integrations.google.login.callback']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/google/link/authorize': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Google.Link.Authorize */
+    get: operations['integrations_google:integrations_google_link:integrations.google.link.authorize']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/integrations/google/link/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Integrations.Google.Link.Callback */
+    get: operations['integrations_google:integrations_google_link:integrations.google.link.callback']
     put?: never
     post?: never
     delete?: never
@@ -5871,6 +5939,418 @@ export interface components {
       | 'notifications:write'
       | 'notification_recipients:read'
       | 'notification_recipients:write'
+    /**
+     * BalanceDisputeEvent
+     * @description An event created by Polar when an order is disputed.
+     */
+    BalanceDisputeEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.dispute'
+      metadata: components['schemas']['BalanceDisputeMetadata']
+    }
+    /** BalanceDisputeMetadata */
+    BalanceDisputeMetadata: {
+      /** Transaction Id */
+      transaction_id: string
+      /** Dispute Id */
+      dispute_id: string
+      /** Order Id */
+      order_id?: string
+      /** Product Id */
+      product_id?: string
+      /** Subscription Id */
+      subscription_id?: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Presentment Amount */
+      presentment_amount: number
+      /** Presentment Currency */
+      presentment_currency: string
+      /** Tax Amount */
+      tax_amount: number
+      /** Tax State */
+      tax_state?: string | null
+      /** Tax Country */
+      tax_country?: string | null
+      /** Fee */
+      fee: number
+    }
+    /**
+     * BalanceDisputeReversalEvent
+     * @description An event created by Polar when a dispute is won and funds are reinstated.
+     */
+    BalanceDisputeReversalEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.dispute_reversal'
+      metadata: components['schemas']['BalanceDisputeMetadata']
+    }
+    /**
+     * BalanceOrderEvent
+     * @description An event created by Polar when an order is paid.
+     */
+    BalanceOrderEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.order'
+      metadata: components['schemas']['BalanceOrderMetadata']
+    }
+    /** BalanceOrderMetadata */
+    BalanceOrderMetadata: {
+      /** Transaction Id */
+      transaction_id: string
+      /** Order Id */
+      order_id: string
+      /** Product Id */
+      product_id?: string
+      /** Subscription Id */
+      subscription_id?: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Presentment Amount */
+      presentment_amount: number
+      /** Presentment Currency */
+      presentment_currency: string
+      /** Tax Amount */
+      tax_amount: number
+      /** Tax State */
+      tax_state?: string | null
+      /** Tax Country */
+      tax_country?: string | null
+      /** Fee */
+      fee: number
+    }
+    /**
+     * BalanceRefundEvent
+     * @description An event created by Polar when an order is refunded.
+     */
+    BalanceRefundEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.refund'
+      metadata: components['schemas']['BalanceRefundMetadata']
+    }
+    /** BalanceRefundMetadata */
+    BalanceRefundMetadata: {
+      /** Transaction Id */
+      transaction_id: string
+      /** Refund Id */
+      refund_id: string
+      /** Order Id */
+      order_id?: string
+      /** Product Id */
+      product_id?: string
+      /** Subscription Id */
+      subscription_id?: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Presentment Amount */
+      presentment_amount: number
+      /** Presentment Currency */
+      presentment_currency: string
+      /** Refundable Amount */
+      refundable_amount?: number
+      /** Tax Amount */
+      tax_amount: number
+      /** Tax State */
+      tax_state?: string | null
+      /** Tax Country */
+      tax_country?: string | null
+      /** Fee */
+      fee: number
+    }
+    /**
+     * BalanceRefundReversalEvent
+     * @description An event created by Polar when a refund is reverted.
+     */
+    BalanceRefundReversalEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.refund_reversal'
+      metadata: components['schemas']['BalanceRefundMetadata']
+    }
     Benefit:
       | components['schemas']['BenefitCustom']
       | components['schemas']['BenefitDiscord']
@@ -9755,6 +10235,7 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
        * Format: uuid4
@@ -9896,6 +10377,7 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
        * @description List of product IDs available to select at that checkout. The first one will be selected by default.
@@ -10514,6 +10996,7 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout.
@@ -13461,9 +13944,19 @@ export interface components {
       status: components['schemas']['SeatStatus']
       /**
        * Customer Id
-       * @description The assigned customer ID
+       * @description The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
        */
       customer_id?: string | null
+      /**
+       * Member Id
+       * @description The member ID of the seat occupant
+       */
+      member_id?: string | null
+      /**
+       * Email
+       * @description Email of the seat member (set when member_model_enabled is true)
+       */
+      email?: string | null
       /**
        * Customer Email
        * @description The assigned customer email
@@ -17508,8 +18001,6 @@ export interface components {
       organization_name: string
       /** Amount */
       amount: number
-      /** Title */
-      title: string
       /** Formatted Amount */
       readonly formatted_amount: string
     }
@@ -20511,6 +21002,19 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /**
+     * PresentmentCurrency
+     * @enum {string}
+     */
+    PresentmentCurrency:
+      | 'usd'
+      | 'eur'
+      | 'gbp'
+      | 'cad'
+      | 'aud'
+      | 'jpy'
+      | 'chf'
+      | 'sek'
     /**
      * Processor
      * @description Supported payment or payout processors, i.e rails for transactions.
@@ -23546,6 +24050,11 @@ export interface components {
       | components['schemas']['CustomerCreatedEvent']
       | components['schemas']['CustomerUpdatedEvent']
       | components['schemas']['CustomerDeletedEvent']
+      | components['schemas']['BalanceOrderEvent']
+      | components['schemas']['BalanceRefundEvent']
+      | components['schemas']['BalanceRefundReversalEvent']
+      | components['schemas']['BalanceDisputeEvent']
+      | components['schemas']['BalanceDisputeReversalEvent']
     /**
      * TaxIDFormat
      * @description List of supported tax ID formats.
@@ -25530,7 +26039,7 @@ export interface operations {
       }
     }
   }
-  'integrations_github:integrations.github.authorize': {
+  'integrations_github:integrations_github_login:integrations.github.login.authorize': {
     parameters: {
       query?: {
         payment_intent_id?: string | null
@@ -25563,7 +26072,72 @@ export interface operations {
       }
     }
   }
-  'integrations_github:integrations.github.callback': {
+  'integrations_github:integrations_github_login:integrations.github.login.callback': {
+    parameters: {
+      query?: {
+        code?: string | null
+        code_verifier?: string | null
+        state?: string | null
+        error?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_github:integrations_github_link:integrations.github.link.authorize': {
+    parameters: {
+      query?: {
+        return_to?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_github:integrations_github_link:integrations.github.link.callback': {
     parameters: {
       query?: {
         code?: string | null
@@ -30390,7 +30964,7 @@ export interface operations {
       }
     }
   }
-  'integrations_google:integrations.google.authorize': {
+  'integrations_google:integrations_google_login:integrations.google.login.authorize': {
     parameters: {
       query?: {
         return_to?: string | null
@@ -30422,7 +30996,72 @@ export interface operations {
       }
     }
   }
-  'integrations_google:integrations.google.callback': {
+  'integrations_google:integrations_google_login:integrations.google.login.callback': {
+    parameters: {
+      query?: {
+        code?: string | null
+        code_verifier?: string | null
+        state?: string | null
+        error?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_google:integrations_google_link:integrations.google.link.authorize': {
+    parameters: {
+      query?: {
+        return_to?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'integrations_google:integrations_google_link:integrations.google.link.callback': {
     parameters: {
       query?: {
         code?: string | null
@@ -39019,6 +39658,21 @@ export const availableScopeValues: ReadonlyArray<
   'notification_recipients:read',
   'notification_recipients:write',
 ]
+export const balanceDisputeEventNameValues: ReadonlyArray<
+  components['schemas']['BalanceDisputeEvent']['name']
+> = ['balance.dispute']
+export const balanceDisputeReversalEventNameValues: ReadonlyArray<
+  components['schemas']['BalanceDisputeReversalEvent']['name']
+> = ['balance.dispute_reversal']
+export const balanceOrderEventNameValues: ReadonlyArray<
+  components['schemas']['BalanceOrderEvent']['name']
+> = ['balance.order']
+export const balanceRefundEventNameValues: ReadonlyArray<
+  components['schemas']['BalanceRefundEvent']['name']
+> = ['balance.refund']
+export const balanceRefundReversalEventNameValues: ReadonlyArray<
+  components['schemas']['BalanceRefundReversalEvent']['name']
+> = ['balance.refund_reversal']
 export const benefitCustomCreateTypeValues: ReadonlyArray<
   components['schemas']['BenefitCustomCreate']['type']
 > = ['custom']
@@ -40170,6 +40824,9 @@ export const pledgeStateValues: ReadonlyArray<
   'charge_disputed',
   'cancelled',
 ]
+export const presentmentCurrencyValues: ReadonlyArray<
+  components['schemas']['PresentmentCurrency']
+> = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
 export const processorValues: ReadonlyArray<
   components['schemas']['Processor']
 > = ['stripe', 'manual', 'open_collective']

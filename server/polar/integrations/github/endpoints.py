@@ -11,10 +11,16 @@ from polar.auth.dependencies import WebUserOrAnonymous, WebUserWrite
 from polar.auth.models import is_user
 from polar.auth.service import auth as auth_service
 from polar.config import settings
-from polar.exceptions import NotPermitted, PolarRedirectionError
+from polar.exceptions import NotPermitted
 from polar.integrations.loops.service import loops as loops_service
-from polar.kit import jwt
 from polar.kit.http import ReturnTo, get_safe_return_url
+from polar.kit.oauth import (
+    OAuthCallbackError,
+    clear_login_cookie,
+    encode_state,
+    set_login_cookie,
+    validate_callback,
+)
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -38,61 +44,10 @@ oauth2_link_authorize_callback = OAuth2AuthorizeCallback(
 GITHUB_OAUTH_SCOPES = ["user", "user:email"]
 
 
-class OAuthCallbackError(PolarRedirectionError): ...
-
-
 class NotPermittedOrganizationBillingPlan(NotPermitted):
     def __init__(self) -> None:
         message = "Organization billing plan not accessible."
         super().__init__(message)
-
-
-def set_login_cookie(
-    request: Request, response: RedirectResponse, encoded_state: str
-) -> None:
-    is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
-    secure = False if is_localhost else True
-    response.set_cookie(
-        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
-        value=encoded_state,
-        max_age=int(settings.SOCIAL_LOGIN_SESSION_TTL.total_seconds()),
-        path="/",
-        secure=secure,
-        httponly=True,
-    )
-
-
-def clear_login_cookie(request: Request, response: RedirectResponse) -> None:
-    is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
-    secure = False if is_localhost else True
-    response.set_cookie(
-        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
-        value="",
-        max_age=0,
-        path="/",
-        secure=secure,
-        httponly=True,
-    )
-
-
-def validate_oauth_callback(
-    request: Request, token_data: OAuth2Token, state: str | None
-) -> dict[str, Any]:
-    error_description = token_data.get("error_description")
-    if error_description:
-        raise OAuthCallbackError(error_description)
-
-    if not state:
-        raise OAuthCallbackError("No state")
-
-    session_cookie = request.cookies.get(settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY)
-    if session_cookie is None or session_cookie != state:
-        raise OAuthCallbackError("Invalid session cookie")
-
-    try:
-        return jwt.decode(token=state, secret=settings.SECRET, type="github_oauth")
-    except jwt.DecodeError as e:
-        raise OAuthCallbackError("Invalid state") from e
 
 
 async def create_authorization_response(
@@ -100,7 +55,7 @@ async def create_authorization_response(
     state: dict[str, Any],
     callback_route: str,
 ) -> RedirectResponse:
-    encoded_state = jwt.encode(data=state, secret=settings.SECRET, type="github_oauth")
+    encoded_state = encode_state(state, type="github_oauth")
     redirect_uri = str(request.url_for(callback_route))
     authorization_url = await github_oauth_client.get_authorization_url(
         redirect_uri=redirect_uri,
@@ -153,7 +108,7 @@ async def login_callback(
         raise NotPermitted()
 
     token_data, state = access_token_state
-    state_data = validate_oauth_callback(request, token_data, state)
+    state_data = validate_callback(request, token_data, state, type="github_oauth")
 
     return_to = state_data.get("return_to", None)
 
@@ -216,7 +171,7 @@ async def link_callback(
     ),
 ) -> RedirectResponse:
     token_data, state = access_token_state
-    state_data = validate_oauth_callback(request, token_data, state)
+    state_data = validate_callback(request, token_data, state, type="github_oauth")
 
     return_to = state_data.get("return_to", None)
     state_user_id = state_data.get("user_id")

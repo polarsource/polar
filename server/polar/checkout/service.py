@@ -93,7 +93,7 @@ from polar.product.guard import (
     is_fixed_price,
     is_seat_price,
 )
-from polar.product.price_set import NoPricesForCurrency, PriceSet
+from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
@@ -297,7 +297,7 @@ class CheckoutService:
 
             product = products[0]
 
-            currency = self._get_currency(
+            currencies = self._get_currencies(
                 checkout_create.currency, product.organization, ip_country
             )
 
@@ -307,9 +307,10 @@ class CheckoutService:
                 prices = product.prices
 
             try:
-                price_set = PriceSet.from_prices(currency, prices)
+                price_set = PriceSet.from_prices(prices, *currencies)
                 price = price_set.get_default_price()
-            except NoPricesForCurrency as e:
+                currency = price_set.currency
+            except NoPricesForCurrencies as e:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -610,11 +611,11 @@ class CheckoutService:
             )
 
         ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currency = self._get_currency(None, product.organization, ip_country)
+        currencies = self._get_currencies(None, product.organization, ip_country)
 
         try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
+            currency_prices = PriceSet.from_product(product, *currencies)
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {
@@ -627,6 +628,7 @@ class CheckoutService:
             ) from e
 
         price = currency_prices.get_default_price()
+        currency = currency_prices.currency
 
         # Validate seats for seat-based pricing
         if is_seat_price(price):
@@ -754,11 +756,11 @@ class CheckoutService:
                     break
 
         ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currency = self._get_currency(None, product.organization, ip_country)
+        currencies = self._get_currencies(None, product.organization, ip_country)
 
         try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
+            currency_prices = PriceSet.from_product(product, *currencies)
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {
@@ -771,6 +773,7 @@ class CheckoutService:
             ) from e
 
         price = currency_prices.get_default_price()
+        currency = currency_prices.currency
 
         amount = 0
         seats = None
@@ -1398,10 +1401,10 @@ class CheckoutService:
                 ]
             )
 
-        currency = self._get_currency(currency, product.organization, ip_country)
+        currencies = self._get_currencies(currency, product.organization, ip_country)
         try:
-            currency_prices = PriceSet.from_product(currency, product)
-        except NoPricesForCurrency as e:
+            currency_prices = PriceSet.from_product(product, *currencies)
+        except NoPricesForCurrencies as e:
             raise PolarRequestValidationError(
                 [
                     {
@@ -1414,6 +1417,7 @@ class CheckoutService:
             ) from e
 
         price = currency_prices.get_default_price()
+        currency = currency_prices.currency
 
         return [product], product, price, currency
 
@@ -1707,9 +1711,9 @@ class CheckoutService:
             checkout.currency = updated_currency
             try:
                 currency_prices = PriceSet.from_product(
-                    updated_currency, checkout.product
+                    checkout.product, updated_currency
                 )
-            except NoPricesForCurrency as e:
+            except NoPricesForCurrencies as e:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -1780,10 +1784,10 @@ class CheckoutService:
                 if updated_currency is not None:
                     try:
                         currency_prices = PriceSet.from_product(
-                            updated_currency, product
+                            product, updated_currency
                         )
                         checkout.currency = updated_currency
-                    except NoPricesForCurrency:
+                    except NoPricesForCurrencies:
                         raise PolarRequestValidationError(
                             [
                                 {
@@ -1795,17 +1799,15 @@ class CheckoutService:
                             ]
                         )
                 # Only product is updated, try to use the existing currency
+                # or fallback to default currency if existing currency is not supported
                 else:
-                    try:
-                        currency_prices = PriceSet.from_product(
-                            checkout.currency, product
-                        )
-                    # Fallback to default currency if existing currency is not supported
-                    except NoPricesForCurrency:
-                        currency_prices = PriceSet.from_product(
-                            product.organization.default_presentment_currency, product
-                        )
-                        checkout.currency = currency_prices.currency
+                    currency_prices = PriceSet.from_product(
+                        product,
+                        checkout.currency,
+                        product.organization.default_presentment_currency,
+                    )
+                    checkout.currency = currency_prices.currency
+
                 price = currency_prices.get_default_price()
 
             checkout = await self._update_price(checkout, checkout_update, price)
@@ -2065,21 +2067,22 @@ class CheckoutService:
 
         return ip_geolocation.get_ip_country(ip_geolocation_client, str(ip_address))
 
-    def _get_currency(
+    def _get_currencies(
         self,
-        currency: str | None,
+        currency_request: str | None,
         organization: Organization,
         ip_country: str | None,
-    ) -> str:
-        if currency is not None:
-            return currency
+    ) -> Sequence[str]:
+        if currency_request is not None:
+            return [currency_request]
 
-        currency = organization.default_presentment_currency
-
+        currencies: list[str] = []
         if ip_country is not None:
-            currency = get_presentment_currency(ip_country, currency)
+            if (country_currency := get_presentment_currency(ip_country)) is not None:
+                currencies.append(country_currency)
 
-        return currency
+        currencies.append(organization.default_presentment_currency)
+        return currencies
 
     async def _update_ip_country(
         self, session: AsyncSession, checkout: Checkout, ip_country: str | None

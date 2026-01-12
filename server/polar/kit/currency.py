@@ -15,27 +15,24 @@ class PresentmentCurrency(StrEnum):
     sek = "sek"
 
 
-def get_presentment_currency(
-    country: str, default: PresentmentCurrency
-) -> PresentmentCurrency:
+def get_presentment_currency(country: str) -> PresentmentCurrency | None:
     """Get the presentment currency for a given country.
 
     Args:
-        country (str): The country code (ISO 3166-1 alpha-2).
-        default (PresentmentCurrency): The default currency to return if no supported currency is found.
+        country: The country code (ISO 3166-1 alpha-2).
 
     Returns:
-        PresentmentCurrency: A supported presentment currency code (ISO 4217).
+        The presentment currency or None if no supported currency is found.
     """
     try:
         countryinfo = CountryInfo(country)
         currencies = cast(list[str], countryinfo.currencies())
     except KeyError:
-        return default
+        return None
     else:
         for currency in currencies:
             try:
                 return PresentmentCurrency(currency.lower())
             except ValueError:
                 continue
-        return default
+        return None

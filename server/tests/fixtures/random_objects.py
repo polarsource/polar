@@ -1000,7 +1000,7 @@ async def create_subscription(
     seats: int | None = None,
     past_due_at: datetime | None = None,
 ) -> Subscription:
-    currency_prices = PriceSet.from_product(currency, product)
+    currency_prices = PriceSet.from_product(product, currency)
     prices = prices or currency_prices.prices
 
     recurring_interval = product.recurring_interval
@@ -1400,7 +1400,7 @@ async def create_checkout(
 ) -> Checkout:
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
-    currency_prices = PriceSet.from_product(currency, product)
+    currency_prices = PriceSet.from_product(product, currency)
 
     price = price or currency_prices.get_default_price()
     if is_currency_price(price) and price.price_currency != currency:

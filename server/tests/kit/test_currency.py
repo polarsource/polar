@@ -1,6 +1,6 @@
 import pytest
 
-from polar.kit.currency import PresentmentCurrency, get_presentment_currency
+from polar.kit.currency import get_presentment_currency
 
 
 @pytest.mark.parametrize(
@@ -10,11 +10,9 @@ from polar.kit.currency import PresentmentCurrency, get_presentment_currency
         pytest.param("GB", "gbp", id="supported country GB"),
         pytest.param("FR", "eur", id="supported country FR"),
         pytest.param("SE", "sek", id="supported country SE"),
-        pytest.param("CN", "usd", id="unsupported country default"),
-        pytest.param("KK", "usd", id="invalid country code default"),
+        pytest.param("CN", None, id="unsupported country"),
+        pytest.param("KK", None, id="invalid country code"),
     ],
 )
-def test_get_presentment_currency(country: str, expected_currency: str) -> None:
-    assert (
-        get_presentment_currency(country, PresentmentCurrency.usd) == expected_currency
-    )
+def test_get_presentment_currency(country: str, expected_currency: str | None) -> None:
+    assert get_presentment_currency(country) == expected_currency

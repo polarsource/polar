@@ -482,7 +482,7 @@ class OrderService:
         items: list[OrderItem] = []
         if has_product_checkout(checkout):
             currency_prices = PriceSet.from_prices(
-                checkout.currency, checkout.prices[checkout.product_id]
+                checkout.prices[checkout.product_id], checkout.currency
             )
             for price in currency_prices:
                 # Don't create an item for metered prices

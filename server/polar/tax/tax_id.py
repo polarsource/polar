@@ -6,6 +6,7 @@ from typing import Annotated, Any, Protocol
 import stdnum.ca.bn
 import stdnum.cl.rut
 import stdnum.exceptions
+import stdnum.il.idnr
 import stdnum.in_.gstin
 import stdnum.tr.vkn
 import stdnum.vn.mst
@@ -293,6 +294,23 @@ class AETRNValidator(ValidatorProtocol):
         return number
 
 
+class ILVATValidator(ValidatorProtocol):
+    """
+    Validator for Israeli VAT Number.
+
+    Israeli VAT numbers are 9-digit numbers with a Luhn check digit.
+    Unlike company numbers (ח.פ.) which must start with '5', VAT numbers
+    can have different prefixes depending on the entity type.
+    """
+
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.il.idnr.compact(number)
+        try:
+            return stdnum.il.idnr.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -301,6 +319,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CAGSTHSTValidator()
         case TaxIDFormat.cl_tin:
             return CLTINValidator()
+        case TaxIDFormat.il_vat:
+            return ILVATValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
         case TaxIDFormat.in_gst:

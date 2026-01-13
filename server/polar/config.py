@@ -76,7 +76,6 @@ class Settings(BaseSettings):
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=5)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=15)
-    CUSTOMER_METER_UPDATE_PROCESSING_TIMEOUT: timedelta = timedelta(seconds=60)
 
     # TimescaleDB Migration - dual-write to events_hyper table
     EVENTS_DUAL_WRITE_ENABLED: bool = False

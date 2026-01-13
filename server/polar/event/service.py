@@ -620,6 +620,13 @@ class EventService:
         repository = EventRepository.from_session(session)
         event_ids, duplicates_count = await repository.insert_batch(events)
 
+        # Temporarily: fetch inserted events and create meter_events
+        if event_ids:
+            inserted_events = await repository.get_all(
+                repository.get_base_statement().where(Event.id.in_(event_ids))
+            )
+            await self._create_meter_events(session, inserted_events)
+
         enqueue_events(*event_ids)
 
         return EventsIngestResponse(
@@ -629,6 +636,9 @@ class EventService:
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
         event = await repository.create(event, flush=True)
+        # Temporarily
+        await self._create_meter_events(session, [event])
+
         enqueue_events(event.id)
 
         log.debug(
@@ -734,7 +744,8 @@ class EventService:
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
 
-        await self._create_meter_events(session, events)
+        # Temporarily do this sync on ingestion instead
+        # await self._create_meter_events(session, events)
 
         await self._activate_matching_customer_meters(
             session, repository, event_ids, customers

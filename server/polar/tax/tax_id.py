@@ -253,14 +253,6 @@ class CLTINValidator(ValidatorProtocol):
 
 
 class CONITValidator(ValidatorProtocol):
-    """
-    Validator for Colombian NIT (Número de Identificación Tributaria).
-
-    The Colombian NIT is a tax identification number that consists of 8-15 digits
-    including a check digit. It can be formatted with dots as thousand separators
-    and a dash before the check digit (e.g., '213.123.432-1').
-    """
-
     def validate(self, number: str, country: str) -> str:
         number = stdnum.co.nit.compact(number)
         try:

@@ -144,6 +144,15 @@ If you need to ensure that data is flushed to the database, to run constraints o
 - **Use existing fixtures**: Leverage `SaveFixture`, `AsyncSession`, and other established test utilities.
 - **Test structure**: Follow the existing patterns with `pytest.mark.asyncio` and class-based test organization.
 
+### Tax ID Validation
+
+When adding or modifying tax ID validators in `server/polar/tax/tax_id.py`:
+
+- **Keep validators minimal**: Do not add lengthy docstrings to validator classes. The code should be self-explanatory.
+- **Follow existing patterns**: Use the same structure as other validators (e.g., `CLTINValidator`, `TRTINValidator`).
+- **Use stdnum library**: Leverage the `stdnum` library for validation when a module exists for the tax ID type.
+- **Minimal tests**: Add a few representative valid format tests and only one invalid test case per tax ID type. Do not add excessive negative tests.
+
 ## Frontend Conventions
 
 - **Modular Structure**: The code is organized in a modular way, with features grouped into their own folders.

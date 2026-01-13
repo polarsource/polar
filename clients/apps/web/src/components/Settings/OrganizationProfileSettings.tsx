@@ -82,9 +82,21 @@ const SOCIAL_PLATFORM_DOMAINS = {
   'github.com': 'github',
 }
 
-const OrganizationSocialLinks = () => {
-  const { watch, setValue } = useFormContext<schemas['OrganizationUpdate']>()
+interface OrganizationSocialLinksProps {
+  required?: boolean
+}
+
+const OrganizationSocialLinks = ({
+  required,
+}: OrganizationSocialLinksProps) => {
+  const { watch, setValue, formState } =
+    useFormContext<schemas['OrganizationUpdate']>()
   const socials = watch('socials') || []
+
+  const hasValidSocial = socials.some(
+    (social) => social.url && social.url.trim() !== '',
+  )
+  const showError = required && formState.isSubmitted && !hasValidSocial
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -177,6 +189,11 @@ const OrganizationSocialLinks = () => {
         <AddOutlined fontSize="small" className="mr-1" />
         Add Social
       </Button>
+      {showError && (
+        <p className="text-destructive text-sm font-medium">
+          At least one social media link is required
+        </p>
+      )}
     </div>
   )
 }
@@ -379,13 +396,15 @@ export const OrganizationDetailsForm: React.FC<
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-4 flex flex-col items-start">
-            <label className="block text-sm font-medium">Social Media</label>
+            <label className="block text-sm font-medium">
+              Social Media {inKYCMode && '*'}
+            </label>
             <p className="mt-2 text-xs text-gray-600">
-              Social media links help with your account review. They will not be
-              shown publicly.
+              Your personal social media links are used for identity
+              verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks />
+          <OrganizationSocialLinks required={inKYCMode} />
         </div>
       </div>
 

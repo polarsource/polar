@@ -337,6 +337,7 @@ const DownloadInvoice = ({
                     render={({ field }) => (
                       <>
                         <CountryStatePicker
+                          disabled={true}
                           autoComplete="billing address-level1"
                           country={country}
                           value={field.value || ''}
@@ -357,6 +358,7 @@ const DownloadInvoice = ({
                     render={({ field }) => (
                       <>
                         <CountryPicker
+                          disabled={true}
                           autoComplete="billing country"
                           value={field.value || undefined}
                           onChange={field.onChange}

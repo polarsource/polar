@@ -25,6 +25,7 @@ const CountryPicker = ({
   value,
   onChange,
   autoComplete,
+  disabled,
   className,
   itemClassName,
   contentClassName,
@@ -33,13 +34,19 @@ const CountryPicker = ({
   value?: string
   onChange: (value: string) => void
   autoComplete?: string
+  disabled?: boolean
   className?: string
   itemClassName?: string
   contentClassName?: string
 }) => {
   const countryMap = getCountryList(allowedCountries as TCountryCode[])
   return (
-    <Select onValueChange={onChange} value={value} autoComplete={autoComplete}>
+    <Select
+      onValueChange={onChange}
+      value={value}
+      autoComplete={autoComplete}
+      disabled={disabled}
+    >
       <SelectTrigger className={className}>
         <SelectValue
           placeholder="Country"

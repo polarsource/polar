@@ -12,6 +12,7 @@ from sqlalchemy import (
     asc,
     cte,
     desc,
+    exists,
     func,
     or_,
     select,
@@ -35,6 +36,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
     Product,
     ProductPriceMeteredUnit,
     SubscriptionProductPrice,
@@ -472,23 +474,29 @@ class MeterService:
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_base_statement()
+            .join(MeterEvent, MeterEvent.event_id == Event.id)
             .where(
-                Event.organization_id == meter.organization_id,
-                Event.customer.is_not(None),
+                MeterEvent.meter_id == meter.id,
                 or_(
-                    # Events matching meter definitions
-                    event_repository.get_meter_clause(meter),
-                    # System events impacting the meter balance
-                    event_repository.get_meter_system_clause(meter),
+                    MeterEvent.customer_id.is_not(None),
+                    and_(
+                        MeterEvent.external_customer_id.is_not(None),
+                        exists(
+                            select(1).where(
+                                Customer.external_id == MeterEvent.external_customer_id,
+                                Customer.organization_id == MeterEvent.organization_id,
+                            )
+                        ),
+                    ),
                 ),
             )
-            .order_by(Event.ingested_at.asc())
-            .options(*event_repository.get_eager_options())
+            .order_by(MeterEvent.ingested_at.asc())
+            .options(joinedload(Event.customer))
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
             statement = statement.where(
-                Event.ingested_at > last_billed_event.ingested_at
+                MeterEvent.ingested_at > last_billed_event.ingested_at
             )
 
         subscription_product_price_repository = (

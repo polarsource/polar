@@ -3289,6 +3289,33 @@ class TestUpdate:
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )
 
+    async def test_full_discount_resets_is_business_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_fixed: Checkout,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout_one_time_fixed.is_business_customer = True
+        await save_fixture(checkout_one_time_fixed)
+
+        assert checkout_one_time_fixed.is_business_customer is True
+        assert checkout_one_time_fixed.is_payment_form_required is True
+
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=discount_percentage_100.code,
+            ),
+        )
+
+        assert checkout.discount == discount_percentage_100
+        assert checkout.is_payment_form_required is False
+        assert checkout.is_business_customer is False
+
     async def test_multiple_subscriptions_allowed(
         self,
         save_fixture: SaveFixture,

@@ -289,12 +289,6 @@ class VNTINValidator(ValidatorProtocol):
 
 
 class AETRNValidator(ValidatorProtocol):
-    """
-    Validator for UAE Tax Registration Number (TRN).
-
-    The UAE TRN is a 15-digit number issued by the Federal Tax Authority.
-    """
-
     def validate(self, number: str, country: str) -> str:
         # Remove spaces, dashes, and other common separators
         number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
@@ -305,16 +299,6 @@ class AETRNValidator(ValidatorProtocol):
 
 
 class ILVATValidator(ValidatorProtocol):
-    """
-    Validator for Israeli VAT Number.
-
-    Israeli VAT numbers are 9-digit numbers with a Luhn check digit.
-    Company numbers (ח.פ.) start with '5', but self-employed individuals
-    can also register for VAT using their identity number.
-    We use stdnum.il.idnr which validates the 9-digit Luhn checksum
-    without prefix restrictions to support both cases.
-    """
-
     def validate(self, number: str, country: str) -> str:
         number = stdnum.il.idnr.compact(number)
         try:

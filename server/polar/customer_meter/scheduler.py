@@ -1,13 +1,12 @@
 import datetime
 import uuid
-from operator import or_
 
 import dramatiq
 import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import Select, case, func, select, update
+from sqlalchemy import Select, case, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from polar.config import settings
@@ -47,11 +46,18 @@ class CustomerMeterJobStore(BaseJobStore):
         return None
 
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
+        processing_timeout = now - settings.CUSTOMER_METER_UPDATE_PROCESSING_TIMEOUT
         statement = (
             select(Customer)
             .where(
                 Customer.deleted_at.is_(None),
                 Customer.meters_dirtied_at.is_not(None),
+                # Exclude customers that are currently being processed
+                # (unless the processing has timed out)
+                or_(
+                    Customer.meters_processing_since.is_(None),
+                    Customer.meters_processing_since < processing_timeout,
+                ),
                 or_(
                     Customer.meters_dirtied_at
                     < case(
@@ -75,10 +81,18 @@ class CustomerMeterJobStore(BaseJobStore):
 
     def get_all_jobs(self) -> list[Job]:
         now = utc_now()
+        processing_timeout = now - settings.CUSTOMER_METER_UPDATE_PROCESSING_TIMEOUT
         statement = (
             select(Customer)
             .where(
                 Customer.deleted_at.is_(None),
+                Customer.meters_dirtied_at.is_not(None),
+                # Exclude customers that are currently being processed
+                # (unless the processing has timed out)
+                or_(
+                    Customer.meters_processing_since.is_(None),
+                    Customer.meters_processing_since < processing_timeout,
+                ),
                 or_(
                     Customer.meters_dirtied_at
                     < case(
@@ -99,10 +113,11 @@ class CustomerMeterJobStore(BaseJobStore):
 
     def remove_job(self, job_id: str) -> None:
         customer_id = job_id.split(":")[-1]
+        now = utc_now()
         statement = (
             update(Customer)
             .where(Customer.id == customer_id)
-            .values(meters_dirtied_at=None)
+            .values(meters_processing_since=now)
         )
         with self.engine.begin() as connection:
             connection.execute(statement)

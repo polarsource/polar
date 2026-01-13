@@ -23,7 +23,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.meter.repository import MeterRepository
-from polar.models import Customer, CustomerMeter, Event, Meter
+from polar.models import Customer, CustomerMeter, Event, Meter, MeterEvent
 from polar.models.event import EventSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
@@ -153,9 +153,27 @@ class CustomerMeterService:
             if meters_dirtied_at is not None:
                 ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
 
-            last_event = await self._get_latest_current_window_event(
-                session, customer, meter, ingested_at_lower_bound
-            )
+            # A/B Test: Compare old (JSONB) vs new (MeterEvent) implementations
+            with logfire.span("get_latest_event.old"):
+                last_event = await self._get_latest_current_window_event(
+                    session, customer, meter, ingested_at_lower_bound
+                )
+
+            with logfire.span("get_latest_event.new"):
+                new_last_event = await self._get_latest_current_window_event_new(
+                    session, customer, meter, ingested_at_lower_bound
+                )
+
+            old_last_event_id = last_event.id if last_event else None
+            new_last_event_id = new_last_event.id if new_last_event else None
+            if old_last_event_id != new_last_event_id:
+                logfire.error(
+                    "last_event mismatch",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
+                    old_event_id=str(old_last_event_id) if old_last_event_id else None,
+                    new_event_id=str(new_last_event_id) if new_last_event_id else None,
+                )
 
             if customer_meter is None:
                 activated_at = (
@@ -175,12 +193,52 @@ class CustomerMeterService:
 
             event_repository = EventRepository.from_session(session)
 
-            usage_units = await self._get_usage_quantity(session, customer, meter)
+            with logfire.span("get_usage.old"):
+                usage_units = await self._get_usage_quantity(session, customer, meter)
+
+            with logfire.span("get_usage.new"):
+                new_usage_units = await self._get_usage_quantity_new(
+                    session, customer, meter
+                )
+
+            if usage_units != new_usage_units:
+                logfire.error(
+                    "usage mismatch",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
+                    old_usage=usage_units,
+                    new_usage=new_usage_units,
+                )
+
             customer_meter.consumed_units = Decimal(usage_units)
 
-            credit_events = await self._get_credit_events(
-                customer, meter, event_repository
-            )
+            with logfire.span("get_credits.old"):
+                credit_events = await self._get_credit_events(
+                    customer, meter, event_repository
+                )
+
+            with logfire.span("get_credits.new"):
+                new_credit_events = await self._get_credit_events_new(
+                    session, customer, meter
+                )
+
+            old_credit_ids = {e.id for e in credit_events}
+            new_credit_ids = {e.id for e in new_credit_events}
+            if old_credit_ids != new_credit_ids:
+                logfire.error(
+                    "credit_events mismatch",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
+                    old_count=len(old_credit_ids),
+                    new_count=len(new_credit_ids),
+                    only_in_old=[
+                        str(e) for e in list(old_credit_ids - new_credit_ids)[:5]
+                    ],
+                    only_in_new=[
+                        str(e) for e in list(new_credit_ids - old_credit_ids)[:5]
+                    ],
+                )
+
             credited_units = non_negative_running_sum(
                 event.user_metadata["units"] for event in credit_events
             )
@@ -279,6 +337,48 @@ class CustomerMeterService:
                 select(Event).from_statement(union_statement)
             )
             return result.scalar_one_or_none()
+
+    async def _get_latest_current_window_event_new(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        ingested_at_lower_bound: datetime | None = None,
+    ) -> Event | None:
+        """Get latest event using MeterEvent table (no JSONB filtering)."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        statement = (
+            event_repository.get_base_statement()
+            .join(MeterEvent, MeterEvent.event_id == Event.id)
+            .where(MeterEvent.meter_id == meter.id)
+        )
+
+        if customer.external_id is not None:
+            statement = statement.where(
+                or_(
+                    MeterEvent.customer_id == customer.id,
+                    MeterEvent.external_customer_id == customer.external_id,
+                )
+            )
+        else:
+            statement = statement.where(MeterEvent.customer_id == customer.id)
+
+        if meter_reset_event is not None:
+            statement = statement.where(
+                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+            )
+
+        if ingested_at_lower_bound is not None:
+            statement = statement.where(
+                MeterEvent.ingested_at >= ingested_at_lower_bound
+            )
+
+        statement = statement.order_by(MeterEvent.ingested_at.desc()).limit(1)
+        return await event_repository.get_one_or_none(statement)
 
     async def _get_current_window_events_statement(
         self, session: AsyncSession, customer: Customer, meter: Meter
@@ -485,6 +585,75 @@ class CustomerMeterService:
             .order_by(Event.timestamp.asc())
         )
 
+        return await event_repository.get_all(statement)
+
+    async def _get_usage_quantity_new(
+        self, session: AsyncSession, customer: Customer, meter: Meter
+    ) -> float:
+        """Get usage quantity using MeterEvent table (no JSONB filtering)."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
+
+        statement = (
+            select(agg_column)
+            .select_from(Event)
+            .join(MeterEvent, MeterEvent.event_id == Event.id)
+            .where(
+                MeterEvent.meter_id == meter.id,
+                Event.source == EventSource.user,
+            )
+        )
+
+        if customer.external_id is not None:
+            statement = statement.where(
+                or_(
+                    MeterEvent.customer_id == customer.id,
+                    MeterEvent.external_customer_id == customer.external_id,
+                )
+            )
+        else:
+            statement = statement.where(MeterEvent.customer_id == customer.id)
+
+        if meter_reset_event is not None:
+            statement = statement.where(
+                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+            )
+
+        result = await session.scalar(statement)
+        return result or 0.0
+
+    async def _get_credit_events_new(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> Sequence[Event]:
+        """Get credit events using MeterEvent table (no JSONB filtering)."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+
+        statement = (
+            event_repository.get_base_statement()
+            .join(MeterEvent, MeterEvent.event_id == Event.id)
+            .where(
+                MeterEvent.meter_id == meter.id,
+                MeterEvent.customer_id == customer.id,
+                Event.is_meter_credit.is_(True),
+            )
+        )
+
+        if meter_reset_event is not None:
+            statement = statement.where(
+                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+            )
+
+        statement = statement.order_by(Event.timestamp.asc())
         return await event_repository.get_all(statement)
 
 

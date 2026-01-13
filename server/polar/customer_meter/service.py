@@ -121,7 +121,6 @@ class CustomerMeterService:
 
         customer_repository = CustomerRepository.from_session(session)
         await customer_repository.set_meters_updated_at((customer,))
-        await customer_repository.clear_meters_processing(customer, meters_dirtied_at)
 
     async def update_customer_meter(
         self,

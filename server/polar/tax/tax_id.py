@@ -5,6 +5,7 @@ from typing import Annotated, Any, Protocol
 
 import stdnum.ca.bn
 import stdnum.cl.rut
+import stdnum.co.nit
 import stdnum.exceptions
 import stdnum.il.idnr
 import stdnum.in_.gstin
@@ -251,6 +252,23 @@ class CLTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class CONITValidator(ValidatorProtocol):
+    """
+    Validator for Colombian NIT (Número de Identificación Tributaria).
+
+    The Colombian NIT is a tax identification number that consists of 8-15 digits
+    including a check digit. It can be formatted with dots as thousand separators
+    and a dash before the check digit (e.g., '213.123.432-1').
+    """
+
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.co.nit.compact(number)
+        try:
+            return stdnum.co.nit.validate(number)
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class TRTINValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.tr.vkn.compact(number)
@@ -321,6 +339,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return CAGSTHSTValidator()
         case TaxIDFormat.cl_tin:
             return CLTINValidator()
+        case TaxIDFormat.co_nit:
+            return CONITValidator()
         case TaxIDFormat.il_vat:
             return ILVATValidator()
         case TaxIDFormat.tr_tin:

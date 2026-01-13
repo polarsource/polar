@@ -25,6 +25,11 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
         ("12.531.909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
         ("12531909-2", "CL", ("125319092", TaxIDFormat.cl_tin)),
+        ("213.123.432-1", "CO", ("2131234321", TaxIDFormat.co_nit)),
+        ("213-123-432-1", "CO", ("2131234321", TaxIDFormat.co_nit)),
+        ("213 123 432 1", "CO", ("2131234321", TaxIDFormat.co_nit)),
+        ("2131234321", "CO", ("2131234321", TaxIDFormat.co_nit)),
+        ("800.197.268-4", "CO", ("8001972684", TaxIDFormat.co_nit)),
         ("4540536920", "TR", ("4540536920", TaxIDFormat.tr_tin)),
         ("27AAPFU0939F1ZV", "IN", ("27AAPFU0939F1ZV", TaxIDFormat.in_gst)),
         ("0100233488", "VN", ("0100233488", TaxIDFormat.vn_tin)),
@@ -56,6 +61,9 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("1234567890", "IL"),
         ("123456789", "IL"),
         ("516179150", "IL"),
+        ("213123432", "CO"),  # Missing check digit
+        ("2131234325", "CO"),  # Wrong check digit
+        ("1234567", "CO"),  # Too short
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

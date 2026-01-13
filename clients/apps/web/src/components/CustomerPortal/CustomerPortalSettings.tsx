@@ -1,12 +1,10 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import {
-  useAuthenticatedCustomer,
-  useCustomerPaymentMethods,
-} from '@/hooks/queries'
+import { useCustomerPaymentMethods } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
+import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
@@ -47,7 +45,7 @@ export const CustomerPortalSettings = ({
     hide: hideAddPaymentMethodModal,
     show: showAddPaymentMethodModal,
   } = useModal(setupIntentParams !== undefined)
-  const { data: customer } = useAuthenticatedCustomer(api)
+  const { data: customer } = useCustomerPortalCustomer()
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   if (!customer) {
@@ -93,8 +91,6 @@ export const CustomerPortalSettings = ({
         <Separator className="dark:bg-polar-700" />
         <WellContent>
           <EditBillingDetails
-            api={api}
-            customer={customer}
             onSuccess={() => {
               revalidate(`customer_portal`)
               router.refresh()

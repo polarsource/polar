@@ -1,6 +1,7 @@
-import { useUpdateCustomerPortal } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { enums, type Client, type schemas } from '@polar-sh/client'
+import { enums, type schemas } from '@polar-sh/client'
+import { isValidationError } from '@polar-sh/customer-portal/core'
+import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -15,22 +16,20 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-const EditBillingDetails = ({
-  api,
-  customer,
-  onSuccess,
-}: {
-  api: Client
-  customer: schemas['CustomerPortalCustomer']
-  onSuccess: () => void
-}) => {
-  const form = useForm<schemas['CustomerPortalCustomerUpdate']>({
+
+type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
+
+const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
+  const { data: customer, update } = useCustomerPortalCustomer()
+
+  const form = useForm<CustomerPortalCustomerUpdate>({
     defaultValues: {
-      billing_name: customer.billing_name || customer.name,
-      billing_address: customer.billing_address as schemas['AddressInput'],
-      tax_id: customer.tax_id ? customer.tax_id[0] : null,
+      billing_name: customer?.billing_name || customer?.name,
+      billing_address: customer?.billing_address as schemas['AddressInput'],
+      tax_id: customer?.tax_id ? customer.tax_id[0] : null,
     },
   })
+
   const {
     control,
     handleSubmit,
@@ -49,30 +48,32 @@ const EditBillingDetails = ({
     }
   }, [country, setValue])
 
-  const updateCustomer = useUpdateCustomerPortal(api)
   const onSubmit = useCallback(
-    async (data: schemas['CustomerPortalCustomerUpdate']) => {
-      const { error, data: updatedCustomer } =
-        await updateCustomer.mutateAsync(data)
-      if (error) {
-        if (error.detail) {
-          setValidationErrors(error.detail, setError)
+    async (data: CustomerPortalCustomerUpdate) => {
+      try {
+        const updatedCustomer = await update.mutateAsync(data)
+
+        reset({
+          billing_name: updatedCustomer.billing_name || updatedCustomer.name,
+          billing_address: updatedCustomer.billing_address as
+            | schemas['AddressInput']
+            | null,
+          tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
+        })
+
+        onSuccess()
+      } catch (e) {
+        if (isValidationError(e)) {
+          setValidationErrors(e.errors, setError)
         }
-        return
       }
-
-      reset({
-        billing_name: updatedCustomer.billing_name || updatedCustomer.name,
-        billing_address: updatedCustomer.billing_address as
-          | schemas['AddressInput']
-          | null,
-        tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
-      })
-
-      onSuccess()
     },
-    [updateCustomer, onSuccess, setError, reset],
+    [update, onSuccess, setError, reset],
   )
+
+  if (!customer) {
+    return null
+  }
 
   return (
     <Form {...form}>
@@ -269,8 +270,8 @@ const EditBillingDetails = ({
         />
         <Button
           type="submit"
-          loading={updateCustomer.isPending}
-          disabled={updateCustomer.isPending || !isDirty}
+          loading={update.isPending}
+          disabled={update.isPending || !isDirty}
           className="self-start"
         >
           Update Billing Details

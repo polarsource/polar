@@ -19,9 +19,16 @@ from polar.enums import (
     SubscriptionRecurringInterval,
     TaxProcessor,
 )
+from polar.exceptions import PolarRequestValidationError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import Address, CountryAlpha2
+from polar.kit.address import (
+    Address,
+    AddressDict,
+    AddressInput,
+    CountryAlpha2,
+    CountryAlpha2Input,
+)
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
@@ -49,6 +56,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
+from polar.order.schemas import OrderUpdate
 from polar.order.service import (
     CardPaymentFailed,
     MissingCheckoutCustomer,
@@ -427,6 +435,71 @@ class TestList:
 
         assert order1 in orders
         assert order2 in orders
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    @pytest.mark.parametrize(
+        ("set_address", "address_update"),
+        [
+            ({"country": "US", "state": "CA"}, {"country": "US", "state": "NY"}),
+            ({"country": "US", "state": "CA"}, {"country": "FR", "state": None}),
+            ({"country": "FR", "state": None}, {"country": "US", "state": "CA"}),
+        ],
+    )
+    async def test_invalid_country_state_update(
+        self,
+        set_address: AddressDict,
+        address_update: AddressDict,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address.model_validate(set_address),
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(
+                    billing_name=None,
+                    billing_address=AddressInput.model_validate(address_update),
+                ),
+            )
+
+    async def test_valid_billing_address_update(
+        self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_name="New Name",
+                billing_address=AddressInput(
+                    line1="Rue de la Paix",
+                    city="Paris",
+                    postal_code="75000",
+                    country=CountryAlpha2Input("FR"),
+                ),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_name == "New Name"
+        assert updated_order.billing_address is not None
+        assert updated_order.billing_address.country == "FR"
+        assert updated_order.billing_address.line1 == "Rue de la Paix"
 
 
 @pytest.mark.asyncio

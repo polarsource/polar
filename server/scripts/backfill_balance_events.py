@@ -80,6 +80,31 @@ async def _compute_dispute_fees_by_order(session: AsyncSession) -> dict[str, int
     return {str(row[0]): row[1] for row in fees_result.fetchall()}
 
 
+async def _get_existing_event_tx_ids_for_batch(
+    session: AsyncSession,
+    event_name: str,
+    tx_ids: list[uuid.UUID],
+) -> set[str]:
+    """
+    Check which transaction IDs in the batch already have events.
+    Queries only for specific transaction IDs rather than scanning the entire events table.
+    """
+    if not tx_ids:
+        return set()
+
+    tx_id_strings = [str(tx_id) for tx_id in tx_ids]
+    result = await session.execute(
+        select(Event.user_metadata["transaction_id"].as_string())
+        .where(
+            Event.name == event_name,
+            Event.source == EventSource.system,
+            Event.user_metadata["transaction_id"].as_string().in_(tx_id_strings),
+        )
+        .distinct()
+    )
+    return {row[0] for row in result.fetchall()}
+
+
 async def create_missing_balance_order_events(
     session: AsyncSession,
     batch_size: int,
@@ -94,17 +119,6 @@ async def create_missing_balance_order_events(
     fees_by_order = await _compute_fees_by_order(session)
     typer.echo(f"Computed fees for {len(fees_by_order)} orders")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_order,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.order events")
-
     all_tx_ids_result = await session.execute(
         select(Transaction.id).where(
             Transaction.type == TransactionType.payment,
@@ -112,33 +126,34 @@ async def create_missing_balance_order_events(
         )
     )
     all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+    total_to_check = len(all_tx_ids)
 
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.order events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} payment transactions without balance.order events"
-    )
+    typer.echo(f"Found {total_to_check} payment transactions to check")
 
     created_count = 0
 
     with Progress() as progress:
         task = progress.add_task(
-            "[cyan]Creating balance.order events...", total=total_to_create
+            "[cyan]Creating balance.order events...", total=total_to_check
         )
 
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
+        for i in range(0, total_to_check, batch_size):
+            batch_ids = all_tx_ids[i : i + batch_size]
+
+            existing_in_batch = await _get_existing_event_tx_ids_for_batch(
+                session, SystemEvent.balance_order, batch_ids
+            )
+            missing_batch_ids = [
+                tx_id for tx_id in batch_ids if str(tx_id) not in existing_in_batch
+            ]
+
+            if not missing_batch_ids:
+                progress.update(task, advance=len(batch_ids))
+                continue
 
             statement = (
                 select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
+                .where(Transaction.id.in_(missing_batch_ids))
                 .options(
                     selectinload(Transaction.order).selectinload(Order.customer),
                     selectinload(Transaction.order).selectinload(Order.subscription),
@@ -147,9 +162,6 @@ async def create_missing_balance_order_events(
 
             result = await session.execute(statement)
             transactions = result.scalars().all()
-
-            if not transactions:
-                break
 
             events = []
             for tx in transactions:
@@ -197,7 +209,7 @@ async def create_missing_balance_order_events(
                 await session.commit()
                 created_count += len(events)
 
-            progress.update(task, advance=len(transactions))
+            progress.update(task, advance=len(batch_ids))
             await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.order events")
@@ -265,17 +277,6 @@ async def create_missing_balance_refund_events(
     refundable_amounts = await _compute_refundable_amounts(session)
     typer.echo(f"Computed refundable amounts for {len(refundable_amounts)} refunds")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_refund,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.refund events")
-
     all_tx_ids_result = await session.execute(
         select(Transaction.id).where(
             Transaction.type == TransactionType.refund,
@@ -283,33 +284,34 @@ async def create_missing_balance_refund_events(
         )
     )
     all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+    total_to_check = len(all_tx_ids)
 
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.refund events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} refund transactions without balance.refund events"
-    )
+    typer.echo(f"Found {total_to_check} refund transactions to check")
 
     created_count = 0
 
     with Progress() as progress:
         task = progress.add_task(
-            "[cyan]Creating balance.refund events...", total=total_to_create
+            "[cyan]Creating balance.refund events...", total=total_to_check
         )
 
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
+        for i in range(0, total_to_check, batch_size):
+            batch_ids = all_tx_ids[i : i + batch_size]
+
+            existing_in_batch = await _get_existing_event_tx_ids_for_batch(
+                session, SystemEvent.balance_refund, batch_ids
+            )
+            missing_batch_ids = [
+                tx_id for tx_id in batch_ids if str(tx_id) not in existing_in_batch
+            ]
+
+            if not missing_batch_ids:
+                progress.update(task, advance=len(batch_ids))
+                continue
 
             statement = (
                 select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
+                .where(Transaction.id.in_(missing_batch_ids))
                 .options(
                     selectinload(Transaction.refund).selectinload(Refund.customer),
                     selectinload(Transaction.refund).selectinload(Refund.organization),
@@ -319,9 +321,6 @@ async def create_missing_balance_refund_events(
 
             result = await session.execute(statement)
             transactions = result.scalars().all()
-
-            if not transactions:
-                break
 
             events = []
             for tx in transactions:
@@ -381,7 +380,7 @@ async def create_missing_balance_refund_events(
                 await session.commit()
                 created_count += len(events)
 
-            progress.update(task, advance=len(transactions))
+            progress.update(task, advance=len(batch_ids))
             await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.refund events")
@@ -402,17 +401,6 @@ async def create_missing_balance_dispute_events(
     dispute_fees_by_order = await _compute_dispute_fees_by_order(session)
     typer.echo(f"Computed dispute fees for {len(dispute_fees_by_order)} orders")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_dispute,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.dispute events")
-
     all_tx_ids_result = await session.execute(
         select(Transaction.id).where(
             Transaction.type == TransactionType.dispute,
@@ -420,33 +408,34 @@ async def create_missing_balance_dispute_events(
         )
     )
     all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+    total_to_check = len(all_tx_ids)
 
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.dispute events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} dispute transactions without balance.dispute events"
-    )
+    typer.echo(f"Found {total_to_check} dispute transactions to check")
 
     created_count = 0
 
     with Progress() as progress:
         task = progress.add_task(
-            "[cyan]Creating balance.dispute events...", total=total_to_create
+            "[cyan]Creating balance.dispute events...", total=total_to_check
         )
 
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
+        for i in range(0, total_to_check, batch_size):
+            batch_ids = all_tx_ids[i : i + batch_size]
+
+            existing_in_batch = await _get_existing_event_tx_ids_for_batch(
+                session, SystemEvent.balance_dispute, batch_ids
+            )
+            missing_batch_ids = [
+                tx_id for tx_id in batch_ids if str(tx_id) not in existing_in_batch
+            ]
+
+            if not missing_batch_ids:
+                progress.update(task, advance=len(batch_ids))
+                continue
 
             statement = (
                 select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
+                .where(Transaction.id.in_(missing_batch_ids))
                 .options(
                     selectinload(Transaction.dispute)
                     .selectinload(Dispute.order)
@@ -457,9 +446,6 @@ async def create_missing_balance_dispute_events(
 
             result = await session.execute(statement)
             transactions = result.scalars().all()
-
-            if not transactions:
-                break
 
             events = []
             for tx in transactions:
@@ -525,7 +511,7 @@ async def create_missing_balance_dispute_events(
                 await session.commit()
                 created_count += len(events)
 
-            progress.update(task, advance=len(transactions))
+            progress.update(task, advance=len(batch_ids))
             await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.dispute events")
@@ -542,17 +528,6 @@ async def create_missing_balance_dispute_reversal_events(
     """
     typer.echo("\n=== Creating missing balance.dispute_reversal events ===")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_dispute_reversal,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.dispute_reversal events")
-
     all_tx_ids_result = await session.execute(
         select(Transaction.id).where(
             Transaction.type == TransactionType.dispute_reversal,
@@ -560,33 +535,34 @@ async def create_missing_balance_dispute_reversal_events(
         )
     )
     all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+    total_to_check = len(all_tx_ids)
 
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.dispute_reversal events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} dispute_reversal transactions without balance.dispute_reversal events"
-    )
+    typer.echo(f"Found {total_to_check} dispute_reversal transactions to check")
 
     created_count = 0
 
     with Progress() as progress:
         task = progress.add_task(
-            "[cyan]Creating balance.dispute_reversal events...", total=total_to_create
+            "[cyan]Creating balance.dispute_reversal events...", total=total_to_check
         )
 
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
+        for i in range(0, total_to_check, batch_size):
+            batch_ids = all_tx_ids[i : i + batch_size]
+
+            existing_in_batch = await _get_existing_event_tx_ids_for_batch(
+                session, SystemEvent.balance_dispute_reversal, batch_ids
+            )
+            missing_batch_ids = [
+                tx_id for tx_id in batch_ids if str(tx_id) not in existing_in_batch
+            ]
+
+            if not missing_batch_ids:
+                progress.update(task, advance=len(batch_ids))
+                continue
 
             statement = (
                 select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
+                .where(Transaction.id.in_(missing_batch_ids))
                 .options(
                     selectinload(Transaction.dispute)
                     .selectinload(Dispute.order)
@@ -598,9 +574,6 @@ async def create_missing_balance_dispute_reversal_events(
 
             result = await session.execute(statement)
             transactions = result.scalars().all()
-
-            if not transactions:
-                break
 
             events = []
             for tx in transactions:
@@ -665,7 +638,7 @@ async def create_missing_balance_dispute_reversal_events(
                 await session.commit()
                 created_count += len(events)
 
-            progress.update(task, advance=len(transactions))
+            progress.update(task, advance=len(batch_ids))
             await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.dispute_reversal events")
@@ -682,17 +655,6 @@ async def create_missing_balance_refund_reversal_events(
     """
     typer.echo("\n=== Creating missing balance.refund_reversal events ===")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_refund_reversal,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.refund_reversal events")
-
     all_tx_ids_result = await session.execute(
         select(Transaction.id).where(
             Transaction.type == TransactionType.refund_reversal,
@@ -700,29 +662,30 @@ async def create_missing_balance_refund_reversal_events(
         )
     )
     all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
+    total_to_check = len(all_tx_ids)
 
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.refund_reversal events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} refund_reversal transactions without balance.refund_reversal events"
-    )
+    typer.echo(f"Found {total_to_check} refund_reversal transactions to check")
 
     created_count = 0
 
     with Progress() as progress:
         task = progress.add_task(
-            "[cyan]Creating balance.refund_reversal events...", total=total_to_create
+            "[cyan]Creating balance.refund_reversal events...", total=total_to_check
         )
 
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
+        for i in range(0, total_to_check, batch_size):
+            batch_ids = all_tx_ids[i : i + batch_size]
+
+            existing_in_batch = await _get_existing_event_tx_ids_for_batch(
+                session, SystemEvent.balance_refund_reversal, batch_ids
+            )
+            missing_batch_ids = [
+                tx_id for tx_id in batch_ids if str(tx_id) not in existing_in_batch
+            ]
+
+            if not missing_batch_ids:
+                progress.update(task, advance=len(batch_ids))
+                continue
 
             statement = (
                 select(Transaction)

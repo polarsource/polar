@@ -112,18 +112,26 @@ class CustomerMeterService:
             updated = False
             async for meter in repository.stream(statement):
                 _, meter_updated = await self.update_customer_meter(
-                    session, locker, customer, meter, meters_dirtied_at=meters_dirtied_at
+                    session,
+                    locker,
+                    customer,
+                    meter,
+                    meters_dirtied_at=meters_dirtied_at,
                 )
                 updated = updated or meter_updated
 
             if updated:
                 enqueue_job(
-                    "customer.webhook", WebhookEventType.customer_state_changed, customer.id
+                    "customer.webhook",
+                    WebhookEventType.customer_state_changed,
+                    customer.id,
                 )
 
             await customer_repository.set_meters_updated_at((customer,))
         finally:
-            await customer_repository.clear_meters_processing(customer, meters_dirtied_at)
+            await customer_repository.clear_meters_processing(
+                customer, meters_dirtied_at
+            )
 
     async def update_customer_meter(
         self,

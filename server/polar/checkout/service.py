@@ -1969,6 +1969,15 @@ class CheckoutService:
         ).items():
             setattr(checkout, attr, value)
 
+        # Reset is_business_customer if payment form is no longer required
+        # This handles the case where a 100% discount is applied and the
+        # billing address section disappears from the frontend
+        if (
+            not checkout.is_payment_form_required
+            and not checkout.require_billing_address
+        ):
+            checkout.is_business_customer = False
+
         checkout = await self._update_trial_end(checkout)
 
         session.add(checkout)

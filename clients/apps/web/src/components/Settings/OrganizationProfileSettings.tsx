@@ -132,12 +132,13 @@ const OrganizationSocialLinks = ({
   }
 
   const handleChange = (index: number, value: string) => {
-    const currentFieldValue = socials[index]?.url
-    if (
-      currentFieldValue === '' &&
-      !value.startsWith('https://') &&
-      !value.startsWith('http://')
-    ) {
+    if (value.startsWith('http://')) {
+      value = value.replace('http://', 'https://')
+    }
+    const hasProtocol = value.startsWith('https://')
+    const isTypingProtocol =
+      'https://'.startsWith(value) || 'http://'.startsWith(value)
+    if (!hasProtocol && !isTypingProtocol) {
       value = 'https://' + value
     }
 
@@ -368,6 +369,20 @@ export const OrganizationDetailsForm: React.FC<
                   {...field}
                   value={field.value || ''}
                   placeholder="https://acme.com"
+                  onChange={(e) => {
+                    let value = e.target.value
+                    if (value.startsWith('http://')) {
+                      value = value.replace('http://', 'https://')
+                    }
+                    const hasProtocol = value.startsWith('https://')
+                    const isTypingProtocol =
+                      'https://'.startsWith(value) ||
+                      'http://'.startsWith(value)
+                    if (!hasProtocol && !isTypingProtocol) {
+                      value = 'https://' + value
+                    }
+                    field.onChange(value)
+                  }}
                   onBlur={(e) => {
                     field.onBlur()
                     validateURL(e.target.value)

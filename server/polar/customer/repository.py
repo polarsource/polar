@@ -1,10 +1,10 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import Select, func, or_, select, update
+from sqlalchemy import CursorResult, Select, func, or_, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -182,7 +182,8 @@ class CustomerRepository(
                 )
                 .values(meters_processing_since=None, meters_dirtied_at=None)
             )
-            result = await self.session.execute(statement)
+            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+            result = cast(CursorResult[Customer], await self.session.execute(statement))
 
             # If no rows were updated, meters_dirtied_at was updated during processing
             # Just clear meters_processing_since

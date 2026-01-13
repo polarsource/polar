@@ -245,16 +245,14 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
 
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
-        description=(
-            "The name of the customer that should appear on the invoice. "
-            "Can't be updated after the invoice is generated."
-        )
+        None, description="The name of the customer that should appear on the invoice."
     )
     billing_address: AddressInput | None = Field(
+        None,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Can't be updated after the invoice is generated."
-        )
+            "Country and state fields cannot be updated."
+        ),
     )
 
 

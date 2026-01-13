@@ -33,7 +33,7 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.file.s3 import S3_SERVICES
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -344,6 +344,33 @@ class OrderService:
         order_update: OrderUpdate | CustomerOrderUpdate,
     ) -> Order:
         repository = OrderRepository.from_session(session)
+
+        errors: list[ValidationError] = []
+
+        billing_address = order_update.billing_address
+        if billing_address is not None and order.billing_address is not None:
+            if str(billing_address.country) != str(order.billing_address.country):
+                errors.append(
+                    {
+                        "loc": ("body", "billing_address", "country"),
+                        "msg": "Country cannot be changed",
+                        "type": "value_error",
+                        "input": billing_address.country,
+                    }
+                )
+            if billing_address.state != order.billing_address.state:
+                errors.append(
+                    {
+                        "loc": ("body", "billing_address", "state"),
+                        "msg": "State cannot be changed",
+                        "type": "value_error",
+                        "input": billing_address.state,
+                    }
+                )
+
+        if errors:
+            raise PolarRequestValidationError(errors)
+
         order = await repository.update(
             order, update_dict=order_update.model_dump(exclude_unset=True)
         )

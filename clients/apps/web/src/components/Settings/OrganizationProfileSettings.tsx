@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
@@ -33,6 +34,7 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
@@ -203,6 +205,9 @@ export const OrganizationDetailsForm: React.FC<
     useFormContext<schemas['OrganizationUpdate']>()
   const name = watch('name')
   const avatarURL = watch('avatar_url')
+  const { status: urlStatus, validateURL } = useURLValidation({
+    organizationSlug: organization.slug,
+  })
 
   const onFilesUpdated = useCallback(
     (files: FileObject<schemas['OrganizationAvatarFileRead']>[]) => {
@@ -320,10 +325,25 @@ export const OrganizationDetailsForm: React.FC<
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Website</label>
+          <label className="mb-2 block text-sm font-medium">Website *</label>
           <FormField
             control={control}
             name="website"
+            rules={{
+              required: 'Website is required',
+              validate: (value) => {
+                if (!value) return 'Website is required'
+                if (!value.startsWith('https://')) {
+                  return 'Website must start with https://'
+                }
+                try {
+                  new URL(value)
+                  return true
+                } catch {
+                  return 'Please enter a valid URL'
+                }
+              },
+            }}
             render={({ field }) => (
               <div>
                 <Input
@@ -331,8 +351,26 @@ export const OrganizationDetailsForm: React.FC<
                   {...field}
                   value={field.value || ''}
                   placeholder="https://acme.com"
+                  onBlur={(e) => {
+                    field.onBlur()
+                    validateURL(e.target.value)
+                  }}
+                  postSlot={
+                    urlStatus === 'validating' ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                    ) : urlStatus === 'valid' ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : urlStatus === 'invalid' ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    ) : null
+                  }
                 />
                 <FormMessage />
+                {urlStatus === 'invalid' && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    Website appears to be unreachable
+                  </p>
+                )}
               </div>
             )}
           />

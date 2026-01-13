@@ -1,5 +1,6 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -156,6 +157,35 @@ class CustomerRepository(
             .where(Customer.id.in_([c.id for c in customers]))
             .values(meters_updated_at=utc_now())
         )
+        await self.session.execute(statement)
+
+    async def clear_meters_dirtied_at(
+        self, customer: Customer, meters_dirtied_at: datetime | None
+    ) -> None:
+        """
+        Clear meters_dirtied_at only if it hasn't been updated since the job started.
+
+        This prevents a race condition where new events re-dirty the customer during
+        task processing. By only clearing if the value is unchanged (or older), we
+        ensure customers with continuous event ingestion are processed correctly.
+        """
+        if meters_dirtied_at is None:
+            # No original value to compare - clear unconditionally
+            statement = (
+                update(Customer)
+                .where(Customer.id == customer.id)
+                .values(meters_dirtied_at=None)
+            )
+        else:
+            # Only clear if meters_dirtied_at is still the same or older
+            statement = (
+                update(Customer)
+                .where(
+                    Customer.id == customer.id,
+                    Customer.meters_dirtied_at <= meters_dirtied_at,
+                )
+                .values(meters_dirtied_at=None)
+            )
         await self.session.execute(statement)
 
     async def get_by_id_and_organization(

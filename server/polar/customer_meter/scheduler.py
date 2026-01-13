@@ -98,12 +98,34 @@ class CustomerMeterJobStore(BaseJobStore):
         return jobs
 
     def remove_job(self, job_id: str) -> None:
-        customer_id = job_id.split(":")[-1]
-        statement = (
-            update(Customer)
-            .where(Customer.id == customer_id)
-            .values(meters_dirtied_at=None)
-        )
+        # Extract customer_id and meters_dirtied_at from job_id
+        # Format: "customers:meter_update:{customer_id}:{meters_dirtied_at}"
+        # Note: meters_dirtied_at is an ISO timestamp which contains colons,
+        # so we split with maxsplit=3 to keep the timestamp intact
+        parts = job_id.split(":", maxsplit=3)
+        customer_id = parts[2]
+        meters_dirtied_str = parts[3] if len(parts) > 3 else None
+
+        if meters_dirtied_str is None or meters_dirtied_str == "None":
+            # No original value - clear unconditionally
+            statement = (
+                update(Customer)
+                .where(Customer.id == customer_id)
+                .values(meters_dirtied_at=None)
+            )
+        else:
+            # Only clear if meters_dirtied_at is still the same or older.
+            # This prevents a race condition where new events re-dirty the
+            # customer between job pickup and task completion.
+            meters_dirtied = datetime.datetime.fromisoformat(meters_dirtied_str)
+            statement = (
+                update(Customer)
+                .where(
+                    Customer.id == customer_id,
+                    Customer.meters_dirtied_at <= meters_dirtied,
+                )
+                .values(meters_dirtied_at=None)
+            )
         with self.engine.begin() as connection:
             connection.execute(statement)
 
@@ -132,6 +154,9 @@ class CustomerMeterJobStore(BaseJobStore):
                 meters_dirtied = (
                     meters_dirtied_at.isoformat() if meters_dirtied_at else None
                 )
+                # Include meters_dirtied_at in job ID so remove_job() can do
+                # conditional clearing to prevent race conditions
+                job_id = f"customers:meter_update:{customer_id}:{meters_dirtied}"
                 job_kwargs = {
                     **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
@@ -139,7 +164,7 @@ class CustomerMeterJobStore(BaseJobStore):
                     "func": enqueue_update_customer,
                     "args": (customer_id, meters_dirtied),
                     "kwargs": {},
-                    "id": f"customers:meter_update:{customer_id}",
+                    "id": job_id,
                     "name": None,
                     "next_run_time": trigger.run_date,
                     "misfire_grace_time": None,

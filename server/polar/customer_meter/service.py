@@ -121,6 +121,9 @@ class CustomerMeterService:
 
         customer_repository = CustomerRepository.from_session(session)
         await customer_repository.set_meters_updated_at((customer,))
+        # Clear meters_dirtied_at only if no new events arrived during processing.
+        # This prevents excessive task scheduling for high-volume customers.
+        await customer_repository.clear_meters_dirtied_at(customer, meters_dirtied_at)
 
     async def update_customer_meter(
         self,

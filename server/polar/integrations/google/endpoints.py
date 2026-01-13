@@ -15,7 +15,7 @@ from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
     OAuthCallbackError,
     clear_login_cookie,
-    encode_state,
+    generate_state,
     set_login_cookie,
     validate_callback,
 )
@@ -47,7 +47,7 @@ async def create_authorization_response(
     state: dict[str, Any],
     callback_route: str,
 ) -> RedirectResponse:
-    encoded_state = encode_state(state, type="google_oauth")
+    encoded_state, nonce = generate_state(state, type="google_oauth")
     redirect_uri = str(request.url_for(callback_route))
     authorization_url = await google_oauth_client.get_authorization_url(
         redirect_uri=redirect_uri,
@@ -55,7 +55,7 @@ async def create_authorization_response(
         scope=GOOGLE_OAUTH_SCOPES,
     )
     response = RedirectResponse(authorization_url, 303)
-    set_login_cookie(request, response, encoded_state)
+    set_login_cookie(request, response, nonce)
     return response
 
 

@@ -1,3 +1,4 @@
+import secrets
 from typing import Any, Literal
 
 from fastapi import Request
@@ -16,11 +17,14 @@ class OAuthCallbackError(PolarRedirectionError):
 OAuthStateType = Literal["github_oauth", "google_oauth", "apple_oauth"]
 
 
-def encode_state(state: dict[str, Any], *, type: OAuthStateType) -> str:
-    return jwt.encode(data=state, secret=settings.SECRET, type=type)
+def generate_state(state: dict[str, Any], *, type: OAuthStateType) -> tuple[str, str]:
+    nonce = secrets.token_urlsafe()
+    state_with_nonce = {**state, "nonce": nonce}
+    encoded = jwt.encode(data=state_with_nonce, secret=settings.SECRET, type=type)
+    return encoded, nonce
 
 
-def decode_state(state: str, *, type: OAuthStateType) -> dict[str, Any]:
+def parse_state(state: str, *, type: OAuthStateType) -> dict[str, Any]:
     try:
         return jwt.decode(token=state, secret=settings.SECRET, type=type)
     except jwt.DecodeError as e:
@@ -30,16 +34,16 @@ def decode_state(state: str, *, type: OAuthStateType) -> dict[str, Any]:
 def set_login_cookie(
     request: Request,
     response: RedirectResponse,
-    encoded_state: str,
+    nonce: str,
     *,
     cross_site: bool = False,
 ) -> None:
     is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
     secure = False if is_localhost else True
     response.set_cookie(
-        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
-        value=encoded_state,
-        max_age=int(settings.SOCIAL_LOGIN_SESSION_TTL.total_seconds()),
+        settings.OAUTH_STATE_COOKIE_KEY,
+        value=nonce,
+        max_age=int(settings.OAUTH_STATE_TTL.total_seconds()),
         path="/",
         secure=secure,
         httponly=True,
@@ -56,7 +60,7 @@ def clear_login_cookie(
     is_localhost = request.url.hostname in {"127.0.0.1", "localhost"}
     secure = False if is_localhost else True
     response.set_cookie(
-        settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY,
+        settings.OAUTH_STATE_COOKIE_KEY,
         value="",
         max_age=0,
         path="/",
@@ -80,8 +84,17 @@ def validate_callback(
     if not state:
         raise OAuthCallbackError("No state")
 
-    session_cookie = request.cookies.get(settings.SOCIAL_LOGIN_SESSION_COOKIE_KEY)
-    if session_cookie is None or session_cookie != state:
+    state_data = parse_state(state, type=type)
+
+    state_nonce = state_data.get("nonce")
+    if not state_nonce or not isinstance(state_nonce, str):
+        raise OAuthCallbackError("Invalid state: missing nonce")
+
+    cookie_nonce = request.cookies.get(settings.OAUTH_STATE_COOKIE_KEY)
+    if cookie_nonce is None:
         raise OAuthCallbackError("Invalid session cookie")
 
-    return decode_state(state, type=type)
+    if not secrets.compare_digest(state_nonce, cookie_nonce):
+        raise OAuthCallbackError("Invalid session cookie")
+
+    return state_data

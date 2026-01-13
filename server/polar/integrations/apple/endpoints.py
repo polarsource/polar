@@ -16,7 +16,7 @@ from polar.kit.http import ReturnTo
 from polar.kit.oauth import (
     OAuthCallbackError,
     clear_login_cookie,
-    encode_state,
+    generate_state,
     set_login_cookie,
     validate_callback,
 )
@@ -49,7 +49,7 @@ async def apple_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    encoded_state = encode_state(state, type="apple_oauth")
+    encoded_state, nonce = generate_state(state, type="apple_oauth")
     redirect_uri = str(request.url_for("integrations.apple.callback"))
     apple_oauth_client = get_apple_oauth_client()
     authorization_url = await apple_oauth_client.get_authorization_url(
@@ -58,7 +58,7 @@ async def apple_authorize(
         extras_params={"response_mode": "form_post"},
     )
     response = RedirectResponse(authorization_url, 303)
-    set_login_cookie(request, response, encoded_state, cross_site=True)
+    set_login_cookie(request, response, nonce, cross_site=True)
     return response
 
 

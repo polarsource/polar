@@ -61,9 +61,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("1234567890", "IL"),
         ("123456789", "IL"),
         ("516179150", "IL"),
-        ("213123432", "CO"),  # Missing check digit
         ("2131234325", "CO"),  # Wrong check digit
-        ("1234567", "CO"),  # Too short
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

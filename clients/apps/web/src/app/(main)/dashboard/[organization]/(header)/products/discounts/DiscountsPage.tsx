@@ -264,9 +264,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         return discount.ends_at ? (
           <FormattedDateTime datetime={discount.ends_at} resolution="day" />
         ) : (
-          <span className="text-gray-500 dark:text-polar-500">
-            Never
-          </span>
+          <span className="dark:text-polar-500 text-gray-500">Never</span>
         )
       },
     },

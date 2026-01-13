@@ -163,6 +163,16 @@ retry attempt after a delay as explained above. However, we strongly recommend y
 best practice is for your webhook handler to queue a background worker task to handle the
 payload asynchronously.
 
+### Endpoint Disabling
+
+Webhook endpoints are automatically disabled after **10 consecutive failed deliveries** (non-2xx responses). When this happens:
+
+- The endpoint is marked as disabled and will no longer receive new events.
+- Any pending events for the endpoint are marked as skipped.
+- All organization members will receive an email notification.
+
+To re-enable a disabled endpoint, go to your organization's webhook settings in the dashboard and manually enable it. Before re-enabling, ensure your endpoint is properly configured and reachable to avoid repeated disabling.
+
 ## Troubleshooting
 
 ### Not receiving webhooks

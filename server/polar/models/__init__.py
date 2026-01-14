@@ -33,6 +33,7 @@ from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
 from .login_code import LoginCode
 from .member import Member, MemberRole
+from .member_session import MemberSession
 from .meter import Meter
 from .meter_event import MeterEvent
 from .notification import Notification
@@ -123,6 +124,7 @@ __all__ = [
     "LoginCode",
     "Member",
     "MemberRole",
+    "MemberSession",
     "Meter",
     "MeterEvent",
     "Model",

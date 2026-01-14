@@ -1,7 +1,7 @@
 """Add MemberSession model
 
 Revision ID: ab473a734057
-Revises: 3f4a5b6c7d8e
+Revises: 20a0c4dce7fd
 Create Date: 2026-01-14
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "ab473a734057"
-down_revision = "3f4a5b6c7d8e"
+down_revision = "20a0c4dce7fd"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

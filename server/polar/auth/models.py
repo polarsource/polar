@@ -5,6 +5,8 @@ from polar.enums import RateLimitGroup
 from polar.models import (
     Customer,
     CustomerSession,
+    Member,
+    MemberSession,
     OAuth2Token,
     Organization,
     OrganizationAccessToken,
@@ -19,14 +21,17 @@ from .scope import Scope
 class Anonymous: ...
 
 
-Subject = User | Organization | Customer | Anonymous
-SubjectType = type[User] | type[Organization] | type[Customer] | type[Anonymous]
+Subject = User | Organization | Customer | Member | Anonymous
+SubjectType = (
+    type[User] | type[Organization] | type[Customer] | type[Member] | type[Anonymous]
+)
 Session = (
     UserSession
     | OrganizationAccessToken
     | OAuth2Token
     | PersonalAccessToken
     | CustomerSession
+    | MemberSession
 )
 
 
@@ -59,6 +64,8 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
                 return f"organization:{self.subject.id}"
             case Customer():
                 return f"customer:{self.subject.id}"
+            case Member():
+                return f"member:{self.subject.id}"
             case Anonymous():
                 return "anonymous"
 
@@ -82,7 +89,7 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
             "rate_limit_group": self.rate_limit_group.value,
             "rate_limit_user": self.rate_limit_user,
         }
-        if isinstance(self.subject, User | Organization | Customer):
+        if isinstance(self.subject, User | Organization | Customer | Member):
             baggage["subject_id"] = str(self.subject.id)
 
         if self.session:
@@ -113,16 +120,25 @@ def is_customer[S: Subject](
     return isinstance(auth_subject.subject, Customer)
 
 
+def is_member[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[Member]]:
+    return isinstance(auth_subject.subject, Member)
+
+
 __all__ = [
     # Re-export subject types for convenience
     "Anonymous",
     "AuthSubject",
     "Customer",
+    "Member",
     "Organization",
     "Subject",
     "SubjectType",
     "User",
     "is_anonymous",
+    "is_customer",
+    "is_member",
     "is_organization",
     "is_user",
 ]

@@ -8,8 +8,16 @@ from starlette.types import Scope as ASGIScope
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
+from polar.member_session.service import (
+    MEMBER_SESSION_TOKEN_PREFIX,
+)
+from polar.member_session.service import (
+    member_session as member_session_service,
+)
 from polar.models import (
     CustomerSession,
+    MemberSession,
     OAuth2Token,
     OrganizationAccessToken,
     PersonalAccessToken,
@@ -92,6 +100,10 @@ async def get_customer_session(
     return await customer_session_service.get_by_token(session, value)
 
 
+async def get_member_session(session: AsyncSession, value: str) -> MemberSession | None:
+    return await member_session_service.get_by_token(session, value)
+
+
 async def get_auth_subject(
     request: Request, session: AsyncSession
 ) -> AuthSubject[Subject]:
@@ -100,10 +112,40 @@ async def get_auth_subject(
         if is_registration_token_prefix(token):
             return AuthSubject(Anonymous(), set(), None)
 
+        # Try MemberSession first (polar_mst_ prefix)
+        if token.startswith(MEMBER_SESSION_TOKEN_PREFIX):
+            member_session = await get_member_session(session, token)
+            if member_session:
+                return AuthSubject(
+                    member_session.member,
+                    {Scope.customer_portal_write},
+                    member_session,
+                )
+            raise InvalidTokenError()
+
+        # CustomerSession with conditional Member resolution
         customer_session = await get_customer_session(session, token)
         if customer_session:
+            customer = customer_session.customer
+            organization = customer.organization
+
+            # Check if member_model_enabled for this organization
+            if organization.feature_settings.get("member_model_enabled", False):
+                # Try to resolve to owner Member
+                member_repository = MemberRepository.from_session(session)
+                owner_member = await member_repository.get_owner_by_customer_id(
+                    session, customer.id
+                )
+                if owner_member:
+                    return AuthSubject(
+                        owner_member,
+                        {Scope.customer_portal_write},
+                        customer_session,
+                    )
+
+            # Default: return Customer
             return AuthSubject(
-                customer_session.customer,
+                customer,
                 {Scope.customer_portal_write},
                 customer_session,
             )

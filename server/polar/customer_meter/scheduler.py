@@ -117,7 +117,7 @@ class CustomerMeterJobStore(BaseJobStore):
         statement = (
             update(Customer)
             .where(Customer.id == customer_id)
-            .values(meters_processing_since=now)
+            .values(meters_processing_since=now, meters_dirtied_at=None)
         )
         with self.engine.begin() as connection:
             connection.execute(statement)

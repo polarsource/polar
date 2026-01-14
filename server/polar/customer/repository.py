@@ -1,10 +1,9 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
-from datetime import datetime
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, func, or_, select, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -159,48 +158,14 @@ class CustomerRepository(
         )
         await self.session.execute(statement)
 
-    async def clear_meters_processing(
-        self, customer: Customer, meters_dirtied_at: datetime | None = None
-    ) -> None:
-        """
-        Clear the meters processing state after task completion.
-
-        If meters_dirtied_at is provided, only clear meters_dirtied_at if it
-        hasn't been updated since processing started (i.e., no new events came in).
-        """
-        if meters_dirtied_at is not None:
-            # Try to clear both meters_processing_since and meters_dirtied_at
-            # but only if meters_dirtied_at hasn't been updated during processing
-            statement = (
-                update(Customer)
-                .where(
-                    Customer.id == customer.id,
-                    or_(
-                        Customer.meters_dirtied_at.is_(None),
-                        Customer.meters_dirtied_at <= meters_dirtied_at,
-                    ),
-                )
-                .values(meters_processing_since=None, meters_dirtied_at=None)
-            )
-            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
-            result = cast(CursorResult[Customer], await self.session.execute(statement))
-
-            # If no rows were updated, meters_dirtied_at was updated during processing
-            # Just clear meters_processing_since
-            if result.rowcount == 0:
-                statement = (
-                    update(Customer)
-                    .where(Customer.id == customer.id)
-                    .values(meters_processing_since=None)
-                )
-                await self.session.execute(statement)
-        else:
-            statement = (
-                update(Customer)
-                .where(Customer.id == customer.id)
-                .values(meters_processing_since=None)
-            )
-            await self.session.execute(statement)
+    async def clear_meters_processing(self, customer: Customer) -> None:
+        """Clear the meters processing state after task completion."""
+        statement = (
+            update(Customer)
+            .where(Customer.id == customer.id)
+            .values(meters_processing_since=None)
+        )
+        await self.session.execute(statement)
 
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID

@@ -52,7 +52,6 @@ resource "render_env_group" "backend" {
       POLAR_LOGO_DEV_PUBLISHABLE_KEY   = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
-      POLAR_EVENTS_DUAL_WRITE_ENABLED  = { value = "false" }
       POLAR_DEFAULT_TAX_PROCESSOR      = { value = var.backend_config.default_tax_processor }
       POLAR_NUMERAL_API_KEY            = { value = var.backend_secrets.numeral_api_key }
     },

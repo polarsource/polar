@@ -74,7 +74,7 @@ services:
   # ============================================
 
   db:
-    image: timescale/timescaledb:latest-pg15
+    image: postgres:15.1-bullseye
     environment:
       POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}
       POSTGRES_PASSWORD: ${POLAR_POSTGRES_PWD:-polar}

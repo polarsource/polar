@@ -164,7 +164,7 @@ jobs:
 
     services:
       postgres:
-        image: timescale/timescaledb:latest-pg15
+        image: postgres:15.1-bullseye
         env:
           POSTGRES_USER: polar
           POSTGRES_PASSWORD: polar

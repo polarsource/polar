@@ -14,6 +14,7 @@ from .models import (
     Anonymous,
     AuthSubject,
     Customer,
+    Member,
     Organization,
     Subject,
     SubjectType,
@@ -44,6 +45,16 @@ customer_session_scheme = HTTPBearer(
         "that are used to authenticate customers on your organization. "
         "You can create those sessions programmatically using the "
         "[Create Customer Session endpoint](/api-reference/customer-portal/sessions/create)."
+    ),
+)
+member_session_scheme = HTTPBearer(
+    scheme_name="member_session",
+    auto_error=False,
+    description=(
+        "Member session tokens are specific tokens "
+        "that are used to authenticate members on your organization. "
+        "You can create those sessions programmatically using the "
+        "[Create Member Session endpoint](/api-reference/member-portal/sessions/create)."
     ),
 )
 
@@ -96,6 +107,14 @@ def _get_auth_subject_factory(
                 name="customer_session_credentials",
                 kind=Parameter.KEYWORD_ONLY,
                 default=Depends(customer_session_scheme),
+            )
+        )
+    if Member in allowed_subjects:
+        parameters.append(
+            Parameter(
+                name="member_session_credentials",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(member_session_scheme),
             )
         )
 

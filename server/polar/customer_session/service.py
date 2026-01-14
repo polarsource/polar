@@ -101,7 +101,11 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 CustomerSession.deleted_at.is_(None),
                 Customer.can_authenticate.is_(True),
             )
-            .options(contains_eager(CustomerSession.customer))
+            .options(
+                contains_eager(CustomerSession.customer).joinedload(
+                    Customer.organization
+                )
+            )
         )
         if not expired:
             statement = statement.where(CustomerSession.expires_at > utc_now())

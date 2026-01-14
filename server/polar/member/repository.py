@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -79,13 +80,17 @@ class MemberRepository(
         customer_id: UUID,
     ) -> Member | None:
         """Get the owner member for a customer."""
-        statement = select(Member).where(
-            Member.customer_id == customer_id,
-            Member.role == MemberRole.owner,
-            Member.deleted_at.is_(None),
+        statement = (
+            select(Member)
+            .where(
+                Member.customer_id == customer_id,
+                Member.role == MemberRole.owner,
+                Member.deleted_at.is_(None),
+            )
+            .options(joinedload(Member.customer).joinedload(Customer.organization))
         )
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def list_by_customers(
         self,

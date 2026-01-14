@@ -1,16 +1,14 @@
 import structlog
 from pydantic import HttpUrl
-from sqlalchemy import delete, select
-from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
-from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Member, MemberSession
-from polar.models.customer import Customer
 from polar.postgres import AsyncSession
+
+from .repository import MemberSessionRepository
 
 log: Logger = structlog.get_logger()
 
@@ -41,30 +39,12 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> MemberSession | None:
         token_hash = get_token_hash(token, secret=settings.SECRET)
-        statement = (
-            select(MemberSession)
-            .join(MemberSession.member)
-            .join(Member.customer)
-            .where(
-                MemberSession.token == token_hash,
-                MemberSession.deleted_at.is_(None),
-                Member.deleted_at.is_(None),
-            )
-            .options(
-                contains_eager(MemberSession.member)
-                .contains_eager(Member.customer)
-                .joinedload(Customer.organization)
-            )
-        )
-        if not expired:
-            statement = statement.where(MemberSession.expires_at > utc_now())
-
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        repository = MemberSessionRepository.from_session(session)
+        return await repository.get_by_token_hash(token_hash, expired=expired)
 
     async def delete_expired(self, session: AsyncSession) -> None:
-        statement = delete(MemberSession).where(MemberSession.expires_at < utc_now())
-        await session.execute(statement)
+        repository = MemberSessionRepository.from_session(session)
+        await repository.delete_expired()
 
 
 member_session = MemberSessionService(MemberSession)

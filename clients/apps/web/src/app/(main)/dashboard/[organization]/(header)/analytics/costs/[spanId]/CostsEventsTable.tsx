@@ -102,7 +102,7 @@ export default function CostsEventsTable({
     }
   }, [hierarchyStats])
 
-  return events.length > 0 ? (
+  return events.length > 0 && eventTypes.length > 0 ? (
     <div>
       <div className="dark:border-polar-700 w-full border-collapse overflow-hidden rounded-xl border border-gray-200">
         <table className="w-full table-fixed border-collapse rounded-lg">

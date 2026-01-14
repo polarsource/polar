@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
@@ -60,7 +61,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         active: bool | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerSubscriptionSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerSubscriptionSortProperty]] = [
             (CustomerSubscriptionSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:

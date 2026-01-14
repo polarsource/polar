@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -131,7 +132,7 @@ class OrganizationService:
         *,
         slug: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrganizationSortProperty]] = [
+        sorting: builtins.list[Sorting[OrganizationSortProperty]] = [
             (OrganizationSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[Organization], int]:

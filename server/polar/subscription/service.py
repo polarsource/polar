@@ -1,3 +1,4 @@
+import builtins
 import contextlib
 import uuid
 from collections.abc import AsyncGenerator, Sequence
@@ -287,7 +288,7 @@ class SubscriptionService:
         cancel_at_period_end: bool | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SubscriptionSortProperty]] = [
+        sorting: builtins.list[Sorting[SubscriptionSortProperty]] = [
             (SubscriptionSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:

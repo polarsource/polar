@@ -233,7 +233,7 @@ def actor[**P, R](
                 return await fn(*args, **kwargs)
 
         _actor(
-            _wrapped_fn,  # type: ignore
+            _wrapped_fn,
             actor_class=actor_class,
             actor_name=actor_name,
             queue_name=queue_name,

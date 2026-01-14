@@ -234,7 +234,7 @@ class CustomFieldSelect(CustomField):
     }
 
     def get_field_definition(self, required: bool) -> tuple[Any, Any]:
-        literal_type = Literal[  # type: ignore
+        literal_type = Literal[
             tuple(option["value"] for option in self.properties["options"])
         ]
         return (

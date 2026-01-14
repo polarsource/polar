@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 
@@ -53,7 +54,7 @@ class PaymentService:
         method: Sequence[str] | None = None,
         customer_email: Sequence[str] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[PaymentSortProperty]] = [
+        sorting: builtins.list[Sorting[PaymentSortProperty]] = [
             (PaymentSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Payment], int]:

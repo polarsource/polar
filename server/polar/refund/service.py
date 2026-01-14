@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Literal
@@ -113,7 +114,7 @@ class RefundService:
         customer_id: Sequence[UUID] | None = None,
         succeeded: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[RefundSortProperty]] = [
+        sorting: builtins.list[Sorting[RefundSortProperty]] = [
             (RefundSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Refund], int]:
@@ -287,9 +288,12 @@ class RefundService:
         # Check if there are disputes to link
         dispute_repository = DisputeRepository.from_session(session)
         dispute: Dispute | None = None
-        if stripe_refund.metadata and (
-            alert_id := stripe_refund.metadata.get("cbs_related_alert_id")
-        ):
+        alert_id = (
+            stripe_refund.metadata.get("cbs_related_alert_id")
+            if stripe_refund.metadata
+            else None
+        )
+        if alert_id:
             dispute = await dispute_repository.get_by_alert_processor_id(
                 DisputeAlertProcessor.chargeback_stop, alert_id
             )

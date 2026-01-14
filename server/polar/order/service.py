@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -269,7 +270,7 @@ class OrderService:
         checkout_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrderSortProperty]] = [
+        sorting: builtins.list[Sorting[OrderSortProperty]] = [
             (OrderSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Order], int]:

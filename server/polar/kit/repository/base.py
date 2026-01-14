@@ -4,7 +4,6 @@ from enum import StrEnum
 from typing import Any, Protocol, Self
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
-from sqlalchemy.orm import Mapped
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
@@ -16,16 +15,16 @@ from polar.kit.utils import utc_now
 
 
 class ModelDeletedAtProtocol(Protocol):
-    deleted_at: Mapped[datetime | None]
+    deleted_at: datetime | None
 
 
 class ModelIDProtocol[ID_TYPE](Protocol):
-    id: Mapped[ID_TYPE]
+    id: ID_TYPE
 
 
 class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
-    id: Mapped[ID_TYPE]
-    deleted_at: Mapped[datetime | None]
+    id: ID_TYPE
+    deleted_at: datetime | None
 
 
 type Options = Sequence[ExecutableOption]
@@ -202,7 +201,7 @@ class RepositorySoftDeletionMixin[MODEL_DELETED_AT: ModelDeletedAtProtocol]:
         )
 
 
-class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[type-arg]
+class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:
     async def get_by_id(
         self: RepositoryProtocol[MODEL_ID],
         id: ID_TYPE,
@@ -216,7 +215,7 @@ class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[typ
 
 
 class RepositorySoftDeletionIDMixin[
-    MODEL_DELETED_AT_ID: ModelDeletedAtIDProtocol,  # type: ignore[type-arg]
+    MODEL_DELETED_AT_ID: ModelDeletedAtIDProtocol,
     ID_TYPE,
 ]:
     async def get_by_id(

@@ -59,7 +59,7 @@ def SortingGetter[PE: StrEnum](
         enum_values.append(value.value)
         enum_values.append(f"-{value.value}")
 
-    sort_property_full_enum = StrEnum(  # type: ignore[misc]
+    sort_property_full_enum = StrEnum(
         sort_property_enum.__name__,
         enum_values,
     )

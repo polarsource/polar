@@ -219,7 +219,7 @@ class Address(BaseModel):
 
 
 class AddressInput(Address):
-    country: Annotated[CountryAlpha2Input, BeforeValidator(str.upper)] = Field(  # type: ignore
+    country: Annotated[CountryAlpha2Input, BeforeValidator(str.upper)] = Field(
         examples=["US", "SE", "FR"]
     )
 

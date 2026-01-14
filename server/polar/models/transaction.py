@@ -390,7 +390,7 @@ class Transaction(RecordModel):
             lazy="raise",
             # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
             remote_side=[
-                cls.id,  # type: ignore
+                cls.id,
             ],
             foreign_keys="[Transaction.payment_transaction_id]",
             back_populates="balance_transactions",
@@ -455,7 +455,7 @@ class Transaction(RecordModel):
             lazy="raise",
             # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
             remote_side=[
-                cls.id,  # type: ignore
+                cls.id,
             ],
             foreign_keys="[Transaction.balance_reversal_transaction_id]",
             back_populates="balance_reversal_transactions",
@@ -487,7 +487,7 @@ class Transaction(RecordModel):
             lazy="raise",
             # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
             remote_side=[
-                cls.id,  # type: ignore
+                cls.id,
             ],
             foreign_keys="[Transaction.payout_transaction_id]",
             back_populates="paid_transactions",
@@ -527,7 +527,7 @@ class Transaction(RecordModel):
             lazy="raise",
             # Ref: https://docs.sqlalchemy.org/en/20/orm/self_referential.html
             remote_side=[
-                cls.id,  # type: ignore
+                cls.id,
             ],
             back_populates="incurred_transactions",
             foreign_keys="[Transaction.incurred_by_transaction_id]",

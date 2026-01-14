@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any, cast
@@ -47,7 +48,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CheckoutLinkSortProperty]] = [
+        sorting: builtins.list[Sorting[CheckoutLinkSortProperty]] = [
             (CheckoutLinkSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:

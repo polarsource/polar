@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
@@ -62,7 +63,7 @@ class CustomerOrderService:
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerOrderSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerOrderSortProperty]] = [
             (CustomerOrderSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Order], int]:

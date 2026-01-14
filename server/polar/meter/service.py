@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -65,7 +66,7 @@ class MeterService:
         query: str | None = None,
         is_archived: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[MeterSortProperty]] = [
+        sorting: builtins.list[Sorting[MeterSortProperty]] = [
             (MeterSortProperty.meter_name, False)
         ],
     ) -> tuple[Sequence[Meter], int]:

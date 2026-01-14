@@ -179,7 +179,7 @@ class BillingEntryService:
         if entry.direction == BillingEntryDirection.credit:
             label = f"Remaining time on {product.name} — From {start} to {end}"
             amount = -amount
-        elif entry.direction == BillingEntryDirection.debit:
+        else:
             label = f"{product.name} — From {start} to {end}"
             amount = amount
 

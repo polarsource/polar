@@ -191,7 +191,7 @@ class MultipleQueryFilter[Q](Sequence[Q]):
     def _scalar_to_sequence(cls, v: Q | Sequence[Q]) -> Sequence[Q]:
         if isinstance(v, Sequence) and not isinstance(v, str):
             return v
-        return [cast(Q, v)]  # type: ignore[redundant-cast]
+        return [cast(Q, v)]
 
 
 ORGANIZATION_ID_EXAMPLE = "1dbfc517-0bbf-4301-9ba8-555ca42b9737"

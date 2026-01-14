@@ -60,7 +60,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "mypy>=1.11",
+  "ty>=0.0.11",
   "pytest<10",
   "pytest-sugar>=1.0.0",
   "typer>=0.12.5",
@@ -95,7 +95,7 @@ test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
-lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
+lint_types = { cmd = "ty check polar scripts tests", help = "run ty type checker" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
@@ -136,23 +136,49 @@ ignore = [
 ]
 "scripts/*" = ["T20"]
 
-[tool.mypy]
-ignore_missing_imports = true
-plugins = ["pydantic.mypy"]
-warn_redundant_casts = true
-warn_unused_ignores = true
-disallow_any_generics = true
-check_untyped_defs = true
-no_implicit_reexport = true
-strict_equality = true
-disallow_untyped_defs = true
-skip_cache_mtime_checks = true
+[tool.ty.environment]
+python-version = "3.14"
+python = "./.venv"
 
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = false
-warn_untyped_fields = true
+[tool.ty.rules]
+unused-ignore-comment = "warn"
+redundant-cast = "warn"
+deprecated = "warn"
+possibly-unresolved-reference = "error"
+division-by-zero = "error"
+invalid-argument-type = "error"
+invalid-assignment = "error"
+unresolved-attribute = "error"
+invalid-return-type = "error"
+missing-argument = "error"
+unknown-argument = "error"
+
+[tool.ty.src]
+include = ["polar", "scripts", "tests"]
+
+[[tool.ty.overrides]]
+include = ["polar/integrations/plain/**"]
+[tool.ty.overrides.rules]
+unknown-argument = "ignore"
+missing-argument = "ignore"
+
+[[tool.ty.overrides]]
+include = ["polar/app.py"]
+[tool.ty.overrides.rules]
+invalid-argument-type = "ignore"
+
+[[tool.ty.overrides]]
+include = ["tests/**"]
+[tool.ty.overrides.rules]
+possibly-unresolved-reference = "warn"
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/backoffice/**"]
+[tool.ty.overrides.rules]
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

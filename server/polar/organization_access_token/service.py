@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -45,7 +46,7 @@ class OrganizationAccessTokenService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[OrganizationAccessTokenSortProperty]] = [
+        sorting: builtins.list[Sorting[OrganizationAccessTokenSortProperty]] = [
             (OrganizationAccessTokenSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[OrganizationAccessToken], int]:

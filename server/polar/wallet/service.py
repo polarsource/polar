@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 
@@ -59,7 +60,7 @@ class WalletService:
         type: Sequence[WalletType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[WalletSortProperty]] = [
+        sorting: builtins.list[Sorting[WalletSortProperty]] = [
             (WalletSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Wallet], int]:

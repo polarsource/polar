@@ -85,7 +85,7 @@ class DownloadableFileRead(FileReadBase):
 
 
 class PublicFileReadBase(FileReadBase):
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def public_url(self) -> str:
         return S3_SERVICES[self.service].get_public_url(self.path)

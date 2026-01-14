@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 
@@ -56,7 +57,7 @@ class DisputeService:
         order_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[DisputeStatus] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[DisputeSortProperty]] = [
+        sorting: builtins.list[Sorting[DisputeSortProperty]] = [
             (DisputeSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Dispute], int]:

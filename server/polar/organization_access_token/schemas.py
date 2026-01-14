@@ -7,7 +7,7 @@ from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import OrganizationID
 
-AvailableScope = StrEnum(  # type: ignore
+AvailableScope = StrEnum(
     "AvailableScope", {s: s.value for s in Scope if s not in RESERVED_SCOPES}
 )
 

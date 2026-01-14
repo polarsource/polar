@@ -65,7 +65,7 @@ class S3File(IDSchema, validate_assignment=True):
 
     last_modified_at: datetime | None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def size_readable(self) -> str:
         return human_readable_size(self.size)

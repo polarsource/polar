@@ -27,7 +27,7 @@ class BenefitDiscordProperties(Schema):
         description="Whether to kick the member from the Discord server on revocation.",
     )
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def guild_token(self) -> str:
         return jwt.encode(

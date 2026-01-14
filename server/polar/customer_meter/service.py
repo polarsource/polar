@@ -164,7 +164,7 @@ class CustomerMeterService:
             #         session, customer, meter, ingested_at_lower_bound
             #     )
 
-            old_last_event_id = last_event.id if last_event else None
+            # old_last_event_id = last_event.id if last_event else None
             # new_last_event_id = new_last_event.id if new_last_event else None
             # if old_last_event_id != new_last_event_id:
             #     logfire.error(
@@ -222,7 +222,7 @@ class CustomerMeterService:
             #         session, customer, meter
             #     )
 
-            old_credit_ids = {e.id for e in credit_events}
+            # old_credit_ids = {e.id for e in credit_events}
             # new_credit_ids = {e.id for e in new_credit_events}
             # if old_credit_ids != new_credit_ids:
             #     logfire.error(

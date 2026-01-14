@@ -141,5 +141,8 @@ server/tests/invoice/test_invoice*.pdf
 supervisord.pid
 server/.minio/
 
+# Email renderer
+server/emails/.npmrc
+
 # Docker dev environment
 dev/docker/.env.docker

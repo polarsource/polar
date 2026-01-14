@@ -14,6 +14,10 @@ def include_object(object, name, type_, reflected, compare_to):
     # Exclude TimescaleDB - Docker image handles creation, migration is backup
     if isinstance(object, PGExtension) and object.signature == "timescaledb":
         return False
+    # Exclude tables/indexes marked with skip_autogenerate
+    if type_ in ("table", "index") and hasattr(object, "info"):
+        if object.info.get("skip_autogenerate"):
+            return False
     # Exclude TimescaleDB auto-created index on hypertable partitioning column
     if type_ == "index" and name == "events_hyper_ingested_at_idx":
         return False

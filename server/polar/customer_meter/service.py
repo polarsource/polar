@@ -159,21 +159,21 @@ class CustomerMeterService:
                     session, customer, meter, ingested_at_lower_bound
                 )
 
-            with logfire.span("get_latest_event.new"):
-                new_last_event = await self._get_latest_current_window_event_new(
-                    session, customer, meter, ingested_at_lower_bound
-                )
+            # with logfire.span("get_latest_event.new"):
+            #     new_last_event = await self._get_latest_current_window_event_new(
+            #         session, customer, meter, ingested_at_lower_bound
+            #     )
 
-            old_last_event_id = last_event.id if last_event else None
-            new_last_event_id = new_last_event.id if new_last_event else None
-            if old_last_event_id != new_last_event_id:
-                logfire.error(
-                    "last_event mismatch",
-                    customer_id=str(customer.id),
-                    meter_id=str(meter.id),
-                    old_event_id=str(old_last_event_id) if old_last_event_id else None,
-                    new_event_id=str(new_last_event_id) if new_last_event_id else None,
-                )
+            # old_last_event_id = last_event.id if last_event else None
+            # new_last_event_id = new_last_event.id if new_last_event else None
+            # if old_last_event_id != new_last_event_id:
+            #     logfire.error(
+            #         "last_event mismatch",
+            #         customer_id=str(customer.id),
+            #         meter_id=str(meter.id),
+            #         old_event_id=str(old_last_event_id) if old_last_event_id else None,
+            #         new_event_id=str(new_last_event_id) if new_last_event_id else None,
+            #     )
 
             if customer_meter is None:
                 activated_at = (
@@ -196,19 +196,19 @@ class CustomerMeterService:
             with logfire.span("get_usage.old"):
                 usage_units = await self._get_usage_quantity(session, customer, meter)
 
-            with logfire.span("get_usage.new"):
-                new_usage_units = await self._get_usage_quantity_new(
-                    session, customer, meter
-                )
+            # with logfire.span("get_usage.new"):
+            #     new_usage_units = await self._get_usage_quantity_new(
+            #         session, customer, meter
+            #     )
 
-            if usage_units != new_usage_units:
-                logfire.error(
-                    "usage mismatch",
-                    customer_id=str(customer.id),
-                    meter_id=str(meter.id),
-                    old_usage=usage_units,
-                    new_usage=new_usage_units,
-                )
+            # if usage_units != new_usage_units:
+            #     logfire.error(
+            #         "usage mismatch",
+            #         customer_id=str(customer.id),
+            #         meter_id=str(meter.id),
+            #         old_usage=usage_units,
+            #         new_usage=new_usage_units,
+            #     )
 
             customer_meter.consumed_units = Decimal(usage_units)
 
@@ -217,27 +217,27 @@ class CustomerMeterService:
                     customer, meter, event_repository
                 )
 
-            with logfire.span("get_credits.new"):
-                new_credit_events = await self._get_credit_events_new(
-                    session, customer, meter
-                )
+            # with logfire.span("get_credits.new"):
+            #     new_credit_events = await self._get_credit_events_new(
+            #         session, customer, meter
+            #     )
 
-            old_credit_ids = {e.id for e in credit_events}
-            new_credit_ids = {e.id for e in new_credit_events}
-            if old_credit_ids != new_credit_ids:
-                logfire.error(
-                    "credit_events mismatch",
-                    customer_id=str(customer.id),
-                    meter_id=str(meter.id),
-                    old_count=len(old_credit_ids),
-                    new_count=len(new_credit_ids),
-                    only_in_old=[
-                        str(e) for e in list(old_credit_ids - new_credit_ids)[:5]
-                    ],
-                    only_in_new=[
-                        str(e) for e in list(new_credit_ids - old_credit_ids)[:5]
-                    ],
-                )
+            # old_credit_ids = {e.id for e in credit_events}
+            # new_credit_ids = {e.id for e in new_credit_events}
+            # if old_credit_ids != new_credit_ids:
+            #     logfire.error(
+            #         "credit_events mismatch",
+            #         customer_id=str(customer.id),
+            #         meter_id=str(meter.id),
+            #         old_count=len(old_credit_ids),
+            #         new_count=len(new_credit_ids),
+            #         only_in_old=[
+            #             str(e) for e in list(old_credit_ids - new_credit_ids)[:5]
+            #         ],
+            #         only_in_new=[
+            #             str(e) for e in list(new_credit_ids - old_credit_ids)[:5]
+            #         ],
+            #     )
 
             credited_units = non_negative_running_sum(
                 event.user_metadata["units"] for event in credit_events

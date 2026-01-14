@@ -1,6 +1,6 @@
 """Add MemberSession model
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: ab473a734057
 Revises: 3f4a5b6c7d8e
 Create Date: 2026-01-14
 
@@ -12,7 +12,7 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "a1b2c3d4e5f6"
+revision = "ab473a734057"
 down_revision = "3f4a5b6c7d8e"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None

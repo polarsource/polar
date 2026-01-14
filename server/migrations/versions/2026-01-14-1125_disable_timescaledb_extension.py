@@ -6,6 +6,7 @@ Create Date: 2026-01-14 11:25:38.404124
 
 """
 
+import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
@@ -18,8 +19,21 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.execute("DROP EXTENSION IF EXISTS timescaledb CASCADE")
+    connection = op.get_bind()
+    assert connection is not None
+    result = connection.execute(
+        sa.text("SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb'")
+    ).fetchone()
+    if result:
+        op.execute("DROP EXTENSION IF EXISTS timescaledb CASCADE")
 
 
 def downgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")
+    connection = op.get_bind()
+    assert connection is not None
+    result = connection.execute(
+        sa.text("SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb'")
+    ).fetchone()
+
+    if result:
+        op.execute("CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")

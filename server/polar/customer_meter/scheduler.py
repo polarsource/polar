@@ -3,6 +3,7 @@ import uuid
 from operator import or_
 
 import dramatiq
+import redis
 import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
@@ -16,10 +17,24 @@ from polar.logging import Logger
 from polar.models import Customer
 from polar.postgres import create_sync_engine
 
+from .tasks import UPDATE_CUSTOMER_LOCK_PREFIX
+
+_redis_client: redis.Redis[str] | None = None
+
+
+def _get_redis() -> redis.Redis[str]:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
+    return _redis_client
+
 
 def enqueue_update_customer(
     customer_id: uuid.UUID, meters_dirtied_at: datetime.datetime | None = None
 ) -> None:
+    lock_key = f"{UPDATE_CUSTOMER_LOCK_PREFIX}{customer_id}"
+    if not _get_redis().set(lock_key, "1", nx=True, ex=3600):
+        return
     actor = dramatiq.get_broker().get_actor("customer_meter.update_customer")
     actor.send(customer_id=customer_id, meters_dirtied_at=meters_dirtied_at)
 

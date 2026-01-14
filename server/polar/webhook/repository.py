@@ -32,18 +32,10 @@ class WebhookEventRepository(
     async def get_all_undelivered(
         self, older_than: datetime | None = None
     ) -> Sequence[WebhookEvent]:
-        statement = (
-            self.get_base_statement()
-            .join(
-                WebhookDelivery,
-                WebhookDelivery.webhook_event_id == WebhookEvent.id,
-                isouter=True,
-            )
-            .where(
-                WebhookDelivery.id.is_(None),
-                WebhookEvent.payload.is_not(None),
-                WebhookEvent.skipped.is_(False),
-            )
+        statement = self.get_base_statement().where(
+            WebhookEvent.succeeded.is_(None),
+            WebhookEvent.payload.is_not(None),
+            WebhookEvent.skipped.is_(False),
         )
         if older_than is not None:
             statement = statement.where(WebhookEvent.created_at < older_than)

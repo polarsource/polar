@@ -12,6 +12,7 @@ from .repository import ExternalEventRepository
     actor_name="external_event.prune",
     priority=TaskPriority.LOW,
     cron_trigger=CronTrigger(hour=0, minute=0),
+    max_retries=0,
 )
 async def external_event_prune() -> None:
     async with AsyncSessionMaker() as session:

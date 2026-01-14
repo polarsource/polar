@@ -9,7 +9,7 @@ from .repository import OrganizationAccessTokenRepository
 @actor(
     actor_name="organization_access_token.record_usage",
     priority=TaskPriority.LOW,
-    max_retries=3,
+    max_retries=1,
     min_backoff=5_000,
 )
 async def record_usage(

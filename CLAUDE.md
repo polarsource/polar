@@ -27,7 +27,7 @@ pnpm test                     # Frontend tests
 
 ## Custom Commands
 
-- `/polar:code-review` - Comprehensive code review with 3 parallel agents (security, conventions, simplification)
+- `/polar-code-review` - Comprehensive code review with 3 parallel agents (security, conventions, simplification)
 
 ## Architecture
 

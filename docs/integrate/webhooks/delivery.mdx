@@ -42,15 +42,15 @@ import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 const app = express()
 
 app.post(
-'/webhook',
-express.raw({ type: 'application/json' }),
-(req: Request, res: Response) => {
-try {
-const event = validateEvent(
-req.body,
-req.headers,
-process.env['POLAR_WEBHOOK_SECRET'] ?? '',
-)
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  (req: Request, res: Response) => {
+    try {
+      const event = validateEvent(
+        req.body,
+        req.headers,
+        process.env['POLAR_WEBHOOK_SECRET'] ?? '',
+      )
 
       // Process the event
 
@@ -61,11 +61,9 @@ process.env['POLAR_WEBHOOK_SECRET'] ?? '',
       }
       throw error
     }
-
-},
+  },
 )
-
-````
+```
 
 ```python Python (Flask)
 import os
@@ -88,7 +86,7 @@ def webhook():
         return "", 202
     except WebhookVerificationError as e:
         return "", 403
-````
+```
 
 </CodeGroup>
 

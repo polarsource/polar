@@ -295,7 +295,7 @@ export function EventRow({
   return (
     <>
       <tr>
-        {showEventType && (
+        {showEventType && eventType && (
           <td
             className={twMerge(
               'p-2',

@@ -10,6 +10,8 @@ from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from .service import customer_meter as customer_meter_service
 
+UPDATE_CUSTOMER_LOCK_PREFIX = "customer_meter.update_customer:lock:"
+
 
 class CustomerMeterTaskError(PolarTaskError): ...
 
@@ -47,3 +49,5 @@ async def update_customer(
         await customer_meter_service.update_customer(
             session, locker, customer, meters_dirtied
         )
+
+        await redis.delete(f"{UPDATE_CUSTOMER_LOCK_PREFIX}{customer_id}")

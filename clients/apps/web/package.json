@@ -40,6 +40,7 @@
     "@next/third-parties": "16.1.1",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
+    "@polar-sh/customer-portal": "workspace:*",
     "@polar-sh/mdx": "workspace:*",
     "@polar-sh/sdk": "^0.42.1",
     "@polar-sh/ui": "workspace:*",

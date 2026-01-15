@@ -12,13 +12,17 @@ from dramatiq.brokers.redis import RedisBroker
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
+from polar.logging import Logger
 
+from ._debounce import DebounceMiddleware
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
 from ._memory import MemoryMonitorMiddleware
 from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
 from ._sqlalchemy import SQLAlchemyMiddleware
+
+log: Logger = structlog.get_logger()
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -123,13 +127,11 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
-redis_pool = redis.ConnectionPool.from_url(
-    settings.redis_url,
-    client_name=f"{settings.ENV.value}.worker.dramatiq",
-)
-
-
 def get_broker() -> dramatiq.Broker:
+    redis_pool = redis.ConnectionPool.from_url(
+        settings.redis_url,
+        client_name=f"{settings.ENV.value}.worker.dramatiq",
+    )
     broker = RedisBroker(
         connection_pool=redis_pool,
         # Override default middlewares
@@ -155,6 +157,7 @@ def get_broker() -> dramatiq.Broker:
     broker.add_middleware(middleware.AsyncIO())
     broker.add_middleware(middleware.CurrentMessage())
     broker.add_middleware(MaxRetriesMiddleware())
+    broker.add_middleware(DebounceMiddleware(redis_pool))
     broker.add_middleware(SQLAlchemyMiddleware())
     broker.add_middleware(RedisMiddleware())
     broker.add_middleware(HTTPXMiddleware())

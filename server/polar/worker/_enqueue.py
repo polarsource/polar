@@ -14,6 +14,8 @@ from dramatiq.common import dq_name
 from polar.logging import Logger
 from polar.redis import Redis
 
+from ._debounce import set_debounce_key
+
 log: Logger = structlog.get_logger()
 
 
@@ -84,6 +86,18 @@ class JobQueueManager:
                 kwargs=kwargs,
                 redis_message_id=redis_message_id,
             )
+
+            # Set debounce key if any
+            debounce = await set_debounce_key(
+                redis, fn, message.message_id, args, kwargs
+            )
+            if debounce is not None:
+                key, debounce_delay = debounce
+                message = message.copy(options={**message.options, "debounce_key": key})
+                if delay is not None:
+                    delay = max(delay, debounce_delay)
+                else:
+                    delay = debounce_delay
 
             # Handle delay: convert to eta and use delayed queue
             # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116

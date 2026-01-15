@@ -23,6 +23,7 @@ from polar.kit.schemas import (
     SelectorWidget,
     SetSchemaReference,
 )
+from polar.member.schemas import Member
 from polar.models.benefit import BenefitType
 
 from .strategies import BenefitGrantProperties
@@ -120,6 +121,7 @@ class BenefitGrant(BenefitGrantBase):
 
 class BenefitGrantWebhookBase(BenefitGrantBase):
     customer: Customer
+    member: Member | None = None
 
 
 class BenefitGrantDiscordWebhook(BenefitGrantWebhookBase):

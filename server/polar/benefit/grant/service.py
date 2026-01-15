@@ -88,6 +88,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             query = query.options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+                joinedload(BenefitGrant.member),
             )
 
         if options is not None:
@@ -237,6 +238,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "benefit_id": str(benefit.id),
                     "benefit_grant_id": str(grant.id),
                     "benefit_type": benefit.type,
+                    **({"member_id": str(grant.member_id)} if grant.member_id else {}),
                 },
             ),
         )
@@ -335,6 +337,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "benefit_id": str(benefit.id),
                     "benefit_grant_id": str(grant.id),
                     "benefit_type": benefit.type,
+                    **({"member_id": str(grant.member_id)} if grant.member_id else {}),
                 },
             ),
         )
@@ -474,6 +477,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "benefit_id": str(benefit.id),
                     "benefit_grant_id": str(grant.id),
                     "benefit_type": benefit.type,
+                    **({"member_id": str(grant.member_id)} if grant.member_id else {}),
                 },
             ),
         )
@@ -543,6 +547,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "benefit_id": str(benefit.id),
                     "benefit_grant_id": str(grant.id),
                     "benefit_type": benefit.type,
+                    **({"member_id": str(grant.member_id)} if grant.member_id else {}),
                 },
             ),
         )

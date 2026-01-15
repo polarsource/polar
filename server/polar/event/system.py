@@ -89,10 +89,11 @@ class MeterResetEvent(Event):
         user_metadata: Mapped[MeterResetMetadata]  # type: ignore[assignment]
 
 
-class BenefitGrantMetadata(TypedDict):
+class BenefitGrantMetadata(TypedDict, total=False):
     benefit_id: str
     benefit_grant_id: str
     benefit_type: BenefitType
+    member_id: str
 
 
 class BenefitGrantedEvent(Event):

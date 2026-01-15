@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import logfire
 import structlog
 from sqlalchemy import (
     Select,
@@ -551,86 +552,93 @@ class EventService:
                 metadata["id"] = batch_external_id_map[event_create.external_id]
             event_metadata.append(metadata)
 
-        sorted_metadata = _topological_sort_events(event_metadata)
+        with logfire.span("topological_sort", event_count=len(event_metadata)):
+            sorted_metadata = _topological_sort_events(event_metadata)
 
         # Process events in sorted order
         events: list[dict[str, Any]] = []
         errors: list[ValidationError] = []
         processed_events: dict[uuid.UUID, dict[str, Any]] = {}
 
-        for metadata in sorted_metadata:
-            index = metadata["index"]
-            event_create = ingest.events[index]
+        with logfire.span("process_events", event_count=len(sorted_metadata)):
+            for metadata in sorted_metadata:
+                index = metadata["index"]
+                event_create = ingest.events[index]
 
-            try:
-                organization_id = validate_organization_id(
-                    index, event_create.organization_id
-                )
-                if isinstance(event_create, EventCreateCustomer):
-                    validate_customer_id(index, event_create.customer_id)
-
-                parent_event: Event | None = None
-                parent_id_in_batch: uuid.UUID | None = None
-                if event_create.parent_id is not None:
-                    parent_event, parent_id_in_batch = await self._resolve_parent(
-                        session,
-                        index,
-                        event_create.parent_id,
-                        organization_id,
-                        batch_external_id_map,
+                try:
+                    organization_id = validate_organization_id(
+                        index, event_create.organization_id
                     )
+                    if isinstance(event_create, EventCreateCustomer):
+                        validate_customer_id(index, event_create.customer_id)
 
-                event_label_cache_key = (event_create.name, organization_id)
-                if event_label_cache_key not in event_types_cache:
-                    event_type = await event_type_repository.get_or_create(
-                        event_create.name, organization_id
-                    )
-                    event_types_cache[event_label_cache_key] = event_type.id
-                event_type_id = event_types_cache[event_label_cache_key]
-            except EventIngestValidationError as e:
-                errors.extend(e.errors)
-                continue
-            else:
-                event_dict = event_create.model_dump(
-                    exclude={"organization_id", "parent_id"}, by_alias=True
-                )
-                event_dict["source"] = EventSource.user
-                event_dict["organization_id"] = organization_id
-                event_dict["event_type_id"] = event_type_id
-
-                if event_create.external_id is not None:
-                    event_dict["id"] = batch_external_id_map[event_create.external_id]
-
-                if parent_event is not None:
-                    event_dict["parent_id"] = parent_event.id
-                    event_dict["root_id"] = parent_event.root_id or parent_event.id
-                elif parent_id_in_batch is not None:
-                    event_dict["parent_id"] = parent_id_in_batch
-                    # Parent was already processed, look it up
-                    parent_dict = processed_events.get(parent_id_in_batch)
-                    if parent_dict:
-                        event_dict["root_id"] = parent_dict.get(
-                            "root_id", parent_id_in_batch
+                    parent_event: Event | None = None
+                    parent_id_in_batch: uuid.UUID | None = None
+                    if event_create.parent_id is not None:
+                        parent_event, parent_id_in_batch = await self._resolve_parent(
+                            session,
+                            index,
+                            event_create.parent_id,
+                            organization_id,
+                            batch_external_id_map,
                         )
 
-                events.append(event_dict)
-                if event_dict.get("id"):
-                    processed_events[event_dict["id"]] = event_dict
+                    event_label_cache_key = (event_create.name, organization_id)
+                    if event_label_cache_key not in event_types_cache:
+                        event_type = await event_type_repository.get_or_create(
+                            event_create.name, organization_id
+                        )
+                        event_types_cache[event_label_cache_key] = event_type.id
+                    event_type_id = event_types_cache[event_label_cache_key]
+                except EventIngestValidationError as e:
+                    errors.extend(e.errors)
+                    continue
+                else:
+                    event_dict = event_create.model_dump(
+                        exclude={"organization_id", "parent_id"}, by_alias=True
+                    )
+                    event_dict["source"] = EventSource.user
+                    event_dict["organization_id"] = organization_id
+                    event_dict["event_type_id"] = event_type_id
+
+                    if event_create.external_id is not None:
+                        event_dict["id"] = batch_external_id_map[
+                            event_create.external_id
+                        ]
+
+                    if parent_event is not None:
+                        event_dict["parent_id"] = parent_event.id
+                        event_dict["root_id"] = parent_event.root_id or parent_event.id
+                    elif parent_id_in_batch is not None:
+                        event_dict["parent_id"] = parent_id_in_batch
+                        # Parent was already processed, look it up
+                        parent_dict = processed_events.get(parent_id_in_batch)
+                        if parent_dict:
+                            event_dict["root_id"] = parent_dict.get(
+                                "root_id", parent_id_in_batch
+                            )
+
+                    events.append(event_dict)
+                    if event_dict.get("id"):
+                        processed_events[event_dict["id"]] = event_dict
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids, duplicates_count = await repository.insert_batch(events)
+        with logfire.span("insert_batch", event_count=len(events)):
+            event_ids, duplicates_count = await repository.insert_batch(events)
 
         # Temporarily: fetch inserted events and create meter_events
-        if event_ids:
-            inserted_events = await repository.get_all(
-                repository.get_base_statement().where(Event.id.in_(event_ids))
-            )
-            await self._create_meter_events(session, inserted_events)
+        with logfire.span("create_meter_events", event_count=len(event_ids)):
+            if event_ids:
+                inserted_events = await repository.get_all(
+                    repository.get_base_statement().where(Event.id.in_(event_ids))
+                )
+                await self._create_meter_events(session, inserted_events)
 
-        enqueue_events(*event_ids)
+        with logfire.span("enqueue_events", event_count=len(event_ids)):
+            enqueue_events(*event_ids)
 
         return EventsIngestResponse(
             inserted=len(event_ids), duplicates=duplicates_count
@@ -767,9 +775,10 @@ class EventService:
         if not events:
             return
 
-        events_by_org: dict[uuid.UUID, list[Event]] = {}
-        for event in events:
-            events_by_org.setdefault(event.organization_id, []).append(event)
+        with logfire.span("group_events_by_org"):
+            events_by_org: dict[uuid.UUID, list[Event]] = {}
+            for event in events:
+                events_by_org.setdefault(event.organization_id, []).append(event)
 
         meter_repository = MeterRepository.from_session(session)
         meter_event_rows: list[dict[str, Any]] = []
@@ -782,20 +791,26 @@ class EventService:
                 )
             )
 
-            for event in org_events:
-                for meter in meters:
-                    if self._event_matches_meter(event, meter):
-                        meter_event_rows.append(
-                            {
-                                "meter_id": meter.id,
-                                "event_id": event.id,
-                                "customer_id": event.customer_id,
-                                "external_customer_id": event.external_customer_id,
-                                "organization_id": event.organization_id,
-                                "ingested_at": event.ingested_at,
-                                "timestamp": event.timestamp,
-                            }
-                        )
+            with logfire.span(
+                "match_meters",
+                org_id=str(org_id),
+                event_count=len(org_events),
+                meter_count=len(meters),
+            ):
+                for event in org_events:
+                    for meter in meters:
+                        if self._event_matches_meter(event, meter):
+                            meter_event_rows.append(
+                                {
+                                    "meter_id": meter.id,
+                                    "event_id": event.id,
+                                    "customer_id": event.customer_id,
+                                    "external_customer_id": event.external_customer_id,
+                                    "organization_id": event.organization_id,
+                                    "ingested_at": event.ingested_at,
+                                    "timestamp": event.timestamp,
+                                }
+                            )
 
         if meter_event_rows:
             await session.execute(

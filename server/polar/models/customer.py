@@ -127,7 +127,7 @@ class Customer(MetadataMixin, RecordModel):
     )
     short_id_sequence = sa.Sequence("customer_short_id_seq", start=1)
 
-    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
+    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     short_id: Mapped[int] = mapped_column(

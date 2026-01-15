@@ -420,46 +420,46 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, owner, role=MemberRole.member)
 
-        assert "must have at least one owner" in str(exc_info.value).lower()
+        assert "must have exactly one owner" in str(exc_info.value).lower()
 
     @pytest.mark.auth
-    async def test_update_can_change_owner_when_multiple_owners(
+    async def test_update_cannot_promote_to_owner_when_owner_exists(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test that can change owner role when there are multiple owners."""
+        """Test that cannot promote member to owner when an owner already exists."""
+        from polar.exceptions import PolarRequestValidationError
+
         customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer@example.com",
         )
 
-        owner1 = Member(
+        owner = Member(
             customer_id=customer.id,
             organization_id=organization.id,
-            email="owner1@example.com",
-            name="Owner 1",
+            email="owner@example.com",
+            name="Owner",
             role=MemberRole.owner,
         )
-        await save_fixture(owner1)
+        await save_fixture(owner)
 
-        owner2 = Member(
+        member = Member(
             customer_id=customer.id,
             organization_id=organization.id,
-            email="owner2@example.com",
-            name="Owner 2",
-            role=MemberRole.owner,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
         )
-        await save_fixture(owner2)
+        await save_fixture(member)
 
-        updated_member = await member_service.update(
-            session, owner1, role=MemberRole.member
-        )
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.update(session, member, role=MemberRole.owner)
 
-        assert updated_member.id == owner1.id
-        assert updated_member.role == MemberRole.member
+        assert "must have exactly one owner" in str(exc_info.value).lower()
 
     @pytest.mark.auth
     async def test_update_no_changes(

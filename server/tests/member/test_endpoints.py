@@ -714,10 +714,10 @@ class TestUpdateMember:
 
         assert response.status_code == 422
         json = response.json()
-        assert "must have at least one owner" in json["detail"][0]["msg"].lower()
+        assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
 
     @pytest.mark.auth
-    async def test_update_member_can_change_owner_when_multiple_owners(
+    async def test_update_member_cannot_promote_to_owner_when_owner_exists(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -730,32 +730,32 @@ class TestUpdateMember:
             email="customer@example.com",
         )
 
-        owner1 = Member(
+        owner = Member(
             customer_id=customer.id,
             organization_id=organization.id,
-            email="owner1@example.com",
-            name="Owner 1",
+            email="owner@example.com",
+            name="Owner",
             role="owner",
         )
-        await save_fixture(owner1)
+        await save_fixture(owner)
 
-        owner2 = Member(
+        member = Member(
             customer_id=customer.id,
             organization_id=organization.id,
-            email="owner2@example.com",
-            name="Owner 2",
-            role="owner",
+            email="member@example.com",
+            name="Member",
+            role="member",
         )
-        await save_fixture(owner2)
+        await save_fixture(member)
 
         response = await client.patch(
-            f"/v1/members/{owner1.id}",
-            json={"role": "member"},
+            f"/v1/members/{member.id}",
+            json={"role": "owner"},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 422
         json = response.json()
-        assert json["role"] == "member"
+        assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
 
     @pytest.mark.auth
     async def test_update_member_not_found(

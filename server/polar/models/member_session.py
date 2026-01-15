@@ -10,12 +10,12 @@ from polar.config import settings
 from polar.kit.db.models.base import RecordModel
 from polar.kit.utils import utc_now
 
+if TYPE_CHECKING:
+    from .customer import Customer
+
 from .member import Member
 
 MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
-
-if TYPE_CHECKING:
-    from polar.models.customer import Customer
 
 
 def get_expires_at() -> datetime:

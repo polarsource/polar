@@ -10,7 +10,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import BadRequest, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
@@ -62,6 +62,16 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                         "input": id_value,
                     }
                 ]
+            )
+
+        # Reject if org has both flags enabled (must use member-sessions)
+        feature_settings = customer.organization.feature_settings
+        if feature_settings.get(
+            "seat_based_pricing_enabled", False
+        ) and feature_settings.get("member_model_enabled", False):
+            raise BadRequest(
+                "This organization has seat-based pricing enabled. "
+                "Use POST /v1/member-sessions/ with a member_id instead."
             )
 
         token, customer_session = await self.create_customer_session(

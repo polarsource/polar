@@ -523,12 +523,13 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total[5m])) by (task_name)",
+          "expr": "sum(rate(polar_task_executions_total{status!='skipped'}[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
       ],
       "title": "Tasks/Second by Type",
+      "description": "Note: Skipped tasks are excluded from this graph.",
       "type": "timeseries"
     },
     {

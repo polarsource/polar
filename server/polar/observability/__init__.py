@@ -8,6 +8,8 @@ from polar.observability.http_metrics import (
     METRICS_DENY_LIST,
 )
 from polar.observability.metrics import (
+    TASK_DEBOUNCE_DELAY,
+    TASK_DEBOUNCED,
     TASK_DURATION,
     TASK_EXECUTIONS,
     TASK_RETRIES,
@@ -22,6 +24,8 @@ __all__ = [
     "HTTP_REQUEST_TOTAL",
     "METRICS_DENY_LIST",
     # Task metrics (worker)
+    "TASK_DEBOUNCED",
+    "TASK_DEBOUNCE_DELAY",
     "TASK_DURATION",
     "TASK_EXECUTIONS",
     "TASK_RETRIES",

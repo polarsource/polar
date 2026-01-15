@@ -32,3 +32,17 @@ TASK_RETRIES = Counter(
     "Total number of task retries",
     ["task_name"],
 )
+
+# Debounce metrics
+TASK_DEBOUNCED = Counter(
+    "polar_task_debounced_total",
+    "Total number of debounced tasks",
+    ["queue", "task_name"],
+)
+
+TASK_DEBOUNCE_DELAY = Histogram(
+    "polar_task_debounce_delay_seconds",
+    "Debounce delay in seconds (time between first enqueue and execution)",
+    ["queue", "task_name"],
+    buckets=(1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0, 1800.0, 3600.0),
+)

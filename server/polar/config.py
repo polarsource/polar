@@ -238,6 +238,12 @@ class Settings(BaseSettings):
     # Loops
     LOOPS_API_KEY: str | None = None
 
+    # Tinybird
+    TINYBIRD_API_URL: str = "http://localhost:7181"
+    TINYBIRD_API_TOKEN: str | None = None
+    TINYBIRD_EVENTS_WRITE: bool = False
+    TINYBIRD_EVENTS_READ: bool = False
+
     # Logo.dev (for company logo avatars)
     LOGO_DEV_PUBLISHABLE_KEY: str | None = None
     PERSONAL_EMAIL_DOMAINS: set[str] = {

@@ -1,0 +1,25 @@
+SCHEMA >
+    `id` UUID,
+    `ingested_at` DateTime64(3),
+    `timestamp` DateTime64(3),
+    `name` LowCardinality(String),
+    `source` LowCardinality(String),
+    `organization_id` UUID,
+    `customer_id` Nullable(UUID),
+    `external_customer_id` Nullable(String),
+    `external_id` Nullable(String),
+    `parent_id` Nullable(UUID),
+    `root_id` Nullable(UUID),
+    `event_type_id` Nullable(UUID),
+    `meter_id` Nullable(UUID),
+    `units` Nullable(Int64),
+    `product_id` Nullable(UUID),
+    `subscription_id` Nullable(UUID),
+    `order_id` Nullable(UUID),
+    `amount` Nullable(Int64),
+    `currency` LowCardinality(Nullable(String)),
+    `user_metadata` JSON
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "organization_id, timestamp, id"

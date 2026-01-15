@@ -102,6 +102,12 @@ services:
     profiles:
       - monitoring
 
+  tinybird:
+    image: tinybirdco/tinybird-local:latest
+    platform: linux/amd64
+    ports:
+      - "7181:7181"
+
 volumes:
   postgres_data:
   minio_data:

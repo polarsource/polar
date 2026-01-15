@@ -22,10 +22,12 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.integrations.tinybird.service import ingest_events
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -630,6 +632,9 @@ class EventService:
             )
             await self._create_meter_events(session, inserted_events)
 
+            if settings.TINYBIRD_EVENTS_WRITE:
+                await ingest_events(list(inserted_events))
+
         enqueue_events(*event_ids)
 
         return EventsIngestResponse(
@@ -641,6 +646,9 @@ class EventService:
         event = await repository.create(event, flush=True)
         # Temporarily
         await self._create_meter_events(session, [event])
+
+        if settings.TINYBIRD_EVENTS_WRITE:
+            await ingest_events([event])
 
         enqueue_events(event.id)
 

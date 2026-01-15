@@ -11,6 +11,10 @@ uv run task test         # Run tests with coverage
 uv run task test_fast    # Faster parallel tests
 uv run task lint         # Auto-fix linting
 uv run task lint_types   # Type checking with mypy
+
+# Database migrations
+uv run alembic revision --autogenerate -m "description"  # Create migration
+uv run alembic upgrade head                              # Apply migrations
 ```
 
 ## Module Structure

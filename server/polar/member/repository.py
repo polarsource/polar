@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -91,6 +91,28 @@ class MemberRepository(
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+    async def list_by_email_and_organization(
+        self,
+        email: str,
+        organization_id: UUID,
+    ) -> Sequence[Member]:
+        """
+        Get all members with the given email in the organization.
+        Used for customer portal email disambiguation when a user's email
+        belongs to multiple customers.
+        """
+        statement = (
+            select(Member)
+            .where(
+                func.lower(Member.email) == email.lower(),
+                Member.organization_id == organization_id,
+                Member.deleted_at.is_(None),
+            )
+            .options(joinedload(Member.customer))
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().unique().all()
 
     async def list_by_customers(
         self,

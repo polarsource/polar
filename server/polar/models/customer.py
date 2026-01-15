@@ -215,6 +215,7 @@ class Customer(MetadataMixin, RecordModel):
         Uuid,
         ForeignKey("payment_methods.id", ondelete="set null"),
         nullable=True,
+        index=True,
     )
 
     @declared_attr

@@ -14,7 +14,7 @@ class DiscountRedemption(RecordModel):
     __tablename__ = "discount_redemptions"
 
     discount_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("discounts.id", ondelete="cascade")
+        Uuid, ForeignKey("discounts.id", ondelete="cascade"), index=True
     )
 
     @declared_attr
@@ -24,7 +24,7 @@ class DiscountRedemption(RecordModel):
         )
 
     checkout_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("checkouts.id", ondelete="cascade")
+        Uuid, ForeignKey("checkouts.id", ondelete="cascade"), index=True
     )
 
     @declared_attr
@@ -32,7 +32,7 @@ class DiscountRedemption(RecordModel):
         return relationship("Checkout", lazy="raise")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("subscriptions.id", ondelete="cascade")
+        Uuid, ForeignKey("subscriptions.id", ondelete="cascade"), index=True
     )
 
     @declared_attr

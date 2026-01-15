@@ -181,7 +181,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Product", lazy="raise")
 
     discount_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True, index=True
     )
 
     @declared_attr
@@ -193,7 +193,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("subscriptions.id"), nullable=True
+        Uuid, ForeignKey("subscriptions.id"), nullable=True, index=True
     )
 
     @declared_attr

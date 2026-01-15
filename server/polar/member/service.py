@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer
@@ -350,29 +350,33 @@ class MemberService:
         member: Member,
         *,
         name: str | None = None,
-        external_id: str | None = None,
         role: MemberRole | None = None,
     ) -> Member:
-        """
-        Update a member.
-
-        Args:
-            session: Database session
-            member: Member to update
-            name: Optional new name
-            external_id: Optional new external_id
-            role: Optional new role
-
-        Returns:
-            Updated Member
-        """
+        """Update a member."""
         repository = MemberRepository.from_session(session)
+
+        if (
+            role is not None
+            and member.role == MemberRole.owner
+            and role != MemberRole.owner
+        ):
+            members = await repository.list_by_customer(session, member.customer_id)
+            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
+            if owner_count <= 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "role"),
+                            "msg": "Cannot change role. Customer must have at least one owner.",
+                            "input": role,
+                        }
+                    ]
+                )
 
         update_dict = {}
         if name is not None:
             update_dict["name"] = name
-        if external_id is not None:
-            update_dict["external_id"] = external_id
         if role is not None:
             update_dict["role"] = role
 

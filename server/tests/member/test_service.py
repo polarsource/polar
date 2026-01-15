@@ -358,37 +358,6 @@ class TestUpdate:
         assert updated_member.role == MemberRole.billing_manager
 
     @pytest.mark.auth
-    async def test_update_external_id(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test updating member external_id."""
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Test Member",
-            external_id="ext_123",
-            role=MemberRole.member,
-        )
-        await save_fixture(member)
-
-        updated_member = await member_service.update(
-            session, member, external_id="ext_456"
-        )
-
-        assert updated_member.id == member.id
-        assert updated_member.external_id == "ext_456"
-
-    @pytest.mark.auth
     async def test_update_multiple_fields(
         self,
         save_fixture: SaveFixture,
@@ -416,14 +385,81 @@ class TestUpdate:
             session,
             member,
             name="Updated Name",
-            external_id="ext_456",
             role=MemberRole.billing_manager,
         )
 
         assert updated_member.id == member.id
         assert updated_member.name == "Updated Name"
-        assert updated_member.external_id == "ext_456"
         assert updated_member.role == MemberRole.billing_manager
+
+    @pytest.mark.auth
+    async def test_update_cannot_remove_last_owner(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that cannot change role when member is the only owner."""
+        from polar.exceptions import PolarRequestValidationError
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await member_service.update(session, owner, role=MemberRole.member)
+
+        assert "must have at least one owner" in str(exc_info.value).lower()
+
+    @pytest.mark.auth
+    async def test_update_can_change_owner_when_multiple_owners(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that can change owner role when there are multiple owners."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner1@example.com",
+            name="Owner 1",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner1)
+
+        owner2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner2@example.com",
+            name="Owner 2",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner2)
+
+        updated_member = await member_service.update(
+            session, owner1, role=MemberRole.member
+        )
+
+        assert updated_member.id == owner1.id
+        assert updated_member.role == MemberRole.member
 
     @pytest.mark.auth
     async def test_update_no_changes(

@@ -143,7 +143,7 @@ async def update_member(
     """
     Update a member.
 
-    Only name, external_id, and role can be updated.
+    Only name and role can be updated.
     The authenticated user or organization must have access to the member's organization.
     """
     member = await member_service.get(session, auth_subject, id)
@@ -155,7 +155,6 @@ async def update_member(
         session,
         member,
         name=member_update.name,
-        external_id=member_update.external_id,
         role=member_update.role,
     )
 

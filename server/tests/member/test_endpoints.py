@@ -647,40 +647,6 @@ class TestUpdateMember:
         assert json["role"] == "billing_manager"
 
     @pytest.mark.auth
-    async def test_update_member_external_id(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer@example.com",
-        )
-
-        member = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Test Member",
-            external_id="ext_123",
-            role="member",
-        )
-        await save_fixture(member)
-
-        response = await client.patch(
-            f"/v1/members/{member.id}",
-            json={"external_id": "ext_456"},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["id"] == str(member.id)
-        assert json["external_id"] == "ext_456"
-
-    @pytest.mark.auth
     async def test_update_member_multiple_fields(
         self,
         save_fixture: SaveFixture,
@@ -708,7 +674,6 @@ class TestUpdateMember:
             f"/v1/members/{member.id}",
             json={
                 "name": "Updated Name",
-                "external_id": "ext_456",
                 "role": "billing_manager",
             },
         )
@@ -717,8 +682,80 @@ class TestUpdateMember:
         json = response.json()
         assert json["id"] == str(member.id)
         assert json["name"] == "Updated Name"
-        assert json["external_id"] == "ext_456"
         assert json["role"] == "billing_manager"
+
+    @pytest.mark.auth
+    async def test_update_member_cannot_remove_last_owner(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role="owner",
+        )
+        await save_fixture(owner)
+
+        response = await client.patch(
+            f"/v1/members/{owner.id}",
+            json={"role": "member"},
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "must have at least one owner" in json["detail"][0]["msg"].lower()
+
+    @pytest.mark.auth
+    async def test_update_member_can_change_owner_when_multiple_owners(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner1@example.com",
+            name="Owner 1",
+            role="owner",
+        )
+        await save_fixture(owner1)
+
+        owner2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner2@example.com",
+            name="Owner 2",
+            role="owner",
+        )
+        await save_fixture(owner2)
+
+        response = await client.patch(
+            f"/v1/members/{owner1.id}",
+            json={"role": "member"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["role"] == "member"
 
     @pytest.mark.auth
     async def test_update_member_not_found(

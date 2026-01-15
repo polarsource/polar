@@ -25,7 +25,7 @@ from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
-from polar.transaction.service.refund import (  # type: ignore[attr-defined]
+from polar.transaction.service.refund import (
     NotCanceledRefundError,
     NotSucceededRefundError,
     RefundTransactionAlreadyExistsError,

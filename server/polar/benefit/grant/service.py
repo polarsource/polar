@@ -389,13 +389,20 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 b for b in product.benefits if b.id in granted_benefit_ids
             ]
 
+        # Construct typed scope for scope_to_args
+        typed_scope: BenefitGrantScope = {}
+        if "subscription" in scope:
+            typed_scope["subscription"] = scope["subscription"]
+        if "order" in scope:
+            typed_scope["order"] = scope["order"]
+
         for benefit in benefits_to_process:
             enqueue_job(
                 f"benefit.{task}",
                 customer_id=customer.id,
                 benefit_id=benefit.id,
                 member_id=member_id,
-                **scope_to_args(scope),
+                **scope_to_args(typed_scope),
             )
 
         # Get granted benefits that are not part of this product.
@@ -407,7 +414,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 customer_id=customer.id,
                 benefit_id=outdated_grant.benefit_id,
                 member_id=member_id,
-                **scope_to_args(scope),
+                **scope_to_args(typed_scope),
             )
 
     async def enqueue_benefit_grant_updates(

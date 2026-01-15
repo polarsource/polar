@@ -77,12 +77,12 @@ def SortingGetter[PE: StrEnum](
                     "Add a minus sign `-` before the criteria name to sort by descending order."
                 ),
             ),
-            annotation=list[sort_property_full_enum] | None,
+            annotation=list[sort_property_full_enum] | None,  # type: ignore[invalid-type-form]
         ),
     ]
     signature = Signature(parameters)
 
-    class _SortingGetterSignature(_SortingGetter[Any]):
+    class _SortingGetterSignature(_SortingGetter[Any]):  # type: ignore[invalid-generic-class]
         @with_signature(signature)
         async def __call__(self, sorting: Any) -> list[Sorting[Any]]:
             return await super().__call__(sorting)

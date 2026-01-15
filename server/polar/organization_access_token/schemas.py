@@ -16,12 +16,12 @@ class OrganizationAccessTokenCreate(Schema):
     organization_id: UUID4
     comment: str
     expires_in: timedelta | None = None
-    scopes: list[AvailableScope]  # pyright: ignore
+    scopes: list[AvailableScope]  # type: ignore[invalid-type-form]  # pyright: ignore
 
 
 class OrganizationAccessTokenUpdate(Schema):
     comment: str | None = None
-    scopes: list[AvailableScope] | None = None  # pyright: ignore
+    scopes: list[AvailableScope] | None = None  # type: ignore[invalid-type-form]  # pyright: ignore
 
 
 class OrganizationAccessToken(TimestampedSchema):

@@ -730,13 +730,13 @@ class TestListWithAggregateCosts:
             e for e in events_without_agg if e.id == root_without_cost.id
         )
 
-        assert root1_no_agg.child_count == 2  # type: ignore[attr-defined]
+        assert root1_no_agg.child_count == 2
         assert root1_no_agg.user_metadata["_cost"]["amount"] == 10
-        assert child1_no_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child1_no_agg.child_count == 0
         assert child1_no_agg.user_metadata["_cost"]["amount"] == 5
-        assert child2_no_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child2_no_agg.child_count == 0
         assert child2_no_agg.user_metadata["_cost"]["amount"] == 3
-        assert root2_no_agg.child_count == 1  # type: ignore[attr-defined]
+        assert root2_no_agg.child_count == 1
         assert "_cost" not in root2_no_agg.user_metadata
 
         events_with_agg, _ = await event_service.list(
@@ -752,17 +752,17 @@ class TestListWithAggregateCosts:
         root2_agg = next(e for e in events_with_agg if e.id == root_without_cost.id)
 
         # root1 already had _cost with currency, so it's preserved
-        assert root1_agg.child_count == 2  # type: ignore[attr-defined]
+        assert root1_agg.child_count == 2
         assert root1_agg.user_metadata["_cost"]["amount"] == 18
         assert root1_agg.user_metadata["_cost"]["currency"] == "usd"
-        assert child1_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child1_agg.child_count == 0
         assert child1_agg.user_metadata["_cost"]["amount"] == 5
-        assert child2_agg.child_count == 0  # type: ignore[attr-defined]
+        assert child2_agg.child_count == 0
         assert child2_agg.user_metadata["_cost"]["amount"] == 3
 
         # root2 didn't have _cost originally, so only aggregated amount is set
         # Currency defaults to "usd" when not present in parent
-        assert root2_agg.child_count == 1  # type: ignore[attr-defined]
+        assert root2_agg.child_count == 1
         assert "_cost" in root2_agg.user_metadata
         assert root2_agg.user_metadata["_cost"]["amount"] == 7
         assert root2_agg.user_metadata["_cost"]["currency"] == "usd"

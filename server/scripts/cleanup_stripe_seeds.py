@@ -4,15 +4,15 @@ from functools import wraps
 import typer
 
 from polar.config import settings
-from polar.integrations.stripe.service import stripe_lib  # type: ignore[attr-defined]
+from polar.integrations.stripe.service import stripe_lib
 
 cli = typer.Typer()
 
 
-def typer_async(f):  # type: ignore
+def typer_async(f):
     # From https://github.com/tiangolo/typer/issues/85
     @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper

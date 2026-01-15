@@ -86,7 +86,8 @@ async def enqueue_benefits_grants(
         if product is None:
             raise ProductDoesNotExist(product_id)
 
-        resolved_scope = await resolve_scope(session, scope)
+        scope_args = BenefitGrantScopeArgs(**scope)
+        resolved_scope = await resolve_scope(session, scope_args)
 
         await benefit_grant_service.enqueue_benefits_grants(
             session, task, customer, product, member_id=member_id, **resolved_scope
@@ -113,7 +114,8 @@ async def benefit_grant(
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
-        resolved_scope = await resolve_scope(session, scope)
+        scope_args = BenefitGrantScopeArgs(**scope)
+        resolved_scope = await resolve_scope(session, scope_args)
 
         product = None
         if subscription := resolved_scope.get("subscription"):
@@ -175,7 +177,8 @@ async def benefit_revoke(
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
-        resolved_scope = await resolve_scope(session, scope)
+        scope_args = BenefitGrantScopeArgs(**scope)
+        resolved_scope = await resolve_scope(session, scope_args)
 
         product = None
         if subscription := resolved_scope.get("subscription"):
@@ -239,7 +242,8 @@ async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
 @actor(actor_name="benefit.enqueue_benefit_grant_cycles", priority=TaskPriority.MEDIUM)
 async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -> None:
     async with AsyncSessionMaker() as session:
-        resolved_scope = await resolve_scope(session, scope)
+        scope_args = BenefitGrantScopeArgs(**scope)
+        resolved_scope = await resolve_scope(session, scope_args)
         await benefit_grant_service.enqueue_benefit_grant_cycles(
             session, RedisMiddleware.get(), **resolved_scope
         )

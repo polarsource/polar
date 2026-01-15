@@ -179,7 +179,7 @@ class MultipleQueryFilter[Q](Sequence[Q]):
             raise TypeError("QueryFilter requires at least one type argument")
 
         generic_type = args[0]
-        sequence_schema = handler.generate_schema(Sequence[generic_type])  # type: ignore
+        sequence_schema = handler.generate_schema(Sequence[generic_type])
         scalar_schema = handler.generate_schema(generic_type)
         union_schema = core_schema.union_schema([scalar_schema, sequence_schema])
 

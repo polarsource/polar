@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import BenefitGrantService
 from polar.benefit.service import benefit as benefit_service
-from polar.benefit.service import (  # type: ignore[attr-defined]
+from polar.benefit.service import (
     benefit_grant_service,
 )
 from polar.benefit.strategies import (

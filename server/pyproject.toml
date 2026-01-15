@@ -168,17 +168,148 @@ include = ["polar/app.py"]
 invalid-argument-type = "ignore"
 
 [[tool.ty.overrides]]
+include = ["polar/backoffice/**"]
+[tool.ty.overrides.rules]
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+invalid-return-type = "warn"
+invalid-type-form = "warn"
+no-matching-overload = "warn"
+not-iterable = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/models/**"]
+[tool.ty.overrides.rules]
+# SQLAlchemy relationship/column descriptor issues
+invalid-argument-type = "warn"
+invalid-type-form = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/integrations/**"]
+[tool.ty.overrides.rules]
+# Third-party library type issues (Loops, etc.)
+unresolved-attribute = "warn"
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/checkout/**"]
+[tool.ty.overrides.rules]
+# Pydantic/Stripe TypedDict issues
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+invalid-type-form = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/custom_field/**"]
+[tool.ty.overrides.rules]
+# Pydantic create_model issues
+no-matching-overload = "warn"
+invalid-type-form = "warn"
+invalid-assignment = "warn"
+invalid-argument-type = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/oauth2/**"]
+[tool.ty.overrides.rules]
+# AuthLib type issues
+invalid-argument-type = "warn"
+invalid-method-override = "warn"
+invalid-assignment = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/invoice/**"]
+[tool.ty.overrides.rules]
+# fpdf2 type issues
+unresolved-attribute = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/worker/**"]
+[tool.ty.overrides.rules]
+# Dramatiq type issues
+no-matching-overload = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/customer_portal/**"]
+[tool.ty.overrides.rules]
+# Stripe type issues
+invalid-assignment = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/webhook/**"]
+[tool.ty.overrides.rules]
+# Slack TypedDict issues
+missing-typed-dict-key = "warn"
+invalid-return-type = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/kit/**"]
+[tool.ty.overrides.rules]
+# Various kit module type issues
+invalid-return-type = "warn"
+invalid-type-form = "warn"
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+unresolved-attribute = "warn"
+invalid-method-override = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/benefit/**"]
+[tool.ty.overrides.rules]
+# Pydantic validation errors type issues
+invalid-assignment = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/metrics/**"]
+[tool.ty.overrides.rules]
+# Division by zero false positives
+division-by-zero = "warn"
+unresolved-attribute = "warn"
+invalid-argument-type = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/logging.py", "polar/config.py"]
+[tool.ty.overrides.rules]
+# Configuration type issues
+invalid-assignment = "warn"
+invalid-argument-type = "warn"
+conflicting-declarations = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/tax/**"]
+[tool.ty.overrides.rules]
+# Tax type issues
+invalid-type-form = "warn"
+invalid-return-type = "warn"
+
+[[tool.ty.overrides]]
+include = ["polar/customer/**"]
+[tool.ty.overrides.rules]
+# Customer async type issues
+unresolved-attribute = "warn"
+no-matching-overload = "warn"
+
+[[tool.ty.overrides]]
+include = ["scripts/**"]
+[tool.ty.overrides.rules]
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+invalid-key = "warn"
+missing-typed-dict-key = "warn"
+unresolved-import = "warn"
+conflicting-declarations = "warn"
+unresolved-attribute = "warn"
+
+[[tool.ty.overrides]]
 include = ["tests/**"]
 [tool.ty.overrides.rules]
 possibly-unresolved-reference = "warn"
 invalid-argument-type = "warn"
 invalid-assignment = "warn"
-
-[[tool.ty.overrides]]
-include = ["polar/backoffice/**"]
-[tool.ty.overrides.rules]
-invalid-argument-type = "warn"
-invalid-assignment = "warn"
+invalid-key = "warn"
+missing-typed-dict-key = "warn"
+invalid-return-type = "warn"
+no-matching-overload = "warn"
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

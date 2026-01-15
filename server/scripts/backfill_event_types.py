@@ -18,9 +18,9 @@ from polar.models import Event, EventType
 cli = typer.Typer()
 
 
-def typer_async(f):  # type: ignore
+def typer_async(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper

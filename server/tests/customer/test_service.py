@@ -590,20 +590,20 @@ class TestDelete:
             )
         except IntegrityError:
             pytest.fail("Should not raise IntegrityError")
+        else:
+            assert recycled.id is not None
+            assert recycled.id != customer.id
+            assert recycled.deleted_at is None
+            assert recycled.external_id == "will-be-recycled"
 
-        assert recycled.id is not None
-        assert recycled.id != customer.id
-        assert recycled.deleted_at is None
-        assert recycled.external_id == "will-be-recycled"
-
-        with pytest.raises(IntegrityError):
-            await create_customer(
-                save_fixture,
-                organization=organization,
-                email=recycled.email,
-                external_id=recycled.external_id,
-                user_metadata=recycled.user_metadata,
-            )
+            with pytest.raises(IntegrityError):
+                await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=recycled.email,
+                    external_id=recycled.external_id,
+                    user_metadata=recycled.user_metadata,
+                )
 
 
 @pytest.mark.asyncio

@@ -1395,7 +1395,9 @@ class PlainService:
 
         return CustomerIdentifierInput(email_address=email)
 
-    async def check_thread_exists(self, customer_email: str, thread_title: str) -> bool:
+    async def check_thread_exists(
+        self, customer_email: str, thread_title: str, fuzzy: bool = False
+    ) -> bool:
         """
         Check if a thread with the given title exists for a customer.
         Only considers threads that are not done/closed.
@@ -1417,7 +1419,11 @@ class PlainService:
             nr_threads = 0
             for edge in threads.edges:
                 thread = edge.node
-                if thread.title == thread_title:
+                if fuzzy:
+                    match = thread_title.lower() in thread.title.lower()
+                else:
+                    match = thread.title == thread_title
+                if match:
                     nr_threads += 1
             log.info(f"There are {nr_threads} threads for user {customer_email}")
             return nr_threads > 0

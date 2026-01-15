@@ -167,6 +167,7 @@ async def process_organizations(dry_run: bool = False, limit: int = 1) -> None:
             thread_exists = await plain_service.check_thread_exists(
                 customer_email=admin.email,
                 thread_title="Account Review",
+                fuzzy=True,
             )
 
             if thread_exists:

@@ -179,7 +179,16 @@ class BillingEntryService:
         if entry.direction == BillingEntryDirection.credit:
             label = f"Remaining time on {product.name} — From {start} to {end}"
             amount = -amount
+        elif entry.direction == BillingEntryDirection.debit:
+            label = f"{product.name} — From {start} to {end}"
+            amount = amount
         else:
+            # This should never happen - log if a new BillingEntryDirection is added
+            log.warning(
+                "billing_entry.unknown_direction",
+                direction=entry.direction,
+                entry_id=str(entry.id),
+            )
             label = f"{product.name} — From {start} to {end}"
             amount = amount
 

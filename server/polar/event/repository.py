@@ -181,6 +181,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             ),
         )
 
+    def get_event_actor_id_filter_clause(
+        self, event_actor_ids: Sequence[UUID]
+    ) -> ColumnElement[bool]:
+        """
+        Filter events by event_actor_id.
+
+        This is the preferred method for filtering events by customer/member
+        as it uses a single indexed lookup instead of OR conditions with subqueries.
+        """
+        return Event.event_actor_id.in_(event_actor_ids)
+
     def get_meter_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
         return and_(
             meter.filter.get_sql_clause(Event),

@@ -8,6 +8,7 @@ from polar.customer_session import tasks as customer_session
 from polar.email import tasks as email
 from polar.email_update import tasks as email_update
 from polar.event import tasks as event
+from polar.event_actor import tasks as event_actor
 from polar.eventstream import tasks as eventstream
 from polar.external_event import tasks as external_event
 from polar.integrations.chargeback_stop import tasks as chargeback_stop
@@ -38,6 +39,7 @@ __all__ = [
     "email",
     "email_update",
     "event",
+    "event_actor",
     "eventstream",
     "external_event",
     "loops",

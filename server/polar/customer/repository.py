@@ -1,6 +1,6 @@
 import contextlib
 from collections.abc import AsyncGenerator, Iterable, Sequence
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 from sqlalchemy import Select, func, select, update
@@ -9,7 +9,9 @@ from sqlalchemy.orm import InstanceState
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.event.system import CustomerUpdatedFields, SystemEvent
+from polar.event_actor.service import event_actor_service
 from polar.kit.address import Address
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -69,6 +71,15 @@ class CustomerRepository(
         yield customer
         assert customer.id is not None, "Customer.id is None"
 
+        # Link customer to existing EventActor if one exists with matching external_id.
+        # This allows events ingested before the customer was created to automatically
+        # resolve to this customer via the EventActor.
+        if customer.external_id is not None:
+            # create_context is a write operation, so session is always AsyncSession
+            await event_actor_service.link_customer(
+                cast(AsyncSession, self.session), customer
+            )
+
         # If the customer has an external_id, enqueue a meter update job
         # to create meters for any pre-existing events with that external_id.
         if customer.external_id is not None:
@@ -86,8 +97,21 @@ class CustomerRepository(
     ) -> Customer:
         inspection = orm_inspect(object)
 
+        # Check if external_id is being added/changed
+        external_id_changed, new_external_id = _get_changed_value(
+            inspection, "external_id"
+        )
+
         customer = await super().update(object, update_dict=update_dict, flush=flush)
         enqueue_job("customer.webhook", WebhookEventType.customer_updated, customer.id)
+
+        # Link to existing EventActor if external_id was added
+        # This allows events ingested before the external_id was set to automatically
+        # resolve to this customer via the EventActor.
+        if external_id_changed and new_external_id is not None:
+            await event_actor_service.link_customer(
+                cast(AsyncSession, self.session), customer
+            )
 
         # Only create an event if the customer is not being deleted
         if not customer.deleted_at:

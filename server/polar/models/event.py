@@ -47,6 +47,7 @@ from polar.kit.utils import generate_uuid, utc_now
 from .customer import Customer
 
 if TYPE_CHECKING:
+    from .event_actor import EventActor
     from .event_type import EventType
     from .organization import Organization
 
@@ -146,6 +147,12 @@ class Event(Model, MetadataMixin):
             "source",
             "id",
         ),
+        Index(
+            "ix_events_organization_event_actor_id_ingested_at_desc",
+            "organization_id",
+            "event_actor_id",
+            literal_column("ingested_at DESC"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -171,6 +178,14 @@ class Event(Model, MetadataMixin):
     external_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, unique=True
     )
+
+    event_actor_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("event_actors.id"), nullable=True, index=True
+    )
+
+    @declared_attr
+    def event_actor(cls) -> Mapped["EventActor | None"]:
+        return relationship("EventActor", lazy="raise")
 
     parent_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True

@@ -25,6 +25,7 @@ from sqlalchemy.orm import contains_eager
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.event_actor.service import event_actor_service
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -625,6 +626,34 @@ class EventService:
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
+        # Resolve EventActors for all events in the batch
+        # Cache to avoid duplicate lookups for events with same identifiers
+        with logfire.span("resolve_event_actors", event_count=len(events)):
+            event_actor_cache: dict[
+                tuple[uuid.UUID, uuid.UUID | None, str | None], uuid.UUID
+            ] = {}
+
+            for event_dict in events:
+                org_id = event_dict["organization_id"]
+                cust_id = event_dict.get("customer_id")
+                ext_cust_id = event_dict.get("external_customer_id")
+
+                # Skip if no customer identifier
+                if cust_id is None and ext_cust_id is None:
+                    continue
+
+                cache_key = (org_id, cust_id, ext_cust_id)
+                if cache_key not in event_actor_cache:
+                    actor = await event_actor_service.resolve(
+                        session,
+                        org_id,
+                        customer_id=cust_id,
+                        external_customer_id=ext_cust_id,
+                    )
+                    event_actor_cache[cache_key] = actor.id
+
+                event_dict["event_actor_id"] = event_actor_cache[cache_key]
+
         repository = EventRepository.from_session(session)
         with logfire.span("insert_batch", event_count=len(events)):
             event_ids, duplicates_count = await repository.insert_batch(events)
@@ -645,6 +674,18 @@ class EventService:
         )
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
+        # Resolve EventActor if event has customer identifiers and organization_id
+        if event.organization_id is not None and (
+            event.customer_id is not None or event.external_customer_id is not None
+        ):
+            actor = await event_actor_service.resolve(
+                session,
+                event.organization_id,
+                customer_id=event.customer_id,
+                external_customer_id=event.external_customer_id,
+            )
+            event.event_actor_id = actor.id
+
         repository = EventRepository.from_session(session)
         event = await repository.create(event, flush=True)
         # Temporarily

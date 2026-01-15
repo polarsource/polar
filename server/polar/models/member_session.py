@@ -12,6 +12,8 @@ from polar.kit.utils import utc_now
 
 from .member import Member
 
+MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
+
 if TYPE_CHECKING:
     from polar.models.customer import Customer
 

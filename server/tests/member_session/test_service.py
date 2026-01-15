@@ -9,13 +9,10 @@ from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.utils import utc_now
 from polar.member_session.schemas import MemberSessionCreate
-from polar.member_session.service import (
-    MEMBER_SESSION_TOKEN_PREFIX,
-    member_session,
-)
+from polar.member_session.service import member_session
 from polar.models import Member, Organization, User, UserOrganization
 from polar.models.member import MemberRole
-from polar.models.member_session import MemberSession
+from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX, MemberSession
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer

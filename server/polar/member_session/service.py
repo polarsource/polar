@@ -10,6 +10,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Member, MemberSession
+from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncSession
 
@@ -17,8 +18,6 @@ from .repository import MemberSessionRepository
 from .schemas import MemberSessionCreate
 
 log: Logger = structlog.get_logger()
-
-MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
 
 
 class MemberSessionService(ResourceServiceReader[MemberSession]):
@@ -53,15 +52,15 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
 
         organization: OrganizationModel = member.customer.organization
 
-        if not organization.feature_settings.get("member_model_enabled", False):
+        required_flags = ["member_model_enabled", "seat_based_pricing_enabled"]
+        missing_flags = [
+            flag
+            for flag in required_flags
+            if not organization.feature_settings.get(flag, False)
+        ]
+        if missing_flags:
             raise NotPermitted(
-                "Member sessions are only available for organizations with "
-                "member_model_enabled. Use customer sessions instead."
-            )
-
-        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
-            raise NotPermitted(
-                "Member sessions require seat_based_pricing_enabled to be enabled "
+                f"Member sessions require {', '.join(missing_flags)} to be enabled "
                 "for the organization. Use customer sessions instead."
             )
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -10,6 +11,11 @@ from polar.kit.db.models.base import RecordModel
 from polar.kit.utils import utc_now
 
 from .member import Member
+
+MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
+
+if TYPE_CHECKING:
+    from polar.models.customer import Customer
 
 
 def get_expires_at() -> datetime:
@@ -49,3 +55,13 @@ class MemberSession(RecordModel):
         return settings.generate_frontend_url(
             f"/{self.member.customer.organization.slug}/portal?{query_string}"
         )
+
+    @property
+    def customer_id(self) -> UUID:
+        """Return the customer ID from the member relationship."""
+        return self.member.customer_id
+
+    @property
+    def customer(self) -> "Customer":
+        """Return the customer from the member relationship."""
+        return self.member.customer

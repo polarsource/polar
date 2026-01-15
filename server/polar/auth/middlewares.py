@@ -14,12 +14,7 @@ from polar.customer_session.service import (
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
-from polar.member_session.service import (
-    MEMBER_SESSION_TOKEN_PREFIX,
-)
-from polar.member_session.service import (
-    member_session as member_session_service,
-)
+from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     CustomerSession,
     MemberSession,
@@ -28,6 +23,7 @@ from polar.models import (
     PersonalAccessToken,
     UserSession,
 )
+from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.oauth2.constants import is_registration_token_prefix
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.oauth2.exceptions import InvalidTokenError

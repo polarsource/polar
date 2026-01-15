@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total[1m])) by (task_name)",
+          "expr": "sum(rate(polar_task_executions_total[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -970,7 +970,7 @@
       "id": 17,
       "options": {
         "legend": {
-          "calcs": ["mean", "max"],
+          "calcs": ["last", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
@@ -986,30 +986,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.50, sum(rate(polar_task_debounce_delay_seconds_bucket[5m])) by (le, task_name))",
-          "legendFormat": "{{task_name}} p50",
+          "expr": "histogram_quantile(1.0, sum(rate(polar_task_debounce_delay_seconds_bucket[5m])) by (le, task_name))",
+          "legendFormat": "{{task_name}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "histogram_quantile(0.95, sum(rate(polar_task_debounce_delay_seconds_bucket[5m])) by (le, task_name))",
-          "legendFormat": "{{task_name}} p95",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "expr": "histogram_quantile(0.99, sum(rate(polar_task_debounce_delay_seconds_bucket[5m])) by (le, task_name))",
-          "legendFormat": "{{task_name}} p99",
-          "refId": "C"
         }
       ],
-      "title": "Debounce Delay Percentiles by Type",
+      "title": "Max Debounce Delay by Type",
       "type": "timeseries"
     },
     {
@@ -1063,7 +1045,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total[1m]))",
+          "expr": "sum(rate(polar_task_executions_total[5m]))",
           "legendFormat": "Total",
           "refId": "A"
         }

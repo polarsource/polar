@@ -98,7 +98,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ),
     )
 
-    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
+    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
     status: Mapped[OrderStatus] = mapped_column(
         String, nullable=False, default=OrderStatus.pending, index=True

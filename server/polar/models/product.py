@@ -58,7 +58,7 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
         ),
     )
 
-    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True)
+    search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)
 
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

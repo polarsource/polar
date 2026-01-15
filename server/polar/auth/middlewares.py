@@ -5,7 +5,12 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
-from polar.customer_session.service import customer_session as customer_session_service
+from polar.customer_session.service import (
+    CUSTOMER_SESSION_TOKEN_PREFIX,
+)
+from polar.customer_session.service import (
+    customer_session as customer_session_service,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
@@ -124,31 +129,33 @@ async def get_auth_subject(
             raise InvalidTokenError()
 
         # CustomerSession with conditional Member resolution
-        customer_session = await get_customer_session(session, token)
-        if customer_session:
-            customer = customer_session.customer
-            organization = customer.organization
+        if token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
+            customer_session = await get_customer_session(session, token)
+            if customer_session:
+                customer = customer_session.customer
+                organization = customer.organization
 
-            # Check if member_model_enabled for this organization
-            if organization.feature_settings.get("member_model_enabled", False):
-                # Try to resolve to owner Member
-                member_repository = MemberRepository.from_session(session)
-                owner_member = await member_repository.get_owner_by_customer_id(
-                    session, customer.id
-                )
-                if owner_member:
-                    return AuthSubject(
-                        owner_member,
-                        {Scope.customer_portal_write},
-                        customer_session,
+                # Check if member_model_enabled for this organization
+                if organization.feature_settings.get("member_model_enabled", False):
+                    # Try to resolve to owner Member
+                    member_repository = MemberRepository.from_session(session)
+                    owner_member = await member_repository.get_owner_by_customer_id(
+                        session, customer.id
                     )
+                    if owner_member:
+                        return AuthSubject(
+                            owner_member,
+                            {Scope.customer_portal_write},
+                            customer_session,
+                        )
 
-            # Default: return Customer
-            return AuthSubject(
-                customer,
-                {Scope.customer_portal_write},
-                customer_session,
-            )
+                # Default: return Customer
+                return AuthSubject(
+                    customer,
+                    {Scope.customer_portal_write},
+                    customer_session,
+                )
+            raise InvalidTokenError()
 
         organization_access_token = await get_organization_access_token(session, token)
         if organization_access_token:

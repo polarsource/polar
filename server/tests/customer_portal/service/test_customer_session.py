@@ -33,6 +33,89 @@ class TestRequest:
 
         assert exc_info.value.organization_id == fake_org_id
 
+
+@pytest.mark.asyncio
+class TestRequestLegacyOrg:
+    """Tests for orgs with member_model_enabled=false (legacy customer lookup)."""
+
+    async def test_customer_exists_returns_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that existing customer returns session code (legacy path)."""
+        # organization defaults to member_model_enabled=false
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+
+        assert customer_session_code.customer.id == customer.id
+        assert customer_session_code.email == "test@example.com"
+        assert code is not None
+        assert len(code) == 6  # Default code length
+
+    async def test_customer_does_not_exist_raises(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that non-existent email raises CustomerDoesNotExist (legacy path)."""
+        with pytest.raises(CustomerDoesNotExist) as exc_info:
+            await customer_session_service.request(
+                session, "nonexistent@example.com", organization.id
+            )
+
+        assert exc_info.value.email == "nonexistent@example.com"
+        assert exc_info.value.organization == organization
+
+    async def test_case_insensitive_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that email matching is case-insensitive (legacy path)."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="user@example.com"
+        )
+
+        # Try with uppercase email
+        customer_session_code, code = await customer_session_service.request(
+            session, "USER@EXAMPLE.COM", organization.id
+        )
+
+        assert customer_session_code.customer.id == customer.id
+
+    async def test_customer_id_parameter_ignored(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that customer_id is ignored in legacy path (looks up by email only)."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        # Pass a random customer_id - should be ignored in legacy path
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id, customer_id=uuid.uuid4()
+        )
+
+        # Should still work because legacy path uses email lookup only
+        assert customer_session_code.customer.id == customer.id
+
+
+@pytest.mark.asyncio
+class TestRequestMemberEnabledOrg:
+    """Tests for orgs with member_model_enabled=true (member-based lookup)."""
+
     async def test_no_members_found(
         self,
         session: AsyncSession,
@@ -40,6 +123,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that non-existent email raises CustomerDoesNotExist."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         with pytest.raises(CustomerDoesNotExist) as exc_info:
             await customer_session_service.request(
                 session, "nonexistent@example.com", organization.id
@@ -55,6 +141,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that single member returns customer session code."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="single@example.com"
         )
@@ -84,6 +173,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that email matching is case-insensitive."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="user@example.com"
         )
@@ -117,6 +209,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that multiple members without customer_id raises CustomerSelectionRequired."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture,
             organization=organization,
@@ -171,6 +266,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that multiple members with valid customer_id returns code."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture,
             organization=organization,
@@ -224,6 +322,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that multiple members with invalid customer_id raises CustomerDoesNotExist."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture, organization=organization, email="customer1@example.com"
         )
@@ -262,6 +363,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that customer_id from different org raises CustomerDoesNotExist."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         # Create customer in the primary organization
         customer1 = await create_customer(
             save_fixture, organization=organization, email="customer1@example.com"
@@ -298,6 +402,9 @@ class TestRequest:
         """Test that soft-deleted members are not found."""
         from polar.kit.utils import utc_now
 
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="deleted@example.com"
         )
@@ -322,6 +429,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that member email is used (not customer email)."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="customer@example.com"
         )

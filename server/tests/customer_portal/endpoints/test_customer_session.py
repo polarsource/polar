@@ -1,13 +1,24 @@
 import uuid
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.models import Member, Organization
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
+
+
+@pytest.fixture(autouse=True)
+def mock_send_email(mocker: MockerFixture) -> MagicMock:
+    """Mock the customer session service send method to prevent actual email sending."""
+    return mocker.patch(
+        "polar.customer_portal.endpoints.customer_session.customer_session_service.send",
+        autospec=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -27,12 +38,84 @@ class TestRequest:
         # Returns 202 to prevent organization enumeration
         assert response.status_code == 202
 
-    async def test_no_members_returns_202(
+
+@pytest.mark.asyncio
+class TestRequestLegacyOrg:
+    """Tests for orgs with member_model_enabled=false (legacy customer lookup)."""
+
+    async def test_customer_exists_returns_202(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that existing customer returns 202 (legacy path)."""
+        # organization defaults to member_model_enabled=false
+        await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        response = await client.post(
+            "/v1/customer-portal/customer-session/request",
+            json={
+                "email": "test@example.com",
+                "organization_id": str(organization.id),
+            },
+        )
+        assert response.status_code == 202
+
+    async def test_customer_does_not_exist_returns_202(
         self,
         client: AsyncClient,
         organization: Organization,
     ) -> None:
+        """Test that non-existent email returns 202 (no information leak, legacy path)."""
+        response = await client.post(
+            "/v1/customer-portal/customer-session/request",
+            json={
+                "email": "nonexistent@example.com",
+                "organization_id": str(organization.id),
+            },
+        )
+        # Returns 202 to prevent email enumeration
+        assert response.status_code == 202
+
+    async def test_case_insensitive_email(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that email matching is case-insensitive (legacy path)."""
+        await create_customer(
+            save_fixture, organization=organization, email="user@example.com"
+        )
+
+        # Test uppercase
+        response = await client.post(
+            "/v1/customer-portal/customer-session/request",
+            json={
+                "email": "USER@EXAMPLE.COM",
+                "organization_id": str(organization.id),
+            },
+        )
+        assert response.status_code == 202
+
+
+@pytest.mark.asyncio
+class TestRequestMemberEnabledOrg:
+    """Tests for orgs with member_model_enabled=true (member-based lookup)."""
+
+    async def test_no_members_returns_202(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
         """Test that non-existent email returns 202 (no information leak)."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         response = await client.post(
             "/v1/customer-portal/customer-session/request",
             json={
@@ -51,6 +134,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that single member match returns 202 and sends code."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="test@example.com"
         )
@@ -80,6 +166,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that multiple member match returns 409 with customer selection."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture,
             organization=organization,
@@ -145,6 +234,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that selecting a customer from multiple returns 202."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture,
             organization=organization,
@@ -204,6 +296,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that invalid customer_id returns 202 (no information leak)."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture, organization=organization, email="customer1@example.com"
         )
@@ -247,6 +342,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test that email matching is case-insensitive."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer = await create_customer(
             save_fixture, organization=organization, email="user@example.com"
         )
@@ -286,6 +384,9 @@ class TestRequest:
         organization: Organization,
     ) -> None:
         """Test 409 response includes customers with null names."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         customer1 = await create_customer(
             save_fixture, organization=organization, email="customer1@example.com"
         )

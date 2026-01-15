@@ -359,30 +359,26 @@ class MemberService:
             members = await repository.list_by_customer(session, member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
 
-            if member.role == MemberRole.owner and role != MemberRole.owner:
-                if owner_count <= 1:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "role"),
-                                "msg": "Cannot change role. Customer must have exactly one owner.",
-                                "input": role,
-                            }
-                        ]
-                    )
-            elif role == MemberRole.owner and member.role != MemberRole.owner:
-                if owner_count >= 1:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "role"),
-                                "msg": "Cannot change role. Customer must have exactly one owner.",
-                                "input": role,
-                            }
-                        ]
-                    )
+            demoting_owner = (
+                member.role == MemberRole.owner and role != MemberRole.owner
+            )
+            promoting_to_owner = (
+                role == MemberRole.owner and member.role != MemberRole.owner
+            )
+
+            if (demoting_owner and owner_count <= 1) or (
+                promoting_to_owner and owner_count >= 1
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "role"),
+                            "msg": "Cannot change role. Customer must have exactly one owner.",
+                            "input": role,
+                        }
+                    ]
+                )
 
         update_dict = {}
         if name is not None:

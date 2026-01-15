@@ -7,13 +7,11 @@ import type {
 } from '../core/types'
 import { useCustomerPortalContext } from './context'
 
-export interface UseCustomerPortalCustomerOptions {
+export interface UseCustomerOptions {
   initialData?: CustomerPortalCustomer
 }
 
-export function useCustomerPortalCustomer(
-  options: UseCustomerPortalCustomerOptions = {},
-) {
+export function useCustomer(options: UseCustomerOptions = {}) {
   const { client } = useCustomerPortalContext()
   const queryClient = useQueryClient()
   const methods = createCustomerMethods(client)

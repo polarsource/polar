@@ -92,6 +92,7 @@ export const subscriptionFixture = (
     recurring_interval: 'month',
     recurring_interval_count: 1,
     meters: [],
+    prices: [],
     product: productFixture(),
     ...overrides,
   }) as schemas['CustomerSubscription']

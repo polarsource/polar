@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { customerFixture } from '../test-utils/fixtures'
 import { createWrapper } from '../test-utils/render'
 import { server } from '../test-utils/server'
-import { useCustomerPortalCustomer } from './useCustomerPortalCustomer'
+import { useCustomer } from './useCustomer'
 
 const API_BASE = 'http://example.com:8000'
 
-describe('useCustomerPortalCustomer', () => {
+describe('useCustomer', () => {
   it('fetches customer data', async () => {
     const mockCustomer = customerFixture({ email: 'test@example.com' })
 
@@ -18,7 +18,7 @@ describe('useCustomerPortalCustomer', () => {
       }),
     )
 
-    const { result } = renderHook(() => useCustomerPortalCustomer(), {
+    const { result } = renderHook(() => useCustomer(), {
       wrapper: createWrapper({ token: 'test_token', baseUrl: API_BASE }),
     })
 
@@ -35,7 +35,7 @@ describe('useCustomerPortalCustomer', () => {
     const initialCustomer = customerFixture({ email: 'initial@example.com' })
 
     const { result } = renderHook(
-      () => useCustomerPortalCustomer({ initialData: initialCustomer }),
+      () => useCustomer({ initialData: initialCustomer }),
       { wrapper: createWrapper({ baseUrl: API_BASE }) },
     )
 
@@ -56,7 +56,7 @@ describe('useCustomerPortalCustomer', () => {
       }),
     )
 
-    const { result } = renderHook(() => useCustomerPortalCustomer(), {
+    const { result } = renderHook(() => useCustomer(), {
       wrapper: createWrapper({ baseUrl: API_BASE }),
     })
 
@@ -80,7 +80,7 @@ describe('useCustomerPortalCustomer', () => {
       }),
     )
 
-    const { result } = renderHook(() => useCustomerPortalCustomer(), {
+    const { result } = renderHook(() => useCustomer(), {
       wrapper: createWrapper({ baseUrl: API_BASE }),
     })
 

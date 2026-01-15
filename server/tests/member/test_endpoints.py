@@ -460,6 +460,384 @@ class TestCreateMember:
 
 
 @pytest.mark.asyncio
+class TestGetMember:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        member_id = str(uuid.uuid4())
+        response = await client.get(f"/v1/members/{member_id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        member_id = str(uuid.uuid4())
+        response = await client.get(f"/v1/members/{member_id}")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_get_member_success(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_123",
+            role="billing_manager",
+        )
+        await save_fixture(member)
+
+        response = await client.get(f"/v1/members/{member.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["email"] == "member@example.com"
+        assert json["name"] == "Test Member"
+        assert json["external_id"] == "ext_123"
+        assert json["role"] == "billing_manager"
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth
+    async def test_get_member_not_found(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        non_existent_member_id = str(uuid.uuid4())
+        response = await client.get(f"/v1/members/{non_existent_member_id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_get_member_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Test Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.get(f"/v1/members/{member.id}")
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateMember:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        member_id = str(uuid.uuid4())
+        response = await client.patch(
+            f"/v1/members/{member_id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        member_id = str(uuid.uuid4())
+        response = await client.patch(
+            f"/v1/members/{member_id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_update_member_name(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Original Name",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["name"] == "Updated Name"
+        assert json["email"] == "member@example.com"
+        assert json["role"] == "member"
+
+    @pytest.mark.auth
+    async def test_update_member_role(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={"role": "billing_manager"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["role"] == "billing_manager"
+
+    @pytest.mark.auth
+    async def test_update_member_multiple_fields(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Original Name",
+            external_id="ext_123",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={
+                "name": "Updated Name",
+                "role": "billing_manager",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["name"] == "Updated Name"
+        assert json["role"] == "billing_manager"
+
+    @pytest.mark.auth
+    async def test_update_member_cannot_remove_last_owner(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role="owner",
+        )
+        await save_fixture(owner)
+
+        response = await client.patch(
+            f"/v1/members/{owner.id}",
+            json={"role": "member"},
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
+
+    @pytest.mark.auth
+    async def test_update_member_cannot_promote_to_owner_when_owner_exists(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role="owner",
+        )
+        await save_fixture(owner)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={"role": "owner"},
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
+
+    @pytest.mark.auth
+    async def test_update_member_not_found(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        non_existent_member_id = str(uuid.uuid4())
+        response = await client.patch(
+            f"/v1/members/{non_existent_member_id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_update_member_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+    ) -> None:
+        other_org = await create_organization(save_fixture)
+        customer = await create_customer(
+            save_fixture,
+            organization=other_org,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=other_org.id,
+            email="member@example.com",
+            name="Test Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_update_member_empty_payload(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role="member",
+        )
+        await save_fixture(member)
+
+        response = await client.patch(
+            f"/v1/members/{member.id}",
+            json={},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(member.id)
+        assert json["name"] == "Test Member"
+        assert json["role"] == "member"
+
+
+@pytest.mark.asyncio
 class TestDeleteMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         member_id = str(uuid.uuid4())

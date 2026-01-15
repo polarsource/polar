@@ -14,7 +14,7 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import Member, MemberCreate
+from .schemas import Member, MemberCreate, MemberUpdate
 from .service import member_service
 
 router = APIRouter(
@@ -96,6 +96,69 @@ async def create_member(
     )
 
     return Member.model_validate(created_member)
+
+
+@router.get(
+    "/{id}",
+    summary="Get Member",
+    response_model=Member,
+    responses={
+        200: {"description": "Member retrieved."},
+        404: MemberNotFound,
+    },
+)
+async def get_member(
+    id: UUID,
+    auth_subject: auth.MemberRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Member:
+    """
+    Get a member by ID.
+
+    The authenticated user or organization must have access to the member's organization.
+    """
+    member = await member_service.get(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    return Member.model_validate(member)
+
+
+@router.patch(
+    "/{id}",
+    summary="Update Member",
+    response_model=Member,
+    responses={
+        200: {"description": "Member updated."},
+        404: MemberNotFound,
+    },
+)
+async def update_member(
+    id: UUID,
+    member_update: MemberUpdate,
+    auth_subject: auth.MemberWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Member:
+    """
+    Update a member.
+
+    Only name and role can be updated.
+    The authenticated user or organization must have access to the member's organization.
+    """
+    member = await member_service.get(session, auth_subject, id)
+
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    updated_member = await member_service.update(
+        session,
+        member,
+        name=member_update.name,
+        role=member_update.role,
+    )
+
+    return Member.model_validate(updated_member)
 
 
 @router.delete(

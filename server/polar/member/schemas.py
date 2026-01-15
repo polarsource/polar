@@ -65,6 +65,17 @@ class MemberCreate(Schema):
     )
 
 
+class MemberUpdate(Schema):
+    """Schema for updating a member."""
+
+    name: MemberNameInput | None = None
+    role: MemberRole | None = Field(
+        default=None,
+        description="The role of the member within the customer.",
+        examples=[MemberRole.member],
+    )
+
+
 class MemberBase(TimestampedSchema, IDSchema):
     """Base schema for member responses."""
 

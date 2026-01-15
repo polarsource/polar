@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer
@@ -343,6 +343,61 @@ class MemberService:
                 )
                 return existing_member
             raise
+
+    async def update(
+        self,
+        session: AsyncSession,
+        member: Member,
+        *,
+        name: str | None = None,
+        role: MemberRole | None = None,
+    ) -> Member:
+        """Update a member."""
+        repository = MemberRepository.from_session(session)
+
+        if role is not None and member.role != role:
+            members = await repository.list_by_customer(session, member.customer_id)
+            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
+
+            demoting_owner = (
+                member.role == MemberRole.owner and role != MemberRole.owner
+            )
+            promoting_to_owner = (
+                role == MemberRole.owner and member.role != MemberRole.owner
+            )
+
+            if (demoting_owner and owner_count <= 1) or (
+                promoting_to_owner and owner_count >= 1
+            ):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "role"),
+                            "msg": "Cannot change role. Customer must have exactly one owner.",
+                            "input": role,
+                        }
+                    ]
+                )
+
+        update_dict = {}
+        if name is not None:
+            update_dict["name"] = name
+        if role is not None:
+            update_dict["role"] = role
+
+        if not update_dict:
+            return member
+
+        updated_member = await repository.update(member, update_dict=update_dict)
+        log.info(
+            "member.update.success",
+            member_id=member.id,
+            customer_id=member.customer_id,
+            organization_id=member.organization_id,
+            updated_fields=list(update_dict.keys()),
+        )
+        return updated_member
 
 
 member_service = MemberService()

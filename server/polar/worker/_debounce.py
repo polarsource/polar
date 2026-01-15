@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Never
 
 import dramatiq
 import redis
@@ -55,6 +55,8 @@ async def set_debounce_key(
         await pipe.hsetnx(key, "enqueue_timestamp", now_timestamp())
         # Change owner to current message_id
         await pipe.hset(key, "message_id", message_id)
+        # Set task as non-executed
+        await pipe.hset(key, "executed", 0)
         # Set TTL to avoid keys being stuck in Redis
         await pipe.expire(key, DEBOUNCE_KEY_TTL)
         await pipe.execute()
@@ -88,35 +90,48 @@ class DebounceMiddleware(dramatiq.Middleware):
             debounce_key=debounce_key,
             message_id=message.message_id,
         )
+
         debounce_data = self._redis.hgetall(debounce_key)
-        if debounce_data:
-            message_owner = debounce_data[b"message_id"].decode("utf-8")
-            enqueue_timestamp = int(debounce_data[b"enqueue_timestamp"])
-            max_threshold = self._get_debounce_max_threshold(broker, message)
+        if not debounce_data:
+            return
 
-            if message_owner != message.message_id:
-                if enqueue_timestamp + max_threshold < now_timestamp():
-                    log.info(
-                        "Max debounce threshold reached, executing",
-                        debounce_key=debounce_key,
-                        current_message_id=message.message_id,
-                        owner_message_id=message_owner,
-                    )
-                    message.options["debounce_max_threshold_execution"] = True
-                else:
-                    log.info(
-                        "Debounce owned by another message, skipping",
-                        debounce_key=debounce_key,
-                        current_message_id=message.message_id,
-                        owner_message_id=message_owner,
-                    )
-                    queue_name = message.queue_name or "default"
-                    TASK_DEBOUNCED.labels(
-                        queue=queue_name, task_name=message.actor_name
-                    ).inc()
-                    raise dramatiq.middleware.SkipMessage()
+        # Already executed in this debounce window
+        if int(debounce_data.get(b"executed", 0)):
+            log.debug(
+                "Debounce key already executed, skipping",
+                debounce_key=debounce_key,
+                current_message_id=message.message_id,
+            )
+            self._skip_debounced(message)
 
-            message.options["debounce_enqueue_timestamp"] = enqueue_timestamp
+        message_owner = debounce_data[b"message_id"].decode("utf-8")
+        enqueue_timestamp = int(debounce_data[b"enqueue_timestamp"])
+        message.options["debounce_enqueue_timestamp"] = enqueue_timestamp
+
+        # Owner always executes
+        if message_owner == message.message_id:
+            return
+
+        # Not owner: check max threshold
+        max_threshold = self._get_debounce_max_threshold(broker, message)
+        if enqueue_timestamp + max_threshold < now_timestamp():
+            log.info(
+                "Max debounce threshold reached, executing",
+                debounce_key=debounce_key,
+                current_message_id=message.message_id,
+                owner_message_id=message_owner,
+            )
+            message.options["debounce_max_threshold_execution"] = True
+            return
+
+        # Not owner, max threshold not reached: skip
+        log.info(
+            "Debounce owned by another message, skipping",
+            debounce_key=debounce_key,
+            current_message_id=message.message_id,
+            owner_message_id=message_owner,
+        )
+        self._skip_debounced(message)
 
     def after_process_message(
         self,
@@ -140,21 +155,23 @@ class DebounceMiddleware(dramatiq.Middleware):
                 queue=queue_name, task_name=message.actor_name
             ).observe(delay)
 
-        if message.options.pop("debounce_max_threshold_execution", False):
-            log.debug(
-                "Bumping debounce key enqueue timestamp after max threshold execution",
-                debounce_key=debounce_key,
-                message_id=message.message_id,
-            )
-            self._redis.hset(debounce_key, "enqueue_timestamp", now_timestamp())
-            self._redis.expire(debounce_key, DEBOUNCE_KEY_TTL)
-        else:
-            log.debug(
-                "Releasing debounce key",
-                debounce_key=debounce_key,
-                message_id=message.message_id,
-            )
-            self._redis.delete(debounce_key)
+        with self._redis.pipeline(transaction=True) as pipe:
+            if message.options.pop("debounce_max_threshold_execution", False):
+                log.debug(
+                    "Bumping debounce key enqueue timestamp after max threshold execution",
+                    debounce_key=debounce_key,
+                    message_id=message.message_id,
+                )
+                pipe.hset(debounce_key, "enqueue_timestamp", now_timestamp())
+                pipe.expire(debounce_key, DEBOUNCE_KEY_TTL)
+            elif exception is None:
+                log.debug(
+                    "Marking debounce key as executed",
+                    debounce_key=debounce_key,
+                    message_id=message.message_id,
+                )
+                pipe.hset(debounce_key, "executed", 1)
+            pipe.execute()
 
     def _get_debounce_max_threshold(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
@@ -167,6 +184,11 @@ class DebounceMiddleware(dramatiq.Middleware):
                 int(settings.WORKER_DEFAULT_DEBOUNCE_MAX_THRESHOLD.total_seconds()),
             ),
         )
+
+    def _skip_debounced(self, message: dramatiq.MessageProxy) -> Never:
+        queue_name = message.queue_name or "default"
+        TASK_DEBOUNCED.labels(queue=queue_name, task_name=message.actor_name).inc()
+        raise dramatiq.middleware.SkipMessage()
 
 
 __all__ = ["DebounceMiddleware", "set_debounce_key"]

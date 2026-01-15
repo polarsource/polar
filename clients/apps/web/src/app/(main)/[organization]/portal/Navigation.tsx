@@ -89,7 +89,7 @@ export const Navigation = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{customer?.name ?? '—'}</h3>
+          <h3>{customer?.billing_name ?? customer?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
             {customer?.email ?? '—'}
           </span>

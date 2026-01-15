@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -78,6 +79,14 @@ class EventTypeRepository(
             return existing
 
         event_type = EventType(name=name, label=name, organization_id=organization_id)
-        self.session.add(event_type)
-        await self.session.flush()
+        nested = await self.session.begin_nested()
+        try:
+            self.session.add(event_type)
+            await self.session.flush()
+        except IntegrityError:
+            await nested.rollback()
+            existing = await self.get_by_name_and_organization(name, organization_id)
+            if existing:
+                return existing
+            raise
         return event_type

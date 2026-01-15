@@ -4,7 +4,6 @@ import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useAssignSeat,
   useCustomerBenefitGrants,
-  useCustomerCancelSubscription,
   useCustomerOrders,
   useCustomerSeats,
   useResendSeatInvitation,
@@ -12,6 +11,7 @@ import {
 } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
+import { useSubscription } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -56,7 +56,9 @@ const CustomerPortalSubscription = ({
     sorting: ['-created_at'],
   })
 
-  const cancelSubscription = useCustomerCancelSubscription(api)
+  const { cancel: cancelSubscription } = useSubscription(subscription.id, {
+    initialData: subscription,
+  })
 
   const hasInvoices = orders?.items && orders.items.length > 0
 

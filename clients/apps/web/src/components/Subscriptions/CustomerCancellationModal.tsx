@@ -2,9 +2,9 @@
 
 import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@/components/Modal'
-import { useCustomerCancelSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
+import { isValidationError } from '@polar-sh/customer-portal/core'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
@@ -19,6 +19,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
+import type { UseMutationResult } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -41,12 +42,21 @@ const CancellationReasonRadio = ({
   )
 }
 
+type CancelMutationInput = Omit<
+  schemas['CustomerSubscriptionCancel'],
+  'cancel_at_period_end'
+>
+
 interface CustomerCancellationModalProps extends Omit<
   ModalProps,
   'title' | 'modalContent'
 > {
   subscription: schemas['CustomerSubscription']
-  cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
+  cancelSubscription: UseMutationResult<
+    schemas['CustomerSubscription'],
+    Error,
+    CancelMutationInput
+  >
   onAbort?: () => void
 }
 
@@ -74,29 +84,31 @@ const CustomerCancellationModal = ({
 
   const handleCancellation = useCallback(
     async (cancellation: schemas['CustomerSubscriptionCancel']) => {
-      const { error } = await cancelSubscription.mutateAsync({
-        id: subscription.id,
-        body: cancellation,
-      })
+      try {
+        await cancelSubscription.mutateAsync({
+          cancellation_reason: cancellation.cancellation_reason,
+          cancellation_comment: cancellation.cancellation_comment,
+        })
 
-      await revalidate(`customer_portal`)
+        await revalidate(`customer_portal`)
 
-      if (error) {
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else {
-          setError('root', { message: error.detail })
+        toast({
+          title: 'Subscription Cancelled',
+          description: `Subscription was cancelled successfully`,
+        })
+        router.refresh()
+        props.hide()
+      } catch (error) {
+        if (isValidationError(error)) {
+          setValidationErrors(error.errors, setError)
+        } else if (error instanceof Error) {
+          setError('root', {
+            message: error.message ?? 'An error occurred',
+          })
         }
-        return
       }
-      toast({
-        title: 'Subscription Cancelled',
-        description: `Subscription was cancelled successfully`,
-      })
-      router.refresh()
-      props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props, router],
+    [cancelSubscription, setError, props, router],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {

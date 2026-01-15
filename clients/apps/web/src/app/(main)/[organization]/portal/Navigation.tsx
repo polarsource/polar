@@ -1,12 +1,10 @@
 'use client'
 
-import {
-  useAuthenticatedCustomer,
-  useCustomerPortalSession,
-} from '@/hooks/queries'
+import { useCustomerPortalSession } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
+import { useCustomer } from '@polar-sh/customer-portal/react'
 import {
   Select,
   SelectContent,
@@ -61,7 +59,7 @@ export const Navigation = ({
     searchParams.get('customer_session_token') as string,
   )
   const { data: customerPortalSession } = useCustomerPortalSession(api)
-  const { data: authenticatedCustomer } = useAuthenticatedCustomer(api)
+  const { data: customer } = useCustomer()
 
   // Hide navigation on routes where portal access is being requested or authenticated
   const hideNav =
@@ -91,9 +89,9 @@ export const Navigation = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{authenticatedCustomer?.name ?? '—'}</h3>
+          <h3>{customer?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
-            {authenticatedCustomer?.email ?? '—'}
+            {customer?.email ?? '—'}
           </span>
         </div>
         <div className="flex flex-col gap-y-1">

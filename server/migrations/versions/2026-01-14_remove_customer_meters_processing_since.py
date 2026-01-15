@@ -1,7 +1,7 @@
 """Remove Customer.meters_processing_since
 
 Revision ID: 9c8d7e6f5a4b
-Revises: ab473a734057
+Revises: 6dfc8955157c
 Create Date: 2026-01-14
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9c8d7e6f5a4b"
-down_revision = "ab473a734057"
+down_revision = "6dfc8955157c"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

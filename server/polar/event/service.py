@@ -932,7 +932,6 @@ class EventService:
         auth_subject: AuthSubject[User | Organization],
         customer_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
-        # Short-circuit: no customer_ids to validate
         if not customer_ids:
             allowed_customers: set[uuid.UUID] = set()
         else:

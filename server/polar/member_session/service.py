@@ -1,14 +1,20 @@
 import structlog
 from pydantic import HttpUrl
+from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Member, MemberSession
+from polar.member.repository import MemberRepository
+from polar.models import Customer, Member, MemberSession
+from polar.models.organization import Organization as OrganizationModel
 from polar.postgres import AsyncSession
 
 from .repository import MemberSessionRepository
+from .schemas import MemberSessionCreate
 
 log: Logger = structlog.get_logger()
 
@@ -16,6 +22,55 @@ MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
 
 
 class MemberSessionService(ResourceServiceReader[MemberSession]):
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        member_session_create: MemberSessionCreate,
+    ) -> MemberSession:
+        repository = MemberRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Member.id == member_session_create.member_id)
+            .options(
+                joinedload(Member.customer).joinedload(Customer.organization),
+            )
+        )
+
+        member = await repository.get_one_or_none(statement)
+
+        if member is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "member_id"),
+                        "msg": "Member does not exist.",
+                        "type": "value_error",
+                        "input": member_session_create.member_id,
+                    }
+                ]
+            )
+
+        organization: OrganizationModel = member.customer.organization
+
+        if not organization.feature_settings.get("member_model_enabled", False):
+            raise NotPermitted(
+                "Member sessions are only available for organizations with "
+                "member_model_enabled. Use customer sessions instead."
+            )
+
+        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
+            raise NotPermitted(
+                "Member sessions require seat_based_pricing_enabled to be enabled "
+                "for the organization. Use customer sessions instead."
+            )
+
+        token, member_session = await self.create_member_session(
+            session, member, member_session_create.return_url
+        )
+        member_session.raw_token = token
+        return member_session
+
     async def create_member_session(
         self,
         session: AsyncSession,

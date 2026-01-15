@@ -524,8 +524,11 @@ class EventService:
         validate_organization_id = await self._get_organization_validation_function(
             session, auth_subject
         )
+        customer_ids_in_batch = {
+            e.customer_id for e in ingest.events if isinstance(e, EventCreateCustomer)
+        }
         validate_customer_id = await self._get_customer_validation_function(
-            session, auth_subject
+            session, auth_subject, customer_ids_in_batch
         )
 
         event_type_repository = EventTypeRepository.from_session(session)
@@ -924,24 +927,34 @@ class EventService:
         return _validate_organization_id_by_user
 
     async def _get_customer_validation_function(
-        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        customer_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
-        statement = select(Customer.id).where(Customer.deleted_at.is_(None))
-        if is_user(auth_subject):
-            statement = statement.where(
-                Customer.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == auth_subject.subject.id,
-                        UserOrganization.deleted_at.is_(None),
+        # Short-circuit: no customer_ids to validate
+        if not customer_ids:
+            allowed_customers: set[uuid.UUID] = set()
+        else:
+            statement = select(Customer.id).where(
+                Customer.deleted_at.is_(None),
+                Customer.id.in_(customer_ids),
+            )
+            if is_user(auth_subject):
+                statement = statement.where(
+                    Customer.organization_id.in_(
+                        select(UserOrganization.organization_id).where(
+                            UserOrganization.user_id == auth_subject.subject.id,
+                            UserOrganization.deleted_at.is_(None),
+                        )
                     )
                 )
-            )
-        else:
-            statement = statement.where(
-                Customer.organization_id == auth_subject.subject.id
-            )
-        result = await session.execute(statement)
-        allowed_customers = set(result.scalars().all())
+            else:
+                statement = statement.where(
+                    Customer.organization_id == auth_subject.subject.id
+                )
+            result = await session.execute(statement)
+            allowed_customers = set(result.scalars().all())
 
         def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
             if customer_id not in allowed_customers:

@@ -1,6 +1,7 @@
 import secrets
 import string
 import uuid
+from dataclasses import dataclass
 from math import ceil
 
 from sqlalchemy import select
@@ -14,9 +15,18 @@ from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.models import CustomerSession, CustomerSessionCode, Organization
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
+
+
+@dataclass
+class CustomerOption:
+    """Minimal customer info for disambiguation."""
+
+    id: uuid.UUID
+    name: str | None
 
 
 class CustomerSessionError(PolarError): ...
@@ -44,29 +54,112 @@ class CustomerSessionCodeInvalidOrExpired(CustomerSessionError):
         )
 
 
+class CustomerSelectionRequired(CustomerSessionError):
+    """Raised when multiple customers match the email and selection is needed."""
+
+    def __init__(self, customers: list[CustomerOption]) -> None:
+        self.customers = customers
+        super().__init__(
+            "Multiple customers found for this email. Please select one.",
+            status_code=409,
+        )
+
+
 class CustomerSessionService:
     async def request(
-        self, session: AsyncSession, email: str, organization_id: uuid.UUID
+        self,
+        session: AsyncSession,
+        email: str,
+        organization_id: uuid.UUID,
+        customer_id: uuid.UUID | None = None,
     ) -> tuple[CustomerSessionCode, str]:
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        repository = CustomerRepository.from_session(session)
-        customer = await repository.get_by_email_and_organization(
+        member_model_enabled = organization.feature_settings.get(
+            "member_model_enabled", False
+        )
+
+        if member_model_enabled:
+            customer_session_code, code = await self._request_with_member_lookup(
+                session, email, organization, customer_id
+            )
+        else:
+            customer_session_code, code = await self._request_with_customer_lookup(
+                session, email, organization
+            )
+
+        session.add(customer_session_code)
+        return customer_session_code, code
+
+    async def _request_with_member_lookup(
+        self,
+        session: AsyncSession,
+        email: str,
+        organization: Organization,
+        customer_id: uuid.UUID | None,
+    ) -> tuple[CustomerSessionCode, str]:
+        """
+        Member-based lookup with disambiguation for migrated orgs.
+
+        Used when member_model_enabled=true. Looks up members by email and
+        handles the case where multiple members share the same email.
+        """
+        member_repository = MemberRepository.from_session(session)
+        members = await member_repository.list_by_email_and_organization(
             email, organization.id
         )
+
+        if not members:
+            raise CustomerDoesNotExist(email, organization)
+
+        if customer_id is not None:
+            target_member = next(
+                (m for m in members if m.customer_id == customer_id), None
+            )
+            if target_member is None:
+                raise CustomerDoesNotExist(email, organization)
+            member = target_member
+        elif len(members) == 1:
+            member = members[0]
+        else:
+            customer_options = [
+                CustomerOption(id=m.customer.id, name=m.customer.name) for m in members
+            ]
+            raise CustomerSelectionRequired(customer_options)
+
+        code, code_hash = self._generate_code_hash()
+        customer_session_code = CustomerSessionCode(
+            code=code_hash, email=member.email, customer=member.customer
+        )
+        return customer_session_code, code
+
+    async def _request_with_customer_lookup(
+        self,
+        session: AsyncSession,
+        email: str,
+        organization: Organization,
+    ) -> tuple[CustomerSessionCode, str]:
+        """
+        Legacy customer-based lookup for non-migrated orgs.
+
+        Used when member_model_enabled=false. Looks up customers directly
+        by email since members don't exist for this organization yet.
+        """
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_email_and_organization(
+            email, organization.id
+        )
+
         if customer is None:
             raise CustomerDoesNotExist(email, organization)
 
         code, code_hash = self._generate_code_hash()
-
         customer_session_code = CustomerSessionCode(
-            code=code_hash, email=customer.email, customer=customer
+            code=code_hash, email=email, customer=customer
         )
-        session.add(customer_session_code)
-
         return customer_session_code, code
 
     async def send(

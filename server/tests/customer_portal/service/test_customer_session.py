@@ -6,9 +6,11 @@ from polar.customer_portal.service.customer_session import (
     CustomerDoesNotExist,
     CustomerSelectionRequired,
     OrganizationDoesNotExist,
+)
+from polar.customer_portal.service.customer_session import (
     customer_session as customer_session_service,
 )
-from polar.models import Customer, Member, Organization
+from polar.models import Member, Organization
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture

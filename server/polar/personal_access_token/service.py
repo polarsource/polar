@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 import structlog
@@ -22,8 +22,12 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import PersonalAccessToken, User
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 
 log: Logger = structlog.get_logger()
+
+USAGE_SET_KEY = "personal_access_token:usage:pending"
+USAGE_HASH_KEY = "personal_access_token:usage:timestamps"
 
 TOKEN_PREFIX = "polar_pat_"
 
@@ -89,6 +93,43 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             .values(last_used_at=last_used_at)
         )
         await session.execute(statement)
+
+    async def queue_record_usage(
+        self, redis: Redis, token_id: UUID, timestamp: float
+    ) -> None:
+        token_id_str = str(token_id)
+        async with redis.pipeline() as pipe:
+            await pipe.sadd(USAGE_SET_KEY, token_id_str)
+            await pipe.hset(USAGE_HASH_KEY, token_id_str, str(timestamp))
+            await pipe.execute()
+
+    async def batch_record_usage(self, session: AsyncSession, redis: Redis) -> int:
+        token_ids = await redis.smembers(USAGE_SET_KEY)
+        if not token_ids:
+            return 0
+
+        timestamps = await redis.hmget(USAGE_HASH_KEY, *token_ids)
+
+        updates: list[dict[str, UUID | datetime]] = []
+        for token_id_str, ts in zip(token_ids, timestamps):
+            if ts is not None:
+                updates.append({
+                    "id": UUID(token_id_str),
+                    "last_used_at": datetime.fromtimestamp(float(ts), tz=UTC),
+                })
+
+        if updates:
+            await session.execute(
+                update(PersonalAccessToken),
+                updates,
+            )
+
+        async with redis.pipeline() as pipe:
+            await pipe.delete(USAGE_SET_KEY)
+            await pipe.delete(USAGE_HASH_KEY)
+            await pipe.execute()
+
+        return len(updates)
 
     async def revoke_leaked(
         self,

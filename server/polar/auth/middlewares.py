@@ -34,6 +34,7 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker._enqueue import enqueue_job
 
@@ -65,15 +66,13 @@ async def get_oauth2_token(session: AsyncSession, value: str) -> OAuth2Token | N
 
 
 async def get_personal_access_token(
-    session: AsyncSession, value: str
+    session: AsyncSession, redis: Redis, value: str
 ) -> PersonalAccessToken | None:
     token = await personal_access_token_service.get_by_token(session, value)
 
     if token is not None:
-        enqueue_job(
-            "personal_access_token.record_usage",
-            personal_access_token_id=token.id,
-            last_used_at=utc_now().timestamp(),
+        await personal_access_token_service.queue_record_usage(
+            redis, token.id, utc_now().timestamp()
         )
 
     return token
@@ -105,7 +104,7 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 
 
 async def get_auth_subject(
-    request: Request, session: AsyncSession
+    request: Request, session: AsyncSession, redis: Redis
 ) -> AuthSubject[Subject]:
     token = get_bearer_token(request)
     if token is not None:
@@ -162,7 +161,7 @@ async def get_auth_subject(
         if oauth2_token:
             return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
 
-        personal_access_token = await get_personal_access_token(session, token)
+        personal_access_token = await get_personal_access_token(session, redis, token)
         if personal_access_token:
             return AuthSubject(
                 personal_access_token.user,
@@ -189,10 +188,11 @@ class AuthSubjectMiddleware:
             return
 
         session: AsyncSession = scope["state"]["async_session"]
+        redis: Redis = scope["state"]["redis"]
         request = Request(scope)
 
         try:
-            auth_subject = await get_auth_subject(request, session)
+            auth_subject = await get_auth_subject(request, session, redis)
         except OAuth2Error as e:
             response = await oauth2_error_exception_handler(request, e)
             return await response(scope, receive, send)

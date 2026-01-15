@@ -158,6 +158,7 @@ class DebounceMiddleware(dramatiq.Middleware):
             elif exception is None:
                 log.debug("Marking debounce key as executed", debounce_key=debounce_key)
                 pipe.hset(debounce_key, "executed", 1)
+                pipe.hdel(debounce_key, "enqueue_timestamp")
             pipe.execute()
 
     def _get_debounce_max_threshold(

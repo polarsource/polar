@@ -1,5 +1,5 @@
 import uuid
-from collections import defaultdict
+from collections import defaultdict, deque
 from collections.abc import Callable, Sequence
 from datetime import date, datetime
 from typing import Any
@@ -106,11 +106,11 @@ def _topological_sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any
             graph[parent_idx].append(idx)
             in_degree[idx] += 1
 
-    queue = [idx for idx in range(len(events)) if in_degree[idx] == 0]
-    sorted_indices = []
+    queue = deque(idx for idx in range(len(events)) if in_degree[idx] == 0)
+    sorted_indices: list[int] = []
 
     while queue:
-        current_idx = queue.pop(0)
+        current_idx = queue.popleft()
         sorted_indices.append(current_idx)
 
         for child_idx in graph[current_idx]:

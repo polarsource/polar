@@ -61,7 +61,7 @@ async def set_debounce_key(
         await pipe.expire(key, DEBOUNCE_KEY_TTL)
         await pipe.execute()
 
-    log.debug("Set debounce key", key=key, delay=delay, message_id=message_id)
+    log.debug("Set debounce key", key=key, delay=delay)
 
     return key, delay
 
@@ -85,11 +85,7 @@ class DebounceMiddleware(dramatiq.Middleware):
         if debounce_key is None:
             return
 
-        log.debug(
-            "Checking debounce key",
-            debounce_key=debounce_key,
-            message_id=message.message_id,
-        )
+        log.debug("Checking debounce key", debounce_key=debounce_key)
 
         debounce_data = self._redis.hgetall(debounce_key)
         if not debounce_data:
@@ -98,9 +94,7 @@ class DebounceMiddleware(dramatiq.Middleware):
         # Already executed in this debounce window
         if int(debounce_data.get(b"executed", 0)):
             log.debug(
-                "Debounce key already executed, skipping",
-                debounce_key=debounce_key,
-                current_message_id=message.message_id,
+                "Debounce key already executed, skipping", debounce_key=debounce_key
             )
             self._skip_debounced(message)
 
@@ -118,7 +112,6 @@ class DebounceMiddleware(dramatiq.Middleware):
             log.info(
                 "Max debounce threshold reached, executing",
                 debounce_key=debounce_key,
-                current_message_id=message.message_id,
                 owner_message_id=message_owner,
             )
             message.options["debounce_max_threshold_execution"] = True
@@ -128,7 +121,6 @@ class DebounceMiddleware(dramatiq.Middleware):
         log.info(
             "Debounce owned by another message, skipping",
             debounce_key=debounce_key,
-            current_message_id=message.message_id,
             owner_message_id=message_owner,
         )
         self._skip_debounced(message)
@@ -160,16 +152,11 @@ class DebounceMiddleware(dramatiq.Middleware):
                 log.debug(
                     "Bumping debounce key enqueue timestamp after max threshold execution",
                     debounce_key=debounce_key,
-                    message_id=message.message_id,
                 )
                 pipe.hset(debounce_key, "enqueue_timestamp", now_timestamp())
                 pipe.expire(debounce_key, DEBOUNCE_KEY_TTL)
             elif exception is None:
-                log.debug(
-                    "Marking debounce key as executed",
-                    debounce_key=debounce_key,
-                    message_id=message.message_id,
-                )
+                log.debug("Marking debounce key as executed", debounce_key=debounce_key)
                 pipe.hset(debounce_key, "executed", 1)
             pipe.execute()
 

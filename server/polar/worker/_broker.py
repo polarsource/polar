@@ -157,13 +157,13 @@ def get_broker() -> dramatiq.Broker:
     broker.add_middleware(middleware.AsyncIO())
     broker.add_middleware(middleware.CurrentMessage())
     broker.add_middleware(MaxRetriesMiddleware())
-    broker.add_middleware(DebounceMiddleware(redis_pool))
     broker.add_middleware(SQLAlchemyMiddleware())
     broker.add_middleware(RedisMiddleware())
     broker.add_middleware(HTTPXMiddleware())
     broker.add_middleware(scheduler_middleware)
     broker.add_middleware(LogfireMiddleware())
     broker.add_middleware(LogContextMiddleware())
+    broker.add_middleware(DebounceMiddleware(redis_pool))
     broker.add_middleware(PrometheusMiddleware())
 
     return broker

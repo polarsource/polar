@@ -291,3 +291,166 @@ class TestCreateOwnerMember:
         assert member is not None
         assert member.external_id is None
         assert member.email == customer.email
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    @pytest.mark.auth
+    async def test_update_name(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test updating member name."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Original Name",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_member = await member_service.update(
+            session, member, name="Updated Name"
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.name == "Updated Name"
+        assert updated_member.email == "member@example.com"
+        assert updated_member.role == MemberRole.member
+
+    @pytest.mark.auth
+    async def test_update_role(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test updating member role."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_member = await member_service.update(
+            session, member, role=MemberRole.billing_manager
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.role == MemberRole.billing_manager
+
+    @pytest.mark.auth
+    async def test_update_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test updating member external_id."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            external_id="ext_123",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_member = await member_service.update(
+            session, member, external_id="ext_456"
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.external_id == "ext_456"
+
+    @pytest.mark.auth
+    async def test_update_multiple_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test updating multiple member fields at once."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Original Name",
+            external_id="ext_123",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        updated_member = await member_service.update(
+            session,
+            member,
+            name="Updated Name",
+            external_id="ext_456",
+            role=MemberRole.billing_manager,
+        )
+
+        assert updated_member.id == member.id
+        assert updated_member.name == "Updated Name"
+        assert updated_member.external_id == "ext_456"
+        assert updated_member.role == MemberRole.billing_manager
+
+    @pytest.mark.auth
+    async def test_update_no_changes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that updating with no changes returns the same member."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        original_updated_at = member.modified_at
+
+        updated_member = await member_service.update(session, member)
+
+        assert updated_member.id == member.id
+        assert updated_member.modified_at == original_updated_at

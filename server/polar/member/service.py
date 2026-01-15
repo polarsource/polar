@@ -344,5 +344,50 @@ class MemberService:
                 return existing_member
             raise
 
+    async def update(
+        self,
+        session: AsyncSession,
+        member: Member,
+        *,
+        name: str | None = None,
+        external_id: str | None = None,
+        role: MemberRole | None = None,
+    ) -> Member:
+        """
+        Update a member.
+
+        Args:
+            session: Database session
+            member: Member to update
+            name: Optional new name
+            external_id: Optional new external_id
+            role: Optional new role
+
+        Returns:
+            Updated Member
+        """
+        repository = MemberRepository.from_session(session)
+
+        update_dict = {}
+        if name is not None:
+            update_dict["name"] = name
+        if external_id is not None:
+            update_dict["external_id"] = external_id
+        if role is not None:
+            update_dict["role"] = role
+
+        if not update_dict:
+            return member
+
+        updated_member = await repository.update(member, update_dict=update_dict)
+        log.info(
+            "member.update.success",
+            member_id=member.id,
+            customer_id=member.customer_id,
+            organization_id=member.organization_id,
+            updated_fields=list(update_dict.keys()),
+        )
+        return updated_member
+
 
 member_service = MemberService()

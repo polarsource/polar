@@ -65,6 +65,22 @@ class MemberCreate(Schema):
     )
 
 
+class MemberUpdate(Schema):
+    """Schema for updating a member."""
+
+    name: MemberNameInput | None = None
+    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+    )
+    role: MemberRole | None = Field(
+        default=None,
+        description="The role of the member within the customer.",
+        examples=[MemberRole.member],
+    )
+
+
 class MemberBase(TimestampedSchema, IDSchema):
     """Base schema for member responses."""
 

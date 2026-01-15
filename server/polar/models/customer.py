@@ -178,7 +178,7 @@ class Customer(MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
     meters_processing_since: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True, deferred=True
     )
 
     invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

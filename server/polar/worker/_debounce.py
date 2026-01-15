@@ -101,6 +101,7 @@ class DebounceMiddleware(dramatiq.Middleware):
                         current_message_id=message.message_id,
                         owner_message_id=message_owner,
                     )
+                    message.options["debounce_max_threshold_execution"] = True
                 else:
                     log.info(
                         "Debounce owned by another message, skipping",
@@ -122,12 +123,21 @@ class DebounceMiddleware(dramatiq.Middleware):
         if debounce_key is None:
             return
 
-        log.debug(
-            "Releasing debounce key",
-            debounce_key=debounce_key,
-            message_id=message.message_id,
-        )
-        self._redis.delete(debounce_key)
+        if message.options.pop("debounce_max_threshold_execution", False):
+            log.debug(
+                "Bumping debounce key enqueue timestamp after max threshold execution",
+                debounce_key=debounce_key,
+                message_id=message.message_id,
+            )
+            self._redis.hset(debounce_key, "enqueue_timestamp", now_timestamp())
+            self._redis.expire(debounce_key, DEBOUNCE_KEY_TTL)
+        else:
+            log.debug(
+                "Releasing debounce key",
+                debounce_key=debounce_key,
+                message_id=message.message_id,
+            )
+            self._redis.delete(debounce_key)
 
     def _get_debounce_max_threshold(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

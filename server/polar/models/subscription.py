@@ -176,7 +176,10 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Customer", lazy="raise")
 
     payment_method_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("payment_methods.id", ondelete="set null"), nullable=True
+        Uuid,
+        ForeignKey("payment_methods.id", ondelete="set null"),
+        nullable=True,
+        index=True,
     )
 
     @declared_attr
@@ -209,7 +212,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     discount_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
+        Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True, index=True
     )
 
     discount_applied_at: Mapped[datetime | None] = mapped_column(

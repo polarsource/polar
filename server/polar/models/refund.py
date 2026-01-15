@@ -176,6 +176,7 @@ class Refund(MetadataMixin, RecordModel):
         Uuid,
         ForeignKey("pledges.id"),
         nullable=True,
+        index=True,
     )
 
     @declared_attr
@@ -183,7 +184,7 @@ class Refund(MetadataMixin, RecordModel):
         return relationship("Pledge", lazy="raise")
 
     dispute_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("disputes.id"), nullable=True
+        Uuid, ForeignKey("disputes.id"), nullable=True, index=True
     )
 
     @declared_attr

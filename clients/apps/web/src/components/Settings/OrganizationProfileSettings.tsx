@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
@@ -33,6 +34,7 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
@@ -80,9 +82,21 @@ const SOCIAL_PLATFORM_DOMAINS = {
   'github.com': 'github',
 }
 
-const OrganizationSocialLinks = () => {
-  const { watch, setValue } = useFormContext<schemas['OrganizationUpdate']>()
+interface OrganizationSocialLinksProps {
+  required?: boolean
+}
+
+const OrganizationSocialLinks = ({
+  required,
+}: OrganizationSocialLinksProps) => {
+  const { watch, setValue, formState } =
+    useFormContext<schemas['OrganizationUpdate']>()
   const socials = watch('socials') || []
+
+  const hasValidSocial = socials.some(
+    (social) => social.url && social.url.trim() !== '',
+  )
+  const showError = required && formState.isSubmitted && !hasValidSocial
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -118,12 +132,13 @@ const OrganizationSocialLinks = () => {
   }
 
   const handleChange = (index: number, value: string) => {
-    const currentFieldValue = socials[index]?.url
-    if (
-      currentFieldValue === '' &&
-      !value.startsWith('https://') &&
-      !value.startsWith('http://')
-    ) {
+    if (value.startsWith('http://')) {
+      value = value.replace('http://', 'https://')
+    }
+    const hasProtocol = value.startsWith('https://')
+    const isTypingProtocol =
+      'https://'.startsWith(value) || 'http://'.startsWith(value)
+    if (!hasProtocol && !isTypingProtocol) {
       value = 'https://' + value
     }
 
@@ -175,6 +190,11 @@ const OrganizationSocialLinks = () => {
         <AddOutlined fontSize="small" className="mr-1" />
         Add Social
       </Button>
+      {showError && (
+        <p className="text-destructive text-sm font-medium">
+          At least one social media link is required
+        </p>
+      )}
     </div>
   )
 }
@@ -203,6 +223,9 @@ export const OrganizationDetailsForm: React.FC<
     useFormContext<schemas['OrganizationUpdate']>()
   const name = watch('name')
   const avatarURL = watch('avatar_url')
+  const { status: urlStatus, validateURL } = useURLValidation({
+    organizationSlug: organization.slug,
+  })
 
   const onFilesUpdated = useCallback(
     (files: FileObject<schemas['OrganizationAvatarFileRead']>[]) => {
@@ -320,10 +343,25 @@ export const OrganizationDetailsForm: React.FC<
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Website</label>
+          <label className="mb-2 block text-sm font-medium">Website *</label>
           <FormField
             control={control}
             name="website"
+            rules={{
+              required: 'Website is required',
+              validate: (value) => {
+                if (!value) return 'Website is required'
+                if (!value.startsWith('https://')) {
+                  return 'Website must start with https://'
+                }
+                try {
+                  new URL(value)
+                  return true
+                } catch {
+                  return 'Please enter a valid URL'
+                }
+              },
+            }}
             render={({ field }) => (
               <div>
                 <Input
@@ -331,8 +369,40 @@ export const OrganizationDetailsForm: React.FC<
                   {...field}
                   value={field.value || ''}
                   placeholder="https://acme.com"
+                  onChange={(e) => {
+                    let value = e.target.value
+                    if (value.startsWith('http://')) {
+                      value = value.replace('http://', 'https://')
+                    }
+                    const hasProtocol = value.startsWith('https://')
+                    const isTypingProtocol =
+                      'https://'.startsWith(value) ||
+                      'http://'.startsWith(value)
+                    if (!hasProtocol && !isTypingProtocol) {
+                      value = 'https://' + value
+                    }
+                    field.onChange(value)
+                  }}
+                  onBlur={(e) => {
+                    field.onBlur()
+                    validateURL(e.target.value)
+                  }}
+                  postSlot={
+                    urlStatus === 'validating' ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                    ) : urlStatus === 'valid' ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : urlStatus === 'invalid' ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    ) : null
+                  }
                 />
                 <FormMessage />
+                {urlStatus === 'invalid' && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    Website appears to be unreachable
+                  </p>
+                )}
               </div>
             )}
           />
@@ -341,13 +411,15 @@ export const OrganizationDetailsForm: React.FC<
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-4 flex flex-col items-start">
-            <label className="block text-sm font-medium">Social Media</label>
+            <label className="block text-sm font-medium">
+              Social Media {inKYCMode && '*'}
+            </label>
             <p className="mt-2 text-xs text-gray-600">
-              Social media links help with your account review. They will not be
-              shown publicly.
+              Your personal social media links are used for identity
+              verification. They will never be shown publicly.
             </p>
           </div>
-          <OrganizationSocialLinks />
+          <OrganizationSocialLinks required={inKYCMode} />
         </div>
       </div>
 

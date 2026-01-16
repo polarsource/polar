@@ -93,6 +93,7 @@ class BenefitGrantMetadata(TypedDict):
     benefit_id: str
     benefit_grant_id: str
     benefit_type: BenefitType
+    member_id: NotRequired[str]
 
 
 class BenefitGrantedEvent(Event):

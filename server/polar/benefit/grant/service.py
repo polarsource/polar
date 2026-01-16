@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
-from polar.event.system import SystemEvent, build_system_event
+from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
@@ -88,6 +88,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             query = query.options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+                joinedload(BenefitGrant.member),
             )
 
         if options is not None:
@@ -233,11 +234,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 SystemEvent.benefit_granted,
                 customer=customer,
                 organization=benefit.organization,
-                metadata={
-                    "benefit_id": str(benefit.id),
-                    "benefit_grant_id": str(grant.id),
-                    "benefit_type": benefit.type,
-                },
+                metadata=self._build_benefit_grant_metadata(grant, benefit),
             ),
         )
 
@@ -331,11 +328,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 SystemEvent.benefit_revoked,
                 customer=customer,
                 organization=benefit.organization,
-                metadata={
-                    "benefit_id": str(benefit.id),
-                    "benefit_grant_id": str(grant.id),
-                    "benefit_type": benefit.type,
-                },
+                metadata=self._build_benefit_grant_metadata(grant, benefit),
             ),
         )
 
@@ -470,11 +463,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 SystemEvent.benefit_updated,
                 customer=customer,
                 organization=benefit.organization,
-                metadata={
-                    "benefit_id": str(benefit.id),
-                    "benefit_grant_id": str(grant.id),
-                    "benefit_type": benefit.type,
-                },
+                metadata=self._build_benefit_grant_metadata(grant, benefit),
             ),
         )
 
@@ -539,11 +528,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 SystemEvent.benefit_cycled,
                 customer=customer,
                 organization=benefit.organization,
-                metadata={
-                    "benefit_id": str(benefit.id),
-                    "benefit_grant_id": str(grant.id),
-                    "benefit_type": benefit.type,
-                },
+                metadata=self._build_benefit_grant_metadata(grant, benefit),
             ),
         )
 
@@ -614,6 +599,19 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             previous_grant_properties=previous_properties,
         )
         return grant
+
+    def _build_benefit_grant_metadata(
+        self, grant: BenefitGrant, benefit: Benefit
+    ) -> BenefitGrantMetadata:
+        """Build metadata dict for benefit grant events with optional member_id."""
+        metadata: BenefitGrantMetadata = {
+            "benefit_id": str(benefit.id),
+            "benefit_grant_id": str(grant.id),
+            "benefit_type": benefit.type,
+        }
+        if grant.member_id:
+            metadata["member_id"] = str(grant.member_id)
+        return metadata
 
     async def _send_webhook(
         self,

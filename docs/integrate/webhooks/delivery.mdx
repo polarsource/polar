@@ -158,9 +158,8 @@ If we hit an error while trying to reach your endpoint, whether it is a temporar
 
 ### Delivery Timeouts
 
-We timeout our requests to your endpoint after **20 seconds**. Triggering a
-retry attempt after a delay as explained above. However, we strongly recommend you optimize your endpoint route to be fast. A
-best practice is for your webhook handler to queue a background worker task to handle the
+We currently timeout our requests to your endpoint after **10 seconds**, triggering a
+retry attempt after a delay as explained above. However, we strongly recommend you optimize your endpoint route to respond within **2 seconds** to ensure reliable delivery. We may lower the timeout threshold in the future, so we advise implementing your webhook handler to queue a background worker task to handle the
 payload asynchronously.
 
 ### Endpoint Disabling

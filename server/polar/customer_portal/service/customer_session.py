@@ -6,6 +6,7 @@ from math import ceil
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -19,6 +20,7 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
+    Customer,
     CustomerSession,
     CustomerSessionCode,
     MemberSession,
@@ -225,9 +227,17 @@ class CustomerSessionService:
     ) -> tuple[str, CustomerSession | MemberSession]:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
-        statement = select(CustomerSessionCode).where(
-            CustomerSessionCode.expires_at > utc_now(),
-            CustomerSessionCode.code == code_hash,
+        statement = (
+            select(CustomerSessionCode)
+            .where(
+                CustomerSessionCode.expires_at > utc_now(),
+                CustomerSessionCode.code == code_hash,
+            )
+            .options(
+                joinedload(CustomerSessionCode.customer).joinedload(
+                    Customer.organization
+                )
+            )
         )
         result = await session.execute(statement)
         customer_session_code = result.scalar_one_or_none()

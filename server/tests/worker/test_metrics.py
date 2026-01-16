@@ -46,9 +46,11 @@ class TestPrometheusMiddlewareWithStubBroker:
 
         # Verify metrics were recorded
         mock_executions.labels.assert_called_with(
-            task_name="simple_task", status="success"
+            queue="default", task_name="simple_task", status="success"
         )
-        mock_duration.labels.assert_called_with(task_name="simple_task")
+        mock_duration.labels.assert_called_with(
+            queue="default", task_name="simple_task"
+        )
 
     def test_middleware_records_failure_on_exception(
         self, stub_broker: StubBroker, stub_worker: Worker, mocker: MockerFixture
@@ -67,7 +69,7 @@ class TestPrometheusMiddlewareWithStubBroker:
         stub_worker.join()
 
         mock_executions.labels.assert_called_with(
-            task_name="failing_task", status="failure"
+            queue="default", task_name="failing_task", status="failure"
         )
 
     def test_middleware_records_retries(
@@ -94,7 +96,7 @@ class TestPrometheusMiddlewareWithStubBroker:
         assert mock_retries.labels.call_count == 2
         # Final call should be success
         mock_executions.labels.assert_called_with(
-            task_name="retrying_task", status="success"
+            queue="default", task_name="retrying_task", status="success"
         )
 
     def test_middleware_measures_duration(
@@ -114,7 +116,7 @@ class TestPrometheusMiddlewareWithStubBroker:
         stub_worker.join()
 
         # Verify observe was called with a duration
-        mock_duration.labels.assert_called_with(task_name="slow_task")
+        mock_duration.labels.assert_called_with(queue="default", task_name="slow_task")
         observe_call = mock_duration.labels().observe.call_args
         duration = observe_call[0][0]
         assert duration >= 0.05  # At least 50ms
@@ -165,7 +167,9 @@ class TestPrometheusMiddlewareDirectCalls:
         middleware = PrometheusMiddleware()
         middleware.before_process_message(broker, message)
 
-        mock_retries.labels.assert_called_once_with(task_name="test_actor")
+        mock_retries.labels.assert_called_once_with(
+            queue="test_queue", task_name="test_actor"
+        )
         mock_retries.labels().inc.assert_called_once()
 
     def test_before_process_message_no_retry_on_first_attempt(
@@ -199,11 +203,13 @@ class TestPrometheusMiddlewareDirectCalls:
         middleware = PrometheusMiddleware()
         middleware.after_process_message(broker, message, result="ok", exception=None)
 
-        mock_duration.labels.assert_called_with(task_name="test_actor")
+        mock_duration.labels.assert_called_with(
+            queue="test_queue", task_name="test_actor"
+        )
         mock_duration.labels().observe.assert_called_once()
 
         mock_executions.labels.assert_called_with(
-            task_name="test_actor", status="success"
+            queue="test_queue", task_name="test_actor", status="success"
         )
         mock_executions.labels().inc.assert_called_once()
 
@@ -225,7 +231,7 @@ class TestPrometheusMiddlewareDirectCalls:
         )
 
         mock_executions.labels.assert_called_with(
-            task_name="test_actor", status="failure"
+            queue="test_queue", task_name="test_actor", status="failure"
         )
         mock_executions.labels().inc.assert_called_once()
 
@@ -262,6 +268,6 @@ class TestPrometheusMiddlewareDirectCalls:
         middleware.after_skip_message(broker, message)
 
         mock_executions.labels.assert_called_with(
-            task_name="test_actor", status="skipped"
+            queue="test_queue", task_name="test_actor", status="skipped"
         )
         mock_executions.labels().inc.assert_called_once()

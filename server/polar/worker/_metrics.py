@@ -24,7 +24,8 @@ class PrometheusMiddleware(dramatiq.Middleware):
 
         retries = message.options.get("retries", 0)
         if retries > 0:
-            TASK_RETRIES.labels(task_name=message.actor_name).inc()
+            queue_name = message.queue_name or "default"
+            TASK_RETRIES.labels(queue=queue_name, task_name=message.actor_name).inc()
 
     def after_process_message(
         self,
@@ -35,19 +36,29 @@ class PrometheusMiddleware(dramatiq.Middleware):
         exception: BaseException | None = None,
     ) -> None:
         start_time: float | None = message.options.pop("prometheus_start_time", None)
+        queue_name = message.queue_name or "default"
         if start_time is not None:
             duration = time.perf_counter() - start_time
-            TASK_DURATION.labels(task_name=message.actor_name).observe(duration)
+            TASK_DURATION.labels(
+                queue=queue_name, task_name=message.actor_name
+            ).observe(duration)
 
         status = "failure" if exception else "success"
-        TASK_EXECUTIONS.labels(task_name=message.actor_name, status=status).inc()
+        TASK_EXECUTIONS.labels(
+            queue=queue_name, task_name=message.actor_name, status=status
+        ).inc()
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
         start_time: float | None = message.options.pop("prometheus_start_time", None)
+        queue_name = message.queue_name or "default"
         if start_time is not None:
             duration = time.perf_counter() - start_time
-            TASK_DURATION.labels(task_name=message.actor_name).observe(duration)
+            TASK_DURATION.labels(
+                queue=queue_name, task_name=message.actor_name
+            ).observe(duration)
 
-        TASK_EXECUTIONS.labels(task_name=message.actor_name, status="skipped").inc()
+        TASK_EXECUTIONS.labels(
+            queue=queue_name, task_name=message.actor_name, status="skipped"
+        ).inc()

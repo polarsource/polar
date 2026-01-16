@@ -631,7 +631,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.details = org_data.get("details", {})  # type: ignore
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
-        organization.feature_settings = org_data.get("feature_settings", {})  # type: ignore
+        organization.feature_settings = org_data.get("feature_settings", {})
         session.add(organization)
 
         # Create OrganizationReview with PASS verdict for ACTIVE organizations

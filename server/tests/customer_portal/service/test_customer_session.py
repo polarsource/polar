@@ -1,17 +1,22 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 
 from polar.customer_portal.service.customer_session import (
     CustomerDoesNotExist,
     CustomerSelectionRequired,
+    CustomerSessionCodeInvalidOrExpired,
     OrganizationDoesNotExist,
 )
 from polar.customer_portal.service.customer_session import (
     customer_session as customer_session_service,
 )
-from polar.models import Member, Organization
+from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
+from polar.kit.utils import utc_now
+from polar.models import CustomerSession, Member, MemberSession, Organization
 from polar.models.member import MemberRole
+from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_organization
@@ -458,3 +463,309 @@ class TestRequestMemberEnabledOrg:
             await customer_session_service.request(
                 session, "customer@example.com", organization.id
             )
+
+
+@pytest.mark.asyncio
+class TestAuthenticate:
+    """Tests for authenticate() method that exchanges code for session token."""
+
+    async def test_invalid_code_raises_error(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        """Test that invalid code raises CustomerSessionCodeInvalidOrExpired."""
+        with pytest.raises(CustomerSessionCodeInvalidOrExpired):
+            await customer_session_service.authenticate(session, "INVALID")
+
+    async def test_expired_code_raises_error(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that expired code raises CustomerSessionCodeInvalidOrExpired."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        # Request a code
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+        await session.flush()
+
+        # Manually expire the code
+        customer_session_code.expires_at = utc_now() - timedelta(minutes=1)
+        await save_fixture(customer_session_code)
+
+        with pytest.raises(CustomerSessionCodeInvalidOrExpired):
+            await customer_session_service.authenticate(session, code)
+
+    async def test_legacy_org_returns_customer_session(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that legacy org (member_model_enabled=false) returns CustomerSession."""
+        # organization defaults to member_model_enabled=false
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        # Request and get code
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+        await session.flush()
+
+        # Authenticate
+        token, session_obj = await customer_session_service.authenticate(session, code)
+
+        # Should return CustomerSession with polar_cst_ prefix
+        assert token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert isinstance(session_obj, CustomerSession)
+        assert session_obj.customer_id == customer.id
+
+    async def test_member_enabled_org_returns_member_session(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that member-enabled org returns MemberSession with polar_mst_ prefix."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="owner@example.com"
+        )
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Request and get code
+        customer_session_code, code = await customer_session_service.request(
+            session, "owner@example.com", organization.id
+        )
+        await session.flush()
+
+        # Authenticate
+        token, session_obj = await customer_session_service.authenticate(session, code)
+
+        # Should return MemberSession with polar_mst_ prefix
+        assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert isinstance(session_obj, MemberSession)
+        assert session_obj.member_id == owner_member.id
+
+    async def test_member_enabled_resolves_correct_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that authenticate resolves to correct member (not owner) for non-owner login."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="owner@example.com"
+        )
+        # Create owner member
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Create non-owner member for the same customer
+        non_owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="employee@example.com",
+            name="Employee",
+            role=MemberRole.member,
+        )
+        await save_fixture(non_owner_member)
+
+        # Request code as non-owner
+        customer_session_code, code = await customer_session_service.request(
+            session, "employee@example.com", organization.id
+        )
+        await session.flush()
+
+        # Authenticate
+        token, session_obj = await customer_session_service.authenticate(session, code)
+
+        # Should return MemberSession for the employee, NOT the owner
+        assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert isinstance(session_obj, MemberSession)
+        assert session_obj.member_id == non_owner_member.id
+        # Verify it's NOT the owner
+        assert session_obj.member_id != owner_member.id
+
+    async def test_member_enabled_falls_back_to_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that authenticate falls back to owner when member not found by email."""
+        from polar.models import CustomerSessionCode
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="owner@example.com"
+        )
+        owner_member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner_member)
+
+        # Manually create a CustomerSessionCode with an email that doesn't match any member
+        # This simulates an edge case where the member was deleted after code was requested
+        code, code_hash = customer_session_service._generate_code_hash()
+        customer_session_code = CustomerSessionCode(
+            code=code_hash,
+            email="deleted-member@example.com",  # No member with this email
+            customer=customer,
+        )
+        await save_fixture(customer_session_code)
+        await session.flush()
+
+        # Authenticate
+        token, session_obj = await customer_session_service.authenticate(session, code)
+
+        # Should fall back to owner's MemberSession
+        assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert isinstance(session_obj, MemberSession)
+        assert session_obj.member_id == owner_member.id
+
+    async def test_email_verified_on_authenticate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that customer email_verified is set to True on authenticate."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="test@example.com",
+        )
+        # Ensure email is not verified initially
+        customer.email_verified = False
+        await save_fixture(customer)
+
+        # Request and authenticate
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+        await session.flush()
+
+        await customer_session_service.authenticate(session, code)
+
+        # Refresh customer from DB
+        await session.refresh(customer)
+        assert customer.email_verified is True
+
+    async def test_code_deleted_after_authenticate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that code is deleted after successful authentication."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+
+        # Request and authenticate
+        customer_session_code, code = await customer_session_service.request(
+            session, "test@example.com", organization.id
+        )
+        await session.flush()
+
+        await customer_session_service.authenticate(session, code)
+
+        # Same code should not work again
+        with pytest.raises(CustomerSessionCodeInvalidOrExpired):
+            await customer_session_service.authenticate(session, code)
+
+    async def test_disambiguation_flow_returns_correct_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test full flow: email disambiguation + authenticate returns correct member."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        # Create two customers with shared email member
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+            name="Customer One",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer2@example.com",
+            name="Customer Two",
+        )
+
+        shared_email = "shared@example.com"
+        member1 = Member(
+            customer_id=customer1.id,
+            organization_id=organization.id,
+            email=shared_email,
+            name="Member One",
+            role=MemberRole.owner,
+        )
+        member2 = Member(
+            customer_id=customer2.id,
+            organization_id=organization.id,
+            email=shared_email,
+            name="Member Two",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member1)
+        await save_fixture(member2)
+
+        # First request without customer_id should raise selection required
+        with pytest.raises(CustomerSelectionRequired):
+            await customer_session_service.request(
+                session, shared_email, organization.id
+            )
+
+        # Request with customer1 selected
+        customer_session_code, code = await customer_session_service.request(
+            session, shared_email, organization.id, customer_id=customer1.id
+        )
+        await session.flush()
+
+        # Authenticate
+        token, session_obj = await customer_session_service.authenticate(session, code)
+
+        # Should return MemberSession for member1 (under customer1)
+        assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert isinstance(session_obj, MemberSession)
+        assert session_obj.member_id == member1.id
+        # Verify it's NOT member2
+        assert session_obj.member_id != member2.id

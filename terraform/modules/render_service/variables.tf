@@ -46,6 +46,7 @@ variable "workers" {
     dramatiq_prom_port = optional(string, "10000")
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
+    database_pool_size = optional(string, "5")
   }))
 
   validation {

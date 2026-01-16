@@ -2720,7 +2720,15 @@ export interface paths {
       path?: never
       cookie?: never
     }
-    get?: never
+    /**
+     * Get Member
+     * @description Get a member by ID.
+     *
+     *     The authenticated user or organization must have access to the member's organization.
+     *
+     *     **Scopes**: `members:read` `members:write`
+     */
+    get: operations['members:get_member']
     put?: never
     post?: never
     /**
@@ -2734,7 +2742,16 @@ export interface paths {
     delete: operations['members:delete_member']
     options?: never
     head?: never
-    patch?: never
+    /**
+     * Update Member
+     * @description Update a member.
+     *
+     *     Only name and role can be updated.
+     *     The authenticated user or organization must have access to the member's organization.
+     *
+     *     **Scopes**: `members:write`
+     */
+    patch: operations['members:update_member']
     trace?: never
   }
   '/v1/customer-portal/benefit-grants/': {
@@ -3679,6 +3696,31 @@ export interface paths {
      *     **Scopes**: `customer_sessions:write`
      */
     post: operations['customer-sessions:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/member-sessions/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Member Session
+     * @description Create a member session.
+     *
+     *     This endpoint is only available for organizations with `member_model_enabled`
+     *     and `seat_based_pricing_enabled` feature flags enabled.
+     *
+     *     **Scopes**: `member_sessions:write`
+     */
+    post: operations['member-sessions:create']
     delete?: never
     options?: never
     head?: never
@@ -5748,6 +5790,7 @@ export interface components {
        *       "disputes:read": "Read disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
+       *       "member_sessions:write": "Create or modify member sessions",
        *       "customer_seats:read": "Read customer seats",
        *       "customer_seats:write": "Create or modify customer seats",
        *       "orders:read": "Read orders made on your organizations",
@@ -5831,6 +5874,7 @@ export interface components {
        *       "disputes:read": "Read disputes",
        *       "customer_meters:read": "Read customer meters",
        *       "customer_sessions:write": "Create or modify customer sessions",
+       *       "member_sessions:write": "Create or modify member sessions",
        *       "customer_seats:read": "Read customer seats",
        *       "customer_seats:write": "Create or modify customer seats",
        *       "orders:read": "Read orders made on your organizations",
@@ -5916,6 +5960,7 @@ export interface components {
       | 'disputes:read'
       | 'customer_meters:read'
       | 'customer_sessions:write'
+      | 'member_sessions:write'
       | 'customer_seats:read'
       | 'customer_seats:write'
       | 'orders:read'
@@ -13663,11 +13708,11 @@ export interface components {
     CustomerOrderUpdate: {
       /**
        * Billing Name
-       * @description The name of the customer that should appear on the invoice. Can't be updated after the invoice is generated.
+       * @description The name of the customer that should appear on the invoice.
        */
-      billing_name: string | null
-      /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
-      billing_address: components['schemas']['AddressInput'] | null
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
+      billing_address?: components['schemas']['AddressInput'] | null
     }
     /** CustomerOrganization */
     CustomerOrganization: {
@@ -13999,6 +14044,44 @@ export interface components {
       customer_session_token: string
     }
     /**
+     * CustomerSelectionOption
+     * @description Minimal customer information for disambiguation selection.
+     */
+    CustomerSelectionOption: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The customer's name, if available.
+       */
+      name: string | null
+    }
+    /**
+     * CustomerSelectionRequiredResponse
+     * @description Response when multiple customers match the email.
+     */
+    CustomerSelectionRequiredResponse: {
+      /**
+       * Error
+       * @default customer_selection_required
+       */
+      error: string
+      /**
+       * Detail
+       * @default Multiple customers found for this email. Please select one.
+       */
+      detail: string
+      /**
+       * Customers
+       * @description List of customers to choose from.
+       */
+      customers: components['schemas']['CustomerSelectionOption'][]
+    }
+    /**
      * CustomerSession
      * @description A customer session that can be used to authenticate as a customer.
      */
@@ -14071,6 +14154,11 @@ export interface components {
        * Format: uuid4
        */
       organization_id: string
+      /**
+       * Customer Id
+       * @description Optional customer ID for disambiguation when multiple customers share the same email.
+       */
+      customer_id?: string | null
     }
     /**
      * CustomerSessionCustomerExternalIDCreate
@@ -18222,10 +18310,87 @@ export interface components {
      */
     MemberRole: 'owner' | 'billing_manager' | 'member'
     /**
+     * MemberSession
+     * @description A member session that can be used to authenticate as a member in the customer portal.
+     */
+    MemberSession: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Token */
+      token: string
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string
+      /** Return Url */
+      return_url: string | null
+      /** Member Portal Url */
+      member_portal_url: string
+      /**
+       * Member Id
+       * Format: uuid4
+       */
+      member_id: string
+      member: components['schemas']['Member']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      customer: components['schemas']['Customer']
+    }
+    /**
+     * MemberSessionCreate
+     * @description Schema for creating a member session using a member ID.
+     */
+    MemberSessionCreate: {
+      /**
+       * Member Id
+       * Format: uuid4
+       * @description ID of the member to create a session for.
+       */
+      member_id: string
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the customer portal to return to this URL.
+       * @example https://example.com/account
+       */
+      return_url?: string | null
+    }
+    /**
      * MemberSortProperty
      * @enum {string}
      */
     MemberSortProperty: 'created_at' | '-created_at'
+    /**
+     * MemberUpdate
+     * @description Schema for updating a member.
+     */
+    MemberUpdate: {
+      /** Name */
+      name?: string | null
+      /**
+       * @description The role of the member within the customer.
+       * @example member
+       */
+      role?: components['schemas']['MemberRole'] | null
+    }
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -19014,7 +19179,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -19079,7 +19244,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -19125,7 +19290,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
        */
       scope: string
       /** Client Name */
@@ -19917,11 +20082,11 @@ export interface components {
     OrderUpdate: {
       /**
        * Billing Name
-       * @description The name of the customer that should appear on the invoice. Can't be updated after the invoice is generated.
+       * @description The name of the customer that should appear on the invoice.
        */
-      billing_name: string | null
-      /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
-      billing_address: components['schemas']['AddressInput'] | null
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
+      billing_address?: components['schemas']['AddressInput'] | null
     }
     /** OrderUser */
     OrderUser: {
@@ -22376,6 +22541,7 @@ export interface components {
       | 'disputes:read'
       | 'customer_meters:read'
       | 'customer_sessions:write'
+      | 'member_sessions:write'
       | 'customer_seats:read'
       | 'customer_seats:write'
       | 'orders:read'
@@ -30902,6 +31068,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -32683,6 +32850,46 @@ export interface operations {
       }
     }
   }
+  'members:get_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member retrieved. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'members:delete_member': {
     parameters: {
       query?: never
@@ -32700,6 +32907,50 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'members:update_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Member']
+        }
       }
       /** @description Member not found. */
       404: {
@@ -33435,6 +33686,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Multiple customers found for this email. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
         }
       }
       /** @description Validation Error */
@@ -34976,6 +35236,39 @@ export interface operations {
       }
     }
   }
+  'member-sessions:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberSessionCreate']
+      }
+    }
+    responses: {
+      /** @description Member session created. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MemberSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'events:list': {
     parameters: {
       query?: {
@@ -35650,6 +35943,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -38472,6 +38766,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39074,6 +39369,7 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']
@@ -39634,6 +39930,7 @@ export const availableScopeValues: ReadonlyArray<
   'disputes:read',
   'customer_meters:read',
   'customer_sessions:write',
+  'member_sessions:write',
   'customer_seats:read',
   'customer_seats:write',
   'orders:read',
@@ -40950,6 +41247,7 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'disputes:read',
   'customer_meters:read',
   'customer_sessions:write',
+  'member_sessions:write',
   'customer_seats:read',
   'customer_seats:write',
   'orders:read',

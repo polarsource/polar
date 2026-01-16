@@ -38,7 +38,7 @@ const ClientPage = ({
     async ({ email }: { email: string }) => {
       const { error } = await sessionRequest.mutateAsync({ email })
       if (error) {
-        if (error.detail) {
+        if (error.detail && Array.isArray(error.detail)) {
           setValidationErrors(error.detail, setError)
         }
         return

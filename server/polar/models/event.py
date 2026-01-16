@@ -152,6 +152,24 @@ class Event(Model, MetadataMixin):
             "external_id",
             unique=True,
         ),
+        Index(
+            "ix_events_org_source_name_external_customer_id_ingested_at",
+            "organization_id",
+            "source",
+            "name",
+            "external_customer_id",
+            literal_column("ingested_at DESC"),
+            postgresql_where="external_customer_id IS NOT NULL",
+        ),
+        Index(
+            "ix_events_org_source_name_customer_id_ingested_at",
+            "organization_id",
+            "source",
+            "name",
+            "customer_id",
+            literal_column("ingested_at DESC"),
+            postgresql_where="customer_id IS NOT NULL",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

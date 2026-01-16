@@ -25,6 +25,11 @@ DEBOUNCE_KEY_TTL = timedelta(hours=1)
 The TTL for debounce keys, a fail-safe to avoid keys being stuck in Redis.
 """
 
+DEBOUNCE_KEY_PREFIX = "debounce:"
+"""
+Implicitly added prefix to avoid collisions in Redis.
+"""
+
 
 def now_timestamp() -> int:
     return int(datetime.now(UTC).timestamp())
@@ -41,7 +46,7 @@ async def set_debounce_key(
     if debounce_key_factory is None:
         return None
 
-    key = debounce_key_factory(*args, **kwargs)
+    key = f"{DEBOUNCE_KEY_PREFIX}{debounce_key_factory(*args, **kwargs)}"
     delay: int = (
         actor.options.get(
             "debounce_min_threshold",

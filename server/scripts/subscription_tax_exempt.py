@@ -68,10 +68,10 @@ async def subscription_tax_exempt(
         )
         raise typer.Exit(1)
 
-    if country in {"US", "CA"} and state is None:
+    if country == "US" and state is None:
         typer.echo(
             typer.style(
-                "You must specify a state for US and CA subscriptions.",
+                "You must specify a state for US subscriptions.",
                 fg="red",
             )
         )

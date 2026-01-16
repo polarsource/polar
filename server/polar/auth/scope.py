@@ -68,7 +68,6 @@ class Scope(StrEnum):
     customer_meters_read = "customer_meters:read"
 
     customer_sessions_write = "customer_sessions:write"
-
     member_sessions_write = "member_sessions:write"
 
     customer_seats_read = "customer_seats:read"

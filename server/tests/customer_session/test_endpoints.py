@@ -129,3 +129,69 @@ class TestCreate:
         )
         # Ensure it's not incorrectly using the unencoded + sign
         assert "contact+test@example.com" not in portal_url
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_allows_when_seat_based_pricing_enabled_but_not_migrated(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Enable seat-based pricing but NOT member_model_enabled (not fully migrated)
+        # Should still allow customer-sessions for backward compatibility
+        organization.feature_settings = {
+            "seat_based_pricing_enabled": True,
+            "member_model_enabled": False,
+        }
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="test@example.com",
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_rejects_when_both_flags_enabled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # Enable both flags (fully migrated) - must use member-sessions
+        organization.feature_settings = {
+            "seat_based_pricing_enabled": True,
+            "member_model_enabled": True,
+        }
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="test@example.com",
+        )
+
+        response = await client.post(
+            "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
+        )
+
+        assert response.status_code == 400
+        json = response.json()
+        assert "seat-based pricing enabled" in json["detail"]
+        assert "member-sessions" in json["detail"]

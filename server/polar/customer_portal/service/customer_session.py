@@ -6,6 +6,7 @@ from math import ceil
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -17,7 +18,14 @@ from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
-from polar.models import CustomerSession, CustomerSessionCode, Organization
+from polar.member_session.service import member_session as member_session_service
+from polar.models import (
+    Customer,
+    CustomerSession,
+    CustomerSessionCode,
+    MemberSession,
+    Organization,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 
@@ -216,12 +224,20 @@ class CustomerSessionService:
 
     async def authenticate(
         self, session: AsyncSession, code: str
-    ) -> tuple[str, CustomerSession]:
+    ) -> tuple[str, CustomerSession | MemberSession]:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
-        statement = select(CustomerSessionCode).where(
-            CustomerSessionCode.expires_at > utc_now(),
-            CustomerSessionCode.code == code_hash,
+        statement = (
+            select(CustomerSessionCode)
+            .where(
+                CustomerSessionCode.expires_at > utc_now(),
+                CustomerSessionCode.code == code_hash,
+            )
+            .options(
+                joinedload(CustomerSessionCode.customer).joinedload(
+                    Customer.organization
+                )
+            )
         )
         result = await session.execute(statement)
         customer_session_code = result.scalar_one_or_none()
@@ -238,9 +254,31 @@ class CustomerSessionService:
 
         await session.delete(customer_session_code)
 
-        return await customer_session_service.create_customer_session(
-            session, customer_session_code.customer
-        )
+        organization = customer.organization
+
+        # For orgs with member_model_enabled, create MemberSession instead
+        if organization.feature_settings.get("member_model_enabled", False):
+            member_repository = MemberRepository.from_session(session)
+
+            # Look up member by (customer, email) - unique combination
+            member = await member_repository.get_by_customer_and_email(
+                session, customer, customer_session_code.email
+            )
+
+            if member is None:
+                # Fallback to owner if member not found (edge case)
+                member = await member_repository.get_owner_by_customer_id(
+                    session, customer.id
+                )
+
+            if member:
+                # Use create_member_session directly (not create() which checks seat_based_pricing)
+                return await member_session_service.create_member_session(
+                    session, member
+                )
+
+        # Legacy: create CustomerSession
+        return await customer_session_service.create_customer_session(session, customer)
 
     def _generate_code_hash(self) -> tuple[str, str]:
         code = "".join(

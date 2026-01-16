@@ -66,10 +66,10 @@ resource "render_postgres" "db" {
   name           = "db"
   database_name  = "polar_cpit"
   database_user  = "polar_cpit_user"
-  plan           = "pro_32gb"
+  plan           = "pro_64gb"
   region         = "ohio"
   version        = "15"
-  disk_size_gb   = 150
+  disk_size_gb   = 300
 
   high_availability_enabled = true
 

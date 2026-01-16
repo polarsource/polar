@@ -577,7 +577,8 @@
               "guides/schedule-subscription-downgrades-qstash",
               "guides/subscription-upgrades",
               "guides/seat-based-pricing",
-              "guides/theme-switch-in-checkout"
+              "guides/theme-switch-in-checkout",
+              "guides/proration-for-subscription-changes"
             ]
           }
         ]

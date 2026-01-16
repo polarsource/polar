@@ -6,6 +6,7 @@ from typing import Any, Literal, NotRequired, TypedDict
 
 import dramatiq
 import typer
+from sqlalchemy import select
 
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
@@ -29,10 +30,14 @@ from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.file import File, FileServiceTypes
+from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationDetails, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
+from polar.models.subscription import Subscription, SubscriptionStatus
+from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
@@ -43,6 +48,9 @@ from polar.product.schemas import (
     ProductCreateRecurring,
     ProductPriceFixedCreate,
     ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
+    ProductPriceSeatTier,
+    ProductPriceSeatTiers,
 )
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
@@ -51,6 +59,13 @@ from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
 cli = typer.Typer()
+
+
+class SeatBasedCustomerDict(TypedDict):
+    email: str
+    name: str
+    seats_purchased: int
+    seats_allocated: int
 
 
 class OrganizationDict(TypedDict):
@@ -64,6 +79,8 @@ class OrganizationDict(TypedDict):
     products: NotRequired[list["ProductDict"]]
     benefits: NotRequired[dict[str, "BenefitDict"]]
     is_admin: NotRequired[bool]
+    feature_settings: NotRequired[dict[str, bool]]
+    seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
 
 
 class ProductDict(TypedDict):
@@ -75,6 +92,8 @@ class ProductDict(TypedDict):
     metered: NotRequired[bool]
     unit_amount: NotRequired[float]
     cap_amount: NotRequired[int | None]
+    seat_based: NotRequired[bool]
+    price_per_seat: NotRequired[int]
 
 
 class BenefitDictBase(TypedDict):
@@ -459,6 +478,84 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 },
             ],
         },
+        {
+            "name": "SeatBased Members Corp",
+            "slug": "seatbased-members-corp",
+            "email": "admin@polar.sh",
+            "website": "https://seatbased-members.com",
+            "bio": "Organization with seat-based pricing and members model enabled",
+            "status": OrganizationStatus.ACTIVE,
+            "details": {
+                "about": "Testing seat-based pricing with members model",
+                "intended_use": "We sell seat-based licenses for our software",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "Team software licenses with per-seat billing",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 500000,
+                "previous_annual_revenue": 0,
+            },
+            "feature_settings": {
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+            "products": [
+                {
+                    "name": "Team Plan",
+                    "description": "Per-seat team plan with member management",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "seat_based": True,
+                    "price_per_seat": 1000,  # $10 per seat
+                },
+            ],
+            "seat_based_customers": [
+                {
+                    "email": "customer-with-members@polar.sh",
+                    "name": "Customer With Members Inc",
+                    "seats_purchased": 5,
+                    "seats_allocated": 2,
+                },
+            ],
+        },
+        {
+            "name": "SeatBased Only Corp",
+            "slug": "seatbased-only-corp",
+            "email": "admin@polar.sh",
+            "website": "https://seatbased-only.com",
+            "bio": "Organization with seat-based pricing but members model disabled",
+            "status": OrganizationStatus.ACTIVE,
+            "details": {
+                "about": "Testing seat-based pricing without members model",
+                "intended_use": "We sell seat-based licenses without member tracking",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "Team software licenses with simple seat billing",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 500000,
+                "previous_annual_revenue": 0,
+            },
+            "feature_settings": {
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": False,
+            },
+            "products": [
+                {
+                    "name": "Simple Team Plan",
+                    "description": "Per-seat team plan without member management",
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "seat_based": True,
+                    "price_per_seat": 1500,  # $15 per seat
+                },
+            ],
+            "seat_based_customers": [
+                {
+                    "email": "customer-no-members@polar.sh",
+                    "name": "Customer Without Members Inc",
+                    "seats_purchased": 5,
+                    "seats_allocated": 2,
+                },
+            ],
+        },
     ]
 
     # Benefits data for each organization
@@ -499,8 +596,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
     # Create organizations with users and sample data
     for org_data in orgs_data:
-        # Create user first
-        user = await user_service.create_by_email(
+        # Get or create user (allows multiple orgs to share the same user)
+        user, _created = await user_service.get_by_email_or_create(
             session=session,
             email=org_data["email"],
         )
@@ -534,6 +631,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.details = org_data.get("details", {})  # type: ignore
         organization.details_submitted_at = utc_now()
         organization.status = org_data.get("status", OrganizationStatus.CREATED)
+        organization.feature_settings = org_data.get("feature_settings", {})  # type: ignore
         session.add(organization)
 
         # Create OrganizationReview with PASS verdict for ACTIVE organizations
@@ -636,9 +734,15 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
 
         # Create products for organization
         org_products = []
+        seat_based_product = None
+        seat_based_price = None
         for product_data in org_data.get("products", []):
-            # Handle metered products
-            price_create: ProductPriceMeteredUnitCreate | ProductPriceFixedCreate
+            # Handle different price types
+            price_create: (
+                ProductPriceMeteredUnitCreate
+                | ProductPriceFixedCreate
+                | ProductPriceSeatBasedCreate
+            )
             if product_data.get("metered", False) and coldmail_meter:
                 price_create = ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
@@ -646,6 +750,22 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     unit_amount=Decimal(str(product_data["unit_amount"])),
                     meter_id=coldmail_meter.id,
                     cap_amount=product_data.get("cap_amount"),
+                )
+            elif product_data.get("seat_based", False):
+                # Create seat-based price with a single tier
+                price_per_seat = product_data.get("price_per_seat", 1000)
+                price_create = ProductPriceSeatBasedCreate(
+                    amount_type=ProductPriceAmountType.seat_based,
+                    price_currency="usd",
+                    seat_tiers=ProductPriceSeatTiers(
+                        tiers=[
+                            ProductPriceSeatTier(
+                                min_seats=1,
+                                max_seats=None,  # Unlimited
+                                price_per_seat=price_per_seat,
+                            )
+                        ]
+                    ),
                 )
             else:
                 # Create fixed price for product
@@ -680,6 +800,16 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
             org_products.append(product)
 
+            # Track seat-based product for later subscription creation
+            if product_data.get("seat_based", False):
+                seat_based_product = product
+                # Get the seat-based price from the freshly created product
+                await session.refresh(product, ["all_prices"])
+                for price in product.all_prices:
+                    if isinstance(price, ProductPriceSeatUnit):
+                        seat_based_price = price
+                        break
+
             selected_benefits = product_data.get("benefits", [])
             for benefit_key in selected_benefits:
                 await product_service.update_benefits(
@@ -703,8 +833,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 auth_subject=auth_subject,
             )
 
-        # Create customers for organization
-        num_customers = random.randint(0, 5)
+        # Create customers for organization (skip if seat_based_customers are defined)
+        num_customers = random.randint(0, 5) if not org_data.get("seat_based_customers") else 0
         for i in range(num_customers):
             # customer_email = f"customer_{org_data['slug']}_{i + 1}@example.com"
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
@@ -758,6 +888,127 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             # TODO: Create some checkouts for customers
             # This would require more complex checkout creation logic
             pass
+
+        # Create seat-based customers with subscriptions and seats
+        seat_based_customers = org_data.get("seat_based_customers", [])
+        if seat_based_customers and seat_based_product and seat_based_price:
+            member_model_enabled = org_data.get("feature_settings", {}).get(
+                "member_model_enabled", False
+            )
+
+            for customer_data in seat_based_customers:
+                # Create the customer
+                seat_customer = await customer_service.create(
+                    session=session,
+                    customer_create=CustomerCreate(
+                        email=customer_data["email"],
+                        name=customer_data["name"],
+                        organization_id=organization.id,
+                    ),
+                    auth_subject=auth_subject,
+                )
+
+                seats_purchased = customer_data["seats_purchased"]
+                seats_allocated = customer_data["seats_allocated"]
+
+                # Create subscription with seats
+                subscription = Subscription(
+                    amount=seat_based_price.calculate_amount(seats_purchased),
+                    currency=seat_based_price.price_currency,
+                    recurring_interval=seat_based_product.recurring_interval,
+                    recurring_interval_count=1,
+                    status=SubscriptionStatus.active,
+                    current_period_start=utc_now(),
+                    current_period_end=utc_now() + timedelta(days=30),
+                    cancel_at_period_end=False,
+                    started_at=utc_now(),
+                    customer_id=seat_customer.id,
+                    product_id=seat_based_product.id,
+                    seats=seats_purchased,
+                )
+                session.add(subscription)
+                await session.flush()
+
+                # Create subscription product price
+                spp = SubscriptionProductPrice(
+                    subscription_id=subscription.id,
+                    product_price_id=seat_based_price.id,
+                    amount=seat_based_price.calculate_amount(seats_purchased),
+                )
+                session.add(spp)
+                await session.flush()
+
+                # Create members if member_model_enabled
+                members_for_seats = []
+                if member_model_enabled:
+                    # The customer_service.create() already created the owner member
+                    # when member_model_enabled is True. Fetch it from the database.
+                    owner_result = await session.execute(
+                        select(Member).where(
+                            Member.customer_id == seat_customer.id,
+                            Member.role == MemberRole.owner,
+                        )
+                    )
+                    owner_member = owner_result.scalar_one_or_none()
+                    if owner_member:
+                        members_for_seats.append(owner_member)
+
+                    # Create additional members for allocated seats (beyond the owner)
+                    for i in range(1, seats_allocated):
+                        member = Member(
+                            customer_id=seat_customer.id,
+                            organization_id=organization.id,
+                            email=f"member{i}@{customer_data['email'].split('@')[1]}",
+                            name=f"Team Member {i}",
+                            role=MemberRole.member,
+                        )
+                        session.add(member)
+                        await session.flush()
+                        members_for_seats.append(member)
+
+                # Create customer seats
+                for i in range(seats_purchased):
+                    if i < seats_allocated:
+                        # Allocated/claimed seats
+                        if member_model_enabled and i < len(members_for_seats):
+                            # With member - claimed
+                            seat = CustomerSeat(
+                                subscription_id=subscription.id,
+                                status=SeatStatus.claimed,
+                                customer_id=seat_customer.id,
+                                member_id=members_for_seats[i].id,
+                                email=members_for_seats[i].email,
+                                claimed_at=utc_now(),
+                            )
+                        else:
+                            # Without member model - create a Customer for each seat holder
+                            seat_holder_email = f"seat{i + 1}@{customer_data['email'].split('@')[1]}"
+                            seat_holder_customer = await customer_service.create(
+                                session=session,
+                                customer_create=CustomerCreate(
+                                    email=seat_holder_email,
+                                    name=f"Seat Holder {i + 1}",
+                                    organization_id=organization.id,
+                                ),
+                                auth_subject=auth_subject,
+                            )
+                            seat = CustomerSeat(
+                                subscription_id=subscription.id,
+                                status=SeatStatus.claimed,
+                                customer_id=seat_holder_customer.id,
+                                email=seat_holder_email,
+                                claimed_at=utc_now(),
+                            )
+                    else:
+                        # Pending seats (not yet allocated)
+                        seat = CustomerSeat(
+                            subscription_id=subscription.id,
+                            status=SeatStatus.pending,
+                            customer_id=seat_customer.id,
+                        )
+                    session.add(seat)
+
+                await session.flush()
 
         # Downgrade user from admin (for non-admin users)
         await user_repository.update(

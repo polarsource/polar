@@ -95,7 +95,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         statement = (
             insert(Event)
-            .on_conflict_do_nothing(index_elements=["external_id"])
+            .on_conflict_do_nothing(index_elements=["organization_id", "external_id"])
             .returning(Event.id)
         )
         result = await self.session.execute(statement, events)

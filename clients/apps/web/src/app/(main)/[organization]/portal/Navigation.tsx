@@ -18,19 +18,42 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['CustomerOrganization']) => {
+const hasBillingPermission = (
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
+  // Customers always have billing access (legacy behavior)
+  if (!authenticatedUser || authenticatedUser.type === 'customer') {
+    return true
+  }
+  // Members need owner or billing_manager role
+  return (
+    authenticatedUser.role === 'owner' ||
+    authenticatedUser.role === 'billing_manager'
+  )
+}
+
+const links = (
+  organization: schemas['CustomerOrganization'],
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
   const portalSettings = organization.customer_portal_settings
+  const canAccessBilling = hasBillingPermission(authenticatedUser)
+
   return [
     {
       href: `/${organization.slug}/portal/overview`,
       label: 'Overview',
       isActive: (path: string) => path.includes('/overview'),
     },
-    {
-      href: `/${organization.slug}/portal/orders`,
-      label: 'Orders',
-      isActive: (path: string) => path.includes('/orders'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/orders`,
+            label: 'Orders',
+            isActive: (path: string) => path.includes('/orders'),
+          },
+        ]
+      : []),
     ...(portalSettings.usage.show
       ? [
           {
@@ -40,11 +63,15 @@ const links = (organization: schemas['CustomerOrganization']) => {
           },
         ]
       : []),
-    {
-      href: `/${organization.slug}/portal/settings`,
-      label: 'Billing',
-      isActive: (path: string) => path.includes('/settings'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/settings`,
+            label: 'Billing',
+            isActive: (path: string) => path.includes('/settings'),
+          },
+        ]
+      : []),
   ]
 }
 
@@ -78,7 +105,7 @@ export const Navigation = ({
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization)
+  const filteredLinks = links(organization, authenticatedUser)
 
   return (
     <>

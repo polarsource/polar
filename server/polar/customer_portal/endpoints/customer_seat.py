@@ -114,7 +114,7 @@ async def list_seats(
 )
 async def assign_seat(
     seat_assign: SeatAssign,
-    auth_subject: auth.CustomerPortalUnionWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
     customer = get_customer(auth_subject)
@@ -196,7 +196,7 @@ async def assign_seat(
 )
 async def revoke_seat(
     seat_id: UUID4,
-    auth_subject: auth.CustomerPortalUnionWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
     customer = get_customer(auth_subject)
@@ -221,7 +221,7 @@ async def revoke_seat(
 )
 async def resend_invitation(
     seat_id: UUID4,
-    auth_subject: auth.CustomerPortalUnionWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
     customer = get_customer(auth_subject)

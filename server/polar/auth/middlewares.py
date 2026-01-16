@@ -13,7 +13,6 @@ from polar.customer_session.service import (
 )
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     CustomerSession,
@@ -124,43 +123,14 @@ async def get_auth_subject(
                 )
             raise InvalidTokenError()
 
-        # CustomerSession with conditional Member resolution
+        # CustomerSession - always returns Customer auth subject
+        # Note: For proper member authentication with role-based permissions,
+        # use MemberSession tokens (polar_mst_) instead of CustomerSession tokens.
+        # CustomerSession tokens are for legacy customer-only authentication.
         if token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
             customer_session = await get_customer_session(session, token)
             if customer_session:
                 customer = customer_session.customer
-                organization = customer.organization
-
-                # Check if member_model_enabled for this organization
-                if organization.feature_settings.get("member_model_enabled", False):
-                    log.debug(
-                        "customer_portal.auth.resolving_member",
-                        customer_id=str(customer.id),
-                        organization_id=str(organization.id),
-                    )
-                    # Try to resolve to owner Member
-                    member_repository = MemberRepository.from_session(session)
-                    owner_member = await member_repository.get_owner_by_customer_id(
-                        session, customer.id
-                    )
-                    if owner_member:
-                        log.debug(
-                            "customer_portal.auth.resolved_to_member",
-                            member_id=str(owner_member.id),
-                            member_role=owner_member.role,
-                            customer_id=str(customer.id),
-                        )
-                        return AuthSubject(
-                            owner_member,
-                            {Scope.customer_portal_write},
-                            customer_session,
-                        )
-                    log.debug(
-                        "customer_portal.auth.no_owner_member_found",
-                        customer_id=str(customer.id),
-                    )
-
-                # Default: return Customer
                 return AuthSubject(
                     customer,
                     {Scope.customer_portal_write},

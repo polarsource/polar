@@ -268,9 +268,7 @@ class CustomerSessionService:
                 )
 
         # Legacy: create CustomerSession
-        return await customer_session_service.create_customer_session(
-            session, customer
-        )
+        return await customer_session_service.create_customer_session(session, customer)
 
     def _generate_code_hash(self) -> tuple[str, str]:
         code = "".join(

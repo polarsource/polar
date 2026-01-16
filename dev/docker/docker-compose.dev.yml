@@ -15,7 +15,7 @@ x-common-backend-env: &common-backend-env
   POLAR_ENV: development
   POLAR_LOG_LEVEL: DEBUG
   POLAR_TESTING: "0"
-  POLAR_SQLALCHEMY_DEBUG: "1"
+  POLAR_SQLALCHEMY_DEBUG: "0"
   POLAR_POSTHOG_DEBUG: "1"
   # Database - uses service name for container networking
   POLAR_POSTGRES_USER: ${POLAR_POSTGRES_USER:-polar}

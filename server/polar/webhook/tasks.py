@@ -112,7 +112,7 @@ async def _webhook_event_send(
             event.webhook_endpoint.url,
             content=event.payload,
             headers=headers,
-            timeout=20.0,
+            timeout=10.0,
         )
         delivery.http_code = response.status_code
         delivery.response = (

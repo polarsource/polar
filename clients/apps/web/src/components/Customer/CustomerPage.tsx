@@ -3,6 +3,7 @@
 import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
+import { MembersSection } from '@/components/Customer/MembersSection'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
@@ -489,6 +490,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             className="text-sm"
           />
         </div>
+
+        <MembersSection
+          customerId={customer.id}
+          organizationId={organization.id}
+        />
 
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">

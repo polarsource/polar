@@ -160,6 +160,11 @@ module "production" {
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }
+    "worker-webhook" = {
+      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 32 --queues webhook"
+      tag                = "latest"
+      dramatiq_prom_port = "10001"
+    }
   }
 
   google_secrets = {

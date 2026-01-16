@@ -834,7 +834,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             )
 
         # Create customers for organization (skip if seat_based_customers are defined)
-        num_customers = random.randint(0, 5) if not org_data.get("seat_based_customers") else 0
+        num_customers = (
+            random.randint(0, 5) if not org_data.get("seat_based_customers") else 0
+        )
         for i in range(num_customers):
             # customer_email = f"customer_{org_data['slug']}_{i + 1}@example.com"
             customer_email = f"customer_{org_data['slug']}_{i + 1}@polar.sh"
@@ -982,7 +984,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                             )
                         else:
                             # Without member model - create a Customer for each seat holder
-                            seat_holder_email = f"seat{i + 1}@{customer_data['email'].split('@')[1]}"
+                            seat_holder_email = (
+                                f"seat{i + 1}@{customer_data['email'].split('@')[1]}"
+                            )
                             seat_holder_customer = await customer_service.create(
                                 session=session,
                                 customer_create=CustomerCreate(

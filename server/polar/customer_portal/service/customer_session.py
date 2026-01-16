@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass
 from math import ceil
 
+import structlog
 from sqlalchemy import select
 
 from polar.config import settings
@@ -19,6 +20,8 @@ from polar.member.repository import MemberRepository
 from polar.models import CustomerSession, CustomerSessionCode, Organization
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
+
+log = structlog.get_logger()
 
 
 @dataclass
@@ -200,6 +203,16 @@ class CustomerSessionService:
             subject=f"Access your {organization.name} purchases",
             html_content=body,
         )
+
+        if settings.is_development():
+            log.info(
+                "\n"
+                "╔══════════════════════════════════════════════════════════╗\n"
+                "║                                                          ║\n"
+                f"║           🔑 CUSTOMER SESSION CODE: {code}              ║\n"
+                "║                                                          ║\n"
+                "╚══════════════════════════════════════════════════════════╝"
+            )
 
     async def authenticate(
         self, session: AsyncSession, code: str

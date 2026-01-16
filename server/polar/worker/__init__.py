@@ -1,6 +1,5 @@
 import functools
 from collections.abc import Awaitable, Callable
-from enum import IntEnum, StrEnum
 from typing import Any, ParamSpec
 
 import dramatiq
@@ -23,6 +22,7 @@ from ._enqueue import (
     make_bulk_job_delay_calculator,
 )
 from ._httpx import HTTPXMiddleware
+from ._queues import TaskPriority, TaskQueue
 from ._redis import RedisMiddleware
 from ._sqlalchemy import AsyncSessionMaker
 
@@ -57,19 +57,6 @@ def can_retry() -> bool:
 broker = get_broker()
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
-
-
-class TaskPriority(IntEnum):
-    HIGH = 0
-    MEDIUM = 50
-    LOW = 100
-
-
-class TaskQueue(StrEnum):
-    HIGH_PRIORITY = "high_priority"
-    MEDIUM_PRIORITY = "medium_priority"
-    LOW_PRIORITY = "low_priority"
-    WEBHOOKS = "webhooks"
 
 
 P = ParamSpec("P")

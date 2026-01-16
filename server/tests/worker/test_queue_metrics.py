@@ -128,14 +128,9 @@ class TestCollectQueueMetrics:
     @pytest.mark.asyncio
     async def test_redis_error_on_queue_age(self) -> None:
         redis = AsyncMock()
-        redis.llen.side_effect = [
-            10,
-            5,
-            3,
-            RedisError("timeout"),
-            RedisError("timeout"),
-            RedisError("timeout"),
-        ]
+        redis.llen.side_effect = [10] * len(QUEUE_NAMES) + [
+            RedisError("timeout")
+        ] * len(QUEUE_NAMES)
 
         await collect_queue_metrics(redis)
 

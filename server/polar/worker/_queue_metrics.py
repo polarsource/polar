@@ -9,9 +9,11 @@ import polar.observability.metrics  # noqa: F401  # Sets PROMETHEUS_MULTIPROC_DI
 from polar.logging import Logger
 from polar.redis import Redis
 
+from ._queues import TaskQueue
+
 log: Logger = structlog.get_logger()
 
-QUEUE_NAMES = ["high_priority", "medium_priority", "low_priority"]
+QUEUE_NAMES = {queue.value for queue in TaskQueue}
 
 QUEUE_SIZE = Gauge(
     "polar_queue_size",

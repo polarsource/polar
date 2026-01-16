@@ -817,6 +817,27 @@ async def create_customer(
     return customer
 
 
+async def create_member(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    email: str | None = None,
+    name: str | None = None,
+    role: str = "owner",
+    external_id: str | None = None,
+) -> Member:
+    member = Member(
+        customer_id=customer.id,
+        organization_id=customer.organization_id,
+        email=email or customer.email,
+        name=name or customer.name,
+        role=role,
+        external_id=external_id,
+    )
+    await save_fixture(member)
+    return member
+
+
 async def create_order(
     save_fixture: SaveFixture,
     *,
@@ -1568,6 +1589,30 @@ async def customer(
         organization=organization,
         email=lstr("customer@example.com"),
         stripe_customer_id=lstr("STRIPE_CUSTOMER_ID"),
+    )
+
+
+@pytest_asyncio.fixture
+async def member(
+    save_fixture: SaveFixture,
+    customer: Customer,
+) -> Member:
+    return await create_member(
+        save_fixture,
+        customer=customer,
+    )
+
+
+@pytest_asyncio.fixture
+async def member_second(
+    save_fixture: SaveFixture,
+    customer: Customer,
+) -> Member:
+    return await create_member(
+        save_fixture,
+        customer=customer,
+        email=lstr("member.second@example.com"),
+        role="member",
     )
 
 

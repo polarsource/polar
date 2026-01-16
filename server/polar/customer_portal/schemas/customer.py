@@ -13,6 +13,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.models.member import MemberRole
 from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
 from polar.tax.tax_id import TaxID
 
@@ -79,3 +80,36 @@ CustomerPaymentMethodCreateResponse = Annotated[
 class CustomerPaymentMethodConfirm(Schema):
     setup_intent_id: str
     set_default: bool
+
+
+# Schema for authenticated user info
+class CustomerPortalMember(IDSchema, TimestampedSchema):
+    """Member information for the customer portal."""
+
+    email: str
+    name: str | None
+    role: MemberRole
+    customer_id: UUID4
+
+
+class CustomerPortalUserCustomer(Schema):
+    """Authenticated user response when the subject is a Customer."""
+
+    type: Literal["customer"] = "customer"
+    customer: CustomerPortalCustomer
+
+
+class CustomerPortalUserMember(Schema):
+    """Authenticated user response when the subject is a Member."""
+
+    type: Literal["member"] = "member"
+    member: CustomerPortalMember
+    customer: CustomerPortalCustomer
+
+
+CustomerPortalUser = Annotated[
+    CustomerPortalUserCustomer | CustomerPortalUserMember,
+    Discriminator("type"),
+    SetSchemaReference("CustomerPortalUser"),
+    MergeJSONSchema({"title": "CustomerPortalUser"}),
+]

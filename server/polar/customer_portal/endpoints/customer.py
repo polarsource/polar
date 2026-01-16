@@ -2,6 +2,7 @@ from fastapi import Depends, Request
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
 
+from polar.auth.models import is_member
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
@@ -22,6 +23,10 @@ from ..schemas.customer import (
     CustomerPaymentMethodTypeAdapter,
     CustomerPortalCustomer,
     CustomerPortalCustomerUpdate,
+    CustomerPortalMember,
+    CustomerPortalUser,
+    CustomerPortalUserCustomer,
+    CustomerPortalUserMember,
 )
 from ..service.customer import CustomerNotReady
 from ..service.customer import customer as customer_service
@@ -42,10 +47,30 @@ async def stream(
     return EventSourceResponse(subscribe(redis, channels, request))
 
 
-@router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)
-async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
-    """Get authenticated customer."""
-    return get_customer(auth_subject)
+@router.get("/me", summary="Get Authenticated User", response_model=CustomerPortalUser)
+async def get(
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerPortalUserCustomer | CustomerPortalUserMember:
+    """Get authenticated customer or member information.
+
+    Returns either a Customer or Member based on the authentication type.
+    For Members, also includes the associated Customer information.
+    """
+    if is_member(auth_subject):
+        member = auth_subject.subject
+        # Load the customer for the member
+        customer = await session.get(Customer, member.customer_id)
+        assert customer is not None
+        return CustomerPortalUserMember(
+            member=CustomerPortalMember.model_validate(member),
+            customer=CustomerPortalCustomer.model_validate(customer),
+        )
+    else:
+        customer = get_customer(auth_subject)
+        return CustomerPortalUserCustomer(
+            customer=CustomerPortalCustomer.model_validate(customer),
+        )
 
 
 @router.patch(

@@ -146,6 +146,12 @@ class Event(Model, MetadataMixin):
             "source",
             "id",
         ),
+        Index(
+            "ix_events_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -168,9 +174,7 @@ class Event(Model, MetadataMixin):
         String, nullable=True, index=True
     )
 
-    external_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True, unique=True
-    )
+    external_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     parent_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True

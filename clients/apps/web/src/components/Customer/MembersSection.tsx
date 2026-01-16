@@ -32,7 +32,10 @@ export const MembersSection = ({
   customerId,
   organizationId,
 }: MembersSectionProps) => {
-  const { data: organization } = useOrganization(organizationId, !!organizationId)
+  const { data: organization } = useOrganization(
+    organizationId,
+    !!organizationId,
+  )
   const { data: membersData, isLoading } = useMembers(customerId)
 
   const isEnabled =

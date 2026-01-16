@@ -276,6 +276,7 @@ resource "render_web_service" "worker" {
 
   env_vars = {
     dramatiq_prom_port           = { value = each.value.dramatiq_prom_port }
+    POLAR_DATABASE_POOL_SIZE     = { value = each.value.database_pool_size }
     POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
     POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
     POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }

@@ -4,13 +4,14 @@ from uuid import UUID
 
 import stripe as stripe_lib
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
-from polar.models import Customer, PaymentMethod
+from polar.models import PaymentMethod
+from polar.models import Customer as CustomerModel
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
@@ -30,7 +31,7 @@ class CustomerError(PolarError): ...
 
 
 class CustomerNotReady(CustomerError):
-    def __init__(self, customer: Customer) -> None:
+    def __init__(self, customer: CustomerModel) -> None:
         self.customer = customer
         super().__init__("Customer is not ready for this operation.", 403)
 
@@ -39,9 +40,9 @@ class CustomerService:
     async def update(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         customer_update: CustomerPortalCustomerUpdate,
-    ) -> Customer:
+    ) -> CustomerModel:
         if customer_update.billing_name is not None:
             customer.billing_name = customer_update.billing_name
 
@@ -108,7 +109,7 @@ class CustomerService:
     async def list_payment_methods(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         pagination: PaginationParams,
     ) -> tuple[Sequence[PaymentMethod], int]:
@@ -121,7 +122,7 @@ class CustomerService:
         )
 
     async def get_payment_method(
-        self, session: AsyncSession, auth_subject: AuthSubject[Customer], id: UUID
+        self, session: AsyncSession, auth_subject: AuthSubject[Customer | Member], id: UUID
     ) -> PaymentMethod | None:
         repository = CustomerPaymentMethodRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
@@ -132,7 +133,7 @@ class CustomerService:
     async def add_payment_method(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         payment_method_create: CustomerPaymentMethodCreate,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
@@ -177,7 +178,7 @@ class CustomerService:
     async def confirm_payment_method(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         payment_method_confirm: CustomerPaymentMethodConfirm,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
@@ -225,7 +226,7 @@ class CustomerService:
     async def _save_payment_method(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         setup_intent: stripe_lib.SetupIntent,
         set_default: bool,
     ) -> CustomerPaymentMethodCreateResponse:

@@ -2826,8 +2826,6 @@ export interface paths {
     /**
      * Update Customer
      * @description Update authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:write`
      */
     patch: operations['customer_portal:customers:update']
     trace?: never
@@ -2842,16 +2840,12 @@ export interface paths {
     /**
      * List Customer Payment Methods
      * @description Get saved payment methods of the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:customers:list_payment_methods']
     put?: never
     /**
      * Add Customer Payment Method
      * @description Add a payment method to the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     post: operations['customer_portal:customers:add_payment_method']
     delete?: never
@@ -2872,8 +2866,6 @@ export interface paths {
     /**
      * Confirm Customer Payment Method
      * @description Confirm a payment method for the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     post: operations['customer_portal:customers:confirm_payment_method']
     delete?: never
@@ -2895,8 +2887,6 @@ export interface paths {
     /**
      * Delete Customer Payment Method
      * @description Delete a payment method from the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     delete: operations['customer_portal:customers:delete_payment_method']
     options?: never
@@ -3082,6 +3072,28 @@ export interface paths {
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:customer-session:introspect']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/user': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Authenticated Portal User
+     * @description Get information about the currently authenticated portal user.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:customer-session:get_authenticated_user']
     put?: never
     post?: never
     delete?: never
@@ -3294,8 +3306,6 @@ export interface paths {
     /**
      * List Orders
      * @description List orders of the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:orders:list']
     put?: never
@@ -3316,8 +3326,6 @@ export interface paths {
     /**
      * Get Order
      * @description Get an order by ID for the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:orders:get']
     put?: never
@@ -3328,8 +3336,6 @@ export interface paths {
     /**
      * Update Order
      * @description Update an order for the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:write`
      */
     patch: operations['customer_portal:orders:update']
     trace?: never
@@ -3344,16 +3350,12 @@ export interface paths {
     /**
      * Get Order Invoice
      * @description Get an order's invoice data.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:orders:invoice']
     put?: never
     /**
      * Generate Order Invoice
      * @description Trigger generation of an order's invoice.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     post: operations['customer_portal:orders:generate_invoice']
     delete?: never
@@ -3372,8 +3374,6 @@ export interface paths {
     /**
      * Get Order Payment Status
      * @description Get the current payment status for an order.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:orders:get_payment_status']
     put?: never
@@ -3396,8 +3396,6 @@ export interface paths {
     /**
      * Confirm Retry Payment
      * @description Confirm a retry payment using a Stripe confirmation token.
-     *
-     *     **Scopes**: `customer_portal:write`
      */
     post: operations['customer_portal:orders:confirm_retry_payment']
     delete?: never
@@ -3514,8 +3512,6 @@ export interface paths {
     /**
      * List Wallets
      * @description List wallets of the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:wallets:list']
     put?: never
@@ -3536,8 +3532,6 @@ export interface paths {
     /**
      * Get Wallet
      * @description Get a wallet by ID for the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:wallets:get']
     put?: never
@@ -7473,6 +7467,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitCustom']
       properties: components['schemas']['BenefitGrantCustomProperties']
       previous_properties?:
@@ -7559,6 +7554,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDiscord']
       properties: components['schemas']['BenefitGrantDiscordProperties']
       previous_properties?:
@@ -7639,6 +7635,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDownloadables']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
       previous_properties?:
@@ -7739,6 +7736,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitGitHubRepository']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
       previous_properties?:
@@ -7821,6 +7819,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitLicenseKeys']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
       previous_properties?:
@@ -7834,6 +7833,8 @@ export interface components {
       /** Benefit Grant Id */
       benefit_grant_id: string
       benefit_type: components['schemas']['BenefitType']
+      /** Member Id */
+      member_id?: string
     }
     /** BenefitGrantMeterCreditProperties */
     BenefitGrantMeterCreditProperties: {
@@ -7913,6 +7914,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitMeterCredit']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
       previous_properties?:
@@ -21168,6 +21170,38 @@ export interface components {
       | 'charge_disputed'
       | 'cancelled'
     /**
+     * PortalAuthenticatedUser
+     * @description Information about the authenticated portal user.
+     */
+    PortalAuthenticatedUser: {
+      /**
+       * Type
+       * @description Type of authenticated user: 'customer' or 'member'
+       */
+      type: string
+      /**
+       * Name
+       * @description User's name, if available.
+       */
+      name: string | null
+      /**
+       * Email
+       * @description User's email address.
+       */
+      email: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description Associated customer ID.
+       */
+      customer_id: string
+      /**
+       * Role
+       * @description Member role (owner, billing_manager, member). Only set for members.
+       */
+      role?: string | null
+    }
+    /**
      * PresentmentCurrency
      * @enum {string}
      */
@@ -31068,7 +31102,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -33770,6 +33803,26 @@ export interface operations {
       }
     }
   }
+  'customer_portal:customer-session:get_authenticated_user': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PortalAuthenticatedUser']
+        }
+      }
+    }
+  }
   'customer_portal:downloadables:list': {
     parameters: {
       query?: {
@@ -35943,7 +35996,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -38766,7 +38818,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39369,7 +39420,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']

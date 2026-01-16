@@ -20,6 +20,7 @@ from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
+from ..utils import get_customer_id
 from ..service.subscription import CustomerSubscriptionSortProperty
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -44,7 +45,7 @@ ListSorting = Annotated[
     "/", summary="List Subscriptions", response_model=ListResource[CustomerSubscription]
 )
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     product_id: MultipleQueryFilter[ProductID] | None = Query(
@@ -85,7 +86,7 @@ async def list(
 )
 async def get(
     id: SubscriptionID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Get a subscription for the authenticated customer."""
@@ -108,7 +109,7 @@ async def get(
 )
 async def get_charge_preview(
     id: SubscriptionID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:
     """Get current period usage and cost breakdown for a subscription."""
@@ -151,7 +152,7 @@ async def get_charge_preview(
 async def update(
     id: SubscriptionID,
     subscription_update: CustomerSubscriptionUpdate,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionWrite,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
@@ -166,7 +167,7 @@ async def update(
     log.info(
         "customer_portal.subscription.cancel",
         id=id,
-        customer_id=auth_subject.subject.id,
+        customer_id=get_customer_id(auth_subject),
         updates=subscription_update,
     )
     async with subscription_service.lock(locker, subscription):
@@ -193,7 +194,7 @@ async def update(
 )
 async def cancel(
     id: SubscriptionID,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionWrite,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
@@ -208,7 +209,7 @@ async def cancel(
     log.info(
         "customer_portal.subscription.cancel",
         id=id,
-        customer_id=auth_subject.subject.id,
+        customer_id=get_customer_id(auth_subject),
     )
     async with subscription_service.lock(locker, subscription):
         return await customer_subscription_service.cancel(session, subscription)

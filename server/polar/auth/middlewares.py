@@ -133,17 +133,32 @@ async def get_auth_subject(
 
                 # Check if member_model_enabled for this organization
                 if organization.feature_settings.get("member_model_enabled", False):
+                    log.debug(
+                        "customer_portal.auth.resolving_member",
+                        customer_id=str(customer.id),
+                        organization_id=str(organization.id),
+                    )
                     # Try to resolve to owner Member
                     member_repository = MemberRepository.from_session(session)
                     owner_member = await member_repository.get_owner_by_customer_id(
                         session, customer.id
                     )
                     if owner_member:
+                        log.debug(
+                            "customer_portal.auth.resolved_to_member",
+                            member_id=str(owner_member.id),
+                            member_role=owner_member.role,
+                            customer_id=str(customer.id),
+                        )
                         return AuthSubject(
                             owner_member,
                             {Scope.customer_portal_write},
                             customer_session,
                         )
+                    log.debug(
+                        "customer_portal.auth.no_owner_member_found",
+                        customer_id=str(customer.id),
+                    )
 
                 # Default: return Customer
                 return AuthSubject(

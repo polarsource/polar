@@ -1,8 +1,9 @@
 from fastapi import Depends, Response
 from fastapi.responses import JSONResponse
 
+from polar.auth.models import is_customer, is_member
 from polar.kit.db.postgres import AsyncSession
-from polar.models import CustomerSession
+from polar.models import CustomerSession, MemberSession
 from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
@@ -16,6 +17,7 @@ from ..schemas.customer_session import (
     CustomerSessionCodeAuthenticateResponse,
     CustomerSessionCodeInvalidOrExpiredResponse,
     CustomerSessionCodeRequest,
+    PortalAuthenticatedUser,
 )
 from ..service.customer_session import (
     CustomerDoesNotExist,
@@ -97,9 +99,40 @@ async def authenticate(
     response_model=CustomerCustomerSession,
 )
 async def introspect(
-    auth_subject: auth.CustomerPortalRead,
-) -> CustomerSession:
+    auth_subject: auth.CustomerPortalUnionRead,
+) -> CustomerSession | MemberSession:
     """Introspect the current session and return its information."""
     session = auth_subject.session
-    assert isinstance(session, CustomerSession)
+    assert isinstance(session, (CustomerSession, MemberSession))
     return session
+
+
+@router.get(
+    "/user",
+    summary="Get Authenticated Portal User",
+    tags=[APITag.public],
+    response_model=PortalAuthenticatedUser,
+)
+async def get_authenticated_user(
+    auth_subject: auth.CustomerPortalUnionRead,
+) -> PortalAuthenticatedUser:
+    """Get information about the currently authenticated portal user."""
+    if is_member(auth_subject):
+        member = auth_subject.subject
+        return PortalAuthenticatedUser(
+            type="member",
+            name=member.name,
+            email=member.email,
+            customer_id=member.customer_id,
+            role=member.role,
+        )
+    elif is_customer(auth_subject):
+        customer = auth_subject.subject
+        return PortalAuthenticatedUser(
+            type="customer",
+            name=customer.name,
+            email=customer.email,
+            customer_id=customer.id,
+            role=None,
+        )
+    raise ValueError("Invalid auth subject type")

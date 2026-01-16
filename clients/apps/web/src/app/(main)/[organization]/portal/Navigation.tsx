@@ -1,8 +1,8 @@
 'use client'
 
 import {
-  useAuthenticatedCustomer,
   useCustomerPortalSession,
+  usePortalAuthenticatedUser,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
@@ -57,11 +57,13 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
-  const api = createClientSideAPI(
-    searchParams.get('customer_session_token') as string,
-  )
+  const token =
+    searchParams.get('customer_session_token') ??
+    searchParams.get('member_session_token') ??
+    ''
+  const api = createClientSideAPI(token)
   const { data: customerPortalSession } = useCustomerPortalSession(api)
-  const { data: authenticatedCustomer } = useAuthenticatedCustomer(api)
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   // Hide navigation on routes where portal access is being requested or authenticated
   const hideNav =
@@ -91,9 +93,9 @@ export const Navigation = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{authenticatedCustomer?.name ?? '—'}</h3>
+          <h3>{authenticatedUser?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
-            {authenticatedCustomer?.email ?? '—'}
+            {authenticatedUser?.email ?? '—'}
           </span>
         </div>
         <div className="flex flex-col gap-y-1">

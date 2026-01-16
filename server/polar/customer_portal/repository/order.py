@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -12,13 +12,15 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import (
-    Customer,
+    Customer as CustomerModel,
     Order,
     OrderItem,
     Product,
     ProductPrice,
     Subscription,
 )
+
+from ..utils import get_customer_id
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -32,10 +34,10 @@ class CustomerOrderRepository(
     model = Order
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[Order]]:
         return self.get_base_statement().where(
-            Order.customer_id == auth_subject.subject.id
+            Order.customer_id == get_customer_id(auth_subject)
         )
 
     def get_eager_options(
@@ -44,7 +46,7 @@ class CustomerOrderRepository(
         if product_load is None:
             product_load = joinedload(Order.product)
         return (
-            joinedload(Order.customer).joinedload(Customer.organization),
+            joinedload(Order.customer).joinedload(CustomerModel.organization),
             joinedload(Order.discount),
             joinedload(Order.subscription).joinedload(Subscription.customer),
             product_load.options(

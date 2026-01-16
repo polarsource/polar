@@ -6,16 +6,16 @@ import structlog
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
+from polar.customer_portal.utils import get_customer_id
 from polar.models import (
     Benefit,
-    Customer,
     LicenseKey,
     LicenseKeyActivation,
     Organization,
@@ -421,7 +421,7 @@ class LicenseKeyService:
     async def get_customer_list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         pagination: PaginationParams,
         benefit_id: UUID | None = None,
@@ -442,7 +442,7 @@ class LicenseKeyService:
     async def get_customer_license_key(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         license_key_id: UUID,
     ) -> LicenseKey | None:
         query = (
@@ -454,14 +454,14 @@ class LicenseKeyService:
         return result.unique().scalar_one_or_none()
 
     def _get_select_customer_base(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[LicenseKey]]:
         return (
             select(LicenseKey)
             .options(joinedload(LicenseKey.customer))
             .where(
                 LicenseKey.deleted_at.is_(None),
-                LicenseKey.customer_id == auth_subject.subject.id,
+                LicenseKey.customer_id == get_customer_id(auth_subject),
             )
         )
 

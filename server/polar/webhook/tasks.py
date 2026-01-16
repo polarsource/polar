@@ -19,6 +19,7 @@ from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
     TaskPriority,
+    TaskQueue,
     actor,
     can_retry,
     enqueue_job,
@@ -35,6 +36,20 @@ log: Logger = structlog.get_logger()
     priority=TaskPriority.MEDIUM,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
+    async with AsyncSessionMaker() as session:
+        return await _webhook_event_send(
+            session, webhook_event_id=webhook_event_id, redeliver=redeliver
+        )
+
+
+@actor(
+    actor_name="webhook_event.send.v2",
+    max_retries=settings.WEBHOOK_MAX_RETRIES,
+    queue_name=TaskQueue.WEBHOOKS,
+)
+async def webhook_event_send_dedicated_queue(
+    webhook_event_id: UUID, redeliver: bool = False
+) -> None:
     async with AsyncSessionMaker() as session:
         return await _webhook_event_send(
             session, webhook_event_id=webhook_event_id, redeliver=redeliver

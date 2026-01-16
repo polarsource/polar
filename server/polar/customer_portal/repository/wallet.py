@@ -12,11 +12,11 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Customer as CustomerModel, Wallet
-
-from ..utils import get_customer_id
+from polar.models import Customer as CustomerModel
+from polar.models import Wallet
 
 from ..sorting.wallet import CustomerWalletSortProperty
+from ..utils import get_customer_id
 
 
 class CustomerWalletRepository(

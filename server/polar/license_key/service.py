@@ -10,10 +10,10 @@ from polar.auth.models import AuthSubject, Customer, Member
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
+from polar.customer_portal.utils import get_customer_id
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
-from polar.customer_portal.utils import get_customer_id
 from polar.models import (
     Benefit,
     LicenseKey,

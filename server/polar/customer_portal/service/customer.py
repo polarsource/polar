@@ -10,8 +10,8 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
-from polar.models import PaymentMethod
 from polar.models import Customer as CustomerModel
+from polar.models import PaymentMethod
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import InvalidTaxID, to_stripe_tax_id, validate_tax_id
@@ -122,7 +122,10 @@ class CustomerService:
         )
 
     async def get_payment_method(
-        self, session: AsyncSession, auth_subject: AuthSubject[Customer | Member], id: UUID
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Customer | Member],
+        id: UUID,
     ) -> PaymentMethod | None:
         repository = CustomerPaymentMethodRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(

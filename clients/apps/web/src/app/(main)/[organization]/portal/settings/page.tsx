@@ -53,7 +53,8 @@ export default async function Page(props: {
     setup_intent?: string
   }>
 }) {
-  const { customer_session_token, member_session_token, ...searchParams } = await props.searchParams
+  const { customer_session_token, member_session_token, ...searchParams } =
+    await props.searchParams
   const params = await props.params
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)

@@ -20,11 +20,11 @@ from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
-from ..utils import get_customer_id
 from ..service.subscription import CustomerSubscriptionSortProperty
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
 )
+from ..utils import get_customer_id
 
 log = structlog.get_logger()
 

@@ -62,7 +62,9 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update authenticated customer."""
-    return await customer_service.update(session, get_customer(auth_subject), customer_update)
+    return await customer_service.update(
+        session, get_customer(auth_subject), customer_update
+    )
 
 
 @router.get(

@@ -7,8 +7,6 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member
-
-from ..utils import get_customer_id
 from polar.config import settings
 from polar.exceptions import (
     BadRequest,
@@ -33,6 +31,7 @@ from ..schemas.downloadables import (
     DownloadableUpdate,
     DownloadableURL,
 )
+from ..utils import get_customer_id
 
 log = structlog.get_logger()
 

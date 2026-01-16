@@ -13,6 +13,8 @@ from polar.kit.repository import (
 )
 from polar.models import (
     Customer as CustomerModel,
+)
+from polar.models import (
     Order,
     OrderItem,
     Product,

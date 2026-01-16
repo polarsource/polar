@@ -20,7 +20,7 @@ from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription
-from ..utils import get_customer, get_customer_id
+from ..utils import get_customer
 
 log = structlog.get_logger()
 

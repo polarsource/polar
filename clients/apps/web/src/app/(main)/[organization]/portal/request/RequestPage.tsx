@@ -16,8 +16,11 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { RadioGroup, RadioGroupItem } from '@polar-sh/ui/components/ui/radio-group'
 import { Label } from '@polar-sh/ui/components/ui/label'
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@polar-sh/ui/components/ui/radio-group'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -60,7 +63,8 @@ const ClientPage = ({
 
       // Handle 409 - customer selection required
       if (response.response.status === 409) {
-        const data = response.error as unknown as CustomerSelectionRequiredResponse
+        const data =
+          response.error as unknown as CustomerSelectionRequiredResponse
         if (data.customers && data.customers.length > 0) {
           setCustomers(data.customers)
           setShowCustomerPicker(true)
@@ -106,7 +110,7 @@ const ClientPage = ({
             {customers.map((customer) => (
               <div
                 key={customer.id}
-                className="flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50 dark:hover:bg-polar-800"
+                className="dark:hover:bg-polar-800 flex items-center space-x-3 rounded-lg border p-4 hover:bg-gray-50"
               >
                 <RadioGroupItem value={customer.id} id={customer.id} />
                 <Label

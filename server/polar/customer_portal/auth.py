@@ -112,7 +112,10 @@ class _UnionBillingRoleCheck:
         self.allowed_roles = allowed_roles
 
     async def __call__(
-        self, auth_subject: AuthSubject[Customer | Member] = Depends(_CustomerPortalUnionWrite)
+        self,
+        auth_subject: AuthSubject[Customer | Member] = Depends(
+            _CustomerPortalUnionWrite
+        ),
     ) -> AuthSubject[Customer | Member]:
         # Customers always have billing access (legacy behavior)
         if isinstance(auth_subject.subject, Customer):
@@ -131,7 +134,10 @@ class _UnionBillingRoleCheckRead(_UnionBillingRoleCheck):
     """Read-scope variant of billing role check."""
 
     async def __call__(
-        self, auth_subject: AuthSubject[Customer | Member] = Depends(_CustomerPortalUnionRead)
+        self,
+        auth_subject: AuthSubject[Customer | Member] = Depends(
+            _CustomerPortalUnionRead
+        ),
     ) -> AuthSubject[Customer | Member]:
         # Customers always have billing access (legacy behavior)
         if isinstance(auth_subject.subject, Customer):

@@ -227,7 +227,7 @@ class WebhookService:
         if event is None:
             raise ResourceNotFound()
 
-        enqueue_job("webhook_event.send", webhook_event_id=event.id, redeliver=True)
+        enqueue_job("webhook_event.send.v2", webhook_event_id=event.id, redeliver=True)
 
     async def on_event_success(self, session: AsyncSession, id: UUID) -> None:
         """
@@ -679,7 +679,7 @@ class WebhookService:
                 session.add(event_type)
                 events.append(event_type)
                 await session.flush()
-                enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
+                enqueue_job("webhook_event.send.v2", webhook_event_id=event_type.id)
             except UnsupportedTarget as e:
                 # Log the error but do not raise to not fail the whole request
                 log.error(e.message)

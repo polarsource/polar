@@ -1,6 +1,6 @@
 import functools
 from collections.abc import Awaitable, Callable
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from typing import Any, ParamSpec
 
 import dramatiq
@@ -65,10 +65,11 @@ class TaskPriority(IntEnum):
     LOW = 100
 
 
-class TaskQueue:
+class TaskQueue(StrEnum):
     HIGH_PRIORITY = "high_priority"
     MEDIUM_PRIORITY = "medium_priority"
     LOW_PRIORITY = "low_priority"
+    WEBHOOKS = "webhooks"
 
 
 P = ParamSpec("P")
@@ -77,7 +78,7 @@ P = ParamSpec("P")
 def actor[**P, R](
     actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
     actor_name: str | None = None,
-    queue_name: str | None = None,
+    queue_name: TaskQueue | None = None,
     priority: TaskPriority = TaskPriority.LOW,
     broker: dramatiq.Broker | None = None,
     **options: Any,

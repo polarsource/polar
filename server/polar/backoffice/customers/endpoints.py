@@ -6,7 +6,6 @@ from fastapi.responses import HTMLResponse
 from pydantic import UUID4
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
-from polar.backoffice.document import get_document
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
@@ -24,6 +23,7 @@ from ..formatters import currency
 from ..layout import layout
 from ..orders.components import orders_datatable
 from .components import customers_datatable, email_verified_badge
+from polar.backoffice.document import get_document
 
 router = APIRouter()
 
@@ -101,7 +101,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    customer_repository = CustomerRepository.from_session(session)
+
+    doc = get_document()    customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(
         id,
         options=(joinedload(Customer.organization),),
@@ -337,7 +338,8 @@ async def generate_portal_link_modal(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    customer_repository = CustomerRepository.from_session(session)
+
+    doc = get_document()    customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(
         id, options=(joinedload(Customer.organization),)
     )

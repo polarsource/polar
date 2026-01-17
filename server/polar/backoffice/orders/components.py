@@ -2,8 +2,8 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.kit.sorting import Sorting
 from polar.models import Order
 from polar.models.order import OrderStatus
@@ -17,7 +17,8 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
         super().__init__(label, sorting=OrderSortProperty.status)
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-        with order_status_badge(item.status):
+
+        doc = get_document()        with order_status_badge(item.status):
             pass
         return None
 

@@ -1,7 +1,6 @@
 import contextlib
 from collections.abc import Generator
 from typing import Any, Literal
-
 from polar.backoffice.document import get_document
 
 Position = Literal["left", "center", "right", "between"]

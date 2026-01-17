@@ -4,12 +4,12 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
 from polar.file.service import file as file_service
 from polar.models import File, Organization
 
 from ....components import card, empty_state
+from polar.backoffice.document import get_document
 
 
 class FilesSection:
@@ -24,7 +24,8 @@ class FilesSection:
         self.files = files or []
 
     def format_file_size(self, size_bytes: int) -> str:
-        """Format file size in human-readable format."""
+
+        doc = get_document()        """Format file size in human-readable format."""
         if size_bytes < 1024:
             return f"{size_bytes} B"
         elif size_bytes < 1024 * 1024:
@@ -36,6 +37,8 @@ class FilesSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the files section."""
 
         with doc.div(classes="space-y-6"):

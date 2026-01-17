@@ -3,7 +3,8 @@ from collections.abc import Generator
 from typing import Literal
 
 from polar.backoffice.document import get_document
-# AttrValue type defined inline
+
+type AttrValue = str | int | float | bool | None
 
 Variant = Literal[
     "neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"

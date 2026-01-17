@@ -3,8 +3,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, Query, Request
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.models import Pledge
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
@@ -20,7 +20,8 @@ class PledgeSortProperty(StrEnum): ...
 
 class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         with doc.button(
             classes="btn btn-sm btn-primary",
             hx_post=str(request.url_for("pledges:transfer", pledge_id=item.id)),
@@ -132,7 +133,8 @@ async def transfer(
     pledge_id: UUID,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    try:
+
+    doc = get_document()    try:
         # Perform the admin transfer
         await pledge_service.admin_transfer(session, pledge_id)
 

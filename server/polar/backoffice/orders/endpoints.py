@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -38,7 +38,8 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
         super().__init__(label)
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-        with order_status_badge(item.status):
+
+        doc = get_document()        with order_status_badge(item.status):
             pass
         return None
 
@@ -49,14 +50,16 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
         self.rate = rate
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         doc.text(f"{self.rate:.2f}%")
         return None
 
 
 class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
     def get_value(self, item: Order) -> Any:
-        value = self.get_raw_value(item)
+
+        doc = get_document()        value = self.get_raw_value(item)
         if value is None:
             return None
         return formatters.tax_id(value)
@@ -68,7 +71,8 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
         self.url = url
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         with doc.div(classes="flex items-center gap-1"):
             if self.url is not None:
                 with doc.a(href=self.url, classes="link flex flex-row gap-1"):
@@ -228,7 +232,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    order_repository = OrderRepository.from_session(session)
+
+    doc = get_document()    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(
         id,
         options=(
@@ -613,7 +618,8 @@ async def refund(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    order_repository = OrderRepository.from_session(session)
+
+    doc = get_document()    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(
         id,
         options=order_repository.get_eager_options(),
@@ -696,7 +702,8 @@ async def block_refunds(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    order_repository = OrderRepository.from_session(session)
+
+    doc = get_document()    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(id)
 
     if order is None:
@@ -719,7 +726,8 @@ async def unblock_refunds(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    order_repository = OrderRepository.from_session(session)
+
+    doc = get_document()    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(id)
 
     if order is None:

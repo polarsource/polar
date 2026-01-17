@@ -4,11 +4,11 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
 from polar.models import Organization, User
 
 from ....components import action_bar, button, card
+from polar.backoffice.document import get_document
 
 
 class TeamSection:
@@ -20,6 +20,8 @@ class TeamSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the team section."""
 
         with doc.div(classes="space-y-6"):

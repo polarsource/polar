@@ -9,7 +9,6 @@ from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
-
 from polar.backoffice.document import get_document
 
 type Data = dict[str, Any] | object
@@ -60,7 +59,8 @@ class FormField:
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the form field as HTML.
+
+        doc = get_document()        """Render the form field as HTML.
 
         Args:
             id: The HTML id and name attribute for the field.
@@ -121,7 +121,8 @@ class InputField(FormField):
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the input field with label and error handling.
+
+        doc = get_document()        """Render the input field with label and error handling.
 
         Creates a styled input field with proper error states and validation
         message display. The input is wrapped in a label container for
@@ -185,7 +186,8 @@ class TextAreaField(FormField):
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the textarea field with label and error handling.
+
+        doc = get_document()        """Render the textarea field with label and error handling.
 
         Creates a styled textarea field with proper error states and validation
         message display. The label is positioned above the textarea for better
@@ -248,7 +250,8 @@ class CheckboxField(FormField):
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the checkbox field with label and error handling.
+
+        doc = get_document()        """Render the checkbox field with label and error handling.
 
         Creates a checkbox input with the label as clickable text next to it.
         The checkbox state is determined by the truthiness of the value parameter.
@@ -306,7 +309,8 @@ class CurrencyField(InputField):
         value: int | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the currency field with automatic cent-to-decimal conversion.
+
+        doc = get_document()        """Render the currency field with automatic cent-to-decimal conversion.
 
         Converts the stored integer value (in cents) to a decimal value for
         display. For example, 1250 cents becomes 12.50 for user input.
@@ -369,7 +373,8 @@ class SelectField(FormField):
         value: str | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the select field with options and error handling.
+
+        doc = get_document()        """Render the select field with options and error handling.
 
         Creates a select dropdown with all configured options, automatically
         selecting the option that matches the provided value. Includes
@@ -433,7 +438,8 @@ class SubFormField(FormField):
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
     ) -> Generator[None]:
-        """Render the sub-form inline with its own fields and validation.
+
+        doc = get_document()        """Render the sub-form inline with its own fields and validation.
 
         Args:
             id: The HTML id attribute for the sub-form container.
@@ -561,7 +567,8 @@ class BaseForm(BaseModel):
         validation_error: ValidationError | None = None,
         **kwargs: AttrValue,
     ) -> Generator[None]:
-        """Render the complete form with all fields and validation.
+
+        doc = get_document()        """Render the complete form with all fields and validation.
 
         Generates a form element containing all model fields as appropriate
         form controls. Validation errors are automatically displayed next to
@@ -609,7 +616,8 @@ class BaseForm(BaseModel):
         by_alias: bool | None = None,
         by_name: bool | None = None,
     ) -> Self:
-        data = _parse_form_data(obj)
+
+        doc = get_document()        data = _parse_form_data(obj)
         return cls.model_validate(
             data,
             strict=strict,

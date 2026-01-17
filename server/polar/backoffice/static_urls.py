@@ -1,5 +1,4 @@
 from fastapi import Request
-from polar.backoffice.document import get_document
 
 from .versioned_static import VersionedStaticFiles
 

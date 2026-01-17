@@ -2,8 +2,8 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from polar.backoffice.document import get_document
-from polar.backoffice.document import get_document
-# AttrValue type defined inline
+
+type AttrValue = str | int | float | bool | None
 
 
 @contextlib.contextmanager

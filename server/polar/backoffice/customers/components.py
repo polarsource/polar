@@ -2,8 +2,8 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.customer.sorting import CustomerSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import Customer

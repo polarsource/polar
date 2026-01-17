@@ -17,7 +17,6 @@ from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
-from polar.backoffice.document import get_document
 
 from polar.account.service import account as account_service
 from polar.account_credit.repository import AccountCreditRepository
@@ -63,6 +62,7 @@ from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
+from polar.backoffice.document import get_document
 
 router = APIRouter(prefix="/organizations-v2", tags=["organizations-v2"])
 
@@ -566,7 +566,8 @@ async def deny_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Deny organization dialog and action."""
+
+    doc = get_document()    """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -628,7 +629,8 @@ async def approve_denied_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Approve a denied organization dialog and action."""
+
+    doc = get_document()    """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -714,7 +716,8 @@ async def unblock_approve_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Unblock and approve organization dialog and action."""
+
+    doc = get_document()    """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -803,7 +806,8 @@ async def block_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Block organization dialog and action."""
+
+    doc = get_document()    """Block organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -878,7 +882,8 @@ async def edit_organization(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization details."""
+
+    doc = get_document()    """Edit organization details."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -975,7 +980,8 @@ async def edit_details(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization details (about, product description, intended use)."""
+
+    doc = get_document()    """Edit organization details (about, product description, intended use)."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1057,7 +1063,8 @@ async def edit_order_settings(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization order settings."""
+
+    doc = get_document()    """Edit organization order settings."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1147,7 +1154,8 @@ async def edit_socials(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization social media links."""
+
+    doc = get_document()    """Edit organization social media links."""
     # Platform name constants for consistency
     PLATFORM_YOUTUBE = "youtube"
     PLATFORM_INSTAGRAM = "instagram"
@@ -1308,7 +1316,8 @@ async def edit_features(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit organization feature flags."""
+
+    doc = get_document()    """Edit organization feature flags."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1414,7 +1423,8 @@ async def add_note(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Add internal notes to an organization."""
+
+    doc = get_document()    """Add internal notes to an organization."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1484,7 +1494,8 @@ async def edit_note(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Edit internal notes for an organization."""
+
+    doc = get_document()    """Edit internal notes for an organization."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1553,7 +1564,8 @@ async def impersonate_user(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse:
-    """Impersonate a user by creating a read-only session for them."""
+
+    doc = get_document()    """Impersonate a user by creating a read-only session for them."""
     from datetime import timedelta
 
     from polar.config import settings
@@ -1639,7 +1651,8 @@ async def make_admin(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse:
-    """Make a user an admin of the organization."""
+
+    doc = get_document()    """Make a user an admin of the organization."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1677,7 +1690,8 @@ async def remove_member(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse:
-    """Remove a member from the organization."""
+
+    doc = get_document()    """Remove a member from the organization."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1713,7 +1727,8 @@ async def delete_dialog(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Delete organization dialog and action."""
+
+    doc = get_document()    """Delete organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1780,7 +1795,8 @@ async def setup_account(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Show modal to setup a manual payment account."""
+
+    doc = get_document()    """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1809,7 +1825,9 @@ async def setup_account(
     with modal("Setup Manual Account", open=True):
         with doc.div(classes="space-y-4"):
             with doc.p(classes="text-sm text-base-content/60"):
-                doc.text("This will create a manual payment account for this organization.")
+                doc.text(
+                    "This will create a manual payment account for this organization."
+                )
 
             with doc.div(classes="alert alert-warning"):
                 with doc.span(classes="text-sm"):
@@ -1847,7 +1865,8 @@ async def disconnect_stripe_account(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    repository = OrganizationRepository(session)
+
+    doc = get_document()    repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_account(organization_id)
 
     if not organization:
@@ -1953,7 +1972,8 @@ async def delete_stripe_account(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    repository = OrganizationRepository(session)
+
+    doc = get_document()    repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_account(organization_id)
 
     if not organization:
@@ -2064,7 +2084,8 @@ async def grant_credit(
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Grant fee credits to an organization's account."""
+
+    doc = get_document()    """Grant fee credits to an organization's account."""
     from datetime import datetime
 
     repository = OrganizationRepository(session)
@@ -2230,7 +2251,8 @@ async def revoke_credit(
     credit_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse | None:
-    """Revoke a fee credit."""
+
+    doc = get_document()    """Revoke a fee credit."""
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id(
         organization_id, options=(joinedload(Organization.account),)

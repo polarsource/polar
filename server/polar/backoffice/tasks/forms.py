@@ -13,7 +13,6 @@ from typing import (
 
 import dramatiq
 from fastapi import Request
-from polar.backoffice.document import get_document
 from pydantic import Field, create_model
 
 from polar import tasks  # noqa

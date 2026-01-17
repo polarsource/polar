@@ -5,8 +5,8 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 
@@ -29,7 +29,8 @@ class OrganizationDetailView:
     def section_tabs(
         self, request: Request, current_section: str = "overview"
     ) -> Generator[None]:
-        """Render horizontal section navigation tabs."""
+
+        doc = get_document()        """Render horizontal section navigation tabs."""
         tabs = [
             Tab(
                 "Overview",
@@ -89,7 +90,8 @@ class OrganizationDetailView:
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         """Render right sidebar with contextual actions and metadata."""
         with doc.aside(classes="w-80 pl-4"):
             # Internal Notes - Prominent at top
@@ -367,7 +369,8 @@ class OrganizationDetailView:
     def main_content(
         self, request: Request, section: str = "overview"
     ) -> Generator[None]:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         """Render main content area (delegated to section components)."""
         with doc.main(classes="flex-1"):
             # Section content will be rendered by specific section components
@@ -375,6 +378,8 @@ class OrganizationDetailView:
 
     @contextlib.contextmanager
     def render(self, request: Request, section: str = "overview") -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the complete detail view with top tabs."""
 
         # Back button and header

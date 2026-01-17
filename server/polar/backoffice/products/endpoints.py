@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
-from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
@@ -24,6 +23,7 @@ from polar.product.sorting import ProductSortProperty
 from .. import formatters
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from polar.backoffice.document import get_document
 
 router = APIRouter()
 
@@ -158,7 +158,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    repository = ProductRepository.from_session(session)
+
+    doc = get_document()    repository = ProductRepository.from_session(session)
     product = await repository.get_by_id(
         id,
         options=(

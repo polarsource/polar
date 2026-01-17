@@ -55,7 +55,8 @@ class SetupVerdict:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         """Render the setup verdict component."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title"):

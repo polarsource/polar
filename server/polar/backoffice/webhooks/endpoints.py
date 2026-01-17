@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
@@ -17,6 +16,7 @@ from polar.webhook.sorting import WebhookSortProperty
 from ..components import button, confirmation_dialog, datatable, description_list, input
 from ..layout import layout
 from ..toast import add_toast
+from polar.backoffice.document import get_document
 
 router = APIRouter()
 
@@ -107,7 +107,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    repository = WebhookEndpointRepository.from_session(session)
+
+    doc = get_document()    repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(
         id,
         options=(joinedload(WebhookEndpoint.organization),),
@@ -223,7 +224,8 @@ async def confirm_toggle_enabled(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    repository = WebhookEndpointRepository.from_session(session)
+
+    doc = get_document()    repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 
     if webhook is None:
@@ -255,7 +257,8 @@ async def toggle_enabled(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    repository = WebhookEndpointRepository.from_session(session)
+
+    doc = get_document()    repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 
     if webhook is None:

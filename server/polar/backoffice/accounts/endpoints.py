@@ -4,10 +4,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from pydantic import UUID4
-from polar.backoffice.document import get_document
 
 from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
+from polar.backoffice.document import get_document
 from polar.integrations.stripe.service import stripe
 from polar.models import User
 from polar.models.user import IdentityVerificationStatus
@@ -43,7 +43,8 @@ class IdentityVerificationStatusColumn(
     datatable.DatatableAttrColumn[User, UserSortProperty]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        status = item.identity_verification_status
+
+        doc = get_document()        status = item.identity_verification_status
         with identity_verification_status_badge(status):
             pass
         return None
@@ -53,7 +54,8 @@ class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
             with doc.a(

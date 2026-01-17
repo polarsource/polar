@@ -20,7 +20,8 @@ class AIReviewVerdict:
 
     @property
     def verdict_text(self) -> str:
-        """Get the verdict text."""
+
+        doc = get_document()        """Get the verdict text."""
         if not self.review:
             return "NOT REVIEWED"
         # Handle both enum and string values
@@ -32,7 +33,8 @@ class AIReviewVerdict:
 
     @property
     def verdict_classes(self) -> str:
-        """Get CSS classes for the verdict badge."""
+
+        doc = get_document()        """Get CSS classes for the verdict badge."""
         if not self.review:
             return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
 
@@ -53,7 +55,8 @@ class AIReviewVerdict:
 
     @property
     def risk_score_color(self) -> str:
-        """Get color class for risk score based on value."""
+
+        doc = get_document()        """Get color class for risk score based on value."""
         if not self.review:
             return "text-gray-600"
 
@@ -89,7 +92,8 @@ class AIReviewVerdict:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         """Render the AI review verdict component (compact version)."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title flex items-center gap-2"):
@@ -257,7 +261,9 @@ class AIReviewVerdict:
                                     with doc.p(
                                         classes="text-xs text-gray-600 dark:text-gray-400"
                                     ):
-                                        doc.text("Review the appeal and make a decision")
+                                        doc.text(
+                                            "Review the appeal and make a decision"
+                                        )
 
                                 with ApproveOrganizationAppealForm.render(
                                     method="POST",

@@ -2,10 +2,9 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal, TypedDict
 
-from polar.backoffice.document import get_document
-
 from ._button import Variant as ButtonVariant
 from ._button import button
+from polar.backoffice.document import get_document
 
 Variant = Literal["info", "success", "warning", "error"]
 

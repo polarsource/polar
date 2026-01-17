@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from polar.backoffice.document import get_document
 
+from polar.backoffice.document import get_document
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product, Subscription
@@ -36,7 +36,8 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Subscriptio
         super().__init__(label)
 
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
-        with subscription_status_badge(item):
+
+        doc = get_document()        with subscription_status_badge(item):
             pass
         return None
 
@@ -46,7 +47,8 @@ class StatusColumn(
     datatable.DatatableSortingColumn[Subscription, SubscriptionSortProperty]
 ):
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
-        with subscription_status_badge(item):
+
+        doc = get_document()        with subscription_status_badge(item):
             pass
         return None
 
@@ -198,7 +200,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    subscription_repository = SubscriptionRepository.from_session(session)
+
+    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(
         id,
         options=(
@@ -375,7 +378,8 @@ async def cancel(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    subscription_repository = SubscriptionRepository.from_session(session)
+
+    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 
     if subscription is None:
@@ -427,7 +431,8 @@ async def uncancel(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    subscription_repository = SubscriptionRepository.from_session(session)
+
+    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 
     if subscription is None:

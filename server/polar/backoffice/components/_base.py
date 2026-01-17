@@ -2,6 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
+
 from polar.backoffice.document import get_document
 
 from ..static_urls import static_url

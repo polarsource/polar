@@ -4,11 +4,11 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
 from polar.models import Organization
 
 from ....components import button, card
+from polar.backoffice.document import get_document
 
 
 class SettingsSection:
@@ -19,6 +19,8 @@ class SettingsSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the settings section."""
 
         with doc.div(classes="space-y-6"):

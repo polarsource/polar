@@ -5,7 +5,6 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
-from polar.backoffice.document import get_document
 
 from polar.external_event import sorting
 from polar.external_event.repository import ExternalEventRepository
@@ -20,6 +19,7 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from ..components import button, datatable, input, modal
 from ..layout import layout
 from ..toast import add_toast
+from polar.backoffice.document import get_document
 
 
 def _get_logfire_url(event: ExternalEvent) -> str:
@@ -140,7 +140,8 @@ async def resend(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    repository = ExternalEventRepository.from_session(session)
+
+    doc = get_document()    repository = ExternalEventRepository.from_session(session)
     external_event = await repository.get_by_id(id)
 
     if external_event is None:

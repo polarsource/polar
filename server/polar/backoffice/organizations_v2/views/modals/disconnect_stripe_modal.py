@@ -2,11 +2,11 @@ import contextlib
 from collections.abc import Generator
 
 from pydantic import ValidationError
-from polar.backoffice.document import get_document
 
 from polar.backoffice.components import button, modal
 from polar.backoffice.organizations.forms import DisconnectStripeAccountForm
 from polar.models import Account
+from polar.backoffice.document import get_document
 
 
 class DisconnectStripeModal:
@@ -22,6 +22,8 @@ class DisconnectStripeModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         form_data = {
             "stripe_account_id": "",
             "reason": "",
@@ -30,7 +32,9 @@ class DisconnectStripeModal:
         with modal("Disconnect Stripe Account", open=True):
             with doc.div(classes="flex flex-col gap-4"):
                 with doc.p(classes="font-semibold text-warning"):
-                    doc.text("This will unlink the Stripe account from this organization.")
+                    doc.text(
+                        "This will unlink the Stripe account from this organization."
+                    )
 
                 with doc.div(classes="bg-base-200 p-4 rounded-lg"):
                     with doc.p(classes="mb-2"):

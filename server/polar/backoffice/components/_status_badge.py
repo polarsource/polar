@@ -2,9 +2,8 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from polar.backoffice.document import get_document
-
 from polar.models.organization import OrganizationStatus
+from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager

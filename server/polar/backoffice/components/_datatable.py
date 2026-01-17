@@ -11,13 +11,13 @@ from typing import Any, Protocol
 
 from fastapi import Request
 from fastapi.datastructures import URL
-from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 
 from .. import formatters
 from ._clipboard_button import clipboard_button
+from polar.backoffice.document import get_document
 
 
 class DatatableColumn[M]:
@@ -40,7 +40,8 @@ class DatatableColumn[M]:
         self.label = label
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-        """Render the column content for a specific item.
+
+        doc = get_document()        """Render the column content for a specific item.
 
         Args:
             request: The FastAPI request object.
@@ -184,6 +185,8 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         super().__init__(label or attr, sorting)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+
+        doc = get_document()        doc = get_document()
         """Render the attribute value as a table cell.
 
         Args:
@@ -208,7 +211,8 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         return None
 
     def get_raw_value(self, item: M) -> Any:
-        """Extract the raw attribute value from the model item.
+
+        doc = get_document()        """Extract the raw attribute value from the model item.
 
         Args:
             item: The model item to extract from.
@@ -222,7 +226,8 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         return attrgetter(self.attr)(item)
 
     def get_value(self, item: M) -> str | None:
-        """Get the formatted string value for display.
+
+        doc = get_document()        """Get the formatted string value for display.
 
         This method can be overridden in subclasses to provide custom formatting.
 
@@ -257,7 +262,8 @@ class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def get_value(self, item: M) -> str | None:
-        """Get the formatted datetime string for display.
+
+        doc = get_document()        """Get the formatted datetime string for display.
 
         Args:
             item: The model item to extract the datetime from.
@@ -287,7 +293,8 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def get_value(self, item: M) -> str | None:
-        """Get the formatted currency string for display.
+
+        doc = get_document()        """Get the formatted currency string for display.
 
         Args:
             item: The model item to extract the currency value from.
@@ -301,7 +308,8 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         return formatters.currency(value, self.get_currency(item))
 
     def get_currency(self, item: M) -> str:
-        """Get the currency code for formatting.
+
+        doc = get_document()        """Get the currency code for formatting.
 
         By default, tries to extract the attribute 'currency' from the item,
         falling back to "usd" if not present. This can be overridden in subclasses
@@ -329,6 +337,8 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+
+        doc = get_document()        doc = get_document()
         """Render the boolean value as an icon.
 
         Args:
@@ -362,7 +372,8 @@ class DatatableAction[M](Protocol):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
-        """Render the action element for a specific item.
+
+        doc = get_document()        """Render the action element for a specific item.
 
         Args:
             request: The FastAPI request object.
@@ -371,7 +382,8 @@ class DatatableAction[M](Protocol):
         ...
 
     def is_hidden(self, request: Request, item: M) -> bool:
-        """Determine if this action should be hidden for a specific item.
+
+        doc = get_document()        """Determine if this action should be hidden for a specific item.
 
         Args:
             request: The FastAPI request object.
@@ -414,6 +426,8 @@ class DatatableActionLink[M](DatatableAction[M]):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the action as a link.
 
         Args:
@@ -430,7 +444,8 @@ class DatatableActionLink[M](DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
-        """Check if the action should be hidden.
+
+        doc = get_document()        """Check if the action should be hidden.
 
         Returns:
             Always False - link actions are never hidden by default.
@@ -472,6 +487,8 @@ class DatatableActionHTMX[M](DatatableAction[M]):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the action as an HTMX button.
 
         Args:
@@ -488,7 +505,8 @@ class DatatableActionHTMX[M](DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
-        """Check if the action should be hidden for a specific item.
+
+        doc = get_document()        """Check if the action should be hidden for a specific item.
 
         Args:
             request: The FastAPI request object.
@@ -524,6 +542,8 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
         super().__init__(label)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+
+        doc = get_document()        doc = get_document()
         """Render the actions dropdown for a specific item.
 
         Args:
@@ -598,7 +618,8 @@ class Datatable[M, PE: StrEnum]:
         *,
         sorting: list[Sorting[PE]] | None = None,
     ) -> Generator[None]:
-        """Render the complete datatable with headers, data, and sorting controls.
+
+        doc = get_document()        """Render the complete datatable with headers, data, and sorting controls.
 
         Args:
             request: The FastAPI request object for URL generation.

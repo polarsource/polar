@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
-from polar.backoffice.document import get_document
 
 from polar.benefit import sorting
 from polar.benefit.repository import BenefitRepository
@@ -26,18 +25,21 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from polar.backoffice.document import get_document
 
 router = APIRouter()
 
 
 class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
     def get_value(self, item: Benefit) -> str | None:
-        return item.type.get_display_name()
+
+        doc = get_document()        return item.type.get_display_name()
 
 
 class BenefitTypeDescriptionListItem(description_list.DescriptionListAttrItem[Benefit]):
     def get_value(self, item: Benefit) -> str | None:
-        return item.type.get_display_name()
+
+        doc = get_document()        return item.type.get_display_name()
 
 
 class OrganizationColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
@@ -144,7 +146,8 @@ async def list(
 async def _get_github_repository_invitations(
     benefit: Benefit,
 ) -> builtins.list[dict[str, Any]]:
-    """Get pending GitHub repository invitations for a benefit."""
+
+    doc = get_document()    """Get pending GitHub repository invitations for a benefit."""
     if benefit.type != BenefitType.github_repository:
         return []
 
@@ -193,7 +196,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    repository = BenefitRepository.from_session(session)
+
+    doc = get_document()    repository = BenefitRepository.from_session(session)
     benefit = await repository.get_by_id(id)
 
     if benefit is None:
@@ -251,7 +255,9 @@ async def get(
                         doc.text("Pending GitHub Repository Invitations")
                     if not github_invitations:
                         with doc.div(classes="text-gray-500"):
-                            doc.text("No pending invitations found for this repository.")
+                            doc.text(
+                                "No pending invitations found for this repository."
+                            )
                     else:
                         with doc.div(classes="overflow-x-auto"):
                             with doc.table(classes="table table-zebra w-full"):

@@ -7,13 +7,13 @@ from datetime import UTC, datetime
 import pycountry
 from fastapi import Request
 from sqlalchemy import func, select
-from polar.backoffice.document import get_document
 
 from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 
 from ...components import (
+from polar.backoffice.document import get_document
     Tab,
     action_bar,
     button,
@@ -30,7 +30,8 @@ class OrganizationListView:
         self.session = session
 
     async def get_status_counts(self) -> dict[OrganizationStatus, int]:
-        """Get count of organizations by status for tab badges."""
+
+    doc = get_document()        """Get count of organizations by status for tab badges."""
         stmt = select(
             Organization.status,
             func.count(Organization.id).label("count"),
@@ -39,7 +40,8 @@ class OrganizationListView:
         return {row.status: row.count for row in result}  # type: ignore[misc]
 
     async def get_distinct_countries(self) -> list[str]:
-        """Get list of distinct countries from organizations with accounts."""
+
+    doc = get_document()        """Get list of distinct countries from organizations with accounts."""
         stmt = (
             select(Account.country)
             .join(Organization, Organization.account_id == Account.id)
@@ -51,7 +53,8 @@ class OrganizationListView:
         return [row[0] for row in result.all()]
 
     def calculate_days_in_status(self, org: Organization) -> int:
-        """Calculate how many days organization has been in current status."""
+
+        doc = get_document()        """Calculate how many days organization has been in current status."""
         if not org.status_updated_at:
             delta = datetime.now(UTC) - org.created_at
         else:
@@ -59,7 +62,8 @@ class OrganizationListView:
         return delta.days
 
     def is_needs_attention(self, org: Organization) -> bool:
-        """Determine if organization needs immediate attention."""
+
+        doc = get_document()        """Determine if organization needs immediate attention."""
         days_in_status = self.calculate_days_in_status(org)
 
         # Under review for more than 3 days
@@ -91,7 +95,8 @@ class OrganizationListView:
         align: str = "left",
         status_filter: OrganizationStatus | None = None,
     ) -> Generator[None]:
-        """Render a sortable table header with direction indicator."""
+
+        doc = get_document()        """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
         # Toggle direction: if currently ASC, next click is DESC
         next_direction = "desc" if (is_active and current_direction == "asc") else "asc"
@@ -144,7 +149,8 @@ class OrganizationListView:
     def organization_row(
         self, request: Request, org: Organization, show_quick_actions: bool = False
     ) -> Generator[None]:
-        """Render a single organization row in the table."""
+
+        doc = get_document()        """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
 
@@ -286,7 +292,8 @@ class OrganizationListView:
         countries: list[str] | None = None,
         selected_country: str | None = None,
     ) -> Generator[None]:
-        """Render the complete list view."""
+
+        doc = get_document()        """Render the complete list view."""
 
         # Page header
         with doc.div(classes="flex items-center justify-between mb-8"):
@@ -436,7 +443,9 @@ class OrganizationListView:
                                             if selected_country == country_code:
                                                 option_attrs["selected"] = ""
                                             with doc.option(**option_attrs):
-                                                doc.text(f"{country_code} - {display_name}")
+                                                doc.text(
+                                                    f"{country_code} - {display_name}"
+                                                )
 
                             # Risk filter
                             with doc.div():
@@ -722,7 +731,8 @@ class OrganizationListView:
         current_sort: str = "priority",
         current_direction: str = "asc",
     ) -> Generator[None]:
-        """Render only the organization table (for HTMX updates)."""
+
+        doc = get_document()        """Render only the organization table (for HTMX updates)."""
 
         # Organization table
         with doc.div(id="org-list", classes="overflow-x-auto"):

@@ -5,12 +5,12 @@ from collections.abc import Generator, Sequence
 from datetime import UTC, datetime
 
 from fastapi import Request
-from polar.backoffice.document import get_document
 
 from polar.enums import AccountType
 from polar.models import AccountCredit, Organization
 
 from ....components import button, card
+from polar.backoffice.document import get_document
 
 
 def _get_credit_status(credit: AccountCredit) -> tuple[str, str]:
@@ -54,6 +54,8 @@ class AccountSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         """Render the account section."""
 
         with doc.div(classes="space-y-6"):
@@ -307,11 +309,17 @@ class AccountSection:
                                             with doc.td():
                                                 doc.text(_format_cents(credit.used))
                                             with doc.td(classes="font-semibold"):
-                                                doc.text(_format_cents(credit.remaining))
+                                                doc.text(
+                                                    _format_cents(credit.remaining)
+                                                )
                                             with doc.td(classes="text-xs"):
-                                                doc.text(_format_date(credit.granted_at))
+                                                doc.text(
+                                                    _format_date(credit.granted_at)
+                                                )
                                             with doc.td(classes="text-xs"):
-                                                doc.text(_format_date(credit.expires_at))
+                                                doc.text(
+                                                    _format_date(credit.expires_at)
+                                                )
                                             with doc.td():
                                                 if status_label == "Active":
                                                     with button(

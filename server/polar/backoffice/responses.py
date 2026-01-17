@@ -8,6 +8,7 @@ from starlette.background import BackgroundTask
 from starlette.types import Receive, Scope, Send
 
 from .toast import render_toasts
+from polar.backoffice.document import get_document
 
 
 class TagResponse(HTMLResponse):
@@ -35,6 +36,8 @@ class TagResponse(HTMLResponse):
         self.init_headers(headers)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+
+    doc = get_document()        doc = get_document()
         with render_toasts(scope):
             pass
         # Get the document from request scope

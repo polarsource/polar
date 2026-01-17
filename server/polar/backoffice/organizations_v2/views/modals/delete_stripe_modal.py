@@ -2,11 +2,11 @@ import contextlib
 from collections.abc import Generator
 
 from pydantic import ValidationError
-from polar.backoffice.document import get_document
 
 from polar.backoffice.components import button, modal
 from polar.backoffice.organizations.forms import DeleteStripeAccountForm
 from polar.models import Account
+from polar.backoffice.document import get_document
 
 
 class DeleteStripeModal:
@@ -22,6 +22,8 @@ class DeleteStripeModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+
+        doc = get_document()        doc = get_document()
         form_data = {
             "stripe_account_id": "",
             "reason": "",

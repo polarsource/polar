@@ -14,13 +14,13 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
-from polar.backoffice.document import get_document
 
 from polar.account.service import (
     CannotChangeAdminError,
     UserNotOrganizationMemberError,
 )
 from polar.account.service import account as account_service
+from polar.backoffice.document import get_document
 from polar.enums import AccountType
 from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
@@ -127,7 +127,8 @@ class OrganizationStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
-        with organization_badge(item):
+
+        doc = get_document()        with organization_badge(item):
             pass
         return None
 
@@ -136,9 +137,13 @@ class NextReviewThresholdColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
+
+        doc = get_document()        doc = get_document()
         from babel.numbers import format_currency
 
-        doc.text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        doc.text(
+            format_currency(item.next_review_threshold / 100, "USD", locale="en_US")
+        )
         return None
 
 
@@ -146,6 +151,8 @@ class DaysInStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
+
+        doc = get_document()        doc = get_document()
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
             days = delta.days
@@ -164,7 +171,8 @@ class AccountTypeDescriptionListAttrItem(
     description_list.DescriptionListAttrItem[Account]
 ):
     def render(self, request: Request, item: Account) -> Generator[None] | None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         account_type = item.account_type
         if account_type == AccountType.stripe:
             with doc.a(
@@ -184,7 +192,8 @@ class AccountTypeDescriptionListAttrItem(
 async def get_payment_statistics(
     session: AsyncSession, organization_id: UUID4
 ) -> PaymentStatistics:
-    """Get all-time payment statistics for an organization."""
+
+    doc = get_document()    """Get all-time payment statistics for an organization."""
 
     analytics_service = PaymentAnalyticsService(session)
 
@@ -235,7 +244,8 @@ async def get_payment_statistics(
 async def get_setup_verdict_data(
     organization: Organization, session: AsyncSession
 ) -> SetupVerdictData:
-    """Get enhanced setup verdict for an organization."""
+
+    doc = get_document()    """Get enhanced setup verdict for an organization."""
 
     analytics_service = OrganizationSetupAnalyticsService(session)
 
@@ -481,7 +491,8 @@ async def update(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
+
+    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -587,7 +598,8 @@ async def update_details(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
+
+    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -641,7 +653,8 @@ async def update_internal_notes(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
+
+    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -664,7 +677,9 @@ async def update_internal_notes(
 
     with modal("Edit Internal Notes", open=True):
         with doc.p(classes="text-sm text-base-content-secondary"):
-            doc.text("Add or update internal notes about this organization (admin only)")
+            doc.text(
+                "Add or update internal notes about this organization (admin only)"
+            )
 
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
@@ -691,7 +706,8 @@ async def delete(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
+
+    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -753,7 +769,8 @@ async def confirm_remove_member(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Show confirmation modal for removing a member."""
+
+    doc = get_document()    """Show confirmation modal for removing a member."""
 
     # Get user info for the modal
     user_repo = UserRepository.from_session(session)
@@ -809,7 +826,8 @@ async def remove_member(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Remove member endpoint with DELETE method."""
+
+    doc = get_document()    """Remove member endpoint with DELETE method."""
 
     try:
         # Get user info for better error messages
@@ -860,7 +878,8 @@ async def confirm_change_admin(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Show confirmation modal for changing account admin."""
+
+    doc = get_document()    """Show confirmation modal for changing account admin."""
 
     # Get organization and account
     org_repo = OrganizationRepository.from_session(session)
@@ -1012,7 +1031,8 @@ async def change_admin(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Change account admin endpoint."""
+
+    doc = get_document()    """Change account admin endpoint."""
 
     try:
         # Get organization and account
@@ -1069,7 +1089,8 @@ async def setup_manual_payout(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
+
+    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -1147,7 +1168,9 @@ async def setup_manual_payout(
                     )
 
             with doc.p():
-                doc.text("This will create a manual payout account for this organization.")
+                doc.text(
+                    "This will create a manual payout account for this organization."
+                )
 
             # Country selection
             with doc.div(classes="form-control w-full"):
@@ -1189,7 +1212,8 @@ async def create_plain_thread(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Create a Plain thread for this organization."""
+
+    doc = get_document()    """Create a Plain thread for this organization."""
     try:
         form = await request.form()
         logger.info(f"Form data received: {dict(form)}")
@@ -1290,7 +1314,8 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
         super().__init__(label)
 
     def render(self, request: Request, item: File) -> Generator[None]:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
         with doc.a(
@@ -1307,7 +1332,8 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
 
     @override
     def get_value(self, item: File) -> str | None:
-        raw_value: int | None = self.get_raw_value(item)
+
+        doc = get_document()        raw_value: int | None = self.get_raw_value(item)
         return formatters.file_size(raw_value) if raw_value is not None else None
 
 
@@ -1317,7 +1343,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    repository = OrganizationRepository.from_session(session)
+
+    doc = get_document()    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
         id,
         options=(
@@ -1838,7 +1865,8 @@ async def get_plain_search_url(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Get the Plain search URL for this organization's admin."""
+
+    doc = get_document()    """Get the Plain search URL for this organization's admin."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -1859,7 +1887,8 @@ async def get_create_thread_modal(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """Get the create thread modal HTML."""
+
+    doc = get_document()    """Get the create thread modal HTML."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -1933,7 +1962,8 @@ async def get_create_thread_modal(
 
 @router.get("/{id}/clear_modal", name="organizations:clear_modal")
 async def clear_modal(id: UUID4) -> Any:
-    """Clear the modal content."""
+
+    doc = get_document()    """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
 
 
@@ -1945,7 +1975,8 @@ async def import_orders(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    repository = OrganizationRepository.from_session(session)
+
+    doc = get_document()    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(id)
 
     if organization is None:

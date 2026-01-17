@@ -4,7 +4,6 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request
 from pydantic import ValidationError
-from polar.backoffice.document import get_document
 
 from polar.worker import enqueue_job
 
@@ -12,13 +11,15 @@ from ..components import button, datatable, input, modal
 from ..layout import layout
 from ..toast import add_toast
 from .forms import build_enqueue_task_form_class
+from polar.backoffice.document import get_document
 
 router = APIRouter()
 
 
 # class ExecutionTimeColumn(datatable.DatatableColumn[JobResult]):
 #     def render(self, request: Request, item: JobResult) -> None:
-#         execution_time = item.finish_time - item.start_time
+
+        doc = get_document()#         execution_time = item.finish_time - item.start_time
 #         formatted_execution_time = format_decimal(
 #             execution_time.total_seconds(), locale="en_US"
 #         )
@@ -30,7 +31,8 @@ async def list(
     request: Request,
     query: str | None = Query(None),
 ) -> None:
-    items: Sequence[Any] = []
+
+    doc = get_document()    items: Sequence[Any] = []
     if query:
         cursor = 0
         # while True:
@@ -88,7 +90,8 @@ async def list(
 
 @router.api_route("/enqueue", name="tasks:enqueue", methods=["GET", "POST"])
 async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
-    form_class = build_enqueue_task_form_class(request, task)
+
+    doc = get_document()    form_class = build_enqueue_task_form_class(request, task)
     validation_error: ValidationError | None = None
     if request.method == "POST":
         data = await request.form()

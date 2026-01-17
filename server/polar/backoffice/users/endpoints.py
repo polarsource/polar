@@ -5,10 +5,10 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from polar.backoffice.document import get_document
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
+from polar.backoffice.document import get_document
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, Organization, User, UserOrganization
@@ -52,7 +52,8 @@ class IdentityVerificationStatusColumn(
     datatable.DatatableAttrColumn[User, UserSortProperty]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        status = item.identity_verification_status
+
+        doc = get_document()        status = item.identity_verification_status
         with identity_verification_status_badge(status):
             pass
         return None
@@ -62,7 +63,8 @@ class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        doc = get_document()
+
+        doc = get_document()        doc = get_document()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
             with doc.a(
@@ -163,7 +165,8 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    repository = UserRepository.from_session(session)
+
+    doc = get_document()    repository = UserRepository.from_session(session)
     user = await repository.get_by_id(id)
 
     if user is None:
@@ -273,6 +276,7 @@ async def get(
         )
 
         def _stripe_link(request: Request, value: Account) -> str:
+            doc = get_document()
             return f"https://dashboard.stripe.com/connect/accounts/{value.stripe_id}"
 
         with doc.div(classes="flex flex-col gap-4 pt-16"):

@@ -125,6 +125,14 @@ EmbedOrigin = Annotated[
         ),
     ),
 ]
+Locale = Annotated[
+    str | None,
+    Field(
+        default=None,
+        max_length=10,
+        description="Locale for translations. E.g. 'en', 'nl', 'sv'.",
+    ),
+]
 
 _external_customer_id_description = (
     "ID of the customer in your system. "
@@ -327,16 +335,6 @@ class CheckoutCreatePublic(Schema):
             "will be copied to the subscription, and existing keys will be overwritten."
         ),
     )
-
-
-Locale = Annotated[
-    str | None,
-    Field(
-        default=None,
-        max_length=10,
-        description="Locale for translations. E.g. 'en', 'nl', 'sv'.",
-    ),
-]
 
 
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
@@ -571,9 +569,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     customer_tax_id: str | None = Field(
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
-    locale: str | None = Field(
-        default=None, description="Locale for translations."
-    )
+    locale: str | None = Field(default=None, description="Locale for translations.")
 
     payment_processor_metadata: dict[str, str]
 

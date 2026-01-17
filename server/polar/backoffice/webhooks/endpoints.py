@@ -107,7 +107,7 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    doc = get_document()
+    doc = get_document(request)
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(
         id,
@@ -224,7 +224,7 @@ async def confirm_toggle_enabled(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
-    doc = get_document()
+    doc = get_document(request)
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 
@@ -257,7 +257,7 @@ async def toggle_enabled(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    doc = get_document()
+    doc = get_document(request)
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 

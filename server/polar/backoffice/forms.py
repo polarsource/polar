@@ -61,8 +61,7 @@ class FormField:
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the form field as HTML.
+    """Render the form field as HTML.
 
         Args:
             id: The HTML id and name attribute for the field.
@@ -125,8 +124,7 @@ class InputField(FormField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the input field with label and error handling.
+    """Render the input field with label and error handling.
 
         Creates a styled input field with proper error states and validation
         message display. The input is wrapped in a label container for
@@ -192,8 +190,7 @@ class TextAreaField(FormField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the textarea field with label and error handling.
+    """Render the textarea field with label and error handling.
 
         Creates a styled textarea field with proper error states and validation
         message display. The label is positioned above the textarea for better
@@ -258,8 +255,7 @@ class CheckboxField(FormField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the checkbox field with label and error handling.
+    """Render the checkbox field with label and error handling.
 
         Creates a checkbox input with the label as clickable text next to it.
         The checkbox state is determined by the truthiness of the value parameter.
@@ -319,8 +315,7 @@ class CurrencyField(InputField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the currency field with automatic cent-to-decimal conversion.
+    """Render the currency field with automatic cent-to-decimal conversion.
 
         Converts the stored integer value (in cents) to a decimal value for
         display. For example, 1250 cents becomes 12.50 for user input.
@@ -385,8 +380,7 @@ class SelectField(FormField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the select field with options and error handling.
+    """Render the select field with options and error handling.
 
         Creates a select dropdown with all configured options, automatically
         selecting the option that matches the provided value. Includes
@@ -452,8 +446,7 @@ class SubFormField(FormField):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the sub-form inline with its own fields and validation.
+    """Render the sub-form inline with its own fields and validation.
 
         Args:
             id: The HTML id attribute for the sub-form container.
@@ -583,8 +576,7 @@ class BaseForm(BaseModel):
     ) -> Generator[None]:
 
         
-    doc = get_document()
-            """Render the complete form with all fields and validation.
+    """Render the complete form with all fields and validation.
 
         Generates a form element containing all model fields as appropriate
         form controls. Validation errors are automatically displayed next to
@@ -634,7 +626,7 @@ class BaseForm(BaseModel):
     ) -> Self:
 
         
-    doc = get_document()
+    doc = get_document(request)
             data = _parse_form_data(obj)
         return cls.model_validate(
             data,

@@ -40,7 +40,7 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             with order_status_badge(item.status):
             pass
         return None
@@ -54,8 +54,7 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         doc.text(f"{self.rate:.2f}%")
         return None
 
@@ -64,7 +63,7 @@ class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
     def get_value(self, item: Order) -> Any:
 
         
-        doc = get_document()
+        doc = get_document(request)
             value = self.get_raw_value(item)
         if value is None:
             return None
@@ -79,8 +78,7 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         with doc.div(classes="flex items-center gap-1"):
             if self.url is not None:
                 with doc.a(href=self.url, classes="link flex flex-row gap-1"):
@@ -99,7 +97,7 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
     
-    doc = get_document()
+    doc = get_document(request)
     with doc.div(classes="badge"):
         if status == OrderStatus.paid:
             doc.attr("class", "badge-success")
@@ -243,7 +241,7 @@ async def get(
 ) -> None:
 
     
-    doc = get_document()    order_repository = OrderRepository.from_session(session)
+    doc = get_document(request)    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(
         id,
         options=(
@@ -630,7 +628,7 @@ async def refund(
 ) -> Any:
 
     
-    doc = get_document()    order_repository = OrderRepository.from_session(session)
+    doc = get_document(request)    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(
         id,
         options=order_repository.get_eager_options(),
@@ -715,7 +713,7 @@ async def block_refunds(
 ) -> Any:
 
     
-    doc = get_document()    order_repository = OrderRepository.from_session(session)
+    doc = get_document(request)    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(id)
 
     if order is None:
@@ -740,7 +738,7 @@ async def unblock_refunds(
 ) -> Any:
 
     
-    doc = get_document()    order_repository = OrderRepository.from_session(session)
+    doc = get_document(request)    order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(id)
 
     if order is None:

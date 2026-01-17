@@ -36,8 +36,7 @@ class PaymentVerdict:
     def refunds_ratio(self) -> float:
 
         
-        doc = get_document()
-            """Calculate refund ratio."""
+        """Calculate refund ratio."""
         if self.payment_count == 0:
             return 0
         return self.refunds_count / self.payment_count
@@ -46,8 +45,7 @@ class PaymentVerdict:
     def refunds_amount_ratio(self) -> float:
 
         
-        doc = get_document()
-            """Calculate refund amount ratio."""
+        """Calculate refund amount ratio."""
         if self.total_payment_amount == 0:
             return 0
         return self.refunds_amount / self.total_payment_amount
@@ -82,8 +80,6 @@ class PaymentVerdict:
     def render(self) -> Generator[None]:
 
         
-        doc = get_document()
-            doc = get_document()
         """Render the payment verdict component."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title"):

@@ -24,8 +24,7 @@ class DisconnectStripeModal:
     def render(self) -> Generator[None]:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         form_data = {
             "stripe_account_id": "",
             "reason": "",

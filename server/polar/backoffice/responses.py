@@ -38,7 +38,7 @@ class TagResponse(HTMLResponse):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
 
     
-    doc = get_document()        doc = get_document()
+    doc = get_document(request)
         with render_toasts(scope):
             pass
         # Get the document from request scope

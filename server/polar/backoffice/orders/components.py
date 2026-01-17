@@ -19,7 +19,7 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             with order_status_badge(item.status):
             pass
         return None
@@ -28,7 +28,7 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
     
-    doc = get_document()
+    doc = get_document(request)
     with doc.div(classes="badge"):
         if status == OrderStatus.paid:
             doc.attr("class", "badge-success")

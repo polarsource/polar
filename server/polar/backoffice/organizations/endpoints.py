@@ -109,7 +109,7 @@ def empty_str_to_none_before_bool(value: Any) -> Any:
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
     
-    doc = get_document()
+    doc = get_document(request)
     with doc.div(classes="badge"):
         if organization.status == OrganizationStatus.ACTIVE:
             doc.attr("class", "badge-success")
@@ -130,7 +130,7 @@ class OrganizationStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             with organization_badge(item):
             pass
         return None
@@ -142,8 +142,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         from babel.numbers import format_currency
 
         doc.text(
@@ -158,8 +157,7 @@ class DaysInStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
             days = delta.days
@@ -180,8 +178,7 @@ class AccountTypeDescriptionListAttrItem(
     def render(self, request: Request, item: Account) -> Generator[None] | None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         account_type = item.account_type
         if account_type == AccountType.stripe:
             with doc.a(
@@ -203,7 +200,7 @@ async def get_payment_statistics(
 ) -> PaymentStatistics:
 
     
-    doc = get_document()    """Get all-time payment statistics for an organization."""
+    """Get all-time payment statistics for an organization."""
 
     analytics_service = PaymentAnalyticsService(session)
 
@@ -256,7 +253,7 @@ async def get_setup_verdict_data(
 ) -> SetupVerdictData:
 
     
-    doc = get_document()    """Get enhanced setup verdict for an organization."""
+    """Get enhanced setup verdict for an organization."""
 
     analytics_service = OrganizationSetupAnalyticsService(session)
 
@@ -504,7 +501,7 @@ async def update(
 ) -> Any:
 
     
-    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
+    doc = get_document(request)    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -612,7 +609,7 @@ async def update_details(
 ) -> Any:
 
     
-    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
+    doc = get_document(request)    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -668,7 +665,7 @@ async def update_internal_notes(
 ) -> Any:
 
     
-    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
+    doc = get_document(request)    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -722,7 +719,7 @@ async def delete(
 ) -> Any:
 
     
-    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
+    doc = get_document(request)    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -786,7 +783,7 @@ async def confirm_remove_member(
 ) -> Any:
 
     
-    doc = get_document()    """Show confirmation modal for removing a member."""
+    """Show confirmation modal for removing a member."""
 
     # Get user info for the modal
     user_repo = UserRepository.from_session(session)
@@ -844,7 +841,7 @@ async def remove_member(
 ) -> Any:
 
     
-    doc = get_document()    """Remove member endpoint with DELETE method."""
+    """Remove member endpoint with DELETE method."""
 
     try:
         # Get user info for better error messages
@@ -897,7 +894,7 @@ async def confirm_change_admin(
 ) -> Any:
 
     
-    doc = get_document()    """Show confirmation modal for changing account admin."""
+    """Show confirmation modal for changing account admin."""
 
     # Get organization and account
     org_repo = OrganizationRepository.from_session(session)
@@ -1051,7 +1048,7 @@ async def change_admin(
 ) -> Any:
 
     
-    doc = get_document()    """Change account admin endpoint."""
+    """Change account admin endpoint."""
 
     try:
         # Get organization and account
@@ -1110,7 +1107,7 @@ async def setup_manual_payout(
 ) -> Any:
 
     
-    doc = get_document()    org_repo = OrganizationRepository.from_session(session)
+    doc = get_document(request)    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
         raise HTTPException(status_code=404)
@@ -1234,7 +1231,7 @@ async def create_plain_thread(
 ) -> Any:
 
     
-    doc = get_document()    """Create a Plain thread for this organization."""
+    """Create a Plain thread for this organization."""
     try:
         form = await request.form()
         logger.info(f"Form data received: {dict(form)}")
@@ -1337,8 +1334,6 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
     def render(self, request: Request, item: File) -> Generator[None]:
 
         
-        doc = get_document()
-            doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
         with doc.a(
@@ -1357,7 +1352,7 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
     def get_value(self, item: File) -> str | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             raw_value: int | None = self.get_raw_value(item)
         return formatters.file_size(raw_value) if raw_value is not None else None
 
@@ -1370,7 +1365,7 @@ async def get(
 ) -> Any:
 
     
-    doc = get_document()    repository = OrganizationRepository.from_session(session)
+    doc = get_document(request)    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
         id,
         options=(
@@ -1893,7 +1888,7 @@ async def get_plain_search_url(
 ) -> Any:
 
     
-    doc = get_document()    """Get the Plain search URL for this organization's admin."""
+    """Get the Plain search URL for this organization's admin."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -1916,7 +1911,7 @@ async def get_create_thread_modal(
 ) -> Any:
 
     
-    doc = get_document()    """Get the create thread modal HTML."""
+    """Get the create thread modal HTML."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -1992,7 +1987,7 @@ async def get_create_thread_modal(
 async def clear_modal(id: UUID4) -> Any:
 
     
-    doc = get_document()    """Clear the modal content."""
+    """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
 
 
@@ -2006,7 +2001,7 @@ async def import_orders(
 ) -> Any:
 
     
-    doc = get_document()    repository = OrganizationRepository.from_session(session)
+    doc = get_document(request)    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(id)
 
     if organization is None:

@@ -2,15 +2,15 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
+from markupflow import Document
 from sqlalchemy.util.typing import Literal
-
-from polar.backoffice.document import get_document
 
 Variant = Literal["info", "success", "warning", "error"]
 
 
 @contextlib.contextmanager
 def alert(
+    doc: Document,
     variant: Variant | None = None,
     dash: bool = False,
     soft: bool = False,
@@ -25,6 +25,7 @@ def alert(
     with different visual styles.
 
     Args:
+        doc: The markupflow Document instance.
         variant: The alert style variant. One of "info", "success", "warning", or "error".
             If None, uses the default alert styling.
         dash: If True, applies dash styling modifier (alert-dash class).
@@ -32,10 +33,9 @@ def alert(
         **kwargs: Additional HTML attributes to pass to the alert div element.
 
     Example:
-        >>> with alert(variant="success", soft=True):
+        >>> with alert(doc, variant="success", soft=True):
         ...     doc.text("Operation completed successfully!")
     """
-    doc = get_document()
     variants = {
         "info": "alert-info",
         "success": "alert-success",

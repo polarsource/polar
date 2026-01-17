@@ -38,7 +38,7 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Subscriptio
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             with subscription_status_badge(item):
             pass
         return None
@@ -51,7 +51,7 @@ class StatusColumn(
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             with subscription_status_badge(item):
             pass
         return None
@@ -70,7 +70,7 @@ class OrganizationColumn(
 @contextlib.contextmanager
 def subscription_status_badge(subscription: Subscription) -> Generator[None]:
     
-    doc = get_document()
+    doc = get_document(request)
     status = subscription.status
     with doc.div(classes="badge"):
         if status == SubscriptionStatus.active:
@@ -207,7 +207,7 @@ async def get(
 ) -> None:
 
     
-    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
+    doc = get_document(request)    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(
         id,
         options=(
@@ -386,7 +386,7 @@ async def cancel(
 ) -> Any:
 
     
-    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
+    doc = get_document(request)    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 
     if subscription is None:
@@ -440,7 +440,7 @@ async def uncancel(
 ) -> Any:
 
     
-    doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
+    doc = get_document(request)    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 
     if subscription is None:

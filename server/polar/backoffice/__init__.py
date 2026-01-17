@@ -1,9 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from markupflow import Document
 
-from polar.backoffice.document import get_document
 from polar.observability.http_metrics import exclude_app_from_metrics
 
 from .accounts.endpoints import router as accounts_router
@@ -64,7 +62,7 @@ app.include_router(webhooks_router, prefix="/webhooks")
 
 @app.get("/", name="index")
 async def index(request: Request) -> None:
-    doc = get_document()
+    doc = get_document(request)
     with layout(request, [], "index"):
         with doc.h1():
             doc.text("Dashboard")

@@ -3,6 +3,7 @@ from collections.abc import Generator
 from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from markupflow import Document
 from pydantic import UUID4
 
 from polar.account.repository import AccountRepository
@@ -22,10 +23,9 @@ router = APIRouter()
 
 @contextlib.contextmanager
 def identity_verification_status_badge(
+    doc: Document,
     status: IdentityVerificationStatus,
 ) -> Generator[None]:
-    
-    doc = get_document()
     with doc.div(classes="badge"):
         if status == IdentityVerificationStatus.verified:
             doc.attr("class", "badge-success")
@@ -44,9 +44,9 @@ class IdentityVerificationStatusColumn(
     datatable.DatatableAttrColumn[User, UserSortProperty]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        doc = get_document()
+        doc = get_document(request)
         status = item.identity_verification_status
-        with identity_verification_status_badge(status):
+        with identity_verification_status_badge(doc, status):
             pass
         return None
 
@@ -55,7 +55,7 @@ class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-        doc = get_document()
+        doc = get_document(request)
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
             with doc.a(
@@ -111,6 +111,7 @@ async def delete_stripe(
 
         return
 
+    doc = get_document(request)
     with modal(f"Delete Stripe Connect account {account.id}", open=True):
         with doc.div(classes="flex flex-col gap-4"):
             with doc.form(hx_post=str(request.url), hx_target="#modal"):

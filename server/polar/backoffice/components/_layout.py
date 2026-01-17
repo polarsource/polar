@@ -14,7 +14,7 @@ def content(
     request: Request,
     breadcrumbs: Sequence[tuple[str, str]],
 ) -> Generator[None]:
-    doc = get_document()
+    doc = get_document(request)
     with doc.div(classes="breadcrumbs text-sm"):
         with doc.ul():
             for title, href in reversed(
@@ -38,7 +38,7 @@ def menu(
     navigation: list[NavigationItem],
     active_route_name: str,
 ) -> Generator[None]:
-    doc = get_document()
+    doc = get_document(request)
     with doc.ul(classes="menu w-full", id="menu", hx_swap_oob="true"):
         for item in navigation:
             with item.render(request, active_route_name):

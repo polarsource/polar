@@ -103,7 +103,7 @@ async def get(
 ) -> None:
 
     
-    doc = get_document()    customer_repository = CustomerRepository.from_session(session)
+    doc = get_document(request)    customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(
         id,
         options=(joinedload(Customer.organization),),
@@ -341,7 +341,7 @@ async def generate_portal_link_modal(
 ) -> Any:
 
     
-    doc = get_document()    customer_repository = CustomerRepository.from_session(session)
+    doc = get_document(request)    customer_repository = CustomerRepository.from_session(session)
     customer = await customer_repository.get_by_id(
         id, options=(joinedload(Customer.organization),)
     )

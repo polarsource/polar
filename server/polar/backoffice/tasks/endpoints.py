@@ -20,7 +20,7 @@ router = APIRouter()
 #     def render(self, request: Request, item: JobResult) -> None:
 
         
-    doc = get_document()#         execution_time = item.finish_time - item.start_time
+    doc = get_document(request)#         execution_time = item.finish_time - item.start_time
 #         formatted_execution_time = format_decimal(
 #             execution_time.total_seconds(), locale="en_US"
 #         )
@@ -34,7 +34,7 @@ async def list(
 ) -> None:
 
     
-    doc = get_document()    items: Sequence[Any] = []
+    doc = get_document(request)    items: Sequence[Any] = []
     if query:
         cursor = 0
         # while True:
@@ -94,7 +94,7 @@ async def list(
 async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
 
     
-    doc = get_document()    form_class = build_enqueue_task_form_class(request, task)
+    doc = get_document(request)    form_class = build_enqueue_task_form_class(request, task)
     validation_error: ValidationError | None = None
     if request.method == "POST":
         data = await request.form()

@@ -27,7 +27,7 @@ class OrganizationColumn(datatable.DatatableAttrColumn[Customer, CustomerSortPro
 
 @contextlib.contextmanager
 def email_verified_badge(verified: bool) -> Generator[None]:
-    doc = get_document()
+    doc = get_document(request)
     with doc.div(classes="badge"):
         if verified:
             doc.attr("class", "badge-success")

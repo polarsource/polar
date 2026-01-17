@@ -31,7 +31,7 @@ async def _get_product_by_name(
 ) -> Any:
 
     
-    doc = get_document()    statement = repository.get_base_statement().where(
+    doc = get_document(request)    statement = repository.get_base_statement().where(
         Product.organization_id == organization.id,
         func.lower(func.trim(Product.name)) == name.lower(),
     )
@@ -83,7 +83,7 @@ class DecodedUploadFile:
     async def read(self, size: int = -1) -> str:
 
     
-    doc = get_document()        byte_data = await self.file.read(size)
+    doc = get_document(request)        byte_data = await self.file.read(size)
         return byte_data.decode(self.encoding)
 
 
@@ -96,7 +96,7 @@ async def orders_import(
 ) -> AsyncGenerator[tuple[int, int], None]:
 
     
-    doc = get_document()    customer_repository = CustomerRepository.from_session(session)
+    doc = get_document(request)    customer_repository = CustomerRepository.from_session(session)
     product_repository = ProductRepository.from_session(session)
     order_repository = OrderRepository.from_session(session)
 
@@ -266,7 +266,6 @@ async def orders_import_sse(
 ) -> AsyncGenerator[ServerSentEvent, None]:
 
     
-    doc = get_document()    doc = get_document()
     """Same as orders_import but yields progress for SSE."""
     try:
         async for progress in orders_import(

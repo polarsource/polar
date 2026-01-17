@@ -160,7 +160,7 @@ async def get(
 ) -> None:
 
     
-    doc = get_document()    repository = ProductRepository.from_session(session)
+    doc = get_document(request)    repository = ProductRepository.from_session(session)
     product = await repository.get_by_id(
         id,
         options=(

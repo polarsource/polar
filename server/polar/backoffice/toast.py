@@ -6,8 +6,6 @@ from typing import Literal
 from fastapi import Request
 from starlette.types import Scope
 
-from polar.backoffice.document import get_document
-
 from .components import alert
 
 Variant = Literal["info", "success", "warning", "error"]
@@ -31,6 +29,7 @@ def render_toasts(scope: Scope) -> Generator[None]:
     ):
         for toast in toasts:
             with alert(
+                doc,
                 toast.variant,
                 _="""
                 init
@@ -45,7 +44,6 @@ def render_toasts(scope: Scope) -> Generator[None]:
 
 
 async def add_toast(request: Request, message: str, variant: Variant = "info") -> None:
-    doc = get_document()
     toasts: list[Toast] = request.scope.get("toasts", [])
     toasts.append(Toast(message, variant))
     request.scope["toasts"] = toasts

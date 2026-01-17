@@ -34,7 +34,7 @@ class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProper
     def get_value(self, item: Benefit) -> str | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             return item.type.get_display_name()
 
 
@@ -42,7 +42,7 @@ class BenefitTypeDescriptionListItem(description_list.DescriptionListAttrItem[Be
     def get_value(self, item: Benefit) -> str | None:
 
         
-        doc = get_document()
+        doc = get_document(request)
             return item.type.get_display_name()
 
 
@@ -152,7 +152,7 @@ async def _get_github_repository_invitations(
 ) -> builtins.list[dict[str, Any]]:
 
     
-    doc = get_document()    """Get pending GitHub repository invitations for a benefit."""
+    """Get pending GitHub repository invitations for a benefit."""
     if benefit.type != BenefitType.github_repository:
         return []
 
@@ -203,7 +203,7 @@ async def get(
 ) -> Any:
 
     
-    doc = get_document()    repository = BenefitRepository.from_session(session)
+    doc = get_document(request)    repository = BenefitRepository.from_session(session)
     benefit = await repository.get_by_id(id)
 
     if benefit is None:

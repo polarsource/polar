@@ -22,8 +22,7 @@ class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
 
         
-        doc = get_document()
-            doc = get_document()
+        doc = get_document(request)
         with doc.button(
             classes="btn btn-sm btn-primary",
             hx_post=str(request.url_for("pledges:transfer", pledge_id=item.id)),
@@ -36,6 +35,7 @@ class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
 
 @router.get("/", name="pledges:list")
 async def list(
+    doc = get_document(request)
     request: Request,
     issue_reference: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
@@ -79,6 +79,7 @@ async def list(
 
 @router.post("/search", name="pledges:search")
 async def search(
+    doc = get_document(request)
     request: Request,
     issue_reference: Annotated[str, Form()],
     session: AsyncSession = Depends(get_db_session),
@@ -137,7 +138,7 @@ async def transfer(
 ) -> None:
 
     
-    doc = get_document()    try:
+    doc = get_document(request)    try:
         # Perform the admin transfer
         await pledge_service.admin_transfer(session, pledge_id)
 

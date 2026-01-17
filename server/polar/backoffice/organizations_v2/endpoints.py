@@ -568,7 +568,7 @@ async def deny_dialog(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Deny organization dialog and action."""
+    """Deny organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -632,7 +632,7 @@ async def approve_denied_dialog(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Approve a denied organization dialog and action."""
+    """Approve a denied organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -720,7 +720,7 @@ async def unblock_approve_dialog(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Unblock and approve organization dialog and action."""
+    """Unblock and approve organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -811,7 +811,7 @@ async def block_dialog(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Block organization dialog and action."""
+    """Block organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -888,7 +888,7 @@ async def edit_organization(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit organization details."""
+    """Edit organization details."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -987,7 +987,7 @@ async def edit_details(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit organization details (about, product description, intended use)."""
+    """Edit organization details (about, product description, intended use)."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1071,7 +1071,7 @@ async def edit_order_settings(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit organization order settings."""
+    """Edit organization order settings."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1163,7 +1163,7 @@ async def edit_socials(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit organization social media links."""
+    """Edit organization social media links."""
     # Platform name constants for consistency
     PLATFORM_YOUTUBE = "youtube"
     PLATFORM_INSTAGRAM = "instagram"
@@ -1326,7 +1326,7 @@ async def edit_features(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit organization feature flags."""
+    """Edit organization feature flags."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1434,7 +1434,7 @@ async def add_note(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Add internal notes to an organization."""
+    """Add internal notes to an organization."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1506,7 +1506,7 @@ async def edit_note(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Edit internal notes for an organization."""
+    """Edit internal notes for an organization."""
     repository = OrganizationRepository(session)
 
     # Fetch organization
@@ -1577,7 +1577,7 @@ async def impersonate_user(
 ) -> HXRedirectResponse:
 
     
-    doc = get_document()    """Impersonate a user by creating a read-only session for them."""
+    """Impersonate a user by creating a read-only session for them."""
     from datetime import timedelta
 
     from polar.config import settings
@@ -1665,7 +1665,7 @@ async def make_admin(
 ) -> HXRedirectResponse:
 
     
-    doc = get_document()    """Make a user an admin of the organization."""
+    """Make a user an admin of the organization."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1705,7 +1705,7 @@ async def remove_member(
 ) -> HXRedirectResponse:
 
     
-    doc = get_document()    """Remove a member from the organization."""
+    """Remove a member from the organization."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1743,7 +1743,7 @@ async def delete_dialog(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Delete organization dialog and action."""
+    """Delete organization dialog and action."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1812,7 +1812,7 @@ async def setup_account(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Show modal to setup a manual payment account."""
+    """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
     organization = await repository.get_by_id(organization_id)
@@ -1883,7 +1883,7 @@ async def disconnect_stripe_account(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    repository = OrganizationRepository(session)
+    doc = get_document(request)    repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_account(organization_id)
 
     if not organization:
@@ -1991,7 +1991,7 @@ async def delete_stripe_account(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    repository = OrganizationRepository(session)
+    doc = get_document(request)    repository = OrganizationRepository(session)
     organization = await repository.get_by_id_with_account(organization_id)
 
     if not organization:
@@ -2104,7 +2104,7 @@ async def grant_credit(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Grant fee credits to an organization's account."""
+    """Grant fee credits to an organization's account."""
     from datetime import datetime
 
     repository = OrganizationRepository(session)
@@ -2272,7 +2272,7 @@ async def revoke_credit(
 ) -> HXRedirectResponse | None:
 
     
-    doc = get_document()    """Revoke a fee credit."""
+    """Revoke a fee credit."""
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id(
         organization_id, options=(joinedload(Organization.account),)

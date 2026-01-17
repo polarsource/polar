@@ -18,13 +18,16 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
-        doc = get_document()        with order_status_badge(item.status):
+        
+    doc = get_document()
+            with order_status_badge(item.status):
             pass
         return None
 
 
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
+    
     doc = get_document()
     with doc.div(classes="badge"):
         if status == OrderStatus.paid:

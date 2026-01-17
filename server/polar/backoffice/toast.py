@@ -44,8 +44,8 @@ def render_toasts(scope: Scope) -> Generator[None]:
 
 
 async def add_toast(request: Request, message: str, variant: Variant = "info") -> None:
-
-    doc = get_document()    toasts: list[Toast] = request.scope.get("toasts", [])
+    doc = get_document()
+    toasts: list[Toast] = request.scope.get("toasts", [])
     toasts.append(Toast(message, variant))
     request.scope["toasts"] = toasts
 

@@ -20,7 +20,9 @@ class SettingsSection:
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render the settings section."""
 
         with doc.div(classes="space-y-6"):

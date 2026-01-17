@@ -37,7 +37,9 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Subscriptio
 
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
-        doc = get_document()        with subscription_status_badge(item):
+        
+    doc = get_document()
+            with subscription_status_badge(item):
             pass
         return None
 
@@ -48,7 +50,9 @@ class StatusColumn(
 ):
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
-        doc = get_document()        with subscription_status_badge(item):
+        
+    doc = get_document()
+            with subscription_status_badge(item):
             pass
         return None
 
@@ -65,6 +69,7 @@ class OrganizationColumn(
 
 @contextlib.contextmanager
 def subscription_status_badge(subscription: Subscription) -> Generator[None]:
+    
     doc = get_document()
     status = subscription.status
     with doc.div(classes="badge"):
@@ -201,6 +206,7 @@ async def get(
     session: AsyncSession = Depends(get_db_read_session),
 ) -> None:
 
+    
     doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(
         id,
@@ -379,6 +385,7 @@ async def cancel(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 
@@ -432,6 +439,7 @@ async def uncancel(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(id)
 

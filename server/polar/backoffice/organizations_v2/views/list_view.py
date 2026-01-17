@@ -31,6 +31,7 @@ class OrganizationListView:
 
     async def get_status_counts(self) -> dict[OrganizationStatus, int]:
 
+    
     doc = get_document()        """Get count of organizations by status for tab badges."""
         stmt = select(
             Organization.status,
@@ -41,6 +42,7 @@ class OrganizationListView:
 
     async def get_distinct_countries(self) -> list[str]:
 
+    
     doc = get_document()        """Get list of distinct countries from organizations with accounts."""
         stmt = (
             select(Account.country)
@@ -54,7 +56,9 @@ class OrganizationListView:
 
     def calculate_days_in_status(self, org: Organization) -> int:
 
-        doc = get_document()        """Calculate how many days organization has been in current status."""
+        
+    doc = get_document()
+            """Calculate how many days organization has been in current status."""
         if not org.status_updated_at:
             delta = datetime.now(UTC) - org.created_at
         else:
@@ -63,7 +67,9 @@ class OrganizationListView:
 
     def is_needs_attention(self, org: Organization) -> bool:
 
-        doc = get_document()        """Determine if organization needs immediate attention."""
+        
+    doc = get_document()
+            """Determine if organization needs immediate attention."""
         days_in_status = self.calculate_days_in_status(org)
 
         # Under review for more than 3 days
@@ -96,7 +102,9 @@ class OrganizationListView:
         status_filter: OrganizationStatus | None = None,
     ) -> Generator[None]:
 
-        doc = get_document()        """Render a sortable table header with direction indicator."""
+        
+    doc = get_document()
+            """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
         # Toggle direction: if currently ASC, next click is DESC
         next_direction = "desc" if (is_active and current_direction == "asc") else "asc"
@@ -150,7 +158,9 @@ class OrganizationListView:
         self, request: Request, org: Organization, show_quick_actions: bool = False
     ) -> Generator[None]:
 
-        doc = get_document()        """Render a single organization row in the table."""
+        
+    doc = get_document()
+            """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
 
@@ -293,7 +303,9 @@ class OrganizationListView:
         selected_country: str | None = None,
     ) -> Generator[None]:
 
-        doc = get_document()        """Render the complete list view."""
+        
+    doc = get_document()
+            """Render the complete list view."""
 
         # Page header
         with doc.div(classes="flex items-center justify-between mb-8"):
@@ -732,7 +744,9 @@ class OrganizationListView:
         current_direction: str = "asc",
     ) -> Generator[None]:
 
-        doc = get_document()        """Render only the organization table (for HTMX updates)."""
+        
+    doc = get_document()
+            """Render only the organization table (for HTMX updates)."""
 
         # Organization table
         with doc.div(id="org-list", classes="overflow-x-auto"):

@@ -19,7 +19,8 @@ router = APIRouter()
 # class ExecutionTimeColumn(datatable.DatatableColumn[JobResult]):
 #     def render(self, request: Request, item: JobResult) -> None:
 
-        doc = get_document()#         execution_time = item.finish_time - item.start_time
+        
+    doc = get_document()#         execution_time = item.finish_time - item.start_time
 #         formatted_execution_time = format_decimal(
 #             execution_time.total_seconds(), locale="en_US"
 #         )
@@ -32,6 +33,7 @@ async def list(
     query: str | None = Query(None),
 ) -> None:
 
+    
     doc = get_document()    items: Sequence[Any] = []
     if query:
         cursor = 0
@@ -91,6 +93,7 @@ async def list(
 @router.api_route("/enqueue", name="tasks:enqueue", methods=["GET", "POST"])
 async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
 
+    
     doc = get_document()    form_class = build_enqueue_task_form_class(request, task)
     validation_error: ValidationError | None = None
     if request.method == "POST":

@@ -21,7 +21,9 @@ class PledgeSortProperty(StrEnum): ...
 class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         with doc.button(
             classes="btn btn-sm btn-primary",
             hx_post=str(request.url_for("pledges:transfer", pledge_id=item.id)),
@@ -134,6 +136,7 @@ async def transfer(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
 
+    
     doc = get_document()    try:
         # Perform the admin transfer
         await pledge_service.admin_transfer(session, pledge_id)

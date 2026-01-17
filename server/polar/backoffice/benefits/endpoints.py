@@ -33,13 +33,17 @@ router = APIRouter()
 class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
     def get_value(self, item: Benefit) -> str | None:
 
-        doc = get_document()        return item.type.get_display_name()
+        
+    doc = get_document()
+            return item.type.get_display_name()
 
 
 class BenefitTypeDescriptionListItem(description_list.DescriptionListAttrItem[Benefit]):
     def get_value(self, item: Benefit) -> str | None:
 
-        doc = get_document()        return item.type.get_display_name()
+        
+    doc = get_document()
+            return item.type.get_display_name()
 
 
 class OrganizationColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
@@ -147,6 +151,7 @@ async def _get_github_repository_invitations(
     benefit: Benefit,
 ) -> builtins.list[dict[str, Any]]:
 
+    
     doc = get_document()    """Get pending GitHub repository invitations for a benefit."""
     if benefit.type != BenefitType.github_repository:
         return []
@@ -197,6 +202,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    repository = BenefitRepository.from_session(session)
     benefit = await repository.get_by_id(id)
 

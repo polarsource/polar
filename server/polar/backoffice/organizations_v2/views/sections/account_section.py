@@ -55,7 +55,9 @@ class AccountSection:
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render the account section."""
 
         with doc.div(classes="space-y-6"):

@@ -108,6 +108,7 @@ def empty_str_to_none_before_bool(value: Any) -> Any:
 
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
+    
     doc = get_document()
     with doc.div(classes="badge"):
         if organization.status == OrganizationStatus.ACTIVE:
@@ -128,7 +129,9 @@ class OrganizationStatusColumn(
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
-        doc = get_document()        with organization_badge(item):
+        
+    doc = get_document()
+            with organization_badge(item):
             pass
         return None
 
@@ -138,7 +141,9 @@ class NextReviewThresholdColumn(
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         from babel.numbers import format_currency
 
         doc.text(
@@ -152,7 +157,9 @@ class DaysInStatusColumn(
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
             days = delta.days
@@ -172,7 +179,9 @@ class AccountTypeDescriptionListAttrItem(
 ):
     def render(self, request: Request, item: Account) -> Generator[None] | None:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         account_type = item.account_type
         if account_type == AccountType.stripe:
             with doc.a(
@@ -193,6 +202,7 @@ async def get_payment_statistics(
     session: AsyncSession, organization_id: UUID4
 ) -> PaymentStatistics:
 
+    
     doc = get_document()    """Get all-time payment statistics for an organization."""
 
     analytics_service = PaymentAnalyticsService(session)
@@ -245,6 +255,7 @@ async def get_setup_verdict_data(
     organization: Organization, session: AsyncSession
 ) -> SetupVerdictData:
 
+    
     doc = get_document()    """Get enhanced setup verdict for an organization."""
 
     analytics_service = OrganizationSetupAnalyticsService(session)
@@ -492,6 +503,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -599,6 +611,7 @@ async def update_details(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -654,6 +667,7 @@ async def update_internal_notes(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -707,6 +721,7 @@ async def delete(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -770,6 +785,7 @@ async def confirm_remove_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Show confirmation modal for removing a member."""
 
     # Get user info for the modal
@@ -827,6 +843,7 @@ async def remove_member(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Remove member endpoint with DELETE method."""
 
     try:
@@ -879,6 +896,7 @@ async def confirm_change_admin(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Show confirmation modal for changing account admin."""
 
     # Get organization and account
@@ -1032,6 +1050,7 @@ async def change_admin(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Change account admin endpoint."""
 
     try:
@@ -1090,6 +1109,7 @@ async def setup_manual_payout(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
     if not organization:
@@ -1213,6 +1233,7 @@ async def create_plain_thread(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Create a Plain thread for this organization."""
     try:
         form = await request.form()
@@ -1315,7 +1336,9 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
 
     def render(self, request: Request, item: File) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
         with doc.a(
@@ -1333,7 +1356,9 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
     @override
     def get_value(self, item: File) -> str | None:
 
-        doc = get_document()        raw_value: int | None = self.get_raw_value(item)
+        
+    doc = get_document()
+            raw_value: int | None = self.get_raw_value(item)
         return formatters.file_size(raw_value) if raw_value is not None else None
 
 
@@ -1344,6 +1369,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
         id,
@@ -1866,6 +1892,7 @@ async def get_plain_search_url(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Get the Plain search URL for this organization's admin."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
@@ -1888,6 +1915,7 @@ async def get_create_thread_modal(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    """Get the create thread modal HTML."""
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(id)
@@ -1963,6 +1991,7 @@ async def get_create_thread_modal(
 @router.get("/{id}/clear_modal", name="organizations:clear_modal")
 async def clear_modal(id: UUID4) -> Any:
 
+    
     doc = get_document()    """Clear the modal content."""
     return HTMLResponse('<div id="modal"></div>')
 
@@ -1976,6 +2005,7 @@ async def import_orders(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(id)
 

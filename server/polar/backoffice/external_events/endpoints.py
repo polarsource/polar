@@ -141,6 +141,7 @@ async def resend(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
 
+    
     doc = get_document()    repository = ExternalEventRepository.from_session(session)
     external_event = await repository.get_by_id(id)
 

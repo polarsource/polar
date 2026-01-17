@@ -72,7 +72,9 @@ class NavigationItem:
     @contextlib.contextmanager
     def render(self, request: Request, active_route_name: str) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render the navigation item as HTML.
 
         Generates either a simple link item or an expandable details/summary

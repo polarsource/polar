@@ -23,7 +23,9 @@ class DisconnectStripeModal:
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         form_data = {
             "stripe_account_id": "",
             "reason": "",

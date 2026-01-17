@@ -24,6 +24,7 @@ router = APIRouter()
 def identity_verification_status_badge(
     status: IdentityVerificationStatus,
 ) -> Generator[None]:
+    
     doc = get_document()
     with doc.div(classes="badge"):
         if status == IdentityVerificationStatus.verified:
@@ -44,7 +45,9 @@ class IdentityVerificationStatusColumn(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
 
-        doc = get_document()        status = item.identity_verification_status
+        
+    doc = get_document()
+            status = item.identity_verification_status
         with identity_verification_status_badge(status):
             pass
         return None
@@ -55,7 +58,9 @@ class IdentityVerificationStatusDescriptionListItem(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
             with doc.a(

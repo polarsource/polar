@@ -21,7 +21,9 @@ class OverviewSection:
     @contextlib.contextmanager
     def ai_review_card(self) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render AI review verdict card."""
         # Determine if risk is elevated
         has_elevated_risk = (
@@ -96,7 +98,9 @@ class OverviewSection:
         self, setup_data: dict[str, int | bool] | None = None
     ) -> Generator[None]:
 
-        doc = get_document()        doc = get_document()
+        
+    doc = get_document()
+            doc = get_document()
         """Render setup verdict card."""
         with card(bordered=True):
             with doc.h2(classes="text-lg font-bold mb-4"):
@@ -135,7 +139,9 @@ class OverviewSection:
         self, payment_stats: dict[str, int | float] | None = None
     ) -> Generator[None]:
 
-        doc = get_document()        """Render payment statistics card."""
+        
+    doc = get_document()
+            """Render payment statistics card."""
         # Check if payment risk is high
         p90_risk = payment_stats.get("p90_risk", 0) if payment_stats else 0
         has_high_risk = p90_risk >= 75
@@ -254,7 +260,9 @@ class OverviewSection:
         payment_stats: dict[str, int | float] | None = None,
     ) -> Generator[None]:
 
-        doc = get_document()        """Render the complete overview section."""
+        
+    doc = get_document()
+            """Render the complete overview section."""
 
         with doc.div(classes="space-y-6"):
             # Review status cards in a grid

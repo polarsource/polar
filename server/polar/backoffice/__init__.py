@@ -65,6 +65,7 @@ app.include_router(webhooks_router, prefix="/webhooks")
 @app.get("/", name="index")
 async def index(request: Request) -> None:
 
+    
     doc = get_document()    doc = get_document()
     with layout(request, [], "index"):
         with doc.h1():

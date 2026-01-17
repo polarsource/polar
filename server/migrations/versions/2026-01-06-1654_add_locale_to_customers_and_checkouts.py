@@ -1,7 +1,7 @@
 """Add locale to customers and checkouts
 
 Revision ID: f74ec458db91
-Revises: 8c4a2b3d5e6f
+Revises: 4b8c9d0e1f2a
 Create Date: 2026-01-06 16:54:36.624325
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f74ec458db91"
-down_revision = "8c4a2b3d5e6f"
+down_revision = "4b8c9d0e1f2a"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

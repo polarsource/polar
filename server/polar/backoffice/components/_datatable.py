@@ -42,7 +42,7 @@ class DatatableColumn[M]:
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Render the column content for a specific item.
 
         Args:
@@ -189,7 +189,7 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the attribute value as a table cell.
 
@@ -217,7 +217,7 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
     def get_raw_value(self, item: M) -> Any:
 
         
-    doc = get_document()
+        doc = get_document()
             """Extract the raw attribute value from the model item.
 
         Args:
@@ -234,7 +234,7 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted string value for display.
 
         This method can be overridden in subclasses to provide custom formatting.
@@ -272,7 +272,7 @@ class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted datetime string for display.
 
         Args:
@@ -305,7 +305,7 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted currency string for display.
 
         Args:
@@ -322,7 +322,7 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     def get_currency(self, item: M) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the currency code for formatting.
 
         By default, tries to extract the attribute 'currency' from the item,
@@ -353,7 +353,7 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the boolean value as an icon.
 
@@ -390,7 +390,7 @@ class DatatableAction[M](Protocol):
     def render(self, request: Request, item: M) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             """Render the action element for a specific item.
 
         Args:
@@ -402,7 +402,7 @@ class DatatableAction[M](Protocol):
     def is_hidden(self, request: Request, item: M) -> bool:
 
         
-    doc = get_document()
+        doc = get_document()
             """Determine if this action should be hidden for a specific item.
 
         Args:
@@ -448,7 +448,7 @@ class DatatableActionLink[M](DatatableAction[M]):
     def render(self, request: Request, item: M) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the action as a link.
 
@@ -468,7 +468,7 @@ class DatatableActionLink[M](DatatableAction[M]):
     def is_hidden(self, request: Request, item: M) -> bool:
 
         
-    doc = get_document()
+        doc = get_document()
             """Check if the action should be hidden.
 
         Returns:
@@ -513,7 +513,7 @@ class DatatableActionHTMX[M](DatatableAction[M]):
     def render(self, request: Request, item: M) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the action as an HTMX button.
 
@@ -533,7 +533,7 @@ class DatatableActionHTMX[M](DatatableAction[M]):
     def is_hidden(self, request: Request, item: M) -> bool:
 
         
-    doc = get_document()
+        doc = get_document()
             """Check if the action should be hidden for a specific item.
 
         Args:
@@ -572,7 +572,7 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the actions dropdown for a specific item.
 

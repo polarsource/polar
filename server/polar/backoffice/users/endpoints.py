@@ -54,7 +54,7 @@ class IdentityVerificationStatusColumn(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
         
-    doc = get_document()
+        doc = get_document()
         status = item.identity_verification_status
         with identity_verification_status_badge(status):
             pass
@@ -66,7 +66,7 @@ class IdentityVerificationStatusDescriptionListItem(
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
         
-    doc = get_document()
+        doc = get_document()
         status = item.identity_verification_status
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
@@ -281,7 +281,7 @@ async def get(
 
         def _stripe_link(request: Request, value: Account) -> str:
         
-    doc = get_document()
+            doc = get_document()
             return f"https://dashboard.stripe.com/connect/accounts/{value.stripe_id}"
 
         with doc.div(classes="flex flex-col gap-4 pt-16"):

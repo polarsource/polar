@@ -73,7 +73,7 @@ class NavigationItem:
     def render(self, request: Request, active_route_name: str) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the navigation item as HTML.
 

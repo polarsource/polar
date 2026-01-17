@@ -22,7 +22,7 @@ class OverviewSection:
     def ai_review_card(self) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render AI review verdict card."""
         # Determine if risk is elevated

@@ -40,7 +40,7 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             with order_status_badge(item.status):
             pass
         return None
@@ -54,7 +54,7 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         doc.text(f"{self.rate:.2f}%")
         return None
@@ -64,7 +64,7 @@ class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
     def get_value(self, item: Order) -> Any:
 
         
-    doc = get_document()
+        doc = get_document()
             value = self.get_raw_value(item)
         if value is None:
             return None
@@ -79,7 +79,7 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         with doc.div(classes="flex items-center gap-1"):
             if self.url is not None:

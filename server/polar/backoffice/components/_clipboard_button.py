@@ -1,7 +1,6 @@
 import contextlib
 from collections.abc import Generator
 from typing import Literal
-from polar.backoffice.document import get_document
 
 Variant = Literal[
     "neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"

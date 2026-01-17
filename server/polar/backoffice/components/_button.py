@@ -2,8 +2,6 @@ import contextlib
 from collections.abc import Generator
 from typing import Literal
 
-from polar.backoffice.document import get_document
-
 type AttrValue = str | int | float | bool | None
 
 Variant = Literal[

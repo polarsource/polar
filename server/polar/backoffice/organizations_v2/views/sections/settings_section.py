@@ -21,7 +21,7 @@ class SettingsSection:
     def render(self, request: Request) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the settings section."""
 

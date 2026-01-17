@@ -6,8 +6,9 @@ from typing import Literal
 from fastapi import Request
 from starlette.types import Scope
 
-from .components import alert
 from polar.backoffice.document import get_document
+
+from .components import alert
 
 Variant = Literal["info", "success", "warning", "error"]
 

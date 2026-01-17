@@ -38,7 +38,7 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Subscriptio
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             with subscription_status_badge(item):
             pass
         return None
@@ -51,7 +51,7 @@ class StatusColumn(
     def render(self, request: Request, item: Subscription) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             with subscription_status_badge(item):
             pass
         return None

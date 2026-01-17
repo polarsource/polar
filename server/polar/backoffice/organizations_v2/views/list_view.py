@@ -57,7 +57,7 @@ class OrganizationListView:
     def calculate_days_in_status(self, org: Organization) -> int:
 
         
-    doc = get_document()
+        doc = get_document()
             """Calculate how many days organization has been in current status."""
         if not org.status_updated_at:
             delta = datetime.now(UTC) - org.created_at
@@ -68,7 +68,7 @@ class OrganizationListView:
     def is_needs_attention(self, org: Organization) -> bool:
 
         
-    doc = get_document()
+        doc = get_document()
             """Determine if organization needs immediate attention."""
         days_in_status = self.calculate_days_in_status(org)
 

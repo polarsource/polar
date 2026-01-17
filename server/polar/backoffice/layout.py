@@ -5,7 +5,6 @@ from fastapi import Request
 
 from .components import layout as layout_component
 from .navigation import NAVIGATION
-from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager

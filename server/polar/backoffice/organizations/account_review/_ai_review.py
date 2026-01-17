@@ -22,7 +22,7 @@ class AIReviewVerdict:
     def verdict_text(self) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the verdict text."""
         if not self.review:
             return "NOT REVIEWED"
@@ -37,7 +37,7 @@ class AIReviewVerdict:
     def verdict_classes(self) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get CSS classes for the verdict badge."""
         if not self.review:
             return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
@@ -61,7 +61,7 @@ class AIReviewVerdict:
     def risk_score_color(self) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get color class for risk score based on value."""
         if not self.review:
             return "text-gray-600"
@@ -100,7 +100,7 @@ class AIReviewVerdict:
     def render(self) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the AI review verdict component (compact version)."""
         with doc.div(classes="card-body"):

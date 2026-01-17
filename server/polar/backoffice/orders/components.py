@@ -19,7 +19,7 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             with order_status_badge(item.status):
             pass
         return None

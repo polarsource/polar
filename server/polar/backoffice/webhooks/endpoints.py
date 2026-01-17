@@ -5,6 +5,7 @@ from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 
+from polar.backoffice.document import get_document
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
@@ -16,7 +17,6 @@ from polar.webhook.sorting import WebhookSortProperty
 from ..components import button, confirmation_dialog, datatable, description_list, input
 from ..layout import layout
 from ..toast import add_toast
-from polar.backoffice.document import get_document
 
 router = APIRouter()
 

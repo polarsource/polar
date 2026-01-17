@@ -26,7 +26,7 @@ class FilesSection:
     def format_file_size(self, size_bytes: int) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Format file size in human-readable format."""
         if size_bytes < 1024:
             return f"{size_bytes} B"
@@ -41,7 +41,7 @@ class FilesSection:
     def render(self, request: Request) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the files section."""
 

@@ -35,7 +35,7 @@ class DescriptionListItem[M]:
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Render the item content for a specific data object.
 
         Args:
@@ -85,7 +85,7 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the attribute value as a description list item.
 
@@ -104,7 +104,7 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
     def get_raw_value(self, item: M) -> Any | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Extract the raw attribute value from the data object.
 
         Args:
@@ -121,7 +121,7 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted string value for display.
 
         This method can be overridden in subclasses to provide custom formatting.
@@ -158,7 +158,7 @@ class DescriptionListDateTimeItem[M](DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted datetime string for display.
 
         Args:
@@ -208,7 +208,7 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the attribute value as an external link.
 
@@ -251,7 +251,7 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the formatted currency string for display.
 
         Args:
@@ -268,7 +268,7 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     def get_currency(self, item: M) -> str:
 
         
-    doc = get_document()
+        doc = get_document()
             """Get the currency code for formatting.
 
         By default, tries to extract the attribute 'currency' from the item,
@@ -297,7 +297,7 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render social links with platform icons and external links.
 
@@ -395,7 +395,7 @@ class DescriptionList[M]:
     def render(self, request: Request, data: M) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the complete description list with all items.
 

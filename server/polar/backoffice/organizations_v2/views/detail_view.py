@@ -94,7 +94,7 @@ class OrganizationDetailView:
     def right_sidebar(self, request: Request) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render right sidebar with contextual actions and metadata."""
         with doc.aside(classes="w-80 pl-4"):
@@ -386,7 +386,7 @@ class OrganizationDetailView:
     def render(self, request: Request, section: str = "overview") -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render the complete detail view with top tabs."""
 

@@ -2,7 +2,6 @@ import contextlib
 from collections.abc import Generator
 from dataclasses import dataclass
 from typing import Any
-from polar.backoffice.document import get_document
 
 
 @dataclass

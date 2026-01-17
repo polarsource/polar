@@ -130,7 +130,7 @@ class OrganizationStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             with organization_badge(item):
             pass
         return None
@@ -142,7 +142,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         from babel.numbers import format_currency
 
@@ -158,7 +158,7 @@ class DaysInStatusColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         if item.status_updated_at:
             delta = datetime.now(UTC) - item.status_updated_at
@@ -180,7 +180,7 @@ class AccountTypeDescriptionListAttrItem(
     def render(self, request: Request, item: Account) -> Generator[None] | None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         account_type = item.account_type
         if account_type == AccountType.stripe:
@@ -1337,7 +1337,7 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
     def render(self, request: Request, item: File) -> Generator[None]:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
@@ -1357,7 +1357,7 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
     def get_value(self, item: File) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             raw_value: int | None = self.get_raw_value(item)
         return formatters.file_size(raw_value) if raw_value is not None else None
 

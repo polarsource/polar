@@ -34,7 +34,7 @@ class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProper
     def get_value(self, item: Benefit) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             return item.type.get_display_name()
 
 
@@ -42,7 +42,7 @@ class BenefitTypeDescriptionListItem(description_list.DescriptionListAttrItem[Be
     def get_value(self, item: Benefit) -> str | None:
 
         
-    doc = get_document()
+        doc = get_document()
             return item.type.get_display_name()
 
 

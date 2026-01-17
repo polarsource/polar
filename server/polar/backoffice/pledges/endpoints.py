@@ -22,7 +22,7 @@ class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
 
         
-    doc = get_document()
+        doc = get_document()
             doc = get_document()
         with doc.button(
             classes="btn btn-sm btn-primary",

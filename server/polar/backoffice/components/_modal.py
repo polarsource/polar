@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import Generator
-from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager

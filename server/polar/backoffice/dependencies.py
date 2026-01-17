@@ -25,5 +25,4 @@ async def get_admin(
 
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
-
     return user_session

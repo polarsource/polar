@@ -9,8 +9,6 @@ from polar.models import Organization
 
 from ....components import button, card
 from polar.backoffice.document import get_document
-
-
 class SettingsSection:
     """Render the settings section with configuration options."""
 
@@ -19,8 +17,6 @@ class SettingsSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
-
-        
         """Render the settings section."""
 
         with doc.div(classes="space-y-6"):

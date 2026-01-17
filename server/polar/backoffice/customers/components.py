@@ -9,14 +9,10 @@ from polar.kit.sorting import Sorting
 from polar.models import Customer
 
 from ..components import datatable
-
-
 class CustomerIDColumn(datatable.DatatableAttrColumn[Customer, CustomerSortProperty]):
     def __init__(self) -> None:
         super().__init__("id", "ID", clipboard=True)
         self.href_getter = lambda r, i: str(r.url_for("customers:get", id=i.id))
-
-
 class OrganizationColumn(datatable.DatatableAttrColumn[Customer, CustomerSortProperty]):
     def __init__(self) -> None:
         super().__init__("organization.name", "Organization")
@@ -27,7 +23,6 @@ class OrganizationColumn(datatable.DatatableAttrColumn[Customer, CustomerSortPro
 
 @contextlib.contextmanager
 def email_verified_badge(verified: bool) -> Generator[None]:
-    doc = get_document(request)
     with doc.div(classes="badge"):
         if verified:
             doc.attr("class", "badge-success")

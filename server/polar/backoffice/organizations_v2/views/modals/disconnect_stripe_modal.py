@@ -7,8 +7,6 @@ from polar.backoffice.components import button, modal
 from polar.backoffice.organizations.forms import DisconnectStripeAccountForm
 from polar.models import Account
 from polar.backoffice.document import get_document
-
-
 class DisconnectStripeModal:
     def __init__(
         self,
@@ -22,9 +20,6 @@ class DisconnectStripeModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-
-        
-        doc = get_document(request)
         form_data = {
             "stripe_account_id": "",
             "reason": "",

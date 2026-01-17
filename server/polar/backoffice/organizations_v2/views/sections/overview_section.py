@@ -10,8 +10,6 @@ from polar.models import Organization
 
 from ....components import card, metric_card
 from ....components._metric_card import Variant
-
-
 class OverviewSection:
     """Render the overview section with review status cards."""
 

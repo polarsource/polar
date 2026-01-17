@@ -122,8 +122,6 @@ def organization_badge(organization: Organization) -> Generator[None]:
             doc.attr("class", "badge-secondary")
         doc.text(organization.status.get_display_name())
     yield
-
-
 class OrganizationStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
@@ -134,8 +132,6 @@ class OrganizationStatusColumn(
             with organization_badge(item):
             pass
         return None
-
-
 class NextReviewThresholdColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
@@ -149,8 +145,6 @@ class NextReviewThresholdColumn(
             format_currency(item.next_review_threshold / 100, "USD", locale="en_US")
         )
         return None
-
-
 class DaysInStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
@@ -170,8 +164,6 @@ class DaysInStatusColumn(
         else:
             doc.text(f"{days} days since review")
         return None
-
-
 class AccountTypeDescriptionListAttrItem(
     description_list.DescriptionListAttrItem[Account]
 ):
@@ -236,7 +228,6 @@ async def get_payment_statistics(
     transfer_sum = await transaction_service.get_transactions_sum(
         session, account_id, type=TransactionType.balance
     )
-
     return PaymentStatistics(
         payment_count=payment_count,
         p50_risk=p50_risk,
@@ -299,7 +290,6 @@ async def get_setup_verdict_data(
         account_charges_enabled=account_charges_enabled,
         account_payouts_enabled=account_payouts_enabled,
     )
-
     return SetupVerdictData(
         checkout_links_count=checkout_links_count,
         webhooks_count=webhooks_count,
@@ -858,7 +848,6 @@ async def remove_member(
             f"{user_email} has been removed from the organization",
             "success",
         )
-
         return HXRedirectResponse(
             request, request.url_for("organizations:get", id=id), 303
         )
@@ -1078,7 +1067,6 @@ async def change_admin(
             f"Account admin changed to {user_email}",
             "success",
         )
-
         return HXRedirectResponse(
             request, request.url_for("organizations:get", id=id), 303
         )
@@ -1158,7 +1146,6 @@ async def setup_manual_payout(
             f"Manual payout account created for {organization.name}",
             "success",
         )
-
         return HXRedirectResponse(
             request, str(request.url_for("organizations:get", id=id)), 303
         )
@@ -1309,7 +1296,6 @@ async def create_plain_thread(
                         hx_target="#modal",
                     ):
                         pass
-
         return HTMLResponse(str(doc))
 
     except Exception as e:
@@ -1319,12 +1305,9 @@ async def create_plain_thread(
             f"Failed to create Plain thread: {str(e)}",
             "error",
         )
-
         return HXRedirectResponse(
             request, str(request.url_for("organizations:get", id=id)), 303
         )
-
-
 class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
     """A column that displays a download link for a file."""
 
@@ -1343,8 +1326,6 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
                 pass
             doc.text("Download")
         yield
-
-
 class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
     """A column that displays file size with proper formatting."""
 
@@ -1899,7 +1880,6 @@ async def get_plain_search_url(
         raise HTTPException(status_code=404, detail="No admin user found")
 
     search_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/search/?q={admin_user.email}"
-
     return RedirectResponse(url=search_url, status_code=302)
 
 
@@ -1979,7 +1959,6 @@ async def get_create_thread_modal(
                     hx_target="#modal",
                 ):
                     pass
-
     return HTMLResponse(str(doc))
 
 

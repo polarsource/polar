@@ -4,8 +4,6 @@ from collections.abc import Generator
 from polar.backoffice.components import confirmation_dialog
 from polar.backoffice.document import get_document
 from polar.models import User
-
-
 class DeleteIdentityVerificationModal:
     def __init__(self, user: User, form_action: str):
         self.user = user
@@ -13,7 +11,6 @@ class DeleteIdentityVerificationModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-        doc = get_document(request)
         with confirmation_dialog(
             "Delete Identity Verification",
             "Are you sure you want to delete this user's identity verification? "

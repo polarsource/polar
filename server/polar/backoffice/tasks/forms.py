@@ -42,8 +42,6 @@ def _get_function_arguments(
                 yield from _get_function_arguments(type_hints_args[0].__init__)
                 return
         yield key, type_hint
-
-
 class EnqueueTaskFormBase(forms.BaseForm):
     task: str
 
@@ -73,7 +71,6 @@ def build_enqueue_task_form_class(
             if type_hint is bool:
                 default = False
             field_definitions[key] = (type_hint, default)
-
     return create_model(
         "EnqueueTaskForm",
         **field_definitions,  # type: ignore

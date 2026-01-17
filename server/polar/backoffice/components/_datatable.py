@@ -18,8 +18,6 @@ from polar.kit.sorting import Sorting
 from .. import formatters
 from ._clipboard_button import clipboard_button
 from polar.backoffice.document import get_document
-
-
 class DatatableColumn[M]:
     """Base class for datatable columns.
 
@@ -58,8 +56,6 @@ class DatatableColumn[M]:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(label={self.label!r})"
-
-
 class DatatableSortingColumn[M, PE: StrEnum](DatatableColumn[M]):
     """A datatable column that supports sorting functionality.
 
@@ -82,8 +78,6 @@ class DatatableSortingColumn[M, PE: StrEnum](DatatableColumn[M]):
         """
         self.sorting = sorting
         super().__init__(label)
-
-
 class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
     """A datatable column that displays an attribute value from the model.
 
@@ -209,8 +203,6 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         return None
 
     def get_raw_value(self, item: M) -> Any:
-
-        
         """Extract the raw attribute value from the model item.
 
         Args:
@@ -225,8 +217,6 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         return attrgetter(self.attr)(item)
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted string value for display.
 
         This method can be overridden in subclasses to provide custom formatting.
@@ -247,8 +237,6 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r})"
-
-
 class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays datetime attributes with proper formatting.
 
@@ -262,8 +250,6 @@ class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted datetime string for display.
 
         Args:
@@ -279,8 +265,6 @@ class DatatableDateTimeColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         if value is None:
             return None
         return formatters.datetime(value)
-
-
 class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays currency values with proper formatting.
 
@@ -294,8 +278,6 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted currency string for display.
 
         Args:
@@ -310,8 +292,6 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         return formatters.currency(value, self.get_currency(item))
 
     def get_currency(self, item: M) -> str:
-
-        
         """Get the currency code for formatting.
 
         By default, tries to extract the attribute 'currency' from the item,
@@ -325,8 +305,6 @@ class DatatableCurrencyColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
             The currency code.
         """
         return getattr(item, "currency", "usd")
-
-
 class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """A datatable column that displays boolean attributes with icons.
 
@@ -340,8 +318,6 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
     """
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-
-        
         """Render the boolean value as an icon.
 
         Args:
@@ -358,10 +334,7 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
             else:
                 with doc.div(classes="icon-x"):
                     pass
-
         return None
-
-
 class DatatableAction[M](Protocol):
     """Protocol defining the interface for datatable row actions.
 
@@ -375,8 +348,6 @@ class DatatableAction[M](Protocol):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
-
-        
         """Render the action element for a specific item.
 
         Args:
@@ -386,8 +357,6 @@ class DatatableAction[M](Protocol):
         ...
 
     def is_hidden(self, request: Request, item: M) -> bool:
-
-        
         """Determine if this action should be hidden for a specific item.
 
         Args:
@@ -398,8 +367,6 @@ class DatatableAction[M](Protocol):
             True if the action should be hidden, False otherwise.
         """
         ...
-
-
 class DatatableActionLink[M](DatatableAction[M]):
     """A datatable action that renders as a navigation link.
 
@@ -431,8 +398,6 @@ class DatatableActionLink[M](DatatableAction[M]):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
-
-        
         """Render the action as a link.
 
         Args:
@@ -449,16 +414,12 @@ class DatatableActionLink[M](DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
-
-        
         """Check if the action should be hidden.
 
         Returns:
             Always False - link actions are never hidden by default.
         """
         return False
-
-
 class DatatableActionHTMX[M](DatatableAction[M]):
     """A datatable action that performs an HTMX request.
 
@@ -493,8 +454,6 @@ class DatatableActionHTMX[M](DatatableAction[M]):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
-
-        
         """Render the action as an HTMX button.
 
         Args:
@@ -511,8 +470,6 @@ class DatatableActionHTMX[M](DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
-
-        
         """Check if the action should be hidden for a specific item.
 
         Args:
@@ -525,8 +482,6 @@ class DatatableActionHTMX[M](DatatableAction[M]):
         if self.hidden is None:
             return False
         return self.hidden(request, item)
-
-
 class DatatableActionsColumn[M](DatatableColumn[M]):
     """A datatable column that displays a dropdown menu of actions for each row.
 
@@ -549,8 +504,6 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
         super().__init__(label)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-
-        
         """Render the actions dropdown for a specific item.
 
         Args:
@@ -583,15 +536,10 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
                 with doc.li():
                     with action.render(request, item):
                         pass
-
         return None
-
-
 class SortWay(Enum):
     ASC = auto()
     DESC = auto()
-
-
 class Datatable[M, PE: StrEnum]:
     """A complete datatable component with sorting and customizable columns.
 
@@ -625,9 +573,7 @@ class Datatable[M, PE: StrEnum]:
         *,
         sorting: list[Sorting[PE]] | None = None,
     ) -> Generator[None]:
-
-        
-    """Render the complete datatable with headers, data, and sorting controls.
+        """Render the complete datatable with headers, data, and sorting controls.
 
         Args:
             request: The FastAPI request object for URL generation.
@@ -694,7 +640,6 @@ class Datatable[M, PE: StrEnum]:
         for field, is_desc in sorting:
             if field == column.sorting:
                 return SortWay.DESC if is_desc else SortWay.ASC
-
         return None
 
     def _get_column_sort_url(
@@ -713,7 +658,6 @@ class Datatable[M, PE: StrEnum]:
         else:
             if column.sorting is not None:
                 url = url.include_query_params(sorting=column.sorting.value)
-
         return url
 
     def __repr__(self) -> str:

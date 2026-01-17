@@ -21,8 +21,6 @@ from polar.backoffice.document import get_document
     status_badge,
     tab_nav,
 )
-
-
 class OrganizationListView:
     """Render the enhanced organization list view."""
 
@@ -85,7 +83,6 @@ class OrganizationListView:
         # High risk score
         if org.review and org.review.risk_score and org.review.risk_score >= 80:
             return True
-
         return False
 
     @contextlib.contextmanager

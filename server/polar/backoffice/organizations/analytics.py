@@ -18,8 +18,6 @@ from polar.models import (
 from polar.models.payment import PaymentStatus
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
-
-
 class PaymentAnalyticsService:
     """Service for computing payment statistics and analytics."""
 
@@ -59,7 +57,6 @@ class PaymentAnalyticsService:
             )
         )
         count, total_amount = stats_result.first() or (0, 0)
-
         return count, total_amount, risk_scores
 
     async def get_refund_stats(self, organization_id: UUID4) -> tuple[int, int]:
@@ -96,7 +93,6 @@ class PaymentAnalyticsService:
         if p90_index >= n:
             p90_index = n - 1
         p90_risk = sorted_scores[p90_index]
-
         return p50_risk, p90_risk
 
     @staticmethod
@@ -108,8 +104,6 @@ class PaymentAnalyticsService:
             return "yellow"
         else:
             return "red"
-
-
 class OrganizationSetupAnalyticsService:
     """Service for computing organization setup statistics and analytics."""
 
@@ -187,7 +181,6 @@ class OrganizationSetupAnalyticsService:
 
         charges_enabled = getattr(organization.account, "charges_enabled", False)
         payouts_enabled = getattr(organization.account, "payouts_enabled", False)
-
         return charges_enabled, payouts_enabled
 
     @staticmethod

@@ -17,8 +17,6 @@ from ...components import (
     status_badge,
     tab_nav,
 )
-
-
 class OrganizationDetailView:
     """Render the organization detail view with horizontal section tabs."""
 

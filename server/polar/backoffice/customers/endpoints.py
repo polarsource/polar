@@ -411,5 +411,4 @@ async def generate_portal_link_modal(
                     with doc.form(method="dialog"):
                         with button(variant="primary"):
                             doc.text("Done")
-
     return HTMLResponse(str(doc))

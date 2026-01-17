@@ -7,8 +7,6 @@ from polar.backoffice.components import button, modal
 from polar.backoffice.organizations.forms import DeleteStripeAccountForm
 from polar.models import Account
 from polar.backoffice.document import get_document
-
-
 class DeleteStripeModal:
     def __init__(
         self,
@@ -22,9 +20,6 @@ class DeleteStripeModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-
-        
-        doc = get_document(request)
         form_data = {
             "stripe_account_id": "",
             "reason": "",

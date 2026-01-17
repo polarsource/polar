@@ -10,8 +10,6 @@ from polar.models.order import OrderStatus
 from polar.order.sorting import OrderSortProperty
 
 from ..components import datatable
-
-
 class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
     def __init__(self, label: str) -> None:
         super().__init__(label, sorting=OrderSortProperty.status)

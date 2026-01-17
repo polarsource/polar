@@ -4,8 +4,6 @@ from typing import overload
 
 from fastapi import Request
 from polar.backoffice.document import get_document
-
-
 class NavigationItem:
     """A navigation menu item that can be a link or a collapsible group of items.
 
@@ -71,8 +69,6 @@ class NavigationItem:
 
     @contextlib.contextmanager
     def render(self, request: Request, active_route_name: str) -> Generator[None]:
-
-        
         """Render the navigation item as HTML.
 
         Generates either a simple link item or an expandable details/summary

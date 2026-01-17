@@ -7,8 +7,6 @@ from polar.backoffice.organizations.schemas import PaymentStatistics
 
 from ...components import button
 from ..forms import ApproveOrganizationForm, UnderReviewOrganizationForm
-
-
 class PaymentVerdict:
     """Payment risk assessment component for 3-month period."""
 
@@ -34,8 +32,6 @@ class PaymentVerdict:
 
     @property
     def refunds_ratio(self) -> float:
-
-        
         """Calculate refund ratio."""
         if self.payment_count == 0:
             return 0
@@ -43,8 +39,6 @@ class PaymentVerdict:
 
     @property
     def refunds_amount_ratio(self) -> float:
-
-        
         """Calculate refund amount ratio."""
         if self.total_payment_amount == 0:
             return 0
@@ -78,8 +72,6 @@ class PaymentVerdict:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-
-        
         """Render the payment verdict component."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title"):

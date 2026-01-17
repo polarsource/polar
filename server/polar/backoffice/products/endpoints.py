@@ -62,8 +62,6 @@ def _format_price_display(price: ProductPrice) -> str:
     elif is_metered_price(price):
         return f"{price.meter.name}: {formatters.currency(price.unit_amount, price.price_currency, decimal_quantization=False)} / unit"
     return "N/A"
-
-
 class OrganizationColumn(datatable.DatatableAttrColumn[Product, ProductSortProperty]):
     def __init__(self) -> None:
         super().__init__("organization.name", "Organization")

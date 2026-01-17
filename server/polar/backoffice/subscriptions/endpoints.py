@@ -55,8 +55,6 @@ class StatusColumn(
             with subscription_status_badge(item):
             pass
         return None
-
-
 class OrganizationColumn(
     datatable.DatatableAttrColumn[Subscription, SubscriptionSortProperty]
 ):

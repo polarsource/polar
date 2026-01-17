@@ -16,5 +16,4 @@ def static_url(request: Request, path: str) -> str:
                     version = route.app.get_file_version(path)
                     return f"{base_url}?v={version}"
                 break
-
     return base_url

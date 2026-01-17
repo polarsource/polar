@@ -16,8 +16,6 @@ def _get_logfire_url(organization_id: UUID) -> str:
         "last": "30d",
     }
     return f"https://logfire-us.pydantic.dev/polar/production?{urllib.parse.urlencode(params)}"
-
-
 class SetupVerdict:
     """Component for evaluating organization integration setup status."""
 
@@ -55,8 +53,6 @@ class SetupVerdict:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-
-        
         """Render the setup verdict component."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title"):

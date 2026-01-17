@@ -3,8 +3,6 @@ from functools import lru_cache
 from pathlib import Path
 
 from starlette.staticfiles import StaticFiles
-
-
 class VersionedStaticFiles(StaticFiles):
     """StaticFiles subclass for versioned static files."""
 

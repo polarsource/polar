@@ -67,14 +67,10 @@ def _getter(
 class RowError:
     index: int
     message: str
-
-
 class OrdersImportError(PolarError):
     def __init__(self, errors: list[RowError]) -> None:
         self.errors = errors
         super().__init__("Errors encountered during import")
-
-
 class DecodedUploadFile:
     def __init__(self, file: UploadFile, encoding: str = "utf-8") -> None:
         self.file = file

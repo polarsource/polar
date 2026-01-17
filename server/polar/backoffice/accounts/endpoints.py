@@ -38,8 +38,6 @@ def identity_verification_status_badge(
             doc.attr("class", "badge-neutral")
         doc.text(status.get_display_name())
     yield
-
-
 class IdentityVerificationStatusColumn(
     datatable.DatatableAttrColumn[User, UserSortProperty]
 ):
@@ -49,8 +47,6 @@ class IdentityVerificationStatusColumn(
         with identity_verification_status_badge(doc, status):
             pass
         return None
-
-
 class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):

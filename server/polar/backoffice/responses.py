@@ -9,8 +9,6 @@ from starlette.types import Receive, Scope, Send
 
 from .toast import render_toasts
 from polar.backoffice.document import get_document
-
-
 class TagResponse(HTMLResponse):
     """
     HTML response that uses markupflow for rendering.
@@ -48,8 +46,6 @@ class TagResponse(HTMLResponse):
         self.body = doc.render().encode("utf-8")
         self.init_headers(self.initial_headers)
         await super().__call__(scope, receive, send)
-
-
 class HXRedirectResponse(RedirectResponse):
     def __init__(
         self,

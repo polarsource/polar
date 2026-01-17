@@ -11,8 +11,6 @@ from fastapi.datastructures import URL
 from .. import formatters
 from ._clipboard_button import clipboard_button
 from polar.backoffice.document import get_document
-
-
 class DescriptionListItem[M]:
     """Base class for description list items.
 
@@ -51,8 +49,6 @@ class DescriptionListItem[M]:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(label={self.label!r})"
-
-
 class DescriptionListAttrItem[M](DescriptionListItem[M]):
     """A description list item that displays an attribute value from the model.
 
@@ -80,8 +76,6 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
         super().__init__(label or attr)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-
-        
         """Render the attribute value as a description list item.
 
         Args:
@@ -97,8 +91,6 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
         return None
 
     def get_raw_value(self, item: M) -> Any | None:
-
-        
         """Extract the raw attribute value from the data object.
 
         Args:
@@ -113,8 +105,6 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
         return attrgetter(self.attr)(item)
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted string value for display.
 
         This method can be overridden in subclasses to provide custom formatting.
@@ -135,8 +125,6 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, clipboard={self.clipboard})"
-
-
 class DescriptionListDateTimeItem[M](DescriptionListAttrItem[M]):
     """A description list item that displays datetime attributes with proper formatting.
 
@@ -149,8 +137,6 @@ class DescriptionListDateTimeItem[M](DescriptionListAttrItem[M]):
     """
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted datetime string for display.
 
         Args:
@@ -166,8 +152,6 @@ class DescriptionListDateTimeItem[M](DescriptionListAttrItem[M]):
         if value is None:
             return None
         return formatters.datetime(value)
-
-
 class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
     """A description list item that generates a link.
 
@@ -198,8 +182,6 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
             self.href_getter = href_getter
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-
-        
         """Render the attribute value as an external link.
 
         Args:
@@ -225,8 +207,6 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, external={self.external!r})"
-
-
 class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     """A description list item that displays currency values with proper formatting.
 
@@ -239,8 +219,6 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     """
 
     def get_value(self, item: M) -> str | None:
-
-        
         """Get the formatted currency string for display.
 
         Args:
@@ -255,8 +233,6 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
         return formatters.currency(value, self.get_currency(item))
 
     def get_currency(self, item: M) -> str:
-
-        
         """Get the currency code for formatting.
 
         By default, tries to extract the attribute 'currency' from the item,
@@ -270,8 +246,6 @@ class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
             The currency code.
         """
         return getattr(item, "currency", "usd")
-
-
 class DescriptionListSocialsItem[M](DescriptionListItem[M]):
     """A description list item that displays social links with platform icons.
 
@@ -283,8 +257,6 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
     """
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-
-        
         """Render social links with platform icons and external links.
 
         Args:
@@ -355,10 +327,7 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
             if not socials and not twitter_username:
                 with doc.span(classes="text-gray-500 italic"):
                     doc.text("No social links available")
-
         return None
-
-
 class DescriptionList[M]:
     """A complete description list component for displaying structured data.
 
@@ -379,8 +348,6 @@ class DescriptionList[M]:
 
     @contextlib.contextmanager
     def render(self, request: Request, data: M) -> Generator[None]:
-
-        
         """Render the complete description list with all items.
 
         Args:

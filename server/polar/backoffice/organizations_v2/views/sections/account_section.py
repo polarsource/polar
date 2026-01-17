@@ -36,8 +36,6 @@ def _format_date(dt: datetime | None) -> str:
     if dt is None:
         return "—"
     return dt.strftime("%Y-%m-%d %H:%M")
-
-
 class AccountSection:
     """Render the account section with payment details."""
 
@@ -54,8 +52,6 @@ class AccountSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
-
-        
         """Render the account section."""
 
         with doc.div(classes="space-y-6"):

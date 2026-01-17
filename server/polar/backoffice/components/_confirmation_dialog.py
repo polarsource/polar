@@ -6,8 +6,6 @@ from ._button import Variant as ButtonVariant
 from ._button import button
 
 Variant = Literal["info", "success", "warning", "error"]
-
-
 class VariantConfig(TypedDict):
     icon: str
     button: ButtonVariant

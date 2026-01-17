@@ -545,7 +545,6 @@ async def approve_organization(
     await organization_service.confirm_organization_reviewed(
         session, organization, next_review_threshold
     )
-
     return HXRedirectResponse(
         request,
         str(
@@ -578,7 +577,6 @@ async def deny_dialog(
     if request.method == "POST":
         # Deny the organization
         await organization_service.deny_organization(session, organization)
-
         return HXRedirectResponse(
             request,
             str(
@@ -615,7 +613,6 @@ async def deny_dialog(
                 ):
                     with button(variant="error", type="submit"):
                         doc.text("Deny Organization")
-
     return None
 
 
@@ -649,7 +646,6 @@ async def approve_denied_dialog(
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
         )
-
         return HXRedirectResponse(
             request,
             str(
@@ -703,7 +699,6 @@ async def approve_denied_dialog(
                         doc.text("Cancel")
                 with button(variant="primary", type="submit"):
                     doc.text("Approve Organization")
-
     return None
 
 
@@ -740,7 +735,6 @@ async def unblock_approve_dialog(
         await organization_service.confirm_organization_reviewed(
             session, organization, threshold
         )
-
         return HXRedirectResponse(
             request,
             str(
@@ -794,7 +788,6 @@ async def unblock_approve_dialog(
                         doc.text("Cancel")
                 with button(variant="primary", type="submit"):
                     doc.text("Unblock & Approve")
-
     return None
 
 
@@ -823,7 +816,6 @@ async def block_dialog(
         from datetime import UTC, datetime
 
         organization.blocked_at = datetime.now(UTC)
-
         return HXRedirectResponse(
             request,
             str(
@@ -871,7 +863,6 @@ async def block_dialog(
                 ):
                     with button(variant="error", type="submit"):
                         doc.text("Block Organization")
-
     return None
 
 
@@ -970,7 +961,6 @@ async def edit_organization(
                     variant="primary",
                 ):
                     doc.text("Save Changes")
-
     return None
 
 
@@ -1054,7 +1044,6 @@ async def edit_details(
                     variant="primary",
                 ):
                     doc.text("Save Changes")
-
     return None
 
 
@@ -1146,7 +1135,6 @@ async def edit_order_settings(
                         doc.text("Cancel")
                 with button(type="submit", variant="primary"):
                     doc.text("Save Changes")
-
     return None
 
 
@@ -1309,7 +1297,6 @@ async def edit_socials(
                     variant="primary",
                 ):
                     doc.text("Save Changes")
-
     return None
 
 
@@ -1417,7 +1404,6 @@ async def edit_features(
                     variant="primary",
                 ):
                     doc.text("Save Changes")
-
     return None
 
 
@@ -1489,7 +1475,6 @@ async def add_note(
                     variant="primary",
                 ):
                     doc.text("Save Notes")
-
     return None
 
 
@@ -1561,7 +1546,6 @@ async def edit_note(
                     variant="primary",
                 ):
                     doc.text("Save Notes")
-
     return None
 
 
@@ -1649,7 +1633,6 @@ async def impersonate_user(
         httponly=False,  # JS-readable for UI banner
         samesite="lax",
     )
-
     return response
 
 
@@ -1752,7 +1735,6 @@ async def delete_dialog(
 
     if request.method == "POST":
         await organization_service.delete(session, organization)
-
         return HXRedirectResponse(
             request,
             str(request.url_for("organizations-v2:list")),
@@ -1795,7 +1777,6 @@ async def delete_dialog(
                 ):
                     with button(variant="error", type="submit"):
                         doc.text("Delete Organization")
-
     return None
 
 
@@ -1866,7 +1847,6 @@ async def setup_account(
                     ),
                 ):
                     doc.text("Create Manual Account")
-
     return None
 
 
@@ -1974,7 +1954,6 @@ async def disconnect_stripe_account(
     modal_view = DisconnectStripeModal(account, form_action, validation_error)
     with modal_view.render():
         pass
-
     return None
 
 
@@ -2075,7 +2054,6 @@ async def delete_stripe_account(
     modal_view = DeleteStripeModal(account, form_action, validation_error)
     with modal_view.render():
         pass
-
     return None
 
 
@@ -2167,7 +2145,6 @@ async def grant_credit(
             f"Granted ${amount_dollars:.2f} in fee credits",
             "success",
         )
-
         return HXRedirectResponse(
             request,
             str(
@@ -2254,7 +2231,6 @@ async def grant_credit(
                         doc.text("Cancel")
                 with button(variant="primary", type="submit"):
                     doc.text("Grant Credit")
-
     return None
 
 
@@ -2303,7 +2279,6 @@ async def revoke_credit(
             await add_toast(request, "Credit has been revoked", "success")
         except CreditAlreadyRevokedError:
             await add_toast(request, "Credit was already revoked", "warning")
-
         return HXRedirectResponse(
             request,
             str(
@@ -2355,7 +2330,6 @@ async def revoke_credit(
                 ),
             ):
                 doc.text("Revoke Credit")
-
     return None
 
 

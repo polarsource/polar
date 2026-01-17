@@ -7,6 +7,7 @@ from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
+from polar.backoffice.document import get_document
 from polar.benefit import sorting
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.sorting import BenefitSortProperty
@@ -25,25 +26,18 @@ from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
-from polar.backoffice.document import get_document
 
 router = APIRouter()
 
 
 class BenefitTypeColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
     def get_value(self, item: Benefit) -> str | None:
-
-        
-        doc = get_document(request)
-            return item.type.get_display_name()
+        return item.type.get_display_name()
 
 
 class BenefitTypeDescriptionListItem(description_list.DescriptionListAttrItem[Benefit]):
     def get_value(self, item: Benefit) -> str | None:
-
-        
-        doc = get_document(request)
-            return item.type.get_display_name()
+        return item.type.get_display_name()
 
 
 class OrganizationColumn(datatable.DatatableAttrColumn[Benefit, BenefitSortProperty]):
@@ -88,6 +82,7 @@ async def list(
         statement, limit=pagination.limit, page=pagination.page
     )
 
+    doc = get_document(request)
     with layout(
         request,
         [
@@ -97,7 +92,7 @@ async def list(
     ):
         with doc.div(classes="flex flex-col gap-4"):
             with doc.h1(classes="text-4xl"):
-                doc.text("Benefits")
+                doc.doc.text("Benefits")
 
             # Filters
             with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
@@ -150,8 +145,6 @@ async def list(
 async def _get_github_repository_invitations(
     benefit: Benefit,
 ) -> builtins.list[dict[str, Any]]:
-
-    
     """Get pending GitHub repository invitations for a benefit."""
     if benefit.type != BenefitType.github_repository:
         return []
@@ -201,9 +194,7 @@ async def get(
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-
-    
-    doc = get_document(request)    repository = BenefitRepository.from_session(session)
+    repository = BenefitRepository.from_session(session)
     benefit = await repository.get_by_id(id)
 
     if benefit is None:

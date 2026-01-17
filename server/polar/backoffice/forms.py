@@ -39,8 +39,6 @@ def _get_data_value(
     if isinstance(data, dict):
         return data.get(key)
     return getattr(data, key, None)
-
-
 class FormField:
     """Base class for all form field types.
 
@@ -77,8 +75,6 @@ class FormField:
             NotImplementedError: This method must be implemented by subclasses.
         """
         raise NotImplementedError()
-
-
 class SkipField:
     """Marker class used as metadata to indicate a field should be skipped during form rendering.
 
@@ -94,8 +90,6 @@ class SkipField:
     """
 
     ...
-
-
 class InputField(FormField):
     """A standard HTML input field with configurable type and attributes.
 
@@ -160,8 +154,6 @@ class InputField(FormField):
             with doc.div(classes="label text-error"):
                 doc.text(error["msg"])
         yield
-
-
 class TextAreaField(FormField):
     """A textarea input field for multi-line text.
 
@@ -227,8 +219,6 @@ class TextAreaField(FormField):
             with doc.div(classes="label text-error"):
                 doc.text(error["msg"])
         yield
-
-
 class CheckboxField(FormField):
     """A checkbox input field for boolean values.
 
@@ -286,8 +276,6 @@ class CheckboxField(FormField):
             with doc.div(classes="label text-error"):
                 doc.text(error["msg"])
         yield
-
-
 class CurrencyField(InputField):
     """A specialized input field for currency values stored as cents.
 
@@ -340,8 +328,6 @@ class CurrencyField(InputField):
         ):
             pass
         yield
-
-
 class SelectField(FormField):
     """A dropdown select field with configurable options.
 
@@ -419,8 +405,6 @@ class SelectField(FormField):
                 doc.text(error["msg"])
 
         yield
-
-
 class SubFormField(FormField):
     """A nested sub-form field for embedding another BaseForm.
 
@@ -501,7 +485,6 @@ def _get_input_field(field: FieldInfo) -> FormField:
                 return SelectField(
                     options=[(item.value, item.name) for item in field.annotation]
                 )
-
     return InputField()
 
 
@@ -524,10 +507,7 @@ def _parse_form_data(form_data: FormData) -> dict[str, Any]:
 
         # Set the final value
         current[parts[-1]] = value
-
     return result
-
-
 class BaseForm(BaseModel):
     """Base class for creating form components from Pydantic models.
 
@@ -626,7 +606,6 @@ class BaseForm(BaseModel):
     ) -> Self:
 
         
-    doc = get_document(request)
             data = _parse_form_data(obj)
         return cls.model_validate(
             data,

@@ -10,7 +10,6 @@ from ..static_urls import static_url
 
 @contextlib.contextmanager
 def title(title_parts: Sequence[str]) -> Generator[None]:
-    doc = get_document(request)
     with doc.title(id="page_title", hx_swap_oob="true"):
         doc.text(
             " · ".join((*title_parts, "Polar Backoffice")),

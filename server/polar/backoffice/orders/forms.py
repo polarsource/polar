@@ -7,8 +7,6 @@ from polar.kit.schemas import EmptyStrToNone
 from polar.models.refund import RefundReason
 
 from .. import forms
-
-
 class RefundForm(forms.BaseForm):
     reason: Annotated[RefundReason, Field(title="Refund reason")]
     amount: Annotated[Decimal, Field(title="Amount to refund", gt=0, decimal_places=2)]

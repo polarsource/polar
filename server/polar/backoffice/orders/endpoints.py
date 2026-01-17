@@ -44,8 +44,6 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
             with order_status_badge(item.status):
             pass
         return None
-
-
 class TaxRateItem(description_list.DescriptionListItem[Order]):
     def __init__(self, rate: float):
         super().__init__("Tax Rate")
@@ -57,8 +55,6 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
         doc = get_document(request)
         doc.text(f"{self.rate:.2f}%")
         return None
-
-
 class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
     def get_value(self, item: Order) -> Any:
 
@@ -68,8 +64,6 @@ class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
         if value is None:
             return None
         return formatters.tax_id(value)
-
-
 class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def __init__(self, url: str | None):
         super().__init__("Invoice PDF")

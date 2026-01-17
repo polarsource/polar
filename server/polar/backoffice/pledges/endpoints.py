@@ -13,11 +13,7 @@ from ..components import datatable, input
 from ..layout import layout
 
 router = APIRouter()
-
-
 class PledgeSortProperty(StrEnum): ...
-
-
 class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
 
@@ -35,7 +31,6 @@ class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
 
 @router.get("/", name="pledges:list")
 async def list(
-    doc = get_document(request)
     request: Request,
     issue_reference: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
@@ -79,7 +74,6 @@ async def list(
 
 @router.post("/search", name="pledges:search")
 async def search(
-    doc = get_document(request)
     request: Request,
     issue_reference: Annotated[str, Form()],
     session: AsyncSession = Depends(get_db_session),

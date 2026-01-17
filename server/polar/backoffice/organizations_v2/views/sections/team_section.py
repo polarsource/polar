@@ -9,8 +9,6 @@ from polar.models import Organization, User
 
 from ....components import action_bar, button, card
 from polar.backoffice.document import get_document
-
-
 class TeamSection:
     """Render the team section with member management."""
 
@@ -20,8 +18,6 @@ class TeamSection:
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
-
-        
         """Render the team section."""
 
         with doc.div(classes="space-y-6"):

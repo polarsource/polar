@@ -13,8 +13,6 @@ from polar.kit.schemas import HttpUrlToStr
 from polar.organization.schemas import NameInput, OrganizationFeatureSettings, SlugInput
 
 from .. import forms
-
-
 class ApproveOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["approve"], forms.SkipField]
     next_review_threshold: Annotated[
@@ -24,20 +22,12 @@ class ApproveOrganizationForm(forms.BaseForm):
         forms.CurrencyValidator,
         Field(title="Next Review Threshold"),
     ]
-
-
 class DenyOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["deny"], forms.SkipField]
-
-
 class UnderReviewOrganizationForm(forms.BaseForm):
     action: Annotated[Literal["under_review"], forms.SkipField]
-
-
 class ApproveOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["approve_appeal"], forms.SkipField]
-
-
 class DenyOrganizationAppealForm(forms.BaseForm):
     action: Annotated[Literal["deny_appeal"], forms.SkipField]
 
@@ -54,8 +44,6 @@ OrganizationStatusForm = Annotated[
 OrganizationStatusFormAdapter: TypeAdapter[OrganizationStatusForm] = TypeAdapter(
     OrganizationStatusForm
 )
-
-
 class UpdateOrganizationBasicForm(forms.BaseForm):
     """Form for editing basic organization settings (name, slug, invoice prefix)."""
 
@@ -67,8 +55,6 @@ class UpdateOrganizationBasicForm(forms.BaseForm):
             to_upper=True, min_length=3, pattern=r"^[a-zA-Z0-9\-]+[a-zA-Z0-9]$"
         ),
     ]
-
-
 class UpdateOrganizationForm(forms.BaseForm):
     """Form for editing organization settings including feature flags."""
 
@@ -85,8 +71,6 @@ class UpdateOrganizationForm(forms.BaseForm):
         forms.SubFormField(OrganizationFeatureSettings),
         Field(default=None, title="Feature Flags"),
     ]
-
-
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):
     about: Annotated[
         str,
@@ -115,8 +99,6 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
             description="How the organization will integrate and use Polar",
         ),
     ]
-
-
 class UpdateOrganizationDetailsForm(forms.BaseForm):
     website: Annotated[
         HttpUrlToStr | None,
@@ -128,8 +110,6 @@ class UpdateOrganizationDetailsForm(forms.BaseForm):
         ),
     ]
     details: Annotated[UpdateOrganizationDetailsDataForm, Field(title="Details")]
-
-
 class UpdateOrganizationInternalNotesForm(forms.BaseForm):
     internal_notes: Annotated[
         str | None,
@@ -140,8 +120,6 @@ class UpdateOrganizationInternalNotesForm(forms.BaseForm):
             description="Internal notes about this organization (admin only)",
         ),
     ]
-
-
 class UpdateOrganizationSocialsForm(forms.BaseForm):
     """Form for editing organization social media links."""
 
@@ -235,8 +213,6 @@ class UpdateOrganizationSocialsForm(forms.BaseForm):
             description="Other social media or website URL",
         ),
     ]
-
-
 class OrganizationOrdersImportForm(forms.BaseForm):
     invoice_number_prefix: Annotated[
         str,
@@ -258,8 +234,6 @@ class OrganizationOrdersImportForm(forms.BaseForm):
             ),
         ),
     ]
-
-
 class DisconnectStripeAccountForm(forms.BaseForm):
     stripe_account_id: Annotated[
         str,
@@ -275,8 +249,6 @@ class DisconnectStripeAccountForm(forms.BaseForm):
             description="Explain why this Stripe account is being disconnected",
         ),
     ]
-
-
 class DeleteStripeAccountForm(forms.BaseForm):
     stripe_account_id: Annotated[
         str,

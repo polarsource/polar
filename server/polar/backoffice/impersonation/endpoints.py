@@ -115,7 +115,6 @@ async def start_impersonation(
         httponly=False,  # JS-readable
         samesite="lax",
     )
-
     return response
 
 
@@ -184,5 +183,4 @@ async def end_impersonation(
         path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
     )
-
     return response

@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue\",status!='skipped',task_name=~\"$task_name\"}[5m])) by (task_name)",
+          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue|\",status!='skipped',task_name=~\"$task_name\"}[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -613,7 +613,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.50, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (le))",
           "legendFormat": "p50",
           "refId": "A"
         },
@@ -622,7 +622,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (le))",
           "legendFormat": "p95",
           "refId": "B"
         },
@@ -631,7 +631,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.99, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(polar_task_duration_seconds_bucket{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (le))",
           "legendFormat": "p99",
           "refId": "C"
         }
@@ -720,7 +720,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue\",status=\"failure\",task_name=~\"$task_name\"}[5m])) by (task_name) / sum(rate(polar_task_executions_total{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (task_name)",
+          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue|\",status=\"failure\",task_name=~\"$task_name\"}[5m])) by (task_name) / sum(rate(polar_task_executions_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -809,7 +809,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_retries_total{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (task_name)",
+          "expr": "sum(rate(polar_task_retries_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -898,7 +898,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_debounced_total{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (task_name)",
+          "expr": "sum(rate(polar_task_debounced_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (task_name)",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -987,7 +987,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(1.0, sum(rate(polar_task_debounce_delay_seconds_bucket{queue=~\"$queue\",task_name=~\"$task_name\"}[5m])) by (le, task_name))",
+          "expr": "histogram_quantile(1.0, sum(rate(polar_task_debounce_delay_seconds_bucket{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m])) by (le, task_name))",
           "legendFormat": "{{task_name}}",
           "refId": "A"
         }
@@ -1046,7 +1046,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue\",task_name=~\"$task_name\"}[5m]))",
+          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m]))",
           "legendFormat": "Total",
           "refId": "A"
         }
@@ -1113,7 +1113,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue\",status=\"failure\",task_name=~\"$task_name\"}[5m])) / sum(rate(polar_task_executions_total{queue=~\"$queue\",task_name=~\"$task_name\"}[5m]))",
+          "expr": "sum(rate(polar_task_executions_total{queue=~\"$queue|\",status=\"failure\",task_name=~\"$task_name\"}[5m])) / sum(rate(polar_task_executions_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[5m]))",
           "legendFormat": "Error Rate",
           "refId": "A"
         }
@@ -1173,7 +1173,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(increase(polar_task_executions_total{queue=~\"$queue\",status=\"success\",task_name=~\"$task_name\"}[24h]))",
+          "expr": "sum(increase(polar_task_executions_total{queue=~\"$queue|\",status=\"success\",task_name=~\"$task_name\"}[24h]))",
           "legendFormat": "Success",
           "refId": "A"
         }
@@ -1241,7 +1241,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(increase(polar_task_retries_total{queue=~\"$queue\",task_name=~\"$task_name\"}[24h]))",
+          "expr": "sum(increase(polar_task_retries_total{queue=~\"$queue|\",task_name=~\"$task_name\"}[24h]))",
           "legendFormat": "Retries",
           "refId": "A"
         }

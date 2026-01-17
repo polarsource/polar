@@ -3,12 +3,12 @@ from uuid import UUID
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import delete
+from sqlalchemy import delete, func, update
 
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion
-from polar.models import OAuthAccount, User
+from polar.models import NotificationRecipient, OAuthAccount, User
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -300,6 +300,7 @@ class UserService:
             update_dict["meta"] = {}
 
         await self._delete_oauth_accounts(session, user)
+        await self._delete_notification_recipients(session, user)
 
         user = await repository.update(user, update_dict=update_dict)
         await repository.soft_delete(user)
@@ -322,6 +323,25 @@ class UserService:
 
         log.info(
             "user.oauth_accounts_deleted",
+            user_id=user.id,
+        )
+
+    async def _delete_notification_recipients(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """Soft-delete all notification recipients for a user."""
+        stmt = (
+            update(NotificationRecipient)
+            .where(NotificationRecipient.user_id == user.id)
+            .where(NotificationRecipient.deleted_at.is_(None))
+            .values(deleted_at=func.now())
+        )
+        await session.execute(stmt)
+
+        log.info(
+            "user.notification_recipients_deleted",
             user_id=user.id,
         )
 

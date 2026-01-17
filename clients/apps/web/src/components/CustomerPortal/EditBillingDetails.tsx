@@ -1,7 +1,7 @@
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
 import { isValidationError } from '@polar-sh/customer-portal/core'
-import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
+import { useCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -20,7 +20,7 @@ import { useForm } from 'react-hook-form'
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
-  const { data: customer, update } = useCustomerPortalCustomer()
+  const { data: customer, update } = useCustomer()
 
   const form = useForm<CustomerPortalCustomerUpdate>({
     defaultValues: {

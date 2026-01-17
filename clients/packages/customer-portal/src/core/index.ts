@@ -22,6 +22,14 @@ export type {
   CustomerPortalCustomer,
   CustomerPortalCustomerUpdate,
   CustomerSubscription,
+  CustomerSubscriptionCancel,
+  CustomerSubscriptionUpdate,
+  SubscriptionChargePreview,
 } from './types'
 
 export { createCustomerMethods } from './customer'
+
+export {
+  createSubscriptionMethods,
+  type ListSubscriptionsParams,
+} from './subscriptions'

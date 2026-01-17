@@ -8,7 +8,11 @@ export {
   type CustomerPortalContextValue,
 } from './context'
 
+export { useCustomer, type UseCustomerOptions } from './useCustomer'
+
 export {
-  useCustomerPortalCustomer,
-  type UseCustomerPortalCustomerOptions,
-} from './useCustomerPortalCustomer'
+  useSubscriptions,
+  type UseSubscriptionsOptions,
+} from './useSubscriptions'
+
+export { useSubscription, type UseSubscriptionOptions } from './useSubscription'

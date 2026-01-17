@@ -6,17 +6,19 @@ from zoneinfo import ZoneInfo
 import logfire
 from sqlalchemy import ColumnElement, FromClause, select, text
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_organization
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import Organization, User
 from polar.models.product import ProductBillingType
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .metrics import (
     METRICS,
     METRICS_POST_COMPUTE,
     METRICS_SQL,
+    METRICS_SQL_SETTLEMENT,
     MetaMetric,
     Metric,
     SQLMetric,
@@ -169,7 +171,131 @@ def _get_filtered_all_metrics(
     return [m for m in METRICS if m.slug in metrics]
 
 
+def _get_required_queries_settlement(
+    metrics: Sequence[str] | None,
+) -> set[MetricQuery] | None:
+    """
+    Determine which query types are needed for settlement currency metrics.
+    Uses settlement metrics for metrics that have settlement versions,
+    regular metrics for everything else.
+    """
+    if metrics is None:
+        return None
+
+    sql_metric_slugs, _ = _expand_metrics_with_dependencies(metrics)
+
+    if not sql_metric_slugs:
+        return None
+
+    settlement_metrics_by_slug = {m.slug: m for m in METRICS_SQL_SETTLEMENT}
+    sql_metrics_by_slug = {m.slug: m for m in METRICS_SQL}
+
+    required: set[MetricQuery] = set()
+    for slug in sql_metric_slugs:
+        if slug in settlement_metrics_by_slug:
+            required.add(settlement_metrics_by_slug[slug].query)
+        elif slug in sql_metrics_by_slug:
+            required.add(sql_metrics_by_slug[slug].query)
+
+    return required if required else None
+
+
+def _get_filtered_queries_settlement(
+    required_queries: set[MetricQuery] | None,
+) -> list[QueryCallable]:
+    """
+    Filter queries for settlement currency mode.
+    Uses balance_orders query instead of orders query.
+    Uses settlement_active_subscriptions for settlement MRR metrics.
+    """
+    if required_queries is None:
+        queries_to_include = {
+            MetricQuery.balance_orders,
+            MetricQuery.active_subscriptions,
+            MetricQuery.settlement_active_subscriptions,
+            MetricQuery.checkouts,
+            MetricQuery.canceled_subscriptions,
+            MetricQuery.churned_subscriptions,
+            MetricQuery.events,
+        }
+    else:
+        queries_to_include = set()
+        for q in required_queries:
+            if q == MetricQuery.orders:
+                queries_to_include.add(MetricQuery.balance_orders)
+            else:
+                queries_to_include.add(q)
+
+    return [
+        query_fn
+        for query_type, query_fn in QUERY_TO_FUNCTION.items()
+        if query_type in queries_to_include
+    ]
+
+
+def _get_filtered_metrics_settlement(
+    metrics: Sequence[str] | None,
+) -> list[type[SQLMetric]]:
+    """
+    Filter metrics for settlement currency mode.
+    Uses settlement metrics for order-based metrics, regular metrics for everything else.
+    """
+    settlement_slugs = {m.slug for m in METRICS_SQL_SETTLEMENT}
+    non_order_metrics = [m for m in METRICS_SQL if m.query != MetricQuery.orders]
+
+    if metrics is None:
+        return list(METRICS_SQL_SETTLEMENT) + non_order_metrics
+
+    sql_metric_slugs, _ = _expand_metrics_with_dependencies(metrics)
+
+    result: list[type[SQLMetric]] = []
+    for slug in sql_metric_slugs:
+        if slug in settlement_slugs:
+            metric = next((m for m in METRICS_SQL_SETTLEMENT if m.slug == slug), None)
+            if metric:
+                result.append(metric)
+        else:
+            metric = next((m for m in METRICS_SQL if m.slug == slug), None)
+            if metric:
+                result.append(metric)
+
+    return result
+
+
 class MetricsService:
+    async def _should_use_settlement_metrics(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[uuid.UUID] | None,
+    ) -> bool:
+        """
+        Check if settlement currency metrics should be used based on organization feature flag.
+        Returns True only if ALL relevant organizations have the feature enabled.
+
+        If organization_id is specified, checks those organizations.
+        Otherwise, derives the organization from auth_subject.
+        """
+        repo = OrganizationRepository.from_session(session)
+
+        org_ids_to_check: list[uuid.UUID] = []
+
+        if organization_id is not None and len(organization_id) > 0:
+            org_ids_to_check = list(organization_id)
+        elif is_organization(auth_subject):
+            org_ids_to_check = [auth_subject.subject.id]
+        else:
+            return False
+
+        for org_id in org_ids_to_check:
+            org = await repo.get_by_id(org_id)
+            if org is None:
+                return False
+            if not org.feature_settings.get("settlement_currency_metrics", False):
+                return False
+
+        return True
+
     async def get_metrics(
         self,
         session: AsyncSession | AsyncReadSession,
@@ -211,10 +337,21 @@ class MetricsService:
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
+        # Check if settlement currency metrics should be used
+        use_settlement_metrics = await self._should_use_settlement_metrics(
+            session, auth_subject, organization_id
+        )
+
         # Determine which queries to run based on metrics
-        required_queries = _get_required_queries(metrics)
-        filtered_query_fns = _get_filtered_queries(required_queries)
-        filtered_metrics_sql = _get_filtered_metrics(metrics)
+        if use_settlement_metrics:
+            required_queries = _get_required_queries_settlement(metrics)
+            filtered_query_fns = _get_filtered_queries_settlement(required_queries)
+            filtered_metrics_sql = _get_filtered_metrics_settlement(metrics)
+        else:
+            required_queries = _get_required_queries(metrics)
+            filtered_query_fns = _get_filtered_queries(required_queries)
+            filtered_metrics_sql = _get_filtered_metrics(metrics)
+
         filtered_post_compute = _get_filtered_post_compute_metrics(metrics)
         filtered_all_metrics = _get_filtered_all_metrics(metrics)
 

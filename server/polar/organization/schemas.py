@@ -85,6 +85,10 @@ class OrganizationFeatureSettings(Schema):
     member_model_enabled: bool = Field(
         False, description="If this organization has the Member model enabled"
     )
+    settlement_currency_metrics: bool = Field(
+        False,
+        description="If this organization uses settlement currency for revenue metrics",
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

@@ -14,11 +14,13 @@ from sqlalchemy import (
     SQLColumnExpression,
     case,
     func,
+    literal_column,
     or_,
     type_coerce,
 )
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
 from polar.kit.time_queries import TimeInterval
 from polar.models import Checkout, Order, Subscription
 from polar.models.checkout import CheckoutStatus
@@ -1024,6 +1026,495 @@ class ActiveUserMetric(SQLMetric):
         return int(cumulative_last(periods, ActiveSubscriptionsMetric.slug))
 
 
+class SettlementOrdersMetric(SQLMetric):
+    slug = "orders"
+    display_name = "Orders"
+    type = MetricType.scalar
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Event.id).filter(
+            Event.name == SystemEvent.balance_order.value
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementRevenueMetric(SQLMetric):
+    slug = "revenue"
+    display_name = "Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.user_metadata["amount"].as_integer()).filter(
+            Event.name == SystemEvent.balance_order.value
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementNetRevenueMetric(SQLMetric):
+    slug = "net_revenue"
+    display_name = "Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(
+            Event.user_metadata["amount"].as_integer()
+            - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementCumulativeRevenueMetric(SQLMetric):
+    slug = "cumulative_revenue"
+    display_name = "Cumulative Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.user_metadata["amount"].as_integer())
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class SettlementNetCumulativeRevenueMetric(SQLMetric):
+    slug = "net_cumulative_revenue"
+    display_name = "Net Cumulative Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(
+            Event.user_metadata["amount"].as_integer()
+            - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class SettlementAverageOrderValueMetric(SQLMetric):
+    slug = "average_order_value"
+    display_name = "Average Order Value"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.cast(
+            func.ceil(
+                func.avg(Event.user_metadata["amount"].as_integer()).filter(
+                    Event.name == SystemEvent.balance_order.value
+                )
+            ),
+            Integer,
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
+        revenue = sum(getattr(p, "revenue") or 0 for p in periods)
+        return revenue / total_orders if total_orders > 0 else 0.0
+
+
+class SettlementNetAverageOrderValueMetric(SQLMetric):
+    slug = "net_average_order_value"
+    display_name = "Net Average Order Value"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.cast(
+            func.ceil(
+                func.avg(
+                    Event.user_metadata["amount"].as_integer()
+                    - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+                ).filter(Event.name == SystemEvent.balance_order.value)
+            ),
+            Integer,
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        total_orders = sum(getattr(p, "orders") or 0 for p in periods)
+        revenue = sum(getattr(p, "net_revenue") or 0 for p in periods)
+        return revenue / total_orders if total_orders > 0 else 0.0
+
+
+class SettlementOneTimeProductsMetric(SQLMetric):
+    slug = "one_time_products"
+    display_name = "One-Time Products"
+    type = MetricType.scalar
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(Event.id).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata["subscription_id"].astext.is_(None),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementOneTimeProductsRevenueMetric(SQLMetric):
+    slug = "one_time_products_revenue"
+    display_name = "One-Time Products Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.user_metadata["amount"].as_integer()).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata["subscription_id"].astext.is_(None),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementOneTimeProductsNetRevenueMetric(SQLMetric):
+    slug = "one_time_products_net_revenue"
+    display_name = "One-Time Products Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(
+            Event.user_metadata["amount"].as_integer()
+            - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+        ).filter(
+            Event.user_metadata["subscription_id"].astext.is_(None),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementNewSubscriptionsRevenueMetric(SQLMetric):
+    slug = "new_subscriptions_revenue"
+    display_name = "New Subscriptions Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.user_metadata["amount"].as_integer()).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementNewSubscriptionsNetRevenueMetric(SQLMetric):
+    slug = "new_subscriptions_net_revenue"
+    display_name = "New Subscriptions Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(
+            Event.user_metadata["amount"].as_integer()
+            - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+        ).filter(
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementRenewedSubscriptionsMetric(SQLMetric):
+    slug = "renewed_subscriptions"
+    display_name = "Renewed Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(
+            func.distinct(Event.user_metadata["subscription_id"].astext)
+        ).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementRenewedSubscriptionsRevenueMetric(SQLMetric):
+    slug = "renewed_subscriptions_revenue"
+    display_name = "Renewed Subscriptions Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Event.user_metadata["amount"].as_integer()).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementRenewedSubscriptionsNetRevenueMetric(SQLMetric):
+    slug = "renewed_subscriptions_net_revenue"
+    display_name = "Renewed Subscriptions Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(
+            Event.user_metadata["amount"].as_integer()
+            - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+        ).filter(
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementNewSubscriptionsMetric(SQLMetric):
+    slug = "new_subscriptions"
+    display_name = "New Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.balance_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.count(
+            func.distinct(Event.user_metadata["subscription_id"].astext)
+        ).filter(
+            Event.name == SystemEvent.balance_order.value,
+            Event.user_metadata.has_key("subscription_id"),
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t),
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class SettlementMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "monthly_recurring_revenue"
+    display_name = "Monthly Recurring Revenue"
+    type = MetricType.currency
+    query = MetricQuery.settlement_active_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        settlement_amount: ColumnElement[int] = func.coalesce(
+            literal_column("latest_payments.settlement_amount"), 0
+        )
+        return func.coalesce(
+            func.sum(
+                case(
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.year,
+                        func.round(settlement_amount / 12),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.month,
+                        settlement_amount,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        func.round(settlement_amount * 4),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        func.round(settlement_amount * 30),
+                    ),
+                )
+            ),
+            0,
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class SettlementCommittedMonthlyRecurringRevenueMetric(SQLMetric):
+    slug = "committed_monthly_recurring_revenue"
+    display_name = "Committed Monthly Recurring Revenue"
+    type = MetricType.currency
+    query = MetricQuery.settlement_active_subscriptions
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        settlement_amount: ColumnElement[int] = func.coalesce(
+            literal_column("latest_payments.settlement_amount"), 0
+        )
+        return func.coalesce(
+            func.sum(
+                case(
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.year,
+                        func.round(settlement_amount / 12),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.month,
+                        settlement_amount,
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.week,
+                        func.round(settlement_amount * 4),
+                    ),
+                    (
+                        Subscription.recurring_interval
+                        == SubscriptionRecurringInterval.day,
+                        func.round(settlement_amount * 30),
+                    ),
+                )
+            ).filter(
+                or_(
+                    func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
+                        None
+                    ),
+                    i.sql_date_trunc(
+                        cast(
+                            SQLColumnExpression[datetime],
+                            func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                        )
+                    )
+                    < i.sql_date_trunc(now),
+                )
+            ),
+            0,
+        )
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+METRICS_SQL_SETTLEMENT: list[type[SQLMetric]] = [
+    SettlementOrdersMetric,
+    SettlementRevenueMetric,
+    SettlementNetRevenueMetric,
+    SettlementCumulativeRevenueMetric,
+    SettlementNetCumulativeRevenueMetric,
+    SettlementAverageOrderValueMetric,
+    SettlementNetAverageOrderValueMetric,
+    SettlementOneTimeProductsMetric,
+    SettlementOneTimeProductsRevenueMetric,
+    SettlementOneTimeProductsNetRevenueMetric,
+    SettlementNewSubscriptionsMetric,
+    SettlementNewSubscriptionsRevenueMetric,
+    SettlementNewSubscriptionsNetRevenueMetric,
+    SettlementRenewedSubscriptionsMetric,
+    SettlementRenewedSubscriptionsRevenueMetric,
+    SettlementRenewedSubscriptionsNetRevenueMetric,
+    SettlementMonthlyRecurringRevenueMetric,
+    SettlementCommittedMonthlyRecurringRevenueMetric,
+]
+
+
 METRICS_SQL: list[type[SQLMetric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -1082,6 +1573,7 @@ __all__ = [
     "METRICS",
     "METRICS_POST_COMPUTE",
     "METRICS_SQL",
+    "METRICS_SQL_SETTLEMENT",
     "MetaMetric",
     "Metric",
     "MetricType",

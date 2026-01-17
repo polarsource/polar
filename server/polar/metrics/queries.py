@@ -9,6 +9,7 @@ from sqlalchemy import (
     ColumnElement,
     Select,
     SQLColumnExpression,
+    String,
     and_,
     cte,
     func,
@@ -18,6 +19,7 @@ from sqlalchemy import (
 )
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.event.system import SystemEvent
 from polar.kit.time_queries import TimeInterval
 from polar.models import (
     Checkout,
@@ -31,6 +33,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.event import EventSource
 from polar.models.product import ProductBillingType
 
 if TYPE_CHECKING:
@@ -39,7 +42,9 @@ if TYPE_CHECKING:
 
 class MetricQuery(StrEnum):
     orders = "orders"
+    balance_orders = "balance_orders"
     active_subscriptions = "active_subscriptions"
+    settlement_active_subscriptions = "settlement_active_subscriptions"
     checkouts = "checkouts"
     canceled_subscriptions = "canceled_subscriptions"
     churned_subscriptions = "churned_subscriptions"
@@ -324,6 +329,91 @@ def get_active_subscriptions_cte(
                 ),
             )
         )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
+def get_settlement_active_subscriptions_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    bounds: tuple[datetime, datetime],
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    """Active subscriptions CTE with settlement amounts from latest balance events."""
+    start_timestamp, end_timestamp = bounds
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_subscriptions_statement = _get_readable_subscriptions_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    latest_payments = _get_latest_payment_per_subscription_subquery(
+        auth_subject, organization_id
+    )
+
+    subscription_join = timestamp_series.join(
+        Subscription,
+        isouter=True,
+        onclause=and_(
+            or_(
+                Subscription.started_at.is_(None),
+                interval.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], Subscription.started_at)
+                )
+                <= interval.sql_date_trunc(timestamp_column),
+            ),
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                interval.sql_date_trunc(
+                    cast(
+                        SQLColumnExpression[datetime],
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at),
+                    )
+                )
+                > interval.sql_date_trunc(timestamp_column),
+            ),
+            Subscription.id.in_(readable_subscriptions_statement),
+            or_(
+                Subscription.started_at.is_(None),
+                Subscription.started_at <= end_timestamp,
+            ),
+            or_(
+                func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
+                func.coalesce(Subscription.ended_at, Subscription.ends_at)
+                >= start_timestamp,
+            ),
+        ),
+    ).join(
+        latest_payments,
+        isouter=True,
+        onclause=latest_payments.c.subscription_id
+        == func.cast(Subscription.id, String),
+    )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.settlement_active_subscriptions,
+                timestamp_column,
+                interval,
+                metrics,
+                now,
+            ),
+        )
+        .select_from(subscription_join)
         .group_by(timestamp_column)
         .order_by(timestamp_column.asc())
     )
@@ -715,9 +805,238 @@ def get_events_metrics_cte(
     )
 
 
+def _get_latest_payment_per_subscription_subquery(
+    auth_subject: AuthSubject[User | Organization],
+    organization_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    """Get the latest balance_order settlement amount per subscription."""
+    ranked = select(
+        Event.user_metadata["subscription_id"].astext.label("subscription_id"),
+        Event.user_metadata["amount"].as_integer().label("settlement_amount"),
+        func.row_number()
+        .over(
+            partition_by=Event.user_metadata["subscription_id"].astext,
+            order_by=Event.timestamp.desc(),
+        )
+        .label("rn"),
+    ).where(
+        Event.source == EventSource.system,
+        Event.name == SystemEvent.balance_order.value,
+        Event.user_metadata.has_key("subscription_id"),
+    )
+
+    if is_user(auth_subject):
+        ranked = ranked.where(
+            Event.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        ranked = ranked.where(Event.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        ranked = ranked.where(Event.organization_id.in_(organization_id))
+
+    ranked_cte = ranked.cte("ranked_payments")
+
+    return cte(
+        select(
+            ranked_cte.c.subscription_id,
+            ranked_cte.c.settlement_amount,
+        ).where(ranked_cte.c.rn == 1),
+        name="latest_payments",
+    )
+
+
+def _get_readable_balance_events_statement(
+    auth_subject: AuthSubject[User | Organization],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> Select[tuple[uuid.UUID]]:
+    statement = select(Event.id).where(
+        Event.source == EventSource.system,
+        Event.name.in_(
+            [
+                SystemEvent.balance_order.value,
+                SystemEvent.balance_refund.value,
+                SystemEvent.balance_dispute.value,
+                SystemEvent.balance_dispute_reversal.value,
+            ]
+        ),
+    )
+
+    if is_user(auth_subject):
+        statement = statement.where(
+            Event.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        statement = statement.where(Event.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        statement = statement.where(Event.organization_id.in_(organization_id))
+
+    if product_id is not None:
+        statement = statement.where(
+            Event.user_metadata["product_id"].astext.in_([str(p) for p in product_id])
+        )
+
+    if billing_type is not None:
+        statement = statement.join(
+            Product,
+            onclause=Event.user_metadata["product_id"].astext
+            == func.cast(Product.id, String),
+        ).where(Product.billing_type.in_(billing_type))
+
+    if customer_id is not None:
+        statement = statement.where(Event.customer_id.in_(customer_id))
+
+    return statement
+
+
+def get_balance_orders_metrics_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[SQLMetric]"],
+    now: datetime,
+    *,
+    bounds: tuple[datetime, datetime],
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    start_timestamp, end_timestamp = bounds
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_balance_events_statement = _get_readable_balance_events_statement(
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        billing_type=billing_type,
+        customer_id=customer_id,
+    )
+
+    day_column = interval.sql_date_trunc(Event.timestamp)
+
+    cumulative_metrics = ["cumulative_revenue", "net_cumulative_revenue"]
+    cumulative_metrics_to_compute = [
+        m
+        for m in metrics
+        if m.query == MetricQuery.balance_orders and m.slug in cumulative_metrics
+    ]
+
+    min_timestamp_subquery = select(
+        func.min(timestamp_series.c.timestamp)
+    ).scalar_subquery()
+
+    historical_baseline = None
+    if any(m.slug in cumulative_metrics for m in metrics):
+        historical_baseline = cte(
+            select(
+                func.coalesce(
+                    func.sum(Event.user_metadata["amount"].as_integer()).filter(
+                        Event.name == SystemEvent.balance_order.value
+                    ),
+                    0,
+                ).label("hist_cumulative_revenue"),
+                func.coalesce(
+                    func.sum(
+                        Event.user_metadata["amount"].as_integer()
+                        - func.coalesce(Event.user_metadata["fee"].as_integer(), 0)
+                    ),
+                    0,
+                ).label("hist_net_cumulative_revenue"),
+            )
+            .select_from(Event)
+            .where(
+                Event.id.in_(readable_balance_events_statement),
+                Event.timestamp < start_timestamp,
+            )
+        )
+
+    daily_metrics = cte(
+        select(
+            day_column.label("day"),
+            *[
+                func.coalesce(
+                    metric.get_sql_expression(day_column, interval, now), 0
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.balance_orders
+            ],
+        )
+        .select_from(Event)
+        .outerjoin(
+            Subscription,
+            onclause=Event.user_metadata["subscription_id"].astext
+            == func.cast(Subscription.id, String),
+        )
+        .where(
+            Event.id.in_(readable_balance_events_statement),
+            Event.timestamp >= start_timestamp,
+            Event.timestamp <= end_timestamp,
+        )
+        .group_by(day_column)
+    )
+
+    from_clause = timestamp_series.join(
+        daily_metrics,
+        onclause=daily_metrics.c.day == timestamp_column,
+        isouter=True,
+    )
+
+    if historical_baseline is not None:
+        from_clause = from_clause.join(
+            historical_baseline,
+            isouter=False,
+            onclause=literal(True),
+        )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *[
+                (
+                    func.coalesce(
+                        func.sum(getattr(daily_metrics.c, metric.slug)).over(
+                            order_by=timestamp_column
+                        ),
+                        0,
+                    )
+                    + (
+                        getattr(historical_baseline.c, f"hist_{metric.slug}")
+                        if historical_baseline is not None
+                        else 0
+                    )
+                    if metric.slug in cumulative_metrics
+                    else func.coalesce(getattr(daily_metrics.c, metric.slug), 0)
+                ).label(metric.slug)
+                for metric in metrics
+                if metric.query == MetricQuery.balance_orders
+            ],
+        )
+        .select_from(from_clause)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_orders_metrics_cte,
+    get_balance_orders_metrics_cte,
     get_active_subscriptions_cte,
+    get_settlement_active_subscriptions_cte,
     get_checkouts_cte,
     get_canceled_subscriptions_cte,
     get_churned_subscriptions_cte,
@@ -727,7 +1046,9 @@ QUERIES: list[QueryCallable] = [
 # Mapping from MetricQuery enum to query function for filtering
 QUERY_TO_FUNCTION: dict[MetricQuery, QueryCallable] = {
     MetricQuery.orders: get_orders_metrics_cte,
+    MetricQuery.balance_orders: get_balance_orders_metrics_cte,
     MetricQuery.active_subscriptions: get_active_subscriptions_cte,
+    MetricQuery.settlement_active_subscriptions: get_settlement_active_subscriptions_cte,
     MetricQuery.checkouts: get_checkouts_cte,
     MetricQuery.canceled_subscriptions: get_canceled_subscriptions_cte,
     MetricQuery.churned_subscriptions: get_churned_subscriptions_cte,

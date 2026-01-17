@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import Any
 
 from fastapi import Request
 from markupflow import Document
@@ -19,15 +18,15 @@ def set_document(doc: Document) -> None:
 
 def get_document(request: Request | None = None) -> Document:
     """FastAPI dependency to get the document from request scope.
-    
+
     Can be used as a FastAPI dependency or called directly in context managers.
-    
+
     Args:
         request: The FastAPI request object (when used as dependency).
-        
+
     Returns:
         The Document instance for the current request.
-        
+
     Raises:
         RuntimeError: If no document is found.
     """
@@ -35,13 +34,13 @@ def get_document(request: Request | None = None) -> Document:
         doc = request.scope.get("markupflow_document")
         if doc is not None:
             return doc
-    
+
     # Try to get from contextvar
     doc = _current_doc.get()
     if doc is not None:
         return doc
-    
+
     raise RuntimeError("No document in context")
 
 
-__all__ = ["get_document", "set_document", "Document"]
+__all__ = ["Document", "get_document", "set_document"]

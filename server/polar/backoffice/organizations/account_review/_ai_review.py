@@ -89,7 +89,7 @@ class AIReviewVerdict:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         """Render the AI review verdict component (compact version)."""
         with doc.div(classes="card-body"):
             with doc.h2(classes="card-title flex items-center gap-2"):

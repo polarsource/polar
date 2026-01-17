@@ -53,7 +53,7 @@ class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
-    doc = get_document()
+        doc = get_document()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
             with doc.a(

@@ -49,7 +49,7 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
         self.rate = rate
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-    doc = get_document()
+        doc = get_document()
         doc.text(f"{self.rate:.2f}%")
         return None
 
@@ -68,7 +68,7 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
         self.url = url
 
     def render(self, request: Request, item: Order) -> Generator[None] | None:
-    doc = get_document()
+        doc = get_document()
         with doc.div(classes="flex items-center gap-1"):
             if self.url is not None:
                 with doc.a(href=self.url, classes="link flex flex-row gap-1"):

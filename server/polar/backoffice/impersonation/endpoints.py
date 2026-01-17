@@ -2,7 +2,6 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import (
-from polar.backoffice.document import get_document
     APIRouter,
     Depends,
     Form,

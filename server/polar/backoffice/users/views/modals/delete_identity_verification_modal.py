@@ -14,7 +14,7 @@ class DeleteIdentityVerificationModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         with confirmation_dialog(
             "Delete Identity Verification",
             "Are you sure you want to delete this user's identity verification? "

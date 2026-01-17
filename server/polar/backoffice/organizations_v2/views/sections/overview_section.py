@@ -93,7 +93,7 @@ class OverviewSection:
     def setup_card(
         self, setup_data: dict[str, int | bool] | None = None
     ) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         """Render setup verdict card."""
         with card(bordered=True):
             with doc.h2(classes="text-lg font-bold mb-4"):

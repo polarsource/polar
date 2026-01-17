@@ -89,7 +89,7 @@ class OrganizationDetailView:
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         """Render right sidebar with contextual actions and metadata."""
         with doc.aside(classes="w-80 pl-4"):
             # Internal Notes - Prominent at top
@@ -367,7 +367,7 @@ class OrganizationDetailView:
     def main_content(
         self, request: Request, section: str = "overview"
     ) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         """Render main content area (delegated to section components)."""
         with doc.main(classes="flex-1"):
             # Section content will be rendered by specific section components

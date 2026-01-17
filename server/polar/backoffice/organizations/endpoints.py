@@ -164,7 +164,7 @@ class AccountTypeDescriptionListAttrItem(
     description_list.DescriptionListAttrItem[Account]
 ):
     def render(self, request: Request, item: Account) -> Generator[None] | None:
-    doc = get_document()
+        doc = get_document()
         account_type = item.account_type
         if account_type == AccountType.stripe:
             with doc.a(
@@ -1290,7 +1290,7 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
         super().__init__(label)
 
     def render(self, request: Request, item: File) -> Generator[None]:
-    doc = get_document()
+        doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
         with doc.a(

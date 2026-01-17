@@ -3,7 +3,7 @@ from collections.abc import Generator
 from typing import overload
 
 from fastapi import Request
-from tagflow import attr, classes, tag, text
+from polar.backoffice.document import get_document
 
 
 class NavigationItem:
@@ -87,19 +87,19 @@ class NavigationItem:
             None: Context manager yields control for the navigation item.
         """
         is_active = self._is_active(active_route_name)
-        with tag.li():
+        with doc.li():
             if self.route_name is not None:
-                with tag.a(href=str(request.url_for(self.route_name))):
+                with doc.a(href=str(request.url_for(self.route_name))):
                     if is_active:
-                        classes("menu-active")
-                    text(self.label)
+                        doc.attr("class", "menu-active")
+                    doc.text(self.label)
             elif self.children:
-                with tag.details():
+                with doc.details():
                     if is_active:
-                        attr("open", True)
-                    with tag.summary():
-                        text(self.label)
-                    with tag.ul():
+                        doc.attr("open", True)
+                    with doc.summary():
+                        doc.text(self.label)
+                    with doc.ul():
                         for child in self.children:
                             with child.render(request, active_route_name):
                                 pass

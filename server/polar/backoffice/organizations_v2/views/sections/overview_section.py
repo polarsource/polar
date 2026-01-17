@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.models import Organization
 
@@ -32,60 +32,60 @@ class OverviewSection:
         border_class = "border-l-4 border-l-error" if has_elevated_risk else ""
 
         with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("AI Review")
+            with doc.h2(classes="text-lg font-bold mb-4"):
+                doc.text("AI Review")
 
             if not self.org.review:
-                with tag.p(classes="text-base-content/60"):
-                    text("No review available yet.")
+                with doc.p(classes="text-base-content/60"):
+                    doc.text("No review available yet.")
             else:
                 review = self.org.review
 
                 # Verdict badge
-                with tag.div(classes="flex items-center gap-3 mb-3"):
-                    with tag.span(
+                with doc.div(classes="flex items-center gap-3 mb-3"):
+                    with doc.span(
                         classes="badge badge-ghost border border-base-300 badge-lg"
                     ):
-                        text(review.verdict or "N/A")
+                        doc.text(review.verdict or "N/A")
 
                     if review.risk_score is not None:
-                        with tag.span(classes="text-lg font-bold"):
-                            text(f"Risk: {review.risk_score}")
+                        with doc.span(classes="text-lg font-bold"):
+                            doc.text(f"Risk: {review.risk_score}")
 
                 # Violated sections
                 if review.violated_sections:
-                    with tag.div(classes="mb-3"):
-                        with tag.div(classes="text-sm font-semibold mb-1"):
-                            text("Violated Sections:")
-                        with tag.div(classes="flex flex-wrap gap-1"):
+                    with doc.div(classes="mb-3"):
+                        with doc.div(classes="text-sm font-semibold mb-1"):
+                            doc.text("Violated Sections:")
+                        with doc.div(classes="flex flex-wrap gap-1"):
                             for section in review.violated_sections:
-                                with tag.span(
+                                with doc.span(
                                     classes="badge badge-ghost border border-base-300 badge-sm"
                                 ):
-                                    text(section)
+                                    doc.text(section)
 
                 # Assessment reason
                 if review.reason:
-                    with tag.div(
+                    with doc.div(
                         classes="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
                     ):
-                        text(review.reason)
+                        doc.text(review.reason)
 
                 # Appeal information
                 if review.appeal_submitted_at:
-                    with tag.div(
+                    with doc.div(
                         classes="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
                     ):
-                        with tag.div(classes="font-semibold mb-1"):
-                            text("Appeal Submitted")
+                        with doc.div(classes="font-semibold mb-1"):
+                            doc.text("Appeal Submitted")
                         if review.appeal_reason:
-                            with tag.div(classes="text-sm text-base-content/70"):
-                                text(review.appeal_reason)
+                            with doc.div(classes="text-sm text-base-content/70"):
+                                doc.text(review.appeal_reason)
 
                         if review.appeal_reviewed_at:
-                            with tag.div(classes="mt-2 text-sm"):
-                                with tag.span(classes="font-semibold"):
-                                    text(f"Decision: {review.appeal_decision}")
+                            with doc.div(classes="mt-2 text-sm"):
+                                with doc.span(classes="font-semibold"):
+                                    doc.text(f"Decision: {review.appeal_decision}")
 
             yield
 
@@ -93,17 +93,18 @@ class OverviewSection:
     def setup_card(
         self, setup_data: dict[str, int | bool] | None = None
     ) -> Generator[None]:
+    doc = get_document()
         """Render setup verdict card."""
         with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Setup Status")
+            with doc.h2(classes="text-lg font-bold mb-4"):
+                doc.text("Setup Status")
 
             if not setup_data:
-                with tag.p(classes="text-base-content/60"):
-                    text("Setup metrics not available.")
+                with doc.p(classes="text-base-content/60"):
+                    doc.text("Setup metrics not available.")
             else:
                 # Metrics including payment ready
-                with tag.div(classes="space-y-2"):
+                with doc.div(classes="space-y-2"):
                     payment_ready = setup_data.get("payment_ready", False)
 
                     metrics = [
@@ -116,13 +117,13 @@ class OverviewSection:
                     ]
 
                     for label, value in metrics:
-                        with tag.div(
+                        with doc.div(
                             classes="flex items-center justify-between py-1.5 border-b border-base-200"
                         ):
-                            with tag.span(classes="text-sm"):
-                                text(label)
-                            with tag.span(classes="font-mono text-sm font-semibold"):
-                                text(str(value))
+                            with doc.span(classes="text-sm"):
+                                doc.text(label)
+                            with doc.span(classes="font-mono text-sm font-semibold"):
+                                doc.text(str(value))
 
             yield
 
@@ -137,41 +138,41 @@ class OverviewSection:
         border_class = "border-l-4 border-l-warning" if has_high_risk else ""
 
         with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Payment Metrics")
+            with doc.h2(classes="text-lg font-bold mb-4"):
+                doc.text("Payment Metrics")
 
             if not payment_stats:
-                with tag.p(classes="text-base-content/60"):
-                    text("No payment data available.")
+                with doc.p(classes="text-base-content/60"):
+                    doc.text("No payment data available.")
             else:
                 # Next review threshold and total transfers at top
                 next_review_threshold = payment_stats.get("next_review_threshold")
                 total_transfer_sum = payment_stats.get("total_transfer_sum")
 
                 if next_review_threshold or total_transfer_sum:
-                    with tag.div(
+                    with doc.div(
                         classes="space-y-2 mb-4 pb-4 border-b border-base-200"
                     ):
                         if next_review_threshold:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Next Review")
-                                with tag.span(
+                            with doc.div(classes="flex items-center justify-between"):
+                                with doc.span(classes="text-sm text-base-content/60"):
+                                    doc.text("Next Review")
+                                with doc.span(
                                     classes="font-mono text-sm font-semibold"
                                 ):
-                                    text(f"${next_review_threshold / 100:,.0f}")
+                                    doc.text(f"${next_review_threshold / 100:,.0f}")
 
                         if total_transfer_sum:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Total Transfers")
-                                with tag.span(
+                            with doc.div(classes="flex items-center justify-between"):
+                                with doc.span(classes="text-sm text-base-content/60"):
+                                    doc.text("Total Transfers")
+                                with doc.span(
                                     classes="font-mono text-sm font-semibold"
                                 ):
-                                    text(f"${total_transfer_sum / 100:,.2f}")
+                                    doc.text(f"${total_transfer_sum / 100:,.2f}")
 
                 # Payment metrics
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
+                with doc.div(classes="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "Total Payments",
                         payment_stats.get("payment_count", 0),
@@ -195,7 +196,7 @@ class OverviewSection:
                 else:
                     risk_variant = "default"
 
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
+                with doc.div(classes="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "P50 Risk",
                         payment_stats.get("p50_risk", 0),
@@ -222,7 +223,7 @@ class OverviewSection:
                     else "default"
                 )
 
-                with tag.div(classes="grid grid-cols-2 gap-3"):
+                with doc.div(classes="grid grid-cols-2 gap-3"):
                     with metric_card(
                         "Refunds",
                         payment_stats.get("refunds_count", 0),
@@ -250,9 +251,9 @@ class OverviewSection:
     ) -> Generator[None]:
         """Render the complete overview section."""
 
-        with tag.div(classes="space-y-6"):
+        with doc.div(classes="space-y-6"):
             # Review status cards in a grid
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-6"):
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-6"):
                 with self.ai_review_card():
                     pass
 

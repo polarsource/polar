@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal, TypedDict
 
-from tagflow import attr, tag, text
+from polar.backoffice.document import get_document
 
 from ._button import Variant as ButtonVariant
 from ._button import button
@@ -65,45 +65,45 @@ def confirmation_dialog(
 
     config = variant_config.get(variant, variant_config["warning"])
 
-    with tag.dialog(classes="modal modal-bottom sm:modal-middle", **kwargs):
+    with doc.dialog(classes="modal modal-bottom sm:modal-middle", **kwargs):
         if open:
-            attr("open", True)
+            doc.attr("open", True)
 
-        with tag.div(classes="modal-box"):
+        with doc.div(classes="modal-box"):
             # Close button
-            with tag.form(method="dialog"):
-                with tag.button(
+            with doc.form(method="dialog"):
+                with doc.button(
                     classes="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                 ):
-                    with tag.div(classes="icon-x"):
+                    with doc.div(classes="icon-x"):
                         pass
 
             # Icon and title
-            with tag.div(classes="flex items-center gap-3 mb-4"):
-                with tag.div(classes="text-4xl"):
-                    text(config["icon"])
-                with tag.h3(classes="text-lg font-bold"):
-                    text(title)
+            with doc.div(classes="flex items-center gap-3 mb-4"):
+                with doc.div(classes="text-4xl"):
+                    doc.text(config["icon"])
+                with doc.h3(classes="text-lg font-bold"):
+                    doc.text(title)
 
             # Message
-            with tag.p(classes="text-base-content/80 mb-6"):
-                text(message)
+            with doc.p(classes="text-base-content/80 mb-6"):
+                doc.text(message)
 
             # Action buttons
-            with tag.div(classes="modal-action"):
+            with doc.div(classes="modal-action"):
                 # Cancel button (closes dialog)
-                with tag.form(method="dialog"):
+                with doc.form(method="dialog"):
                     with button(variant="secondary", size="md"):
-                        text(cancel_text)
+                        doc.text(cancel_text)
 
                 # Confirm button (yielded for custom action)
                 with button(variant=config["button"], size="md"):
-                    text(confirm_text)
+                    doc.text(confirm_text)
                     yield
 
         # Backdrop
-        with tag.form(method="dialog", classes="modal-backdrop"):
-            with tag.button():
+        with doc.form(method="dialog", classes="modal-backdrop"):
+            with doc.button():
                 pass
 
 

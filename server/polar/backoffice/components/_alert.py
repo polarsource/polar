@@ -3,8 +3,8 @@ from collections.abc import Generator
 from typing import Any
 
 from sqlalchemy.util.typing import Literal
-from tagflow import classes as _classes
-from tagflow import tag
+
+from polar.backoffice.document import get_document
 
 Variant = Literal["info", "success", "warning", "error"]
 
@@ -33,23 +33,24 @@ def alert(
 
     Example:
         >>> with alert(variant="success", soft=True):
-        ...     text("Operation completed successfully!")
+        ...     doc.text("Operation completed successfully!")
     """
+    doc = get_document()
     variants = {
         "info": "alert-info",
         "success": "alert-success",
         "warning": "alert-warning",
         "error": "alert-error",
     }
-    with tag.div(classes="alert", role="alert", **kwargs):
+    with doc.div(classes="alert", role="alert", **kwargs):
         if variant:
-            _classes(variants[variant])
+            doc.attr("class", variants[variant])
         if dash:
-            _classes("alert-dash")
+            doc.attr("class", "alert-dash")
         if soft:
-            _classes("alert-soft")
+            doc.attr("class", "alert-soft")
         if classes:
-            _classes(classes)
+            doc.attr("class", classes)
         yield
 
 

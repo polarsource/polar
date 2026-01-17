@@ -5,7 +5,7 @@ from collections.abc import Generator, Sequence
 from datetime import UTC, datetime
 
 from fastapi import Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.enums import AccountType
 from polar.models import AccountCredit, Organization
@@ -56,101 +56,101 @@ class AccountSection:
     def render(self, request: Request) -> Generator[None]:
         """Render the account section."""
 
-        with tag.div(classes="space-y-6"):
+        with doc.div(classes="space-y-6"):
             # Account details card
             with card(bordered=True):
-                with tag.h2(classes="text-lg font-bold mb-4"):
-                    text("Payment Account")
+                with doc.h2(classes="text-lg font-bold mb-4"):
+                    doc.text("Payment Account")
 
                 if self.org.account:
                     account = self.org.account
 
                     # Account type and status
-                    with tag.div(classes="space-y-4"):
-                        with tag.div(classes="grid grid-cols-2 gap-4"):
-                            with tag.div():
-                                with tag.div(
+                    with doc.div(classes="space-y-4"):
+                        with doc.div(classes="grid grid-cols-2 gap-4"):
+                            with doc.div():
+                                with doc.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Account ID")
-                                with tag.div(classes="font-mono text-sm"):
-                                    text(str(account.id))
+                                    doc.text("Account ID")
+                                with doc.div(classes="font-mono text-sm"):
+                                    doc.text(str(account.id))
 
-                            with tag.div():
-                                with tag.div(
+                            with doc.div():
+                                with doc.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Type")
-                                with tag.div(classes="font-semibold"):
+                                    doc.text("Type")
+                                with doc.div(classes="font-semibold"):
                                     if account.account_type == AccountType.stripe:
-                                        with tag.span(classes="badge badge-primary"):
-                                            text("Stripe")
+                                        with doc.span(classes="badge badge-primary"):
+                                            doc.text("Stripe")
                                     else:
-                                        with tag.span(classes="badge badge-secondary"):
-                                            text(account.account_type.value.title())
+                                        with doc.span(classes="badge badge-secondary"):
+                                            doc.text(account.account_type.value.title())
 
-                            with tag.div():
-                                with tag.div(
+                            with doc.div():
+                                with doc.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Country")
-                                with tag.div(classes="font-semibold"):
-                                    text(account.country or "N/A")
+                                    doc.text("Country")
+                                with doc.div(classes="font-semibold"):
+                                    doc.text(account.country or "N/A")
 
-                            with tag.div():
-                                with tag.div(
+                            with doc.div():
+                                with doc.div(
                                     classes="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Currency")
-                                with tag.div(classes="font-semibold"):
-                                    text(account.currency or "N/A")
+                                    doc.text("Currency")
+                                with doc.div(classes="font-semibold"):
+                                    doc.text(account.currency or "N/A")
 
                         # Stripe-specific info
                         if (
                             account.account_type == AccountType.stripe
                             and account.stripe_id
                         ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(
+                            with doc.div(classes="pt-4 border-t border-base-300"):
+                                with doc.div(
                                     classes="flex items-center justify-between"
                                 ):
-                                    with tag.div():
-                                        with tag.div(
+                                    with doc.div():
+                                        with doc.div(
                                             classes="text-sm text-base-content/60 mb-1"
                                         ):
-                                            text("Stripe Account ID")
-                                        with tag.div(classes="font-mono text-sm"):
-                                            text(account.stripe_id)
+                                            doc.text("Stripe Account ID")
+                                        with doc.div(classes="font-mono text-sm"):
+                                            doc.text(account.stripe_id)
 
-                                    with tag.a(
+                                    with doc.a(
                                         href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}",
                                         target="_blank",
                                         classes="btn btn-secondary btn-sm",
                                     ):
-                                        text("Open in Stripe →")
+                                        doc.text("Open in Stripe →")
 
                         # Account status
-                        with tag.div(classes="pt-4 border-t border-base-300"):
-                            with tag.div(classes="text-sm font-semibold mb-3"):
-                                text("Account Status")
+                        with doc.div(classes="pt-4 border-t border-base-300"):
+                            with doc.div(classes="text-sm font-semibold mb-3"):
+                                doc.text("Account Status")
 
-                            with tag.div(classes="grid grid-cols-2 gap-3"):
+                            with doc.div(classes="grid grid-cols-2 gap-3"):
                                 # Charges enabled
                                 charges_enabled = (
                                     account.is_charges_enabled
                                     if hasattr(account, "charges_enabled")
                                     else False
                                 )
-                                with tag.div(classes="flex items-center gap-2"):
+                                with doc.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if charges_enabled else "No"
                                     color = (
                                         "text-success"
                                         if charges_enabled
                                         else "text-error"
                                     )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Charges Enabled")
+                                    with doc.span(classes=color):
+                                        doc.text(icon)
+                                    doc.text("Charges Enabled")
 
                                 # Payouts enabled
                                 payouts_enabled = (
@@ -158,26 +158,26 @@ class AccountSection:
                                     if hasattr(account, "payouts_enabled")
                                     else False
                                 )
-                                with tag.div(classes="flex items-center gap-2"):
+                                with doc.div(classes="flex items-center gap-2"):
                                     icon = "Yes" if payouts_enabled else "No"
                                     color = (
                                         "text-success"
                                         if payouts_enabled
                                         else "text-error"
                                     )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Payouts Enabled")
+                                    with doc.span(classes=color):
+                                        doc.text(icon)
+                                    doc.text("Payouts Enabled")
 
                         if (
                             account.account_type == AccountType.stripe
                             and account.stripe_id
                         ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(classes="text-sm font-semibold mb-3"):
-                                    text("Account Actions")
+                            with doc.div(classes="pt-4 border-t border-base-300"):
+                                with doc.div(classes="text-sm font-semibold mb-3"):
+                                    doc.text("Account Actions")
 
-                                with tag.div(classes="flex flex-wrap gap-2"):
+                                with doc.div(classes="flex flex-wrap gap-2"):
                                     with button(
                                         variant="warning",
                                         size="sm",
@@ -189,7 +189,7 @@ class AccountSection:
                                         ),
                                         hx_target="#modal",
                                     ):
-                                        text("Disconnect")
+                                        doc.text("Disconnect")
 
                                     with button(
                                         variant="error",
@@ -202,13 +202,13 @@ class AccountSection:
                                         ),
                                         hx_target="#modal",
                                     ):
-                                        text("Delete")
+                                        doc.text("Delete")
 
                 else:
                     # No account
-                    with tag.div(classes="text-center py-8"):
-                        with tag.div(classes="text-base-content/60 mb-4"):
-                            text("No payment account configured")
+                    with doc.div(classes="text-center py-8"):
+                        with doc.div(classes="text-base-content/60 mb-4"):
+                            doc.text("No payment account configured")
 
                         with button(
                             variant="primary",
@@ -220,33 +220,33 @@ class AccountSection:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Setup Manual Account")
+                            doc.text("Setup Manual Account")
 
             # Payout settings (if manual account)
             if self.org.account and self.org.account.account_type != AccountType.stripe:
                 with card(bordered=True):
-                    with tag.h3(classes="text-md font-bold mb-4"):
-                        text("Manual Payout Settings")
+                    with doc.h3(classes="text-md font-bold mb-4"):
+                        doc.text("Manual Payout Settings")
 
-                    with tag.div(classes="space-y-3 text-sm"):
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Processor Fees: ")
-                            with tag.span(classes="font-semibold"):
-                                text("None (Manual)")
+                    with doc.div(classes="space-y-3 text-sm"):
+                        with doc.div():
+                            with doc.span(classes="text-base-content/60"):
+                                doc.text("Processor Fees: ")
+                            with doc.span(classes="font-semibold"):
+                                doc.text("None (Manual)")
 
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Payout Schedule: ")
-                            with tag.span(classes="font-semibold"):
-                                text("Manual processing required")
+                        with doc.div():
+                            with doc.span(classes="text-base-content/60"):
+                                doc.text("Payout Schedule: ")
+                            with doc.span(classes="font-semibold"):
+                                doc.text("Manual processing required")
 
             # Fee Credits section (only if account exists)
             if self.org.account:
                 with card(bordered=True):
-                    with tag.div(classes="flex items-center justify-between mb-4"):
-                        with tag.h2(classes="text-lg font-bold"):
-                            text("Fee Credits")
+                    with doc.div(classes="flex items-center justify-between mb-4"):
+                        with doc.h2(classes="text-lg font-bold"):
+                            doc.text("Fee Credits")
                         with button(
                             variant="primary",
                             size="sm",
@@ -258,61 +258,61 @@ class AccountSection:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Grant Credit")
+                            doc.text("Grant Credit")
 
                     # Available balance
-                    with tag.div(classes="mb-4 p-4 bg-base-200 rounded-lg"):
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Available Balance")
-                        with tag.div(classes="text-2xl font-bold text-success"):
-                            text(_format_cents(self.available_balance))
+                    with doc.div(classes="mb-4 p-4 bg-base-200 rounded-lg"):
+                        with doc.div(classes="text-sm text-base-content/60 mb-1"):
+                            doc.text("Available Balance")
+                        with doc.div(classes="text-2xl font-bold text-success"):
+                            doc.text(_format_cents(self.available_balance))
 
                     # Credits table
                     if self.credits:
-                        with tag.div(classes="overflow-x-auto"):
-                            with tag.table(classes="table table-sm"):
-                                with tag.thead():
-                                    with tag.tr():
-                                        with tag.th():
-                                            text("Status")
-                                        with tag.th():
-                                            text("Title")
-                                        with tag.th():
-                                            text("Amount")
-                                        with tag.th():
-                                            text("Used")
-                                        with tag.th():
-                                            text("Remaining")
-                                        with tag.th():
-                                            text("Granted")
-                                        with tag.th():
-                                            text("Expires")
-                                        with tag.th():
-                                            text("Actions")
-                                with tag.tbody():
+                        with doc.div(classes="overflow-x-auto"):
+                            with doc.table(classes="table table-sm"):
+                                with doc.thead():
+                                    with doc.tr():
+                                        with doc.th():
+                                            doc.text("Status")
+                                        with doc.th():
+                                            doc.text("Title")
+                                        with doc.th():
+                                            doc.text("Amount")
+                                        with doc.th():
+                                            doc.text("Used")
+                                        with doc.th():
+                                            doc.text("Remaining")
+                                        with doc.th():
+                                            doc.text("Granted")
+                                        with doc.th():
+                                            doc.text("Expires")
+                                        with doc.th():
+                                            doc.text("Actions")
+                                with doc.tbody():
                                     for credit in self.credits:
                                         status_label, badge_class = _get_credit_status(
                                             credit
                                         )
-                                        with tag.tr():
-                                            with tag.td():
-                                                with tag.span(
+                                        with doc.tr():
+                                            with doc.td():
+                                                with doc.span(
                                                     classes=f"badge {badge_class}"
                                                 ):
-                                                    text(status_label)
-                                            with tag.td():
-                                                text(credit.title)
-                                            with tag.td():
-                                                text(_format_cents(credit.amount))
-                                            with tag.td():
-                                                text(_format_cents(credit.used))
-                                            with tag.td(classes="font-semibold"):
-                                                text(_format_cents(credit.remaining))
-                                            with tag.td(classes="text-xs"):
-                                                text(_format_date(credit.granted_at))
-                                            with tag.td(classes="text-xs"):
-                                                text(_format_date(credit.expires_at))
-                                            with tag.td():
+                                                    doc.text(status_label)
+                                            with doc.td():
+                                                doc.text(credit.title)
+                                            with doc.td():
+                                                doc.text(_format_cents(credit.amount))
+                                            with doc.td():
+                                                doc.text(_format_cents(credit.used))
+                                            with doc.td(classes="font-semibold"):
+                                                doc.text(_format_cents(credit.remaining))
+                                            with doc.td(classes="text-xs"):
+                                                doc.text(_format_date(credit.granted_at))
+                                            with doc.td(classes="text-xs"):
+                                                doc.text(_format_date(credit.expires_at))
+                                            with doc.td():
                                                 if status_label == "Active":
                                                     with button(
                                                         variant="error",
@@ -327,21 +327,21 @@ class AccountSection:
                                                         ),
                                                         hx_target="#modal",
                                                     ):
-                                                        text("Revoke")
+                                                        doc.text("Revoke")
                                                 else:
-                                                    text("—")
+                                                    doc.text("—")
 
                                         # Notes row if present
                                         if credit.notes:
-                                            with tag.tr(classes="bg-base-200/50"):
-                                                with tag.td(
+                                            with doc.tr(classes="bg-base-200/50"):
+                                                with doc.td(
                                                     colspan="8",
                                                     classes="text-xs text-base-content/60 italic",
                                                 ):
-                                                    text(f"Note: {credit.notes}")
+                                                    doc.text(f"Note: {credit.notes}")
                     else:
-                        with tag.div(classes="text-center py-4 text-base-content/60"):
-                            text("No credits granted yet")
+                        with doc.div(classes="text-center py-4 text-base-content/60"):
+                            doc.text("No credits granted yet")
 
             yield
 

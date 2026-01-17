@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.models.organization import OrganizationStatus
 
@@ -69,12 +69,12 @@ def status_badge(
         {"class": "badge-ghost border border-base-300", "aria": "unknown status"},
     )
 
-    with tag.span(classes="badge", **kwargs):
-        classes(config["class"])
+    with doc.span(classes="badge", **kwargs):
+        doc.attr("class", config["class"])
         if "aria-label" not in kwargs:
             kwargs["aria-label"] = config["aria"]
 
-        text(status.get_display_name())
+        doc.text(status.get_display_name())
         yield
 
 

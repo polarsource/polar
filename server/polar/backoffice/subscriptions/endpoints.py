@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -63,20 +63,21 @@ class OrganizationColumn(
 
 @contextlib.contextmanager
 def subscription_status_badge(subscription: Subscription) -> Generator[None]:
+    doc = get_document()
     status = subscription.status
-    with tag.div(classes="badge"):
+    with doc.div(classes="badge"):
         if status == SubscriptionStatus.active:
             if subscription.cancel_at_period_end:
-                classes("badge-warning")
+                doc.attr("class", "badge-warning")
             else:
-                classes("badge-success")
+                doc.attr("class", "badge-success")
         elif status == SubscriptionStatus.trialing:
-            classes("badge-info")
+            doc.attr("class", "badge-info")
         elif status in {SubscriptionStatus.unpaid, SubscriptionStatus.past_due}:
-            classes("badge-error")
+            doc.attr("class", "badge-error")
         else:  # canceled, incomplete, incomplete_expired
-            classes("badge-neutral")
-        text(status.value.replace("_", " ").title())
+            doc.attr("class", "badge-neutral")
+        doc.text(status.value.replace("_", " ").title())
     yield
 
 
@@ -134,10 +135,10 @@ async def list(
         ],
         "subscriptions:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Subscriptions")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Subscriptions")
+            with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -157,7 +158,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    doc.text("Filter")
             with datatable.Datatable[Subscription, SubscriptionSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", clipboard=True, href_route_name="subscriptions:get"
@@ -228,10 +229,10 @@ async def get(
         ],
         "subscriptions:get",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Subscription {subscription.id}")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.div(classes="flex justify-between items-center"):
+                with doc.h1(classes="text-4xl"):
+                    doc.text(f"Subscription {subscription.id}")
                 if subscription.can_cancel():
                     with button(
                         hx_get=str(
@@ -239,7 +240,7 @@ async def get(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Cancel")
+                        doc.text("Cancel")
                 if subscription.can_uncancel():
                     with button(
                         hx_get=str(
@@ -249,14 +250,14 @@ async def get(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Uncancel")
+                        doc.text("Uncancel")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Subscription Details")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Subscription Details")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -285,9 +286,9 @@ async def get(
                             subscription.cancel_at_period_end
                             or subscription.canceled_at
                         ):
-                            with tag.div(classes="mt-4"):
-                                with tag.h3(classes="text-lg font-semibold"):
-                                    text("Cancellation Details")
+                            with doc.div(classes="mt-4"):
+                                with doc.h3(classes="text-lg font-semibold"):
+                                    doc.text("Cancellation Details")
                                 with description_list.DescriptionList[Subscription](
                                     description_list.DescriptionListAttrItem(
                                         "cancel_at_period_end", "Cancel at Period End"
@@ -305,10 +306,10 @@ async def get(
                                     pass
 
                 # Product and Organization
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Product & Organization")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Product & Organization")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "product.name", "Product"
@@ -327,10 +328,10 @@ async def get(
                             pass
 
                 # Customer Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Customer")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Customer")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "customer.id", "ID", clipboard=True
@@ -346,10 +347,10 @@ async def get(
 
                 # Discount if applicable
                 if subscription.discount:
-                    with tag.div(classes="card card-border w-full shadow-sm"):
-                        with tag.div(classes="card-body"):
-                            with tag.h2(classes="card-title"):
-                                text("Discount")
+                    with doc.div(classes="card card-border w-full shadow-sm"):
+                        with doc.div(classes="card-body"):
+                            with doc.h2(classes="card-title"):
+                                doc.text("Discount")
                             with description_list.DescriptionList[Subscription](
                                 description_list.DescriptionListAttrItem(
                                     "discount.name", "Name"
@@ -361,9 +362,9 @@ async def get(
                                 pass
 
             # Orders table
-            with tag.div(classes="flex flex-col gap-4"):
-                with tag.h2(classes="text-2xl"):
-                    text("Orders")
+            with doc.div(classes="flex flex-col gap-4"):
+                with doc.h2(classes="text-2xl"):
+                    doc.text("Orders")
                 with orders_datatable(request, orders):
                     pass
 
@@ -410,12 +411,12 @@ async def cancel(
             classes="flex flex-col",
             validation_error=validation_error,
         ):
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(type="submit", variant="primary"):
-                    text("Submit")
+                    doc.text("Submit")
 
 
 @router.api_route(
@@ -443,20 +444,20 @@ async def uncancel(
         )
 
     with modal("Uncancel subscription", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to uncancel this subscription? ")
-                text(
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p():
+                doc.text("Are you sure you want to uncancel this subscription? ")
+                doc.text(
                     "The billing cycle will be resumed, and the subscription will be active again."
                 )
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Submit")
+                    doc.text("Submit")

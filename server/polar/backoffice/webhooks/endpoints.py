@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import attr, tag, text
+from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
@@ -65,11 +65,11 @@ async def list(
         ],
         "webhooks:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Webhooks")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Webhooks")
 
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+            with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -77,7 +77,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    doc.text("Filter")
 
             with datatable.Datatable[WebhookEndpoint, WebhookSortProperty](
                 datatable.DatatableAttrColumn(
@@ -124,17 +124,17 @@ async def get(
         ],
         "webhooks:get",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Webhook: {webhook.url}")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.div(classes="flex justify-between items-center"):
+                with doc.h1(classes="text-4xl"):
+                    doc.text(f"Webhook: {webhook.url}")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Webhook Details")
-                        with tag.div(id="webhook-details-list"):
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Webhook Details")
+                        with doc.div(id="webhook-details-list"):
                             with description_list.DescriptionList[WebhookEndpoint](
                                 description_list.DescriptionListAttrItem(
                                     "id", "ID", clipboard=True
@@ -155,15 +155,15 @@ async def get(
                             ).render(request, webhook):
                                 pass
 
-                        with tag.div(classes="divider"):
+                        with doc.div(classes="divider"):
                             pass
 
-                        with tag.div(
+                        with doc.div(
                             id="webhook-enabled-status",
                             classes="flex items-center justify-between",
                         ):
-                            with tag.span(classes="label-text font-medium"):
-                                text("Enabled")
+                            with doc.span(classes="label-text font-medium"):
+                                doc.text("Enabled")
                             with button(
                                 variant="success" if webhook.enabled else "neutral",
                                 size="sm",
@@ -174,12 +174,12 @@ async def get(
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Enabled" if webhook.enabled else "Disabled")
+                                doc.text("Enabled" if webhook.enabled else "Disabled")
 
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Organization")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Organization")
                         with description_list.DescriptionList[WebhookEndpoint](
                             description_list.DescriptionListLinkItem[WebhookEndpoint](
                                 "organization.name",
@@ -197,24 +197,24 @@ async def get(
                         ).render(request, webhook):
                             pass
 
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Subscribed Events")
+            with doc.div(classes="flex flex-col gap-4 pt-8"):
+                with doc.h2(classes="text-2xl"):
+                    doc.text("Subscribed Events")
                 if not webhook.events:
-                    with tag.div(classes="text-gray-500"):
-                        text("No events subscribed")
+                    with doc.div(classes="text-gray-500"):
+                        doc.text("No events subscribed")
                 else:
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("Event Type")
-                            with tag.tbody():
+                    with doc.div(classes="overflow-x-auto"):
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
+                                    with doc.th():
+                                        doc.text("Event Type")
+                            with doc.tbody():
                                 for event in webhook.events:
-                                    with tag.tr():
-                                        with tag.td():
-                                            text(event)
+                                    with doc.tr():
+                                        with doc.td():
+                                            doc.text(event)
 
 
 @router.get("/{id}/confirm-toggle-enabled", name="webhooks:confirm_toggle_enabled")
@@ -242,11 +242,11 @@ async def confirm_toggle_enabled(
         confirm_text=action.capitalize(),
         open=True,
     ):
-        attr(
+        doc.attr(
             "hx-post",
             str(request.url_for("webhooks:toggle_enabled", id=webhook.id)),
         )
-        attr("hx-target", "#modal")
+        doc.attr("hx-target", "#modal")
 
 
 @router.post("/{id}/toggle-enabled", name="webhooks:toggle_enabled")
@@ -273,11 +273,11 @@ async def toggle_enabled(
         "success",
     )
 
-    with tag.div(id="modal"):
+    with doc.div(id="modal"):
         pass
 
-    with tag.div(id="webhook-details-list"):
-        attr("hx-swap-oob", "true")
+    with doc.div(id="webhook-details-list"):
+        doc.attr("hx-swap-oob", "true")
         with description_list.DescriptionList[WebhookEndpoint](
             description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
             description_list.DescriptionListAttrItem("url", "URL"),
@@ -288,13 +288,13 @@ async def toggle_enabled(
         ).render(request, webhook):
             pass
 
-    with tag.div(
+    with doc.div(
         id="webhook-enabled-status",
         classes="flex items-center justify-between",
     ):
-        attr("hx-swap-oob", "true")
-        with tag.span(classes="label-text font-medium"):
-            text("Enabled")
+        doc.attr("hx-swap-oob", "true")
+        with doc.span(classes="label-text font-medium"):
+            doc.text("Enabled")
         with button(
             variant="success" if webhook.enabled else "neutral",
             size="sm",
@@ -303,4 +303,4 @@ async def toggle_enabled(
             ),
             hx_target="#modal",
         ):
-            text("Enabled" if webhook.enabled else "Disabled")
+            doc.text("Enabled" if webhook.enabled else "Disabled")

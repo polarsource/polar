@@ -1,9 +1,9 @@
 import contextlib
 from collections.abc import Generator, Sequence
 
-from tagflow import classes as _classes
-from tagflow import tag, text
-from tagflow.tagflow import AttrValue
+from polar.backoffice.document import get_document
+from polar.backoffice.document import get_document
+# AttrValue type defined inline
 
 
 @contextlib.contextmanager
@@ -26,10 +26,10 @@ def search(
         >>> with search(name="query", placeholder="Search users..."):
         ...     pass
     """
-    with tag.label(classes="input"):
-        with tag.div(classes="icon-search opacity-50"):
+    with doc.label(classes="input"):
+        with doc.div(classes="icon-search opacity-50"):
             pass
-        with tag.input(
+        with doc.input(
             type="search",
             classes="grow",
             name=name,
@@ -72,15 +72,15 @@ def select(
         >>> with select(options, value="active", name="status", placeholder="Choose status"):
         ...     pass
     """
-    with tag.select(classes="select", **kwargs):
+    with doc.select(classes="select", **kwargs):
         if classes is not None:
             _classes(classes)
         if placeholder is not None:
-            with tag.option(value="", selected=not value):
-                text(placeholder)
+            with doc.option(value="", selected=not value):
+                doc.text(placeholder)
         for option_label, option_value in options:
-            with tag.option(value=option_value, selected=option_value == value):
-                text(option_label)
+            with doc.option(value=option_value, selected=option_value == value):
+                doc.text(option_label)
     yield
 
 

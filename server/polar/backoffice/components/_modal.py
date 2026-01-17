@@ -1,7 +1,7 @@
 import contextlib
 from collections.abc import Generator
 
-from tagflow import attr, tag, text
+from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager
@@ -32,28 +32,28 @@ def modal(title: str, *, open: bool = False) -> Generator[None]:
 
     Example:
         >>> with modal("Confirm Delete", open=True):
-        ...     with tag.p():
-        ...         text("Are you sure you want to delete this item?")
-        ...     with tag.div(classes="modal-action"):
+        ...     with doc.p():
+        ...         doc.text("Are you sure you want to delete this item?")
+        ...     with doc.div(classes="modal-action"):
         ...         with button(variant="error"):
-        ...             text("Delete")
+        ...             doc.text("Delete")
         # Generates an open modal with title and content
     """
-    with tag.dialog(classes="modal modal-bottom sm:modal-middle"):
+    with doc.dialog(classes="modal modal-bottom sm:modal-middle"):
         if open:
-            attr("open", True)
-        with tag.div(classes="modal-box"):
-            with tag.form(method="dialog"):
-                with tag.button(
+            doc.attr("open", True)
+        with doc.div(classes="modal-box"):
+            with doc.form(method="dialog"):
+                with doc.button(
                     classes="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                 ):
-                    with tag.div(classes="icon-x"):
+                    with doc.div(classes="icon-x"):
                         pass
-            with tag.h3(classes="text-lg font-bold mb-4"):
-                text(title)
+            with doc.h3(classes="text-lg font-bold mb-4"):
+                doc.text(title)
             yield
-        with tag.form(method="dialog", classes="modal-backdrop"):
-            with tag.button():
+        with doc.form(method="dialog", classes="modal-backdrop"):
+            with doc.button():
                 pass
 
 

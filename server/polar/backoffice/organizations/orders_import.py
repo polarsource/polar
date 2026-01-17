@@ -9,7 +9,7 @@ import aiocsv
 from fastapi import UploadFile
 from sqlalchemy import func
 from sse_starlette.event import ServerSentEvent
-from tagflow import document, tag, text
+from polar.backoffice.document import get_document
 
 from polar import tasks  # noqa: F401
 from polar.customer.repository import CustomerRepository
@@ -258,6 +258,7 @@ async def orders_import_sse(
     *,
     invoice_number_prefix: str = "IMPORTED_",
 ) -> AsyncGenerator[ServerSentEvent, None]:
+    doc = get_document()
     """Same as orders_import but yields progress for SSE."""
     try:
         async for progress in orders_import(
@@ -267,7 +268,7 @@ async def orders_import_sse(
             invoice_number_prefix=invoice_number_prefix,
         ):
             with document() as d:
-                with tag.progress(
+                with doc.progress(
                     classes="progress progress-primary w-full",
                     value=str(progress[0]),
                     max=str(progress[1]),
@@ -279,21 +280,21 @@ async def orders_import_sse(
             with alert(
                 variant="error", soft=True, classes="flex flex-col gap-2 items-start"
             ):
-                with tag.div():
-                    text("Import errors, no order were created:")
-                with tag.ul(classes="list-disc list-inside"):
+                with doc.div():
+                    doc.text("Import errors, no order were created:")
+                with doc.ul(classes="list-disc list-inside"):
                     for error in e.errors:
-                        with tag.li():
-                            text(f"Row {error.index}: {error.message}")
+                        with doc.li():
+                            doc.text(f"Row {error.index}: {error.message}")
             yield ServerSentEvent(d.to_html(), event="close")
     except Exception:
         with document() as d:
             with alert(variant="error", soft=True):
-                text("An unexpected error occurred during import. Check server logs.")
+                doc.text("An unexpected error occurred during import. Check server logs.")
             yield ServerSentEvent(d.to_html(), event="close")
         raise
     else:
         with document() as d:
             with alert(variant="success", soft=True):
-                text("Import completed successfully.")
+                doc.text("Import completed successfully.")
             yield ServerSentEvent(d.to_html(), event="close")

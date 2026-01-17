@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from ...components import button
 from ..forms import ApproveOrganizationAppealForm
@@ -76,37 +76,38 @@ class AIReviewVerdict:
         else:
             row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
-        with tag.div(classes=row_classes):
-            with tag.span(
+        with doc.div(classes=row_classes):
+            with doc.span(
                 classes="text-sm font-medium text-gray-700 dark:text-gray-300"
             ):
-                text(label)
-            with tag.span(
+                doc.text(label)
+            with doc.span(
                 classes=f"text-sm font-semibold {color_class or 'text-gray-900 dark:text-gray-100'}"
             ):
-                text(value)
+                doc.text(value)
         yield
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+    doc = get_document()
         """Render the AI review verdict component (compact version)."""
-        with tag.div(classes="card-body"):
-            with tag.h2(classes="card-title flex items-center gap-2"):
-                text("AI Review")
+        with doc.div(classes="card-body"):
+            with doc.h2(classes="card-title flex items-center gap-2"):
+                doc.text("AI Review")
                 if self.review:
-                    with tag.span(classes=f"badge text-xs {self.verdict_classes}"):
-                        text(self.verdict_text)
+                    with doc.span(classes=f"badge text-xs {self.verdict_classes}"):
+                        doc.text(self.verdict_text)
 
             if not self.review:
                 # No review available - compact version
-                with tag.div(classes="text-center py-6"):
-                    with tag.div(classes="text-gray-400 mb-2 text-2xl"):
-                        text("🤖")
-                    with tag.p(classes="text-gray-600 dark:text-gray-400 text-sm"):
-                        text("AI review pending")
+                with doc.div(classes="text-center py-6"):
+                    with doc.div(classes="text-gray-400 mb-2 text-2xl"):
+                        doc.text("🤖")
+                    with doc.p(classes="text-gray-600 dark:text-gray-400 text-sm"):
+                        doc.text("AI review pending")
             else:
                 # Review metrics - compact version
-                with tag.div(classes="space-y-2 mt-4"):
+                with doc.div(classes="space-y-2 mt-4"):
                     with self._render_metric_row(
                         "Risk Score",
                         f"{self.review.risk_score:.2f}",
@@ -124,52 +125,52 @@ class AIReviewVerdict:
 
                 # Violated sections (if any) - full text, each on own line
                 if self.review.violated_sections:
-                    with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                        with tag.div(classes="mb-2"):
-                            with tag.span(
+                    with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                        with doc.div(classes="mb-2"):
+                            with doc.span(
                                 classes="text-sm font-medium text-gray-700 dark:text-gray-300"
                             ):
-                                text("Violations")
-                        with tag.div(classes="space-y-1"):
+                                doc.text("Violations")
+                        with doc.div(classes="space-y-1"):
                             for section in self.review.violated_sections:
-                                with tag.div(
+                                with doc.div(
                                     classes="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm px-2 py-1 rounded"
                                 ):
-                                    text(section)
+                                    doc.text(section)
 
                 # Assessment reason - compact but readable
                 if self.review.reason:
-                    with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                        with tag.div(classes="mb-2"):
-                            with tag.span(
+                    with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                        with doc.div(classes="mb-2"):
+                            with doc.span(
                                 classes="text-sm font-medium text-gray-700 dark:text-gray-300"
                             ):
-                                text("Assessment")
-                        with tag.div(
+                                doc.text("Assessment")
+                        with doc.div(
                             classes="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded max-h-32 overflow-y-auto"
                         ):
                             # Split reason into paragraphs but keep compact
                             paragraphs = self.review.reason.split("\n\n")
                             for i, paragraph in enumerate(paragraphs):
                                 if paragraph.strip():
-                                    with tag.p(
+                                    with doc.p(
                                         classes="mb-1"
                                         if i < len(paragraphs) - 1
                                         else ""
                                     ):
-                                        text(paragraph.strip())
+                                        doc.text(paragraph.strip())
 
                 # Appeal information - if appeal was submitted
                 if (
                     hasattr(self.review, "appeal_submitted_at")
                     and self.review.appeal_submitted_at
                 ):
-                    with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                        with tag.div(classes="mb-2"):
-                            with tag.span(
+                    with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                        with doc.div(classes="mb-2"):
+                            with doc.span(
                                 classes="text-sm font-medium text-gray-700 dark:text-gray-300"
                             ):
-                                text("Appeal Status")
+                                doc.text("Appeal Status")
 
                         # Appeal status badge
                         if (
@@ -189,9 +190,9 @@ class AIReviewVerdict:
                             badge_classes = "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                             status_text = "Under Review"
 
-                        with tag.div(classes="mb-2"):
-                            with tag.span(classes=f"badge text-xs {badge_classes}"):
-                                text(status_text)
+                        with doc.div(classes="mb-2"):
+                            with doc.span(classes=f"badge text-xs {badge_classes}"):
+                                doc.text(status_text)
 
                         # Appeal submission date
                         with self._render_metric_row(
@@ -220,25 +221,25 @@ class AIReviewVerdict:
                             hasattr(self.review, "appeal_reason")
                             and self.review.appeal_reason
                         ):
-                            with tag.div(classes="mt-2"):
-                                with tag.div(classes="mb-2"):
-                                    with tag.span(
+                            with doc.div(classes="mt-2"):
+                                with doc.div(classes="mb-2"):
+                                    with doc.span(
                                         classes="text-sm font-medium text-gray-700 dark:text-gray-300"
                                     ):
-                                        text("Appeal Reason")
-                                with tag.div(
+                                        doc.text("Appeal Reason")
+                                with doc.div(
                                     classes="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded max-h-32 overflow-y-auto"
                                 ):
                                     # Split appeal reason into paragraphs like assessment
                                     paragraphs = self.review.appeal_reason.split("\n\n")
                                     for i, paragraph in enumerate(paragraphs):
                                         if paragraph.strip():
-                                            with tag.p(
+                                            with doc.p(
                                                 classes="mb-1"
                                                 if i < len(paragraphs) - 1
                                                 else ""
                                             ):
-                                                text(paragraph.strip())
+                                                doc.text(paragraph.strip())
 
                         # Appeal decision actions - only show if appeal is pending and we have the necessary context
                         if (
@@ -247,23 +248,23 @@ class AIReviewVerdict:
                             and hasattr(self.review, "appeal_decision")
                             and self.review.appeal_decision is None
                         ):
-                            with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                                with tag.div(classes="text-center mb-3"):
-                                    with tag.h4(
+                            with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                                with doc.div(classes="text-center mb-3"):
+                                    with doc.h4(
                                         classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                     ):
-                                        text("Appeal Decision")
-                                    with tag.p(
+                                        doc.text("Appeal Decision")
+                                    with doc.p(
                                         classes="text-xs text-gray-600 dark:text-gray-400"
                                     ):
-                                        text("Review the appeal and make a decision")
+                                        doc.text("Review the appeal and make a decision")
 
                                 with ApproveOrganizationAppealForm.render(
                                     method="POST",
                                     action=str(self.request.url),
                                     classes="space-y-4",
                                 ):
-                                    with tag.div(
+                                    with doc.div(
                                         classes="flex gap-2 justify-center mt-4"
                                     ):
                                         with button(
@@ -273,7 +274,7 @@ class AIReviewVerdict:
                                             value="approve_appeal",
                                             size="sm",
                                         ):
-                                            text("Approve Appeal")
+                                            doc.text("Approve Appeal")
                                         with button(
                                             name="action",
                                             type="submit",
@@ -281,20 +282,20 @@ class AIReviewVerdict:
                                             value="deny_appeal",
                                             size="sm",
                                         ):
-                                            text("Deny Appeal")
+                                            doc.text("Deny Appeal")
 
                 # Timeout indicator - compact
                 if self.review.timed_out:
-                    with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                        with tag.div(
+                    with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                        with doc.div(
                             classes="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded p-2"
                         ):
-                            with tag.div(classes="flex items-center gap-1"):
-                                with tag.span(classes="text-yellow-600 text-sm"):
-                                    text("⚠️")
-                                with tag.span(
+                            with doc.div(classes="flex items-center gap-1"):
+                                with doc.span(classes="text-yellow-600 text-sm"):
+                                    doc.text("⚠️")
+                                with doc.span(
                                     classes="text-yellow-800 dark:text-yellow-300 text-sm font-medium"
                                 ):
-                                    text("Timed Out")
+                                    doc.text("Timed Out")
 
         yield

@@ -1,7 +1,7 @@
 import contextlib
 from collections.abc import Generator
 
-from tagflow import attr
+from polar.backoffice.document import get_document
 
 from polar.backoffice.components import confirmation_dialog
 from polar.models import User
@@ -14,6 +14,7 @@ class DeleteIdentityVerificationModal:
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+    doc = get_document()
         with confirmation_dialog(
             "Delete Identity Verification",
             "Are you sure you want to delete this user's identity verification? "
@@ -23,9 +24,9 @@ class DeleteIdentityVerificationModal:
             confirm_text="Delete Verification",
             open=True,
         ):
-            attr("hx-post", self.form_action)
-            attr("hx-target", "#modal")
-            attr("hx-vals", '{"confirm": "true"}')
+            doc.attr("hx-post", self.form_action)
+            doc.attr("hx-target", "#modal")
+            doc.attr("hx-vals", '{"confirm": "true"}')
 
         yield
 

@@ -14,7 +14,7 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
-from tagflow import classes, document, tag, text
+from polar.backoffice.document import get_document
 
 from polar.account.service import (
     CannotChangeAdminError,
@@ -108,17 +108,18 @@ def empty_str_to_none_before_bool(value: Any) -> Any:
 
 @contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
-    with tag.div(classes="badge"):
+    doc = get_document()
+    with doc.div(classes="badge"):
         if organization.status == OrganizationStatus.ACTIVE:
-            classes("badge-success")
+            doc.attr("class", "badge-success")
         elif (
             organization.is_under_review
             or organization.status == OrganizationStatus.DENIED
         ):
-            classes("badge-warning")
+            doc.attr("class", "badge-warning")
         else:
-            classes("badge-secondary")
-        text(organization.status.get_display_name())
+            doc.attr("class", "badge-secondary")
+        doc.text(organization.status.get_display_name())
     yield
 
 
@@ -137,7 +138,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         from babel.numbers import format_currency
 
-        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        doc.text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
         return None
 
 
@@ -153,9 +154,9 @@ class DaysInStatusColumn(
             days = delta.days
 
         if item.is_under_review:
-            text(f"{days} days in review")
+            doc.text(f"{days} days in review")
         else:
-            text(f"{days} days since review")
+            doc.text(f"{days} days since review")
         return None
 
 
@@ -163,19 +164,20 @@ class AccountTypeDescriptionListAttrItem(
     description_list.DescriptionListAttrItem[Account]
 ):
     def render(self, request: Request, item: Account) -> Generator[None] | None:
+    doc = get_document()
         account_type = item.account_type
         if account_type == AccountType.stripe:
-            with tag.a(
+            with doc.a(
                 href=f"https://dashboard.stripe.com/connect/accounts/{item.stripe_id}",
                 classes="link flex flex-row gap-1",
                 target="_blank",
                 rel="noopener noreferrer",
             ):
-                text(account_type.get_display_name())
-                with tag.div(classes="icon-external-link"):
+                doc.text(account_type.get_display_name())
+                with doc.div(classes="icon-external-link"):
                     pass
         else:
-            text(account_type.get_display_name())
+            doc.text(account_type.get_display_name())
         return None
 
 
@@ -382,11 +384,11 @@ async def list(
         ],
         "organizations:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Organizations")
-            with tag.form(method="GET", classes="w-full flex flex-col gap-4"):
-                with tag.div(classes="flex flex-row gap-2"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Organizations")
+            with doc.form(method="GET", classes="w-full flex flex-col gap-4"):
+                with doc.div(classes="flex flex-row gap-2"):
                     with input.search("query", query):
                         pass
                     with input.select(
@@ -423,7 +425,7 @@ async def list(
                         name="review_cycle",
                     ):
                         pass
-                with tag.div(classes="flex flex-row gap-2"):
+                with doc.div(classes="flex flex-row gap-2"):
                     with input.select(
                         [
                             ("25 per page", "25"),
@@ -435,7 +437,7 @@ async def list(
                     ):
                         pass
                     with button(type="submit"):
-                        text("Filter")
+                        doc.text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="organizations:get", clipboard=True
@@ -566,15 +568,15 @@ async def update(
             classes="flex flex-col gap-4",
             validation_error=validation_error,
         ):
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Update")
+                    doc.text("Update")
 
 
 @router.api_route(
@@ -607,8 +609,8 @@ async def update_details(
             validation_error = e
 
     with modal("Edit Business Information", open=True):
-        with tag.p(classes="text-sm text-base-content-secondary"):
-            text("Update the key information about your business and products")
+        with doc.p(classes="text-sm text-base-content-secondary"):
+            doc.text("Update the key information about your business and products")
 
         with UpdateOrganizationDetailsForm.render(
             data=organization,
@@ -618,15 +620,15 @@ async def update_details(
             classes="space-y-6",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Update Details")
+                    doc.text("Update Details")
 
 
 @router.api_route(
@@ -661,8 +663,8 @@ async def update_internal_notes(
             validation_error = e
 
     with modal("Edit Internal Notes", open=True):
-        with tag.p(classes="text-sm text-base-content-secondary"):
-            text("Add or update internal notes about this organization (admin only)")
+        with doc.p(classes="text-sm text-base-content-secondary"):
+            doc.text("Add or update internal notes about this organization (admin only)")
 
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
@@ -672,15 +674,15 @@ async def update_internal_notes(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Notes")
+                    doc.text("Save Notes")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -705,41 +707,41 @@ async def delete(
         return
 
     with modal(f"Delete Organization {organization.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to delete this Organization? ")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p():
+                doc.text("Are you sure you want to delete this Organization? ")
 
-            with tag.p():
-                text("Deleting this Organization DOES NOT:")
-            with tag.ul(classes="list-disc list-inside"):
-                with tag.li():
-                    text("Delete or anonymize Users related Organization")
-                with tag.li():
-                    text("Delete or anonymize Account of the Organization")
-                with tag.li():
-                    text(
+            with doc.p():
+                doc.text("Deleting this Organization DOES NOT:")
+            with doc.ul(classes="list-disc list-inside"):
+                with doc.li():
+                    doc.text("Delete or anonymize Users related Organization")
+                with doc.li():
+                    doc.text("Delete or anonymize Account of the Organization")
+                with doc.li():
+                    doc.text(
                         "Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization"
                     )
-                with tag.li():
-                    text("Revoke Benefits granted")
-                with tag.li():
-                    text("Remove API tokens (organization or personal)")
+                with doc.li():
+                    doc.text("Revoke Benefits granted")
+                with doc.li():
+                    doc.text("Remove API tokens (organization or personal)")
 
-            with tag.p():
-                text("The User can be deleted separately")
+            with doc.p():
+                doc.text("The User can be deleted separately")
 
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
-                with tag.form(method="dialog"):
+                        doc.text("Cancel")
+                with doc.form(method="dialog"):
                     with button(
                         type="button",
                         variant="primary",
                         hx_post=str(request.url),
                         hx_target="#modal",
                     ):
-                        text("Delete")
+                        doc.text("Delete")
 
 
 @router.get(
@@ -761,27 +763,27 @@ async def confirm_remove_member(
         raise HTTPException(status_code=404, detail="User not found")
 
     with modal(f"Remove {user.email}", open=True):
-        with tag.div(classes="flex items-start gap-4 mb-6"):
+        with doc.div(classes="flex items-start gap-4 mb-6"):
             # Message content
-            with tag.div(classes="flex-1"):
-                with tag.p(classes="text-sm text-gray-600 mb-4"):
-                    text("Are you sure you want to remove ")
-                    with tag.strong():
-                        text(user.email)
-                    text(" from this organization?")
+            with doc.div(classes="flex-1"):
+                with doc.p(classes="text-sm text-gray-600 mb-4"):
+                    doc.text("Are you sure you want to remove ")
+                    with doc.strong():
+                        doc.text(user.email)
+                    doc.text(" from this organization?")
 
-                with tag.p(classes="text-xs text-gray-500"):
-                    text(
+                with doc.p(classes="text-xs text-gray-500"):
+                    doc.text(
                         "This action cannot be undone. The user will lose access to all organization resources."
                     )
 
         # Action buttons
-        with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
+        with doc.div(classes="modal-action"):
+            with doc.form(method="dialog"):
                 with button(ghost=True):
-                    text("Cancel")
+                    doc.text("Cancel")
 
-            with tag.form(method="dialog"):
+            with doc.form(method="dialog"):
                 with button(
                     variant="error",
                     hx_delete=str(
@@ -793,7 +795,7 @@ async def confirm_remove_member(
                     ),
                     hx_target="#modal",
                 ):
-                    text("Remove User")
+                    doc.text("Remove User")
 
 
 @router.api_route(
@@ -892,99 +894,99 @@ async def confirm_change_admin(
     is_blocked = has_stripe_account or user_not_verified or not_enough_users
 
     with modal("Change Account Admin", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
+        with doc.div(classes="flex flex-col gap-4"):
             # Show appropriate alert based on blocking conditions
             if is_blocked:
-                with tag.div(classes="alert alert-error"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Cannot Change Admin")
+                with doc.div(classes="alert alert-error"):
+                    with doc.div():
+                        with doc.h3(classes="font-bold"):
+                            doc.text("Cannot Change Admin")
                         if has_stripe_account:
-                            with tag.p():
-                                text(
+                            with doc.p():
+                                doc.text(
                                     "To change account admin, first delete the Stripe account using backoffice account management."
                                 )
                         elif user_not_verified:
-                            with tag.p():
-                                text(
+                            with doc.p():
+                                doc.text(
                                     "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
                                 )
                         elif not_enough_users:
-                            with tag.p():
-                                text(
+                            with doc.p():
+                                doc.text(
                                     "Need at least 2 team members to change account admin."
                                 )
             else:
-                with tag.div(classes="alert alert-success"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Change Account Administrator")
-                        with tag.p():
-                            text(
+                with doc.div(classes="alert alert-success"):
+                    with doc.div():
+                        with doc.h3(classes="font-bold"):
+                            doc.text("Change Account Administrator")
+                        with doc.p():
+                            doc.text(
                                 "Account admin can now be changed. This will change who has admin control over the account."
                             )
 
-            with tag.div(classes="space-y-4"):
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("Current Admin:")
-                    with tag.p(classes="text-gray-600"):
+            with doc.div(classes="space-y-4"):
+                with doc.div():
+                    with doc.h4(classes="font-semibold text-sm"):
+                        doc.text("Current Admin:")
+                    with doc.p(classes="text-gray-600"):
                         if current_admin:
-                            text(current_admin.email)
+                            doc.text(current_admin.email)
                         else:
-                            text("No current admin found")
+                            doc.text("No current admin found")
 
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("New Admin:")
-                    with tag.p(classes="text-gray-600"):
-                        text(new_admin.email)
+                with doc.div():
+                    with doc.h4(classes="font-semibold text-sm"):
+                        doc.text("New Admin:")
+                    with doc.p(classes="text-gray-600"):
+                        doc.text(new_admin.email)
 
                 # Show verification status
-                with tag.div():
-                    with tag.h4(classes="font-semibold text-sm"):
-                        text("Identity Verification Status:")
+                with doc.div():
+                    with doc.h4(classes="font-semibold text-sm"):
+                        doc.text("Identity Verification Status:")
                     verification_status = new_admin.identity_verification_status
                     if verification_status == IdentityVerificationStatus.verified:
-                        with tag.p(classes="text-green-600 font-medium"):
-                            text("✅ Verified")
+                        with doc.p(classes="text-green-600 font-medium"):
+                            doc.text("✅ Verified")
                     else:
-                        with tag.p(classes="text-red-600 font-medium"):
-                            text(f"❌ {verification_status.get_display_name()}")
+                        with doc.p(classes="text-red-600 font-medium"):
+                            doc.text(f"❌ {verification_status.get_display_name()}")
 
             # Show warning if user is not verified
             if (
                 new_admin.identity_verification_status
                 != IdentityVerificationStatus.verified
             ):
-                with tag.div(classes="alert alert-error"):
-                    with tag.div():
-                        with tag.h3(classes="font-bold"):
-                            text("Cannot Change Admin")
-                        with tag.p():
-                            text(
+                with doc.div(classes="alert alert-error"):
+                    with doc.div():
+                        with doc.h3(classes="font-bold"):
+                            doc.text("Cannot Change Admin")
+                        with doc.p():
+                            doc.text(
                                 "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
                             )
 
         # Action buttons
-        with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
+        with doc.div(classes="modal-action"):
+            with doc.form(method="dialog"):
                 with button(ghost=True):
-                    text("Cancel")
+                    doc.text("Cancel")
 
             # Show button based on blocking conditions
             if is_blocked:
                 # Show disabled button with appropriate message
                 with button(variant="primary", disabled=True):
                     if has_stripe_account:
-                        text("Change Admin (Delete Stripe Account First)")
+                        doc.text("Change Admin (Delete Stripe Account First)")
                     elif user_not_verified:
-                        text("Change Admin (Requires Verification)")
+                        doc.text("Change Admin (Requires Verification)")
                     elif not_enough_users:
-                        text("Change Admin (Need More Members)")
+                        doc.text("Change Admin (Need More Members)")
             else:
                 # All conditions met - show active button
-                with tag.form(method="dialog"):
+                with doc.form(method="dialog"):
                     with button(
                         variant="primary",
                         hx_post=str(
@@ -996,7 +998,7 @@ async def confirm_change_admin(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Change Admin")
+                        doc.text("Change Admin")
 
 
 @router.api_route(
@@ -1124,35 +1126,35 @@ async def setup_manual_payout(
         )
 
     with modal("Setup Manual Payout", open=True):
-        with tag.form(method="POST", action=str(request.url), classes="flex flex-col"):
+        with doc.form(method="POST", action=str(request.url), classes="flex flex-col"):
             # Warning message
-            with tag.div(classes="alert alert-warning"):
-                with tag.svg(
+            with doc.div(classes="alert alert-warning"):
+                with doc.svg(
                     classes="stroke-current shrink-0 h-6 w-6",
                     fill="none",
                     viewBox="0 0 24 24",
                 ):
-                    with tag.path(
+                    with doc.path(
                         stroke_linecap="round",
                         stroke_linejoin="round",
                         stroke_width="2",
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
                     ):
                         pass
-                with tag.span(classes="font-semibold"):
-                    text(
+                with doc.span(classes="font-semibold"):
+                    doc.text(
                         "Should only be enabled by Birk at this stage since its manual and reserved for a few customers in alpha"
                     )
 
-            with tag.p():
-                text("This will create a manual payout account for this organization.")
+            with doc.p():
+                doc.text("This will create a manual payout account for this organization.")
 
             # Country selection
-            with tag.div(classes="form-control w-full"):
-                with tag.label(classes="label"):
-                    with tag.span(classes="label-text"):
-                        text("Country Code")
-                with tag.input(
+            with doc.div(classes="form-control w-full"):
+                with doc.label(classes="label"):
+                    with doc.span(classes="label-text"):
+                        doc.text("Country Code")
+                with doc.input(
                     type="text",
                     name="country",
                     required=True,
@@ -1164,18 +1166,18 @@ async def setup_manual_payout(
                     title="Enter a 2-letter country code (e.g., US, GB, CA)",
                 ):
                     pass
-                with tag.p(classes="text-xs text-gray-500 mt-1"):
-                    text("Enter a 2-letter ISO country code (e.g., US, GB, CA)")
+                with doc.p(classes="text-xs text-gray-500 mt-1"):
+                    doc.text("Enter a 2-letter ISO country code (e.g., US, GB, CA)")
 
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Create Manual Account")
+                    doc.text("Create Manual Account")
 
 
 @router.post(
@@ -1224,25 +1226,25 @@ async def create_plain_thread(
         thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
 
         with document() as doc:
-            with tag.div(id="modal"):
-                with tag.dialog(classes="modal modal-open"):
-                    with tag.div(classes="modal-box"):
-                        with tag.h3(classes="font-bold text-lg text-success"):
-                            text("✅ Thread Created Successfully!")
+            with doc.div(id="modal"):
+                with doc.dialog(classes="modal modal-open"):
+                    with doc.div(classes="modal-box"):
+                        with doc.h3(classes="font-bold text-lg text-success"):
+                            doc.text("✅ Thread Created Successfully!")
 
-                        with tag.p(classes="py-4"):
-                            text(
+                        with doc.p(classes="py-4"):
+                            doc.text(
                                 "Your Plain thread has been created. Click the link below to open it:"
                             )
 
-                        with tag.div(classes="modal-action"):
-                            with tag.a(
+                        with doc.div(classes="modal-action"):
+                            with doc.a(
                                 href=thread_url,
                                 target="_blank",
                                 classes="btn btn-primary",
                             ):
-                                text("🔗 Open Plain Thread")
-                            with tag.button(
+                                doc.text("🔗 Open Plain Thread")
+                            with doc.button(
                                 type="button",
                                 classes="btn",
                                 hx_get=str(
@@ -1253,9 +1255,9 @@ async def create_plain_thread(
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Close")
+                                doc.text("Close")
 
-                    with tag.div(
+                    with doc.div(
                         classes="modal-backdrop",
                         hx_get=str(
                             request.url_for(
@@ -1288,14 +1290,15 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
         super().__init__(label)
 
     def render(self, request: Request, item: File) -> Generator[None]:
+    doc = get_document()
         """Render a download link for the file."""
         url, _ = file_service.generate_download_url(item)
-        with tag.a(
+        with doc.a(
             href=url, classes="btn btn-sm", target="_blank", rel="noopener noreferrer"
         ):
-            with tag.div(classes="icon-download"):
+            with doc.div(classes="icon-download"):
                 pass
-            text("Download")
+            doc.text("Download")
         yield
 
 
@@ -1384,13 +1387,13 @@ async def get(
         ],
         "organizations:get",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(organization.name)
-                with tag.div(classes="flex gap-2"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.div(classes="flex justify-between items-center"):
+                with doc.h1(classes="text-4xl"):
+                    doc.text(organization.name)
+                with doc.div(classes="flex gap-2"):
                     # Plain Actions
-                    with tag.a(
+                    with doc.a(
                         classes="btn",
                         href=str(
                             request.url_for(
@@ -1400,10 +1403,10 @@ async def get(
                         title="Search in Plain",
                         target="_blank",
                     ):
-                        with tag.div(classes="icon-search"):
+                        with doc.div(classes="icon-search"):
                             pass
-                        text("Search in Plain")
-                    with tag.button(
+                        doc.text("Search in Plain")
+                    with doc.button(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
@@ -1413,10 +1416,10 @@ async def get(
                         hx_target="#modal",
                         title="Create Thread in Plain",
                     ):
-                        with tag.div(classes="icon-message-square-more"):
+                        with doc.div(classes="icon-message-square-more"):
                             pass
-                        text("Create Thread")
-                    with tag.button(
+                        doc.text("Create Thread")
+                    with doc.button(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
@@ -1426,9 +1429,9 @@ async def get(
                         hx_target="#modal",
                         title="Import Orders",
                     ):
-                        with tag.div(classes="icon-upload"):
+                        with doc.div(classes="icon-upload"):
                             pass
-                        text("Import Orders")
+                        doc.text("Import Orders")
                     with button(
                         variant="primary",
                         hx_get=str(
@@ -1436,8 +1439,8 @@ async def get(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
-                    with tag.a(
+                        doc.text("Edit")
+                    with doc.a(
                         classes="btn",
                         href=str(
                             request.url_for(
@@ -1447,8 +1450,8 @@ async def get(
                         ),
                         title="Switch to new view",
                     ):
-                        text("View V2")
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                        doc.text("View V2")
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(
                         "id", "ID", clipboard=True
@@ -1472,11 +1475,11 @@ async def get(
                 ).render(request, organization):
                     pass
                 # Simple users table
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.div(classes="flex justify-between items-center mb-4"):
-                            with tag.h2(classes="card-title"):
-                                text(f"Team Members ({len(users)})")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.div(classes="flex justify-between items-center mb-4"):
+                            with doc.h2(classes="card-title"):
+                                doc.text(f"Team Members ({len(users)})")
 
                         # Check if current organization has admin
                         admin_user = None
@@ -1487,35 +1490,35 @@ async def get(
 
                         if users:
                             # Users table
-                            with tag.div(classes="overflow-x-auto"):
-                                with tag.table(classes="table table-zebra w-full"):
+                            with doc.div(classes="overflow-x-auto"):
+                                with doc.table(classes="table table-zebra w-full"):
                                     # Table header
-                                    with tag.thead():
-                                        with tag.tr():
-                                            with tag.th():
-                                                text("User")
-                                            with tag.th():
-                                                text("Role")
-                                            with tag.th():
-                                                text("Joined")
-                                            with tag.th():
-                                                text("Actions")
+                                    with doc.thead():
+                                        with doc.tr():
+                                            with doc.th():
+                                                doc.text("User")
+                                            with doc.th():
+                                                doc.text("Role")
+                                            with doc.th():
+                                                doc.text("Joined")
+                                            with doc.th():
+                                                doc.text("Actions")
 
                                     # Table body
-                                    with tag.tbody():
+                                    with doc.tbody():
                                         for user in users:
                                             is_admin = (
                                                 admin_user and user.id == admin_user.id
                                             )
-                                            with tag.tr():
+                                            with doc.tr():
                                                 # User info
-                                                with tag.td():
-                                                    with tag.div(
+                                                with doc.td():
+                                                    with doc.div(
                                                         classes="flex items-center gap-3"
                                                     ):
                                                         # User details
-                                                        with tag.div():
-                                                            with tag.a(
+                                                        with doc.div():
+                                                            with doc.a(
                                                                 href=str(
                                                                     request.url_for(
                                                                         "users:get",
@@ -1524,43 +1527,43 @@ async def get(
                                                                 ),
                                                                 classes="font-medium hover:text-primary",
                                                             ):
-                                                                text(user.email)
+                                                                doc.text(user.email)
 
                                                 # Role
-                                                with tag.td():
+                                                with doc.td():
                                                     if is_admin:
-                                                        with tag.span(
+                                                        with doc.span(
                                                             classes="badge badge-primary"
                                                         ):
-                                                            text("Admin")
+                                                            doc.text("Admin")
                                                     else:
-                                                        with tag.span(
+                                                        with doc.span(
                                                             classes="badge badge-ghost"
                                                         ):
-                                                            text("Member")
+                                                            doc.text("Member")
 
                                                 # Joined date
-                                                with tag.td():
-                                                    with tag.span(
+                                                with doc.td():
+                                                    with doc.span(
                                                         classes="text-sm text-gray-600"
                                                     ):
                                                         if (
                                                             hasattr(user, "created_at")
                                                             and user.created_at
                                                         ):
-                                                            text(
+                                                            doc.text(
                                                                 user.created_at.strftime(
                                                                     "%b %d, %Y"
                                                                 )
                                                             )
                                                         else:
-                                                            text("—")
+                                                            doc.text("—")
 
                                                 # Actions
-                                                with tag.td():
-                                                    with tag.div(classes="flex gap-2"):
+                                                with doc.td():
+                                                    with doc.div(classes="flex gap-2"):
                                                         # Impersonate button (always visible)
-                                                        with tag.button(
+                                                        with doc.button(
                                                             classes="btn btn-primary btn-sm",
                                                             name="user_id",
                                                             value=str(user.id),
@@ -1571,7 +1574,7 @@ async def get(
                                                             ),
                                                             hx_confirm="Are you sure you want to impersonate this user?",
                                                         ):
-                                                            text("Impersonate")
+                                                            doc.text("Impersonate")
 
                                                         # More actions dropdown menu
                                                         if not is_admin:
@@ -1585,32 +1588,32 @@ async def get(
                                                                 == IdentityVerificationStatus.verified  # User must be verified
                                                             )
 
-                                                            with tag.div(
+                                                            with doc.div(
                                                                 classes="dropdown dropdown-end"
                                                             ):
-                                                                with tag.div(
+                                                                with doc.div(
                                                                     classes="btn btn-ghost btn-sm",
                                                                     tabindex="0",
                                                                     role="button",
                                                                 ):
                                                                     # Three dots icon
-                                                                    with tag.svg(
+                                                                    with doc.svg(
                                                                         classes="w-4 h-4",
                                                                         fill="currentColor",
                                                                         viewBox="0 0 20 20",
                                                                     ):
-                                                                        with tag.path(
+                                                                        with doc.path(
                                                                             d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
                                                                         ):
                                                                             pass
 
-                                                                with tag.ul(
+                                                                with doc.ul(
                                                                     classes="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow",
                                                                     tabindex="0",
                                                                 ):
                                                                     # Make Admin option (always show, handle restrictions in modal)
-                                                                    with tag.li():
-                                                                        with tag.a(
+                                                                    with doc.li():
+                                                                        with doc.a(
                                                                             hx_get=str(
                                                                                 request.url_for(
                                                                                     "organizations:confirm_change_admin",
@@ -1621,13 +1624,13 @@ async def get(
                                                                             hx_target="#modal",
                                                                             classes="text-warning hover:bg-warning hover:text-warning-content",
                                                                         ):
-                                                                            text(
+                                                                            doc.text(
                                                                                 "Make Admin"
                                                                             )
 
                                                                     # Remove option
-                                                                    with tag.li():
-                                                                        with tag.a(
+                                                                    with doc.li():
+                                                                        with doc.a(
                                                                             hx_get=str(
                                                                                 request.url_for(
                                                                                     "organizations:confirm_remove_member",
@@ -1638,22 +1641,22 @@ async def get(
                                                                             hx_target="#modal",
                                                                             classes="text-error hover:bg-error hover:text-error-content",
                                                                         ):
-                                                                            text(
+                                                                            doc.text(
                                                                                 "Remove Member"
                                                                             )
 
                         else:
                             # Empty state
-                            with tag.div(classes="text-center py-8"):
-                                with tag.div(classes="text-gray-400 mb-2"):
-                                    text("👥")
-                                with tag.p(classes="text-gray-600"):
-                                    text("No team members yet")
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Account Status")
+                            with doc.div(classes="text-center py-8"):
+                                with doc.div(classes="text-gray-400 mb-2"):
+                                    doc.text("👥")
+                                with doc.p(classes="text-gray-600"):
+                                    doc.text("No team members yet")
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Account Status")
                         if account:
                             with description_list.DescriptionList[Account](
                                 description_list.DescriptionListAttrItem(
@@ -1673,17 +1676,17 @@ async def get(
 
                             # Show admin change status
                             if account and len(users) <= 1:
-                                with tag.div(
+                                with doc.div(
                                     classes="mt-4 p-3 bg-gray-50 border border-gray-200 rounded"
                                 ):
-                                    with tag.p(classes="text-sm text-gray-600"):
-                                        text(
+                                    with doc.p(classes="text-sm text-gray-600"):
+                                        doc.text(
                                             "ℹ️ Need at least 2 team members to change account admin."
                                         )
                         else:
-                            with tag.div(classes="text-center py-8"):
-                                with tag.p(classes="text-gray-600 mb-4"):
-                                    text(
+                            with doc.div(classes="text-center py-8"):
+                                with doc.p(classes="text-gray-600 mb-4"):
+                                    doc.text(
                                         "No account has been set up for this organization"
                                     )
                                 with button(
@@ -1696,13 +1699,13 @@ async def get(
                                     hx_target="#modal",
                                     variant="primary",
                                 ):
-                                    text("Setup Manual Account")
+                                    doc.text("Setup Manual Account")
 
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.div(classes="flex justify-between items-center"):
-                            with tag.h2(classes="card-title"):
-                                text("Details")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.div(classes="flex justify-between items-center"):
+                            with doc.h2(classes="card-title"):
+                                doc.text("Details")
                             with button(
                                 hx_get=str(
                                     request.url_for(
@@ -1713,51 +1716,51 @@ async def get(
                                 hx_target="#modal",
                                 variant="secondary",
                             ):
-                                text("Edit Details")
+                                doc.text("Edit Details")
 
                         a = "organization-details-accordion"
                         with accordion.item(a, "About"):
-                            with tag.p(classes="whitespace-pre-line"):
-                                text(organization.details.get("about", "—"))
+                            with doc.p(classes="whitespace-pre-line"):
+                                doc.text(organization.details.get("about", "—"))
                         with accordion.item(a, "Product Description"):
-                            with tag.p(classes="whitespace-pre-line"):
-                                text(
+                            with doc.p(classes="whitespace-pre-line"):
+                                doc.text(
                                     organization.details.get("product_description", "—")
                                 )
                         with accordion.item(a, "Intended Use"):
-                            with tag.p(classes="whitespace-pre-line"):
-                                text(organization.details.get("intended_use", "—"))
+                            with doc.p(classes="whitespace-pre-line"):
+                                doc.text(organization.details.get("intended_use", "—"))
                         with accordion.item(a, "Acquisition"):
-                            with tag.ul(classes="list-disc list-inside"):
+                            with doc.ul(classes="list-disc list-inside"):
                                 for acquisition in organization.details.get(
                                     "customer_acquisition", []
                                 ):
-                                    with tag.li():
-                                        text(acquisition)
+                                    with doc.li():
+                                        doc.text(acquisition)
                         with accordion.item(a, "Expected annual revenue"):
                             expected_revenue = organization.details.get(
                                 "future_annual_revenue"
                             )
                             if expected_revenue:
-                                text(
+                                doc.text(
                                     format_currency(
                                         expected_revenue, "USD", locale="en_US"
                                     )
                                 )
                             else:
-                                text("—")
+                                doc.text("—")
                             if organization.details.get("switching"):
                                 with accordion.item(a, "Switching from"):
-                                    text(
+                                    doc.text(
                                         f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
                                     )
 
             # Internal Notes Section
-            with tag.div(classes="card card-border w-full shadow-sm"):
-                with tag.div(classes="card-body"):
-                    with tag.div(classes="flex justify-between items-center mb-4"):
-                        with tag.h2(classes="card-title"):
-                            text("Internal Notes")
+            with doc.div(classes="card card-border w-full shadow-sm"):
+                with doc.div(classes="card-body"):
+                    with doc.div(classes="flex justify-between items-center mb-4"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Internal Notes")
                         with button(
                             hx_get=str(
                                 request.url_for(
@@ -1768,45 +1771,45 @@ async def get(
                             hx_target="#modal",
                             variant="secondary",
                         ):
-                            text("Edit Notes")
+                            doc.text("Edit Notes")
 
                     if organization.internal_notes:
-                        with tag.div(classes="prose max-w-none"):
-                            with tag.p(classes="whitespace-pre-line text-sm"):
-                                text(organization.internal_notes)
+                        with doc.div(classes="prose max-w-none"):
+                            with doc.p(classes="whitespace-pre-line text-sm"):
+                                doc.text(organization.internal_notes)
                     else:
-                        with tag.div(classes="text-center py-4"):
-                            with tag.p(classes="text-gray-400"):
-                                text("No internal notes yet")
+                        with doc.div(classes="text-center py-4"):
+                            with doc.p(classes="text-gray-400"):
+                                doc.text("No internal notes yet")
 
             # Organization Review Section
-            with tag.div(classes="mt-8"):
-                with tag.div(classes="flex items-center gap-4 mb-4"):
-                    with tag.h2(classes="text-2xl font-bold"):
-                        text("Organization Review")
+            with doc.div(classes="mt-8"):
+                with doc.div(classes="flex items-center gap-4 mb-4"):
+                    with doc.h2(classes="text-2xl font-bold"):
+                        doc.text("Organization Review")
                     with organization_badge(organization):
                         pass
 
-                with tag.div(
+                with doc.div(
                     classes="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
                 ):
-                    with tag.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card card-border w-full shadow-sm"):
                         with ai_review_verdict.render():
                             pass
 
-                    with tag.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card card-border w-full shadow-sm"):
                         with setup_verdict.render():
                             pass
 
-                    with tag.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card card-border w-full shadow-sm"):
                         with payment_verdict.render():
                             pass
 
             # Organization Files Section
-            with tag.div(classes="mt-8"):
-                with tag.div(classes="flex items-center gap-4 mb-4"):
-                    with tag.h2(classes="text-2xl font-bold"):
-                        text("Downloadable Files")
+            with doc.div(classes="mt-8"):
+                with doc.div(classes="flex items-center gap-4 mb-4"):
+                    with doc.h2(classes="text-2xl font-bold"):
+                        doc.text("Downloadable Files")
 
                 sorting: builtins.list[Sorting[FileSortProperty]] = [
                     (FileSortProperty.created_at, True)
@@ -1863,19 +1866,19 @@ async def get_create_thread_modal(
         raise HTTPException(status_code=404)
 
     with document() as doc:
-        with tag.div(id="modal"):
-            with tag.dialog(classes="modal modal-open"):
-                with tag.div(classes="modal-box"):
-                    with tag.form(method="dialog"):
-                        with tag.button(
+        with doc.div(id="modal"):
+            with doc.dialog(classes="modal modal-open"):
+                with doc.div(classes="modal-box"):
+                    with doc.form(method="dialog"):
+                        with doc.button(
                             classes="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                         ):
-                            text("✕")
+                            doc.text("✕")
 
-                    with tag.h3(classes="font-bold text-lg"):
-                        text("Create Plain Thread")
+                    with doc.h3(classes="font-bold text-lg"):
+                        doc.text("Create Plain Thread")
 
-                    with tag.form(
+                    with doc.form(
                         id="create-thread-form",
                         hx_post=str(
                             request.url_for(
@@ -1884,11 +1887,11 @@ async def get_create_thread_modal(
                         ),
                         hx_target="#modal",
                     ):
-                        with tag.div(classes="form-control w-full mt-4"):
-                            with tag.label(classes="label"):
-                                with tag.span(classes="label-text"):
-                                    text("Thread Title")
-                            with tag.input(
+                        with doc.div(classes="form-control w-full mt-4"):
+                            with doc.label(classes="label"):
+                                with doc.span(classes="label-text"):
+                                    doc.text("Thread Title")
+                            with doc.input(
                                 type="text",
                                 name="title",
                                 placeholder="Enter thread title...",
@@ -1898,8 +1901,8 @@ async def get_create_thread_modal(
                             ):
                                 pass
 
-                        with tag.div(classes="modal-action"):
-                            with tag.button(
+                        with doc.div(classes="modal-action"):
+                            with doc.button(
                                 type="button",
                                 classes="btn",
                                 hx_get=str(
@@ -1909,14 +1912,14 @@ async def get_create_thread_modal(
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Cancel")
-                            with tag.button(
+                                doc.text("Cancel")
+                            with doc.button(
                                 type="submit",
                                 classes="btn btn-primary",
                             ):
-                                text("Create Thread")
+                                doc.text("Create Thread")
 
-                with tag.div(
+                with doc.div(
                     classes="modal-backdrop",
                     hx_get=str(
                         request.url_for("organizations:clear_modal", id=organization.id)
@@ -1973,14 +1976,14 @@ async def import_orders(
             validation_error=validation_error,
             _="on submit halt the event then call formPostSSE(me, '#import-progress')",
         ):
-            with tag.div(id="import-progress"):
+            with doc.div(id="import-progress"):
                 pass
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Import")
+                    doc.text("Import")

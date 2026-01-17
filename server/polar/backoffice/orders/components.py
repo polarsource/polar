@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.kit.sorting import Sorting
 from polar.models import Order
@@ -24,16 +24,17 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
 
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
-    with tag.div(classes="badge"):
+    doc = get_document()
+    with doc.div(classes="badge"):
         if status == OrderStatus.paid:
-            classes("badge-success")
+            doc.attr("class", "badge-success")
         elif status == OrderStatus.pending:
-            classes("badge-warning")
+            doc.attr("class", "badge-warning")
         elif status == OrderStatus.refunded:
-            classes("badge-error")
+            doc.attr("class", "badge-error")
         elif status == OrderStatus.partially_refunded:
-            classes("badge-info")
-        text(status.replace("_", " ").title())
+            doc.attr("class", "badge-info")
+        doc.text(status.replace("_", " ").title())
     yield
 
 

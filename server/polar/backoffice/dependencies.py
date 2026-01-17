@@ -1,4 +1,5 @@
 from fastapi import Depends, Request
+from polar.backoffice.document import get_document
 from fastapi.exceptions import HTTPException
 
 from polar.auth.service import auth as auth_service

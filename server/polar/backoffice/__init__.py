@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.observability.http_metrics import exclude_app_from_metrics
 
@@ -9,6 +9,7 @@ from .accounts.endpoints import router as accounts_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
+from .document import get_document
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
@@ -61,10 +62,11 @@ app.include_router(webhooks_router, prefix="/webhooks")
 
 
 @app.get("/", name="index")
-async def index(request: Request) -> None:
+async def index(request: Request, doc=Depends(get_document)) -> None:
+    doc = get_document()
     with layout(request, [], "index"):
-        with tag.h1():
-            text("Dashboard")
+        with doc.h1():
+            doc.text("Dashboard")
 
 
 __all__ = ["app"]

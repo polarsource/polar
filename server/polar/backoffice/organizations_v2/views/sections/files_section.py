@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.file.service import file as file_service
 from polar.models import File, Organization
@@ -38,72 +38,72 @@ class FilesSection:
     def render(self, request: Request) -> Generator[None]:
         """Render the files section."""
 
-        with tag.div(classes="space-y-6"):
+        with doc.div(classes="space-y-6"):
             # Files list card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Downloadable Files")
-                    with tag.div(classes="text-sm text-base-content/60"):
-                        text(f"{len(self.files)} file(s)")
+                with doc.div(classes="flex items-center justify-between mb-4"):
+                    with doc.h2(classes="text-lg font-bold"):
+                        doc.text("Downloadable Files")
+                    with doc.div(classes="text-sm text-base-content/60"):
+                        doc.text(f"{len(self.files)} file(s)")
 
                 if self.files:
                     # Files table
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("Name")
-                                    with tag.th():
-                                        text("Type")
-                                    with tag.th():
-                                        text("Size")
-                                    with tag.th():
-                                        text("Created")
-                                    with tag.th():
-                                        text("Actions")
+                    with doc.div(classes="overflow-x-auto"):
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
+                                    with doc.th():
+                                        doc.text("Name")
+                                    with doc.th():
+                                        doc.text("Type")
+                                    with doc.th():
+                                        doc.text("Size")
+                                    with doc.th():
+                                        doc.text("Created")
+                                    with doc.th():
+                                        doc.text("Actions")
 
-                            with tag.tbody():
+                            with doc.tbody():
                                 for file in self.files:
                                     # Generate presigned download URL
                                     download_url, _ = (
                                         file_service.generate_download_url(file)
                                     )
 
-                                    with tag.tr():
-                                        with tag.td():
-                                            with tag.div(classes="font-medium"):
-                                                text(file.name)
+                                    with doc.tr():
+                                        with doc.td():
+                                            with doc.div(classes="font-medium"):
+                                                doc.text(file.name)
 
-                                        with tag.td():
-                                            with tag.span(
+                                        with doc.td():
+                                            with doc.span(
                                                 classes="badge badge-sm badge-ghost"
                                             ):
-                                                text(file.mime_type or "unknown")
+                                                doc.text(file.mime_type or "unknown")
 
-                                        with tag.td():
-                                            text(
+                                        with doc.td():
+                                            doc.text(
                                                 self.format_file_size(file.size)
                                                 if file.size
                                                 else "N/A"
                                             )
 
-                                        with tag.td():
-                                            text(
+                                        with doc.td():
+                                            doc.text(
                                                 file.created_at.strftime("%Y-%m-%d")
                                                 if file.created_at
                                                 else "N/A"
                                             )
 
-                                        with tag.td():
-                                            with tag.a(
+                                        with doc.td():
+                                            with doc.a(
                                                 href=download_url,
                                                 target="_blank",
                                                 rel="noopener noreferrer",
                                                 classes="btn btn-sm btn-ghost",
                                             ):
-                                                text("Download")
+                                                doc.text("Download")
                 else:
                     with empty_state(
                         "No Files",
@@ -113,23 +113,23 @@ class FilesSection:
 
             # File storage info
             with card(bordered=True):
-                with tag.h3(classes="text-md font-bold mb-3"):
-                    text("Storage Information")
+                with doc.h3(classes="text-md font-bold mb-3"):
+                    doc.text("Storage Information")
 
-                with tag.div(classes="space-y-2 text-sm"):
+                with doc.div(classes="space-y-2 text-sm"):
                     total_size = sum(f.size for f in self.files if f.size)
 
-                    with tag.div(classes="flex justify-between"):
-                        with tag.span(classes="text-base-content/60"):
-                            text("Total Files:")
-                        with tag.span(classes="font-semibold"):
-                            text(str(len(self.files)))
+                    with doc.div(classes="flex justify-between"):
+                        with doc.span(classes="text-base-content/60"):
+                            doc.text("Total Files:")
+                        with doc.span(classes="font-semibold"):
+                            doc.text(str(len(self.files)))
 
-                    with tag.div(classes="flex justify-between"):
-                        with tag.span(classes="text-base-content/60"):
-                            text("Total Size:")
-                        with tag.span(classes="font-semibold"):
-                            text(self.format_file_size(total_size))
+                    with doc.div(classes="flex justify-between"):
+                        with doc.span(classes="text-base-content/60"):
+                            doc.text("Total Size:")
+                        with doc.span(classes="font-semibold"):
+                            doc.text(self.format_file_size(total_size))
 
             yield
 

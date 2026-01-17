@@ -11,7 +11,7 @@ from typing import Any, Protocol
 
 from fastapi import Request
 from fastapi.datastructures import URL
-from tagflow import attr, classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -192,16 +192,16 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         """
         value = self.get_value(item)
         href = self.href_getter(request, item) if self.href_getter else None
-        with tag.div(classes="flex items-center gap-1"):
+        with doc.div(classes="flex items-center gap-1"):
             value_tag = tag.a if href else tag.div
             with value_tag():
                 if href:
-                    classes("link")
-                    attr("href", str(href))
+                    doc.attr("class", "link")
+                    doc.attr("href", str(href))
                     if self.external_href:
-                        attr("target", "_blank")
-                        attr("rel", "noopener noreferrer")
-                text(value if value is not None else "—")
+                        doc.attr("target", "_blank")
+                        doc.attr("rel", "noopener noreferrer")
+                doc.text(value if value is not None else "—")
             if value is not None and self.clipboard:
                 with clipboard_button(value):
                     pass
@@ -336,14 +336,14 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
             item: The model item to extract the boolean from.
         """
         value = self.get_raw_value(item)
-        with tag.div():
+        with doc.div():
             if value is None:
-                text("—")
+                doc.text("—")
             elif value:
-                with tag.div(classes="icon-check"):
+                with doc.div(classes="icon-check"):
                     pass
             else:
-                with tag.div(classes="icon-x"):
+                with doc.div(classes="icon-x"):
                     pass
 
         return None
@@ -425,8 +425,8 @@ class DatatableActionLink[M](DatatableAction[M]):
             href = self.href(request, item)
         else:
             href = str(self.href)
-        with tag.a(href=href, target=self.target if self.target else None):
-            text(self.label)
+        with doc.a(href=href, target=self.target if self.target else None):
+            doc.text(self.label)
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
@@ -483,8 +483,8 @@ class DatatableActionHTMX[M](DatatableAction[M]):
             href = self.href(request, item)
         else:
             href = str(self.href)
-        with tag.button(type="button", hx_get=str(href), hx_target=self.target):
-            text(self.label)
+        with doc.button(type="button", hx_get=str(href), hx_target=self.target):
+            doc.text(self.label)
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
@@ -537,23 +537,23 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
             return None
 
         popover_id = "".join(random.choice(string.ascii_letters) for _ in range(8))
-        with tag.button(
+        with doc.button(
             type="button",
             classes="btn btn-ghost m-1",
             popovertarget=f"popover-{popover_id}",
             style=f"anchor-name:--anchor-{popover_id}",
         ):
-            with tag.div(classes="font-normal icon-ellipsis-vertical"):
+            with doc.div(classes="font-normal icon-ellipsis-vertical"):
                 pass
 
-        with tag.ul(
+        with doc.ul(
             classes="dropdown menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
             popover=True,
             id=f"popover-{popover_id}",
             style=f"position-anchor:--anchor-{popover_id}",
         ):
             for action in displayed_actions:
-                with tag.li():
+                with doc.li():
                     with action.render(request, item):
                         pass
 
@@ -606,23 +606,23 @@ class Datatable[M, PE: StrEnum]:
             sorting: Current sorting configuration for sortable columns.
             If None, no sorting controls are rendered.
         """
-        with tag.div(
+        with doc.div(
             classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
         ):
-            with tag.table(classes="table table-auto"):
-                with tag.thead():
-                    with tag.tr():
+            with doc.table(classes="table table-auto"):
+                with doc.thead():
+                    with doc.tr():
                         for column in self.columns:
-                            with tag.th():
+                            with doc.th():
                                 if (
                                     sorting is None
                                     or not isinstance(column, DatatableSortingColumn)
                                     or column.sorting is None
                                 ):
-                                    text(column.label)
+                                    doc.text(column.label)
                                     continue
 
-                                with tag.a(
+                                with doc.a(
                                     href=str(
                                         self._get_column_sort_url(
                                             request, sorting, column
@@ -630,27 +630,27 @@ class Datatable[M, PE: StrEnum]:
                                     ),
                                     classes="flex gap-1",
                                 ):
-                                    text(column.label)
+                                    doc.text(column.label)
                                     column_sort = self._get_column_sort(sorting, column)
-                                    with tag.div("font-normal"):
+                                    with doc.div("font-normal"):
                                         if column_sort == SortWay.ASC:
-                                            classes("icon-arrow-down-a-z")
+                                            doc.attr("class", "icon-arrow-down-a-z")
                                         elif column_sort == SortWay.DESC:
-                                            classes("icon-arrow-up-z-a")
+                                            doc.attr("class", "icon-arrow-up-z-a")
 
-                with tag.tbody():
+                with doc.tbody():
                     if not items:
-                        with tag.tr():
-                            with tag.td(
+                        with doc.tr():
+                            with doc.td(
                                 classes="text-2xl h-96 text-gray-500 text-center my-10",
                                 colspan=len(self.columns),
                             ):
-                                text(self.empty_message)
+                                doc.text(self.empty_message)
                     else:
                         for item in items:
-                            with tag.tr():
+                            with doc.tr():
                                 for column in self.columns:
-                                    with tag.td():
+                                    with doc.td():
                                         with column._do_render(request, item):
                                             pass
 
@@ -725,33 +725,33 @@ def pagination(
             **{**request.query_params, "page": pagination.page - 1}
         )
 
-    with tag.div(classes="flex justify-between"):
-        with tag.div(classes="text-sm"):
-            text("Showing ")
-            with tag.span(classes="font-bold"):
-                text(str(start))
-            text(" to ")
-            with tag.span(classes="font-bold"):
-                text(str(end))
-            text(" of ")
-            with tag.span(classes="font-bold"):
-                text(str(count))
-            text(" entries")
-        with tag.div(classes="join grid grid-cols-2"):
-            with tag.a(
+    with doc.div(classes="flex justify-between"):
+        with doc.div(classes="text-sm"):
+            doc.text("Showing ")
+            with doc.span(classes="font-bold"):
+                doc.text(str(start))
+            doc.text(" to ")
+            with doc.span(classes="font-bold"):
+                doc.text(str(end))
+            doc.text(" of ")
+            with doc.span(classes="font-bold"):
+                doc.text(str(count))
+            doc.text(" entries")
+        with doc.div(classes="join grid grid-cols-2"):
+            with doc.a(
                 classes="join-item btn",
                 href=str(previous_url) if previous_url else "",
             ):
                 if previous_url is None:
-                    attr("disabled", True)
-                text("Previous")
-            with tag.a(
+                    doc.attr("disabled", True)
+                doc.text("Previous")
+            with doc.a(
                 classes="join-item btn",
                 href=str(next_url) if next_url else "",
             ):
                 if next_url is None:
-                    attr("disabled", True)
-                text("Next")
+                    doc.attr("disabled", True)
+                doc.text("Next")
     yield
 
 

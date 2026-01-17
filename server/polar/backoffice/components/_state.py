@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager
@@ -29,22 +29,22 @@ def empty_state(
     Example:
         >>> with empty_state("No Organizations", "Create your first organization", icon="📁"):
         ...     with button(variant="primary"):
-        ...         text("Create Organization")
+        ...         doc.text("Create Organization")
     """
-    with tag.div(
+    with doc.div(
         classes="flex flex-col items-center justify-center py-12 px-4 text-center",
         **kwargs,
     ):
         if icon:
-            with tag.div(classes="text-6xl mb-4 opacity-50"):
-                text(icon)
+            with doc.div(classes="text-6xl mb-4 opacity-50"):
+                doc.text(icon)
 
-        with tag.h3(classes="text-xl font-bold mb-2"):
-            text(title)
+        with doc.h3(classes="text-xl font-bold mb-2"):
+            doc.text(title)
 
         if description:
-            with tag.p(classes="text-base-content/70 mb-4 max-w-md"):
-                text(description)
+            with doc.p(classes="text-base-content/70 mb-4 max-w-md"):
+                doc.text(description)
 
         yield
 
@@ -79,19 +79,19 @@ def loading_state(
         "lg": "loading-lg",
     }
 
-    with tag.div(
+    with doc.div(
         classes="flex flex-col items-center justify-center py-12 gap-4",
         role="status",
         **kwargs,
     ):
-        with tag.span(
+        with doc.span(
             classes=f"loading loading-spinner {size_classes.get(size, 'loading-md')}"
         ):
             pass
 
         if message:
-            with tag.p(classes="text-base-content/70"):
-                text(message)
+            with doc.p(classes="text-base-content/70"):
+                doc.text(message)
 
         yield
 
@@ -118,10 +118,10 @@ def card(
 
     Example:
         >>> with card(bordered=True):
-        ...     with tag.h3(classes="font-bold"):
-        ...         text("Card Title")
-        ...     with tag.p():
-        ...         text("Card content")
+        ...     with doc.h3(classes="font-bold"):
+        ...         doc.text("Card Title")
+        ...     with doc.p():
+        ...         doc.text("Card content")
     """
     card_classes = ["card", "bg-base-100"]
 
@@ -136,7 +136,7 @@ def card(
     if additional_classes:
         card_classes.append(additional_classes)
 
-    with tag.div(classes=" ".join(card_classes), **kwargs):
+    with doc.div(classes=" ".join(card_classes), **kwargs):
         yield
 
 

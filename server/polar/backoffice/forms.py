@@ -9,10 +9,11 @@ from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
-from tagflow import classes, tag, text
-from tagflow.tagflow import AttrValue
+
+from polar.backoffice.document import get_document
 
 type Data = dict[str, Any] | object
+type AttrValue = str | int | float | bool | None
 
 
 def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails]:
@@ -136,12 +137,12 @@ class InputField(FormField):
         Yields:
             None: Context manager yields control for the input field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            text(label)
+        with doc.label(classes="label", **{"for": id}):
+            doc.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.input(
+                with doc.span(classes="text-error"):
+                    doc.text("*")
+        with doc.input(
             classes="input w-full",
             id=id,
             name=id,
@@ -151,10 +152,10 @@ class InputField(FormField):
             **self.kwargs,
         ):
             if errors:
-                classes("input-error")
+                doc.attr("class", "input-error")
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
+            with doc.div(classes="label text-error"):
+                doc.text(error["msg"])
         yield
 
 
@@ -200,12 +201,12 @@ class TextAreaField(FormField):
         Yields:
             None: Context manager yields control for the textarea field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            text(label)
+        with doc.label(classes="label", **{"for": id}):
+            doc.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.textarea(
+                with doc.span(classes="text-error"):
+                    doc.text("*")
+        with doc.textarea(
             id=id,
             name=id,
             required=required,
@@ -214,12 +215,12 @@ class TextAreaField(FormField):
             **self.kwargs,
         ):
             if errors:
-                classes("textarea-error")
+                doc.attr("class", "textarea-error")
             if value is not None:
-                text(str(value))
+                doc.text(str(value))
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
+            with doc.div(classes="label text-error"):
+                doc.text(error["msg"])
         yield
 
 
@@ -262,8 +263,8 @@ class CheckboxField(FormField):
         Yields:
             None: Context manager yields control for the checkbox field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            with tag.input(
+        with doc.label(classes="label", **{"for": id}):
+            with doc.input(
                 id=id,
                 name=id,
                 type="checkbox",
@@ -273,10 +274,10 @@ class CheckboxField(FormField):
                 **self.kwargs,
             ):
                 pass
-            text(label)
+            doc.text(label)
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
+            with doc.div(classes="label text-error"):
+                doc.text(error["msg"])
         yield
 
 
@@ -384,27 +385,27 @@ class SelectField(FormField):
         Yields:
             None: Context manager yields control for the select field.
         """
-        with tag.legend(classes="label", **{"for": id}):
-            text(label)
+        with doc.legend(classes="label", **{"for": id}):
+            doc.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.select(
+                with doc.span(classes="text-error"):
+                    doc.text("*")
+        with doc.select(
             classes="select w-full",
             id=id,
             name=id,
             required=required,
             **self.kwargs,
         ):
-            with tag.option(value="", selected=value is None):
-                text(self.placeholder)
+            with doc.option(value="", selected=value is None):
+                doc.text(self.placeholder)
             for option_value, option_label in self.options:
                 selected = value == option_value if value is not None else False
-                with tag.option(value=option_value, selected=selected):
-                    text(option_label)
+                with doc.option(value=option_value, selected=selected):
+                    doc.text(option_label)
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
+            with doc.div(classes="label text-error"):
+                doc.text(error["msg"])
 
         yield
 
@@ -444,9 +445,9 @@ class SubFormField(FormField):
         Yields:
             None: Context manager yields control for the sub-form rendering.
         """
-        with tag.fieldset(classes="fieldset border-base-300 rounded-box border p-4"):
-            with tag.legend(classes="fieldset-legend"):
-                text(label)
+        with doc.fieldset(classes="fieldset border-base-300 rounded-box border p-4"):
+            with doc.legend(classes="fieldset-legend"):
+                doc.text(label)
 
             for key, field in self.form_class.model_fields.items():
                 if _is_skipped_field(field):
@@ -549,7 +550,7 @@ class BaseForm(BaseModel):
         ... ):
         ...     # Form fields are automatically rendered
         ...     with button(type="submit"):
-        ...         text("Update Organization")
+        ...         doc.text("Update Organization")
     """
 
     @classmethod
@@ -580,8 +581,8 @@ class BaseForm(BaseModel):
                 like submit buttons, hidden fields, or custom sections.
         """
         errors = validation_error.errors() if validation_error else []
-        with tag.form(**kwargs, novalidate=True):
-            with tag.fieldset(classes="fieldset"):
+        with doc.form(**kwargs, novalidate=True):
+            with doc.fieldset(classes="fieldset"):
                 for key, field in cls.model_fields.items():
                     if _is_skipped_field(field):
                         continue

@@ -5,7 +5,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 
 from fastapi import Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
@@ -89,20 +89,21 @@ class OrganizationDetailView:
 
     @contextlib.contextmanager
     def right_sidebar(self, request: Request) -> Generator[None]:
+    doc = get_document()
         """Render right sidebar with contextual actions and metadata."""
-        with tag.aside(classes="w-80 pl-4"):
+        with doc.aside(classes="w-80 pl-4"):
             # Internal Notes - Prominent at top
             if self.org.internal_notes:
                 with card(bordered=True, classes="border-l-4 border-l-base-400 mb-4"):
-                    with tag.h3(
+                    with doc.h3(
                         classes="font-bold text-sm uppercase tracking-wide mb-3"
                     ):
-                        text("Internal Note")
-                    with tag.div(
+                        doc.text("Internal Note")
+                    with doc.div(
                         classes="text-sm whitespace-pre-wrap text-base-content/90 leading-relaxed"
                     ):
-                        text(self.org.internal_notes)
-                    with tag.div(classes="mt-3 pt-3 border-t border-base-300"):
+                        doc.text(self.org.internal_notes)
+                    with doc.div(classes="mt-3 pt-3 border-t border-base-300"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -115,15 +116,15 @@ class OrganizationDetailView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Edit Note")
+                            doc.text("Edit Note")
             else:
                 with card(bordered=True, classes="mb-4"):
-                    with tag.h3(
+                    with doc.h3(
                         classes="font-bold text-sm uppercase tracking-wide mb-3"
                     ):
-                        text("Internal Note")
-                    with tag.div(classes="text-sm text-base-content/60 mb-3"):
-                        text("No internal notes")
+                        doc.text("Internal Note")
+                    with doc.div(classes="text-sm text-base-content/60 mb-3"):
+                        doc.text("No internal notes")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -135,21 +136,21 @@ class OrganizationDetailView:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Add Note")
+                        doc.text("Add Note")
 
             # Actions card
             with card(bordered=True, classes="mb-4"):
-                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
-                    text("Actions")
+                with doc.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
+                    doc.text("Actions")
 
-                with tag.div(classes="space-y-2"):
+                with doc.div(classes="space-y-2"):
                     # Check if organization is blocked
                     is_blocked = self.org.blocked_at is not None
 
                     # Context-aware actions based on status
                     if is_blocked:
                         # Blocked organizations can be unblocked and approved
-                        with tag.div(classes="w-full"):
+                        with doc.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -162,11 +163,11 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Unblock & Approve")
+                                doc.text("Unblock & Approve")
 
                     elif self.org.status == OrganizationStatus.DENIED:
                         # Denied organizations can be approved
-                        with tag.div(classes="w-full"):
+                        with doc.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -179,11 +180,11 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Approve")
+                                doc.text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
                         # Active organizations can be denied
-                        with tag.div(classes="w-full"):
+                        with doc.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -196,7 +197,7 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Deny")
+                                doc.text("Deny")
 
                     elif self.org.is_under_review:
                         # Quick approve with doubled threshold
@@ -205,7 +206,7 @@ class OrganizationDetailView:
                         next_threshold = current_threshold * 2
                         next_threshold_display = f"${next_threshold / 100:,.0f}"
 
-                        with tag.div(classes="w-full"):
+                        with doc.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -219,7 +220,7 @@ class OrganizationDetailView:
                                 + f"?threshold={next_threshold}",
                                 hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                             ):
-                                text(f"Approve ({next_threshold_display})")
+                                doc.text(f"Approve ({next_threshold_display})")
 
                         # Custom approve with input
                         approve_url = str(
@@ -227,8 +228,8 @@ class OrganizationDetailView:
                                 "organizations-v2:approve", organization_id=self.org.id
                             )
                         )
-                        with tag.div(classes="flex gap-2"):
-                            with tag.input(
+                        with doc.div(classes="flex gap-2"):
+                            with doc.input(
                                 type="number",
                                 id="custom-threshold",
                                 placeholder="Custom amount",
@@ -241,9 +242,9 @@ class OrganizationDetailView:
                                 outline=True,
                                 onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
                             ):
-                                text("✓")
+                                doc.text("✓")
 
-                        with tag.div(classes="w-full"):
+                        with doc.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -256,13 +257,13 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Deny")
+                                doc.text("Deny")
 
                     # Always available actions
-                    with tag.div(classes="divider my-2"):
+                    with doc.div(classes="divider my-2"):
                         pass
 
-                    with tag.div(classes="w-full"):
+                    with doc.div(classes="w-full"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -276,9 +277,9 @@ class OrganizationDetailView:
                             + "/plain-thread",
                             hx_target="#modal",
                         ):
-                            text("Create Plain Thread")
+                            doc.text("Create Plain Thread")
 
-                    with tag.div(classes="w-full"):
+                    with doc.div(classes="w-full"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -291,74 +292,74 @@ class OrganizationDetailView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Block Organization")
+                            doc.text("Block Organization")
 
             # Metadata card
             with card(bordered=True):
-                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
-                    text("Metadata")
+                with doc.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
+                    doc.text("Metadata")
 
-                with tag.dl(classes="space-y-3 text-sm"):
+                with doc.dl(classes="space-y-3 text-sm"):
                     # Slug (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Slug")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
+                    with doc.div():
+                        with doc.dt(classes="text-base-content/60 mb-1"):
+                            doc.text("Slug")
+                        with doc.dd(classes="flex items-center gap-2"):
+                            with doc.code(
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
                             ):
-                                text(self.org.slug)
+                                doc.text(self.org.slug)
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
                                 onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
-                                text("Copy")
+                                doc.text("Copy")
 
                     # ID (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Organization ID")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
+                    with doc.div():
+                        with doc.dt(classes="text-base-content/60 mb-1"):
+                            doc.text("Organization ID")
+                        with doc.dd(classes="flex items-center gap-2"):
+                            with doc.code(
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
                             ):
-                                text(str(self.org.id))
+                                doc.text(str(self.org.id))
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
                                 onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
-                                text("Copy")
+                                doc.text("Copy")
 
                     # Created
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Created")
-                        with tag.dd(classes="font-semibold"):
+                    with doc.div():
+                        with doc.dt(classes="text-base-content/60 mb-1"):
+                            doc.text("Created")
+                        with doc.dd(classes="font-semibold"):
                             days_ago = (datetime.now(UTC) - self.org.created_at).days
-                            text(f"{days_ago}d ago")
+                            doc.text(f"{days_ago}d ago")
 
                     # Status duration
                     if self.org.status_updated_at:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("In Status")
-                            with tag.dd(classes="font-semibold"):
+                        with doc.div():
+                            with doc.dt(classes="text-base-content/60 mb-1"):
+                                doc.text("In Status")
+                            with doc.dd(classes="font-semibold"):
                                 days = (
                                     datetime.now(UTC) - self.org.status_updated_at
                                 ).days
-                                text(f"{days} days")
+                                doc.text(f"{days} days")
 
                     # Country
                     if self.org.account and self.org.account.country:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("Country")
-                            with tag.dd(classes="font-semibold"):
-                                text(self.org.account.country)
+                        with doc.div():
+                            with doc.dt(classes="text-base-content/60 mb-1"):
+                                doc.text("Country")
+                            with doc.dd(classes="font-semibold"):
+                                doc.text(self.org.account.country)
 
             yield
 
@@ -366,8 +367,9 @@ class OrganizationDetailView:
     def main_content(
         self, request: Request, section: str = "overview"
     ) -> Generator[None]:
+    doc = get_document()
         """Render main content area (delegated to section components)."""
-        with tag.main(classes="flex-1"):
+        with doc.main(classes="flex-1"):
             # Section content will be rendered by specific section components
             yield
 
@@ -376,42 +378,42 @@ class OrganizationDetailView:
         """Render the complete detail view with top tabs."""
 
         # Back button and header
-        with tag.div(classes="mb-6"):
-            with tag.a(
+        with doc.div(classes="mb-6"):
+            with doc.a(
                 href=str(request.url_for("organizations-v2:list")),
                 classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
             ):
-                text("← Back to Organizations")
+                doc.text("← Back to Organizations")
 
-            with tag.div(classes="flex items-center justify-between gap-4"):
-                with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
-                    with tag.h1(
+            with doc.div(classes="flex items-center justify-between gap-4"):
+                with doc.div(classes="flex items-center gap-3 min-w-0 flex-1"):
+                    with doc.h1(
                         classes="text-3xl font-bold truncate",
                         title=self.org.name,
                     ):
-                        text(self.org.name)
-                    with tag.div(classes="flex-shrink-0"):
+                        doc.text(self.org.name)
+                    with doc.div(classes="flex-shrink-0"):
                         with status_badge(self.org.status):
                             pass
 
                 # Top-right menu
-                with tag.div(classes="dropdown dropdown-end"):
-                    with tag.button(
+                with doc.div(classes="dropdown dropdown-end"):
+                    with doc.button(
                         classes="btn btn-circle btn-ghost",
                         **{"aria-label": "More options"},
                     ):
-                        text("⋮")
-                    with tag.ul(
+                        doc.text("⋮")
+                    with doc.ul(
                         classes="dropdown-content menu shadow bg-base-100 rounded-box w-52",
                     ):
-                        with tag.li():
-                            with tag.a(
+                        with doc.li():
+                            with doc.a(
                                 href=f"https://app.plain.com/search?q={self.org.email or self.org.slug}",
                                 target="_blank",
                             ):
-                                text("Search in Plain")
-                        with tag.li():
-                            with tag.a(
+                                doc.text("Search in Plain")
+                        with doc.li():
+                            with doc.a(
                                 hx_get=str(
                                     request.url_for(
                                         "organizations-v2:delete_dialog",
@@ -420,15 +422,15 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Delete Organization")
+                                doc.text("Delete Organization")
 
         # Section tabs
-        with tag.div(classes="mb-6"):
+        with doc.div(classes="mb-6"):
             with self.section_tabs(request, section):
                 pass
 
         # Two-column layout: main content + right sidebar
-        with tag.div(classes="flex gap-6"):
+        with doc.div(classes="flex gap-6"):
             # Main content (will be filled by section components)
             with self.main_content(request, section):
                 yield

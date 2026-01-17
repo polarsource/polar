@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, Product, ProductBenefit
@@ -115,12 +115,12 @@ async def list(
         ],
         "products:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Products")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Products")
 
             # Filters
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+            with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -128,7 +128,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    doc.text("Filter")
 
             # Results table
             with datatable.Datatable[Product, ProductSortProperty](
@@ -179,17 +179,17 @@ async def get(
         ],
         "products:get",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Product: {product.name}")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.div(classes="flex justify-between items-center"):
+                with doc.h1(classes="text-4xl"):
+                    doc.text(f"Product: {product.name}")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+            with doc.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Product Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Product Details")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Product Details")
                         with description_list.DescriptionList[Product](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -217,10 +217,10 @@ async def get(
                             pass
 
                 # Organization Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Organization")
+                with doc.div(classes="card card-border w-full shadow-sm"):
+                    with doc.div(classes="card-body"):
+                        with doc.h2(classes="card-title"):
+                            doc.text("Organization")
                         with description_list.DescriptionList[Product](
                             description_list.DescriptionListLinkItem[Product](
                                 "organization.name",
@@ -239,65 +239,65 @@ async def get(
                             pass
 
             # Prices section
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Prices")
+            with doc.div(classes="flex flex-col gap-4 pt-8"):
+                with doc.h2(classes="text-2xl"):
+                    doc.text("Prices")
                 if not product.all_prices:
-                    with tag.div(classes="text-gray-500"):
-                        text("No prices configured for this product.")
+                    with doc.div(classes="text-gray-500"):
+                        doc.text("No prices configured for this product.")
                 else:
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("ID")
-                                    with tag.th():
-                                        text("Amount Type")
-                                    with tag.th():
-                                        text("Price")
-                                    with tag.th():
-                                        text("Archived")
-                            with tag.tbody():
+                    with doc.div(classes="overflow-x-auto"):
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
+                                    with doc.th():
+                                        doc.text("ID")
+                                    with doc.th():
+                                        doc.text("Amount Type")
+                                    with doc.th():
+                                        doc.text("Price")
+                                    with doc.th():
+                                        doc.text("Archived")
+                            with doc.tbody():
                                 for price in product.all_prices:
-                                    with tag.tr():
-                                        with tag.td():
-                                            text(str(price.id))
-                                        with tag.td():
-                                            text(
+                                    with doc.tr():
+                                        with doc.td():
+                                            doc.text(str(price.id))
+                                        with doc.td():
+                                            doc.text(
                                                 price.amount_type.replace(
                                                     "_", " "
                                                 ).title()
                                             )
-                                        with tag.td():
-                                            text(_format_price_display(price))
-                                        with tag.td():
-                                            text(str(price.is_archived))
+                                        with doc.td():
+                                            doc.text(_format_price_display(price))
+                                        with doc.td():
+                                            doc.text(str(price.is_archived))
 
             # Benefits section
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Benefits")
+            with doc.div(classes="flex flex-col gap-4 pt-8"):
+                with doc.h2(classes="text-2xl"):
+                    doc.text("Benefits")
                 if not product.product_benefits:
-                    with tag.div(classes="text-gray-500"):
-                        text("No benefits attached to this product.")
+                    with doc.div(classes="text-gray-500"):
+                        doc.text("No benefits attached to this product.")
                 else:
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("ID")
-                                    with tag.th():
-                                        text("Type")
-                                    with tag.th():
-                                        text("Description")
-                            with tag.tbody():
+                    with doc.div(classes="overflow-x-auto"):
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
+                                    with doc.th():
+                                        doc.text("ID")
+                                    with doc.th():
+                                        doc.text("Type")
+                                    with doc.th():
+                                        doc.text("Description")
+                            with doc.tbody():
                                 for product_benefit in product.product_benefits:
                                     benefit = product_benefit.benefit
-                                    with tag.tr():
-                                        with tag.td():
-                                            with tag.a(
+                                    with doc.tr():
+                                        with doc.td():
+                                            with doc.a(
                                                 href=str(
                                                     request.url_for(
                                                         "benefits:get", id=benefit.id
@@ -305,8 +305,8 @@ async def get(
                                                 ),
                                                 classes="link",
                                             ):
-                                                text(str(benefit.id))
-                                        with tag.td():
-                                            text(benefit.type.get_display_name())
-                                        with tag.td():
-                                            text(benefit.description)
+                                                doc.text(str(benefit.id))
+                                        with doc.td():
+                                            doc.text(benefit.type.get_display_name())
+                                        with doc.td():
+                                            doc.text(benefit.description)

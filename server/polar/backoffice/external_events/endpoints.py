@@ -5,7 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.external_event import sorting
 from polar.external_event.repository import ExternalEventRepository
@@ -71,10 +71,10 @@ async def list(
         ],
         "external_events:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("External Events")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("External Events")
+            with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
                 with input.search("query", query):
                     pass
                 with input.select(
@@ -88,7 +88,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    doc.text("Filter")
 
             with datatable.Datatable[ExternalEvent, ExternalEventSortProperty](
                 datatable.DatatableActionsColumn(
@@ -152,21 +152,21 @@ async def resend(
         return
 
     with modal(f"Resend Event {external_event.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to resend this event? ")
-                text("It'll be enqueued for processing again using the task ")
-                with tag.code():
-                    text(external_event.task_name)
-                text(".")
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p():
+                doc.text("Are you sure you want to resend this event? ")
+                doc.text("It'll be enqueued for processing again using the task ")
+                with doc.code():
+                    doc.text(external_event.task_name)
+                doc.text(".")
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Resend")
+                    doc.text("Resend")

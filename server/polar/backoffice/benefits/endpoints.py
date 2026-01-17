@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.benefit import sorting
 from polar.benefit.repository import BenefitRepository
@@ -89,12 +89,12 @@ async def list(
         ],
         "benefits:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Benefits")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Benefits")
 
             # Filters
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+            with doc.form(method="GET", classes="w-full flex flex-row gap-2"):
                 with input.search(
                     "query", query, placeholder="Search by ID, Organization ID, or name"
                 ):
@@ -115,7 +115,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    doc.text("Filter")
 
             # Results table
             with datatable.Datatable[Benefit, BenefitSortProperty](
@@ -212,10 +212,10 @@ async def get(
         ],
         "benefits:get",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex flex-row items-center gap-2"):
-                with tag.h1(classes="text-4xl"):
-                    text(benefit.description)
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.div(classes="flex flex-row items-center gap-2"):
+                with doc.h1(classes="text-4xl"):
+                    doc.text(benefit.description)
 
             # Benefit details
             with description_list.DescriptionList[Benefit](
@@ -235,61 +235,61 @@ async def get(
                 pass
 
             # Properties section
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Properties")
-                with tag.div(classes="bg-gray-50 p-4 rounded-lg"):
-                    with tag.pre(classes="whitespace-pre-wrap text-sm"):
+            with doc.div(classes="flex flex-col gap-4 pt-8"):
+                with doc.h2(classes="text-2xl"):
+                    doc.text("Properties")
+                with doc.div(classes="bg-gray-50 p-4 rounded-lg"):
+                    with doc.pre(classes="whitespace-pre-wrap text-sm"):
                         import json
 
-                        text(json.dumps(benefit.properties, indent=2))
+                        doc.text(json.dumps(benefit.properties, indent=2))
 
             # GitHub repository invitations section
             if benefit.type == BenefitType.github_repository:
-                with tag.div(classes="flex flex-col gap-4 pt-8"):
-                    with tag.h2(classes="text-2xl"):
-                        text("Pending GitHub Repository Invitations")
+                with doc.div(classes="flex flex-col gap-4 pt-8"):
+                    with doc.h2(classes="text-2xl"):
+                        doc.text("Pending GitHub Repository Invitations")
                     if not github_invitations:
-                        with tag.div(classes="text-gray-500"):
-                            text("No pending invitations found for this repository.")
+                        with doc.div(classes="text-gray-500"):
+                            doc.text("No pending invitations found for this repository.")
                     else:
-                        with tag.div(classes="overflow-x-auto"):
-                            with tag.table(classes="table table-zebra w-full"):
-                                with tag.thead():
-                                    with tag.tr():
-                                        with tag.th():
-                                            text("ID")
-                                        with tag.th():
-                                            text("Invitee")
-                                        with tag.th():
-                                            text("GitHub ID")
-                                        with tag.th():
-                                            text("Permissions")
-                                        with tag.th():
-                                            text("Created At")
-                                with tag.tbody():
+                        with doc.div(classes="overflow-x-auto"):
+                            with doc.table(classes="table table-zebra w-full"):
+                                with doc.thead():
+                                    with doc.tr():
+                                        with doc.th():
+                                            doc.text("ID")
+                                        with doc.th():
+                                            doc.text("Invitee")
+                                        with doc.th():
+                                            doc.text("GitHub ID")
+                                        with doc.th():
+                                            doc.text("Permissions")
+                                        with doc.th():
+                                            doc.text("Created At")
+                                with doc.tbody():
                                     for invitation in github_invitations:
-                                        with tag.tr():
-                                            with tag.td():
-                                                text(str(invitation["id"]))
-                                            with tag.td():
-                                                text(
+                                        with doc.tr():
+                                            with doc.td():
+                                                doc.text(str(invitation["id"]))
+                                            with doc.td():
+                                                doc.text(
                                                     invitation["invitee_login"] or "N/A"
                                                 )
-                                            with tag.td():
-                                                text(
+                                            with doc.td():
+                                                doc.text(
                                                     str(invitation["invitee_id"])
                                                     if invitation["invitee_id"]
                                                     else "N/A"
                                                 )
-                                            with tag.td():
-                                                text(invitation["permissions"])
-                                            with tag.td():
+                                            with doc.td():
+                                                doc.text(invitation["permissions"])
+                                            with doc.td():
                                                 if invitation["created_at"]:
-                                                    text(
+                                                    doc.text(
                                                         invitation[
                                                             "created_at"
                                                         ].strftime("%Y-%m-%d %H:%M:%S")
                                                     )
                                                 else:
-                                                    text("N/A")
+                                                    doc.text("N/A")

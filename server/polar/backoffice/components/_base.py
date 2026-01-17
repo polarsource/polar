@@ -2,15 +2,16 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from ..static_urls import static_url
 
 
 @contextlib.contextmanager
 def title(title_parts: Sequence[str]) -> Generator[None]:
-    with tag.title(id="page_title", hx_swap_oob="true"):
-        text(
+    doc = get_document()
+    with doc.title(id="page_title", hx_swap_oob="true"):
+        doc.text(
             " · ".join((*title_parts, "Polar Backoffice")),
         )
     yield
@@ -18,27 +19,28 @@ def title(title_parts: Sequence[str]) -> Generator[None]:
 
 @contextlib.contextmanager
 def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
-    with tag.html(lang="en"):
-        with tag.head():
-            with tag.meta(charset="utf-8"):
+    doc = get_document()
+    with doc.html(lang="en"):
+        with doc.head():
+            with doc.meta(charset="utf-8"):
                 pass
-            with tag.meta(
+            with doc.meta(
                 name="viewport", content="width=device-width, initial-scale=1.0"
             ):
                 pass
-            with tag.link(
+            with doc.link(
                 href=static_url(request, "styles.css"),
                 rel="stylesheet",
                 type="text/css",
             ):
                 pass
-            with tag.script(src=static_url(request, "scripts.js")):
+            with doc.script(src=static_url(request, "scripts.js")):
                 pass
             with title(title_parts):
                 pass
 
-            with tag.script(type="text/hyperscript"):
-                text("""
+            with doc.script(type="text/hyperscript"):
+                doc.text("""
                 on every htmx:beforeSend from <form />
                     for submitButton in <button[type='submit'] /> in it
                     toggle @disabled on submitButton until htmx:afterOnLoad
@@ -55,13 +57,13 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
                 end
                 """)
 
-        with tag.body():
+        with doc.body():
             yield
 
-            with tag.div(id="modal"):
+            with doc.div(id="modal"):
                 pass
 
-            with tag.div(
+            with doc.div(
                 classes="absolute z-40 bottom-1 right-1 hidden",
                 _="""
                 on htmx:beforeSend from document
@@ -75,7 +77,7 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
                 end
               """,
             ):
-                with tag.span(classes="loading loading-spinner loading-sm"):
+                with doc.span(classes="loading loading-spinner loading-sm"):
                     pass
 
 

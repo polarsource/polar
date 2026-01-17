@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.backoffice.organizations.schemas import PaymentStatistics
 
@@ -62,26 +62,27 @@ class PaymentVerdict:
         else:
             row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
-        with tag.div(classes=row_classes):
-            with tag.span(
+        with doc.div(classes=row_classes):
+            with doc.span(
                 classes="text-sm font-medium text-gray-700 dark:text-gray-300"
             ):
-                text(label)
-            with tag.span(
+                doc.text(label)
+            with doc.span(
                 classes="text-sm font-semibold text-gray-900 dark:text-gray-100"
             ):
-                text(value)
+                doc.text(value)
         yield
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+    doc = get_document()
         """Render the payment verdict component."""
-        with tag.div(classes="card-body"):
-            with tag.h2(classes="card-title"):
-                text("Payments")
+        with doc.div(classes="card-body"):
+            with doc.h2(classes="card-title"):
+                doc.text("Payments")
 
             # Payment metrics
-            with tag.div(classes="space-y-2 mt-4"):
+            with doc.div(classes="space-y-2 mt-4"):
                 with self._render_metric_row("Total Payments", str(self.payment_count)):
                     pass
 
@@ -104,8 +105,8 @@ class PaymentVerdict:
                         pass
 
             # Refunds section
-            with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
-                with tag.div(classes="space-y-2"):
+            with doc.div(classes="mt-4 pt-4 border-t border-gray-200"):
+                with doc.div(classes="space-y-2"):
                     with self._render_metric_row(
                         "Refunds Count", str(self.refunds_count)
                     ):
@@ -130,27 +131,27 @@ class PaymentVerdict:
                             pass
 
             # Balance section
-            with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
-                with tag.div(classes="space-y-2"):
+            with doc.div(classes="mt-4 pt-4 border-t border-gray-200"):
+                with doc.div(classes="space-y-2"):
                     balance_color = (
                         "text-green-600" if self.transfer_sum >= 0 else "text-red-600"
                     )
-                    with tag.div(
+                    with doc.div(
                         classes="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800"
                     ):
-                        with tag.div(classes="flex items-center gap-1"):
-                            with tag.span(
+                        with doc.div(classes="flex items-center gap-1"):
+                            with doc.span(
                                 classes="text-sm font-medium text-gray-700 dark:text-gray-300",
                                 title="Sum of balance transactions - used for review threshold checking",
                             ):
-                                text("Transfer Sum")
-                            with tag.span(
+                                doc.text("Transfer Sum")
+                            with doc.span(
                                 classes="text-gray-400 dark:text-gray-500 cursor-help text-xs",
                                 title="Sum of balance transactions - used for review threshold checking",
                             ):
-                                text("ⓘ")
-                        with tag.span(classes=f"text-sm font-bold {balance_color}"):
-                            text(self._format_currency(self.transfer_sum))
+                                doc.text("ⓘ")
+                        with doc.span(classes=f"text-sm font-bold {balance_color}"):
+                            doc.text(self._format_currency(self.transfer_sum))
 
                     # Next Review Threshold
                     if self.organization:
@@ -164,17 +165,17 @@ class PaymentVerdict:
 
                         # Review Actions (context-sensitive based on organization status)
                         if self.show_actions and self.request:
-                            with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
+                            with doc.div(classes="mt-3 pt-3 border-t border-gray-200"):
                                 if self.organization.is_under_review:
-                                    with tag.div(classes="text-center mb-3"):
-                                        with tag.h4(
+                                    with doc.div(classes="text-center mb-3"):
+                                        with doc.h4(
                                             classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
-                                            text("Review Decision")
-                                        with tag.p(
+                                            doc.text("Review Decision")
+                                        with doc.p(
                                             classes="text-xs text-gray-600 dark:text-gray-400"
                                         ):
-                                            text(
+                                            doc.text(
                                                 "Based on the financial analysis above"
                                             )
 
@@ -185,7 +186,7 @@ class PaymentVerdict:
                                         classes="space-y-4",
                                         validation_error=self.validation_error,
                                     ):
-                                        with tag.div(
+                                        with doc.div(
                                             classes="flex gap-2 justify-center mt-4"
                                         ):
                                             with button(
@@ -195,7 +196,7 @@ class PaymentVerdict:
                                                 value="approve",
                                                 size="sm",
                                             ):
-                                                text("Approve")
+                                                doc.text("Approve")
                                             with button(
                                                 name="action",
                                                 type="submit",
@@ -203,18 +204,18 @@ class PaymentVerdict:
                                                 value="deny",
                                                 size="sm",
                                             ):
-                                                text("Deny")
+                                                doc.text("Deny")
                                 else:
                                     # Show "Set to Under Review" action when not under review
-                                    with tag.div(classes="text-center mt-3 mb-3"):
-                                        with tag.h4(
+                                    with doc.div(classes="text-center mt-3 mb-3"):
+                                        with doc.h4(
                                             classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
-                                            text("Ready for Review?")
-                                        with tag.p(
+                                            doc.text("Ready for Review?")
+                                        with doc.p(
                                             classes="text-xs text-gray-600 dark:text-gray-400"
                                         ):
-                                            text(
+                                            doc.text(
                                                 "Based on financial threshold analysis"
                                             )
 
@@ -225,7 +226,7 @@ class PaymentVerdict:
                                         classes="space-y-4",
                                         validation_error=self.validation_error,
                                     ):
-                                        with tag.div(
+                                        with doc.div(
                                             classes="flex justify-center mt-4"
                                         ):
                                             with button(
@@ -235,6 +236,6 @@ class PaymentVerdict:
                                                 value="under_review",
                                                 size="sm",
                                             ):
-                                                text("Set to Under Review")
+                                                doc.text("Set to Under Review")
 
         yield

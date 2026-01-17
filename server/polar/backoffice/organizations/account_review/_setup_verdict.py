@@ -4,7 +4,7 @@ from collections.abc import Generator
 from typing import Any
 from uuid import UUID
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from ..schemas import SetupVerdictData
 
@@ -34,34 +34,35 @@ class SetupVerdict:
         if clickable:
             classes += " cursor-pointer"
 
-        with tag.div(classes=classes):
-            with tag.div(classes="flex items-center gap-2"):
+        with doc.div(classes=classes):
+            with doc.div(classes="flex items-center gap-2"):
                 if status:
-                    with tag.div(classes="w-2 h-2 rounded-full bg-green-500"):
+                    with doc.div(classes="w-2 h-2 rounded-full bg-green-500"):
                         pass
                 else:
-                    with tag.div(classes="w-2 h-2 rounded-full bg-red-500"):
+                    with doc.div(classes="w-2 h-2 rounded-full bg-red-500"):
                         pass
-                with tag.span(
+                with doc.span(
                     classes="text-sm font-medium text-gray-900 dark:text-gray-100"
                 ):
-                    text(title)
+                    doc.text(title)
             if count > 0:
-                with tag.span(
+                with doc.span(
                     classes="text-sm text-gray-600 dark:text-gray-400 font-medium"
                 ):
-                    text(str(count))
+                    doc.text(str(count))
         yield
 
     @contextlib.contextmanager
     def render(self) -> Generator[None]:
+    doc = get_document()
         """Render the setup verdict component."""
-        with tag.div(classes="card-body"):
-            with tag.h2(classes="card-title"):
-                text("Setup")
+        with doc.div(classes="card-body"):
+            with doc.h2(classes="card-title"):
+                doc.text("Setup")
 
             # Setup details
-            with tag.div(classes="space-y-2 mt-4"):
+            with doc.div(classes="space-y-2 mt-4"):
                 # Checkout links
                 checkout_count = self.data.checkout_links_count
                 with self._render_detail_item(
@@ -101,8 +102,8 @@ class SetupVerdict:
                     pass
 
             # Verification section
-            with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
-                with tag.div(classes="space-y-2"):
+            with doc.div(classes="mt-4 pt-4 border-t border-gray-200"):
+                with doc.div(classes="space-y-2"):
                     # User verification
                     user_verified = self.data.user_verified
                     with self._render_detail_item(
@@ -122,15 +123,15 @@ class SetupVerdict:
 
             # API Logs link
             if self.organization:
-                with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
-                    with tag.a(
+                with doc.div(classes="mt-4 pt-4 border-t border-gray-200"):
+                    with doc.a(
                         href=_get_logfire_url(self.organization.id),
                         target="_blank",
                         rel="noopener noreferrer",
                         classes="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300",
                     ):
-                        text("View API Logs in Logfire")
-                        with tag.div(classes="icon-external-link"):
+                        doc.text("View API Logs in Logfire")
+                        with doc.div(classes="icon-external-link"):
                             pass
 
         yield

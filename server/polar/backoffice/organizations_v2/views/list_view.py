@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pycountry
 from fastapi import Request
 from sqlalchemy import func, select
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
@@ -117,7 +117,7 @@ class OrganizationListView:
 
         hx_vals = json.dumps(hx_vals_dict)
 
-        with tag.th(
+        with doc.th(
             classes=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
                 "hx-get": str(request.url_for("organizations-v2:list")),
@@ -132,11 +132,11 @@ class OrganizationListView:
                 "right": "justify-end",
             }.get(align, "justify-start")
 
-            with tag.div(classes=f"flex items-center gap-1 {justify}"):
-                text(label)
+            with doc.div(classes=f"flex items-center gap-1 {justify}"):
+                doc.text(label)
                 indicator_opacity = "opacity-100" if is_active else "opacity-50"
-                with tag.span(classes=f"text-xs {indicator_opacity}"):
-                    text(indicator)
+                with doc.span(classes=f"text-xs {indicator_opacity}"):
+                    doc.text(indicator)
 
         yield
 
@@ -153,11 +153,11 @@ class OrganizationListView:
         if needs_attention:
             row_class += " bg-error/5"
 
-        with tag.tr(classes=row_class):
+        with doc.tr(classes=row_class):
             # Organization name and status
-            with tag.td(classes="py-4"):
-                with tag.div(classes="flex flex-col gap-1"):
-                    with tag.a(
+            with doc.td(classes="py-4"):
+                with doc.div(classes="flex flex-col gap-1"):
+                    with doc.a(
                         href=str(
                             request.url_for(
                                 "organizations-v2:detail", organization_id=org.id
@@ -165,48 +165,48 @@ class OrganizationListView:
                         ),
                         classes="font-semibold hover:underline flex items-center gap-2",
                     ):
-                        text(org.name)
+                        doc.text(org.name)
                         with status_badge(org.status):
                             pass
-                    with tag.div(classes="text-xs text-base-content/60 font-mono"):
-                        text(org.slug)
+                    with doc.div(classes="text-xs text-base-content/60 font-mono"):
+                        doc.text(org.slug)
                     # Appeal indicator
                     if (
                         org.review
                         and org.review.appeal_submitted_at
                         and not org.review.appeal_reviewed_at
                     ):
-                        with tag.span(classes="badge badge-info badge-xs mt-1"):
-                            text("Appeal Pending")
+                        with doc.span(classes="badge badge-info badge-xs mt-1"):
+                            doc.text("Appeal Pending")
 
             # Email
-            with tag.td(classes="text-sm"):
+            with doc.td(classes="text-sm"):
                 if org.email:
-                    with tag.span(classes="font-mono text-xs"):
-                        text(org.email)
+                    with doc.span(classes="font-mono text-xs"):
+                        doc.text(org.email)
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with doc.span(classes="text-base-content/40"):
+                        doc.text("—")
 
             # Country
-            with tag.td(classes="text-sm"):
+            with doc.td(classes="text-sm"):
                 if org.account and org.account.country:
-                    text(org.account.country)
+                    doc.text(org.account.country)
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with doc.span(classes="text-base-content/40"):
+                        doc.text("—")
 
             # Created
-            with tag.td(classes="text-sm"):
+            with doc.td(classes="text-sm"):
                 days_old = (datetime.now(UTC) - org.created_at).days
-                text(f"{days_old}d ago")
+                doc.text(f"{days_old}d ago")
 
             # Days in status
-            with tag.td(classes="text-sm font-semibold text-center"):
-                text(f"{days_in_status}d")
+            with doc.td(classes="text-sm font-semibold text-center"):
+                doc.text(f"{days_in_status}d")
 
             # Risk score
-            with tag.td(classes="text-sm text-center"):
+            with doc.td(classes="text-sm text-center"):
                 if org.review and org.review.risk_score is not None:
                     risk = org.review.risk_score
                     if risk >= 75:
@@ -215,24 +215,24 @@ class OrganizationListView:
                         color = "text-warning"
                     else:
                         color = "text-success"
-                    with tag.span(classes=f"font-bold {color}"):
-                        text(str(risk))
+                    with doc.span(classes=f"font-bold {color}"):
+                        doc.text(str(risk))
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with doc.span(classes="text-base-content/40"):
+                        doc.text("—")
 
             # Next review
-            with tag.td(classes="text-sm text-right"):
+            with doc.td(classes="text-sm text-right"):
                 if org.next_review_threshold:
-                    text(f"${org.next_review_threshold / 100:,.0f}")
+                    doc.text(f"${org.next_review_threshold / 100:,.0f}")
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with doc.span(classes="text-base-content/40"):
+                        doc.text("—")
 
             # Actions
-            with tag.td(classes="text-right"):
+            with doc.td(classes="text-right"):
                 if show_quick_actions:
-                    with tag.div(classes="flex gap-2 justify-end"):
+                    with doc.div(classes="flex gap-2 justify-end"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -245,7 +245,7 @@ class OrganizationListView:
                             + "?threshold=25000",
                             hx_confirm="Approve with $250 threshold?",
                         ):
-                            text("Approve")
+                            doc.text("Approve")
                         with button(
                             variant="secondary",
                             size="sm",
@@ -258,9 +258,9 @@ class OrganizationListView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Deny")
+                            doc.text("Deny")
                 else:
-                    with tag.a(
+                    with doc.a(
                         href=str(
                             request.url_for(
                                 "organizations-v2:detail", organization_id=org.id
@@ -268,7 +268,7 @@ class OrganizationListView:
                         ),
                         classes="btn btn-ghost btn-sm",
                     ):
-                        text("View →")
+                        doc.text("View →")
 
         yield
 
@@ -289,16 +289,16 @@ class OrganizationListView:
         """Render the complete list view."""
 
         # Page header
-        with tag.div(classes="flex items-center justify-between mb-8"):
-            with tag.h1(classes="text-3xl font-bold"):
-                text("Organizations")
+        with doc.div(classes="flex items-center justify-between mb-8"):
+            with doc.h1(classes="text-3xl font-bold"):
+                doc.text("Organizations")
             with action_bar(position="right"):
                 with button(
                     variant="primary",
                     hx_get=str(request.url_for("organizations-v2:list")) + "/new",
                     hx_target="#modal",
                 ):
-                    text("+ Create Thread")
+                    doc.text("+ Create Thread")
 
         # Status tabs
         tabs = [
@@ -344,8 +344,8 @@ class OrganizationListView:
             pass
 
         # Search and filters section
-        with tag.div(classes="my-6"):
-            with tag.form(
+        with doc.div(classes="my-6"):
+            with doc.form(
                 id="filter-form",
                 classes="space-y-4",
                 hx_get=str(request.url_for("organizations-v2:list")),
@@ -353,10 +353,10 @@ class OrganizationListView:
                 hx_target="#org-list",
             ):
                 # Search bar with filter toggle
-                with tag.div(classes="flex gap-3"):
+                with doc.div(classes="flex gap-3"):
                     # Search input
-                    with tag.div(classes="flex-1"):
-                        with tag.input(
+                    with doc.div(classes="flex-1"):
+                        with doc.input(
                             type="search",
                             placeholder="Search organizations by name, slug, or email...",
                             classes="input input-bordered w-full",
@@ -366,20 +366,20 @@ class OrganizationListView:
                             pass
 
                     # Advanced filters toggle button
-                    with tag.button(
+                    with doc.button(
                         type="button",
                         id="filter-toggle-btn",
                         classes="btn btn-outline gap-2",
                         **{"_": "on click toggle .hidden on #advanced-filters"},
                     ):
-                        with tag.svg(
+                        with doc.svg(
                             xmlns="http://www.w3.org/2000/svg",
                             classes="h-5 w-5",
                             fill="none",
                             viewBox="0 0 24 24",
                             stroke="currentColor",
                         ):
-                            with tag.path(
+                            with doc.path(
                                 **{
                                     "stroke-linecap": "round",
                                     "stroke-linejoin": "round",
@@ -388,10 +388,10 @@ class OrganizationListView:
                                 }
                             ):
                                 pass
-                        text("Filters")
+                        doc.text("Filters")
 
                     # Clear all button
-                    with tag.button(
+                    with doc.button(
                         type="button",
                         id="clear-filters-btn",
                         classes="btn btn-ghost",
@@ -399,29 +399,29 @@ class OrganizationListView:
                             "_": "on click set value of <input.filter-input/> to '' then set value of <select.filter-select/> to '' then trigger submit on #filter-form"
                         },
                     ):
-                        text("Clear")
+                        doc.text("Clear")
 
                 # Advanced filters (hidden by default)
-                with tag.div(
+                with doc.div(
                     id="advanced-filters",
                     classes="hidden mt-4 p-4 bg-base-200 rounded-lg",
                 ):
-                    with tag.div(classes="space-y-3"):
+                    with doc.div(classes="space-y-3"):
                         # Row 1: Basic filters
-                        with tag.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with doc.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
                             # Country filter
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
+                            with doc.div():
+                                with doc.label(classes="label"):
+                                    with doc.span(
                                         classes="label-text text-xs font-semibold"
                                     ):
-                                        text("Country")
-                                with tag.select(
+                                        doc.text("Country")
+                                with doc.select(
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="country",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All Countries")
+                                    with doc.option(value=""):
+                                        doc.text("All Countries")
                                     if countries:
                                         for country_code in countries:
                                             country = pycountry.countries.get(
@@ -435,77 +435,77 @@ class OrganizationListView:
                                             option_attrs = {"value": country_code}
                                             if selected_country == country_code:
                                                 option_attrs["selected"] = ""
-                                            with tag.option(**option_attrs):
-                                                text(f"{country_code} - {display_name}")
+                                            with doc.option(**option_attrs):
+                                                doc.text(f"{country_code} - {display_name}")
 
                             # Risk filter
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
+                            with doc.div():
+                                with doc.label(classes="label"):
+                                    with doc.span(
                                         classes="label-text text-xs font-semibold"
                                     ):
-                                        text("Risk Level")
-                                with tag.select(
+                                        doc.text("Risk Level")
+                                with doc.select(
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="risk_level",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All Risk Levels")
-                                    with tag.option(value="high"):
-                                        text("High (≥75)")
-                                    with tag.option(value="medium"):
-                                        text("Medium (50-74)")
-                                    with tag.option(value="low"):
-                                        text("Low (<50)")
-                                    with tag.option(value="unscored"):
-                                        text("Unscored")
+                                    with doc.option(value=""):
+                                        doc.text("All Risk Levels")
+                                    with doc.option(value="high"):
+                                        doc.text("High (≥75)")
+                                    with doc.option(value="medium"):
+                                        doc.text("Medium (50-74)")
+                                    with doc.option(value="low"):
+                                        doc.text("Low (<50)")
+                                    with doc.option(value="unscored"):
+                                        doc.text("Unscored")
 
                             # Days in status
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
+                            with doc.div():
+                                with doc.label(classes="label"):
+                                    with doc.span(
                                         classes="label-text text-xs font-semibold"
                                     ):
-                                        text("Days in Status")
-                                with tag.select(
+                                        doc.text("Days in Status")
+                                with doc.select(
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="days_in_status",
                                 ):
-                                    with tag.option(value=""):
-                                        text("Any Duration")
-                                    with tag.option(value="1"):
-                                        text(">1 day")
-                                    with tag.option(value="3"):
-                                        text(">3 days")
-                                    with tag.option(value="7"):
-                                        text(">7 days")
-                                    with tag.option(value="30"):
-                                        text(">30 days")
+                                    with doc.option(value=""):
+                                        doc.text("Any Duration")
+                                    with doc.option(value="1"):
+                                        doc.text(">1 day")
+                                    with doc.option(value="3"):
+                                        doc.text(">3 days")
+                                    with doc.option(value="7"):
+                                        doc.text(">7 days")
+                                    with doc.option(value="30"):
+                                        doc.text(">30 days")
 
                         # Row 2: Appeal filter
-                        with tag.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with doc.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
                             # Has appeal
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
+                            with doc.div():
+                                with doc.label(classes="label"):
+                                    with doc.span(
                                         classes="label-text text-xs font-semibold"
                                     ):
-                                        text("Appeal Status")
-                                with tag.select(
+                                        doc.text("Appeal Status")
+                                with doc.select(
                                     classes="select select-bordered select-sm w-full filter-select",
                                     name="has_appeal",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All")
-                                    with tag.option(value="pending"):
-                                        text("Pending Appeal")
-                                    with tag.option(value="reviewed"):
-                                        text("Reviewed")
-                                    with tag.option(value="none"):
-                                        text("No Appeal")
+                                    with doc.option(value=""):
+                                        doc.text("All")
+                                    with doc.option(value="pending"):
+                                        doc.text("Pending Appeal")
+                                    with doc.option(value="reviewed"):
+                                        doc.text("Reviewed")
+                                    with doc.option(value="none"):
+                                        doc.text("No Appeal")
 
         # Organization table
-        with tag.div(id="org-list", classes="overflow-x-auto"):
+        with doc.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
                 with empty_state(
                     "No Organizations Found",
@@ -523,17 +523,17 @@ class OrganizationListView:
 
                 # Needs attention table
                 if needs_attention and status_filter is None:
-                    with tag.div(classes="mb-8"):
-                        with tag.h2(
+                    with doc.div(classes="mb-8"):
+                        with doc.h2(
                             classes="text-xl font-bold mb-4 flex items-center gap-3"
                         ):
-                            text("Needs Attention")
-                            with tag.span(classes="badge badge-error badge-lg"):
-                                text(str(len(needs_attention)))
+                            doc.text("Needs Attention")
+                            with doc.span(classes="badge badge-error badge-lg"):
+                                doc.text(str(len(needs_attention)))
 
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
                                     with self.sortable_header(
                                         request,
                                         "Organization",
@@ -544,8 +544,8 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
+                                    with doc.th():
+                                        doc.text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -600,10 +600,10 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th(classes="text-right"):
-                                        text("Actions")
+                                    with doc.th(classes="text-right"):
+                                        doc.text("Actions")
 
-                            with tag.tbody():
+                            with doc.tbody():
                                 for org in needs_attention:
                                     with self.organization_row(
                                         request, org, show_quick_actions=True
@@ -611,14 +611,14 @@ class OrganizationListView:
                                         pass
 
                     # Divider
-                    with tag.div(classes="divider my-8"):
-                        text("All Organizations")
+                    with doc.div(classes="divider my-8"):
+                        doc.text("All Organizations")
 
                 # Regular organizations table
                 if regular_orgs or status_filter is not None:
-                    with tag.table(classes="table table-zebra w-full"):
-                        with tag.thead():
-                            with tag.tr():
+                    with doc.table(classes="table table-zebra w-full"):
+                        with doc.thead():
+                            with doc.tr():
                                 with self.sortable_header(
                                     request,
                                     "Organization",
@@ -629,8 +629,8 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
+                                with doc.th():
+                                    doc.text("Email")
 
                                 with self.sortable_header(
                                     request,
@@ -685,10 +685,10 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th(classes="text-right"):
-                                    text("Actions")
+                                with doc.th(classes="text-right"):
+                                    doc.text("Actions")
 
-                        with tag.tbody():
+                        with doc.tbody():
                             display_orgs = (
                                 regular_orgs if status_filter is None else organizations
                             )
@@ -698,7 +698,7 @@ class OrganizationListView:
 
                 # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
+                    with doc.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
                             hx_get=str(request.url_for("organizations-v2:list"))
@@ -706,7 +706,7 @@ class OrganizationListView:
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
-                            text("Load More")
+                            doc.text("Load More")
 
         yield
 
@@ -725,7 +725,7 @@ class OrganizationListView:
         """Render only the organization table (for HTMX updates)."""
 
         # Organization table
-        with tag.div(id="org-list", classes="overflow-x-auto"):
+        with doc.div(id="org-list", classes="overflow-x-auto"):
             if not organizations:
                 with empty_state(
                     "No Organizations Found",
@@ -743,17 +743,17 @@ class OrganizationListView:
 
                 # Needs attention table
                 if needs_attention and status_filter is None:
-                    with tag.div(classes="mb-8"):
-                        with tag.h2(
+                    with doc.div(classes="mb-8"):
+                        with doc.h2(
                             classes="text-xl font-bold mb-4 flex items-center gap-3"
                         ):
-                            text("Needs Attention")
-                            with tag.span(classes="badge badge-error badge-lg"):
-                                text(str(len(needs_attention)))
+                            doc.text("Needs Attention")
+                            with doc.span(classes="badge badge-error badge-lg"):
+                                doc.text(str(len(needs_attention)))
 
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
+                        with doc.table(classes="table table-zebra w-full"):
+                            with doc.thead():
+                                with doc.tr():
                                     with self.sortable_header(
                                         request,
                                         "Organization",
@@ -764,8 +764,8 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
+                                    with doc.th():
+                                        doc.text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -820,10 +820,10 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th(classes="text-right"):
-                                        text("Actions")
+                                    with doc.th(classes="text-right"):
+                                        doc.text("Actions")
 
-                            with tag.tbody():
+                            with doc.tbody():
                                 for org in needs_attention:
                                     with self.organization_row(
                                         request, org, show_quick_actions=True
@@ -831,14 +831,14 @@ class OrganizationListView:
                                         pass
 
                     # Divider
-                    with tag.div(classes="divider my-8"):
-                        text("All Organizations")
+                    with doc.div(classes="divider my-8"):
+                        doc.text("All Organizations")
 
                 # Regular organizations table
                 if regular_orgs or status_filter is not None:
-                    with tag.table(classes="table table-zebra w-full"):
-                        with tag.thead():
-                            with tag.tr():
+                    with doc.table(classes="table table-zebra w-full"):
+                        with doc.thead():
+                            with doc.tr():
                                 with self.sortable_header(
                                     request,
                                     "Organization",
@@ -849,8 +849,8 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
+                                with doc.th():
+                                    doc.text("Email")
 
                                 with self.sortable_header(
                                     request,
@@ -905,10 +905,10 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th(classes="text-right"):
-                                    text("Actions")
+                                with doc.th(classes="text-right"):
+                                    doc.text("Actions")
 
-                        with tag.tbody():
+                        with doc.tbody():
                             display_orgs = (
                                 regular_orgs if status_filter is None else organizations
                             )
@@ -918,7 +918,7 @@ class OrganizationListView:
 
                 # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
+                    with doc.div(classes="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
                             hx_get=str(request.url_for("organizations-v2:list"))
@@ -926,7 +926,7 @@ class OrganizationListView:
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
-                            text("Load More")
+                            doc.text("Load More")
 
         yield
 

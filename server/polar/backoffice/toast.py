@@ -4,8 +4,8 @@ from collections.abc import Generator
 from typing import Literal
 
 from fastapi import Request
+from polar.backoffice.document import get_document
 from starlette.types import Scope
-from tagflow import tag, text
 
 from .components import alert
 
@@ -20,8 +20,12 @@ class Toast:
 
 @contextlib.contextmanager
 def render_toasts(scope: Scope) -> Generator[None]:
+    doc = scope.get("markupflow_document")
+    if doc is None:
+        raise RuntimeError("No document in request scope")
+    
     toasts: list[Toast] = scope.get("toasts", [])
-    with tag.div(
+    with doc.div(
         id="toast", classes="toast toast-bottom toast-end", hx_swap_oob="beforeend"
     ):
         for toast in toasts:
@@ -35,7 +39,7 @@ def render_toasts(scope: Scope) -> Generator[None]:
                 on click remove me
                 """,
             ):
-                text(toast.message)
+                doc.text(toast.message)
     yield
 
 

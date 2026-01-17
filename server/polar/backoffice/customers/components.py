@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.customer.sorting import CustomerSortProperty
 from polar.kit.sorting import Sorting
@@ -27,13 +27,14 @@ class OrganizationColumn(datatable.DatatableAttrColumn[Customer, CustomerSortPro
 
 @contextlib.contextmanager
 def email_verified_badge(verified: bool) -> Generator[None]:
-    with tag.div(classes="badge"):
+    doc = get_document()
+    with doc.div(classes="badge"):
         if verified:
-            classes("badge-success")
-            text("Verified")
+            doc.attr("class", "badge-success")
+            doc.text("Verified")
         else:
-            classes("badge-neutral")
-            text("Not Verified")
+            doc.attr("class", "badge-neutral")
+            doc.text("Not Verified")
     yield
 
 

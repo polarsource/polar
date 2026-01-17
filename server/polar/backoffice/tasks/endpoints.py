@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request
 from pydantic import ValidationError
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.worker import enqueue_job
 
@@ -22,7 +22,7 @@ router = APIRouter()
 #         formatted_execution_time = format_decimal(
 #             execution_time.total_seconds(), locale="en_US"
 #         )
-#         text(formatted_execution_time)
+#         doc.text(formatted_execution_time)
 
 
 @router.get("/", name="tasks:list")
@@ -60,11 +60,11 @@ async def list(
         ],
         "tasks:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Tasks")
-            with tag.div(classes="w-full flex flex-row justify-between"):
-                with tag.form(method="GET"):
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Tasks")
+            with doc.div(classes="w-full flex flex-row justify-between"):
+                with doc.form(method="GET"):
                     with input.search("query", query):
                         pass
                 with button(
@@ -72,7 +72,7 @@ async def list(
                     hx_get=str(request.url_for("tasks:enqueue")),
                     hx_target="#modal",
                 ):
-                    text("Enqueue Task")
+                    doc.text("Enqueue Task")
 
             with datatable.Datatable[Any, Any](
                 datatable.DatatableDateTimeColumn("enqueue_time", "Enqueue Time"),
@@ -110,14 +110,14 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
             classes="flex flex-col",
             validation_error=validation_error,
         ):
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Enqueue")
+                    doc.text("Enqueue")

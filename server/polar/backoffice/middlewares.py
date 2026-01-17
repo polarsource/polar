@@ -1,8 +1,10 @@
 import functools
 
+from markupflow import Document
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
-from tagflow import document
+
+from .document import set_document
 
 
 class TagflowMiddleware:
@@ -13,8 +15,11 @@ class TagflowMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
-        with document():
-            await self.app(scope, receive, send)
+        # Create a document and store it in the request scope and contextvar
+        doc = Document()
+        scope["markupflow_document"] = doc
+        set_document(doc)
+        await self.app(scope, receive, send)
 
 
 class SecurityHeadersMiddleware:

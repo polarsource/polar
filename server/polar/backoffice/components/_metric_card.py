@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 Variant = Literal["default", "success", "warning", "error", "info"]
 
@@ -61,31 +61,31 @@ def metric_card(
 
     padding_class = "p-3" if compact else "p-4"
 
-    with tag.div(
+    with doc.div(
         classes=f"card border {padding_class} {variant_classes[variant]}",
         **kwargs,
     ):
-        with tag.div(classes="flex flex-col gap-1"):
+        with doc.div(classes="flex flex-col gap-1"):
             # Label
-            with tag.div(
+            with doc.div(
                 classes="text-xs uppercase font-semibold text-base-content/60"
             ):
-                text(label)
+                doc.text(label)
 
             # Value with optional trend
-            with tag.div(classes="flex items-baseline gap-2"):
+            with doc.div(classes="flex items-baseline gap-2"):
                 size_class = "text-xl" if compact else "text-3xl"
-                with tag.div(classes=f"{size_class} font-bold font-mono"):
-                    text(str(value))
+                with doc.div(classes=f"{size_class} font-bold font-mono"):
+                    doc.text(str(value))
 
                 if trend:
-                    with tag.span(classes=f"text-lg {trend_colors[trend]}"):
-                        text(trend_icons[trend])
+                    with doc.span(classes=f"text-lg {trend_colors[trend]}"):
+                        doc.text(trend_icons[trend])
 
             # Optional subtitle
             if subtitle:
-                with tag.div(classes="text-sm text-base-content/70"):
-                    text(subtitle)
+                with doc.div(classes="text-sm text-base-content/70"):
+                    doc.text(subtitle)
 
             # Allow additional content
             yield

@@ -3,7 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, Query, Request
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.models import Pledge
 from polar.pledge.service import pledge as pledge_service
@@ -20,14 +20,15 @@ class PledgeSortProperty(StrEnum): ...
 
 class TransferColumn(datatable.DatatableAttrColumn[Pledge, PledgeSortProperty]):
     def render(self, request: Request, item: Pledge) -> None:
-        with tag.button(
+    doc = get_document()
+        with doc.button(
             classes="btn btn-sm btn-primary",
             hx_post=str(request.url_for("pledges:transfer", pledge_id=item.id)),
             hx_confirm="Are you sure you want to transfer this pledge to the organization?",
             hx_swap="outerHTML",
             hx_target="closest tr",
         ):
-            text("Transfer")
+            doc.text("Transfer")
 
 
 @router.get("/", name="pledges:list")
@@ -43,12 +44,12 @@ async def list(
         ],
         "pledges:list",
     ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Pledges")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.h1(classes="text-4xl"):
+                doc.text("Pledges")
 
             # Search form
-            with tag.form(
+            with doc.form(
                 method="POST",
                 action=str(request.url_for("pledges:search")),
                 hx_post=str(request.url_for("pledges:search")),
@@ -56,12 +57,12 @@ async def list(
                 hx_swap="innerHTML",
                 classes="flex flex-col gap-4",
             ):
-                with tag.div(classes="flex flex-row gap-2 items-end"):
-                    with tag.div(classes="form-control flex-1"):
-                        with tag.label(classes="label"):
-                            with tag.span(classes="label-text"):
-                                text("Issue Reference")
-                        with tag.form(method="GET"):
+                with doc.div(classes="flex flex-row gap-2 items-end"):
+                    with doc.div(classes="form-control flex-1"):
+                        with doc.label(classes="label"):
+                            with doc.span(classes="label-text"):
+                                doc.text("Issue Reference")
+                        with doc.form(method="GET"):
                             with input.search(
                                 "issue_reference",
                                 issue_reference,
@@ -69,7 +70,7 @@ async def list(
                                 pass
 
             # Results container
-            with tag.div(id="search-results"):
+            with doc.div(id="search-results"):
                 pass
 
 
@@ -84,15 +85,15 @@ async def search(
 
     # Render results
     if not pledges:
-        with tag.div(classes="alert"):
-            with tag.span(classes="icon-info-circle"):
+        with doc.div(classes="alert"):
+            with doc.span(classes="icon-info-circle"):
                 pass
-            text(f"No pledges found for issue reference: {issue_reference}")
+            doc.text(f"No pledges found for issue reference: {issue_reference}")
         return
 
-    with tag.div(classes="flex flex-col gap-4"):
-        with tag.h2(classes="text-2xl"):
-            text(f"Pledges for {issue_reference}")
+    with doc.div(classes="flex flex-col gap-4"):
+        with doc.h2(classes="text-2xl"):
+            doc.text(f"Pledges for {issue_reference}")
 
         with datatable.Datatable(
             datatable.DatatableAttrColumn(
@@ -136,11 +137,11 @@ async def transfer(
         await pledge_service.admin_transfer(session, pledge_id)
 
         # Return success message row
-        with tag.tr(classes="bg-green-50"):
-            with tag.td(colspan="9", classes="text-center text-green-700"):
-                text("✓ Pledge transferred successfully")
+        with doc.tr(classes="bg-green-50"):
+            with doc.td(colspan="9", classes="text-center text-green-700"):
+                doc.text("✓ Pledge transferred successfully")
     except Exception as e:
         # Return error message row
-        with tag.tr(classes="bg-red-50"):
-            with tag.td(colspan="9", classes="text-center text-red-700"):
-                text(f"✗ Transfer failed: {str(e)}")
+        with doc.tr(classes="bg-red-50"):
+            with doc.td(colspan="9", classes="text-center text-red-700"):
+                doc.text(f"✗ Transfer failed: {str(e)}")

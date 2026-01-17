@@ -3,18 +3,18 @@ from typing import Any
 
 from fastapi.datastructures import URL
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.background import BackgroundTask
 from starlette.types import Receive, Scope, Send
-from tagflow import TagResponse as _TagResponse
 
 from .toast import render_toasts
 
 
-class TagResponse(_TagResponse):
+class TagResponse(HTMLResponse):
     """
-    Overload of TagResponse that delays the rendering at call time, so we can render
-    the toasts that have been added to the request scope.
+    HTML response that uses markupflow for rendering.
+    Delays the rendering at call time, so we can render the toasts that have been
+    added to the request scope.
     """
 
     def __init__(
@@ -37,7 +37,11 @@ class TagResponse(_TagResponse):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         with render_toasts(scope):
             pass
-        self.body = self.render(self.content)
+        # Get the document from request scope
+        doc = scope.get("markupflow_document")
+        if doc is None:
+            raise RuntimeError("No document in request scope")
+        self.body = doc.render().encode("utf-8")
         self.init_headers(self.initial_headers)
         await super().__call__(scope, receive, send)
 

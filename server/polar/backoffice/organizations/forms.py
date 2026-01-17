@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from fastapi import UploadFile
+from polar.backoffice.document import get_document
 from pydantic import (
     Discriminator,
     Field,

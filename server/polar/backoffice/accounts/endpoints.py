@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from pydantic import UUID4
-from tagflow import classes, tag, text
+from polar.backoffice.document import get_document
 
 from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
@@ -24,17 +24,18 @@ router = APIRouter()
 def identity_verification_status_badge(
     status: IdentityVerificationStatus,
 ) -> Generator[None]:
-    with tag.div(classes="badge"):
+    doc = get_document()
+    with doc.div(classes="badge"):
         if status == IdentityVerificationStatus.verified:
-            classes("badge-success")
+            doc.attr("class", "badge-success")
         elif status in {
             IdentityVerificationStatus.pending,
             IdentityVerificationStatus.failed,
         }:
-            classes("badge-warning")
+            doc.attr("class", "badge-warning")
         else:
-            classes("badge-neutral")
-        text(status.get_display_name())
+            doc.attr("class", "badge-neutral")
+        doc.text(status.get_display_name())
     yield
 
 
@@ -52,19 +53,20 @@ class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
     def render(self, request: Request, item: User) -> Generator[None] | None:
+    doc = get_document()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
-            with tag.a(
+            with doc.a(
                 href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
                 classes="link flex flex-row gap-1",
                 target="_blank",
                 rel="noopener noreferrer",
             ):
-                text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
+                doc.text(status.get_display_name())
+                with doc.div(classes="icon-external-link"):
                     pass
         else:
-            text(status.get_display_name())
+            doc.text(status.get_display_name())
         return None
 
 
@@ -108,25 +110,25 @@ async def delete_stripe(
         return
 
     with modal(f"Delete Stripe Connect account {account.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.form(hx_post=str(request.url), hx_target="#modal"):
-                with tag.p():
-                    with tag.span():
-                        text(
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.form(hx_post=str(request.url), hx_target="#modal"):
+                with doc.p():
+                    with doc.span():
+                        doc.text(
                             f"Are you sure you want to delete this Stripe Connect account? Write in {account.stripe_id} below to confirm:"
                         )
-                with tag.input(
+                with doc.input(
                     type="text",
                     classes="input",
                     name="stripe_account_id",
                     placeholder=f"{account.stripe_id}",
                 ):
                     pass
-                with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
+                with doc.div(classes="modal-action"):
+                    with doc.form(method="dialog"):
                         with button(ghost=True):
-                            text("Cancel")
-                    with tag.input(
+                            doc.text("Cancel")
+                    with doc.input(
                         type="submit", classes="btn btn-primary", value="Delete"
                     ):
                         pass

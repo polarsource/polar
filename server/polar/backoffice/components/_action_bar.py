@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal
 
-from tagflow import tag
+from polar.backoffice.document import get_document
 
 Position = Literal["left", "center", "right", "between"]
 
@@ -30,9 +30,9 @@ def action_bar(
     Example:
         >>> with action_bar(position="right"):
         ...     with button(variant="primary"):
-        ...         text("Save")
+        ...         doc.text("Save")
         ...     with button(variant="secondary"):
-        ...         text("Cancel")
+        ...         doc.text("Cancel")
     """
     justify_classes = {
         "left": "justify-start",
@@ -44,7 +44,7 @@ def action_bar(
     direction_class = "flex-col" if vertical else "flex-row"
     gap_class = "gap-2" if not vertical else "gap-3"
 
-    with tag.div(
+    with doc.div(
         classes=f"flex {direction_class} items-center {gap_class} {justify_classes[position]}",
         **kwargs,
     ):

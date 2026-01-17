@@ -56,6 +56,7 @@ dependencies = [
   "aiocsv>=1.4.0",
   "alembic-utils>=0.8.8",
   "countryinfo>=0.1.2",
+  "markupflow>=0.0.1",
 ]
 
 [dependency-groups]

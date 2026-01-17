@@ -2,8 +2,8 @@ import contextlib
 from collections.abc import Generator
 from typing import Literal
 
-from tagflow import classes, tag
-from tagflow.tagflow import AttrValue
+from polar.backoffice.document import get_document
+# AttrValue type defined inline
 
 Variant = Literal[
     "neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"
@@ -43,7 +43,7 @@ def button(
 
     Example:
         >>> with button(variant="primary", size="lg", outline=True, type="submit"):
-        ...     text("Submit Form")
+        ...     doc.text("Submit Form")
     """
     variants = {
         "neutral": "btn-neutral",
@@ -62,19 +62,19 @@ def button(
         "lg": "btn-lg",
         "xl": "btn-xl",
     }
-    with tag.button(classes="btn", **kwargs):
+    with doc.button(classes="btn", **kwargs):
         if variant:
-            classes(variants[variant])
+            doc.attr("class", variants[variant])
         if size:
-            classes(sizes[size])
+            doc.attr("class", sizes[size])
         if ghost:
-            classes("btn-ghost")
+            doc.attr("class", "btn-ghost")
         if link:
-            classes("btn-link")
+            doc.attr("class", "btn-link")
         if soft:
-            classes("btn-soft")
+            doc.attr("class", "btn-soft")
         if outline:
-            classes("btn-outline")
+            doc.attr("class", "btn-outline")
         yield
 
 

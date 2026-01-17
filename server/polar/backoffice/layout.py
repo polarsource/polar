@@ -2,6 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
+from polar.backoffice.document import get_document
 
 from .components import layout as layout_component
 from .navigation import NAVIGATION
@@ -39,8 +40,8 @@ def layout(
     Example:
         >>> breadcrumbs = [("Dashboard", "/dashboard")]
         >>> with layout(request, breadcrumbs, "dashboard"):
-        ...     with tag.h1():
-        ...         text("Dashboard Content")
+        ...     with doc.h1():
+        ...         doc.text("Dashboard Content")
     """
     with layout_component(
         request,

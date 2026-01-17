@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Literal
 
-from tagflow import tag
+from polar.backoffice.document import get_document
 
 Variant = Literal[
     "neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"
@@ -28,14 +28,14 @@ def clipboard_button(text: str) -> Generator[None]:
         >>> with clipboard_button("secret-api-key-123"):
         ...     pass
     """
-    with tag.button(
+    with doc.button(
         type="button",
         classes="font-normal cursor-pointer",
         _=f"install CopyToClipboard(text: '{text}')",
     ):
-        with tag.div(classes="icon-clipboard"):
+        with doc.div(classes="icon-clipboard"):
             pass
-        with tag.div(classes="icon-clipboard-check hidden"):
+        with doc.div(classes="icon-clipboard-check hidden"):
             pass
     yield
 

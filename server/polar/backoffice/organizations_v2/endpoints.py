@@ -17,7 +17,7 @@ from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import joinedload
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 from polar.account.service import account as account_service
 from polar.account_credit.repository import AccountCreditRepository
@@ -513,15 +513,15 @@ async def get_organization_detail(
                     pass
             elif section == "history":
                 # TODO: Implement history section
-                with tag.div():
-                    text("History section coming soon...")
+                with doc.div():
+                    doc.text("History section coming soon...")
             elif section == "settings":
                 settings_section = SettingsSection(organization)
                 with settings_section.render(request):
                     pass
             else:
-                with tag.div():
-                    text(f"Unknown section: {section}")
+                with doc.div():
+                    doc.text(f"Unknown section: {section}")
 
 
 @router.post("/{organization_id}/approve", name="organizations-v2:approve")
@@ -588,22 +588,22 @@ async def deny_dialog(
         )
 
     with modal("Deny Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-error"):
-                text("⚠️ Warning: Payments will be blocked")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p(classes="font-semibold text-error"):
+                doc.text("⚠️ Warning: Payments will be blocked")
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.p(classes="mb-2"):
-                    text(
+            with doc.div(classes="bg-base-200 p-4 rounded-lg"):
+                with doc.p(classes="mb-2"):
+                    doc.text(
                         "Denying this organization will prevent them from receiving payments. "
                         "This action can be reversed, but the organization will need to be reviewed again."
                     )
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
-                with tag.form(
+                        doc.text("Cancel")
+                with doc.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:deny_dialog",
@@ -612,7 +612,7 @@ async def deny_dialog(
                     ),
                 ):
                     with button(variant="error", type="submit"):
-                        text("Deny Organization")
+                        doc.text("Deny Organization")
 
     return None
 
@@ -657,7 +657,7 @@ async def approve_denied_dialog(
         )
 
     with modal("Approve Denied Organization", open=True):
-        with tag.form(
+        with doc.form(
             hx_post=str(
                 request.url_for(
                     "organizations-v2:approve_denied_dialog",
@@ -667,21 +667,21 @@ async def approve_denied_dialog(
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
-            with tag.p(classes="font-semibold"):
-                text("Approve this previously denied organization")
+            with doc.p(classes="font-semibold"):
+                doc.text("Approve this previously denied organization")
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.p(classes="mb-3"):
-                    text(
+            with doc.div(classes="bg-base-200 p-4 rounded-lg"):
+                with doc.p(classes="mb-3"):
+                    doc.text(
                         "This will set the organization to ACTIVE status and allow them to receive payments. "
                         "Make sure you've reviewed the organization details and any appeal information."
                     )
 
-                with tag.div(classes="form-control"):
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text font-semibold"):
-                            text("Next Review Threshold (in dollars)")
-                    with tag.input(
+                with doc.div(classes="form-control"):
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text font-semibold"):
+                            doc.text("Next Review Threshold (in dollars)")
+                    with doc.input(
                         type="number",
                         name="threshold",
                         value="250",
@@ -689,16 +689,16 @@ async def approve_denied_dialog(
                         classes="input input-bordered",
                     ):
                         pass
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text-alt"):
-                            text("Amount in dollars that will trigger next review")
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text-alt"):
+                            doc.text("Amount in dollars that will trigger next review")
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(variant="primary", type="submit"):
-                    text("Approve Organization")
+                    doc.text("Approve Organization")
 
     return None
 
@@ -746,7 +746,7 @@ async def unblock_approve_dialog(
         )
 
     with modal("Unblock & Approve Organization", open=True):
-        with tag.form(
+        with doc.form(
             hx_post=str(
                 request.url_for(
                     "organizations-v2:unblock_approve_dialog",
@@ -756,21 +756,21 @@ async def unblock_approve_dialog(
             hx_target="#modal",
             classes="flex flex-col gap-4",
         ):
-            with tag.p(classes="font-semibold"):
-                text("Unblock and approve this organization")
+            with doc.p(classes="font-semibold"):
+                doc.text("Unblock and approve this organization")
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.p(classes="mb-3"):
-                    text(
+            with doc.div(classes="bg-base-200 p-4 rounded-lg"):
+                with doc.p(classes="mb-3"):
+                    doc.text(
                         "This will unblock the organization and set it to ACTIVE status. "
                         "The organization will be able to receive payments again."
                     )
 
-                with tag.div(classes="form-control"):
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text font-semibold"):
-                            text("Next Review Threshold (in dollars)")
-                    with tag.input(
+                with doc.div(classes="form-control"):
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text font-semibold"):
+                            doc.text("Next Review Threshold (in dollars)")
+                    with doc.input(
                         type="number",
                         name="threshold",
                         value="250",
@@ -778,16 +778,16 @@ async def unblock_approve_dialog(
                         classes="input input-bordered",
                     ):
                         pass
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text-alt"):
-                            text("Amount in dollars that will trigger next review")
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text-alt"):
+                            doc.text("Amount in dollars that will trigger next review")
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(variant="primary", type="submit"):
-                    text("Unblock & Approve")
+                    doc.text("Unblock & Approve")
 
     return None
 
@@ -827,33 +827,33 @@ async def block_dialog(
         )
 
     with modal("Block Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-error"):
-                text("⚠️ Critical Warning: Complete Organization Block")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p(classes="font-semibold text-error"):
+                doc.text("⚠️ Critical Warning: Complete Organization Block")
 
-            with tag.div(classes="bg-error/10 border border-error/20 p-4 rounded-lg"):
-                with tag.p(classes="font-semibold mb-2 text-error"):
-                    text("Blocking this organization will:")
-                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
-                    with tag.li():
-                        text("Prevent all access to the organization")
-                    with tag.li():
-                        text("Block all payments and transactions")
-                    with tag.li():
-                        text("Disable API access")
-                    with tag.li():
-                        text("Prevent any organization operations")
+            with doc.div(classes="bg-error/10 border border-error/20 p-4 rounded-lg"):
+                with doc.p(classes="font-semibold mb-2 text-error"):
+                    doc.text("Blocking this organization will:")
+                with doc.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with doc.li():
+                        doc.text("Prevent all access to the organization")
+                    with doc.li():
+                        doc.text("Block all payments and transactions")
+                    with doc.li():
+                        doc.text("Disable API access")
+                    with doc.li():
+                        doc.text("Prevent any organization operations")
 
-                with tag.p(classes="mt-3 text-sm font-semibold"):
-                    text(
+                with doc.p(classes="mt-3 text-sm font-semibold"):
+                    doc.text(
                         "This is a severe action typically used for fraud or ToS violations."
                     )
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
-                with tag.form(
+                        doc.text("Cancel")
+                with doc.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:block_dialog",
@@ -862,7 +862,7 @@ async def block_dialog(
                     ),
                 ):
                     with button(variant="error", type="submit"):
-                        text("Block Organization")
+                        doc.text("Block Organization")
 
     return None
 
@@ -936,8 +936,8 @@ async def edit_organization(
     }
 
     with modal("Edit Basic Settings", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Update organization name, slug, and customer invoice prefix")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Update organization name, slug, and customer invoice prefix")
 
         with UpdateOrganizationBasicForm.render(
             data=form_data,
@@ -951,15 +951,15 @@ async def edit_organization(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Changes")
+                    doc.text("Save Changes")
 
     return None
 
@@ -1016,8 +1016,8 @@ async def edit_details(
     }
 
     with modal("Edit Organization Details", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text(
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text(
                 "Update organization details (about, product description, intended use)"
             )
 
@@ -1033,15 +1033,15 @@ async def edit_details(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Changes")
+                    doc.text("Save Changes")
 
     return None
 
@@ -1087,10 +1087,10 @@ async def edit_order_settings(
     current = organization.order_settings.get("invoice_numbering", "organization")
 
     with modal("Edit Order Settings", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Configure how invoice numbers are generated")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Configure how invoice numbers are generated")
 
-        with tag.form(
+        with doc.form(
             hx_post=str(
                 request.url_for(
                     "organizations-v2:edit_order_settings",
@@ -1100,7 +1100,7 @@ async def edit_order_settings(
             hx_target="#modal",
             classes="space-y-4",
         ):
-            with tag.div(classes="space-y-3"):
+            with doc.div(classes="space-y-3"):
                 for value, label, desc in [
                     (
                         "organization",
@@ -1109,10 +1109,10 @@ async def edit_order_settings(
                     ),
                     ("customer", "Per-customer", "Separate numbering per customer"),
                 ]:
-                    with tag.label(
+                    with doc.label(
                         classes="label cursor-pointer justify-start gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-200"
                     ):
-                        with tag.input(
+                        with doc.input(
                             type="radio",
                             name="invoice_numbering",
                             value=value,
@@ -1120,18 +1120,18 @@ async def edit_order_settings(
                             **{"checked": ""} if current == value else {},
                         ):
                             pass
-                        with tag.div():
-                            with tag.div(classes="font-semibold text-sm"):
-                                text(label)
-                            with tag.div(classes="text-xs text-base-content/60"):
-                                text(desc)
+                        with doc.div():
+                            with doc.div(classes="font-semibold text-sm"):
+                                doc.text(label)
+                            with doc.div(classes="text-xs text-base-content/60"):
+                                doc.text(desc)
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(type="submit", variant="primary"):
-                    text("Save Changes")
+                    doc.text("Save Changes")
 
     return None
 
@@ -1269,8 +1269,8 @@ async def edit_socials(
             form_data["other_url"] = url
 
     with modal("Edit Social Media Links", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Update organization social media links for creator outreach")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Update organization social media links for creator outreach")
 
         with UpdateOrganizationSocialsForm.render(
             data=form_data,
@@ -1284,15 +1284,15 @@ async def edit_socials(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Changes")
+                    doc.text("Save Changes")
 
     return None
 
@@ -1354,10 +1354,10 @@ async def edit_features(
 
     # Render feature flags form
     with modal("Edit Feature Flags", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Enable or disable feature flags for this organization")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Enable or disable feature flags for this organization")
 
-        with tag.form(
+        with doc.form(
             hx_post=str(
                 request.url_for(
                     "organizations-v2:edit_features", organization_id=organization_id
@@ -1367,7 +1367,7 @@ async def edit_features(
             classes="space-y-4",
         ):
             # Feature flags checkboxes
-            with tag.div(classes="space-y-3"):
+            with doc.div(classes="space-y-3"):
                 for (
                     field_name,
                     field_info,
@@ -1375,30 +1375,30 @@ async def edit_features(
                     enabled = organization.feature_settings.get(field_name, False)
                     label = field_name.replace("_", " ").title()
 
-                    with tag.div(classes="form-control"):
-                        with tag.label(
+                    with doc.div(classes="form-control"):
+                        with doc.label(
                             classes="label cursor-pointer justify-start gap-3"
                         ):
-                            with tag.input(
+                            with doc.input(
                                 type="checkbox",
                                 name=field_name,
                                 classes="checkbox checkbox-sm",
                                 **{"checked": ""} if enabled else {},
                             ):
                                 pass
-                            with tag.span(classes="label-text"):
-                                text(label)
+                            with doc.span(classes="label-text"):
+                                doc.text(label)
 
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Changes")
+                    doc.text("Save Changes")
 
     return None
 
@@ -1445,8 +1445,8 @@ async def add_note(
             validation_error = e
 
     with modal("Add Internal Notes", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Add internal notes about this organization (admin only)")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Add internal notes about this organization (admin only)")
 
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
@@ -1460,15 +1460,15 @@ async def add_note(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Notes")
+                    doc.text("Save Notes")
 
     return None
 
@@ -1515,8 +1515,8 @@ async def edit_note(
             validation_error = e
 
     with modal("Edit Internal Notes", open=True):
-        with tag.p(classes="text-sm text-base-content/60 mb-4"):
-            text("Update internal notes about this organization (admin only)")
+        with doc.p(classes="text-sm text-base-content/60 mb-4"):
+            doc.text("Update internal notes about this organization (admin only)")
 
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
@@ -1530,15 +1530,15 @@ async def edit_note(
             classes="space-y-4",
         ):
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
                 ):
-                    text("Save Notes")
+                    doc.text("Save Notes")
 
     return None
 
@@ -1730,32 +1730,32 @@ async def delete_dialog(
         )
 
     with modal(f"Delete Organization {organization.name}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-error"):
-                text("Are you sure you want to delete this organization?")
+        with doc.div(classes="flex flex-col gap-4"):
+            with doc.p(classes="font-semibold text-error"):
+                doc.text("Are you sure you want to delete this organization?")
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.p(classes="font-semibold mb-2"):
-                    text("Deleting this organization DOES NOT:")
-                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
-                    with tag.li():
-                        text("Delete or anonymize users")
-                    with tag.li():
-                        text("Delete or anonymize the account")
-                    with tag.li():
-                        text(
+            with doc.div(classes="bg-base-200 p-4 rounded-lg"):
+                with doc.p(classes="font-semibold mb-2"):
+                    doc.text("Deleting this organization DOES NOT:")
+                with doc.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with doc.li():
+                        doc.text("Delete or anonymize users")
+                    with doc.li():
+                        doc.text("Delete or anonymize the account")
+                    with doc.li():
+                        doc.text(
                             "Delete customers, products, discounts, benefits, or checkouts"
                         )
-                    with tag.li():
-                        text("Revoke granted benefits")
-                    with tag.li():
-                        text("Remove API tokens")
+                    with doc.li():
+                        doc.text("Revoke granted benefits")
+                    with doc.li():
+                        doc.text("Remove API tokens")
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
-                with tag.form(
+                        doc.text("Cancel")
+                with doc.form(
                     hx_post=str(
                         request.url_for(
                             "organizations-v2:delete_dialog",
@@ -1764,7 +1764,7 @@ async def delete_dialog(
                     ),
                 ):
                     with button(variant="error", type="submit"):
-                        text("Delete Organization")
+                        doc.text("Delete Organization")
 
     return None
 
@@ -1807,21 +1807,21 @@ async def setup_account(
 
     # GET - Show modal
     with modal("Setup Manual Account", open=True):
-        with tag.div(classes="space-y-4"):
-            with tag.p(classes="text-sm text-base-content/60"):
-                text("This will create a manual payment account for this organization.")
+        with doc.div(classes="space-y-4"):
+            with doc.p(classes="text-sm text-base-content/60"):
+                doc.text("This will create a manual payment account for this organization.")
 
-            with tag.div(classes="alert alert-warning"):
-                with tag.span(classes="text-sm"):
-                    text(
+            with doc.div(classes="alert alert-warning"):
+                with doc.span(classes="text-sm"):
+                    doc.text(
                         "Manual accounts require manual payout processing and do not integrate with Stripe."
                     )
 
             # Action buttons
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action pt-6 border-t border-base-200"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(
                     variant="primary",
                     hx_post=str(
@@ -1831,7 +1831,7 @@ async def setup_account(
                         )
                     ),
                 ):
-                    text("Create Manual Account")
+                    doc.text("Create Manual Account")
 
     return None
 
@@ -2140,20 +2140,20 @@ async def grant_credit(
 
     # GET: Show modal form
     with modal("Grant Fee Credit", open=True):
-        with tag.form(
+        with doc.form(
             hx_post=str(
                 request.url_for(
                     "organizations-v2:grant_credit", organization_id=organization_id
                 )
             ),
         ):
-            with tag.div(classes="space-y-4"):
+            with doc.div(classes="space-y-4"):
                 # Title field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Title")
-                    with tag.input(
+                with doc.div():
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text"):
+                            doc.text("Title")
+                    with doc.input(
                         type="text",
                         name="title",
                         placeholder="Fee Credit",
@@ -2161,15 +2161,15 @@ async def grant_credit(
                         required=True,
                     ):
                         pass
-                    with tag.div(classes="text-xs text-base-content/60 mt-1"):
-                        text("Public title shown to the customer")
+                    with doc.div(classes="text-xs text-base-content/60 mt-1"):
+                        doc.text("Public title shown to the customer")
 
                 # Amount field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Amount (USD)")
-                    with tag.input(
+                with doc.div():
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text"):
+                            doc.text("Amount (USD)")
+                    with doc.input(
                         type="number",
                         name="amount",
                         step="0.01",
@@ -2179,15 +2179,15 @@ async def grant_credit(
                         required=True,
                     ):
                         pass
-                    with tag.div(classes="text-xs text-base-content/60 mt-1"):
-                        text("Enter amount in dollars (e.g., 100.00 for $100)")
+                    with doc.div(classes="text-xs text-base-content/60 mt-1"):
+                        doc.text("Enter amount in dollars (e.g., 100.00 for $100)")
 
                 # Expiration date field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Expires At (optional)")
-                    with tag.input(
+                with doc.div():
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text"):
+                            doc.text("Expires At (optional)")
+                    with doc.input(
                         type="datetime-local",
                         name="expires_at",
                         classes="input input-bordered w-full",
@@ -2195,11 +2195,11 @@ async def grant_credit(
                         pass
 
                 # Notes field
-                with tag.div():
-                    with tag.label(classes="label"):
-                        with tag.span(classes="label-text"):
-                            text("Notes (optional)")
-                    with tag.textarea(
+                with doc.div():
+                    with doc.label(classes="label"):
+                        with doc.span(classes="label-text"):
+                            doc.text("Notes (optional)")
+                    with doc.textarea(
                         name="notes",
                         placeholder="Reason for granting credit...",
                         classes="textarea textarea-bordered w-full",
@@ -2208,12 +2208,12 @@ async def grant_credit(
                         pass
 
             # Action buttons
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with doc.div(classes="modal-action"):
+                with doc.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        doc.text("Cancel")
                 with button(variant="primary", type="submit"):
-                    text("Grant Credit")
+                    doc.text("Grant Credit")
 
     return None
 
@@ -2275,33 +2275,33 @@ async def revoke_credit(
     # GET: Show confirmation modal
     remaining = credit.remaining
     with modal("Revoke Credit", open=True):
-        with tag.div(classes="space-y-4"):
-            with tag.p():
-                text("Are you sure you want to revoke this credit?")
+        with doc.div(classes="space-y-4"):
+            with doc.p():
+                doc.text("Are you sure you want to revoke this credit?")
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.div(classes="grid grid-cols-2 gap-2 text-sm"):
-                    with tag.div(classes="text-base-content/60"):
-                        text("Original Amount:")
-                    with tag.div(classes="font-semibold"):
-                        text(f"${credit.amount / 100:.2f}")
-                    with tag.div(classes="text-base-content/60"):
-                        text("Remaining Balance:")
-                    with tag.div(classes="font-semibold text-error"):
-                        text(f"${remaining / 100:.2f}")
+            with doc.div(classes="bg-base-200 p-4 rounded-lg"):
+                with doc.div(classes="grid grid-cols-2 gap-2 text-sm"):
+                    with doc.div(classes="text-base-content/60"):
+                        doc.text("Original Amount:")
+                    with doc.div(classes="font-semibold"):
+                        doc.text(f"${credit.amount / 100:.2f}")
+                    with doc.div(classes="text-base-content/60"):
+                        doc.text("Remaining Balance:")
+                    with doc.div(classes="font-semibold text-error"):
+                        doc.text(f"${remaining / 100:.2f}")
 
             if remaining > 0:
-                with tag.div(classes="alert alert-warning"):
-                    with tag.span():
-                        text(
+                with doc.div(classes="alert alert-warning"):
+                    with doc.span():
+                        doc.text(
                             f"This credit still has ${remaining / 100:.2f} remaining. "
                             "Revoking it will prevent further use."
                         )
 
-        with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
+        with doc.div(classes="modal-action"):
+            with doc.form(method="dialog"):
                 with button(ghost=True):
-                    text("Cancel")
+                    doc.text("Cancel")
             with button(
                 variant="error",
                 hx_post=str(
@@ -2312,7 +2312,7 @@ async def revoke_credit(
                     )
                 ),
             ):
-                text("Revoke Credit")
+                doc.text("Revoke Credit")
 
     return None
 

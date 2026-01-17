@@ -1,7 +1,7 @@
 import contextlib
 from collections.abc import Generator
 
-from tagflow import tag, text
+from polar.backoffice.document import get_document
 
 
 @contextlib.contextmanager
@@ -21,18 +21,18 @@ def item(accordion_name: str, title: str) -> Generator[None]:
 
     Example:
         >>> with item("settings-accordion", "General Settings"):
-        ...     with tag.p():
-        ...         text("Configuration options here")
+        ...     with doc.p():
+        ...         doc.text("Configuration options here")
         >>> with item("settings-accordion", "Advanced Settings"):
-        ...     with tag.p():
-        ...         text("Advanced options here")
+        ...     with doc.p():
+        ...         doc.text("Advanced options here")
     """
-    with tag.div(classes="collapse collapse-arrow bg-base-100 border border-base-300"):
-        with tag.input(type="radio", name=accordion_name):
+    with doc.div(classes="collapse collapse-arrow bg-base-100 border border-base-300"):
+        with doc.input(type="radio", name=accordion_name):
             pass
-        with tag.div(classes="collapse-title font-semibold"):
-            text(title)
-        with tag.div(classes="collapse-content"):
+        with doc.div(classes="collapse-title font-semibold"):
+            doc.text(title)
+        with doc.div(classes="collapse-content"):
             yield
 
 

@@ -29,6 +29,7 @@ const CountryPicker = ({
   className,
   itemClassName,
   contentClassName,
+  placeholder = 'Country',
 }: {
   allowedCountries: readonly string[]
   value?: string
@@ -38,6 +39,7 @@ const CountryPicker = ({
   className?: string
   itemClassName?: string
   contentClassName?: string
+  placeholder?: string
 }) => {
   const countryMap = getCountryList(allowedCountries as TCountryCode[])
   return (
@@ -49,7 +51,7 @@ const CountryPicker = ({
     >
       <SelectTrigger className={className}>
         <SelectValue
-          placeholder="Country"
+          placeholder={placeholder}
           // Avoids issues due to browser automatic translation
           // https://github.com/shadcn-ui/ui/issues/852
           translate="no"

@@ -22,7 +22,7 @@ from .. import forms
 _TASK_DEFINITIONS: dict[str, dramatiq.Actor[Any, Any]] = {
     name: actor for name, actor in dramatiq.get_broker().actors.items()
 }
-_TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]  # type: ignore[valid-type]
+_TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]
 
 
 def _get_function_arguments(
@@ -54,7 +54,7 @@ def build_enqueue_task_form_class(
     field_definitions: dict[str, tuple[type, Any]] = {
         "task": (
             Annotated[
-                _TaskName,  # type: ignore
+                _TaskName,
                 forms.SelectField(
                     [(name, name) for name in sorted(_TASK_DEFINITIONS.keys())],
                     hx_get=str(request.url_for("tasks:enqueue")),
@@ -76,6 +76,6 @@ def build_enqueue_task_form_class(
 
     return create_model(
         "EnqueueTaskForm",
-        **field_definitions,  # type: ignore
+        **field_definitions,
         __base__=forms.BaseForm,
     )

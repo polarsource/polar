@@ -22,7 +22,7 @@ from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
 )
-from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
+from polar.transaction.service.dispute import (
     DisputeNotResolved,
     DisputeTransactionAlreadyExistsError,
     platform_fee_transaction_service,

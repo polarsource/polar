@@ -99,10 +99,8 @@ async def resolve_order(
     checkout: Checkout | None,
 ) -> Order | None:
     order_repository = OrderRepository.from_session(session)
-    if (
-        object.metadata is not None
-        and (order_id := object.metadata.get("order_id")) is not None
-    ):
+    order_id = object.metadata.get("order_id") if object.metadata is not None else None
+    if order_id is not None:
         order = await order_repository.get_by_id(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
@@ -111,8 +109,9 @@ async def resolve_order(
         return order
 
     if (
-        object.OBJECT_NAME == "charge" or object.OBJECT_NAME == "payment_intent"
-    ) and object.invoice is not None:
+        isinstance(object, (stripe_lib.Charge, stripe_lib.PaymentIntent))
+        and object.invoice is not None
+    ):
         invoice_id = get_expandable_id(object.invoice)
         order = await order_repository.get_by_stripe_invoice_id(
             invoice_id, options=order_repository.get_eager_options()
@@ -137,13 +136,13 @@ async def handle_success(
     order = await resolve_order(session, object, checkout)
 
     payment: Payment | None = None
-    if object.OBJECT_NAME == "charge":
+    if isinstance(object, stripe_lib.Charge):
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, checkout, wallet, order
         )
 
     if checkout is not None:
-        if object.OBJECT_NAME == "setup_intent":
+        if isinstance(object, stripe_lib.SetupIntent):
             checkout_intent_client_secret = checkout.payment_processor_metadata.get(
                 "intent_client_secret"
             )
@@ -182,11 +181,11 @@ async def handle_failure(
     order = await resolve_order(session, object, checkout)
 
     payment: Payment | None = None
-    if object.OBJECT_NAME == "charge":
+    if isinstance(object, stripe_lib.Charge):
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, checkout, wallet, order
         )
-    elif object.OBJECT_NAME == "payment_intent":
+    elif isinstance(object, stripe_lib.PaymentIntent):
         payment = await payment_service.upsert_from_stripe_payment_intent(
             session, object, checkout, order
         )

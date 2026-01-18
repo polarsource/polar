@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
 from polar.benefit.strategies import BenefitRetriableError
-from polar.benefit.tasks import (  # type: ignore[attr-defined]
+from polar.benefit.tasks import (
     BenefitDoesNotExist,
     BenefitGrantDoesNotExist,
     CustomerDoesNotExist,

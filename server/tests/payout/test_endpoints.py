@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from polar.models import Organization, User, UserOrganization
 from polar.models.transaction import TransactionType
-from polar.payout.endpoints import payout_service  # type: ignore[attr-defined]
+from polar.payout.endpoints import payout_service
 from polar.payout.service import PayoutService
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture

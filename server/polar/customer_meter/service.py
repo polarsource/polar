@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
@@ -44,7 +45,7 @@ class CustomerMeterService:
         external_customer_id: Sequence[str] | None = None,
         meter_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerMeterSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerMeterSortProperty]] = [
             (CustomerMeterSortProperty.modified_at, True)
         ],
     ) -> tuple[Sequence[CustomerMeter], int]:

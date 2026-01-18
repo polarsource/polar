@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 
@@ -19,7 +20,7 @@ class CustomerWalletService(ResourceServiceReader[Wallet]):
         auth_subject: AuthSubject[Customer],
         *,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerWalletSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerWalletSortProperty]] = [
             (CustomerWalletSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Wallet], int]:

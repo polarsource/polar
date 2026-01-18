@@ -94,7 +94,7 @@ class CustomerService:
             if customer.billing_name is not None and customer.name is None:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
-                params["address"] = customer.billing_address.to_dict()  # type: ignore
+                params["address"] = customer.billing_address.to_dict()
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
                 tax_id=to_stripe_tax_id(customer.tax_id)
@@ -142,7 +142,7 @@ class CustomerService:
             if customer.name is not None:
                 params["name"] = customer.name
             if customer.billing_address is not None:
-                params["address"] = customer.billing_address.to_dict()  # type: ignore
+                params["address"] = customer.billing_address.to_dict()
             if customer.tax_id is not None:
                 params["tax_id_data"] = [to_stripe_tax_id(customer.tax_id)]
             stripe_customer = await stripe_service.create_customer(**params)
@@ -162,7 +162,7 @@ class CustomerService:
             },
             return_url=payment_method_create.return_url,
             expand=["payment_method"],
-            payment_method_options={  # type: ignore
+            payment_method_options={
                 "klarna": {"currency": "usd"},
             },
         )

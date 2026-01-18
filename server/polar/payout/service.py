@@ -1,3 +1,4 @@
+import builtins
 import datetime
 import uuid
 from collections.abc import AsyncIterable, Sequence
@@ -136,7 +137,7 @@ class PayoutService:
         account_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[PayoutStatus] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[PayoutSortProperty]] = [
+        sorting: builtins.list[Sorting[PayoutSortProperty]] = [
             (PayoutSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[Payout], int]:

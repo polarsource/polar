@@ -289,7 +289,7 @@ class WebhookCustomerSeatAssignedPayload(BaseWebhookPayload):
     """
 
     type: Literal[WebhookEventType.customer_seat_assigned]
-    data: CustomerSeatSchema  # type: ignore[assignment]
+    data: CustomerSeatSchema
 
 
 class WebhookCustomerSeatClaimedPayload(BaseWebhookPayload):
@@ -301,7 +301,7 @@ class WebhookCustomerSeatClaimedPayload(BaseWebhookPayload):
     """
 
     type: Literal[WebhookEventType.customer_seat_claimed]
-    data: CustomerSeatSchema  # type: ignore[assignment]
+    data: CustomerSeatSchema
 
 
 class WebhookCustomerSeatRevokedPayload(BaseWebhookPayload):
@@ -312,7 +312,7 @@ class WebhookCustomerSeatRevokedPayload(BaseWebhookPayload):
     """
 
     type: Literal[WebhookEventType.customer_seat_revoked]
-    data: CustomerSeatSchema  # type: ignore[assignment]
+    data: CustomerSeatSchema
 
 
 class WebhookOrderPayloadBase(BaseWebhookPayload):

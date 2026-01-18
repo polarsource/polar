@@ -928,7 +928,7 @@ class TestCreate:
         assert checkout.tax_amount == 100
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {}
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -3058,7 +3058,7 @@ class TestUpdate:
         assert checkout.tax_amount == 100
         assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
         assert checkout.taxability_reason == TaxabilityReason.standard_rated
-        assert checkout.tax_rate == {}  # type: ignore
+        assert checkout.tax_rate == {}
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "FR"
 
@@ -4951,7 +4951,7 @@ class TestConfirm:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
 
         # Setup user verification first
         user.identity_verification_status = IdentityVerificationStatus.verified

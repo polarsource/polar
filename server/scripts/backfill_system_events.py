@@ -32,9 +32,9 @@ def drop_all(*args: Any, **kwargs: Any) -> Any:
     raise structlog.DropEvent
 
 
-def typer_async(f):  # type: ignore
+def typer_async(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper

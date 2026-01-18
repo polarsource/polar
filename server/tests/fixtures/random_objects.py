@@ -362,7 +362,7 @@ type PriceFixtureType = (
     | tuple[int | None, int | None, int | None, str]
     | tuple[None]
     | tuple[Meter, Decimal, int | None, str]
-    | tuple[Literal["seat"], int, str]
+    | tuple[str, int, str]  # seat price: ("seat", amount, currency)
 )
 
 
@@ -374,7 +374,7 @@ def _is_metered_price_fixture_type(
 
 def _is_seat_price_fixture_type(
     price: PriceFixtureType,
-) -> TypeIs[tuple[Literal["seat"], int, str]]:
+) -> TypeIs[tuple[str, int, str]]:
     return len(price) == 3 and price[0] == "seat"
 
 

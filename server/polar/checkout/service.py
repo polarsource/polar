@@ -1,3 +1,4 @@
+import builtins
 import contextlib
 import typing
 import uuid
@@ -210,7 +211,7 @@ class CheckoutService:
         status: Sequence[CheckoutStatus] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CheckoutSortProperty]] = [
+        sorting: builtins.list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Checkout], int]:

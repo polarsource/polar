@@ -140,6 +140,7 @@ class DisputeTransactionService(BaseTransactionService):
 
         # We won 😃 Create the dispute reversal, i.e. the transaction reinstating the amount
         dispute_reversal_transaction: Transaction | None = None
+        dispute_reversal_fees: list[Transaction] = []
         if dispute.status == "won":
             dispute_reversal_transaction = Transaction(
                 type=TransactionType.dispute_reversal,

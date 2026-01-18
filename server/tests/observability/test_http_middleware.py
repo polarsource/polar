@@ -291,7 +291,7 @@ class TestMiddlewareIntegration:
         """Test that middleware denies /healthz."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"path": "/healthz", "type": "http"}
         result = middleware._get_path_template(scope)
@@ -301,7 +301,7 @@ class TestMiddlewareIntegration:
         """Test that middleware uses route.path when available."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         mock_route = MagicMock()
         mock_route.path = "/v1/checkouts/{id}"
@@ -319,7 +319,7 @@ class TestMiddlewareIntegration:
         """Test that unmatched routes return None (no metrics)."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         # Route object without path attribute (or no route at all)
         mock_route = MagicMock(spec=[])  # Empty spec = no attributes
@@ -338,7 +338,7 @@ class TestMiddlewareIntegration:
         """Test that paths starting with denied prefixes are blocked."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"path": "/healthz/deep", "type": "http"}
         result = middleware._get_path_template(scope)
@@ -348,7 +348,7 @@ class TestMiddlewareIntegration:
         """Test that middleware denies /readyz."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"path": "/readyz", "type": "http"}
         result = middleware._get_path_template(scope)
@@ -358,7 +358,7 @@ class TestMiddlewareIntegration:
         """Test that middleware denies /.well-known paths."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"path": "/.well-known/jwks.json", "type": "http"}
         result = middleware._get_path_template(scope)
@@ -368,7 +368,7 @@ class TestMiddlewareIntegration:
         """Test middleware with empty path."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"path": "", "type": "http"}
         result = middleware._get_path_template(scope)
@@ -379,7 +379,7 @@ class TestMiddlewareIntegration:
         """Test middleware when path is missing from scope."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         scope = {"type": "http"}  # No path key
         result = middleware._get_path_template(scope)
@@ -392,7 +392,7 @@ class TestMiddlewareIntegration:
         """Test that unknown routes return None (no metrics exported)."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         # Simulate an unknown route - no route object in scope
         scope = {"path": "/v1/unknown", "type": "http"}
@@ -647,7 +647,7 @@ class TestMiddlewareASGIBehavior:
         )
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         # Create a mock app
         mock_app = MagicMock()
@@ -686,7 +686,7 @@ class TestMiddlewareASGIBehavior:
         )
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
-        middleware = HttpMetricsMiddleware(lambda s, r, se: None)  # type: ignore
+        middleware = HttpMetricsMiddleware(lambda s, r, se: None)
 
         # Create a mock app and register it as excluded
         mock_app = MagicMock()

@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 
@@ -37,7 +38,7 @@ class BenefitService:
         id_not_in: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[BenefitSortProperty]] = [
+        sorting: builtins.list[Sorting[BenefitSortProperty]] = [
             (BenefitSortProperty.created_at, True)
         ],
         query: str | None = None,

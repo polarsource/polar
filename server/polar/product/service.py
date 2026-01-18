@@ -65,7 +65,7 @@ class ProductService:
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[ProductSortProperty]] = [
+        sorting: builtins.list[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:

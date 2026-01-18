@@ -1469,7 +1469,7 @@ class TestCreateSubscriptionOrder:
                 duration=setup.discount.duration,
                 duration_in_months=setup.discount.duration_in_months,
                 organization=organization,
-                products=[products[key] for key in setup.discount.applies_to]  # type: ignore
+                products=[products[key] for key in setup.discount.applies_to]
                 if setup.discount.applies_to
                 else None,
             )
@@ -1888,7 +1888,7 @@ class TestCreateWalletOrder:
             amount=100_00,
             tax_amount=20_00,
             taxability_reason=TaxabilityReason.standard_rated,
-            tax_rate={},  # type: ignore
+            tax_rate={},
             tax_calculation_processor_id="TAX_CALCULATION_ID",
         )
         payment = await create_payment(
@@ -1907,7 +1907,7 @@ class TestCreateWalletOrder:
         assert order.tax_amount == 20_00
         assert order.total_amount == 120_00
         assert order.taxability_reason == TaxabilityReason.standard_rated
-        assert order.tax_rate == {}  # type: ignore
+        assert order.tax_rate == {}
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id=payment.processor_id

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.observability.http_metrics import exclude_app_from_metrics
 
@@ -12,7 +12,7 @@ from .dependencies import get_admin
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
-from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
+from .middlewares import SecurityHeadersMiddleware
 from .orders.endpoints import router as orders_router
 from .organizations.endpoints import router as organizations_router
 from .organizations_v2.endpoints import router as organizations_v2_router
@@ -36,7 +36,6 @@ app = FastAPI(
 # Exclude backoffice from HTTP metrics (not sent to Grafana Cloud)
 exclude_app_from_metrics(app)
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(TagflowMiddleware)
 
 
 app.mount(
@@ -61,10 +60,11 @@ app.include_router(webhooks_router, prefix="/webhooks")
 
 
 @app.get("/", name="index")
-async def index(request: Request) -> None:
-    with layout(request, [], "index"):
-        with tag.h1():
-            text("Dashboard")
+async def index(request: Request) -> Fragment:
+    with layout(request, [], "index") as page:
+        with page.h1():
+            page.text("Dashboard")
+    return page
 
 
 __all__ = ["app"]

@@ -9,8 +9,7 @@ from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
-from tagflow import classes, tag, text
-from tagflow.tagflow import AttrValue
+from markupflow import Fragment, AttrValue
 
 type Data = dict[str, Any] | object
 
@@ -58,7 +57,7 @@ class FormField:
         required: bool = False,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the form field as HTML.
 
         Args:
@@ -69,7 +68,7 @@ class FormField:
             errors: List of validation errors to display for this field.
 
         Yields:
-            None: Context manager yields control for field content.
+            Fragment: Context manager yields Fragment for field content.
 
         Raises:
             NotImplementedError: This method must be implemented by subclasses.
@@ -119,7 +118,7 @@ class InputField(FormField):
         required: bool = False,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the input field with label and error handling.
 
         Creates a styled input field with proper error states and validation
@@ -134,15 +133,16 @@ class InputField(FormField):
             errors: List of validation errors to display below the input.
 
         Yields:
-            None: Context manager yields control for the input field.
+            Fragment: Context manager yields Fragment for the input field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            text(label)
+        fragment = Fragment()
+        with fragment.label(class_="label", **{"for": id}):
+            fragment.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.input(
-            classes="input w-full",
+                with fragment.span(class_="text-error"):
+                    fragment.text("*")
+        with fragment.input(
+            class_="input w-full",
             id=id,
             name=id,
             type=self.type,
@@ -151,11 +151,11 @@ class InputField(FormField):
             **self.kwargs,
         ):
             if errors:
-                classes("input-error")
+                fragment.classes("input-error")
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
-        yield
+            with fragment.div(class_="label text-error"):
+                fragment.text(error["msg"])
+        yield fragment
 
 
 class TextAreaField(FormField):
@@ -183,7 +183,7 @@ class TextAreaField(FormField):
         required: bool = False,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the textarea field with label and error handling.
 
         Creates a styled textarea field with proper error states and validation
@@ -198,29 +198,30 @@ class TextAreaField(FormField):
             errors: List of validation errors to display below the textarea.
 
         Yields:
-            None: Context manager yields control for the textarea field.
+            Fragment: Context manager yields Fragment for the textarea field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            text(label)
+        fragment = Fragment()
+        with fragment.label(class_="label", **{"for": id}):
+            fragment.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.textarea(
+                with fragment.span(class_="text-error"):
+                    fragment.text("*")
+        with fragment.textarea(
             id=id,
             name=id,
             required=required,
             rows=self.rows,
-            classes="textarea w-full",
+            class_="textarea w-full",
             **self.kwargs,
         ):
             if errors:
-                classes("textarea-error")
+                fragment.classes("textarea-error")
             if value is not None:
-                text(str(value))
+                fragment.text(str(value))
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
-        yield
+            with fragment.div(class_="label text-error"):
+                fragment.text(error["msg"])
+        yield fragment
 
 
 class CheckboxField(FormField):
@@ -246,7 +247,7 @@ class CheckboxField(FormField):
         required: bool = False,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the checkbox field with label and error handling.
 
         Creates a checkbox input with the label as clickable text next to it.
@@ -260,24 +261,25 @@ class CheckboxField(FormField):
             errors: List of validation errors to display below the checkbox.
 
         Yields:
-            None: Context manager yields control for the checkbox field.
+            Fragment: Context manager yields Fragment for the checkbox field.
         """
-        with tag.label(classes="label", **{"for": id}):
-            with tag.input(
+        fragment = Fragment()
+        with fragment.label(class_="label", **{"for": id}):
+            with fragment.input(
                 id=id,
                 name=id,
                 type="checkbox",
                 required=required,
                 checked=value,
-                classes="checkbox",
+                class_="checkbox",
                 **self.kwargs,
             ):
                 pass
-            text(label)
+            fragment.text(label)
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
-        yield
+            with fragment.div(class_="label text-error"):
+                fragment.text(error["msg"])
+        yield fragment
 
 
 class CurrencyField(InputField):
@@ -304,7 +306,7 @@ class CurrencyField(InputField):
         required: bool = False,
         value: int | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the currency field with automatic cent-to-decimal conversion.
 
         Converts the stored integer value (in cents) to a decimal value for
@@ -318,7 +320,7 @@ class CurrencyField(InputField):
             errors: List of validation errors to display below the input.
 
         Yields:
-            None: Context manager yields control for the currency field.
+            Fragment: Context manager yields Fragment for the currency field.
         """
         formatted_value = value / 100 if value is not None else None
         with super().render(
@@ -367,7 +369,7 @@ class SelectField(FormField):
         required: bool = False,
         value: str | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the select field with options and error handling.
 
         Creates a select dropdown with all configured options, automatically
@@ -382,31 +384,32 @@ class SelectField(FormField):
             errors: List of validation errors to display below the select.
 
         Yields:
-            None: Context manager yields control for the select field.
+            Fragment: Context manager yields Fragment for the select field.
         """
-        with tag.legend(classes="label", **{"for": id}):
-            text(label)
+        fragment = Fragment()
+        with fragment.legend(class_="label", **{"for": id}):
+            fragment.text(label)
             if required:
-                with tag.span(classes="text-error"):
-                    text("*")
-        with tag.select(
-            classes="select w-full",
+                with fragment.span(class_="text-error"):
+                    fragment.text("*")
+        with fragment.select(
+            class_="select w-full",
             id=id,
             name=id,
             required=required,
             **self.kwargs,
         ):
-            with tag.option(value="", selected=value is None):
-                text(self.placeholder)
+            with fragment.option(value="", selected=value is None):
+                fragment.text(self.placeholder)
             for option_value, option_label in self.options:
                 selected = value == option_value if value is not None else False
-                with tag.option(value=option_value, selected=selected):
-                    text(option_label)
+                with fragment.option(value=option_value, selected=selected):
+                    fragment.text(option_label)
         for error in errors:
-            with tag.div(classes="label text-error"):
-                text(error["msg"])
+            with fragment.div(class_="label text-error"):
+                fragment.text(error["msg"])
 
-        yield
+        yield fragment
 
 
 class SubFormField(FormField):
@@ -431,7 +434,7 @@ class SubFormField(FormField):
         required: bool = False,
         value: Any | None = None,
         errors: list[ErrorDetails] = [],
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the sub-form inline with its own fields and validation.
 
         Args:
@@ -442,11 +445,12 @@ class SubFormField(FormField):
             errors: List of validation errors for the sub-form fields.
 
         Yields:
-            None: Context manager yields control for the sub-form rendering.
+            Fragment: Context manager yields Fragment for the sub-form rendering.
         """
-        with tag.fieldset(classes="fieldset border-base-300 rounded-box border p-4"):
-            with tag.legend(classes="fieldset-legend"):
-                text(label)
+        fragment = Fragment()
+        with fragment.fieldset(class_="fieldset border-base-300 rounded-box border p-4"):
+            with fragment.legend(class_="fieldset-legend"):
+                fragment.text(label)
 
             for key, field in self.form_class.model_fields.items():
                 if _is_skipped_field(field):
@@ -462,7 +466,7 @@ class SubFormField(FormField):
                     errors=_get_field_errors(errors, key),
                 ):
                     pass
-        yield
+        yield fragment
 
 
 def _is_skipped_field(field: FieldInfo) -> bool:
@@ -559,7 +563,7 @@ class BaseForm(BaseModel):
         data: Data | None = None,
         validation_error: ValidationError | None = None,
         **kwargs: AttrValue,
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the complete form with all fields and validation.
 
         Generates a form element containing all model fields as appropriate
@@ -576,12 +580,13 @@ class BaseForm(BaseModel):
                 (e.g., method, action, hx-post, etc.).
 
         Yields:
-            None: Context manager yields control for additional form content
+            Fragment: Context manager yields Fragment for additional form content
                 like submit buttons, hidden fields, or custom sections.
         """
         errors = validation_error.errors() if validation_error else []
-        with tag.form(**kwargs, novalidate=True):
-            with tag.fieldset(classes="fieldset"):
+        fragment = Fragment()
+        with fragment.form(**kwargs, novalidate=True):
+            with fragment.fieldset(class_="fieldset"):
                 for key, field in cls.model_fields.items():
                     if _is_skipped_field(field):
                         continue
@@ -595,7 +600,7 @@ class BaseForm(BaseModel):
                         errors=_get_field_errors(errors, key),
                     ):
                         pass
-                yield
+                yield fragment
 
     @classmethod
     def model_validate_form(

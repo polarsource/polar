@@ -3,23 +3,22 @@ from typing import Any
 
 from fastapi.datastructures import URL
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
+from markupflow import Fragment
 from starlette.background import BackgroundTask
 from starlette.types import Receive, Scope, Send
-from tagflow import TagResponse as _TagResponse
 
 from .toast import render_toasts
 
 
-class TagResponse(_TagResponse):
+class TagResponse(HTMLResponse):
     """
-    Overload of TagResponse that delays the rendering at call time, so we can render
-    the toasts that have been added to the request scope.
+    HTML response that renders Fragment/Document instances and supports toast rendering.
     """
 
     def __init__(
         self,
-        content: Any = None,
+        content: Fragment | None = None,
         status_code: int = 200,
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
@@ -29,16 +28,23 @@ class TagResponse(_TagResponse):
         if media_type is not None:
             self.media_type = media_type
         self.background = background
-        self.content = content
+        self.fragment_content = content
         self.initial_headers = headers
-
-        self.init_headers(headers)
+        super().__init__(content="", status_code=status_code, headers=headers, media_type=media_type, background=background)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        with render_toasts(scope):
-            pass
-        self.body = self.render(self.content)
-        self.init_headers(self.initial_headers)
+        # Render toasts into the fragment
+        if self.fragment_content is not None:
+            with render_toasts(scope, self.fragment_content):
+                pass
+            self.body = self.fragment_content.render().encode("utf-8")
+        else:
+            self.body = b""
+        
+        # Reinitialize headers in case they were modified
+        if self.initial_headers is not None:
+            self.init_headers(self.initial_headers)
+        
         await super().__call__(scope, receive, send)
 
 

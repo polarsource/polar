@@ -2,8 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Literal
 
-from tagflow import classes, tag
-from tagflow.tagflow import AttrValue
+from markupflow import AttrValue, Fragment
 
 Variant = Literal[
     "neutral", "primary", "secondary", "accent", "info", "success", "warning", "error"
@@ -21,7 +20,7 @@ def button(
     soft: bool = False,
     outline: bool = False,
     **kwargs: AttrValue,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a styled button component using DaisyUI classes.
 
     Generates a button element with configurable styling variants, sizes, and modifiers.
@@ -39,11 +38,11 @@ def button(
         **kwargs: Additional HTML attributes to pass to the button element (e.g., type, onclick, etc.).
 
     Yields:
-        None: Context manager yields control for button content.
+        Fragment: The fragment for adding button content.
 
     Example:
-        >>> with button(variant="primary", size="lg", outline=True, type="submit"):
-        ...     text("Submit Form")
+        >>> with button(variant="primary", size="lg", outline=True, type="submit") as btn:
+        ...     btn.text("Submit Form")
     """
     variants = {
         "neutral": "btn-neutral",
@@ -62,20 +61,21 @@ def button(
         "lg": "btn-lg",
         "xl": "btn-xl",
     }
-    with tag.button(classes="btn", **kwargs):
+    fragment = Fragment()
+    with fragment.button(class_="btn", **kwargs):
         if variant:
-            classes(variants[variant])
+            fragment.classes(variants[variant])
         if size:
-            classes(sizes[size])
+            fragment.classes(sizes[size])
         if ghost:
-            classes("btn-ghost")
+            fragment.classes("btn-ghost")
         if link:
-            classes("btn-link")
+            fragment.classes("btn-link")
         if soft:
-            classes("btn-soft")
+            fragment.classes("btn-soft")
         if outline:
-            classes("btn-outline")
-        yield
+            fragment.classes("btn-outline")
+        yield fragment
 
 
 __all__ = ["button"]

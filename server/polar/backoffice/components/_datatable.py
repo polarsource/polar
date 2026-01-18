@@ -11,7 +11,7 @@ from typing import Any, Protocol
 
 from fastapi import Request
 from fastapi.datastructures import URL
-from tagflow import attr, classes, tag, text
+from markupflow import Fragment
 
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -39,7 +39,7 @@ class DatatableColumn[M]:
         """
         self.label = label
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Fragment | None:
         """Render the column content for a specific item.
 
         Args:
@@ -47,14 +47,6 @@ class DatatableColumn[M]:
             item: The data item to render in this column.
         """
         raise NotImplementedError()
-
-    @contextlib.contextmanager
-    def _do_render(self, request: Request, item: M) -> Generator[None]:
-        value = self.render(request, item)
-        if isgenerator(value):
-            yield from value
-        else:
-            yield
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(label={self.label!r})"
@@ -183,7 +175,7 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
 
         super().__init__(label or attr, sorting)
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Fragment:
         """Render the attribute value as a table cell.
 
         Args:
@@ -192,20 +184,21 @@ class DatatableAttrColumn[M, PE: StrEnum](DatatableSortingColumn[M, PE]):
         """
         value = self.get_value(item)
         href = self.href_getter(request, item) if self.href_getter else None
-        with tag.div(classes="flex items-center gap-1"):
-            value_tag = tag.a if href else tag.div
-            with value_tag():
+        fragment = Fragment()
+        with fragment.div(class_="flex items-center gap-1"):
+            value_tag = "a" if href else "div"
+            with fragment.tag(value_tag):
                 if href:
-                    classes("link")
-                    attr("href", str(href))
+                    fragment.classes("link")
+                    fragment.attr("href", str(href))
                     if self.external_href:
-                        attr("target", "_blank")
-                        attr("rel", "noopener noreferrer")
-                text(value if value is not None else "—")
+                        fragment.attr("target", "_blank")
+                        fragment.attr("rel", "noopener noreferrer")
+                fragment.text(value if value is not None else "—")
             if value is not None and self.clipboard:
-                with clipboard_button(value):
+                with fragment.fragment(clipboard_button(value)):
                     pass
-        return None
+        return fragment
 
     def get_raw_value(self, item: M) -> Any:
         """Extract the raw attribute value from the model item.
@@ -328,7 +321,7 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
         PE: Type parameter for the sorting field enum.
     """
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Fragment:
         """Render the boolean value as an icon.
 
         Args:
@@ -336,17 +329,18 @@ class DatatableBooleanColumn[M, PE: StrEnum](DatatableAttrColumn[M, PE]):
             item: The model item to extract the boolean from.
         """
         value = self.get_raw_value(item)
-        with tag.div():
+        fragment = Fragment()
+        with fragment.div():
             if value is None:
-                text("—")
+                fragment.text("—")
             elif value:
-                with tag.div(classes="icon-check"):
+                with fragment.div(class_="icon-check"):
                     pass
             else:
-                with tag.div(classes="icon-x"):
+                with fragment.div(class_="icon-x"):
                     pass
 
-        return None
+        return fragment
 
 
 class DatatableAction[M](Protocol):
@@ -361,7 +355,7 @@ class DatatableAction[M](Protocol):
     """
 
     @contextlib.contextmanager
-    def render(self, request: Request, item: M) -> Generator[None]:
+    def render(self, request: Request, item: M) -> Generator[Fragment]:
         """Render the action element for a specific item.
 
         Args:
@@ -413,7 +407,7 @@ class DatatableActionLink[M](DatatableAction[M]):
         self.target = target
 
     @contextlib.contextmanager
-    def render(self, request: Request, item: M) -> Generator[None]:
+    def render(self, request: Request, item: M) -> Generator[Fragment]:
         """Render the action as a link.
 
         Args:
@@ -425,9 +419,10 @@ class DatatableActionLink[M](DatatableAction[M]):
             href = self.href(request, item)
         else:
             href = str(self.href)
-        with tag.a(href=href, target=self.target if self.target else None):
-            text(self.label)
-        yield
+        fragment = Fragment()
+        with fragment.a(href=href, target=self.target if self.target else None):
+            fragment.text(self.label)
+        yield fragment
 
     def is_hidden(self, request: Request, item: M) -> bool:
         """Check if the action should be hidden.
@@ -471,7 +466,7 @@ class DatatableActionHTMX[M](DatatableAction[M]):
         self.hidden = hidden
 
     @contextlib.contextmanager
-    def render(self, request: Request, item: M) -> Generator[None]:
+    def render(self, request: Request, item: M) -> Generator[Fragment]:
         """Render the action as an HTMX button.
 
         Args:
@@ -483,9 +478,10 @@ class DatatableActionHTMX[M](DatatableAction[M]):
             href = self.href(request, item)
         else:
             href = str(self.href)
-        with tag.button(type="button", hx_get=str(href), hx_target=self.target):
-            text(self.label)
-        yield
+        fragment = Fragment()
+        with fragment.button(type="button", hx_get=str(href), hx_target=self.target):
+            fragment.text(self.label)
+        yield fragment
 
     def is_hidden(self, request: Request, item: M) -> bool:
         """Check if the action should be hidden for a specific item.
@@ -523,7 +519,7 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
         self.actions = actions
         super().__init__(label)
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Fragment | None:
         """Render the actions dropdown for a specific item.
 
         Args:
@@ -537,27 +533,28 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
             return None
 
         popover_id = "".join(random.choice(string.ascii_letters) for _ in range(8))
-        with tag.button(
+        fragment = Fragment()
+        with fragment.button(
             type="button",
-            classes="btn btn-ghost m-1",
+            class_="btn btn-ghost m-1",
             popovertarget=f"popover-{popover_id}",
             style=f"anchor-name:--anchor-{popover_id}",
         ):
-            with tag.div(classes="font-normal icon-ellipsis-vertical"):
+            with fragment.div(class_="font-normal icon-ellipsis-vertical"):
                 pass
 
-        with tag.ul(
-            classes="dropdown menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
+        with fragment.tag("ul",
+            class_="dropdown menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
             popover=True,
             id=f"popover-{popover_id}",
             style=f"position-anchor:--anchor-{popover_id}",
         ):
             for action in displayed_actions:
-                with tag.li():
-                    with action.render(request, item):
+                with fragment.tag("li"):
+                    with fragment.fragment(action.render(request, item)):
                         pass
 
-        return None
+        return fragment
 
 
 class SortWay(Enum):
@@ -597,7 +594,7 @@ class Datatable[M, PE: StrEnum]:
         items: Sequence[M],
         *,
         sorting: list[Sorting[PE]] | None = None,
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the complete datatable with headers, data, and sorting controls.
 
         Args:
@@ -606,53 +603,57 @@ class Datatable[M, PE: StrEnum]:
             sorting: Current sorting configuration for sortable columns.
             If None, no sorting controls are rendered.
         """
-        with tag.div(
-            classes="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
+        fragment = Fragment()
+        with fragment.div(
+            class_="overflow-x-auto rounded-box bg-base-100 border-1 border-base-200"
         ):
-            with tag.table(classes="table table-auto"):
-                with tag.thead():
-                    with tag.tr():
+            with fragment.table(class_="table table-auto"):
+                with fragment.thead():
+                    with fragment.tr():
                         for column in self.columns:
-                            with tag.th():
+                            with fragment.th():
                                 if (
                                     sorting is None
                                     or not isinstance(column, DatatableSortingColumn)
                                     or column.sorting is None
                                 ):
-                                    text(column.label)
+                                    fragment.text(column.label)
                                     continue
 
-                                with tag.a(
+                                with fragment.a(
                                     href=str(
                                         self._get_column_sort_url(
                                             request, sorting, column
                                         )
                                     ),
-                                    classes="flex gap-1",
+                                    class_="flex gap-1",
                                 ):
-                                    text(column.label)
+                                    fragment.text(column.label)
                                     column_sort = self._get_column_sort(sorting, column)
-                                    with tag.div("font-normal"):
+                                    with fragment.div(class_="font-normal"):
                                         if column_sort == SortWay.ASC:
-                                            classes("icon-arrow-down-a-z")
+                                            fragment.classes("icon-arrow-down-a-z")
                                         elif column_sort == SortWay.DESC:
-                                            classes("icon-arrow-up-z-a")
+                                            fragment.classes("icon-arrow-up-z-a")
 
-                with tag.tbody():
+                with fragment.tbody():
                     if not items:
-                        with tag.tr():
-                            with tag.td(
-                                classes="text-2xl h-96 text-gray-500 text-center my-10",
+                        with fragment.tr():
+                            with fragment.td(
+                                class_="text-2xl h-96 text-gray-500 text-center my-10",
                                 colspan=len(self.columns),
                             ):
-                                text(self.empty_message)
+                                fragment.text(self.empty_message)
                     else:
                         for item in items:
-                            with tag.tr():
+                            with fragment.tr():
                                 for column in self.columns:
-                                    with tag.td():
-                                        with column._do_render(request, item):
-                                            pass
+                                    with fragment.td():
+                                        rendered = column.render(request, item)
+                                        if rendered is not None:
+                                            fragment.fragment(rendered)
+
+        yield fragment
 
         yield
 
@@ -694,7 +695,7 @@ class Datatable[M, PE: StrEnum]:
 @contextlib.contextmanager
 def pagination(
     request: Request, pagination: PaginationParams, count: int
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Render pagination controls for a datatable.
 
     Creates a pagination component with item count display and previous/next
@@ -708,7 +709,7 @@ def pagination(
         count: Total number of items across all pages.
 
     Example:
-        >>> with pagination(request, PaginationParams(page=2, limit=10), 50):
+        >>> with pagination(request, PaginationParams(page=2, limit=10), 50) as pag:
         ...     pass
     """
     start = (pagination.page - 1) * pagination.limit + 1
@@ -725,34 +726,35 @@ def pagination(
             **{**request.query_params, "page": pagination.page - 1}
         )
 
-    with tag.div(classes="flex justify-between"):
-        with tag.div(classes="text-sm"):
-            text("Showing ")
-            with tag.span(classes="font-bold"):
-                text(str(start))
-            text(" to ")
-            with tag.span(classes="font-bold"):
-                text(str(end))
-            text(" of ")
-            with tag.span(classes="font-bold"):
-                text(str(count))
-            text(" entries")
-        with tag.div(classes="join grid grid-cols-2"):
-            with tag.a(
-                classes="join-item btn",
+    fragment = Fragment()
+    with fragment.div(class_="flex justify-between"):
+        with fragment.div(class_="text-sm"):
+            fragment.text("Showing ")
+            with fragment.span(class_="font-bold"):
+                fragment.text(str(start))
+            fragment.text(" to ")
+            with fragment.span(class_="font-bold"):
+                fragment.text(str(end))
+            fragment.text(" of ")
+            with fragment.span(class_="font-bold"):
+                fragment.text(str(count))
+            fragment.text(" entries")
+        with fragment.div(class_="join grid grid-cols-2"):
+            with fragment.a(
+                class_="join-item btn",
                 href=str(previous_url) if previous_url else "",
             ):
                 if previous_url is None:
-                    attr("disabled", True)
-                text("Previous")
-            with tag.a(
-                classes="join-item btn",
+                    fragment.attr("disabled", True)
+                fragment.text("Previous")
+            with fragment.a(
+                class_="join-item btn",
                 href=str(next_url) if next_url else "",
             ):
                 if next_url is None:
-                    attr("disabled", True)
-                text("Next")
-    yield
+                    fragment.attr("disabled", True)
+                fragment.text("Next")
+    yield fragment
 
 
 __all__ = [

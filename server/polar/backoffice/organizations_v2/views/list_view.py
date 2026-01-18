@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 
 import pycountry
 from fastapi import Request
+from markupflow import Fragment
 from sqlalchemy import func, select
-from tagflow import tag, text
 
 from polar.models import Account, Organization
 from polar.models.organization import OrganizationStatus
@@ -90,7 +90,7 @@ class OrganizationListView:
         current_direction: str,
         align: str = "left",
         status_filter: OrganizationStatus | None = None,
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render a sortable table header with direction indicator."""
         is_active = current_sort == sort_key
         # Toggle direction: if currently ASC, next click is DESC
@@ -117,8 +117,9 @@ class OrganizationListView:
 
         hx_vals = json.dumps(hx_vals_dict)
 
-        with tag.th(
-            classes=f"cursor-pointer hover:bg-base-300 {align_class}",
+        fragment = Fragment()
+        with fragment.th(
+            class_=f"cursor-pointer hover:bg-base-300 {align_class}",
             **{
                 "hx-get": str(request.url_for("organizations-v2:list")),
                 "hx-vals": hx_vals,
@@ -132,18 +133,18 @@ class OrganizationListView:
                 "right": "justify-end",
             }.get(align, "justify-start")
 
-            with tag.div(classes=f"flex items-center gap-1 {justify}"):
-                text(label)
+            with fragment.div(class_=f"flex items-center gap-1 {justify}"):
+                fragment.text(label)
                 indicator_opacity = "opacity-100" if is_active else "opacity-50"
-                with tag.span(classes=f"text-xs {indicator_opacity}"):
-                    text(indicator)
+                with fragment.span(class_=f"text-xs {indicator_opacity}"):
+                    fragment.text(indicator)
 
-        yield
+        yield fragment
 
     @contextlib.contextmanager
     def organization_row(
         self, request: Request, org: Organization, show_quick_actions: bool = False
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render a single organization row in the table."""
         days_in_status = self.calculate_days_in_status(org)
         needs_attention = self.is_needs_attention(org)
@@ -153,60 +154,61 @@ class OrganizationListView:
         if needs_attention:
             row_class += " bg-error/5"
 
-        with tag.tr(classes=row_class):
+        fragment = Fragment()
+        with fragment.tr(class_=row_class):
             # Organization name and status
-            with tag.td(classes="py-4"):
-                with tag.div(classes="flex flex-col gap-1"):
-                    with tag.a(
+            with fragment.td(class_="py-4"):
+                with fragment.div(class_="flex flex-col gap-1"):
+                    with fragment.a(
                         href=str(
                             request.url_for(
                                 "organizations-v2:detail", organization_id=org.id
                             )
                         ),
-                        classes="font-semibold hover:underline flex items-center gap-2",
+                        class_="font-semibold hover:underline flex items-center gap-2",
                     ):
-                        text(org.name)
+                        fragment.text(org.name)
                         with status_badge(org.status):
                             pass
-                    with tag.div(classes="text-xs text-base-content/60 font-mono"):
-                        text(org.slug)
+                    with fragment.div(class_="text-xs text-base-content/60 font-mono"):
+                        fragment.text(org.slug)
                     # Appeal indicator
                     if (
                         org.review
                         and org.review.appeal_submitted_at
                         and not org.review.appeal_reviewed_at
                     ):
-                        with tag.span(classes="badge badge-info badge-xs mt-1"):
-                            text("Appeal Pending")
+                        with fragment.span(class_="badge badge-info badge-xs mt-1"):
+                            fragment.text("Appeal Pending")
 
             # Email
-            with tag.td(classes="text-sm"):
+            with fragment.td(class_="text-sm"):
                 if org.email:
-                    with tag.span(classes="font-mono text-xs"):
-                        text(org.email)
+                    with fragment.span(class_="font-mono text-xs"):
+                        fragment.text(org.email)
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with fragment.span(class_="text-base-content/40"):
+                        fragment.text("—")
 
             # Country
-            with tag.td(classes="text-sm"):
+            with fragment.td(class_="text-sm"):
                 if org.account and org.account.country:
-                    text(org.account.country)
+                    fragment.text(org.account.country)
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with fragment.span(class_="text-base-content/40"):
+                        fragment.text("—")
 
             # Created
-            with tag.td(classes="text-sm"):
+            with fragment.td(class_="text-sm"):
                 days_old = (datetime.now(UTC) - org.created_at).days
-                text(f"{days_old}d ago")
+                fragment.text(f"{days_old}d ago")
 
             # Days in status
-            with tag.td(classes="text-sm font-semibold text-center"):
-                text(f"{days_in_status}d")
+            with fragment.td(class_="text-sm font-semibold text-center"):
+                fragment.text(f"{days_in_status}d")
 
             # Risk score
-            with tag.td(classes="text-sm text-center"):
+            with fragment.td(class_="text-sm text-center"):
                 if org.review and org.review.risk_score is not None:
                     risk = org.review.risk_score
                     if risk >= 75:
@@ -215,24 +217,24 @@ class OrganizationListView:
                         color = "text-warning"
                     else:
                         color = "text-success"
-                    with tag.span(classes=f"font-bold {color}"):
-                        text(str(risk))
+                    with fragment.span(class_=f"font-bold {color}"):
+                        fragment.text(str(risk))
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with fragment.span(class_="text-base-content/40"):
+                        fragment.text("—")
 
             # Next review
-            with tag.td(classes="text-sm text-right"):
+            with fragment.td(class_="text-sm text-right"):
                 if org.next_review_threshold:
-                    text(f"${org.next_review_threshold / 100:,.0f}")
+                    fragment.text(f"${org.next_review_threshold / 100:,.0f}")
                 else:
-                    with tag.span(classes="text-base-content/40"):
-                        text("—")
+                    with fragment.span(class_="text-base-content/40"):
+                        fragment.text("—")
 
             # Actions
-            with tag.td(classes="text-right"):
+            with fragment.td(class_="text-right"):
                 if show_quick_actions:
-                    with tag.div(classes="flex gap-2 justify-end"):
+                    with fragment.div(class_="flex gap-2 justify-end"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -245,7 +247,7 @@ class OrganizationListView:
                             + "?threshold=25000",
                             hx_confirm="Approve with $250 threshold?",
                         ):
-                            text("Approve")
+                            fragment.text("Approve")
                         with button(
                             variant="secondary",
                             size="sm",
@@ -258,19 +260,19 @@ class OrganizationListView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Deny")
+                            fragment.text("Deny")
                 else:
-                    with tag.a(
+                    with fragment.a(
                         href=str(
                             request.url_for(
                                 "organizations-v2:detail", organization_id=org.id
                             )
                         ),
-                        classes="btn btn-ghost btn-sm",
+                        class_="btn btn-ghost btn-sm",
                     ):
-                        text("View →")
+                        fragment.text("View →")
 
-        yield
+        yield fragment
 
     @contextlib.contextmanager
     def render(
@@ -288,17 +290,19 @@ class OrganizationListView:
     ) -> Generator[None]:
         """Render the complete list view."""
 
+        fragment = Fragment()
+
         # Page header
-        with tag.div(classes="flex items-center justify-between mb-8"):
-            with tag.h1(classes="text-3xl font-bold"):
-                text("Organizations")
+        with fragment.div(class_="flex items-center justify-between mb-8"):
+            with fragment.h1(class_="text-3xl font-bold"):
+                fragment.text("Organizations")
             with action_bar(position="right"):
                 with button(
                     variant="primary",
                     hx_get=str(request.url_for("organizations-v2:list")) + "/new",
                     hx_target="#modal",
                 ):
-                    text("+ Create Thread")
+                    fragment.text("+ Create Thread")
 
         # Status tabs
         tabs = [
@@ -344,42 +348,42 @@ class OrganizationListView:
             pass
 
         # Search and filters section
-        with tag.div(classes="my-6"):
-            with tag.form(
+        with fragment.div(class_="my-6"):
+            with fragment.form(
                 id="filter-form",
-                classes="space-y-4",
+                class_="space-y-4",
                 hx_get=str(request.url_for("organizations-v2:list")),
                 hx_trigger="submit, change from:.filter-select",
                 hx_target="#org-list",
             ):
                 # Search bar with filter toggle
-                with tag.div(classes="flex gap-3"):
+                with fragment.div(class_="flex gap-3"):
                     # Search input
-                    with tag.div(classes="flex-1"):
-                        with tag.input(
+                    with fragment.div(class_="flex-1"):
+                        with fragment.input(
                             type="search",
                             placeholder="Search organizations by name, slug, or email...",
-                            classes="input input-bordered w-full",
+                            class_="input input-bordered w-full",
                             name="q",
                             **{"hx-trigger": "keyup changed delay:300ms"},
                         ):
                             pass
 
                     # Advanced filters toggle button
-                    with tag.button(
+                    with fragment.button(
                         type="button",
                         id="filter-toggle-btn",
-                        classes="btn btn-outline gap-2",
+                        class_="btn btn-outline gap-2",
                         **{"_": "on click toggle .hidden on #advanced-filters"},
                     ):
-                        with tag.svg(
+                        with fragment.svg(
                             xmlns="http://www.w3.org/2000/svg",
-                            classes="h-5 w-5",
+                            class_="h-5 w-5",
                             fill="none",
                             viewBox="0 0 24 24",
                             stroke="currentColor",
                         ):
-                            with tag.path(
+                            with fragment.path(
                                 **{
                                     "stroke-linecap": "round",
                                     "stroke-linejoin": "round",
@@ -388,40 +392,40 @@ class OrganizationListView:
                                 }
                             ):
                                 pass
-                        text("Filters")
+                        fragment.text("Filters")
 
                     # Clear all button
-                    with tag.button(
+                    with fragment.button(
                         type="button",
                         id="clear-filters-btn",
-                        classes="btn btn-ghost",
+                        class_="btn btn-ghost",
                         **{
                             "_": "on click set value of <input.filter-input/> to '' then set value of <select.filter-select/> to '' then trigger submit on #filter-form"
                         },
                     ):
-                        text("Clear")
+                        fragment.text("Clear")
 
                 # Advanced filters (hidden by default)
-                with tag.div(
+                with fragment.div(
                     id="advanced-filters",
-                    classes="hidden mt-4 p-4 bg-base-200 rounded-lg",
+                    class_="hidden mt-4 p-4 bg-base-200 rounded-lg",
                 ):
-                    with tag.div(classes="space-y-3"):
+                    with fragment.div(class_="space-y-3"):
                         # Row 1: Basic filters
-                        with tag.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with fragment.div(class_="grid grid-cols-1 md:grid-cols-3 gap-3"):
                             # Country filter
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
-                                        classes="label-text text-xs font-semibold"
+                            with fragment.div():
+                                with fragment.label(class_="label"):
+                                    with fragment.span(
+                                        class_="label-text text-xs font-semibold"
                                     ):
-                                        text("Country")
-                                with tag.select(
-                                    classes="select select-bordered select-sm w-full filter-select",
+                                        fragment.text("Country")
+                                with fragment.select(
+                                    class_="select select-bordered select-sm w-full filter-select",
                                     name="country",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All Countries")
+                                    with fragment.option(value=""):
+                                        fragment.text("All Countries")
                                     if countries:
                                         for country_code in countries:
                                             country = pycountry.countries.get(
@@ -435,77 +439,77 @@ class OrganizationListView:
                                             option_attrs = {"value": country_code}
                                             if selected_country == country_code:
                                                 option_attrs["selected"] = ""
-                                            with tag.option(**option_attrs):
-                                                text(f"{country_code} - {display_name}")
+                                            with fragment.option(**option_attrs):
+                                                fragment.text(f"{country_code} - {display_name}")
 
                             # Risk filter
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
-                                        classes="label-text text-xs font-semibold"
+                            with fragment.div():
+                                with fragment.label(class_="label"):
+                                    with fragment.span(
+                                        class_="label-text text-xs font-semibold"
                                     ):
-                                        text("Risk Level")
-                                with tag.select(
-                                    classes="select select-bordered select-sm w-full filter-select",
+                                        fragment.text("Risk Level")
+                                with fragment.select(
+                                    class_="select select-bordered select-sm w-full filter-select",
                                     name="risk_level",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All Risk Levels")
-                                    with tag.option(value="high"):
-                                        text("High (≥75)")
-                                    with tag.option(value="medium"):
-                                        text("Medium (50-74)")
-                                    with tag.option(value="low"):
-                                        text("Low (<50)")
-                                    with tag.option(value="unscored"):
-                                        text("Unscored")
+                                    with fragment.option(value=""):
+                                        fragment.text("All Risk Levels")
+                                    with fragment.option(value="high"):
+                                        fragment.text("High (≥75)")
+                                    with fragment.option(value="medium"):
+                                        fragment.text("Medium (50-74)")
+                                    with fragment.option(value="low"):
+                                        fragment.text("Low (<50)")
+                                    with fragment.option(value="unscored"):
+                                        fragment.text("Unscored")
 
                             # Days in status
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
-                                        classes="label-text text-xs font-semibold"
+                            with fragment.div():
+                                with fragment.label(class_="label"):
+                                    with fragment.span(
+                                        class_="label-text text-xs font-semibold"
                                     ):
-                                        text("Days in Status")
-                                with tag.select(
-                                    classes="select select-bordered select-sm w-full filter-select",
+                                        fragment.text("Days in Status")
+                                with fragment.select(
+                                    class_="select select-bordered select-sm w-full filter-select",
                                     name="days_in_status",
                                 ):
-                                    with tag.option(value=""):
-                                        text("Any Duration")
-                                    with tag.option(value="1"):
-                                        text(">1 day")
-                                    with tag.option(value="3"):
-                                        text(">3 days")
-                                    with tag.option(value="7"):
-                                        text(">7 days")
-                                    with tag.option(value="30"):
-                                        text(">30 days")
+                                    with fragment.option(value=""):
+                                        fragment.text("Any Duration")
+                                    with fragment.option(value="1"):
+                                        fragment.text(">1 day")
+                                    with fragment.option(value="3"):
+                                        fragment.text(">3 days")
+                                    with fragment.option(value="7"):
+                                        fragment.text(">7 days")
+                                    with fragment.option(value="30"):
+                                        fragment.text(">30 days")
 
                         # Row 2: Appeal filter
-                        with tag.div(classes="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with fragment.div(class_="grid grid-cols-1 md:grid-cols-3 gap-3"):
                             # Has appeal
-                            with tag.div():
-                                with tag.label(classes="label"):
-                                    with tag.span(
-                                        classes="label-text text-xs font-semibold"
+                            with fragment.div():
+                                with fragment.label(class_="label"):
+                                    with fragment.span(
+                                        class_="label-text text-xs font-semibold"
                                     ):
-                                        text("Appeal Status")
-                                with tag.select(
-                                    classes="select select-bordered select-sm w-full filter-select",
+                                        fragment.text("Appeal Status")
+                                with fragment.select(
+                                    class_="select select-bordered select-sm w-full filter-select",
                                     name="has_appeal",
                                 ):
-                                    with tag.option(value=""):
-                                        text("All")
-                                    with tag.option(value="pending"):
-                                        text("Pending Appeal")
-                                    with tag.option(value="reviewed"):
-                                        text("Reviewed")
-                                    with tag.option(value="none"):
-                                        text("No Appeal")
+                                    with fragment.option(value=""):
+                                        fragment.text("All")
+                                    with fragment.option(value="pending"):
+                                        fragment.text("Pending Appeal")
+                                    with fragment.option(value="reviewed"):
+                                        fragment.text("Reviewed")
+                                    with fragment.option(value="none"):
+                                        fragment.text("No Appeal")
 
         # Organization table
-        with tag.div(id="org-list", classes="overflow-x-auto"):
+        with fragment.div(id="org-list", class_="overflow-x-auto"):
             if not organizations:
                 with empty_state(
                     "No Organizations Found",
@@ -523,17 +527,17 @@ class OrganizationListView:
 
                 # Needs attention table
                 if needs_attention and status_filter is None:
-                    with tag.div(classes="mb-8"):
-                        with tag.h2(
-                            classes="text-xl font-bold mb-4 flex items-center gap-3"
+                    with fragment.div(class_="mb-8"):
+                        with fragment.h2(
+                            class_="text-xl font-bold mb-4 flex items-center gap-3"
                         ):
-                            text("Needs Attention")
-                            with tag.span(classes="badge badge-error badge-lg"):
-                                text(str(len(needs_attention)))
+                            fragment.text("Needs Attention")
+                            with fragment.span(class_="badge badge-error badge-lg"):
+                                fragment.text(str(len(needs_attention)))
 
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
+                        with fragment.table(class_="table table-zebra w-full"):
+                            with fragment.thead():
+                                with fragment.tr():
                                     with self.sortable_header(
                                         request,
                                         "Organization",
@@ -544,8 +548,8 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
+                                    with fragment.th():
+                                        fragment.text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -600,10 +604,10 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th(classes="text-right"):
-                                        text("Actions")
+                                    with fragment.th(class_="text-right"):
+                                        fragment.text("Actions")
 
-                            with tag.tbody():
+                            with fragment.tbody():
                                 for org in needs_attention:
                                     with self.organization_row(
                                         request, org, show_quick_actions=True
@@ -611,14 +615,14 @@ class OrganizationListView:
                                         pass
 
                     # Divider
-                    with tag.div(classes="divider my-8"):
-                        text("All Organizations")
+                    with fragment.div(class_="divider my-8"):
+                        fragment.text("All Organizations")
 
                 # Regular organizations table
                 if regular_orgs or status_filter is not None:
-                    with tag.table(classes="table table-zebra w-full"):
-                        with tag.thead():
-                            with tag.tr():
+                    with fragment.table(class_="table table-zebra w-full"):
+                        with fragment.thead():
+                            with fragment.tr():
                                 with self.sortable_header(
                                     request,
                                     "Organization",
@@ -629,8 +633,8 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
+                                with fragment.th():
+                                    fragment.text("Email")
 
                                 with self.sortable_header(
                                     request,
@@ -685,10 +689,10 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th(classes="text-right"):
-                                    text("Actions")
+                                with fragment.th(class_="text-right"):
+                                    fragment.text("Actions")
 
-                        with tag.tbody():
+                        with fragment.tbody():
                             display_orgs = (
                                 regular_orgs if status_filter is None else organizations
                             )
@@ -698,7 +702,7 @@ class OrganizationListView:
 
                 # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
+                    with fragment.div(class_="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
                             hx_get=str(request.url_for("organizations-v2:list"))
@@ -706,9 +710,9 @@ class OrganizationListView:
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
-                            text("Load More")
+                            fragment.text("Load More")
 
-        yield
+        yield fragment
 
     @contextlib.contextmanager
     def render_table_only(
@@ -724,8 +728,10 @@ class OrganizationListView:
     ) -> Generator[None]:
         """Render only the organization table (for HTMX updates)."""
 
+        fragment = Fragment()
+
         # Organization table
-        with tag.div(id="org-list", classes="overflow-x-auto"):
+        with fragment.div(id="org-list", class_="overflow-x-auto"):
             if not organizations:
                 with empty_state(
                     "No Organizations Found",
@@ -743,17 +749,17 @@ class OrganizationListView:
 
                 # Needs attention table
                 if needs_attention and status_filter is None:
-                    with tag.div(classes="mb-8"):
-                        with tag.h2(
-                            classes="text-xl font-bold mb-4 flex items-center gap-3"
+                    with fragment.div(class_="mb-8"):
+                        with fragment.h2(
+                            class_="text-xl font-bold mb-4 flex items-center gap-3"
                         ):
-                            text("Needs Attention")
-                            with tag.span(classes="badge badge-error badge-lg"):
-                                text(str(len(needs_attention)))
+                            fragment.text("Needs Attention")
+                            with fragment.span(class_="badge badge-error badge-lg"):
+                                fragment.text(str(len(needs_attention)))
 
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
+                        with fragment.table(class_="table table-zebra w-full"):
+                            with fragment.thead():
+                                with fragment.tr():
                                     with self.sortable_header(
                                         request,
                                         "Organization",
@@ -764,8 +770,8 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th():
-                                        text("Email")
+                                    with fragment.th():
+                                        fragment.text("Email")
 
                                     with self.sortable_header(
                                         request,
@@ -820,10 +826,10 @@ class OrganizationListView:
                                     ):
                                         pass
 
-                                    with tag.th(classes="text-right"):
-                                        text("Actions")
+                                    with fragment.th(class_="text-right"):
+                                        fragment.text("Actions")
 
-                            with tag.tbody():
+                            with fragment.tbody():
                                 for org in needs_attention:
                                     with self.organization_row(
                                         request, org, show_quick_actions=True
@@ -831,14 +837,14 @@ class OrganizationListView:
                                         pass
 
                     # Divider
-                    with tag.div(classes="divider my-8"):
-                        text("All Organizations")
+                    with fragment.div(class_="divider my-8"):
+                        fragment.text("All Organizations")
 
                 # Regular organizations table
                 if regular_orgs or status_filter is not None:
-                    with tag.table(classes="table table-zebra w-full"):
-                        with tag.thead():
-                            with tag.tr():
+                    with fragment.table(class_="table table-zebra w-full"):
+                        with fragment.thead():
+                            with fragment.tr():
                                 with self.sortable_header(
                                     request,
                                     "Organization",
@@ -849,8 +855,8 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th():
-                                    text("Email")
+                                with fragment.th():
+                                    fragment.text("Email")
 
                                 with self.sortable_header(
                                     request,
@@ -905,10 +911,10 @@ class OrganizationListView:
                                 ):
                                     pass
 
-                                with tag.th(classes="text-right"):
-                                    text("Actions")
+                                with fragment.th(class_="text-right"):
+                                    fragment.text("Actions")
 
-                        with tag.tbody():
+                        with fragment.tbody():
                             display_orgs = (
                                 regular_orgs if status_filter is None else organizations
                             )
@@ -918,7 +924,7 @@ class OrganizationListView:
 
                 # Pagination
                 if has_more:
-                    with tag.div(classes="flex justify-center mt-6"):
+                    with fragment.div(class_="flex justify-center mt-6"):
                         with button(
                             variant="secondary",
                             hx_get=str(request.url_for("organizations-v2:list"))
@@ -926,9 +932,9 @@ class OrganizationListView:
                             hx_target="#org-list",
                             hx_swap="beforeend",
                         ):
-                            text("Load More")
+                            fragment.text("Load More")
 
-        yield
+        yield fragment
 
 
 __all__ = ["OrganizationListView"]

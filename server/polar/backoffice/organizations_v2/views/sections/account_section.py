@@ -5,7 +5,7 @@ from collections.abc import Generator, Sequence
 from datetime import UTC, datetime
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.enums import AccountType
 from polar.models import AccountCredit, Organization
@@ -53,104 +53,105 @@ class AccountSection:
         )
 
     @contextlib.contextmanager
-    def render(self, request: Request) -> Generator[None]:
+    def render(self, request: Request) -> Generator[Fragment]:
         """Render the account section."""
+        fragment = Fragment()
 
-        with tag.div(classes="space-y-6"):
+        with fragment.div(class_="space-y-6"):
             # Account details card
             with card(bordered=True):
-                with tag.h2(classes="text-lg font-bold mb-4"):
-                    text("Payment Account")
+                with fragment.h2(class_="text-lg font-bold mb-4"):
+                    fragment.text("Payment Account")
 
                 if self.org.account:
                     account = self.org.account
 
                     # Account type and status
-                    with tag.div(classes="space-y-4"):
-                        with tag.div(classes="grid grid-cols-2 gap-4"):
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
+                    with fragment.div(class_="space-y-4"):
+                        with fragment.div(class_="grid grid-cols-2 gap-4"):
+                            with fragment.div():
+                                with fragment.div(
+                                    class_="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Account ID")
-                                with tag.div(classes="font-mono text-sm"):
-                                    text(str(account.id))
+                                    fragment.text("Account ID")
+                                with fragment.div(class_="font-mono text-sm"):
+                                    fragment.text(str(account.id))
 
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
+                            with fragment.div():
+                                with fragment.div(
+                                    class_="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Type")
-                                with tag.div(classes="font-semibold"):
+                                    fragment.text("Type")
+                                with fragment.div(class_="font-semibold"):
                                     if account.account_type == AccountType.stripe:
-                                        with tag.span(classes="badge badge-primary"):
-                                            text("Stripe")
+                                        with fragment.span(class_="badge badge-primary"):
+                                            fragment.text("Stripe")
                                     else:
-                                        with tag.span(classes="badge badge-secondary"):
-                                            text(account.account_type.value.title())
+                                        with fragment.span(class_="badge badge-secondary"):
+                                            fragment.text(account.account_type.value.title())
 
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
+                            with fragment.div():
+                                with fragment.div(
+                                    class_="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Country")
-                                with tag.div(classes="font-semibold"):
-                                    text(account.country or "N/A")
+                                    fragment.text("Country")
+                                with fragment.div(class_="font-semibold"):
+                                    fragment.text(account.country or "N/A")
 
-                            with tag.div():
-                                with tag.div(
-                                    classes="text-sm text-base-content/60 mb-1"
+                            with fragment.div():
+                                with fragment.div(
+                                    class_="text-sm text-base-content/60 mb-1"
                                 ):
-                                    text("Currency")
-                                with tag.div(classes="font-semibold"):
-                                    text(account.currency or "N/A")
+                                    fragment.text("Currency")
+                                with fragment.div(class_="font-semibold"):
+                                    fragment.text(account.currency or "N/A")
 
                         # Stripe-specific info
                         if (
                             account.account_type == AccountType.stripe
                             and account.stripe_id
                         ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(
-                                    classes="flex items-center justify-between"
+                            with fragment.div(class_="pt-4 border-t border-base-300"):
+                                with fragment.div(
+                                    class_="flex items-center justify-between"
                                 ):
-                                    with tag.div():
-                                        with tag.div(
-                                            classes="text-sm text-base-content/60 mb-1"
+                                    with fragment.div():
+                                        with fragment.div(
+                                            class_="text-sm text-base-content/60 mb-1"
                                         ):
-                                            text("Stripe Account ID")
-                                        with tag.div(classes="font-mono text-sm"):
-                                            text(account.stripe_id)
+                                            fragment.text("Stripe Account ID")
+                                        with fragment.div(class_="font-mono text-sm"):
+                                            fragment.text(account.stripe_id)
 
-                                    with tag.a(
+                                    with fragment.a(
                                         href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}",
                                         target="_blank",
-                                        classes="btn btn-secondary btn-sm",
+                                        class_="btn btn-secondary btn-sm",
                                     ):
-                                        text("Open in Stripe →")
+                                        fragment.text("Open in Stripe →")
 
                         # Account status
-                        with tag.div(classes="pt-4 border-t border-base-300"):
-                            with tag.div(classes="text-sm font-semibold mb-3"):
-                                text("Account Status")
+                        with fragment.div(class_="pt-4 border-t border-base-300"):
+                            with fragment.div(class_="text-sm font-semibold mb-3"):
+                                fragment.text("Account Status")
 
-                            with tag.div(classes="grid grid-cols-2 gap-3"):
+                            with fragment.div(class_="grid grid-cols-2 gap-3"):
                                 # Charges enabled
                                 charges_enabled = (
                                     account.is_charges_enabled
                                     if hasattr(account, "charges_enabled")
                                     else False
                                 )
-                                with tag.div(classes="flex items-center gap-2"):
+                                with fragment.div(class_="flex items-center gap-2"):
                                     icon = "Yes" if charges_enabled else "No"
                                     color = (
                                         "text-success"
                                         if charges_enabled
                                         else "text-error"
                                     )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Charges Enabled")
+                                    with fragment.span(class_=color):
+                                        fragment.text(icon)
+                                    fragment.text("Charges Enabled")
 
                                 # Payouts enabled
                                 payouts_enabled = (
@@ -158,26 +159,26 @@ class AccountSection:
                                     if hasattr(account, "payouts_enabled")
                                     else False
                                 )
-                                with tag.div(classes="flex items-center gap-2"):
+                                with fragment.div(class_="flex items-center gap-2"):
                                     icon = "Yes" if payouts_enabled else "No"
                                     color = (
                                         "text-success"
                                         if payouts_enabled
                                         else "text-error"
                                     )
-                                    with tag.span(classes=color):
-                                        text(icon)
-                                    text("Payouts Enabled")
+                                    with fragment.span(class_=color):
+                                        fragment.text(icon)
+                                    fragment.text("Payouts Enabled")
 
                         if (
                             account.account_type == AccountType.stripe
                             and account.stripe_id
                         ):
-                            with tag.div(classes="pt-4 border-t border-base-300"):
-                                with tag.div(classes="text-sm font-semibold mb-3"):
-                                    text("Account Actions")
+                            with fragment.div(class_="pt-4 border-t border-base-300"):
+                                with fragment.div(class_="text-sm font-semibold mb-3"):
+                                    fragment.text("Account Actions")
 
-                                with tag.div(classes="flex flex-wrap gap-2"):
+                                with fragment.div(class_="flex flex-wrap gap-2"):
                                     with button(
                                         variant="warning",
                                         size="sm",
@@ -189,7 +190,7 @@ class AccountSection:
                                         ),
                                         hx_target="#modal",
                                     ):
-                                        text("Disconnect")
+                                        fragment.text("Disconnect")
 
                                     with button(
                                         variant="error",
@@ -202,13 +203,13 @@ class AccountSection:
                                         ),
                                         hx_target="#modal",
                                     ):
-                                        text("Delete")
+                                        fragment.text("Delete")
 
                 else:
                     # No account
-                    with tag.div(classes="text-center py-8"):
-                        with tag.div(classes="text-base-content/60 mb-4"):
-                            text("No payment account configured")
+                    with fragment.div(class_="text-center py-8"):
+                        with fragment.div(class_="text-base-content/60 mb-4"):
+                            fragment.text("No payment account configured")
 
                         with button(
                             variant="primary",
@@ -220,33 +221,33 @@ class AccountSection:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Setup Manual Account")
+                            fragment.text("Setup Manual Account")
 
             # Payout settings (if manual account)
             if self.org.account and self.org.account.account_type != AccountType.stripe:
                 with card(bordered=True):
-                    with tag.h3(classes="text-md font-bold mb-4"):
-                        text("Manual Payout Settings")
+                    with fragment.h3(class_="text-md font-bold mb-4"):
+                        fragment.text("Manual Payout Settings")
 
-                    with tag.div(classes="space-y-3 text-sm"):
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Processor Fees: ")
-                            with tag.span(classes="font-semibold"):
-                                text("None (Manual)")
+                    with fragment.div(class_="space-y-3 text-sm"):
+                        with fragment.div():
+                            with fragment.span(class_="text-base-content/60"):
+                                fragment.text("Processor Fees: ")
+                            with fragment.span(class_="font-semibold"):
+                                fragment.text("None (Manual)")
 
-                        with tag.div():
-                            with tag.span(classes="text-base-content/60"):
-                                text("Payout Schedule: ")
-                            with tag.span(classes="font-semibold"):
-                                text("Manual processing required")
+                        with fragment.div():
+                            with fragment.span(class_="text-base-content/60"):
+                                fragment.text("Payout Schedule: ")
+                            with fragment.span(class_="font-semibold"):
+                                fragment.text("Manual processing required")
 
             # Fee Credits section (only if account exists)
             if self.org.account:
                 with card(bordered=True):
-                    with tag.div(classes="flex items-center justify-between mb-4"):
-                        with tag.h2(classes="text-lg font-bold"):
-                            text("Fee Credits")
+                    with fragment.div(class_="flex items-center justify-between mb-4"):
+                        with fragment.h2(class_="text-lg font-bold"):
+                            fragment.text("Fee Credits")
                         with button(
                             variant="primary",
                             size="sm",
@@ -258,61 +259,61 @@ class AccountSection:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Grant Credit")
+                            fragment.text("Grant Credit")
 
                     # Available balance
-                    with tag.div(classes="mb-4 p-4 bg-base-200 rounded-lg"):
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Available Balance")
-                        with tag.div(classes="text-2xl font-bold text-success"):
-                            text(_format_cents(self.available_balance))
+                    with fragment.div(class_="mb-4 p-4 bg-base-200 rounded-lg"):
+                        with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            fragment.text("Available Balance")
+                        with fragment.div(class_="text-2xl font-bold text-success"):
+                            fragment.text(_format_cents(self.available_balance))
 
                     # Credits table
                     if self.credits:
-                        with tag.div(classes="overflow-x-auto"):
-                            with tag.table(classes="table table-sm"):
-                                with tag.thead():
-                                    with tag.tr():
-                                        with tag.th():
-                                            text("Status")
-                                        with tag.th():
-                                            text("Title")
-                                        with tag.th():
-                                            text("Amount")
-                                        with tag.th():
-                                            text("Used")
-                                        with tag.th():
-                                            text("Remaining")
-                                        with tag.th():
-                                            text("Granted")
-                                        with tag.th():
-                                            text("Expires")
-                                        with tag.th():
-                                            text("Actions")
-                                with tag.tbody():
+                        with fragment.div(class_="overflow-x-auto"):
+                            with fragment.table(class_="table table-sm"):
+                                with fragment.thead():
+                                    with fragment.tr():
+                                        with fragment.th():
+                                            fragment.text("Status")
+                                        with fragment.th():
+                                            fragment.text("Title")
+                                        with fragment.th():
+                                            fragment.text("Amount")
+                                        with fragment.th():
+                                            fragment.text("Used")
+                                        with fragment.th():
+                                            fragment.text("Remaining")
+                                        with fragment.th():
+                                            fragment.text("Granted")
+                                        with fragment.th():
+                                            fragment.text("Expires")
+                                        with fragment.th():
+                                            fragment.text("Actions")
+                                with fragment.tbody():
                                     for credit in self.credits:
                                         status_label, badge_class = _get_credit_status(
                                             credit
                                         )
-                                        with tag.tr():
-                                            with tag.td():
-                                                with tag.span(
-                                                    classes=f"badge {badge_class}"
+                                        with fragment.tr():
+                                            with fragment.td():
+                                                with fragment.span(
+                                                    class_=f"badge {badge_class}"
                                                 ):
-                                                    text(status_label)
-                                            with tag.td():
-                                                text(credit.title)
-                                            with tag.td():
-                                                text(_format_cents(credit.amount))
-                                            with tag.td():
-                                                text(_format_cents(credit.used))
-                                            with tag.td(classes="font-semibold"):
-                                                text(_format_cents(credit.remaining))
-                                            with tag.td(classes="text-xs"):
-                                                text(_format_date(credit.granted_at))
-                                            with tag.td(classes="text-xs"):
-                                                text(_format_date(credit.expires_at))
-                                            with tag.td():
+                                                    fragment.text(status_label)
+                                            with fragment.td():
+                                                fragment.text(credit.title)
+                                            with fragment.td():
+                                                fragment.text(_format_cents(credit.amount))
+                                            with fragment.td():
+                                                fragment.text(_format_cents(credit.used))
+                                            with fragment.td(class_="font-semibold"):
+                                                fragment.text(_format_cents(credit.remaining))
+                                            with fragment.td(class_="text-xs"):
+                                                fragment.text(_format_date(credit.granted_at))
+                                            with fragment.td(class_="text-xs"):
+                                                fragment.text(_format_date(credit.expires_at))
+                                            with fragment.td():
                                                 if status_label == "Active":
                                                     with button(
                                                         variant="error",
@@ -327,23 +328,23 @@ class AccountSection:
                                                         ),
                                                         hx_target="#modal",
                                                     ):
-                                                        text("Revoke")
+                                                        fragment.text("Revoke")
                                                 else:
-                                                    text("—")
+                                                    fragment.text("—")
 
                                         # Notes row if present
                                         if credit.notes:
-                                            with tag.tr(classes="bg-base-200/50"):
-                                                with tag.td(
+                                            with fragment.tr(class_="bg-base-200/50"):
+                                                with fragment.td(
                                                     colspan="8",
-                                                    classes="text-xs text-base-content/60 italic",
+                                                    class_="text-xs text-base-content/60 italic",
                                                 ):
-                                                    text(f"Note: {credit.notes}")
+                                                    fragment.text(f"Note: {credit.notes}")
                     else:
-                        with tag.div(classes="text-center py-4 text-base-content/60"):
-                            text("No credits granted yet")
+                        with fragment.div(class_="text-center py-4 text-base-content/60"):
+                            fragment.text("No credits granted yet")
 
-            yield
+            yield fragment
 
 
 __all__ = ["AccountSection"]

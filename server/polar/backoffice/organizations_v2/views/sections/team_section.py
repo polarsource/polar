@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.models import Organization, User
 
@@ -19,41 +19,42 @@ class TeamSection:
         self.admin_user = admin_user
 
     @contextlib.contextmanager
-    def render(self, request: Request) -> Generator[None]:
+    def render(self, request: Request) -> Generator[Fragment]:
         """Render the team section."""
+        fragment = Fragment()
 
-        with tag.div(classes="space-y-6"):
+        with fragment.div(class_="space-y-6"):
             # Team overview card
             with card(bordered=True):
-                with tag.div(classes="mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Team Members")
+                with fragment.div(class_="mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Team Members")
 
                 # Members list
                 if hasattr(self.org, "members") and self.org.members:
-                    with tag.div(classes="space-y-3"):
+                    with fragment.div(class_="space-y-3"):
                         for member in self.org.members:
-                            with tag.div(
-                                classes="flex items-center justify-between p-4 border border-base-300 rounded-lg hover:bg-base-50"
+                            with fragment.div(
+                                class_="flex items-center justify-between p-4 border border-base-300 rounded-lg hover:bg-base-50"
                             ):
                                 # Member info
-                                with tag.div(classes="flex items-center gap-4 flex-1"):
+                                with fragment.div(class_="flex items-center gap-4 flex-1"):
                                     # Avatar placeholder
-                                    with tag.div(
-                                        classes="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
+                                    with fragment.div(
+                                        class_="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
                                     ):
-                                        with tag.span(classes="text-primary font-bold"):
-                                            text(
+                                        with fragment.span(class_="text-primary font-bold"):
+                                            fragment.text(
                                                 member.user.email[0].upper()
                                                 if member.user.email
                                                 else "?"
                                             )
 
-                                    with tag.div():
-                                        with tag.div(classes="font-semibold"):
-                                            text(member.user.email or "Unknown")
-                                        with tag.div(
-                                            classes="text-sm text-base-content/60"
+                                    with fragment.div():
+                                        with fragment.div(class_="font-semibold"):
+                                            fragment.text(member.user.email or "Unknown")
+                                        with fragment.div(
+                                            class_="text-sm text-base-content/60"
                                         ):
                                             is_admin = (
                                                 self.admin_user
@@ -62,7 +63,7 @@ class TeamSection:
                                             role_text = (
                                                 "Admin" if is_admin else "Member"
                                             )
-                                            text(
+                                            fragment.text(
                                                 f"{role_text} · Joined {member.created_at.strftime('%Y-%m-%d')}"
                                             )
 
@@ -80,19 +81,19 @@ class TeamSection:
                                         hx_vals=f'{{"user_id": "{member.user_id}"}}',
                                         hx_confirm="Are you sure you want to impersonate this user?",
                                     ):
-                                        text("Impersonate")
+                                        fragment.text("Impersonate")
 
-                                    with tag.div(classes="dropdown dropdown-end"):
-                                        with tag.button(
-                                            classes="btn btn-ghost btn-sm",
+                                    with fragment.div(class_="dropdown dropdown-end"):
+                                        with fragment.button(
+                                            class_="btn btn-ghost btn-sm",
                                             **{
                                                 "aria-label": "More options",
                                                 "tabindex": "0",
                                             },
                                         ):
-                                            text("⋮")
-                                        with tag.ul(
-                                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-52 z-10",
+                                            fragment.text("⋮")
+                                        with fragment.ul(
+                                            class_="dropdown-content menu shadow bg-base-100 rounded-box w-52 z-10",
                                             **{"tabindex": "0"},
                                         ):
                                             member_is_admin = (
@@ -100,8 +101,8 @@ class TeamSection:
                                                 and member.user_id == self.admin_user.id
                                             )
                                             if not member_is_admin:
-                                                with tag.li():
-                                                    with tag.a(
+                                                with fragment.li():
+                                                    with fragment.a(
                                                         hx_post=str(
                                                             request.url_for(
                                                                 "organizations-v2:make_admin",
@@ -111,9 +112,9 @@ class TeamSection:
                                                         ),
                                                         hx_confirm="Make this user an admin?",
                                                     ):
-                                                        text("Make Admin")
-                                            with tag.li():
-                                                with tag.a(
+                                                        fragment.text("Make Admin")
+                                            with fragment.li():
+                                                with fragment.a(
                                                     hx_delete=str(
                                                         request.url_for(
                                                             "organizations-v2:remove_member",
@@ -122,35 +123,35 @@ class TeamSection:
                                                         )
                                                     ),
                                                     hx_confirm="Remove this member?",
-                                                    classes="text-error",
+                                                    class_="text-error",
                                                 ):
-                                                    text("Remove Member")
+                                                    fragment.text("Remove Member")
                 else:
-                    with tag.div(classes="text-center py-8 text-base-content/60"):
-                        text("No team members found")
+                    with fragment.div(class_="text-center py-8 text-base-content/60"):
+                        fragment.text("No team members found")
 
             # Admin change requirements (if applicable)
             if hasattr(self.org, "account") and self.org.account:
                 with card(bordered=True):
-                    with tag.h3(classes="text-md font-bold mb-3"):
-                        text("Admin Change Requirements")
+                    with fragment.h3(class_="text-md font-bold mb-3"):
+                        fragment.text("Admin Change Requirements")
 
-                    with tag.ul(classes="space-y-2 text-sm"):
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text(
+                    with fragment.ul(class_="space-y-2 text-sm"):
+                        with fragment.li(class_="flex items-start gap-2"):
+                            with fragment.span(class_="text-base-content/60"):
+                                fragment.text(
                                     "• No Stripe account connected (restriction for alpha)"
                                 )
 
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text("• New admin must be verified")
+                        with fragment.li(class_="flex items-start gap-2"):
+                            with fragment.span(class_="text-base-content/60"):
+                                fragment.text("• New admin must be verified")
 
-                        with tag.li(classes="flex items-start gap-2"):
-                            with tag.span(classes="text-base-content/60"):
-                                text("• At least 2 team members required")
+                        with fragment.li(class_="flex items-start gap-2"):
+                            with fragment.span(class_="text-base-content/60"):
+                                fragment.text("• At least 2 team members required")
 
-            yield
+            yield fragment
 
 
 __all__ = ["TeamSection"]

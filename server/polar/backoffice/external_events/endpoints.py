@@ -3,9 +3,9 @@ import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
-from tagflow import tag, text
 
 from polar.external_event import sorting
 from polar.external_event.repository import ExternalEventRepository
@@ -41,7 +41,7 @@ async def list(
     query: str | None = Query(None),
     handled: Annotated[bool | None, BeforeValidator(empty_str_to_none), Query()] = None,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = ExternalEventRepository.from_session(session)
     statement = repository.get_base_statement()
 
@@ -70,11 +70,11 @@ async def list(
             ("External Events", str(request.url_for("external_events:list"))),
         ],
         "external_events:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("External Events")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("External Events")
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search("query", query):
                     pass
                 with input.select(
@@ -88,7 +88,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    pass
 
             with datatable.Datatable[ExternalEvent, ExternalEventSortProperty](
                 datatable.DatatableActionsColumn(
@@ -130,6 +130,7 @@ async def list(
                 pass
             with datatable.pagination(request, pagination, count):
                 pass
+    return page
 
 
 @router.api_route(
@@ -139,7 +140,7 @@ async def resend(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> Any:
+) -> Fragment:
     repository = ExternalEventRepository.from_session(session)
     external_event = await repository.get_by_id(id)
 
@@ -151,22 +152,23 @@ async def resend(
         await add_toast(request, "Event has been enqueued for processing.", "success")
         return
 
-    with modal(f"Resend Event {external_event.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to resend this event? ")
-                text("It'll be enqueued for processing again using the task ")
-                with tag.code():
-                    text(external_event.task_name)
-                text(".")
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+    with modal(f"Resend Event {external_event.id}", open=True) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.p():
+                page.text("Are you sure you want to resend this event? ")
+                page.text("It'll be enqueued for processing again using the task ")
+                with page.code():
+                    page.text(external_event.task_name)
+                page.text(".")
+            with page.div(class_="modal-action"):
+                with page.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        pass
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Resend")
+                    pass
+    return page

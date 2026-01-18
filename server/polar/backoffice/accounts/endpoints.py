@@ -3,8 +3,8 @@ from collections.abc import Generator
 from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from markupflow import Fragment
 from pydantic import UUID4
-from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
@@ -23,19 +23,20 @@ router = APIRouter()
 @contextlib.contextmanager
 def identity_verification_status_badge(
     status: IdentityVerificationStatus,
-) -> Generator[None]:
-    with tag.div(classes="badge"):
+) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="badge"):
         if status == IdentityVerificationStatus.verified:
-            classes("badge-success")
+            fragment.classes("badge-success")
         elif status in {
             IdentityVerificationStatus.pending,
             IdentityVerificationStatus.failed,
         }:
-            classes("badge-warning")
+            fragment.classes("badge-warning")
         else:
-            classes("badge-neutral")
-        text(status.get_display_name())
-    yield
+            fragment.classes("badge-neutral")
+        fragment.text(status.get_display_name())
+    yield fragment
 
 
 class IdentityVerificationStatusColumn(
@@ -51,20 +52,22 @@ class IdentityVerificationStatusColumn(
 class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
-    def render(self, request: Request, item: User) -> Generator[None] | None:
+    def render(self, request: Request, item: User) -> Generator[Fragment] | None:
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
-            with tag.a(
+            fragment = Fragment()
+            with fragment.a(
                 href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                classes="link flex flex-row gap-1",
+                class_="link flex flex-row gap-1",
                 target="_blank",
                 rel="noopener noreferrer",
             ):
-                text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
+                fragment.text(status.get_display_name())
+                with fragment.div(class_="icon-external-link"):
                     pass
         else:
-            text(status.get_display_name())
+            fragment = Fragment()
+            fragment.text(status.get_display_name())
         return None
 
 
@@ -76,7 +79,7 @@ async def delete_stripe(
     id: UUID4,
     stripe_account_id: str | None = Form(None),
     session: AsyncSession = Depends(get_db_session),
-) -> Any:
+) -> Fragment:
     repository = AccountRepository.from_session(session)
     account = await repository.get_by_id(id)
 
@@ -107,26 +110,27 @@ async def delete_stripe(
 
         return
 
-    with modal(f"Delete Stripe Connect account {account.id}", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.form(hx_post=str(request.url), hx_target="#modal"):
-                with tag.p():
-                    with tag.span():
-                        text(
+    with modal(f"Delete Stripe Connect account {account.id}", open=True) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.form(hx_post=str(request.url), hx_target="#modal"):
+                with page.p():
+                    with page.span():
+                        page.text(
                             f"Are you sure you want to delete this Stripe Connect account? Write in {account.stripe_id} below to confirm:"
                         )
-                with tag.input(
+                with page.input(
                     type="text",
-                    classes="input",
+                    class_="input",
                     name="stripe_account_id",
                     placeholder=f"{account.stripe_id}",
                 ):
                     pass
-                with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
-                    with tag.input(
-                        type="submit", classes="btn btn-primary", value="Delete"
+                with page.div(class_="modal-action"):
+                    with page.form(method="dialog"):
+                        with button(ghost=True) as btn:
+                            btn.text("Cancel")
+                    with page.input(
+                        type="submit", class_="btn btn-primary", value="Delete"
                     ):
                         pass
+    return page

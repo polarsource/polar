@@ -14,7 +14,7 @@ from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
-from markupflow import Fragment, document
+from markupflow import Fragment
 
 from polar.account.service import (
     CannotChangeAdminError,
@@ -561,7 +561,7 @@ async def update(
         },
     }
 
-    with modal("Update Organization", open=True) as page:
+    with modal("Update Organization", open=True):
         with UpdateOrganizationForm.render(
             form_data,
             hx_post=str(request.url_for("organizations:update", id=id)),
@@ -571,13 +571,13 @@ async def update(
         ):
             with page.div(class_="modal-action"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
-                        btn.text("Cancel")
+                    with button(ghost=True):
+                        page.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
-                ) as btn:
-                    btn.text("Update")
+                ):
+                    page.text("Update")
 
 
 @router.api_route(
@@ -609,7 +609,7 @@ async def update_details(
         except ValidationError as e:
             validation_error = e
 
-    with modal("Edit Business Information", open=True) as page:
+    with modal("Edit Business Information", open=True):
         with page.p(class_="text-sm text-base-content-secondary"):
             page.text("Update the key information about your business and products")
 
@@ -623,13 +623,13 @@ async def update_details(
             # Action buttons
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
-                        btn.text("Cancel")
+                    with button(ghost=True):
+                        page.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
-                ) as btn:
-                    btn.text("Update Details")
+                ):
+                    page.text("Update Details")
 
 
 @router.api_route(
@@ -663,7 +663,7 @@ async def update_internal_notes(
         except ValidationError as e:
             validation_error = e
 
-    with modal("Edit Internal Notes", open=True) as page:
+    with modal("Edit Internal Notes", open=True):
         with page.p(class_="text-sm text-base-content-secondary"):
             page.text("Add or update internal notes about this organization (admin only)")
 
@@ -677,13 +677,13 @@ async def update_internal_notes(
             # Action buttons
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
-                        btn.text("Cancel")
+                    with button(ghost=True):
+                        page.text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
-                ) as btn:
-                    btn.text("Save Notes")
+                ):
+                    page.text("Save Notes")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -707,7 +707,7 @@ async def delete(
 
         return
 
-    with modal(f"Delete Organization {organization.id}", open=True) as page:
+    with modal(f"Delete Organization {organization.id}", open=True):
         with page.div(class_="flex flex-col gap-4"):
             with page.p():
                 page.text("Are you sure you want to delete this Organization? ")
@@ -733,16 +733,16 @@ async def delete(
 
             with page.div(class_="modal-action"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
-                        btn.text("Cancel")
+                    with button(ghost=True):
+                        page.text("Cancel")
                 with page.form(method="dialog"):
                     with button(
                         type="button",
                         variant="primary",
                         hx_post=str(request.url),
                         hx_target="#modal",
-                    ) as btn:
-                        btn.text("Delete")
+                    ):
+                        page.text("Delete")
 
 
 @router.get(
@@ -763,7 +763,7 @@ async def confirm_remove_member(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    with modal(f"Remove {user.email}", open=True) as page:
+    with modal(f"Remove {user.email}", open=True):
         with page.div(class_="flex items-start gap-4 mb-6"):
             # Message content
             with page.div(class_="flex-1"):
@@ -781,8 +781,8 @@ async def confirm_remove_member(
         # Action buttons
         with page.div(class_="modal-action"):
             with page.form(method="dialog"):
-                with button(ghost=True) as btn:
-                    btn.text("Cancel")
+                with button(ghost=True):
+                    page.text("Cancel")
 
             with page.form(method="dialog"):
                 with button(
@@ -795,8 +795,8 @@ async def confirm_remove_member(
                         )
                     ),
                     hx_target="#modal",
-                ) as btn:
-                    btn.text("Remove User")
+                ):
+                    page.text("Remove User")
 
 
 @router.api_route(
@@ -894,7 +894,7 @@ async def confirm_change_admin(
     # Determine if admin change is blocked and why
     is_blocked = has_stripe_account or user_not_verified or not_enough_users
 
-    with modal("Change Account Admin", open=True) as page:
+    with modal("Change Account Admin", open=True):
         with page.div(class_="flex flex-col gap-4"):
             # Show appropriate alert based on blocking conditions
             if is_blocked:
@@ -1126,7 +1126,7 @@ async def setup_manual_payout(
             request, str(request.url_for("organizations:get", id=id)), 303
         )
 
-    with modal("Setup Manual Payout", open=True) as page:
+    with modal("Setup Manual Payout", open=True):
         with page.form(method="POST", action=str(request.url), class_="flex flex-col"):
             # Warning message
             with page.div(class_="alert alert-warning"):
@@ -1227,25 +1227,25 @@ async def create_plain_thread(
         thread_url = f"https://app.plain.com/workspace/w_01JE9TRRX9KT61D8P2CH77XDQM/thread/{thread_id}"
 
         with document() as doc:
-            with doc.div(id="modal"):
-                with doc.tag("dialog", class_="modal modal-open"):
-                    with doc.div(class_="modal-box"):
-                        with doc.h3(class_="font-bold text-lg text-success"):
-                            doc.text("✅ Thread Created Successfully!")
+            with page.div(id="modal"):
+                with page.dialog(class_="modal modal-open"):
+                    with page.div(class_="modal-box"):
+                        with page.h3(class_="font-bold text-lg text-success"):
+                            page.text("✅ Thread Created Successfully!")
 
-                        with doc.p(class_="py-4"):
-                            doc.text(
+                        with page.p(class_="py-4"):
+                            page.text(
                                 "Your Plain thread has been created. Click the link below to open it:"
                             )
 
-                        with doc.div(class_="modal-action"):
-                            with doc.a(
+                        with page.div(class_="modal-action"):
+                            with page.a(
                                 href=thread_url,
                                 target="_blank",
                                 class_="btn btn-primary",
                             ):
-                                doc.text("🔗 Open Plain Thread")
-                            with doc.button(
+                                page.text("🔗 Open Plain Thread")
+                            with page.button(
                                 type="button",
                                 class_="btn",
                                 hx_get=str(
@@ -1256,9 +1256,9 @@ async def create_plain_thread(
                                 ),
                                 hx_target="#modal",
                             ):
-                                doc.text("Close")
+                                page.text("Close")
 
-                    with doc.div(
+                    with page.div(
                         class_="modal-backdrop",
                         hx_get=str(
                             request.url_for(
@@ -1290,17 +1290,16 @@ class FileDownloadLinkColumn(datatable.DatatableColumn[File]):
     def __init__(self, label: str = "Download"):
         super().__init__(label)
 
-    def render(self, request: Request, item: File) -> Generator[Fragment]:
+    def render(self, request: Request, item: File) -> Generator[None]:
         """Render a download link for the file."""
-        fragment = Fragment()
         url, _ = file_service.generate_download_url(item)
-        with fragment.a(
+        with page.a(
             href=url, class_="btn btn-sm", target="_blank", rel="noopener noreferrer"
         ):
-            with fragment.div(class_="icon-download"):
+            with page.div(class_="icon-download"):
                 pass
-            fragment.text("Download")
-        yield fragment
+            page.text("Download")
+        yield
 
 
 class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
@@ -1387,7 +1386,7 @@ async def get(
             ("Organizations", str(request.url_for("organizations:list"))),
         ],
         "organizations:get",
-    ) as page:
+    ):
         with page.div(class_="flex flex-col gap-4"):
             with page.div(class_="flex justify-between items-center"):
                 with page.h1(class_="text-4xl"):
@@ -1867,19 +1866,19 @@ async def get_create_thread_modal(
         raise HTTPException(status_code=404)
 
     with document() as doc:
-        with doc.div(id="modal"):
-            with doc.dialog(class_="modal modal-open"):
-                with doc.div(class_="modal-box"):
-                    with doc.form(method="dialog"):
-                        with doc.button(
+        with page.div(id="modal"):
+            with page.dialog(class_="modal modal-open"):
+                with page.div(class_="modal-box"):
+                    with page.form(method="dialog"):
+                        with page.button(
                             class_="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                         ):
-                            doc.text("✕")
+                            page.text("✕")
 
-                    with doc.h3(class_="font-bold text-lg"):
-                        doc.text("Create Plain Thread")
+                    with page.h3(class_="font-bold text-lg"):
+                        page.text("Create Plain Thread")
 
-                    with doc.form(
+                    with page.form(
                         id="create-thread-form",
                         hx_post=str(
                             request.url_for(
@@ -1888,11 +1887,11 @@ async def get_create_thread_modal(
                         ),
                         hx_target="#modal",
                     ):
-                        with doc.div(class_="form-control w-full mt-4"):
-                            with doc.label(class_="label"):
-                                with doc.span(class_="label-text"):
-                                    doc.text("Thread Title")
-                            with doc.input(
+                        with page.div(class_="form-control w-full mt-4"):
+                            with page.label(class_="label"):
+                                with page.span(class_="label-text"):
+                                    page.text("Thread Title")
+                            with page.input(
                                 type="text",
                                 name="title",
                                 placeholder="Enter thread title...",
@@ -1902,8 +1901,8 @@ async def get_create_thread_modal(
                             ):
                                 pass
 
-                        with doc.div(class_="modal-action"):
-                            with doc.button(
+                        with page.div(class_="modal-action"):
+                            with page.button(
                                 type="button",
                                 class_="btn",
                                 hx_get=str(
@@ -1913,14 +1912,14 @@ async def get_create_thread_modal(
                                 ),
                                 hx_target="#modal",
                             ):
-                                doc.text("Cancel")
-                            with doc.button(
+                                page.text("Cancel")
+                            with page.button(
                                 type="submit",
                                 class_="btn btn-primary",
                             ):
-                                doc.text("Create Thread")
+                                page.text("Create Thread")
 
-                with doc.div(
+                with page.div(
                     class_="modal-backdrop",
                     hx_get=str(
                         request.url_for("organizations:clear_modal", id=organization.id)
@@ -1968,7 +1967,7 @@ async def import_orders(
         except ValidationError as e:
             validation_error = e
 
-    with modal("Import Orders", open=True) as page:
+    with modal("Import Orders", open=True):
         with OrganizationOrdersImportForm.render(
             {"invoice_number_prefix": "IMPORTED-"},
             action=str(request.url),

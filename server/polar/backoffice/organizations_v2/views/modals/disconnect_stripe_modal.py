@@ -1,8 +1,8 @@
 import contextlib
 from collections.abc import Generator
 
+from markupflow import Fragment
 from pydantic import ValidationError
-from tagflow import tag, text
 
 from polar.backoffice.components import button, modal
 from polar.backoffice.organizations.forms import DisconnectStripeAccountForm
@@ -21,40 +21,41 @@ class DisconnectStripeModal:
         self.validation_error = validation_error
 
     @contextlib.contextmanager
-    def render(self) -> Generator[None]:
+    def render(self) -> Generator[Fragment]:
         form_data = {
             "stripe_account_id": "",
             "reason": "",
         }
 
-        with modal("Disconnect Stripe Account", open=True):
-            with tag.div(classes="flex flex-col gap-4"):
-                with tag.p(classes="font-semibold text-warning"):
-                    text("This will unlink the Stripe account from this organization.")
+        fragment = Fragment()
+        with modal("Disconnect Stripe Account", open=True) as page:
+            with page.div(class_="flex flex-col gap-4"):
+                with page.p(class_="font-semibold text-warning"):
+                    page.text("This will unlink the Stripe account from this organization.")
 
-                with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                    with tag.p(classes="mb-2"):
-                        text(
+                with page.div(class_="bg-base-200 p-4 rounded-lg"):
+                    with page.p(class_="mb-2"):
+                        page.text(
                             "The Stripe connection will be removed, but the Stripe Account will remain and the user can access it. Use it on cases where the Stripe Account cannot be deleted."
                         )
-                    with tag.p(classes="text-sm text-base-content/60"):
-                        text(f"Current Stripe Account ID: {self.account.stripe_id}")
+                    with page.p(class_="text-sm text-base-content/60"):
+                        page.text(f"Current Stripe Account ID: {self.account.stripe_id}")
 
                 with DisconnectStripeAccountForm.render(
                     data=form_data,
                     validation_error=self.validation_error,
                     hx_post=self.form_action,
                     hx_target="#modal",
-                    classes="space-y-4",
-                ):
-                    with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                        with tag.form(method="dialog"):
-                            with button(ghost=True):
-                                text("Cancel")
-                        with button(type="submit", variant="warning"):
-                            text("Disconnect Stripe Account")
+                    class_="space-y-4",
+                ) as form:
+                    with form.div(class_="modal-action pt-6 border-t border-base-200"):
+                        with form.form(method="dialog"):
+                            with button(ghost=True) as btn:
+                                btn.text("Cancel")
+                        with button(type="submit", variant="warning") as btn:
+                            btn.text("Disconnect Stripe Account")
 
-        yield
+        yield fragment
 
 
 __all__ = ["DisconnectStripeModal"]

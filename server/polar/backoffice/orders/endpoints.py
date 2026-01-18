@@ -4,10 +4,10 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import attr, classes, tag, text
 
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.pagination import PaginationParamsQuery
@@ -37,8 +37,8 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
     def __init__(self, label: str) -> None:
         super().__init__(label)
 
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        with order_status_badge(item.status):
+    def render(self, request: Request, item: Order) -> Generator[Fragment] | None:
+        with order_status_badge(item.status) as fragment:
             pass
         return None
 
@@ -48,8 +48,9 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
         super().__init__("Tax Rate")
         self.rate = rate
 
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        text(f"{self.rate:.2f}%")
+    def render(self, request: Request, item: Order) -> Generator[Fragment] | None:
+        fragment = Fragment()
+        fragment.text(f"{self.rate:.2f}%")
         return None
 
 
@@ -66,35 +67,37 @@ class InvoicePDFItem(description_list.DescriptionListItem[Order]):
         super().__init__("Invoice PDF")
         self.url = url
 
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        with tag.div(classes="flex items-center gap-1"):
+    def render(self, request: Request, item: Order) -> Generator[Fragment] | None:
+        fragment = Fragment()
+        with fragment.div(class_="flex items-center gap-1"):
             if self.url is not None:
-                with tag.a(href=self.url, classes="link flex flex-row gap-1"):
-                    attr("target", "_blank")
-                    attr("rel", "noopener noreferrer")
-                    text("Download PDF")
-                    with tag.div(classes="icon-external-link"):
+                with fragment.a(href=self.url, class_="link flex flex-row gap-1"):
+                    fragment.attr(target="_blank")
+                    fragment.attr(rel="noopener noreferrer")
+                    fragment.text("Download PDF")
+                    with fragment.div(class_="icon-external-link"):
                         pass
             else:
-                with tag.span(classes="text-gray-500"):
-                    text("Not generated")
+                with fragment.span(class_="text-gray-500"):
+                    fragment.text("Not generated")
         return None
 
 
 # Table Columns
 @contextlib.contextmanager
-def order_status_badge(status: OrderStatus) -> Generator[None]:
-    with tag.div(classes="badge"):
+def order_status_badge(status: OrderStatus) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="badge"):
         if status == OrderStatus.paid:
-            classes("badge-success")
+            fragment.classes("badge-success")
         elif status == OrderStatus.pending:
-            classes("badge-warning")
+            fragment.classes("badge-warning")
         elif status == OrderStatus.refunded:
-            classes("badge-error")
+            fragment.classes("badge-error")
         elif status == OrderStatus.partially_refunded:
-            classes("badge-info")
-        text(status.replace("_", " ").title())
-    yield
+            fragment.classes("badge-info")
+        fragment.text(status.replace("_", " ").title())
+    yield fragment
 
 
 @router.get("/", name="orders:list")
@@ -110,7 +113,7 @@ async def list(
         OrderBillingReason | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = OrderRepository.from_session(session)
     statement = (
         repository.get_base_statement()
@@ -163,11 +166,11 @@ async def list(
             ("Orders", str(request.url_for("orders:list"))),
         ],
         "orders:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Orders")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Orders")
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -211,12 +214,13 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    page.text("Filter")
 
             with orders_datatable(request, items, sorting=sorting):
                 pass
             with datatable.pagination(request, pagination, count):
                 pass
+        return page
 
 
 @router.get("/{id}", name="orders:get")
@@ -224,7 +228,7 @@ async def get(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     order_repository = OrderRepository.from_session(session)
     order = await order_repository.get_by_id(
         id,
@@ -255,35 +259,35 @@ async def get(
             ("Orders", str(request.url_for("orders:list"))),
         ],
         "orders:get",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.div(classes="flex items-center gap-2"):
-                    with tag.h1(classes="text-4xl"):
-                        text(f"Order {order.invoice_number}")
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.div(class_="flex justify-between items-center"):
+                with page.div(class_="flex items-center gap-2"):
+                    with page.h1(class_="text-4xl"):
+                        page.text(f"Order {order.invoice_number}")
                     if order.refunds_blocked:
-                        with tag.div(classes="badge badge-warning"):
-                            text("Refunds Blocked")
-                with tag.div(classes="flex gap-2"):
+                        with page.div(class_="badge badge-warning"):
+                            page.text("Refunds Blocked")
+                with page.div(class_="flex gap-2"):
                     # Block/Unblock Refunds button
                     if order.refunds_blocked:
-                        with tag.form(
+                        with page.form(
                             method="POST",
                             action=str(
                                 request.url_for("orders:unblock_refunds", id=order.id)
                             ),
                         ):
                             with button(type="submit", outline=True):
-                                text("Unblock Refunds")
+                                page.text("Unblock Refunds")
                     else:
-                        with tag.form(
+                        with page.form(
                             method="POST",
                             action=str(
                                 request.url_for("orders:block_refunds", id=order.id)
                             ),
                         ):
                             with button(type="submit", outline=True):
-                                text("Block Refunds")
+                                page.text("Block Refunds")
                     # Add Refund button if order is paid, can be refunded, and refunds are not blocked
                     if (
                         order.paid
@@ -294,14 +298,14 @@ async def get(
                             hx_get=str(request.url_for("orders:refund", id=order.id)),
                             hx_target="#modal",
                         ):
-                            text("Refund")
+                            page.text("Refund")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+            with page.div(class_="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Order Details")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Order Details")
                         with description_list.DescriptionList[Order](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -335,10 +339,10 @@ async def get(
                             pass
 
                 # Customer Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Customer")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Customer")
                         with description_list.DescriptionList[Order](
                             description_list.DescriptionListAttrItem(
                                 "customer.id", "ID", clipboard=True
@@ -353,10 +357,10 @@ async def get(
                             pass
 
                 # Product Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Product")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Product")
                         with description_list.DescriptionList[Order](
                             description_list.DescriptionListAttrItem(
                                 "product.id", "ID", clipboard=True
@@ -378,28 +382,28 @@ async def get(
                             pass
 
             # Additional sections below the main grid
-            with tag.div(classes="flex flex-col gap-4 mt-6"):
+            with page.div(class_="flex flex-col gap-4 mt-6"):
                 # Invoice section
                 if order.items:
-                    with tag.div(classes="card card-border w-full shadow-sm"):
-                        with tag.div(classes="card-body"):
-                            with tag.h2(classes="card-title"):
-                                text("Invoice")
+                    with page.div(class_="card card-border w-full shadow-sm"):
+                        with page.div(class_="card-body"):
+                            with page.h2(class_="card-title"):
+                                page.text("Invoice")
 
                             # Billing Information (above table, left-aligned)
                             if order.billing_name or order.billing_address:
-                                with tag.div(classes="text-sm mb-4 mt-4"):
+                                with page.div(class_="text-sm mb-4 mt-4"):
                                     if order.billing_name:
-                                        with tag.div():
-                                            text(order.billing_name)
+                                        with page.div():
+                                            page.text(order.billing_name)
                                     if order.billing_address:
                                         if order.billing_address.line1:
-                                            with tag.div():
-                                                text(order.billing_address.line1)
+                                            with page.div():
+                                                page.text(order.billing_address.line1)
                                         if order.billing_address.line2:
-                                            with tag.div():
-                                                text(order.billing_address.line2)
-                                        with tag.div():
+                                            with page.div():
+                                                page.text(order.billing_address.line2)
+                                        with page.div():
                                             address_parts = []
                                             if order.billing_address.city:
                                                 address_parts.append(
@@ -414,54 +418,54 @@ async def get(
                                                     order.billing_address.postal_code
                                                 )
                                             if address_parts:
-                                                text(", ".join(address_parts))
+                                                page.text(", ".join(address_parts))
                                         if order.billing_address.country:
-                                            with tag.div():
-                                                text(order.billing_address.country)
+                                            with page.div():
+                                                page.text(order.billing_address.country)
 
-                            with tag.div(classes="overflow-x-auto"):
-                                with tag.table(classes="table w-full"):
-                                    with tag.thead():
-                                        with tag.tr():
-                                            with tag.th():
-                                                text("Description")
-                                            with tag.th(classes="text-right"):
-                                                text("Quantity")
-                                            with tag.th(classes="text-right"):
-                                                text("Unit Price")
-                                            with tag.th(classes="text-right"):
-                                                text("Amount")
-                                    with tag.tbody():
+                            with page.div(class_="overflow-x-auto"):
+                                with page.table(class_="table w-full"):
+                                    with page.thead():
+                                        with page.tr():
+                                            with page.th():
+                                                page.text("Description")
+                                            with page.th(class_="text-right"):
+                                                page.text("Quantity")
+                                            with page.th(class_="text-right"):
+                                                page.text("Unit Price")
+                                            with page.th(class_="text-right"):
+                                                page.text("Amount")
+                                    with page.tbody():
                                         for item in order.items:
-                                            with tag.tr():
-                                                with tag.td():
-                                                    text(item.label)
-                                                with tag.td(classes="text-right"):
-                                                    text("1")
-                                                with tag.td(classes="text-right"):
-                                                    text(
+                                            with page.tr():
+                                                with page.td():
+                                                    page.text(item.label)
+                                                with page.td(class_="text-right"):
+                                                    page.text("1")
+                                                with page.td(class_="text-right"):
+                                                    page.text(
                                                         formatters.currency(
                                                             item.amount, order.currency
                                                         )
                                                     )
-                                                with tag.td(classes="text-right"):
-                                                    text(
+                                                with page.td(class_="text-right"):
+                                                    page.text(
                                                         formatters.currency(
                                                             item.amount, order.currency
                                                         )
                                                     )
 
                                         # Financial summary rows
-                                        with tag.tr(classes="border-t-2"):
-                                            with tag.td(
+                                        with page.tr(class_="border-t-2"):
+                                            with page.td(
                                                 colspan="3",
-                                                classes="text-right font-semibold",
+                                                class_="text-right font-semibold",
                                             ):
-                                                text("Subtotal")
-                                            with tag.td(
-                                                classes="text-right font-semibold"
+                                                page.text("Subtotal")
+                                            with page.td(
+                                                class_="text-right font-semibold"
                                             ):
-                                                text(
+                                                page.text(
                                                     formatters.currency(
                                                         order.subtotal_amount,
                                                         order.currency,
@@ -469,13 +473,13 @@ async def get(
                                                 )
 
                                         if order.discount_amount > 0:
-                                            with tag.tr():
-                                                with tag.td(
-                                                    colspan="3", classes="text-right"
+                                            with page.tr():
+                                                with page.td(
+                                                    colspan="3", class_="text-right"
                                                 ):
-                                                    text("Discount")
-                                                with tag.td(classes="text-right"):
-                                                    text(
+                                                    page.text("Discount")
+                                                with page.td(class_="text-right"):
+                                                    page.text(
                                                         f"-{
                                                             formatters.currency(
                                                                 order.discount_amount,
@@ -485,9 +489,9 @@ async def get(
                                                     )
 
                                         if order.tax_amount > 0:
-                                            with tag.tr():
-                                                with tag.td(
-                                                    colspan="3", classes="text-right"
+                                            with page.tr():
+                                                with page.td(
+                                                    colspan="3", class_="text-right"
                                                 ):
                                                     # Build tax label with additional information
                                                     tax_label_parts = ["Tax"]
@@ -527,23 +531,23 @@ async def get(
                                                             f"• {order.taxability_reason}"
                                                         )
 
-                                                    text(" ".join(tax_label_parts))
-                                                with tag.td(classes="text-right"):
-                                                    text(
+                                                    page.text(" ".join(tax_label_parts))
+                                                with page.td(class_="text-right"):
+                                                    page.text(
                                                         formatters.currency(
                                                             order.tax_amount,
                                                             order.currency,
                                                         )
                                                     )
 
-                                        with tag.tr(classes="border-t-2"):
-                                            with tag.td(
+                                        with page.tr(class_="border-t-2"):
+                                            with page.td(
                                                 colspan="3",
-                                                classes="text-right font-bold",
+                                                class_="text-right font-bold",
                                             ):
-                                                text("Total")
-                                            with tag.td(classes="text-right font-bold"):
-                                                text(
+                                                page.text("Total")
+                                            with page.td(class_="text-right font-bold"):
+                                                page.text(
                                                     formatters.currency(
                                                         order.total_amount,
                                                         order.currency,
@@ -551,13 +555,13 @@ async def get(
                                                 )
 
                                         if order.applied_balance_amount != 0:
-                                            with tag.tr():
-                                                with tag.td(
-                                                    colspan="3", classes="text-right"
+                                            with page.tr():
+                                                with page.td(
+                                                    colspan="3", class_="text-right"
                                                 ):
-                                                    text("Applied balance")
-                                                with tag.td(classes="text-right"):
-                                                    text(
+                                                    page.text("Applied balance")
+                                                with page.td(class_="text-right"):
+                                                    page.text(
                                                         formatters.currency(
                                                             order.applied_balance_amount,
                                                             order.currency,
@@ -565,16 +569,16 @@ async def get(
                                                     )
 
                                         if order.due_amount != order.total_amount:
-                                            with tag.tr():
-                                                with tag.td(
+                                            with page.tr():
+                                                with page.td(
                                                     colspan="3",
-                                                    classes="text-right font-bold",
+                                                    class_="text-right font-bold",
                                                 ):
-                                                    text("To be paid")
-                                                with tag.td(
-                                                    classes="text-right font-bold"
+                                                    page.text("To be paid")
+                                                with page.td(
+                                                    class_="text-right font-bold"
                                                 ):
-                                                    text(
+                                                    page.text(
                                                         formatters.currency(
                                                             order.due_amount,
                                                             order.currency,
@@ -585,16 +589,16 @@ async def get(
                                             order.refunded_amount
                                             and order.refunded_amount > 0
                                         ):
-                                            with tag.tr():
-                                                with tag.td(
+                                            with page.tr():
+                                                with page.td(
                                                     colspan="3",
-                                                    classes="text-right text-error",
+                                                    class_="text-right text-error",
                                                 ):
-                                                    text("Refunded Amount")
-                                                with tag.td(
-                                                    classes="text-right text-error"
+                                                    page.text("Refunded Amount")
+                                                with page.td(
+                                                    class_="text-right text-error"
                                                 ):
-                                                    text(
+                                                    page.text(
                                                         f"-{
                                                             formatters.currency(
                                                                 order.refunded_amount,
@@ -602,6 +606,7 @@ async def get(
                                                             )
                                                         }"
                                                     )
+        return page
 
 
 @router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])
@@ -669,22 +674,22 @@ async def refund(
         locale="en_US",
     )
 
-    with modal("Refund order", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text(f"Maximum refundable amount: {max_refundable_display}")
+    with modal("Refund order", open=True) as fragment:
+        with fragment.div(class_="flex flex-col gap-4"):
+            with fragment.p():
+                fragment.text(f"Maximum refundable amount: {max_refundable_display}")
             with RefundForm.render(
                 hx_post=str(request.url_for("orders:refund", id=id)),
                 hx_target="#modal",
                 classes="flex flex-col",
                 validation_error=validation_error,
             ):
-                with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
+                with fragment.div(class_="modal-action"):
+                    with fragment.form(method="dialog"):
                         with button(ghost=True):
-                            text("Cancel")
+                            fragment.text("Cancel")
                     with button(type="submit", variant="primary"):
-                        text("Submit")
+                        fragment.text("Submit")
 
 
 @router.post("/{id}/block-refunds", name="orders:block_refunds")

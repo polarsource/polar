@@ -5,7 +5,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
@@ -28,7 +28,7 @@ class OrganizationDetailView:
     @contextlib.contextmanager
     def section_tabs(
         self, request: Request, current_section: str = "overview"
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render horizontal section navigation tabs."""
         tabs = [
             Tab(
@@ -83,26 +83,28 @@ class OrganizationDetailView:
             ),
         ]
 
-        with tab_nav(tabs):
+        fragment = Fragment()
+        with tab_nav(tabs) as nav:
             pass
-        yield
+        yield fragment
 
     @contextlib.contextmanager
-    def right_sidebar(self, request: Request) -> Generator[None]:
+    def right_sidebar(self, request: Request) -> Generator[Fragment]:
         """Render right sidebar with contextual actions and metadata."""
-        with tag.aside(classes="w-80 pl-4"):
+        fragment = Fragment()
+        with fragment.aside(class_="w-80 pl-4"):
             # Internal Notes - Prominent at top
             if self.org.internal_notes:
-                with card(bordered=True, classes="border-l-4 border-l-base-400 mb-4"):
-                    with tag.h3(
-                        classes="font-bold text-sm uppercase tracking-wide mb-3"
+                with card(bordered=True, class_="border-l-4 border-l-base-400 mb-4"):
+                    with fragment.h3(
+                        class_="font-bold text-sm uppercase tracking-wide mb-3"
                     ):
-                        text("Internal Note")
-                    with tag.div(
-                        classes="text-sm whitespace-pre-wrap text-base-content/90 leading-relaxed"
+                        fragment.text("Internal Note")
+                    with fragment.div(
+                        class_="text-sm whitespace-pre-wrap text-base-content/90 leading-relaxed"
                     ):
-                        text(self.org.internal_notes)
-                    with tag.div(classes="mt-3 pt-3 border-t border-base-300"):
+                        fragment.text(self.org.internal_notes)
+                    with fragment.div(class_="mt-3 pt-3 border-t border-base-300"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -115,15 +117,15 @@ class OrganizationDetailView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Edit Note")
+                            fragment.text("Edit Note")
             else:
-                with card(bordered=True, classes="mb-4"):
-                    with tag.h3(
-                        classes="font-bold text-sm uppercase tracking-wide mb-3"
+                with card(bordered=True, class_="mb-4"):
+                    with fragment.h3(
+                        class_="font-bold text-sm uppercase tracking-wide mb-3"
                     ):
-                        text("Internal Note")
-                    with tag.div(classes="text-sm text-base-content/60 mb-3"):
-                        text("No internal notes")
+                        fragment.text("Internal Note")
+                    with fragment.div(class_="text-sm text-base-content/60 mb-3"):
+                        fragment.text("No internal notes")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -135,21 +137,21 @@ class OrganizationDetailView:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Add Note")
+                        fragment.text("Add Note")
 
             # Actions card
-            with card(bordered=True, classes="mb-4"):
-                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
-                    text("Actions")
+            with card(bordered=True, class_="mb-4"):
+                with fragment.h3(class_="font-bold text-sm uppercase tracking-wide mb-3"):
+                    fragment.text("Actions")
 
-                with tag.div(classes="space-y-2"):
+                with fragment.div(class_="space-y-2"):
                     # Check if organization is blocked
                     is_blocked = self.org.blocked_at is not None
 
                     # Context-aware actions based on status
                     if is_blocked:
                         # Blocked organizations can be unblocked and approved
-                        with tag.div(classes="w-full"):
+                        with fragment.div(class_="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -162,11 +164,11 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Unblock & Approve")
+                                fragment.text("Unblock & Approve")
 
                     elif self.org.status == OrganizationStatus.DENIED:
                         # Denied organizations can be approved
-                        with tag.div(classes="w-full"):
+                        with fragment.div(class_="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -179,11 +181,11 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Approve")
+                                fragment.text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
                         # Active organizations can be denied
-                        with tag.div(classes="w-full"):
+                        with fragment.div(class_="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -196,7 +198,7 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Deny")
+                                fragment.text("Deny")
 
                     elif self.org.is_under_review:
                         # Quick approve with doubled threshold
@@ -205,7 +207,7 @@ class OrganizationDetailView:
                         next_threshold = current_threshold * 2
                         next_threshold_display = f"${next_threshold / 100:,.0f}"
 
-                        with tag.div(classes="w-full"):
+                        with fragment.div(class_="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -219,7 +221,7 @@ class OrganizationDetailView:
                                 + f"?threshold={next_threshold}",
                                 hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                             ):
-                                text(f"Approve ({next_threshold_display})")
+                                fragment.text(f"Approve ({next_threshold_display})")
 
                         # Custom approve with input
                         approve_url = str(
@@ -227,12 +229,12 @@ class OrganizationDetailView:
                                 "organizations-v2:approve", organization_id=self.org.id
                             )
                         )
-                        with tag.div(classes="flex gap-2"):
-                            with tag.input(
+                        with fragment.div(class_="flex gap-2"):
+                            with fragment.input(
                                 type="number",
                                 id="custom-threshold",
                                 placeholder="Custom amount",
-                                classes="input input-bordered input-sm flex-1",
+                                class_="input input-bordered input-sm flex-1",
                             ):
                                 pass
                             with button(
@@ -241,9 +243,9 @@ class OrganizationDetailView:
                                 outline=True,
                                 onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
                             ):
-                                text("✓")
+                                fragment.text("✓")
 
-                        with tag.div(classes="w-full"):
+                        with fragment.div(class_="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
@@ -256,13 +258,13 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Deny")
+                                fragment.text("Deny")
 
                     # Always available actions
-                    with tag.div(classes="divider my-2"):
+                    with fragment.div(class_="divider my-2"):
                         pass
 
-                    with tag.div(classes="w-full"):
+                    with fragment.div(class_="w-full"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -276,9 +278,9 @@ class OrganizationDetailView:
                             + "/plain-thread",
                             hx_target="#modal",
                         ):
-                            text("Create Plain Thread")
+                            fragment.text("Create Plain Thread")
 
-                    with tag.div(classes="w-full"):
+                    with fragment.div(class_="w-full"):
                         with button(
                             variant="secondary",
                             size="sm",
@@ -291,127 +293,129 @@ class OrganizationDetailView:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Block Organization")
+                            fragment.text("Block Organization")
 
             # Metadata card
             with card(bordered=True):
-                with tag.h3(classes="font-bold text-sm uppercase tracking-wide mb-3"):
-                    text("Metadata")
+                with fragment.h3(class_="font-bold text-sm uppercase tracking-wide mb-3"):
+                    fragment.text("Metadata")
 
-                with tag.dl(classes="space-y-3 text-sm"):
+                with fragment.dl(class_="space-y-3 text-sm"):
                     # Slug (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Slug")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
-                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
+                    with fragment.div():
+                        with fragment.dt(class_="text-base-content/60 mb-1"):
+                            fragment.text("Slug")
+                        with fragment.dd(class_="flex items-center gap-2"):
+                            with fragment.code(
+                                class_="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
                             ):
-                                text(self.org.slug)
+                                fragment.text(self.org.slug)
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
                                 onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
-                                text("Copy")
+                                fragment.text("Copy")
 
                     # ID (copyable)
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Organization ID")
-                        with tag.dd(classes="flex items-center gap-2"):
-                            with tag.code(
-                                classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
+                    with fragment.div():
+                        with fragment.dt(class_="text-base-content/60 mb-1"):
+                            fragment.text("Organization ID")
+                        with fragment.dd(class_="flex items-center gap-2"):
+                            with fragment.code(
+                                class_="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
                             ):
-                                text(str(self.org.id))
+                                fragment.text(str(self.org.id))
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 ghost=True,
                                 onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
                             ):
-                                text("Copy")
+                                fragment.text("Copy")
 
                     # Created
-                    with tag.div():
-                        with tag.dt(classes="text-base-content/60 mb-1"):
-                            text("Created")
-                        with tag.dd(classes="font-semibold"):
+                    with fragment.div():
+                        with fragment.dt(class_="text-base-content/60 mb-1"):
+                            fragment.text("Created")
+                        with fragment.dd(class_="font-semibold"):
                             days_ago = (datetime.now(UTC) - self.org.created_at).days
-                            text(f"{days_ago}d ago")
+                            fragment.text(f"{days_ago}d ago")
 
                     # Status duration
                     if self.org.status_updated_at:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("In Status")
-                            with tag.dd(classes="font-semibold"):
+                        with fragment.div():
+                            with fragment.dt(class_="text-base-content/60 mb-1"):
+                                fragment.text("In Status")
+                            with fragment.dd(class_="font-semibold"):
                                 days = (
                                     datetime.now(UTC) - self.org.status_updated_at
                                 ).days
-                                text(f"{days} days")
+                                fragment.text(f"{days} days")
 
                     # Country
                     if self.org.account and self.org.account.country:
-                        with tag.div():
-                            with tag.dt(classes="text-base-content/60 mb-1"):
-                                text("Country")
-                            with tag.dd(classes="font-semibold"):
-                                text(self.org.account.country)
+                        with fragment.div():
+                            with fragment.dt(class_="text-base-content/60 mb-1"):
+                                fragment.text("Country")
+                            with fragment.dd(class_="font-semibold"):
+                                fragment.text(self.org.account.country)
 
-            yield
+        yield fragment
 
     @contextlib.contextmanager
     def main_content(
         self, request: Request, section: str = "overview"
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render main content area (delegated to section components)."""
-        with tag.main(classes="flex-1"):
+        fragment = Fragment()
+        with fragment.main(class_="flex-1"):
             # Section content will be rendered by specific section components
-            yield
+            yield fragment
 
     @contextlib.contextmanager
-    def render(self, request: Request, section: str = "overview") -> Generator[None]:
+    def render(self, request: Request, section: str = "overview") -> Generator[Fragment]:
         """Render the complete detail view with top tabs."""
+        fragment = Fragment()
 
         # Back button and header
-        with tag.div(classes="mb-6"):
-            with tag.a(
+        with fragment.div(class_="mb-6"):
+            with fragment.a(
                 href=str(request.url_for("organizations-v2:list")),
-                classes="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
+                class_="text-sm text-base-content/60 hover:text-base-content mb-2 inline-block",
             ):
-                text("← Back to Organizations")
+                fragment.text("← Back to Organizations")
 
-            with tag.div(classes="flex items-center justify-between gap-4"):
-                with tag.div(classes="flex items-center gap-3 min-w-0 flex-1"):
-                    with tag.h1(
-                        classes="text-3xl font-bold truncate",
+            with fragment.div(class_="flex items-center justify-between gap-4"):
+                with fragment.div(class_="flex items-center gap-3 min-w-0 flex-1"):
+                    with fragment.h1(
+                        class_="text-3xl font-bold truncate",
                         title=self.org.name,
                     ):
-                        text(self.org.name)
-                    with tag.div(classes="flex-shrink-0"):
+                        fragment.text(self.org.name)
+                    with fragment.div(class_="flex-shrink-0"):
                         with status_badge(self.org.status):
                             pass
 
                 # Top-right menu
-                with tag.div(classes="dropdown dropdown-end"):
-                    with tag.button(
-                        classes="btn btn-circle btn-ghost",
+                with fragment.div(class_="dropdown dropdown-end"):
+                    with fragment.button(
+                        class_="btn btn-circle btn-ghost",
                         **{"aria-label": "More options"},
                     ):
-                        text("⋮")
-                    with tag.ul(
-                        classes="dropdown-content menu shadow bg-base-100 rounded-box w-52",
+                        fragment.text("⋮")
+                    with fragment.ul(
+                        class_="dropdown-content menu shadow bg-base-100 rounded-box w-52",
                     ):
-                        with tag.li():
-                            with tag.a(
+                        with fragment.li():
+                            with fragment.a(
                                 href=f"https://app.plain.com/search?q={self.org.email or self.org.slug}",
                                 target="_blank",
                             ):
-                                text("Search in Plain")
-                        with tag.li():
-                            with tag.a(
+                                fragment.text("Search in Plain")
+                        with fragment.li():
+                            with fragment.a(
                                 hx_get=str(
                                     request.url_for(
                                         "organizations-v2:delete_dialog",
@@ -420,18 +424,18 @@ class OrganizationDetailView:
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Delete Organization")
+                                fragment.text("Delete Organization")
 
         # Section tabs
-        with tag.div(classes="mb-6"):
+        with fragment.div(class_="mb-6"):
             with self.section_tabs(request, section):
                 pass
 
         # Two-column layout: main content + right sidebar
-        with tag.div(classes="flex gap-6"):
+        with fragment.div(class_="flex gap-6"):
             # Main content (will be filled by section components)
             with self.main_content(request, section):
-                yield
+                yield fragment
 
             # Right sidebar
             with self.right_sidebar(request):

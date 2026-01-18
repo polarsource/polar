@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.models import Organization
 
@@ -18,15 +18,16 @@ class SettingsSection:
         self.org = organization
 
     @contextlib.contextmanager
-    def render(self, request: Request) -> Generator[None]:
+    def render(self, request: Request) -> Generator[Fragment]:
         """Render the settings section."""
+        fragment = Fragment()
 
-        with tag.div(classes="space-y-6"):
+        with fragment.div(class_="space-y-6"):
             # Basic settings card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Basic Settings")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Basic Settings")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -38,39 +39,39 @@ class SettingsSection:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
+                        fragment.text("Edit")
 
-                with tag.div(classes="space-y-4"):
-                    with tag.div(classes="grid grid-cols-2 gap-4"):
-                        with tag.div():
-                            with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                                text("Name")
-                            with tag.div(classes="font-semibold"):
-                                text(self.org.name)
+                with fragment.div(class_="space-y-4"):
+                    with fragment.div(class_="grid grid-cols-2 gap-4"):
+                        with fragment.div():
+                            with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                                fragment.text("Name")
+                            with fragment.div(class_="font-semibold"):
+                                fragment.text(self.org.name)
 
-                        with tag.div():
-                            with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                                text("Slug")
-                            with tag.div(classes="font-mono text-sm"):
-                                text(self.org.slug)
+                        with fragment.div():
+                            with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                                fragment.text("Slug")
+                            with fragment.div(class_="font-mono text-sm"):
+                                fragment.text(self.org.slug)
 
-                    with tag.div():
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Email")
-                        with tag.div(classes="text-sm"):
-                            text(self.org.email or "Not set")
+                    with fragment.div():
+                        with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            fragment.text("Email")
+                        with fragment.div(class_="text-sm"):
+                            fragment.text(self.org.email or "Not set")
 
-                    with tag.div():
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Customer Invoice Prefix")
-                        with tag.div(classes="font-mono text-sm"):
-                            text(self.org.customer_invoice_prefix)
+                    with fragment.div():
+                        with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            fragment.text("Customer Invoice Prefix")
+                        with fragment.div(class_="font-mono text-sm"):
+                            fragment.text(self.org.customer_invoice_prefix)
 
             # Order settings card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Order Settings")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Order Settings")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -83,13 +84,13 @@ class SettingsSection:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
+                        fragment.text("Edit")
 
-                with tag.div(classes="space-y-4"):
-                    with tag.div():
-                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
-                            text("Invoice Numbering")
-                        with tag.div(classes="text-sm"):
+                with fragment.div(class_="space-y-4"):
+                    with fragment.div():
+                        with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            fragment.text("Invoice Numbering")
+                        with fragment.div(class_="text-sm"):
                             invoice_numbering = self.org.order_settings.get(
                                 "invoice_numbering", "organization"
                             )
@@ -98,13 +99,13 @@ class SettingsSection:
                                 if invoice_numbering == "organization"
                                 else "Per-customer"
                             )
-                            text(numbering_label)
+                            fragment.text(numbering_label)
 
             # Feature flags card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Feature Flags")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Feature Flags")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -117,9 +118,9 @@ class SettingsSection:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
+                        fragment.text("Edit")
 
-                with tag.div(classes="space-y-2"):
+                with fragment.div(class_="space-y-2"):
                     # Import OrganizationFeatureSettings to iterate over feature flags
                     from polar.organization.schemas import OrganizationFeatureSettings
 
@@ -131,32 +132,32 @@ class SettingsSection:
                             enabled = feature_settings.get(field_name, False)
                             label = field_name.replace("_", " ").title()
 
-                            with tag.div(classes="flex items-center gap-2"):
+                            with fragment.div(class_="flex items-center gap-2"):
                                 # Status indicator
                                 status_class = (
                                     "bg-success" if enabled else "bg-base-300"
                                 )
-                                with tag.div(
-                                    classes=f"w-2 h-2 rounded-full {status_class}"
+                                with fragment.div(
+                                    class_=f"w-2 h-2 rounded-full {status_class}"
                                 ):
                                     pass
-                                with tag.div(classes="text-sm"):
-                                    text(label)
-                                with tag.div(
-                                    classes="text-xs text-base-content/60 ml-auto"
+                                with fragment.div(class_="text-sm"):
+                                    fragment.text(label)
+                                with fragment.div(
+                                    class_="text-xs text-base-content/60 ml-auto"
                                 ):
-                                    text("Enabled" if enabled else "Disabled")
+                                    fragment.text("Enabled" if enabled else "Disabled")
                     else:
-                        with tag.div(
-                            classes="text-sm text-base-content/60 text-center py-4"
+                        with fragment.div(
+                            class_="text-sm text-base-content/60 text-center py-4"
                         ):
-                            text("No feature flags configured")
+                            fragment.text("No feature flags configured")
 
             # Organization details card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Organization Details")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Organization Details")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -169,63 +170,63 @@ class SettingsSection:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
+                        fragment.text("Edit")
 
-                with tag.div(classes="space-y-4"):
+                with fragment.div(class_="space-y-4"):
                     # Website
                     if self.org.website:
-                        with tag.div():
-                            with tag.div(classes="text-sm font-semibold mb-2"):
-                                text("Website")
-                            with tag.div(classes="text-sm text-base-content/80"):
-                                with tag.a(
+                        with fragment.div():
+                            with fragment.div(class_="text-sm font-semibold mb-2"):
+                                fragment.text("Website")
+                            with fragment.div(class_="text-sm text-base-content/80"):
+                                with fragment.a(
                                     href=str(self.org.website),
                                     target="_blank",
                                     rel="noopener noreferrer",
-                                    classes="link link-primary",
+                                    class_="link link-primary",
                                 ):
-                                    text(str(self.org.website))
+                                    fragment.text(str(self.org.website))
 
                     if hasattr(self.org, "details") and self.org.details:
                         details = self.org.details
 
                         if details.get("about"):
-                            with tag.div():
-                                with tag.div(classes="text-sm font-semibold mb-2"):
-                                    text("About")
-                                with tag.div(
-                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                            with fragment.div():
+                                with fragment.div(class_="text-sm font-semibold mb-2"):
+                                    fragment.text("About")
+                                with fragment.div(
+                                    class_="text-sm text-base-content/80 whitespace-pre-wrap"
                                 ):
-                                    text(details["about"])
+                                    fragment.text(details["about"])
 
                         if details.get("product_description"):
-                            with tag.div():
-                                with tag.div(classes="text-sm font-semibold mb-2"):
-                                    text("Product Description")
-                                with tag.div(
-                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                            with fragment.div():
+                                with fragment.div(class_="text-sm font-semibold mb-2"):
+                                    fragment.text("Product Description")
+                                with fragment.div(
+                                    class_="text-sm text-base-content/80 whitespace-pre-wrap"
                                 ):
-                                    text(details["product_description"])
+                                    fragment.text(details["product_description"])
 
                         if details.get("intended_use"):
-                            with tag.div():
-                                with tag.div(classes="text-sm font-semibold mb-2"):
-                                    text("Intended Use")
-                                with tag.div(
-                                    classes="text-sm text-base-content/80 whitespace-pre-wrap"
+                            with fragment.div():
+                                with fragment.div(class_="text-sm font-semibold mb-2"):
+                                    fragment.text("Intended Use")
+                                with fragment.div(
+                                    class_="text-sm text-base-content/80 whitespace-pre-wrap"
                                 ):
-                                    text(details["intended_use"])
+                                    fragment.text(details["intended_use"])
                     else:
-                        with tag.div(
-                            classes="text-sm text-base-content/60 text-center py-4"
+                        with fragment.div(
+                            class_="text-sm text-base-content/60 text-center py-4"
                         ):
-                            text("No details provided")
+                            fragment.text("No details provided")
 
             # Social media links card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Social Media Links")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Social Media Links")
                     with button(
                         variant="secondary",
                         size="sm",
@@ -238,47 +239,47 @@ class SettingsSection:
                         ),
                         hx_target="#modal",
                     ):
-                        text("Edit")
+                        fragment.text("Edit")
 
                 socials = self.org.socials or []
                 if socials:
-                    with tag.div(classes="space-y-3"):
+                    with fragment.div(class_="space-y-3"):
                         for social in socials:
                             platform = social.get("platform", "").title()
                             url = social.get("url", "")
                             if platform and url:
-                                with tag.div(
-                                    classes="flex items-center justify-between py-1.5"
+                                with fragment.div(
+                                    class_="flex items-center justify-between py-1.5"
                                 ):
-                                    with tag.span(
-                                        classes="text-sm font-medium capitalize"
+                                    with fragment.span(
+                                        class_="text-sm font-medium capitalize"
                                     ):
-                                        text(platform)
-                                    with tag.a(
+                                        fragment.text(platform)
+                                    with fragment.a(
                                         href=url,
                                         target="_blank",
                                         rel="noopener noreferrer",
-                                        classes="text-sm link link-primary truncate max-w-xs",
+                                        class_="text-sm link link-primary truncate max-w-xs",
                                     ):
-                                        text(url)
+                                        fragment.text(url)
                 else:
-                    with tag.div(
-                        classes="text-sm text-base-content/60 text-center py-4"
+                    with fragment.div(
+                        class_="text-sm text-base-content/60 text-center py-4"
                     ):
-                        text("No social media links configured")
+                        fragment.text("No social media links configured")
 
             # Danger zone card
             with card(bordered=True, classes="border-error/20 bg-error/5"):
-                with tag.h2(classes="text-lg font-bold mb-4 text-error"):
-                    text("Danger Zone")
+                with fragment.h2(class_="text-lg font-bold mb-4 text-error"):
+                    fragment.text("Danger Zone")
 
-                with tag.div(classes="space-y-3"):
-                    with tag.div(classes="flex items-center justify-between"):
-                        with tag.div():
-                            with tag.div(classes="font-semibold text-sm"):
-                                text("Delete Organization")
-                            with tag.div(classes="text-xs text-base-content/60"):
-                                text(
+                with fragment.div(class_="space-y-3"):
+                    with fragment.div(class_="flex items-center justify-between"):
+                        with fragment.div():
+                            with fragment.div(class_="font-semibold text-sm"):
+                                fragment.text("Delete Organization")
+                            with fragment.div(class_="text-xs text-base-content/60"):
+                                fragment.text(
                                     "Permanently delete this organization and all associated data"
                                 )
 
@@ -294,9 +295,9 @@ class SettingsSection:
                             ),
                             hx_target="#modal",
                         ):
-                            text("Delete")
+                            fragment.text("Delete")
 
-            yield
+            yield fragment
 
 
 __all__ = ["SettingsSection"]

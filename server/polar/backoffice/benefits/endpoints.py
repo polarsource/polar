@@ -3,10 +3,10 @@ import uuid
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
-from tagflow import tag, text
 
 from polar.benefit import sorting
 from polar.benefit.repository import BenefitRepository
@@ -58,7 +58,7 @@ async def list(
         BenefitType | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = BenefitRepository.from_session(session)
     statement = repository.get_base_statement().options(
         joinedload(Benefit.organization)
@@ -88,13 +88,13 @@ async def list(
             ("Benefits", str(request.url_for("benefits:list"))),
         ],
         "benefits:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Benefits")
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Benefits")
 
             # Filters
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search(
                     "query", query, placeholder="Search by ID, Organization ID, or name"
                 ):
@@ -115,7 +115,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    pass
 
             # Results table
             with datatable.Datatable[Benefit, BenefitSortProperty](
@@ -139,6 +139,7 @@ async def list(
 
             with datatable.pagination(request, pagination, count):
                 pass
+    return page
 
 
 async def _get_github_repository_invitations(
@@ -192,7 +193,7 @@ async def get(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> Any:
+) -> Fragment:
     repository = BenefitRepository.from_session(session)
     benefit = await repository.get_by_id(id)
 
@@ -211,11 +212,11 @@ async def get(
             ("Benefits", str(request.url_for("benefits:list"))),
         ],
         "benefits:get",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex flex-row items-center gap-2"):
-                with tag.h1(classes="text-4xl"):
-                    text(benefit.description)
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.div(class_="flex flex-row items-center gap-2"):
+                with page.h1(class_="text-4xl"):
+                    page.text(benefit.description)
 
             # Benefit details
             with description_list.DescriptionList[Benefit](
@@ -235,61 +236,62 @@ async def get(
                 pass
 
             # Properties section
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Properties")
-                with tag.div(classes="bg-gray-50 p-4 rounded-lg"):
-                    with tag.pre(classes="whitespace-pre-wrap text-sm"):
+            with page.div(class_="flex flex-col gap-4 pt-8"):
+                with page.h2(class_="text-2xl"):
+                    page.text("Properties")
+                with page.div(class_="bg-gray-50 p-4 rounded-lg"):
+                    with page.pre(class_="whitespace-pre-wrap text-sm"):
                         import json
 
-                        text(json.dumps(benefit.properties, indent=2))
+                        page.text(json.dumps(benefit.properties, indent=2))
 
             # GitHub repository invitations section
             if benefit.type == BenefitType.github_repository:
-                with tag.div(classes="flex flex-col gap-4 pt-8"):
-                    with tag.h2(classes="text-2xl"):
-                        text("Pending GitHub Repository Invitations")
+                with page.div(class_="flex flex-col gap-4 pt-8"):
+                    with page.h2(class_="text-2xl"):
+                        page.text("Pending GitHub Repository Invitations")
                     if not github_invitations:
-                        with tag.div(classes="text-gray-500"):
-                            text("No pending invitations found for this repository.")
+                        with page.div(class_="text-gray-500"):
+                            page.text("No pending invitations found for this repository.")
                     else:
-                        with tag.div(classes="overflow-x-auto"):
-                            with tag.table(classes="table table-zebra w-full"):
-                                with tag.thead():
-                                    with tag.tr():
-                                        with tag.th():
-                                            text("ID")
-                                        with tag.th():
-                                            text("Invitee")
-                                        with tag.th():
-                                            text("GitHub ID")
-                                        with tag.th():
-                                            text("Permissions")
-                                        with tag.th():
-                                            text("Created At")
-                                with tag.tbody():
+                        with page.div(class_="overflow-x-auto"):
+                            with page.table(class_="table table-zebra w-full"):
+                                with page.thead():
+                                    with page.tr():
+                                        with page.th():
+                                            page.text("ID")
+                                        with page.th():
+                                            page.text("Invitee")
+                                        with page.th():
+                                            page.text("GitHub ID")
+                                        with page.th():
+                                            page.text("Permissions")
+                                        with page.th():
+                                            page.text("Created At")
+                                with page.tbody():
                                     for invitation in github_invitations:
-                                        with tag.tr():
-                                            with tag.td():
-                                                text(str(invitation["id"]))
-                                            with tag.td():
-                                                text(
+                                        with page.tr():
+                                            with page.td():
+                                                page.text(str(invitation["id"]))
+                                            with page.td():
+                                                page.text(
                                                     invitation["invitee_login"] or "N/A"
                                                 )
-                                            with tag.td():
-                                                text(
+                                            with page.td():
+                                                page.text(
                                                     str(invitation["invitee_id"])
                                                     if invitation["invitee_id"]
                                                     else "N/A"
                                                 )
-                                            with tag.td():
-                                                text(invitation["permissions"])
-                                            with tag.td():
+                                            with page.td():
+                                                page.text(invitation["permissions"])
+                                            with page.td():
                                                 if invitation["created_at"]:
-                                                    text(
+                                                    page.text(
                                                         invitation[
                                                             "created_at"
                                                         ].strftime("%Y-%m-%d %H:%M:%S")
                                                     )
                                                 else:
-                                                    text("N/A")
+                                                    page.text("N/A")
+    return page

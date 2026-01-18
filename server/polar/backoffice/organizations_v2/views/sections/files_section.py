@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.file.service import file as file_service
 from polar.models import File, Organization
@@ -35,75 +35,76 @@ class FilesSection:
             return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
 
     @contextlib.contextmanager
-    def render(self, request: Request) -> Generator[None]:
+    def render(self, request: Request) -> Generator[Fragment]:
         """Render the files section."""
+        fragment = Fragment()
 
-        with tag.div(classes="space-y-6"):
+        with fragment.div(class_="space-y-6"):
             # Files list card
             with card(bordered=True):
-                with tag.div(classes="flex items-center justify-between mb-4"):
-                    with tag.h2(classes="text-lg font-bold"):
-                        text("Downloadable Files")
-                    with tag.div(classes="text-sm text-base-content/60"):
-                        text(f"{len(self.files)} file(s)")
+                with fragment.div(class_="flex items-center justify-between mb-4"):
+                    with fragment.h2(class_="text-lg font-bold"):
+                        fragment.text("Downloadable Files")
+                    with fragment.div(class_="text-sm text-base-content/60"):
+                        fragment.text(f"{len(self.files)} file(s)")
 
                 if self.files:
                     # Files table
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("Name")
-                                    with tag.th():
-                                        text("Type")
-                                    with tag.th():
-                                        text("Size")
-                                    with tag.th():
-                                        text("Created")
-                                    with tag.th():
-                                        text("Actions")
+                    with fragment.div(class_="overflow-x-auto"):
+                        with fragment.table(class_="table table-zebra w-full"):
+                            with fragment.thead():
+                                with fragment.tr():
+                                    with fragment.th():
+                                        fragment.text("Name")
+                                    with fragment.th():
+                                        fragment.text("Type")
+                                    with fragment.th():
+                                        fragment.text("Size")
+                                    with fragment.th():
+                                        fragment.text("Created")
+                                    with fragment.th():
+                                        fragment.text("Actions")
 
-                            with tag.tbody():
+                            with fragment.tbody():
                                 for file in self.files:
                                     # Generate presigned download URL
                                     download_url, _ = (
                                         file_service.generate_download_url(file)
                                     )
 
-                                    with tag.tr():
-                                        with tag.td():
-                                            with tag.div(classes="font-medium"):
-                                                text(file.name)
+                                    with fragment.tr():
+                                        with fragment.td():
+                                            with fragment.div(class_="font-medium"):
+                                                fragment.text(file.name)
 
-                                        with tag.td():
-                                            with tag.span(
-                                                classes="badge badge-sm badge-ghost"
+                                        with fragment.td():
+                                            with fragment.span(
+                                                class_="badge badge-sm badge-ghost"
                                             ):
-                                                text(file.mime_type or "unknown")
+                                                fragment.text(file.mime_type or "unknown")
 
-                                        with tag.td():
-                                            text(
+                                        with fragment.td():
+                                            fragment.text(
                                                 self.format_file_size(file.size)
                                                 if file.size
                                                 else "N/A"
                                             )
 
-                                        with tag.td():
-                                            text(
+                                        with fragment.td():
+                                            fragment.text(
                                                 file.created_at.strftime("%Y-%m-%d")
                                                 if file.created_at
                                                 else "N/A"
                                             )
 
-                                        with tag.td():
-                                            with tag.a(
+                                        with fragment.td():
+                                            with fragment.a(
                                                 href=download_url,
                                                 target="_blank",
                                                 rel="noopener noreferrer",
-                                                classes="btn btn-sm btn-ghost",
+                                                class_="btn btn-sm btn-ghost",
                                             ):
-                                                text("Download")
+                                                fragment.text("Download")
                 else:
                     with empty_state(
                         "No Files",
@@ -113,25 +114,25 @@ class FilesSection:
 
             # File storage info
             with card(bordered=True):
-                with tag.h3(classes="text-md font-bold mb-3"):
-                    text("Storage Information")
+                with fragment.h3(class_="text-md font-bold mb-3"):
+                    fragment.text("Storage Information")
 
-                with tag.div(classes="space-y-2 text-sm"):
+                with fragment.div(class_="space-y-2 text-sm"):
                     total_size = sum(f.size for f in self.files if f.size)
 
-                    with tag.div(classes="flex justify-between"):
-                        with tag.span(classes="text-base-content/60"):
-                            text("Total Files:")
-                        with tag.span(classes="font-semibold"):
-                            text(str(len(self.files)))
+                    with fragment.div(class_="flex justify-between"):
+                        with fragment.span(class_="text-base-content/60"):
+                            fragment.text("Total Files:")
+                        with fragment.span(class_="font-semibold"):
+                            fragment.text(str(len(self.files)))
 
-                    with tag.div(classes="flex justify-between"):
-                        with tag.span(classes="text-base-content/60"):
-                            text("Total Size:")
-                        with tag.span(classes="font-semibold"):
-                            text(self.format_file_size(total_size))
+                    with fragment.div(class_="flex justify-between"):
+                        with fragment.span(class_="text-base-content/60"):
+                            fragment.text("Total Size:")
+                        with fragment.span(class_="font-semibold"):
+                            fragment.text(self.format_file_size(total_size))
 
-            yield
+            yield fragment
 
 
 __all__ = ["FilesSection"]

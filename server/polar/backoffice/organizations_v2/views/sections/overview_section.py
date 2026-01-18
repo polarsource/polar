@@ -4,7 +4,7 @@ import contextlib
 from collections.abc import Generator
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from polar.models import Organization
 
@@ -19,8 +19,9 @@ class OverviewSection:
         self.org = organization
 
     @contextlib.contextmanager
-    def ai_review_card(self) -> Generator[None]:
+    def ai_review_card(self) -> Generator[Fragment]:
         """Render AI review verdict card."""
+        fragment = Fragment()
         # Determine if risk is elevated
         has_elevated_risk = (
             self.org.review
@@ -32,78 +33,79 @@ class OverviewSection:
         border_class = "border-l-4 border-l-error" if has_elevated_risk else ""
 
         with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("AI Review")
+            with fragment.h2(class_="text-lg font-bold mb-4"):
+                fragment.text("AI Review")
 
             if not self.org.review:
-                with tag.p(classes="text-base-content/60"):
-                    text("No review available yet.")
+                with fragment.p(class_="text-base-content/60"):
+                    fragment.text("No review available yet.")
             else:
                 review = self.org.review
 
                 # Verdict badge
-                with tag.div(classes="flex items-center gap-3 mb-3"):
-                    with tag.span(
-                        classes="badge badge-ghost border border-base-300 badge-lg"
+                with fragment.div(class_="flex items-center gap-3 mb-3"):
+                    with fragment.span(
+                        class_="badge badge-ghost border border-base-300 badge-lg"
                     ):
-                        text(review.verdict or "N/A")
+                        fragment.text(review.verdict or "N/A")
 
                     if review.risk_score is not None:
-                        with tag.span(classes="text-lg font-bold"):
-                            text(f"Risk: {review.risk_score}")
+                        with fragment.span(class_="text-lg font-bold"):
+                            fragment.text(f"Risk: {review.risk_score}")
 
                 # Violated sections
                 if review.violated_sections:
-                    with tag.div(classes="mb-3"):
-                        with tag.div(classes="text-sm font-semibold mb-1"):
-                            text("Violated Sections:")
-                        with tag.div(classes="flex flex-wrap gap-1"):
+                    with fragment.div(class_="mb-3"):
+                        with fragment.div(class_="text-sm font-semibold mb-1"):
+                            fragment.text("Violated Sections:")
+                        with fragment.div(class_="flex flex-wrap gap-1"):
                             for section in review.violated_sections:
-                                with tag.span(
-                                    classes="badge badge-ghost border border-base-300 badge-sm"
+                                with fragment.span(
+                                    class_="badge badge-ghost border border-base-300 badge-sm"
                                 ):
-                                    text(section)
+                                    fragment.text(section)
 
                 # Assessment reason
                 if review.reason:
-                    with tag.div(
-                        classes="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
+                    with fragment.div(
+                        class_="text-sm text-base-content/80 p-3 bg-base-200 rounded mt-3"
                     ):
-                        text(review.reason)
+                        fragment.text(review.reason)
 
                 # Appeal information
                 if review.appeal_submitted_at:
-                    with tag.div(
-                        classes="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
+                    with fragment.div(
+                        class_="mt-4 p-3 border-l-4 border-base-300 bg-base-100 rounded"
                     ):
-                        with tag.div(classes="font-semibold mb-1"):
-                            text("Appeal Submitted")
+                        with fragment.div(class_="font-semibold mb-1"):
+                            fragment.text("Appeal Submitted")
                         if review.appeal_reason:
-                            with tag.div(classes="text-sm text-base-content/70"):
-                                text(review.appeal_reason)
+                            with fragment.div(class_="text-sm text-base-content/70"):
+                                fragment.text(review.appeal_reason)
 
                         if review.appeal_reviewed_at:
-                            with tag.div(classes="mt-2 text-sm"):
-                                with tag.span(classes="font-semibold"):
-                                    text(f"Decision: {review.appeal_decision}")
+                            with fragment.div(class_="mt-2 text-sm"):
+                                with fragment.span(class_="font-semibold"):
+                                    fragment.text(f"Decision: {review.appeal_decision}")
 
-            yield
+        yield fragment
 
     @contextlib.contextmanager
     def setup_card(
         self, setup_data: dict[str, int | bool] | None = None
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render setup verdict card."""
+        fragment = Fragment()
         with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Setup Status")
+            with fragment.h2(class_="text-lg font-bold mb-4"):
+                fragment.text("Setup Status")
 
             if not setup_data:
-                with tag.p(classes="text-base-content/60"):
-                    text("Setup metrics not available.")
+                with fragment.p(class_="text-base-content/60"):
+                    fragment.text("Setup metrics not available.")
             else:
                 # Metrics including payment ready
-                with tag.div(classes="space-y-2"):
+                with fragment.div(class_="space-y-2"):
                     payment_ready = setup_data.get("payment_ready", False)
 
                     metrics = [
@@ -116,62 +118,63 @@ class OverviewSection:
                     ]
 
                     for label, value in metrics:
-                        with tag.div(
-                            classes="flex items-center justify-between py-1.5 border-b border-base-200"
+                        with fragment.div(
+                            class_="flex items-center justify-between py-1.5 border-b border-base-200"
                         ):
-                            with tag.span(classes="text-sm"):
-                                text(label)
-                            with tag.span(classes="font-mono text-sm font-semibold"):
-                                text(str(value))
+                            with fragment.span(class_="text-sm"):
+                                fragment.text(label)
+                            with fragment.span(class_="font-mono text-sm font-semibold"):
+                                fragment.text(str(value))
 
-            yield
+        yield fragment
 
     @contextlib.contextmanager
     def payment_card(
         self, payment_stats: dict[str, int | float] | None = None
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render payment statistics card."""
+        fragment = Fragment()
         # Check if payment risk is high
         p90_risk = payment_stats.get("p90_risk", 0) if payment_stats else 0
         has_high_risk = p90_risk >= 75
         border_class = "border-l-4 border-l-warning" if has_high_risk else ""
 
         with card(bordered=True, classes=border_class):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Payment Metrics")
+            with fragment.h2(class_="text-lg font-bold mb-4"):
+                fragment.text("Payment Metrics")
 
             if not payment_stats:
-                with tag.p(classes="text-base-content/60"):
-                    text("No payment data available.")
+                with fragment.p(class_="text-base-content/60"):
+                    fragment.text("No payment data available.")
             else:
                 # Next review threshold and total transfers at top
                 next_review_threshold = payment_stats.get("next_review_threshold")
                 total_transfer_sum = payment_stats.get("total_transfer_sum")
 
                 if next_review_threshold or total_transfer_sum:
-                    with tag.div(
-                        classes="space-y-2 mb-4 pb-4 border-b border-base-200"
+                    with fragment.div(
+                        class_="space-y-2 mb-4 pb-4 border-b border-base-200"
                     ):
                         if next_review_threshold:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Next Review")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
+                            with fragment.div(class_="flex items-center justify-between"):
+                                with fragment.span(class_="text-sm text-base-content/60"):
+                                    fragment.text("Next Review")
+                                with fragment.span(
+                                    class_="font-mono text-sm font-semibold"
                                 ):
-                                    text(f"${next_review_threshold / 100:,.0f}")
+                                    fragment.text(f"${next_review_threshold / 100:,.0f}")
 
                         if total_transfer_sum:
-                            with tag.div(classes="flex items-center justify-between"):
-                                with tag.span(classes="text-sm text-base-content/60"):
-                                    text("Total Transfers")
-                                with tag.span(
-                                    classes="font-mono text-sm font-semibold"
+                            with fragment.div(class_="flex items-center justify-between"):
+                                with fragment.span(class_="text-sm text-base-content/60"):
+                                    fragment.text("Total Transfers")
+                                with fragment.span(
+                                    class_="font-mono text-sm font-semibold"
                                 ):
-                                    text(f"${total_transfer_sum / 100:,.2f}")
+                                    fragment.text(f"${total_transfer_sum / 100:,.2f}")
 
                 # Payment metrics
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
+                with fragment.div(class_="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "Total Payments",
                         payment_stats.get("payment_count", 0),
@@ -195,7 +198,7 @@ class OverviewSection:
                 else:
                     risk_variant = "default"
 
-                with tag.div(classes="grid grid-cols-2 gap-3 mb-3"):
+                with fragment.div(class_="grid grid-cols-2 gap-3 mb-3"):
                     with metric_card(
                         "P50 Risk",
                         payment_stats.get("p50_risk", 0),
@@ -222,7 +225,7 @@ class OverviewSection:
                     else "default"
                 )
 
-                with tag.div(classes="grid grid-cols-2 gap-3"):
+                with fragment.div(class_="grid grid-cols-2 gap-3"):
                     with metric_card(
                         "Refunds",
                         payment_stats.get("refunds_count", 0),
@@ -239,7 +242,7 @@ class OverviewSection:
                     ):
                         pass
 
-            yield
+        yield fragment
 
     @contextlib.contextmanager
     def render(
@@ -247,12 +250,13 @@ class OverviewSection:
         request: Request,
         setup_data: dict[str, int | bool] | None = None,
         payment_stats: dict[str, int | float] | None = None,
-    ) -> Generator[None]:
+    ) -> Generator[Fragment]:
         """Render the complete overview section."""
+        fragment = Fragment()
 
-        with tag.div(classes="space-y-6"):
+        with fragment.div(class_="space-y-6"):
             # Review status cards in a grid
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-6"):
+            with fragment.div(class_="grid grid-cols-1 lg:grid-cols-3 gap-6"):
                 with self.ai_review_card():
                     pass
 
@@ -262,7 +266,7 @@ class OverviewSection:
                 with self.payment_card(payment_stats):
                     pass
 
-            yield
+            yield fragment
 
 
 __all__ = ["OverviewSection"]

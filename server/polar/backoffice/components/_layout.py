@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import tag, text
+from markupflow import Fragment
 
 from ._base import base, title
 from ._navigation import NavigationItem
@@ -12,10 +12,11 @@ from ._navigation import NavigationItem
 def content(
     request: Request,
     breadcrumbs: Sequence[tuple[str, str]],
-) -> Generator[None]:
-    with tag.div(classes="breadcrumbs text-sm"):
-        with tag.ul():
-            for title, href in reversed(
+) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="breadcrumbs text-sm"):
+        with fragment.ul():
+            for title_text, href in reversed(
                 [
                     *breadcrumbs,
                     (
@@ -24,10 +25,10 @@ def content(
                     ),
                 ]
             ):
-                with tag.li():
-                    with tag.a(href=href):
-                        text(title)
-        yield
+                with fragment.li():
+                    with fragment.a(href=href):
+                        fragment.text(title_text)
+        yield fragment
 
 
 @contextlib.contextmanager
@@ -35,12 +36,13 @@ def menu(
     request: Request,
     navigation: list[NavigationItem],
     active_route_name: str,
-) -> Generator[None]:
-    with tag.ul(classes="menu w-full", id="menu", hx_swap_oob="true"):
+) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.ul(class_="menu w-full", id="menu", hx_swap_oob="true"):
         for item in navigation:
             with item.render(request, active_route_name):
                 pass
-    yield
+    yield fragment
 
 
 @contextlib.contextmanager
@@ -49,8 +51,8 @@ def layout(
     breadcrumbs: Sequence[tuple[str, str]],
     navigation: list[NavigationItem],
     active_route_name: str,
-) -> Generator[None]:
-    title_parts = [title for title, href in breadcrumbs]
+) -> Generator[Fragment]:
+    title_parts = [title_text for title_text, href in breadcrumbs]
     if (
         request.headers.get("HX-Boosted")
         and request.headers.get("HX-Target") == "content"
@@ -64,48 +66,49 @@ def layout(
         return
 
     with base(request, title_parts):
-        with tag.div(classes="drawer lg:drawer-open"):
-            with tag.input(id="menu-toggle", type="checkbox", classes="drawer-toggle"):
+        fragment = Fragment()
+        with fragment.div(class_="drawer lg:drawer-open"):
+            with fragment.input(id="menu-toggle", type="checkbox", class_="drawer-toggle"):
                 pass
-            with tag.main(classes="drawer-content"):
-                with tag.div(classes="flex flex-row items-center"):
-                    with tag.label(
-                        classes="btn btn-ghost drawer-button lg:hidden",
+            with fragment.main(class_="drawer-content"):
+                with fragment.div(class_="flex flex-row items-center"):
+                    with fragment.label(
+                        class_="btn btn-ghost drawer-button lg:hidden",
                         **{"for": "menu-toggle"},
                     ):
-                        with tag.div(classes="icon-menu"):
+                        with fragment.div(class_="icon-menu"):
                             pass
-                with tag.div(classes="flex flex-col gap-4 p-4"):
-                    with tag.div(
+                with fragment.div(class_="flex flex-col gap-4 p-4"):
+                    with fragment.div(
                         id="content",
-                        classes="h-full w-full",
+                        class_="h-full w-full",
                         hx_boost="true",
                         hx_target="#content",
                     ):
                         with content(request, breadcrumbs):
-                            yield
-            with tag.aside(classes="drawer-side"):
-                with tag.label(
-                    classes="drawer-overlay",
+                            yield fragment
+            with fragment.aside(class_="drawer-side"):
+                with fragment.label(
+                    class_="drawer-overlay",
                     **{"for": "menu-toggle"},
                 ):
                     pass
 
-                with tag.div(
-                    classes="bg-base-200 text-base-content min-h-full w-60 p-4 flex flex-col gap-4"
+                with fragment.div(
+                    class_="bg-base-200 text-base-content min-h-full w-60 p-4 flex flex-col gap-4"
                 ):
-                    with tag.a(
+                    with fragment.a(
                         href=str(request.url_for("index")),
-                        classes="flex justify-center",
+                        class_="flex justify-center",
                     ):
-                        with tag.img(
+                        with fragment.img(
                             src=str(request.url_for("static", path="logo.light.svg")),
-                            classes="h-8 dark:hidden",
+                            class_="h-8 dark:hidden",
                         ):
                             pass
-                        with tag.img(
+                        with fragment.img(
                             src=str(request.url_for("static", path="logo.dark.svg")),
-                            classes="h-8 dark:block hidden",
+                            class_="h-8 dark:block hidden",
                         ):
                             pass
                     with menu(request, navigation, active_route_name):

@@ -1,11 +1,11 @@
 import contextlib
 from collections.abc import Generator
 
-from tagflow import tag, text
+from markupflow import Fragment
 
 
 @contextlib.contextmanager
-def item(accordion_name: str, title: str) -> Generator[None]:
+def item(accordion_name: str, title: str) -> Generator[Fragment]:
     """Create an accordion item component using DaisyUI collapse styling.
 
     Generates a collapsible accordion item with a radio button control mechanism.
@@ -20,20 +20,21 @@ def item(accordion_name: str, title: str) -> Generator[None]:
         title: The text to display in the accordion header/title area.
 
     Example:
-        >>> with item("settings-accordion", "General Settings"):
-        ...     with tag.p():
-        ...         text("Configuration options here")
-        >>> with item("settings-accordion", "Advanced Settings"):
-        ...     with tag.p():
-        ...         text("Advanced options here")
+        >>> with item("settings-accordion", "General Settings") as accordion:
+        ...     with accordion.p():
+        ...         accordion.text("Configuration options here")
+        >>> with item("settings-accordion", "Advanced Settings") as accordion:
+        ...     with accordion.p():
+        ...         accordion.text("Advanced options here")
     """
-    with tag.div(classes="collapse collapse-arrow bg-base-100 border border-base-300"):
-        with tag.input(type="radio", name=accordion_name):
+    fragment = Fragment()
+    with fragment.div(class_="collapse collapse-arrow bg-base-100 border border-base-300"):
+        with fragment.input(type="radio", name=accordion_name):
             pass
-        with tag.div(classes="collapse-title font-semibold"):
-            text(title)
-        with tag.div(classes="collapse-content"):
-            yield
+        with fragment.div(class_="collapse-title font-semibold"):
+            fragment.text(title)
+        with fragment.div(class_="collapse-content"):
+            yield fragment
 
 
 __all__ = ["item"]

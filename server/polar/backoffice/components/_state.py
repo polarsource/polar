@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import tag, text
+from markupflow import Fragment
 
 
 @contextlib.contextmanager
@@ -11,7 +11,7 @@ def empty_state(
     description: str | None = None,
     icon: str | None = None,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create an empty state component for when there's no data.
 
     Generates a centered, styled empty state display with optional icon,
@@ -24,29 +24,30 @@ def empty_state(
         **kwargs: Additional HTML attributes.
 
     Yields:
-        None: Context manager yields control for action buttons or additional content.
+        Fragment: The fragment for adding action buttons or additional content.
 
     Example:
-        >>> with empty_state("No Organizations", "Create your first organization", icon="📁"):
-        ...     with button(variant="primary"):
-        ...         text("Create Organization")
+        >>> with empty_state("No Organizations", "Create your first organization", icon="📁") as state:
+        ...     with state.fragment(button(variant="primary")) as btn:
+        ...         btn.text("Create Organization")
     """
-    with tag.div(
-        classes="flex flex-col items-center justify-center py-12 px-4 text-center",
+    fragment = Fragment()
+    with fragment.div(
+        class_="flex flex-col items-center justify-center py-12 px-4 text-center",
         **kwargs,
     ):
         if icon:
-            with tag.div(classes="text-6xl mb-4 opacity-50"):
-                text(icon)
+            with fragment.div(class_="text-6xl mb-4 opacity-50"):
+                fragment.text(icon)
 
-        with tag.h3(classes="text-xl font-bold mb-2"):
-            text(title)
+        with fragment.h3(class_="text-xl font-bold mb-2"):
+            fragment.text(title)
 
         if description:
-            with tag.p(classes="text-base-content/70 mb-4 max-w-md"):
-                text(description)
+            with fragment.p(class_="text-base-content/70 mb-4 max-w-md"):
+                fragment.text(description)
 
-        yield
+        yield fragment
 
 
 @contextlib.contextmanager
@@ -54,7 +55,7 @@ def loading_state(
     message: str = "Loading...",
     size: str = "md",
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a loading state component with spinner.
 
     Generates a centered loading indicator with optional message.
@@ -66,10 +67,10 @@ def loading_state(
         **kwargs: Additional HTML attributes.
 
     Yields:
-        None: Context manager yields control (typically not used).
+        Fragment: The fragment for additional content (typically not used).
 
     Example:
-        >>> with loading_state("Fetching organizations...", size="lg"):
+        >>> with loading_state("Fetching organizations...", size="lg") as state:
         ...     pass
     """
     size_classes = {
@@ -79,21 +80,22 @@ def loading_state(
         "lg": "loading-lg",
     }
 
-    with tag.div(
-        classes="flex flex-col items-center justify-center py-12 gap-4",
+    fragment = Fragment()
+    with fragment.div(
+        class_="flex flex-col items-center justify-center py-12 gap-4",
         role="status",
         **kwargs,
     ):
-        with tag.span(
-            classes=f"loading loading-spinner {size_classes.get(size, 'loading-md')}"
+        with fragment.span(
+            class_=f"loading loading-spinner {size_classes.get(size, 'loading-md')}"
         ):
             pass
 
         if message:
-            with tag.p(classes="text-base-content/70"):
-                text(message)
+            with fragment.p(class_="text-base-content/70"):
+                fragment.text(message)
 
-        yield
+        yield fragment
 
 
 @contextlib.contextmanager
@@ -102,7 +104,7 @@ def card(
     bordered: bool = True,
     compact: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a generic card container component.
 
     Generates a card element with optional border and padding variants.
@@ -111,17 +113,17 @@ def card(
     Args:
         bordered: If True, adds a border to the card.
         compact: If True, uses less padding.
-        **kwargs: Additional HTML attributes (including 'classes' for additional classes).
+        **kwargs: Additional HTML attributes (including 'class_' for additional classes).
 
     Yields:
-        None: Context manager yields control for card content.
+        Fragment: The fragment for adding card content.
 
     Example:
-        >>> with card(bordered=True):
-        ...     with tag.h3(classes="font-bold"):
-        ...         text("Card Title")
-        ...     with tag.p():
-        ...         text("Card content")
+        >>> with card(bordered=True) as c:
+        ...     with c.h3(class_="font-bold"):
+        ...         c.text("Card Title")
+        ...     with c.p():
+        ...         c.text("Card content")
     """
     card_classes = ["card", "bg-base-100"]
 
@@ -132,12 +134,13 @@ def card(
     card_classes.append(padding_class)
 
     # Merge additional classes from kwargs if provided
-    additional_classes = kwargs.pop("classes", "")
+    additional_classes = kwargs.pop("class_", None) or kwargs.pop("classes", "")
     if additional_classes:
         card_classes.append(additional_classes)
 
-    with tag.div(classes=" ".join(card_classes), **kwargs):
-        yield
+    fragment = Fragment()
+    with fragment.div(class_=" ".join(card_classes), **kwargs):
+        yield fragment
 
 
 __all__ = ["card", "empty_state", "loading_state"]

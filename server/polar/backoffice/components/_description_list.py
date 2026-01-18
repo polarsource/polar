@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.datastructures import URL
-from tagflow import attr, classes, tag, text
+from markupflow import Fragment
 
 from .. import formatters
 from ._clipboard_button import clipboard_button
@@ -42,12 +42,13 @@ class DescriptionListItem[M]:
         raise NotImplementedError()
 
     @contextlib.contextmanager
-    def _do_render(self, request: Request, item: M) -> Generator[None]:
+    def _do_render(self, request: Request, item: M) -> Generator[Fragment]:
         value = self.render(request, item)
         if isgenerator(value):
             yield from value
         else:
-            yield
+            fragment = Fragment()
+            yield fragment
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(label={self.label!r})"
@@ -79,7 +80,7 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
         self.clipboard = clipboard
         super().__init__(label or attr)
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Generator[Fragment] | None:
         """Render the attribute value as a description list item.
 
         Args:
@@ -87,8 +88,9 @@ class DescriptionListAttrItem[M](DescriptionListItem[M]):
             item: The data object to extract the attribute from.
         """
         value = self.get_value(item)
-        with tag.div(classes="flex items-center gap-1"):
-            text(value if value is not None else "—")
+        fragment = Fragment()
+        with fragment.div(class_="flex items-center gap-1"):
+            fragment.text(value if value is not None else "—")
             if value is not None and self.clipboard:
                 with clipboard_button(value):
                     pass
@@ -189,7 +191,7 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
         else:
             self.href_getter = href_getter
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Generator[Fragment] | None:
         """Render the attribute value as an external link.
 
         Args:
@@ -198,19 +200,20 @@ class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
         """
         value = self.get_raw_value(item)
         href = self.href_getter(request, item)
-        with tag.div(classes="flex items-center gap-1"):
+        fragment = Fragment()
+        with fragment.div(class_="flex items-center gap-1"):
             if value is not None:
-                with tag.a(href=href, classes="link"):
+                with fragment.a(href=href, class_="link"):
                     if self.external:
-                        classes("flex flex-row gap-1")
-                        attr("target", "_blank")
-                        attr("rel", "noopener noreferrer")
-                    text(str(value))
+                        fragment.classes("flex flex-row gap-1")
+                        fragment.attr("target", "_blank")
+                        fragment.attr("rel", "noopener noreferrer")
+                    fragment.text(str(value))
                     if self.external:
-                        with tag.div(classes="icon-external-link"):
+                        with fragment.div(class_="icon-external-link"):
                             pass
             else:
-                text("—")
+                fragment.text("—")
         return None
 
     def __repr__(self) -> str:
@@ -268,7 +271,7 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
         M: Type parameter for the model type.
     """
 
-    def render(self, request: Request, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Generator[Fragment] | None:
         """Render social links with platform icons and external links.
 
         Args:
@@ -278,20 +281,21 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
         socials = getattr(item, "socials", [])
         twitter_username = getattr(item, "twitter_username", None)
 
-        with tag.div(classes="flex flex-col gap-2"):
+        fragment = Fragment()
+        with fragment.div(class_="flex flex-col gap-2"):
             # Display Twitter/X username if available
             if twitter_username:
-                with tag.div(classes="flex items-center gap-2"):
-                    with tag.span(classes="text-sm font-medium"):
-                        text("𝕏 (Twitter):")
-                    with tag.a(
+                with fragment.div(class_="flex items-center gap-2"):
+                    with fragment.span(class_="text-sm font-medium"):
+                        fragment.text("𝕏 (Twitter):")
+                    with fragment.a(
                         href=f"https://twitter.com/{twitter_username}",
-                        classes="link flex items-center gap-1",
+                        class_="link flex items-center gap-1",
                         target="_blank",
                         rel="noopener noreferrer",
                     ):
-                        text(f"@{twitter_username}")
-                        with tag.div(classes="icon-external-link"):
+                        fragment.text(f"@{twitter_username}")
+                        with fragment.div(class_="icon-external-link"):
                             pass
 
             # Display social links from socials field
@@ -300,28 +304,28 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
                     platform = social.get("platform", "")
                     url = social.get("url", "")
                     if platform and url:
-                        with tag.div(classes="flex items-center gap-2"):
-                            with tag.span(classes="text-sm font-medium"):
+                        with fragment.div(class_="flex items-center gap-2"):
+                            with fragment.span(class_="text-sm font-medium"):
                                 # Add platform-specific icons/emojis
                                 if platform.lower() in ["twitter", "x"]:
-                                    text("𝕏:")
+                                    fragment.text("𝕏:")
                                 elif platform.lower() == "github":
-                                    text("GitHub:")
+                                    fragment.text("GitHub:")
                                 elif platform.lower() == "linkedin":
-                                    text("LinkedIn:")
+                                    fragment.text("LinkedIn:")
                                 elif platform.lower() == "youtube":
-                                    text("YouTube:")
+                                    fragment.text("YouTube:")
                                 elif platform.lower() == "instagram":
-                                    text("Instagram:")
+                                    fragment.text("Instagram:")
                                 elif platform.lower() == "facebook":
-                                    text("Facebook:")
+                                    fragment.text("Facebook:")
                                 elif platform.lower() == "discord":
-                                    text("Discord:")
+                                    fragment.text("Discord:")
                                 else:
-                                    text(f"{platform.title()}:")
-                            with tag.a(
+                                    fragment.text(f"{platform.title()}:")
+                            with fragment.a(
                                 href=url,
-                                classes="link flex items-center gap-1",
+                                class_="link flex items-center gap-1",
                                 target="_blank",
                                 rel="noopener noreferrer",
                             ):
@@ -331,14 +335,14 @@ class DescriptionListSocialsItem[M](DescriptionListItem[M]):
                                     display_text = url[8:]  # Remove https://
                                 elif url.startswith("http://"):
                                     display_text = url[7:]  # Remove http://
-                                text(display_text)
-                                with tag.div(classes="icon-external-link"):
+                                fragment.text(display_text)
+                                with fragment.div(class_="icon-external-link"):
                                     pass
 
             # Show message if no social links
             if not socials and not twitter_username:
-                with tag.span(classes="text-gray-500 italic"):
-                    text("No social links available")
+                with fragment.span(class_="text-gray-500 italic"):
+                    fragment.text("No social links available")
 
         return None
 
@@ -362,22 +366,23 @@ class DescriptionList[M]:
         self.items = items
 
     @contextlib.contextmanager
-    def render(self, request: Request, data: M) -> Generator[None]:
+    def render(self, request: Request, data: M) -> Generator[Fragment]:
         """Render the complete description list with all items.
 
         Args:
             request: The FastAPI request object for URL generation.
             data: The data object to display information from.
         """
-        with tag.dl(classes="divide-y divide-gray-100"):
-            with tag.div(classes="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"):
+        fragment = Fragment()
+        with fragment.dl(class_="divide-y divide-gray-100"):
+            with fragment.div(class_="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"):
                 for item in self.items:
-                    with tag.dt(classes="text-sm/6 font-medium"):
-                        text(item.label)
-                        with tag.dd(classes="mt-1 text-sm/6 sm:col-span-2 sm:mt-0"):
+                    with fragment.dt(class_="text-sm/6 font-medium"):
+                        fragment.text(item.label)
+                        with fragment.dd(class_="mt-1 text-sm/6 sm:col-span-2 sm:mt-0"):
                             with item._do_render(request, data):
                                 pass
-        yield
+        yield fragment
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(items={self.items!r})"

@@ -1,15 +1,13 @@
 import contextlib
 from collections.abc import Generator, Sequence
 
-from tagflow import classes as _classes
-from tagflow import tag, text
-from tagflow.tagflow import AttrValue
+from markupflow import AttrValue, Fragment
 
 
 @contextlib.contextmanager
 def search(
     name: str | None = None, value: str | None = None, placeholder: str | None = None
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a search input component with an integrated search icon.
 
     Generates a styled search input field with a search icon on the left side.
@@ -26,18 +24,19 @@ def search(
         >>> with search(name="query", placeholder="Search users..."):
         ...     pass
     """
-    with tag.label(classes="input"):
-        with tag.div(classes="icon-search opacity-50"):
+    fragment = Fragment()
+    with fragment.label(class_="input"):
+        with fragment.div(class_="icon-search opacity-50"):
             pass
-        with tag.input(
+        with fragment.input(
             type="search",
-            classes="grow",
+            class_="grow",
             name=name,
             value=value,
             placeholder=placeholder,
         ):
             pass
-    yield
+    yield fragment
 
 
 @contextlib.contextmanager
@@ -48,7 +47,7 @@ def select(
     placeholder: str | None = None,
     classes: str | None = None,
     **kwargs: AttrValue,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a styled select dropdown component.
 
     Generates a select element with DaisyUI styling and configurable options.
@@ -72,16 +71,17 @@ def select(
         >>> with select(options, value="active", name="status", placeholder="Choose status"):
         ...     pass
     """
-    with tag.select(classes="select", **kwargs):
+    fragment = Fragment()
+    with fragment.select(class_="select", **kwargs):
         if classes is not None:
-            _classes(classes)
+            fragment.classes(classes)
         if placeholder is not None:
-            with tag.option(value="", selected=not value):
-                text(placeholder)
+            with fragment.option(value="", selected=not value):
+                fragment.text(placeholder)
         for option_label, option_value in options:
-            with tag.option(value=option_value, selected=option_value == value):
-                text(option_label)
-    yield
+            with fragment.option(value=option_value, selected=option_value == value):
+                fragment.text(option_label)
+    yield fragment
 
 
 __all__ = ["search", "select"]

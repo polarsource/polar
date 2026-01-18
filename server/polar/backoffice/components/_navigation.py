@@ -3,7 +3,7 @@ from collections.abc import Generator
 from typing import overload
 
 from fastapi import Request
-from tagflow import attr, classes, tag, text
+from markupflow import Fragment
 
 
 class NavigationItem:
@@ -70,7 +70,7 @@ class NavigationItem:
         self.active_route_name_prefix = active_route_name_prefix
 
     @contextlib.contextmanager
-    def render(self, request: Request, active_route_name: str) -> Generator[None]:
+    def render(self, request: Request, active_route_name: str) -> Generator[Fragment]:
         """Render the navigation item as HTML.
 
         Generates either a simple link item or an expandable details/summary
@@ -84,26 +84,27 @@ class NavigationItem:
                 for highlighting and auto-expansion.
 
         Yields:
-            None: Context manager yields control for the navigation item.
+            Fragment: Context manager yields control for the navigation item.
         """
         is_active = self._is_active(active_route_name)
-        with tag.li():
+        fragment = Fragment()
+        with fragment.li():
             if self.route_name is not None:
-                with tag.a(href=str(request.url_for(self.route_name))):
+                with fragment.a(href=str(request.url_for(self.route_name))):
                     if is_active:
-                        classes("menu-active")
-                    text(self.label)
+                        fragment.classes("menu-active")
+                    fragment.text(self.label)
             elif self.children:
-                with tag.details():
+                with fragment.details():
                     if is_active:
-                        attr("open", True)
-                    with tag.summary():
-                        text(self.label)
-                    with tag.ul():
+                        fragment.attr("open", True)
+                    with fragment.summary():
+                        fragment.text(self.label)
+                    with fragment.ul():
                         for child in self.children:
                             with child.render(request, active_route_name):
                                 pass
-        yield
+        yield fragment
 
     def _is_active(self, active_route_name: str) -> bool:
         """Determine if this navigation item should be marked as active.

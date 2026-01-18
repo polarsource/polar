@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, or_, select
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
-from polar.auth.models import AuthSubject, Customer
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -22,6 +22,7 @@ from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 
 from ..sorting.customer_meter import CustomerCustomerMeterSortProperty
+from ..utils import get_customer_id
 
 
 class CustomerMeterRepository(
@@ -33,9 +34,9 @@ class CustomerMeterRepository(
     model = CustomerMeter
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[CustomerMeter]]:
-        customer_id = auth_subject.subject.id
+        customer_id = get_customer_id(auth_subject)
 
         # Subquery for meters from active subscriptions
         subscription_meters = (

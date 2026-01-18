@@ -1,12 +1,12 @@
 import uuid
 from collections.abc import Sequence
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Wallet
+from polar.models import Wallet
 
 from ..repository.wallet import CustomerWalletRepository
 from ..sorting.wallet import CustomerWalletSortProperty
@@ -16,7 +16,7 @@ class CustomerWalletService(ResourceServiceReader[Wallet]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerWalletSortProperty]] = [
@@ -37,7 +37,7 @@ class CustomerWalletService(ResourceServiceReader[Wallet]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> Wallet | None:
         repository = CustomerWalletRepository.from_session(session)

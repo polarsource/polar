@@ -15,7 +15,10 @@ export function CustomerPortalLayoutWrapper({
 }: CustomerPortalLayoutWrapperProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('customer_session_token') ?? ''
+  const token =
+    searchParams.get('customer_session_token') ??
+    searchParams.get('member_session_token') ??
+    ''
 
   return (
     <CustomerPortalProvider

@@ -54,7 +54,7 @@ ListSorting = Annotated[
     response_model=ListResource[CustomerBenefitGrant],
 )
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     type: MultipleQueryFilter[BenefitType] | None = Query(
@@ -106,7 +106,7 @@ async def list(
 )
 async def get(
     id: BenefitGrantID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrant:
     """Get a benefit grant by ID for the authenticated customer."""
@@ -136,7 +136,7 @@ async def get(
 async def update(
     id: BenefitGrantID,
     benefit_grant_update: CustomerBenefitGrantUpdate,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrant:
     """Update a benefit grant for the authenticated customer."""

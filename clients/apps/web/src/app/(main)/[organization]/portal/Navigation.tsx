@@ -1,8 +1,8 @@
 'use client'
 
 import {
-  useAuthenticatedCustomer,
   useCustomerPortalSession,
+  usePortalAuthenticatedUser,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
@@ -18,19 +18,42 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['CustomerOrganization']) => {
+const hasBillingPermission = (
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
+  // Customers always have billing access (legacy behavior)
+  if (!authenticatedUser || authenticatedUser.type === 'customer') {
+    return true
+  }
+  // Members need owner or billing_manager role
+  return (
+    authenticatedUser.role === 'owner' ||
+    authenticatedUser.role === 'billing_manager'
+  )
+}
+
+const links = (
+  organization: schemas['CustomerOrganization'],
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
   const portalSettings = organization.customer_portal_settings
+  const canAccessBilling = hasBillingPermission(authenticatedUser)
+
   return [
     {
       href: `/${organization.slug}/portal/overview`,
       label: 'Overview',
       isActive: (path: string) => path.includes('/overview'),
     },
-    {
-      href: `/${organization.slug}/portal/orders`,
-      label: 'Orders',
-      isActive: (path: string) => path.includes('/orders'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/orders`,
+            label: 'Orders',
+            isActive: (path: string) => path.includes('/orders'),
+          },
+        ]
+      : []),
     ...(portalSettings.usage.show
       ? [
           {
@@ -40,11 +63,15 @@ const links = (organization: schemas['CustomerOrganization']) => {
           },
         ]
       : []),
-    {
-      href: `/${organization.slug}/portal/settings`,
-      label: 'Billing',
-      isActive: (path: string) => path.includes('/settings'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/settings`,
+            label: 'Billing',
+            isActive: (path: string) => path.includes('/settings'),
+          },
+        ]
+      : []),
   ]
 }
 
@@ -57,11 +84,13 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
-  const api = createClientSideAPI(
-    searchParams.get('customer_session_token') as string,
-  )
+  const token =
+    searchParams.get('customer_session_token') ??
+    searchParams.get('member_session_token') ??
+    ''
+  const api = createClientSideAPI(token)
   const { data: customerPortalSession } = useCustomerPortalSession(api)
-  const { data: authenticatedCustomer } = useAuthenticatedCustomer(api)
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   // Hide navigation on routes where portal access is being requested or authenticated
   const hideNav =
@@ -76,7 +105,7 @@ export const Navigation = ({
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization)
+  const filteredLinks = links(organization, authenticatedUser)
 
   return (
     <>
@@ -91,9 +120,9 @@ export const Navigation = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{authenticatedCustomer?.name ?? '—'}</h3>
+          <h3>{authenticatedUser?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
-            {authenticatedCustomer?.email ?? '—'}
+            {authenticatedUser?.email ?? '—'}
           </span>
         </div>
         <div className="flex flex-col gap-y-1">

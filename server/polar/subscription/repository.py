@@ -9,9 +9,11 @@ from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
+    Member,
     Organization,
     User,
     is_customer,
+    is_member,
     is_organization,
     is_user,
 )
@@ -130,7 +132,7 @@ class SubscriptionRepository(
         )
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization | Customer]
+        self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Subscription]]:
         statement = self.get_base_statement().join(Product)
 
@@ -154,20 +156,29 @@ class SubscriptionRepository(
                 Subscription.customer_id == customer.id,
                 Subscription.deleted_at.is_(None),
             )
+        elif is_member(auth_subject):
+            member = auth_subject.subject
+            statement = statement.where(
+                Subscription.customer_id == member.customer_id,
+                Subscription.deleted_at.is_(None),
+            )
 
         return statement
 
     def get_claimed_subscriptions_statement(
-        self, auth_subject: AuthSubject[AuthCustomer]
+        self, auth_subject: AuthSubject[AuthCustomer | Member]
     ) -> Select[tuple[Subscription]]:
         """Get subscriptions where the customer has a claimed seat."""
-        customer = auth_subject.subject
+        if is_member(auth_subject):
+            customer_id = auth_subject.subject.customer_id
+        else:
+            customer_id = auth_subject.subject.id
 
         statement = (
             self.get_base_statement()
             .join(CustomerSeat, CustomerSeat.subscription_id == Subscription.id)
             .where(
-                CustomerSeat.customer_id == customer.id,
+                CustomerSeat.customer_id == customer_id,
                 CustomerSeat.status == SeatStatus.claimed,
             )
         )

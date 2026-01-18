@@ -43,7 +43,7 @@ router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
     },
 )
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     benefit_id: BenefitID | None = Query(
         None, description="Filter by a specific benefit"
@@ -71,7 +71,7 @@ async def list(
     responses={404: NotFoundResponse},
 )
 async def get(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyWithActivations:

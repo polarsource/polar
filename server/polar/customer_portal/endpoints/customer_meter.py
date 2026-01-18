@@ -33,7 +33,7 @@ CustomerMeterNotFound = {
     response_model=ListResource[CustomerMeterSchema],
 )
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     meter_id: MultipleQueryFilter[MeterID] | None = Query(
@@ -67,7 +67,7 @@ async def list(
 )
 async def get(
     id: CustomerMeterID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerMeter:
     """Get a meter by ID for the authenticated customer."""

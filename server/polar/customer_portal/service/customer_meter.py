@@ -4,11 +4,11 @@ from collections.abc import Sequence
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, CustomerMeter, Meter
+from polar.models import CustomerMeter, Meter
 
 from ..repository.customer_meter import CustomerMeterRepository
 from ..sorting.customer_meter import CustomerCustomerMeterSortProperty
@@ -18,7 +18,7 @@ class CustomerMeterService:
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         meter_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
@@ -51,7 +51,7 @@ class CustomerMeterService:
     async def get(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> CustomerMeter | None:
         repository = CustomerMeterRepository.from_session(session)

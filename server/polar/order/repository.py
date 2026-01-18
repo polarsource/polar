@@ -8,9 +8,11 @@ from sqlalchemy.orm.strategy_options import selectinload
 
 from polar.auth.models import (
     AuthSubject,
+    Member,
     Organization,
     User,
     is_customer,
+    is_member,
     is_organization,
     is_user,
 )
@@ -126,7 +128,7 @@ class OrderRepository(
         )
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization | Customer]
+        self, auth_subject: AuthSubject[User | Organization | Customer | Member]
     ) -> Select[tuple[Order]]:
         statement = self.get_base_statement().join(
             Customer, Order.customer_id == Customer.id
@@ -150,6 +152,12 @@ class OrderRepository(
             customer = auth_subject.subject
             statement = statement.where(
                 Order.customer_id == customer.id,
+                Order.deleted_at.is_(None),
+            )
+        elif is_member(auth_subject):
+            member = auth_subject.subject
+            statement = statement.where(
+                Order.customer_id == member.customer_id,
                 Order.deleted_at.is_(None),
             )
 

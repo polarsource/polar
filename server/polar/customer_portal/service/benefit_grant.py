@@ -6,7 +6,7 @@ from typing import Any, cast
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
@@ -16,7 +16,6 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     Benefit,
     BenefitGrant,
-    Customer,
     Order,
     Organization,
     Product,
@@ -31,6 +30,7 @@ from ..schemas.benefit_grant import (
     CustomerBenefitGrantGitHubRepositoryUpdate,
     CustomerBenefitGrantUpdate,
 )
+from ..utils import get_customer_id
 
 
 class CustomerBenefitGrantSortProperty(StrEnum):
@@ -44,7 +44,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         type: Sequence[BenefitType] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
@@ -134,7 +134,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> BenefitGrant | None:
         statement = (
@@ -214,7 +214,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         return benefit_grant
 
     def _get_readable_benefit_grant_statement(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[BenefitGrant]]:
         return (
             select(BenefitGrant)
@@ -223,7 +223,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .where(
                 BenefitGrant.deleted_at.is_(None),
                 BenefitGrant.is_revoked.is_(False),
-                BenefitGrant.customer_id == auth_subject.subject.id,
+                BenefitGrant.customer_id == get_customer_id(auth_subject),
             )
             .options(
                 contains_eager(BenefitGrant.benefit).options(

@@ -25,6 +25,7 @@ from ..schemas.customer import (
 )
 from ..service.customer import CustomerNotReady
 from ..service.customer import customer as customer_service
+from ..utils import get_customer, get_customer_id
 
 router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 
@@ -32,19 +33,19 @@ router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 @router.get("/stream", include_in_schema=False)
 async def stream(
     request: Request,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
-    receivers = Receivers(customer_id=auth_subject.subject.id)
+    receivers = Receivers(customer_id=get_customer_id(auth_subject))
     channels = receivers.get_channels()
     return EventSourceResponse(subscribe(redis, channels, request))
 
 
 @router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)
-async def get(auth_subject: auth.CustomerPortalRead) -> Customer:
+async def get(auth_subject: auth.CustomerPortalUnionRead) -> Customer:
     """Get authenticated customer."""
-    return auth_subject.subject
+    return get_customer(auth_subject)
 
 
 @router.patch(
@@ -57,11 +58,13 @@ async def get(auth_subject: auth.CustomerPortalRead) -> Customer:
 )
 async def update(
     customer_update: CustomerPortalCustomerUpdate,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update authenticated customer."""
-    return await customer_service.update(session, auth_subject.subject, customer_update)
+    return await customer_service.update(
+        session, get_customer(auth_subject), customer_update
+    )
 
 
 @router.get(
@@ -70,7 +73,7 @@ async def update(
     response_model=ListResource[CustomerPaymentMethod],
 )
 async def list_payment_methods(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerPaymentMethod]:
@@ -98,13 +101,13 @@ async def list_payment_methods(
     response_model=CustomerPaymentMethodCreateResponse,
 )
 async def add_payment_method(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     payment_method_create: CustomerPaymentMethodCreate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerPaymentMethodCreateResponse:
     """Add a payment method to the authenticated customer."""
     return await customer_service.add_payment_method(
-        session, auth_subject.subject, payment_method_create
+        session, get_customer(auth_subject), payment_method_create
     )
 
 
@@ -122,13 +125,13 @@ async def add_payment_method(
     response_model=CustomerPaymentMethodCreateResponse,
 )
 async def confirm_payment_method(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     payment_method_confirm: CustomerPaymentMethodConfirm,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerPaymentMethodCreateResponse:
     """Confirm a payment method for the authenticated customer."""
     return await customer_service.confirm_payment_method(
-        session, auth_subject.subject, payment_method_confirm
+        session, get_customer(auth_subject), payment_method_confirm
     )
 
 
@@ -150,7 +153,7 @@ async def confirm_payment_method(
 )
 async def delete_payment_method(
     id: UUID4,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a payment method from the authenticated customer."""

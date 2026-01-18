@@ -47,11 +47,16 @@ export async function generateMetadata(props: {
 
 export default async function Page(props: {
   params: Promise<{ organization: string; id: string }>
-  searchParams: Promise<{ customer_session_token?: string }>
+  searchParams: Promise<{
+    customer_session_token?: string
+    member_session_token?: string
+  }>
 }) {
-  const { customer_session_token, ...searchParams } = await props.searchParams
+  const { customer_session_token, member_session_token, ...searchParams } =
+    await props.searchParams
   const params = await props.params
-  const api = await getServerSideAPI(customer_session_token)
+  const token = customer_session_token ?? member_session_token
+  const api = await getServerSideAPI(token)
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -78,6 +83,11 @@ export default async function Page(props: {
     redirect(`/${organization.slug}/portal/request`)
   }
 
+  if (response.status === 403) {
+    // Member doesn't have billing permissions - redirect to overview
+    redirect(`/${organization.slug}/portal`)
+  }
+
   if (error) {
     throw error
   }
@@ -86,7 +96,7 @@ export default async function Page(props: {
     <OrdersPage
       organization={organization}
       orders={orders}
-      customerSessionToken={customer_session_token as string}
+      customerSessionToken={token as string}
     />
   )
 }

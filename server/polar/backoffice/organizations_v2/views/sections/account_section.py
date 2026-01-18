@@ -84,11 +84,17 @@ class AccountSection:
                                     fragment.text("Type")
                                 with fragment.div(class_="font-semibold"):
                                     if account.account_type == AccountType.stripe:
-                                        with fragment.span(class_="badge badge-primary"):
+                                        with fragment.span(
+                                            class_="badge badge-primary"
+                                        ):
                                             fragment.text("Stripe")
                                     else:
-                                        with fragment.span(class_="badge badge-secondary"):
-                                            fragment.text(account.account_type.value.title())
+                                        with fragment.span(
+                                            class_="badge badge-secondary"
+                                        ):
+                                            fragment.text(
+                                                account.account_type.value.title()
+                                            )
 
                             with fragment.div():
                                 with fragment.div(
@@ -304,15 +310,25 @@ class AccountSection:
                                             with fragment.td():
                                                 fragment.text(credit.title)
                                             with fragment.td():
-                                                fragment.text(_format_cents(credit.amount))
+                                                fragment.text(
+                                                    _format_cents(credit.amount)
+                                                )
                                             with fragment.td():
-                                                fragment.text(_format_cents(credit.used))
+                                                fragment.text(
+                                                    _format_cents(credit.used)
+                                                )
                                             with fragment.td(class_="font-semibold"):
-                                                fragment.text(_format_cents(credit.remaining))
+                                                fragment.text(
+                                                    _format_cents(credit.remaining)
+                                                )
                                             with fragment.td(class_="text-xs"):
-                                                fragment.text(_format_date(credit.granted_at))
+                                                fragment.text(
+                                                    _format_date(credit.granted_at)
+                                                )
                                             with fragment.td(class_="text-xs"):
-                                                fragment.text(_format_date(credit.expires_at))
+                                                fragment.text(
+                                                    _format_date(credit.expires_at)
+                                                )
                                             with fragment.td():
                                                 if status_label == "Active":
                                                     with button(
@@ -339,9 +355,13 @@ class AccountSection:
                                                     colspan="8",
                                                     class_="text-xs text-base-content/60 italic",
                                                 ):
-                                                    fragment.text(f"Note: {credit.notes}")
+                                                    fragment.text(
+                                                        f"Note: {credit.notes}"
+                                                    )
                     else:
-                        with fragment.div(class_="text-center py-4 text-base-content/60"):
+                        with fragment.div(
+                            class_="text-center py-4 text-base-content/60"
+                        ):
                             fragment.text("No credits granted yet")
 
             yield fragment

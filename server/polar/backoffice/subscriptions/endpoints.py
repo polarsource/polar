@@ -4,10 +4,10 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import classes, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -35,20 +35,22 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Subscriptio
     def __init__(self, label: str) -> None:
         super().__init__(label)
 
-    def render(self, request: Request, item: Subscription) -> Generator[None] | None:
-        with subscription_status_badge(item):
-            pass
-        return None
+    def render(self, request: Request, item: Subscription) -> Fragment:
+        fragment = Fragment()
+        with subscription_status_badge(item) as badge:
+            fragment.append(badge)
+        return fragment
 
 
 # Datatable Columns
 class StatusColumn(
     datatable.DatatableSortingColumn[Subscription, SubscriptionSortProperty]
 ):
-    def render(self, request: Request, item: Subscription) -> Generator[None] | None:
-        with subscription_status_badge(item):
-            pass
-        return None
+    def render(self, request: Request, item: Subscription) -> Fragment:
+        fragment = Fragment()
+        with subscription_status_badge(item) as badge:
+            fragment.append(badge)
+        return fragment
 
 
 class OrganizationColumn(
@@ -62,22 +64,25 @@ class OrganizationColumn(
 
 
 @contextlib.contextmanager
-def subscription_status_badge(subscription: Subscription) -> Generator[None]:
-    status = subscription.status
-    with tag.div(classes="badge"):
-        if status == SubscriptionStatus.active:
+def subscription_status_badge(subscription: Subscription) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="badge") as badge:
+        if subscription.status == SubscriptionStatus.active:
             if subscription.cancel_at_period_end:
-                classes("badge-warning")
+                fragment.classes("badge-warning")
             else:
-                classes("badge-success")
-        elif status == SubscriptionStatus.trialing:
-            classes("badge-info")
-        elif status in {SubscriptionStatus.unpaid, SubscriptionStatus.past_due}:
-            classes("badge-error")
+                fragment.classes("badge-success")
+        elif subscription.status == SubscriptionStatus.trialing:
+            fragment.classes("badge-info")
+        elif subscription.status in {
+            SubscriptionStatus.unpaid,
+            SubscriptionStatus.past_due,
+        }:
+            fragment.classes("badge-error")
         else:  # canceled, incomplete, incomplete_expired
-            classes("badge-neutral")
-        text(status.value.replace("_", " ").title())
-    yield
+            fragment.classes("badge-neutral")
+        fragment.text(subscription.status.value.replace("_", " ").title())
+    yield fragment
 
 
 @router.get("/", name="subscriptions:list")
@@ -90,7 +95,7 @@ async def list(
         SubscriptionStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = SubscriptionRepository.from_session(session)
     statement = (
         repository.get_base_statement()
@@ -133,11 +138,11 @@ async def list(
             ("Subscriptions", str(request.url_for("subscriptions:list"))),
         ],
         "subscriptions:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Subscriptions")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Subscriptions")
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -157,7 +162,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    page.text("Filter")
             with datatable.Datatable[Subscription, SubscriptionSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", clipboard=True, href_route_name="subscriptions:get"
@@ -189,6 +194,7 @@ async def list(
                 pass
             with datatable.pagination(request, pagination, count):
                 pass
+        return page
 
 
 @router.get("/{id}", name="subscriptions:get")
@@ -196,7 +202,7 @@ async def get(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     subscription_repository = SubscriptionRepository.from_session(session)
     subscription = await subscription_repository.get_by_id(
         id,
@@ -227,11 +233,11 @@ async def get(
             ("Subscriptions", str(request.url_for("subscriptions:list"))),
         ],
         "subscriptions:get",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Subscription {subscription.id}")
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.div(class_="flex justify-between items-center"):
+                with page.h1(class_="text-4xl"):
+                    page.text(f"Subscription {subscription.id}")
                 if subscription.can_cancel():
                     with button(
                         hx_get=str(
@@ -239,7 +245,7 @@ async def get(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Cancel")
+                        page.text("Cancel")
                 if subscription.can_uncancel():
                     with button(
                         hx_get=str(
@@ -249,14 +255,14 @@ async def get(
                         ),
                         hx_target="#modal",
                     ):
-                        text("Uncancel")
+                        page.text("Uncancel")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+            with page.div(class_="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Subscription Details")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Subscription Details")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
@@ -285,9 +291,9 @@ async def get(
                             subscription.cancel_at_period_end
                             or subscription.canceled_at
                         ):
-                            with tag.div(classes="mt-4"):
-                                with tag.h3(classes="text-lg font-semibold"):
-                                    text("Cancellation Details")
+                            with page.div(class_="mt-4"):
+                                with page.h3(class_="text-lg font-semibold"):
+                                    page.text("Cancellation Details")
                                 with description_list.DescriptionList[Subscription](
                                     description_list.DescriptionListAttrItem(
                                         "cancel_at_period_end", "Cancel at Period End"
@@ -305,10 +311,10 @@ async def get(
                                     pass
 
                 # Product and Organization
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Product & Organization")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Product & Organization")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "product.name", "Product"
@@ -327,10 +333,10 @@ async def get(
                             pass
 
                 # Customer Details
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Customer")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Customer")
                         with description_list.DescriptionList[Subscription](
                             description_list.DescriptionListAttrItem(
                                 "customer.id", "ID", clipboard=True
@@ -346,10 +352,10 @@ async def get(
 
                 # Discount if applicable
                 if subscription.discount:
-                    with tag.div(classes="card card-border w-full shadow-sm"):
-                        with tag.div(classes="card-body"):
-                            with tag.h2(classes="card-title"):
-                                text("Discount")
+                    with page.div(class_="card card-border w-full shadow-sm"):
+                        with page.div(class_="card-body"):
+                            with page.h2(class_="card-title"):
+                                page.text("Discount")
                             with description_list.DescriptionList[Subscription](
                                 description_list.DescriptionListAttrItem(
                                     "discount.name", "Name"
@@ -361,11 +367,12 @@ async def get(
                                 pass
 
             # Orders table
-            with tag.div(classes="flex flex-col gap-4"):
-                with tag.h2(classes="text-2xl"):
-                    text("Orders")
+            with page.div(class_="flex flex-col gap-4"):
+                with page.h2(class_="text-2xl"):
+                    page.text("Orders")
                 with orders_datatable(request, orders):
                     pass
+        return page
 
 
 @router.api_route("/{id}/cancel", name="subscriptions:cancel", methods=["GET", "POST"])
@@ -403,19 +410,20 @@ async def cancel(
         except ValidationError as e:
             validation_error = e
 
-    with modal("Cancel subscription", open=True):
+    with modal("Cancel subscription", open=True) as fragment:
         with CancelForm.render(
             hx_post=str(request.url_for("subscriptions:cancel", id=id)),
             hx_target="#modal",
-            classes="flex flex-col",
+            class_="flex flex-col",
             validation_error=validation_error,
         ):
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with fragment.div(class_="modal-action"):
+                with fragment.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        fragment.text("Cancel")
                 with button(type="submit", variant="primary"):
-                    text("Submit")
+                    fragment.text("Submit")
+        return fragment
 
 
 @router.api_route(
@@ -442,21 +450,22 @@ async def uncancel(
             request, str(request.url_for("subscriptions:get", id=id)), 303
         )
 
-    with modal("Uncancel subscription", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p():
-                text("Are you sure you want to uncancel this subscription? ")
-                text(
+    with modal("Uncancel subscription", open=True) as fragment:
+        with fragment.div(class_="flex flex-col gap-4"):
+            with fragment.p():
+                fragment.text("Are you sure you want to uncancel this subscription? ")
+                fragment.text(
                     "The billing cycle will be resumed, and the subscription will be active again."
                 )
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with fragment.div(class_="modal-action"):
+                with fragment.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        fragment.text("Cancel")
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Submit")
+                    fragment.text("Submit")
+        return fragment

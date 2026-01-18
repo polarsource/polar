@@ -412,7 +412,9 @@ class OrganizationListView:
                 ):
                     with fragment.div(class_="space-y-3"):
                         # Row 1: Basic filters
-                        with fragment.div(class_="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with fragment.div(
+                            class_="grid grid-cols-1 md:grid-cols-3 gap-3"
+                        ):
                             # Country filter
                             with fragment.div():
                                 with fragment.label(class_="label"):
@@ -440,7 +442,9 @@ class OrganizationListView:
                                             if selected_country == country_code:
                                                 option_attrs["selected"] = ""
                                             with fragment.option(**option_attrs):
-                                                fragment.text(f"{country_code} - {display_name}")
+                                                fragment.text(
+                                                    f"{country_code} - {display_name}"
+                                                )
 
                             # Risk filter
                             with fragment.div():
@@ -487,7 +491,9 @@ class OrganizationListView:
                                         fragment.text(">30 days")
 
                         # Row 2: Appeal filter
-                        with fragment.div(class_="grid grid-cols-1 md:grid-cols-3 gap-3"):
+                        with fragment.div(
+                            class_="grid grid-cols-1 md:grid-cols-3 gap-3"
+                        ):
                             # Has appeal
                             with fragment.div():
                                 with fragment.label(class_="label"):

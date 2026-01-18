@@ -4,8 +4,8 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4, BeforeValidator
-from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
@@ -32,49 +32,52 @@ router = APIRouter()
 @contextlib.contextmanager
 def identity_verification_status_badge(
     status: IdentityVerificationStatus,
-) -> Generator[None]:
-    with tag.div(classes="badge"):
+) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="badge") as badge:
         if status == IdentityVerificationStatus.verified:
-            classes("badge-success")
+            fragment.classes("badge-success")
         elif status in {
             IdentityVerificationStatus.pending,
             IdentityVerificationStatus.failed,
         }:
-            classes("badge-warning")
+            fragment.classes("badge-warning")
         else:
-            classes("badge-neutral")
-        text(status.get_display_name())
-    yield
+            fragment.classes("badge-neutral")
+        fragment.text(status.get_display_name())
+    yield fragment
 
 
 class IdentityVerificationStatusColumn(
     datatable.DatatableAttrColumn[User, UserSortProperty]
 ):
-    def render(self, request: Request, item: User) -> Generator[None] | None:
+    def render(self, request: Request, item: User) -> Fragment:
+        fragment = Fragment()
         status = item.identity_verification_status
-        with identity_verification_status_badge(status):
-            pass
-        return None
+        with identity_verification_status_badge(status) as badge:
+            fragment.append(badge)
+        return fragment
 
 
 class IdentityVerificationStatusDescriptionListItem(
     description_list.DescriptionListItem[User]
 ):
-    def render(self, request: Request, item: User) -> Generator[None] | None:
+    def render(self, request: Request, item: User) -> Fragment:
+        fragment = Fragment()
         status = item.identity_verification_status
         if item.identity_verification_id is not None:
-            with tag.a(
+            with fragment.a(
                 href=f"https://dashboard.stripe.com/identity/verification-sessions/{item.identity_verification_id}",
-                classes="link flex flex-row gap-1",
+                class_="link flex flex-row gap-1",
                 target="_blank",
                 rel="noopener noreferrer",
             ):
-                text(status.get_display_name())
-                with tag.div(classes="icon-external-link"):
+                fragment.text(status.get_display_name())
+                with fragment.div(class_="icon-external-link"):
                     pass
         else:
-            text(status.get_display_name())
-        return None
+            fragment.text(status.get_display_name())
+        return fragment
 
 
 @router.get("/", name="users:list")
@@ -87,7 +90,7 @@ async def list(
         IdentityVerificationStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = UserRepository.from_session(session)
     statement = repository.get_base_statement()
     if query:
@@ -111,11 +114,11 @@ async def list(
             ("Users", str(request.url_for("users:list"))),
         ],
         "users:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Users")
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Users")
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search("query", query):
                     pass
                 with input.select(
@@ -133,7 +136,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    page.text("Filter")
             with datatable.Datatable[User, UserSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="users:get", clipboard=True
@@ -153,6 +156,7 @@ async def list(
                 pass
             with datatable.pagination(request, pagination, count):
                 pass
+        return page
 
 
 @router.api_route("/{id}", name="users:get", methods=["GET", "POST"])
@@ -174,30 +178,30 @@ async def get(
             ("Users", str(request.url_for("users:list"))),
         ],
         "users:get",
-    ):
+    ) as page:
         #################
         ### User info ###
         #################
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex items-center justify-between"):
-                with tag.h1(classes="text-4xl"):
-                    text(user.email)
+        with page.div(class_="flex flex-col gap-4"):
+            with page.div(class_="flex items-center justify-between"):
+                with page.h1(class_="text-4xl"):
+                    page.text(user.email)
 
                 # Actions dropdown menu
                 if user.identity_verification_id is not None:
-                    with tag.div(classes="dropdown dropdown-end"):
-                        with tag.button(
-                            classes="btn btn-circle btn-ghost",
+                    with page.div(class_="dropdown dropdown-end"):
+                        with page.button(
+                            class_="btn btn-circle btn-ghost",
                             tabindex="0",
                             **{"aria-label": "More options"},
                         ):
-                            text("⋮")
-                        with tag.ul(
-                            classes="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
+                            page.text("⋮")
+                        with page.ul(
+                            class_="dropdown-content menu shadow bg-base-100 rounded-box w-56 z-10",
                             tabindex="0",
                         ):
-                            with tag.li():
-                                with tag.a(
+                            with page.li():
+                                with page.a(
                                     hx_get=str(
                                         request.url_for(
                                             "users:delete-identity-verification",
@@ -205,9 +209,9 @@ async def get(
                                         )
                                     ),
                                     hx_target="#modal",
-                                    classes="text-error",
+                                    class_="text-error",
                                 ):
-                                    text("Delete Identity Verification")
+                                    page.text("Delete Identity Verification")
             with description_list.DescriptionList[User](
                 description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
                 description_list.DescriptionListAttrItem(
@@ -234,9 +238,9 @@ async def get(
                 UserOrganization.user_id == user.id,
             )
         )
-        with tag.div(classes="flex flex-col gap-4 pt-16"):
-            with tag.h2(classes="text-2xl"):
-                text("Organizations")
+        with page.div(class_="flex flex-col gap-4 pt-16"):
+            with page.h2(class_="text-2xl"):
+                page.text("Organizations")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="organizations:get", clipboard=True
@@ -273,9 +277,9 @@ async def get(
         def _stripe_link(request: Request, value: Account) -> str:
             return f"https://dashboard.stripe.com/connect/accounts/{value.stripe_id}"
 
-        with tag.div(classes="flex flex-col gap-4 pt-16"):
-            with tag.h2(classes="text-2xl"):
-                text("Accounts")
+        with page.div(class_="flex flex-col gap-4 pt-16"):
+            with page.h2(class_="text-2xl"):
+                page.text("Accounts")
             with datatable.Datatable[Account, AccountSortProperty](
                 datatable.DatatableAttrColumn("id", "ID", clipboard=True),
                 datatable.DatatableDateTimeColumn("created_at", "Created At"),
@@ -301,6 +305,7 @@ async def get(
                 ),
             ).render(request, accounts):
                 pass
+        return page
 
 
 @router.api_route(
@@ -330,5 +335,5 @@ async def delete_identity_verification(
         return
 
     form_action = str(request.url_for("users:delete-identity-verification", id=user.id))
-    with DeleteIdentityVerificationModal(user, form_action).render():
-        pass
+    with DeleteIdentityVerificationModal(user, form_action).render() as fragment:
+        return fragment

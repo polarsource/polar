@@ -1,6 +1,6 @@
 import urllib.parse
 import uuid
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from markupflow import Fragment

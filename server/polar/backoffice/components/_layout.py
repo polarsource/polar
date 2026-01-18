@@ -68,7 +68,9 @@ def layout(
     with base(request, title_parts):
         fragment = Fragment()
         with fragment.div(class_="drawer lg:drawer-open"):
-            with fragment.input(id="menu-toggle", type="checkbox", class_="drawer-toggle"):
+            with fragment.input(
+                id="menu-toggle", type="checkbox", class_="drawer-toggle"
+            ):
                 pass
             with fragment.main(class_="drawer-content"):
                 with fragment.div(class_="flex flex-row items-center"):

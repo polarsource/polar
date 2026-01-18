@@ -5,7 +5,6 @@ import typing
 from collections.abc import Callable, Generator, Sequence
 from datetime import datetime
 from enum import Enum, StrEnum, auto
-from inspect import isgenerator
 from operator import attrgetter
 from typing import Any, Protocol
 
@@ -543,7 +542,8 @@ class DatatableActionsColumn[M](DatatableColumn[M]):
             with fragment.div(class_="font-normal icon-ellipsis-vertical"):
                 pass
 
-        with fragment.tag("ul",
+        with fragment.tag(
+            "ul",
             class_="dropdown menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
             popover=True,
             id=f"popover-{popover_id}",

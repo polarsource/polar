@@ -26,16 +26,18 @@ def render_toasts(scope: Scope, fragment: Fragment) -> Generator[None]:
         id="toast", class_="toast toast-bottom toast-end", hx_swap_oob="beforeend"
     ):
         for toast in toasts:
-            with fragment.fragment(alert(
-                toast.variant,
-                _="""
+            with fragment.fragment(
+                alert(
+                    toast.variant,
+                    _="""
                 init
                     wait 5s
                     remove me
                 end
                 on click remove me
                 """,
-            )) as alert_frag:
+                )
+            ) as alert_frag:
                 alert_frag.text(toast.message)
     yield
 

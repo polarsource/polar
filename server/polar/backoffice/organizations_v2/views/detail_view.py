@@ -141,7 +141,9 @@ class OrganizationDetailView:
 
             # Actions card
             with card(bordered=True, class_="mb-4"):
-                with fragment.h3(class_="font-bold text-sm uppercase tracking-wide mb-3"):
+                with fragment.h3(
+                    class_="font-bold text-sm uppercase tracking-wide mb-3"
+                ):
                     fragment.text("Actions")
 
                 with fragment.div(class_="space-y-2"):
@@ -297,7 +299,9 @@ class OrganizationDetailView:
 
             # Metadata card
             with card(bordered=True):
-                with fragment.h3(class_="font-bold text-sm uppercase tracking-wide mb-3"):
+                with fragment.h3(
+                    class_="font-bold text-sm uppercase tracking-wide mb-3"
+                ):
                     fragment.text("Metadata")
 
                 with fragment.dl(class_="space-y-3 text-sm"):
@@ -375,7 +379,9 @@ class OrganizationDetailView:
             yield fragment
 
     @contextlib.contextmanager
-    def render(self, request: Request, section: str = "overview") -> Generator[Fragment]:
+    def render(
+        self, request: Request, section: str = "overview"
+    ) -> Generator[Fragment]:
         """Render the complete detail view with top tabs."""
         fragment = Fragment()
 

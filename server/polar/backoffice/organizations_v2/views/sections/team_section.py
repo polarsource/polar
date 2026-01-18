@@ -38,12 +38,16 @@ class TeamSection:
                                 class_="flex items-center justify-between p-4 border border-base-300 rounded-lg hover:bg-base-50"
                             ):
                                 # Member info
-                                with fragment.div(class_="flex items-center gap-4 flex-1"):
+                                with fragment.div(
+                                    class_="flex items-center gap-4 flex-1"
+                                ):
                                     # Avatar placeholder
                                     with fragment.div(
                                         class_="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"
                                     ):
-                                        with fragment.span(class_="text-primary font-bold"):
+                                        with fragment.span(
+                                            class_="text-primary font-bold"
+                                        ):
                                             fragment.text(
                                                 member.user.email[0].upper()
                                                 if member.user.email
@@ -52,7 +56,9 @@ class TeamSection:
 
                                     with fragment.div():
                                         with fragment.div(class_="font-semibold"):
-                                            fragment.text(member.user.email or "Unknown")
+                                            fragment.text(
+                                                member.user.email or "Unknown"
+                                            )
                                         with fragment.div(
                                             class_="text-sm text-base-content/60"
                                         ):

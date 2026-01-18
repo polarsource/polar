@@ -1,5 +1,4 @@
 from collections.abc import Mapping
-from typing import Any
 
 from fastapi.datastructures import URL
 from fastapi.requests import Request
@@ -30,7 +29,13 @@ class TagResponse(HTMLResponse):
         self.background = background
         self.fragment_content = content
         self.initial_headers = headers
-        super().__init__(content="", status_code=status_code, headers=headers, media_type=media_type, background=background)
+        super().__init__(
+            content="",
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         # Render toasts into the fragment
@@ -40,11 +45,11 @@ class TagResponse(HTMLResponse):
             self.body = self.fragment_content.render().encode("utf-8")
         else:
             self.body = b""
-        
+
         # Reinitialize headers in case they were modified
         if self.initial_headers is not None:
             self.init_headers(self.initial_headers)
-        
+
         await super().__call__(scope, receive, send)
 
 

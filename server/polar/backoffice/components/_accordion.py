@@ -28,7 +28,9 @@ def item(accordion_name: str, title: str) -> Generator[Fragment]:
         ...         accordion.text("Advanced options here")
     """
     fragment = Fragment()
-    with fragment.div(class_="collapse collapse-arrow bg-base-100 border border-base-300"):
+    with fragment.div(
+        class_="collapse collapse-arrow bg-base-100 border border-base-300"
+    ):
         with fragment.input(type="radio", name=accordion_name):
             pass
         with fragment.div(class_="collapse-title font-semibold"):

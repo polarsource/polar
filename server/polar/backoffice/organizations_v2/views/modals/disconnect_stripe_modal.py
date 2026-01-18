@@ -31,7 +31,9 @@ class DisconnectStripeModal:
         with modal("Disconnect Stripe Account", open=True) as page:
             with page.div(class_="flex flex-col gap-4"):
                 with page.p(class_="font-semibold text-warning"):
-                    page.text("This will unlink the Stripe account from this organization.")
+                    page.text(
+                        "This will unlink the Stripe account from this organization."
+                    )
 
                 with page.div(class_="bg-base-200 p-4 rounded-lg"):
                     with page.p(class_="mb-2"):
@@ -39,7 +41,9 @@ class DisconnectStripeModal:
                             "The Stripe connection will be removed, but the Stripe Account will remain and the user can access it. Use it on cases where the Stripe Account cannot be deleted."
                         )
                     with page.p(class_="text-sm text-base-content/60"):
-                        page.text(f"Current Stripe Account ID: {self.account.stripe_id}")
+                        page.text(
+                            f"Current Stripe Account ID: {self.account.stripe_id}"
+                        )
 
                 with DisconnectStripeAccountForm.render(
                     data=form_data,

@@ -3,8 +3,8 @@ from operator import attrgetter
 from typing import Any
 
 from fastapi import APIRouter, Query, Request
+from markupflow import Fragment
 from pydantic import ValidationError
-from tagflow import tag, text
 
 from polar.worker import enqueue_job
 
@@ -29,7 +29,7 @@ router = APIRouter()
 async def list(
     request: Request,
     query: str | None = Query(None),
-) -> None:
+) -> Fragment:
     items: Sequence[Any] = []
     if query:
         cursor = 0
@@ -59,12 +59,12 @@ async def list(
             ("Tasks", str(request.url_for("tasks:list"))),
         ],
         "tasks:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Tasks")
-            with tag.div(classes="w-full flex flex-row justify-between"):
-                with tag.form(method="GET"):
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Tasks")
+            with page.div(class_="w-full flex flex-row justify-between"):
+                with page.form(method="GET"):
                     with input.search("query", query):
                         pass
                 with button(
@@ -72,7 +72,7 @@ async def list(
                     hx_get=str(request.url_for("tasks:enqueue")),
                     hx_target="#modal",
                 ):
-                    text("Enqueue Task")
+                    page.text("Enqueue Task")
 
             with datatable.Datatable[Any, Any](
                 datatable.DatatableDateTimeColumn("enqueue_time", "Enqueue Time"),
@@ -84,6 +84,7 @@ async def list(
                 empty_message="Enter a query to find tasks" if not query else None,
             ).render(request, items):
                 pass
+        return page
 
 
 @router.api_route("/enqueue", name="tasks:enqueue", methods=["GET", "POST"])
@@ -103,21 +104,22 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
         except ValidationError as e:
             validation_error = e
 
-    with modal("Enqueue task", open=True):
+    with modal("Enqueue task", open=True) as fragment:
         with form_class.render(
             {"task": task},
             method="POST",
-            classes="flex flex-col",
+            class_="flex flex-col",
             validation_error=validation_error,
         ):
-            with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
+            with fragment.div(class_="modal-action"):
+                with fragment.form(method="dialog"):
                     with button(ghost=True):
-                        text("Cancel")
+                        fragment.text("Cancel")
                 with button(
                     type="button",
                     variant="primary",
                     hx_post=str(request.url),
                     hx_target="#modal",
                 ):
-                    text("Enqueue")
+                    fragment.text("Enqueue")
+        return fragment

@@ -375,7 +375,9 @@ class DescriptionList[M]:
         """
         fragment = Fragment()
         with fragment.dl(class_="divide-y divide-gray-100"):
-            with fragment.div(class_="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"):
+            with fragment.div(
+                class_="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"
+            ):
                 for item in self.items:
                     with fragment.dt(class_="text-sm/6 font-medium"):
                         fragment.text(item.label)

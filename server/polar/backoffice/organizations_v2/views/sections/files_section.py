@@ -81,7 +81,9 @@ class FilesSection:
                                             with fragment.span(
                                                 class_="badge badge-sm badge-ghost"
                                             ):
-                                                fragment.text(file.mime_type or "unknown")
+                                                fragment.text(
+                                                    file.mime_type or "unknown"
+                                                )
 
                                         with fragment.td():
                                             fragment.text(

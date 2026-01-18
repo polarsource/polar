@@ -1,6 +1,5 @@
 import contextlib
 from collections.abc import Generator
-from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from markupflow import Fragment

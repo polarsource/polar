@@ -44,13 +44,17 @@ class SettingsSection:
                 with fragment.div(class_="space-y-4"):
                     with fragment.div(class_="grid grid-cols-2 gap-4"):
                         with fragment.div():
-                            with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            with fragment.div(
+                                class_="text-sm text-base-content/60 mb-1"
+                            ):
                                 fragment.text("Name")
                             with fragment.div(class_="font-semibold"):
                                 fragment.text(self.org.name)
 
                         with fragment.div():
-                            with fragment.div(class_="text-sm text-base-content/60 mb-1"):
+                            with fragment.div(
+                                class_="text-sm text-base-content/60 mb-1"
+                            ):
                                 fragment.text("Slug")
                             with fragment.div(class_="font-mono text-sm"):
                                 fragment.text(self.org.slug)

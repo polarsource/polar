@@ -9,12 +9,12 @@ import structlog
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from markupflow import Fragment, document
 from pydantic import UUID4, BeforeValidator, ValidationError
 from pydantic_core import PydanticCustomError
 from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from sse_starlette.sse import EventSourceResponse
-from markupflow import Fragment, document
 
 from polar.account.service import (
     CannotChangeAdminError,
@@ -138,7 +138,9 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Fragment | None:
         from babel.numbers import format_currency
 
-        Fragment().text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        Fragment().text(
+            format_currency(item.next_review_threshold / 100, "USD", locale="en_US")
+        )
         return None
 
 
@@ -665,7 +667,9 @@ async def update_internal_notes(
 
     with modal("Edit Internal Notes", open=True) as page:
         with page.p(class_="text-sm text-base-content-secondary"):
-            page.text("Add or update internal notes about this organization (admin only)")
+            page.text(
+                "Add or update internal notes about this organization (admin only)"
+            )
 
         with UpdateOrganizationInternalNotesForm.render(
             data=organization,
@@ -1148,7 +1152,9 @@ async def setup_manual_payout(
                     )
 
             with page.p():
-                page.text("This will create a manual payout account for this organization.")
+                page.text(
+                    "This will create a manual payout account for this organization."
+                )
 
             # Country selection
             with page.div(class_="form-control w-full"):

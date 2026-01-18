@@ -252,7 +252,9 @@ async def get(
                         page.text("Pending GitHub Repository Invitations")
                     if not github_invitations:
                         with page.div(class_="text-gray-500"):
-                            page.text("No pending invitations found for this repository.")
+                            page.text(
+                                "No pending invitations found for this repository."
+                            )
                     else:
                         with page.div(class_="overflow-x-auto"):
                             with page.table(class_="table table-zebra w-full"):

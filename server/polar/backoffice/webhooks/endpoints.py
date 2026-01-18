@@ -1,10 +1,10 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from markupflow import Fragment
 from pydantic import UUID4
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import attr, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.models import Organization, WebhookEndpoint
@@ -27,7 +27,7 @@ async def list(
     pagination: PaginationParamsQuery,
     query: str | None = Query(None),
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = WebhookEndpointRepository.from_session(session)
     statement = (
         repository.get_base_statement()
@@ -64,12 +64,12 @@ async def list(
             ("Webhooks", str(request.url_for("webhooks:list"))),
         ],
         "webhooks:list",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text("Webhooks")
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.h1(class_="text-4xl"):
+                page.text("Webhooks")
 
-            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+            with page.form(method="GET", class_="w-full flex flex-row gap-2"):
                 with input.search(
                     "query",
                     query,
@@ -77,7 +77,7 @@ async def list(
                 ):
                     pass
                 with button(type="submit"):
-                    text("Filter")
+                    page.text("Filter")
 
             with datatable.Datatable[WebhookEndpoint, WebhookSortProperty](
                 datatable.DatatableAttrColumn(
@@ -99,6 +99,7 @@ async def list(
 
             with datatable.pagination(request, pagination, count):
                 pass
+        return page
 
 
 @router.get("/{id}", name="webhooks:get")
@@ -106,7 +107,7 @@ async def get(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(
         id,
@@ -123,18 +124,18 @@ async def get(
             ("Webhooks", str(request.url_for("webhooks:list"))),
         ],
         "webhooks:get",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="flex justify-between items-center"):
-                with tag.h1(classes="text-4xl"):
-                    text(f"Webhook: {webhook.url}")
+    ) as page:
+        with page.div(class_="flex flex-col gap-4"):
+            with page.div(class_="flex justify-between items-center"):
+                with page.h1(class_="text-4xl"):
+                    page.text(f"Webhook: {webhook.url}")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Webhook Details")
-                        with tag.div(id="webhook-details-list"):
+            with page.div(class_="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Webhook Details")
+                        with page.div(id="webhook-details-list"):
                             with description_list.DescriptionList[WebhookEndpoint](
                                 description_list.DescriptionListAttrItem(
                                     "id", "ID", clipboard=True
@@ -155,15 +156,15 @@ async def get(
                             ).render(request, webhook):
                                 pass
 
-                        with tag.div(classes="divider"):
+                        with page.div(class_="divider"):
                             pass
 
-                        with tag.div(
+                        with page.div(
                             id="webhook-enabled-status",
-                            classes="flex items-center justify-between",
+                            class_="flex items-center justify-between",
                         ):
-                            with tag.span(classes="label-text font-medium"):
-                                text("Enabled")
+                            with page.span(class_="label-text font-medium"):
+                                page.text("Enabled")
                             with button(
                                 variant="success" if webhook.enabled else "neutral",
                                 size="sm",
@@ -174,12 +175,12 @@ async def get(
                                 ),
                                 hx_target="#modal",
                             ):
-                                text("Enabled" if webhook.enabled else "Disabled")
+                                page.text("Enabled" if webhook.enabled else "Disabled")
 
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Organization")
+                with page.div(class_="card card-border w-full shadow-sm"):
+                    with page.div(class_="card-body"):
+                        with page.h2(class_="card-title"):
+                            page.text("Organization")
                         with description_list.DescriptionList[WebhookEndpoint](
                             description_list.DescriptionListLinkItem[WebhookEndpoint](
                                 "organization.name",
@@ -197,24 +198,25 @@ async def get(
                         ).render(request, webhook):
                             pass
 
-            with tag.div(classes="flex flex-col gap-4 pt-8"):
-                with tag.h2(classes="text-2xl"):
-                    text("Subscribed Events")
+            with page.div(class_="flex flex-col gap-4 pt-8"):
+                with page.h2(class_="text-2xl"):
+                    page.text("Subscribed Events")
                 if not webhook.events:
-                    with tag.div(classes="text-gray-500"):
-                        text("No events subscribed")
+                    with page.div(class_="text-gray-500"):
+                        page.text("No events subscribed")
                 else:
-                    with tag.div(classes="overflow-x-auto"):
-                        with tag.table(classes="table table-zebra w-full"):
-                            with tag.thead():
-                                with tag.tr():
-                                    with tag.th():
-                                        text("Event Type")
-                            with tag.tbody():
+                    with page.div(class_="overflow-x-auto"):
+                        with page.table(class_="table table-zebra w-full"):
+                            with page.thead():
+                                with page.tr():
+                                    with page.th():
+                                        page.text("Event Type")
+                            with page.tbody():
                                 for event in webhook.events:
-                                    with tag.tr():
-                                        with tag.td():
-                                            text(event)
+                                    with page.tr():
+                                        with page.td():
+                                            page.text(event)
+        return page
 
 
 @router.get("/{id}/confirm-toggle-enabled", name="webhooks:confirm_toggle_enabled")
@@ -222,7 +224,7 @@ async def confirm_toggle_enabled(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-) -> None:
+) -> Fragment:
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 
@@ -241,12 +243,13 @@ async def confirm_toggle_enabled(
         variant="warning",
         confirm_text=action.capitalize(),
         open=True,
-    ):
-        attr(
+    ) as fragment:
+        fragment.attr(
             "hx-post",
             str(request.url_for("webhooks:toggle_enabled", id=webhook.id)),
         )
-        attr("hx-target", "#modal")
+        fragment.attr("hx-target", "#modal")
+        return fragment
 
 
 @router.post("/{id}/toggle-enabled", name="webhooks:toggle_enabled")
@@ -254,7 +257,8 @@ async def toggle_enabled(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> Fragment:
+    fragment = Fragment()
     repository = WebhookEndpointRepository.from_session(session)
     webhook = await repository.get_by_id(id)
 
@@ -273,11 +277,11 @@ async def toggle_enabled(
         "success",
     )
 
-    with tag.div(id="modal"):
+    with fragment.div(id="modal"):
         pass
 
-    with tag.div(id="webhook-details-list"):
-        attr("hx-swap-oob", "true")
+    with fragment.div(id="webhook-details-list"):
+        fragment.attr("hx-swap-oob", "true")
         with description_list.DescriptionList[WebhookEndpoint](
             description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
             description_list.DescriptionListAttrItem("url", "URL"),
@@ -288,13 +292,13 @@ async def toggle_enabled(
         ).render(request, webhook):
             pass
 
-    with tag.div(
+    with fragment.div(
         id="webhook-enabled-status",
-        classes="flex items-center justify-between",
+        class_="flex items-center justify-between",
     ):
-        attr("hx-swap-oob", "true")
-        with tag.span(classes="label-text font-medium"):
-            text("Enabled")
+        fragment.attr("hx-swap-oob", "true")
+        with fragment.span(class_="label-text font-medium"):
+            fragment.text("Enabled")
         with button(
             variant="success" if webhook.enabled else "neutral",
             size="sm",
@@ -303,4 +307,6 @@ async def toggle_enabled(
             ),
             hx_target="#modal",
         ):
-            text("Enabled" if webhook.enabled else "Disabled")
+            fragment.text("Enabled" if webhook.enabled else "Disabled")
+
+    return fragment

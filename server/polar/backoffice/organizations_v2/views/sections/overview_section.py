@@ -123,7 +123,9 @@ class OverviewSection:
                         ):
                             with fragment.span(class_="text-sm"):
                                 fragment.text(label)
-                            with fragment.span(class_="font-mono text-sm font-semibold"):
+                            with fragment.span(
+                                class_="font-mono text-sm font-semibold"
+                            ):
                                 fragment.text(str(value))
 
         yield fragment
@@ -156,17 +158,27 @@ class OverviewSection:
                         class_="space-y-2 mb-4 pb-4 border-b border-base-200"
                     ):
                         if next_review_threshold:
-                            with fragment.div(class_="flex items-center justify-between"):
-                                with fragment.span(class_="text-sm text-base-content/60"):
+                            with fragment.div(
+                                class_="flex items-center justify-between"
+                            ):
+                                with fragment.span(
+                                    class_="text-sm text-base-content/60"
+                                ):
                                     fragment.text("Next Review")
                                 with fragment.span(
                                     class_="font-mono text-sm font-semibold"
                                 ):
-                                    fragment.text(f"${next_review_threshold / 100:,.0f}")
+                                    fragment.text(
+                                        f"${next_review_threshold / 100:,.0f}"
+                                    )
 
                         if total_transfer_sum:
-                            with fragment.div(class_="flex items-center justify-between"):
-                                with fragment.span(class_="text-sm text-base-content/60"):
+                            with fragment.div(
+                                class_="flex items-center justify-between"
+                            ):
+                                with fragment.span(
+                                    class_="text-sm text-base-content/60"
+                                ):
                                     fragment.text("Total Transfers")
                                 with fragment.span(
                                     class_="font-mono text-sm font-semibold"

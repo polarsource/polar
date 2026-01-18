@@ -23,11 +23,12 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[Fragment]:
         with fragment.tag("head"):
             with fragment.tag("meta", charset="utf-8"):
                 pass
-            with fragment.tag("meta",
-                name="viewport", content="width=device-width, initial-scale=1.0"
+            with fragment.tag(
+                "meta", name="viewport", content="width=device-width, initial-scale=1.0"
             ):
                 pass
-            with fragment.tag("link",
+            with fragment.tag(
+                "link",
                 href=static_url(request, "styles.css"),
                 rel="stylesheet",
                 type="text/css",

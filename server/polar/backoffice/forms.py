@@ -6,10 +6,10 @@ from inspect import isclass
 from typing import Any, Self
 
 from fastapi.datastructures import FormData
+from markupflow import AttrValue, Fragment
 from pydantic import AfterValidator, BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from pydantic_core import ErrorDetails
-from markupflow import Fragment, AttrValue
 
 type Data = dict[str, Any] | object
 
@@ -448,7 +448,9 @@ class SubFormField(FormField):
             Fragment: Context manager yields Fragment for the sub-form rendering.
         """
         fragment = Fragment()
-        with fragment.fieldset(class_="fieldset border-base-300 rounded-box border p-4"):
+        with fragment.fieldset(
+            class_="fieldset border-base-300 rounded-box border p-4"
+        ):
             with fragment.legend(class_="fieldset-legend"):
                 fragment.text(label)
 

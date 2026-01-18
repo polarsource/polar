@@ -1811,7 +1811,9 @@ async def setup_account(
     with modal("Setup Manual Account", open=True) as page:
         with page.div(class_="space-y-4"):
             with page.p(class_="text-sm text-base-content/60"):
-                page.text("This will create a manual payment account for this organization.")
+                page.text(
+                    "This will create a manual payment account for this organization."
+                )
 
             with page.div(class_="alert alert-warning"):
                 with page.span(class_="text-sm"):

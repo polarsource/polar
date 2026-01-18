@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal
 
-from tagflow import tag
+from markupflow import Fragment
 
 Position = Literal["left", "center", "right", "between"]
 
@@ -13,7 +13,7 @@ def action_bar(
     position: Position = "right",
     vertical: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create an action bar container for grouping buttons and actions.
 
     Generates a flex container for organizing action buttons with consistent
@@ -25,14 +25,14 @@ def action_bar(
         **kwargs: Additional HTML attributes.
 
     Yields:
-        None: Context manager yields control for button/action content.
+        Fragment: The fragment for adding buttons/actions.
 
     Example:
-        >>> with action_bar(position="right"):
-        ...     with button(variant="primary"):
-        ...         text("Save")
-        ...     with button(variant="secondary"):
-        ...         text("Cancel")
+        >>> with action_bar(position="right") as bar:
+        ...     with bar.fragment(button(variant="primary")) as btn:
+        ...         btn.text("Save")
+        ...     with bar.fragment(button(variant="secondary")) as btn:
+        ...         btn.text("Cancel")
     """
     justify_classes = {
         "left": "justify-start",
@@ -44,11 +44,12 @@ def action_bar(
     direction_class = "flex-col" if vertical else "flex-row"
     gap_class = "gap-2" if not vertical else "gap-3"
 
-    with tag.div(
-        classes=f"flex {direction_class} items-center {gap_class} {justify_classes[position]}",
+    fragment = Fragment()
+    with fragment.div(
+        class_=f"flex {direction_class} items-center {gap_class} {justify_classes[position]}",
         **kwargs,
     ):
-        yield
+        yield fragment
 
 
 __all__ = ["Position", "action_bar"]

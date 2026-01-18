@@ -4,8 +4,8 @@ from collections.abc import Generator
 from typing import Literal
 
 from fastapi import Request
+from markupflow import Fragment
 from starlette.types import Scope
-from tagflow import tag, text
 
 from .components import alert
 
@@ -19,23 +19,26 @@ class Toast:
 
 
 @contextlib.contextmanager
-def render_toasts(scope: Scope) -> Generator[None]:
+def render_toasts(scope: Scope, fragment: Fragment) -> Generator[None]:
+    """Render toasts into the provided fragment."""
     toasts: list[Toast] = scope.get("toasts", [])
-    with tag.div(
-        id="toast", classes="toast toast-bottom toast-end", hx_swap_oob="beforeend"
+    with fragment.div(
+        id="toast", class_="toast toast-bottom toast-end", hx_swap_oob="beforeend"
     ):
         for toast in toasts:
-            with alert(
-                toast.variant,
-                _="""
+            with fragment.fragment(
+                alert(
+                    toast.variant,
+                    _="""
                 init
                     wait 5s
                     remove me
                 end
                 on click remove me
                 """,
-            ):
-                text(toast.message)
+                )
+            ) as alert_frag:
+                alert_frag.text(toast.message)
     yield
 
 

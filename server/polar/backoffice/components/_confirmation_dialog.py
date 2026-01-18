@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal, TypedDict
 
-from tagflow import attr, tag, text
+from markupflow import Fragment
 
 from ._button import Variant as ButtonVariant
 from ._button import button
@@ -25,7 +25,7 @@ def confirmation_dialog(
     cancel_text: str = "Cancel",
     open: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a standardized confirmation dialog component.
 
     Generates a modal dialog for confirming actions with semantic styling,
@@ -65,45 +65,46 @@ def confirmation_dialog(
 
     config = variant_config.get(variant, variant_config["warning"])
 
-    with tag.dialog(classes="modal modal-bottom sm:modal-middle", **kwargs):
+    fragment = Fragment()
+    with fragment.dialog(class_="modal modal-bottom sm:modal-middle", **kwargs):
         if open:
-            attr("open", True)
+            fragment.attr("open", True)
 
-        with tag.div(classes="modal-box"):
+        with fragment.div(class_="modal-box"):
             # Close button
-            with tag.form(method="dialog"):
-                with tag.button(
-                    classes="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+            with fragment.form(method="dialog"):
+                with fragment.button(
+                    class_="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
                 ):
-                    with tag.div(classes="icon-x"):
+                    with fragment.div(class_="icon-x"):
                         pass
 
             # Icon and title
-            with tag.div(classes="flex items-center gap-3 mb-4"):
-                with tag.div(classes="text-4xl"):
-                    text(config["icon"])
-                with tag.h3(classes="text-lg font-bold"):
-                    text(title)
+            with fragment.div(class_="flex items-center gap-3 mb-4"):
+                with fragment.div(class_="text-4xl"):
+                    fragment.text(config["icon"])
+                with fragment.h3(class_="text-lg font-bold"):
+                    fragment.text(title)
 
             # Message
-            with tag.p(classes="text-base-content/80 mb-6"):
-                text(message)
+            with fragment.p(class_="text-base-content/80 mb-6"):
+                fragment.text(message)
 
             # Action buttons
-            with tag.div(classes="modal-action"):
+            with fragment.div(class_="modal-action"):
                 # Cancel button (closes dialog)
-                with tag.form(method="dialog"):
+                with fragment.form(method="dialog"):
                     with button(variant="secondary", size="md"):
-                        text(cancel_text)
+                        fragment.text(cancel_text)
 
                 # Confirm button (yielded for custom action)
                 with button(variant=config["button"], size="md"):
-                    text(confirm_text)
-                    yield
+                    fragment.text(confirm_text)
+                    yield fragment
 
         # Backdrop
-        with tag.form(method="dialog", classes="modal-backdrop"):
-            with tag.button():
+        with fragment.form(method="dialog", class_="modal-backdrop"):
+            with fragment.button():
                 pass
 
 

@@ -142,7 +142,7 @@ class DebounceMiddleware(dramatiq.Middleware):
         if debounce_key is None:
             return
 
-        enqueue_timestamp: int | None = message.options.get(
+        enqueue_timestamp: int | None = message.options.pop(
             "debounce_enqueue_timestamp"
         )
         if enqueue_timestamp is not None:

@@ -235,30 +235,35 @@ class OrganizationListView:
             with fragment.td(class_="text-right"):
                 if show_quick_actions:
                     with fragment.div(class_="flex gap-2 justify-end"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_post=str(
-                                request.url_for(
-                                    "organizations-v2:approve", organization_id=org.id
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_post=str(
+                                    request.url_for(
+                                        "organizations-v2:approve",
+                                        organization_id=org.id,
+                                    )
                                 )
+                                + "?threshold=25000",
+                                hx_confirm="Approve with $250 threshold?",
                             )
-                            + "?threshold=25000",
-                            hx_confirm="Approve with $250 threshold?",
                         ):
                             fragment.text("Approve")
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations-v2:deny_dialog",
-                                    organization_id=org.id,
-                                )
-                            ),
-                            hx_target="#modal",
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:deny_dialog",
+                                        organization_id=org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            )
                         ):
                             fragment.text("Deny")
                 else:
@@ -297,10 +302,12 @@ class OrganizationListView:
             with fragment.h1(class_="text-3xl font-bold"):
                 fragment.text("Organizations")
             with action_bar(position="right"):
-                with button(
-                    variant="primary",
-                    hx_get=str(request.url_for("organizations-v2:list")) + "/new",
-                    hx_target="#modal",
+                with fragment.fragment(
+                    button(
+                        variant="primary",
+                        hx_get=str(request.url_for("organizations-v2:list")) + "/new",
+                        hx_target="#modal",
+                    )
                 ):
                     fragment.text("+ Create Thread")
 
@@ -709,12 +716,14 @@ class OrganizationListView:
                 # Pagination
                 if has_more:
                     with fragment.div(class_="flex justify-center mt-6"):
-                        with button(
-                            variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list"))
-                            + f"?page={page + 1}",
-                            hx_target="#org-list",
-                            hx_swap="beforeend",
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                hx_get=str(request.url_for("organizations-v2:list"))
+                                + f"?page={page + 1}",
+                                hx_target="#org-list",
+                                hx_swap="beforeend",
+                            )
                         ):
                             fragment.text("Load More")
 
@@ -931,12 +940,14 @@ class OrganizationListView:
                 # Pagination
                 if has_more:
                     with fragment.div(class_="flex justify-center mt-6"):
-                        with button(
-                            variant="secondary",
-                            hx_get=str(request.url_for("organizations-v2:list"))
-                            + f"?page={page + 1}",
-                            hx_target="#org-list",
-                            hx_swap="beforeend",
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                hx_get=str(request.url_for("organizations-v2:list"))
+                                + f"?page={page + 1}",
+                                hx_target="#org-list",
+                                hx_swap="beforeend",
+                            )
                         ):
                             fragment.text("Load More")
 

@@ -67,12 +67,14 @@ async def list(
                 with page.form(method="GET"):
                     with input.search("query", query):
                         pass
-                with button(
-                    variant="primary",
-                    hx_get=str(request.url_for("tasks:enqueue")),
-                    hx_target="#modal",
-                ):
-                    page.text("Enqueue Task")
+                with page.fragment(
+                    button(
+                        variant="primary",
+                        hx_get=str(request.url_for("tasks:enqueue")),
+                        hx_target="#modal",
+                    )
+                ) as btn:
+                    btn.text("Enqueue Task")
 
             with datatable.Datatable[Any, Any](
                 datatable.DatatableDateTimeColumn("enqueue_time", "Enqueue Time"),
@@ -113,13 +115,15 @@ async def enqueue(request: Request, task: str | None = Query(None)) -> Any:
         ):
             with fragment.div(class_="modal-action"):
                 with fragment.form(method="dialog"):
-                    with button(ghost=True):
-                        fragment.text("Cancel")
-                with button(
-                    type="button",
-                    variant="primary",
-                    hx_post=str(request.url),
-                    hx_target="#modal",
-                ):
-                    fragment.text("Enqueue")
+                    with fragment.fragment(button(ghost=True)) as btn:
+                        btn.text("Cancel")
+                with fragment.fragment(
+                    button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                    )
+                ) as btn:
+                    btn.text("Enqueue")
         return fragment

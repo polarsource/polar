@@ -135,8 +135,8 @@ async def list(
                     name="identity_verification_status",
                 ):
                     pass
-                with button(type="submit"):
-                    page.text("Filter")
+                with page.fragment(button(type="submit")) as btn:
+                    btn.text("Filter")
             with datatable.Datatable[User, UserSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="users:get", clipboard=True

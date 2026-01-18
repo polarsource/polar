@@ -161,8 +161,8 @@ async def list(
                     name="status",
                 ):
                     pass
-                with button(type="submit"):
-                    page.text("Filter")
+                with page.fragment(button(type="submit")) as btn:
+                    btn.text("Filter")
             with datatable.Datatable[Subscription, SubscriptionSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", clipboard=True, href_route_name="subscriptions:get"
@@ -239,23 +239,29 @@ async def get(
                 with page.h1(class_="text-4xl"):
                     page.text(f"Subscription {subscription.id}")
                 if subscription.can_cancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for("subscriptions:cancel", id=subscription.id)
-                        ),
-                        hx_target="#modal",
-                    ):
-                        page.text("Cancel")
+                    with page.fragment(
+                        button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:cancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        )
+                    ) as btn:
+                        btn.text("Cancel")
                 if subscription.can_uncancel():
-                    with button(
-                        hx_get=str(
-                            request.url_for(
-                                "subscriptions:uncancel", id=subscription.id
-                            )
-                        ),
-                        hx_target="#modal",
-                    ):
-                        page.text("Uncancel")
+                    with page.fragment(
+                        button(
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:uncancel", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        )
+                    ) as btn:
+                        btn.text("Uncancel")
 
             with page.div(class_="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -419,10 +425,10 @@ async def cancel(
         ):
             with fragment.div(class_="modal-action"):
                 with fragment.form(method="dialog"):
-                    with button(ghost=True):
-                        fragment.text("Cancel")
-                with button(type="submit", variant="primary"):
-                    fragment.text("Submit")
+                    with fragment.fragment(button(ghost=True)) as btn:
+                        btn.text("Cancel")
+                with fragment.fragment(button(type="submit", variant="primary")) as btn:
+                    btn.text("Submit")
         return fragment
 
 
@@ -459,13 +465,15 @@ async def uncancel(
                 )
             with fragment.div(class_="modal-action"):
                 with fragment.form(method="dialog"):
-                    with button(ghost=True):
-                        fragment.text("Cancel")
-                with button(
-                    type="button",
-                    variant="primary",
-                    hx_post=str(request.url),
-                    hx_target="#modal",
-                ):
-                    fragment.text("Submit")
+                    with fragment.fragment(button(ghost=True)) as btn:
+                        btn.text("Cancel")
+                with fragment.fragment(
+                    button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                    )
+                ) as btn:
+                    btn.text("Submit")
         return fragment

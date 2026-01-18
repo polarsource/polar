@@ -76,8 +76,8 @@ async def list(
                     placeholder="Search by ID, URL, organization name/slug",
                 ):
                     pass
-                with button(type="submit"):
-                    page.text("Filter")
+                with page.fragment(button(type="submit")) as btn:
+                    btn.text("Filter")
 
             with datatable.Datatable[WebhookEndpoint, WebhookSortProperty](
                 datatable.DatatableAttrColumn(
@@ -165,17 +165,20 @@ async def get(
                         ):
                             with page.span(class_="label-text font-medium"):
                                 page.text("Enabled")
-                            with button(
-                                variant="success" if webhook.enabled else "neutral",
-                                size="sm",
-                                hx_get=str(
-                                    request.url_for(
-                                        "webhooks:confirm_toggle_enabled", id=webhook.id
-                                    )
-                                ),
-                                hx_target="#modal",
-                            ):
-                                page.text("Enabled" if webhook.enabled else "Disabled")
+                            with page.fragment(
+                                button(
+                                    variant="success" if webhook.enabled else "neutral",
+                                    size="sm",
+                                    hx_get=str(
+                                        request.url_for(
+                                            "webhooks:confirm_toggle_enabled",
+                                            id=webhook.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                )
+                            ) as btn:
+                                btn.text("Enabled" if webhook.enabled else "Disabled")
 
                 with page.div(class_="card card-border w-full shadow-sm"):
                     with page.div(class_="card-body"):
@@ -299,14 +302,16 @@ async def toggle_enabled(
         fragment.attr("hx-swap-oob", "true")
         with fragment.span(class_="label-text font-medium"):
             fragment.text("Enabled")
-        with button(
-            variant="success" if webhook.enabled else "neutral",
-            size="sm",
-            hx_get=str(
-                request.url_for("webhooks:confirm_toggle_enabled", id=webhook.id)
-            ),
-            hx_target="#modal",
-        ):
-            fragment.text("Enabled" if webhook.enabled else "Disabled")
+        with fragment.fragment(
+            button(
+                variant="success" if webhook.enabled else "neutral",
+                size="sm",
+                hx_get=str(
+                    request.url_for("webhooks:confirm_toggle_enabled", id=webhook.id)
+                ),
+                hx_target="#modal",
+            )
+        ) as btn:
+            btn.text("Enabled" if webhook.enabled else "Disabled")
 
     return fragment

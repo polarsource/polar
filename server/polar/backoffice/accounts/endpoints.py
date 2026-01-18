@@ -126,7 +126,7 @@ async def delete_stripe(
                     pass
                 with page.div(class_="modal-action"):
                     with page.form(method="dialog"):
-                        with button(ghost=True) as btn:
+                        with page.fragment(button(ghost=True)) as btn:
                             btn.text("Cancel")
                     with page.input(
                         type="submit", class_="btn btn-primary", value="Delete"

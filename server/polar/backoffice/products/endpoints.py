@@ -127,8 +127,8 @@ async def list(
                     placeholder="Search by ID, name, organization name/slug",
                 ):
                     pass
-                with button(type="submit"):
-                    page.text("Filter")
+                with page.fragment(button(type="submit")) as btn:
+                    btn.text("Filter")
 
             # Results table
             with datatable.Datatable[Product, ProductSortProperty](

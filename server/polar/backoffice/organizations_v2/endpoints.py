@@ -603,7 +603,7 @@ async def deny_dialog(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
                 with page.form(
                     hx_post=str(
@@ -613,7 +613,7 @@ async def deny_dialog(
                         )
                     ),
                 ):
-                    with button(variant="error", type="submit") as btn:
+                    with page.fragment(button(variant="error", type="submit")) as btn:
                         btn.text("Deny Organization")
 
     return None
@@ -697,9 +697,9 @@ async def approve_denied_dialog(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(variant="primary", type="submit") as btn:
+                with page.fragment(button(variant="primary", type="submit")) as btn:
                     btn.text("Approve Organization")
 
     return None
@@ -786,9 +786,9 @@ async def unblock_approve_dialog(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(variant="primary", type="submit") as btn:
+                with page.fragment(button(variant="primary", type="submit")) as btn:
                     btn.text("Unblock & Approve")
 
     return None
@@ -853,7 +853,7 @@ async def block_dialog(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
                 with page.form(
                     hx_post=str(
@@ -863,7 +863,7 @@ async def block_dialog(
                         )
                     ),
                 ):
-                    with button(variant="error", type="submit") as btn:
+                    with page.fragment(button(variant="error", type="submit")) as btn:
                         btn.text("Block Organization")
 
     return None
@@ -955,11 +955,13 @@ async def edit_organization(
             # Action buttons
             with form.div(class_="modal-action pt-6 border-t border-base-200"):
                 with form.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with form.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with form.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Changes")
 
@@ -1037,11 +1039,13 @@ async def edit_details(
             # Action buttons
             with form.div(class_="modal-action pt-6 border-t border-base-200"):
                 with form.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with form.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with form.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Changes")
 
@@ -1130,9 +1134,9 @@ async def edit_order_settings(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(type="submit", variant="primary") as btn:
+                with page.fragment(button(type="submit", variant="primary")) as btn:
                     btn.text("Save Changes")
 
     return None
@@ -1288,11 +1292,13 @@ async def edit_socials(
             # Action buttons
             with form.div(class_="modal-action pt-6 border-t border-base-200"):
                 with form.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with form.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with form.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Changes")
 
@@ -1394,11 +1400,13 @@ async def edit_features(
             # Action buttons
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with page.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Changes")
 
@@ -1464,11 +1472,13 @@ async def add_note(
             # Action buttons
             with form.div(class_="modal-action pt-6 border-t border-base-200"):
                 with form.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with form.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with form.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Notes")
 
@@ -1534,11 +1544,13 @@ async def edit_note(
             # Action buttons
             with form.div(class_="modal-action pt-6 border-t border-base-200"):
                 with form.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with form.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    type="submit",
-                    variant="primary",
+                with form.fragment(
+                    button(
+                        type="submit",
+                        variant="primary",
+                    )
                 ) as btn:
                     btn.text("Save Notes")
 
@@ -1755,7 +1767,7 @@ async def delete_dialog(
 
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
                 with page.form(
                     hx_post=str(
@@ -1765,7 +1777,7 @@ async def delete_dialog(
                         )
                     ),
                 ):
-                    with button(variant="error", type="submit") as btn:
+                    with page.fragment(button(variant="error", type="submit")) as btn:
                         btn.text("Delete Organization")
 
     return None
@@ -1824,16 +1836,18 @@ async def setup_account(
             # Action buttons
             with page.div(class_="modal-action pt-6 border-t border-base-200"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(
-                    variant="primary",
-                    hx_post=str(
-                        request.url_for(
-                            "organizations-v2:setup_account",
-                            organization_id=organization_id,
-                        )
-                    ),
+                with page.fragment(
+                    button(
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for(
+                                "organizations-v2:setup_account",
+                                organization_id=organization_id,
+                            )
+                        ),
+                    )
                 ) as btn:
                     btn.text("Create Manual Account")
 
@@ -2214,9 +2228,9 @@ async def grant_credit(
             # Action buttons
             with page.div(class_="modal-action"):
                 with page.form(method="dialog"):
-                    with button(ghost=True) as btn:
+                    with page.fragment(button(ghost=True)) as btn:
                         btn.text("Cancel")
-                with button(variant="primary", type="submit") as btn:
+                with page.fragment(button(variant="primary", type="submit")) as btn:
                     btn.text("Grant Credit")
 
     return None
@@ -2304,17 +2318,19 @@ async def revoke_credit(
 
         with page.div(class_="modal-action"):
             with page.form(method="dialog"):
-                with button(ghost=True) as btn:
+                with page.fragment(button(ghost=True)) as btn:
                     btn.text("Cancel")
-            with button(
-                variant="error",
-                hx_post=str(
-                    request.url_for(
-                        "organizations-v2:revoke_credit",
-                        organization_id=organization_id,
-                        credit_id=credit_id,
-                    )
-                ),
+            with page.fragment(
+                button(
+                    variant="error",
+                    hx_post=str(
+                        request.url_for(
+                            "organizations-v2:revoke_credit",
+                            organization_id=organization_id,
+                            credit_id=credit_id,
+                        )
+                    ),
+                )
             ) as btn:
                 btn.text("Revoke Credit")
 

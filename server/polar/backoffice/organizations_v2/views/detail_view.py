@@ -105,17 +105,19 @@ class OrganizationDetailView:
                     ):
                         fragment.text(self.org.internal_notes)
                     with fragment.div(class_="mt-3 pt-3 border-t border-base-300"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            ghost=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations-v2:edit_note",
-                                    organization_id=self.org.id,
-                                )
-                            ),
-                            hx_target="#modal",
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                size="sm",
+                                ghost=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:edit_note",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            )
                         ):
                             fragment.text("Edit Note")
             else:
@@ -126,16 +128,19 @@ class OrganizationDetailView:
                         fragment.text("Internal Note")
                     with fragment.div(class_="text-sm text-base-content/60 mb-3"):
                         fragment.text("No internal notes")
-                    with button(
-                        variant="secondary",
-                        size="sm",
-                        outline=True,
-                        hx_get=str(
-                            request.url_for(
-                                "organizations-v2:add_note", organization_id=self.org.id
-                            )
-                        ),
-                        hx_target="#modal",
+                    with fragment.fragment(
+                        button(
+                            variant="secondary",
+                            size="sm",
+                            outline=True,
+                            hx_get=str(
+                                request.url_for(
+                                    "organizations-v2:add_note",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                        )
                     ):
                         fragment.text("Add Note")
 
@@ -154,51 +159,57 @@ class OrganizationDetailView:
                     if is_blocked:
                         # Blocked organizations can be unblocked and approved
                         with fragment.div(class_="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations-v2:unblock_approve_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations-v2:unblock_approve_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                )
                             ):
                                 fragment.text("Unblock & Approve")
 
                     elif self.org.status == OrganizationStatus.DENIED:
                         # Denied organizations can be approved
                         with fragment.div(class_="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations-v2:approve_denied_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations-v2:approve_denied_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                )
                             ):
                                 fragment.text("Approve")
 
                     elif self.org.status == OrganizationStatus.ACTIVE:
                         # Active organizations can be denied
                         with fragment.div(class_="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations-v2:deny_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations-v2:deny_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                )
                             ):
                                 fragment.text("Deny")
 
@@ -210,18 +221,20 @@ class OrganizationDetailView:
                         next_threshold_display = f"${next_threshold / 100:,.0f}"
 
                         with fragment.div(class_="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_post=str(
-                                    request.url_for(
-                                        "organizations-v2:approve",
-                                        organization_id=self.org.id,
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_post=str(
+                                        request.url_for(
+                                            "organizations-v2:approve",
+                                            organization_id=self.org.id,
+                                        )
                                     )
+                                    + f"?threshold={next_threshold}",
+                                    hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                                 )
-                                + f"?threshold={next_threshold}",
-                                hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
                             ):
                                 fragment.text(f"Approve ({next_threshold_display})")
 
@@ -239,26 +252,30 @@ class OrganizationDetailView:
                                 class_="input input-bordered input-sm flex-1",
                             ):
                                 pass
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
+                                )
                             ):
                                 fragment.text("✓")
 
                         with fragment.div(class_="w-full"):
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                outline=True,
-                                hx_get=str(
-                                    request.url_for(
-                                        "organizations-v2:deny_dialog",
-                                        organization_id=self.org.id,
-                                    )
-                                ),
-                                hx_target="#modal",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    outline=True,
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations-v2:deny_dialog",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                )
                             ):
                                 fragment.text("Deny")
 
@@ -267,33 +284,37 @@ class OrganizationDetailView:
                         pass
 
                     with fragment.div(class_="w-full"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations-v2:detail",
-                                    organization_id=self.org.id,
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:detail",
+                                        organization_id=self.org.id,
+                                    )
                                 )
+                                + "/plain-thread",
+                                hx_target="#modal",
                             )
-                            + "/plain-thread",
-                            hx_target="#modal",
                         ):
                             fragment.text("Create Plain Thread")
 
                     with fragment.div(class_="w-full"):
-                        with button(
-                            variant="secondary",
-                            size="sm",
-                            outline=True,
-                            hx_get=str(
-                                request.url_for(
-                                    "organizations-v2:block_dialog",
-                                    organization_id=self.org.id,
-                                )
-                            ),
-                            hx_target="#modal",
+                        with fragment.fragment(
+                            button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations-v2:block_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            )
                         ):
                             fragment.text("Block Organization")
 
@@ -314,11 +335,13 @@ class OrganizationDetailView:
                                 class_="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
                             ):
                                 fragment.text(self.org.slug)
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                ghost=True,
-                                onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    ghost=True,
+                                    onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                                )
                             ):
                                 fragment.text("Copy")
 
@@ -331,11 +354,13 @@ class OrganizationDetailView:
                                 class_="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
                             ):
                                 fragment.text(str(self.org.id))
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                ghost=True,
-                                onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                            with fragment.fragment(
+                                button(
+                                    variant="secondary",
+                                    size="sm",
+                                    ghost=True,
+                                    onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
+                                )
                             ):
                                 fragment.text("Copy")
 

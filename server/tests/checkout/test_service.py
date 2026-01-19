@@ -2561,7 +2561,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_id=uuid.uuid4(),
                 ),
@@ -2576,7 +2576,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
 
@@ -2590,7 +2590,7 @@ class TestUpdate:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_custom,
+                checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
                 ),
@@ -2614,7 +2614,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_custom,
+                checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
                 ),
@@ -2628,7 +2628,7 @@ class TestUpdate:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.update(
                 session,
-                                checkout_confirmed_one_time,
+                checkout_confirmed_one_time,
                 CheckoutUpdate(
                     customer_email="customer@example.com",
                 ),
@@ -2669,7 +2669,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_recurring_fixed,
+                checkout_recurring_fixed,
                 CheckoutUpdate.model_validate(updated_values),
             )
 
@@ -2681,7 +2681,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdate(
                     discount_id=uuid.uuid4(),
                 ),
@@ -2695,7 +2695,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdatePublic(
                     discount_code="invalid",
                 ),
@@ -2710,7 +2710,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_free,
+                checkout_one_time_free,
                 CheckoutUpdate(discount_id=discount_fixed_once.id),
             )
 
@@ -2723,7 +2723,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_free,
+                checkout_one_time_free,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
@@ -2747,7 +2747,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
 
@@ -2771,7 +2771,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_recurring_fixed,
+            checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2819,7 +2819,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_recurring_fixed,
+            checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2864,7 +2864,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_recurring_fixed,
+            checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2886,7 +2886,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2903,7 +2903,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_custom,
+            checkout_one_time_custom,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2917,7 +2917,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_free,
+            checkout_one_time_free,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2935,7 +2935,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_custom,
+            checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
@@ -2956,7 +2956,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_custom,
+            checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
                 customer_tax_id=None,
@@ -2978,7 +2978,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
@@ -3006,7 +3006,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
@@ -3032,7 +3032,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdate(customer_email="updatedemail@example.com"),
         )
 
@@ -3045,7 +3045,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_free,
+            checkout_one_time_free,
             CheckoutUpdate(
                 metadata={"key": "value"},
             ),
@@ -3060,7 +3060,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_free,
+            checkout_one_time_free,
             CheckoutUpdate(metadata={}),
         )
 
@@ -3088,7 +3088,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_free,
+            checkout_one_time_free,
             CheckoutUpdate(
                 customer_metadata={"key": "value"},
             ),
@@ -3109,7 +3109,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                                checkout_custom_fields,
+                checkout_custom_fields,
                 CheckoutUpdate(custom_field_data=custom_field_data),
             )
 
@@ -3121,7 +3121,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_custom_fields,
+            checkout_custom_fields,
             CheckoutUpdate(
                 custom_field_data={"text": "abc", "select": "a"},
             ),
@@ -3134,7 +3134,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_custom_fields,
+            checkout_custom_fields,
             CheckoutUpdate(
                 custom_field_data={"text": "abc"},
             ),
@@ -3149,7 +3149,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_free,
+            checkout_one_time_free,
             CheckoutUpdate(
                 embed_origin="https://example.com",
             ),
@@ -3164,7 +3164,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_tax_not_applicable,
+            checkout_tax_not_applicable,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
@@ -3183,7 +3183,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdate(
                 discount_id=discount_fixed_once.id,
             ),
@@ -3208,7 +3208,7 @@ class TestUpdate:
     ) -> None:
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdatePublic(
                 discount_code=discount_fixed_once.code,
             ),
@@ -3240,7 +3240,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_one_time_fixed,
+            checkout_one_time_fixed,
             CheckoutUpdatePublic(
                 discount_code=discount_percentage_100.code,
             ),
@@ -3271,7 +3271,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_recurring_fixed,
+            checkout_recurring_fixed,
             CheckoutUpdate(customer_email=customer.email),
         )
 
@@ -3311,7 +3311,7 @@ class TestUpdate:
         with pytest.raises(AlreadyActiveSubscriptionError):
             await checkout_service.update(
                 session,
-                                checkout_recurring_fixed,
+                checkout_recurring_fixed,
                 CheckoutUpdate(customer_email=customer.email),
             )
 
@@ -3337,7 +3337,7 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-                        checkout_seat_based,
+            checkout_seat_based,
             CheckoutUpdate(seats=12),
         )
 
@@ -3359,7 +3359,7 @@ class TestUpdate:
         # Update seats to 3
         checkout = await checkout_service.update(
             session,
-                        checkout_seat_based,
+            checkout_seat_based,
             CheckoutUpdate(seats=3),
         )
 
@@ -3375,7 +3375,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                                checkout_one_time_fixed,
+                checkout_one_time_fixed,
                 CheckoutUpdate(seats=5),
             )
 
@@ -3391,7 +3391,7 @@ class TestUpdate:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
-                                checkout_seat_based,
+                checkout_seat_based,
                 CheckoutUpdate(seats=0),
             )
 
@@ -3412,7 +3412,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(product_id=product_seat_based.id),
         )
 
@@ -3441,7 +3441,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(product_id=product_one_time.id),
         )
 
@@ -3467,7 +3467,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                                checkout,
+                checkout,
                 CheckoutUpdate(seats=1),  # Below minimum of 3
             )
 
@@ -3495,7 +3495,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                                checkout,
+                checkout,
                 CheckoutUpdate(seats=15),  # Above maximum of 10
             )
 
@@ -3522,7 +3522,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(seats=15),  # Still within range
         )
 
@@ -3547,7 +3547,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(trial_interval_count=14, trial_interval=TrialInterval.day),
         )
 
@@ -3601,7 +3601,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -3636,7 +3636,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -3664,7 +3664,7 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-                        checkout,
+            checkout,
             CheckoutUpdate(currency=PresentmentCurrency.usd),
         )
 
@@ -3691,7 +3691,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                                checkout,
+                checkout,
                 CheckoutUpdate(currency=PresentmentCurrency.eur),
             )
 
@@ -3779,7 +3779,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
             )
@@ -3798,7 +3798,7 @@ class TestConfirm:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
@@ -3822,7 +3822,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -3843,7 +3843,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -3869,7 +3869,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -3893,7 +3893,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -3943,7 +3943,7 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -3986,7 +3986,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4105,7 +4105,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_custom,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4161,7 +4161,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_free,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4209,7 +4209,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4246,7 +4246,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4284,7 +4284,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4317,7 +4317,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4372,7 +4372,7 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_recurring_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4436,7 +4436,7 @@ class TestConfirm:
         with pytest.raises(TrialAlreadyRedeemed):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -4477,7 +4477,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4520,7 +4520,7 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4592,7 +4592,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirm(
                     customer_email="test@example.com",
@@ -4637,7 +4637,7 @@ class TestConfirm:
         # Should be allowed since account setup is complete (is_details_submitted=True)
         confirmed_checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4685,7 +4685,7 @@ class TestConfirm:
         # Free products should be allowed even when payment not ready
         confirmed_checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_free,
             CheckoutConfirm(
                 customer_email="test@example.com",
@@ -4715,7 +4715,7 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
-                                auth_subject,
+                auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
                     {
@@ -4765,7 +4765,7 @@ class TestConfirm:
         # Grandfathered organizations should be allowed
         confirmed_checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {
@@ -4833,7 +4833,7 @@ class TestConfirm:
         # Should be allowed since account setup is complete (is_details_submitted=True)
         confirmed_checkout = await checkout_service.confirm(
             session,
-                        auth_subject,
+            auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
                 {

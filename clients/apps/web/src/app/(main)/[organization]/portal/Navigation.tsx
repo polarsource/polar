@@ -21,8 +21,12 @@ import { twMerge } from 'tailwind-merge'
 const hasBillingPermission = (
   authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
 ) => {
+  // Unauthenticated users can't access billing
+  if (!authenticatedUser) {
+    return false
+  }
   // Customers always have billing access (legacy behavior)
-  if (!authenticatedUser || authenticatedUser.type === 'customer') {
+  if (authenticatedUser.type === 'customer') {
     return true
   }
   // Members need owner or billing_manager role
@@ -84,10 +88,7 @@ export const Navigation = ({
   const currentPath = usePathname()
   const searchParams = useSearchParams()
 
-  const token =
-    searchParams.get('customer_session_token') ??
-    searchParams.get('member_session_token') ??
-    ''
+  const token = searchParams.get('customer_session_token') ?? ''
   const api = createClientSideAPI(token)
   const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)

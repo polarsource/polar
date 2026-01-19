@@ -54,11 +54,10 @@ const ClientPage = ({
         return
       }
 
-      // Detect token type based on prefix
-      const tokenParam = data.token.startsWith('polar_mst_')
-        ? 'member_session_token'
-        : 'customer_session_token'
-      router.push(`/${organization.slug}/portal/?${tokenParam}=${data.token}`)
+      // Always use customer_session_token - backend detects type by prefix
+      router.push(
+        `/${organization.slug}/portal/?customer_session_token=${data.token}`,
+      )
     },
     [sessionRequest, setError, router, organization],
   )

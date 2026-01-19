@@ -123,10 +123,6 @@ async def get_auth_subject(
                 )
             raise InvalidTokenError()
 
-        # CustomerSession - always returns Customer auth subject
-        # Note: For proper member authentication with role-based permissions,
-        # use MemberSession tokens (polar_mst_) instead of CustomerSession tokens.
-        # CustomerSession tokens are for legacy customer-only authentication.
         if token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX):
             customer_session = await get_customer_session(session, token)
             if customer_session:

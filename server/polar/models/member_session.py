@@ -71,10 +71,11 @@ class MemberSession(RecordModel):
         """
         Return the customer portal URL for API compatibility with CustomerSession.
 
-        Uses member_session_token parameter since this is a MemberSession.
+        Uses customer_session_token parameter name for frontend simplicity.
+        The backend detects token type by prefix (polar_mst_ vs polar_cst_).
         """
         query_string = urlencode(
-            {"member_session_token": self.raw_token, "email": self.member.email}
+            {"customer_session_token": self.raw_token, "email": self.member.email}
         )
         return settings.generate_frontend_url(
             f"/{self.member.customer.organization.slug}/portal?{query_string}"

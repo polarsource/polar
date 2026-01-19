@@ -3,7 +3,12 @@ from typing import Any
 
 import dramatiq
 
-from polar.observability import TASK_DURATION, TASK_EXECUTIONS, TASK_RETRIES
+from polar.observability import (
+    TASK_DURATION,
+    TASK_EXECUTIONS,
+    TASK_RETRIES,
+    register_gc_metrics,
+)
 from polar.observability.remote_write import start_remote_write_pusher
 
 
@@ -20,6 +25,7 @@ class PrometheusMiddleware(dramatiq.Middleware):
         # Clearing here would break Counter metrics because they eagerly create .db
         # files during import (before this hook runs), and clearing would delete them.
         start_remote_write_pusher()
+        register_gc_metrics()
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

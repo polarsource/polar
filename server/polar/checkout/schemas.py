@@ -74,10 +74,11 @@ Amount = Annotated[
     Field(
         description=(
             "Amount in cents, before discounts and taxes. "
-            "Only useful for custom prices, it'll be ignored for fixed and free prices."
+            "Only useful for custom prices, it'll be ignored for fixed and free prices. "
+            "If the price has minimum_amount set to 0 (free option), 0 is also accepted."
         )
     ),
-    Ge(MINIMUM_PRICE_AMOUNT),
+    Ge(0),  # Allow 0 for free PWYW; service validates the 1-49 gap
     Le(MAXIMUM_PRICE_AMOUNT),
 ]
 CustomerEmail = Annotated[

@@ -7473,6 +7473,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitCustom']
       properties: components['schemas']['BenefitGrantCustomProperties']
       previous_properties?:
@@ -7559,6 +7560,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDiscord']
       properties: components['schemas']['BenefitGrantDiscordProperties']
       previous_properties?:
@@ -7639,6 +7641,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDownloadables']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
       previous_properties?:
@@ -7739,6 +7742,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitGitHubRepository']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
       previous_properties?:
@@ -7821,6 +7825,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitLicenseKeys']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
       previous_properties?:
@@ -7834,6 +7839,8 @@ export interface components {
       /** Benefit Grant Id */
       benefit_grant_id: string
       benefit_type: components['schemas']['BenefitType']
+      /** Member Id */
+      member_id?: string
     }
     /** BenefitGrantMeterCreditProperties */
     BenefitGrantMeterCreditProperties: {
@@ -7913,6 +7920,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitMeterCredit']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
       previous_properties?:
@@ -9059,6 +9067,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -9181,6 +9194,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -10056,6 +10074,11 @@ export interface components {
        */
       embed_origin?: string | null
       /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
+      /**
        * Product Price Id
        * Format: uuid4
        * @description ID of the product price to checkout.
@@ -10280,6 +10303,11 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
@@ -10422,6 +10450,11 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
@@ -10652,6 +10685,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -10909,6 +10947,11 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /**
+       * Locale
+       * @description Locale for translations.
+       */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11017,6 +11060,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -11138,6 +11186,11 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /**
+       * Locale
+       * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
+       */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -12467,6 +12520,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -12903,6 +12964,14 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
@@ -14262,6 +14331,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -14956,6 +15033,14 @@ export interface components {
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
@@ -14992,6 +15077,14 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
     }
     /**
      * CustomerUpdatedEvent
@@ -15188,6 +15281,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -17576,6 +17677,14 @@ export interface components {
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
       /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
+      /**
        * Organization Id
        * Format: uuid4
        * @description The ID of the organization owning the customer.
@@ -19599,6 +19708,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -23560,6 +23677,14 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * Locale
+       * @description The locale of the customer, used for translations.
+       * @example en
+       * @example nl
+       * @example sv
+       */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -31068,7 +31193,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -35943,7 +36067,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -38766,7 +38889,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39369,7 +39491,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']

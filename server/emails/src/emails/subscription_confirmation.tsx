@@ -1,4 +1,9 @@
 import {
+  getEmailTranslations,
+  isSupportedLocale,
+  type SupportedLocale,
+} from '../i18n'
+import {
   Heading,
   Hr,
   Link,
@@ -23,32 +28,45 @@ export function SubscriptionConfirmation({
   subscription,
   order,
   url,
-}: schemas['SubscriptionConfirmationProps']) {
+  locale = 'en',
+}: schemas['SubscriptionConfirmationProps'] & { locale?: string }) {
+  const safeLocale: SupportedLocale = isSupportedLocale(locale) ? locale : 'en'
+  const t = getEmailTranslations(safeLocale)
+
   return (
     <Wrapper>
-      <Preview>Thank you for your subscription to {product.name}!</Preview>
+      <Preview>
+        {t.subscriptionConfirmation.preview.replace('{product}', product.name)}
+      </Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
         <Heading as="h1" className="text-xl font-bold text-gray-900">
-          Thank you for your subscription!
+          {t.subscriptionConfirmation.heading}
         </Heading>
         <BodyText>
-          Your subscription to <span className="font-bold">{product.name}</span>{' '}
-          is now active.
+          {t.subscriptionConfirmation.active
+            .split('{product}')
+            .map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <span className="font-bold">{product.name}</span>
+                </span>
+              ) : (
+                part
+              ),
+            )}
         </BodyText>
       </Section>
       {product.benefits.length > 0 && <Benefits benefits={product.benefits} />}
       <Section className="my-8 text-center">
-        <Button href={url}>Access my purchase</Button>
+        <Button href={url}>{t.common.accessPurchase}</Button>
       </Section>
       <Hr />
       <OrderSummary order={order} />
       <Hr />
       <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
-          below into your web browser.
-        </Text>
+        <Text className="text-sm text-gray-600">{t.common.troubleWithButton}</Text>
         <Text className="text-sm">
           <Link href={url} className="text-blue-600 underline">
             {url}
@@ -70,6 +88,7 @@ SubscriptionConfirmation.PreviewProps = {
   },
   order,
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
+  locale: 'en',
 }
 
 export default SubscriptionConfirmation

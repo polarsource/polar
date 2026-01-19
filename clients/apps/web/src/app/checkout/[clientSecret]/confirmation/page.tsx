@@ -1,5 +1,6 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
+import { resolveCheckoutLocale } from '@/i18n/utils'
 import { getServerURL } from '@/utils/api'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
@@ -13,14 +14,18 @@ export default async function Page(props: {
     embed?: string
     theme?: 'light' | 'dark'
     customer_session_token?: string
+    locale?: string
   }>
 }) {
   const searchParams = await props.searchParams
-
-  const { embed, theme, customer_session_token } = searchParams
-
   const params = await props.params
 
+  const {
+    embed,
+    theme,
+    customer_session_token,
+    locale: searchParamLocale,
+  } = searchParams
   const { clientSecret } = params
 
   const client = new PolarCore({ serverURL: getServerURL() })
@@ -61,6 +66,12 @@ export default async function Page(props: {
     redirect(checkout.url)
   }
 
+  // Type cast needed until @polar-sh/sdk is updated with locale field
+  const locale = await resolveCheckoutLocale(
+    searchParamLocale,
+    (checkout as typeof checkout & { locale?: string }).locale,
+  )
+
   return (
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
       <CheckoutConfirmation
@@ -68,6 +79,7 @@ export default async function Page(props: {
         embed={embed === 'true'}
         theme={theme}
         customerSessionToken={customer_session_token}
+        locale={locale}
       />
     </CheckoutLayout>
   )

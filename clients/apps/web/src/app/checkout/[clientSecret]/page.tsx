@@ -1,4 +1,5 @@
 import { getExperiment } from '@/experiments/server'
+import { resolveCheckoutLocale } from '@/i18n/utils'
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
@@ -13,14 +14,16 @@ import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
+  searchParams: Promise<{
+    embed?: string
+    theme?: 'light' | 'dark'
+    locale?: string
+  }>
 }) {
   const searchParams = await props.searchParams
-
-  const { embed: _embed, theme } = searchParams
-
   const params = await props.params
 
+  const { embed: _embed, theme, locale: searchParamLocale } = searchParams
   const { clientSecret } = params
 
   const embed = _embed === 'true'
@@ -76,6 +79,11 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
+  // Type cast needed until @polar-sh/sdk is updated with locale field
+  const locale = await resolveCheckoutLocale(
+    searchParamLocale,
+    (checkout as typeof checkout & { locale?: string }).locale,
+  )
   const layoutVariant = await getExperiment('checkout_layout_experiment')
 
   return (
@@ -88,6 +96,7 @@ export default async function Page(props: {
           theme={theme}
           embed={embed}
           layoutVariant={layoutVariant}
+          locale={locale}
         />
       </CheckoutFormProvider>
     </CheckoutProvider>

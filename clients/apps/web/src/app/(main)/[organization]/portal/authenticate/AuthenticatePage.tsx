@@ -2,6 +2,7 @@
 
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -53,6 +54,11 @@ const ClientPage = ({
         setError('root', { message: 'Invalid verification code' })
         return
       }
+
+      // Invalidate cached queries before redirect to ensure fresh data
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({ queryKey: ['portal_authenticated_user'] })
+      queryClient.invalidateQueries({ queryKey: ['customer_portal_session'] })
 
       router.push(
         `/${organization.slug}/portal/?customer_session_token=${data.token}`,

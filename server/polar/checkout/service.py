@@ -1688,7 +1688,7 @@ class CheckoutService:
         # Acquire lock and load fresh in one query
         # Uses FOR UPDATE OF checkouts to allow joins while locking only the checkout
         try:
-            checkout = await repository.get_by_id_for_update(
+            locked_checkout = await repository.get_by_id_for_update(
                 checkout_id,
                 nowait=True,
                 options=repository.get_eager_options(),
@@ -1698,10 +1698,10 @@ class CheckoutService:
                 raise CheckoutLocked(checkout_id) from e
             raise
 
-        if checkout is None:
+        if locked_checkout is None:
             raise ResourceNotFound()
 
-        yield checkout
+        yield locked_checkout
 
         # 🚨 It's not a mistake: we do explicitly commit here to release the FOR UPDATE lock.
         # The goal is to avoid race conditions where waiting requests acquire the lock and

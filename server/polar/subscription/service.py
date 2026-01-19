@@ -860,7 +860,6 @@ class SubscriptionService:
         if isinstance(update, SubscriptionUpdateDiscount):
             return await self.update_discount(
                 session,
-                locker,
                 subscription,
                 discount_id=update.discount_id,
             )
@@ -1193,7 +1192,6 @@ class SubscriptionService:
     async def update_discount(
         self,
         session: AsyncSession,
-        locker: Locker,
         subscription: Subscription,
         *,
         discount_id: uuid.UUID | None = None,
@@ -1248,7 +1246,7 @@ class SubscriptionService:
             return await _update_discount(session, subscription, None)
 
         async with discount_service.redeem_discount(
-            session, locker, discount
+            session, discount
         ) as discount_redemption:
             discount_redemption.subscription = subscription
             return await _update_discount(session, subscription, discount)

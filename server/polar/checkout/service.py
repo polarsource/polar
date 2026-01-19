@@ -54,7 +54,6 @@ from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.logging import Logger
 from polar.member import member_service
 from polar.models import (
@@ -193,6 +192,15 @@ class TrialAlreadyRedeemed(CheckoutError):
             "Trials can only be used once per customer."
         )
         super().__init__(message, 403)
+
+
+class CheckoutLocked(CheckoutError):
+    """Raised when checkout is locked by another transaction."""
+
+    def __init__(self, checkout_id: uuid.UUID) -> None:
+        self.checkout_id = checkout_id
+        message = "Checkout is currently being processed. Please try again."
+        super().__init__(message, 409)
 
 
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
@@ -930,15 +938,11 @@ class CheckoutService:
     async def update(
         self,
         session: AsyncSession,
-        locker: Locker,
-        checkout_id: uuid.UUID,
+        checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        async with self._lock_checkout(session, locker, checkout_id) as checkout:
-            if checkout.is_expired:
-                raise ExpiredCheckoutError()
-
+        async with self._lock_checkout_update(session, checkout) as checkout:
             checkout = await self._update_checkout(
                 session, checkout, checkout_update, ip_geolocation_client
             )
@@ -951,47 +955,20 @@ class CheckoutService:
             await self._after_checkout_updated(session, checkout)
             return checkout
 
-    async def update_by_client_secret(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        client_secret: str,
-        checkout_update: CheckoutUpdatePublic,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
-    ) -> Checkout:
-        """
-        Update a checkout by client secret.
-
-        This method acquires the lock first (using only the checkout ID), then loads
-        the checkout fresh. This avoids SQLAlchemy identity map issues.
-        """
-        repository = CheckoutRepository.from_session(session)
-        checkout_id = await repository.get_id_by_client_secret(client_secret)
-        if checkout_id is None:
-            raise ResourceNotFound()
-
-        return await self.update(
-            session, locker, checkout_id, checkout_update, ip_geolocation_client
-        )
-
     async def confirm(
         self,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[User | Anonymous],
-        checkout_id: uuid.UUID,
+        checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
-        async with self._lock_checkout(session, locker, checkout_id) as checkout:
-            if checkout.is_expired:
-                raise ExpiredCheckoutError()
-
+        async with self._lock_checkout_update(session, checkout) as checkout:
             checkout = await self._update_checkout(session, checkout, checkout_confirm)
             # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
             if checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
-                        session, locker, checkout.discount
+                        session, checkout.discount
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
@@ -1012,29 +989,6 @@ class CheckoutService:
             return await self._confirm_inner(
                 session, auth_subject, checkout, checkout_confirm
             )
-
-    async def confirm_by_client_secret(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        auth_subject: AuthSubject[User | Anonymous],
-        client_secret: str,
-        checkout_confirm: CheckoutConfirm,
-    ) -> Checkout:
-        """
-        Confirm a checkout by client secret.
-
-        This method acquires the lock first (using only the checkout ID), then loads
-        the checkout fresh. This avoids SQLAlchemy identity map issues.
-        """
-        repository = CheckoutRepository.from_session(session)
-        checkout_id = await repository.get_id_by_client_secret(client_secret)
-        if checkout_id is None:
-            raise ResourceNotFound()
-
-        return await self.confirm(
-            session, locker, auth_subject, checkout_id, checkout_confirm
-        )
 
     async def _confirm_inner(
         self,
@@ -1711,44 +1665,49 @@ class CheckoutService:
         return subscription, subscription.customer
 
     @contextlib.asynccontextmanager
-    async def _lock_checkout(
-        self, session: AsyncSession, locker: Locker, checkout_id: uuid.UUID
+    async def _lock_checkout_update(
+        self, session: AsyncSession, checkout: Checkout
     ) -> AsyncIterator[Checkout]:
         """
-        Acquire a lock and load the checkout fresh from the database.
+        Lock checkout with FOR UPDATE NOWAIT and reload fresh from database.
 
-        This method acquires the lock FIRST, then loads the checkout. This ensures
-        the checkout is loaded fresh without SQLAlchemy identity map issues.
+        Uses PostgreSQL row-level locking instead of Redis distributed locks.
+        If another transaction holds the lock, immediately raises CheckoutLocked
+        instead of waiting (NOWAIT behavior).
 
-        Previously, we loaded the checkout before acquiring the lock, then tried to
-        "refresh" it inside the lock. However, SQLAlchemy's identity map would return
-        the cached object without updating its attributes from the database, causing
-        race conditions where stale data was used.
+        Uses FOR UPDATE OF checkouts to lock only the checkout row while still
+        allowing eager loading of relationships via LEFT OUTER JOINs.
 
-        See: https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#orm-queryguide-populate-existing
-
-        The timeout is purposely set to 10 seconds, a high value.
-        We've seen in the past Stripe payment requests taking more than 5 seconds,
-        causing the lock to expire while waiting for the payment to complete.
+        See: https://www.postgresql.org/docs/current/explicit-locking.html
         """
-        async with locker.lock(
-            f"checkout:{checkout_id}", timeout=10, blocking_timeout=10
-        ):
-            # Load checkout fresh - identity map is clean since we acquire lock first
-            repository = CheckoutRepository.from_session(session)
-            checkout = await repository.get_by_id(
-                checkout_id, options=repository.get_eager_options()
+        from sqlalchemy.exc import OperationalError
+
+        repository = CheckoutRepository.from_session(session)
+        checkout_id = checkout.id
+
+        # Acquire lock and load fresh in one query
+        # Uses FOR UPDATE OF checkouts to allow joins while locking only the checkout
+        try:
+            checkout = await repository.get_by_id_for_update(
+                checkout_id,
+                nowait=True,
+                options=repository.get_eager_options(),
             )
-            if checkout is None:
-                raise ResourceNotFound()
+        except OperationalError as e:
+            if "could not obtain lock" in str(e):
+                raise CheckoutLocked(checkout_id) from e
+            raise
 
-            yield checkout
+        if checkout is None:
+            raise ResourceNotFound()
 
-            # 🚨 It's not a mistake: we do explicitly commit here before releasing the lock.
-            # The goal is to avoid race conditions where waiting updates take the lock and refresh
-            # the Checkout object _before_ the previous operation had the chance to commit
-            # See: https://github.com/polarsource/polar/issues/7260
-            await session.commit()
+        yield checkout
+
+        # 🚨 It's not a mistake: we do explicitly commit here to release the FOR UPDATE lock.
+        # The goal is to avoid race conditions where waiting requests acquire the lock and
+        # load the Checkout object _before_ the previous operation had the chance to commit.
+        # See: https://github.com/polarsource/polar/issues/7260
+        await session.commit()
 
     async def _update_checkout(
         self,

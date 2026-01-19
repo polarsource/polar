@@ -13,7 +13,6 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.models import (
     Discount,
     DiscountProduct,
@@ -391,24 +390,38 @@ class DiscountService(ResourceServiceReader[Discount]):
 
     @contextlib.asynccontextmanager
     async def redeem_discount(
-        self, session: AsyncSession, locker: Locker, discount: Discount
+        self, session: AsyncSession, discount: Discount
     ) -> AsyncIterator[DiscountRedemption]:
-        # The timeout is purposely set to 10 seconds, a high value.
-        # We've seen in the past Stripe payment requests taking more than 5 seconds,
-        # causing the lock to expire while waiting for the payment to complete.
-        async with locker.lock(
-            f"discount:{discount.id}", timeout=10, blocking_timeout=10
-        ):
-            if not await self.is_redeemable_discount(session, discount):
-                raise DiscountNotRedeemableError(discount)
+        """
+        Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
 
-            discount_redemption = DiscountRedemption(discount=discount)
+        Uses PostgreSQL row-level locking instead of Redis distributed locks.
+        The lock is held until the parent transaction commits.
+        """
+        from sqlalchemy.exc import OperationalError
 
-            yield discount_redemption
+        from polar.discount.repository import DiscountRepository
 
-            session.add(discount_redemption)
-            await session.flush()
-            await session.refresh(discount, {"redemptions_count"})
+        repository = DiscountRepository.from_session(session)
+
+        # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
+        try:
+            await repository.get_by_id_for_update(discount.id, nowait=True)
+        except OperationalError as e:
+            if "could not obtain lock" in str(e):
+                raise DiscountNotRedeemableError(discount) from e
+            raise
+
+        if not await self.is_redeemable_discount(session, discount):
+            raise DiscountNotRedeemableError(discount)
+
+        discount_redemption = DiscountRedemption(discount=discount)
+
+        yield discount_redemption
+
+        session.add(discount_redemption)
+        await session.flush()
+        await session.refresh(discount, {"redemptions_count"})
 
     async def remove_checkout_redemption(
         self, session: AsyncSession, checkout: Checkout

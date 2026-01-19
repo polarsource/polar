@@ -43,20 +43,24 @@ class CheckoutRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_id_by_client_secret(self, client_secret: str) -> UUID | None:
+    async def get_by_id_for_update(
+        self, checkout_id: UUID, *, nowait: bool = True, options: Options = ()
+    ) -> Checkout | None:
         """
-        Get checkout ID by client secret without loading the full object.
+        Get checkout by ID with FOR UPDATE lock.
 
-        This is used to acquire a lock before loading the checkout, avoiding
-        SQLAlchemy identity map issues where a pre-loaded object wouldn't be
-        refreshed by subsequent queries.
+        Uses FOR UPDATE OF checkouts to lock only the checkout row, allowing
+        LEFT OUTER JOINs for eager loading of relationships.
+
+        See: https://www.postgresql.org/docs/current/explicit-locking.html
         """
-        statement = select(Checkout.id).where(
-            Checkout.client_secret == client_secret,
-            Checkout.deleted_at.is_(None),
+        statement = (
+            self.get_base_statement()
+            .where(Checkout.id == checkout_id)
+            .options(*options)
+            .with_for_update(nowait=nowait, of=Checkout)
         )
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        return await self.get_one_or_none(statement)
 
     async def expire_open_checkouts(self) -> None:
         statement = (

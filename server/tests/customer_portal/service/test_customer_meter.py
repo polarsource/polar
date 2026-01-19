@@ -27,7 +27,6 @@ class TestList:
         customer: Customer,
     ) -> None:
         from polar.enums import SubscriptionRecurringInterval
-
         from tests.fixtures.random_objects import create_product
 
         # Create meters with different names
@@ -87,7 +86,10 @@ class TestList:
         await save_fixture(customer_meter_no_match)
 
         results, count = await customer_meter_service.list(
-            session, auth_subject, query="API Requests", pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            query="API Requests",
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 1
@@ -104,7 +106,6 @@ class TestList:
     ) -> None:
         """Test that % in query is treated as literal, not wildcard."""
         from polar.enums import SubscriptionRecurringInterval
-
         from tests.fixtures.random_objects import create_product
 
         meter_with_percent = await create_meter(
@@ -177,7 +178,6 @@ class TestList:
     ) -> None:
         """Test that _ in query is treated as literal, not single-char wildcard."""
         from polar.enums import SubscriptionRecurringInterval
-
         from tests.fixtures.random_objects import create_product
 
         meter_with_underscore = await create_meter(

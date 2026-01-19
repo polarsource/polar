@@ -731,10 +731,12 @@ class OrderService:
                 )
 
             # Reset the associated meters, if any
+            # Note: subscription_update is intentionally excluded - meter credits from
+            # benefit grants should persist within a billing cycle. Subscription updates
+            # are for prorations, not new billing periods.
             if billing_reason in {
                 OrderBillingReasonInternal.subscription_cycle,
                 OrderBillingReasonInternal.subscription_cycle_after_trial,
-                OrderBillingReasonInternal.subscription_update,
             }:
                 await subscription_service.reset_meters(session, subscription)
 

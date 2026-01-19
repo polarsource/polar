@@ -16,13 +16,11 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
-    select,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     Mapped,
-    column_property,
     declared_attr,
     mapped_column,
     relationship,
@@ -92,8 +90,8 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    stored_redemptions_count: Mapped[int | None] = mapped_column(
-        "redemptions_count", Integer, nullable=True, default=None
+    redemptions_count: Mapped[int] = mapped_column(
+        "redemptions_count", Integer, nullable=False, default=0
     )
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -122,17 +120,6 @@ class Discount(MetadataMixin, RecordModel):
     products: AssociationProxy[list["Product"]] = association_proxy(
         "discount_products", "product"
     )
-
-    @declared_attr
-    def redemptions_count(cls) -> Mapped[int]:
-        from .discount_redemption import DiscountRedemption
-
-        return column_property(
-            select(func.count(DiscountRedemption.id))
-            .where(DiscountRedemption.discount_id == cls.id)
-            .correlate_except(DiscountRedemption)
-            .scalar_subquery()
-        )
 
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()

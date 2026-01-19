@@ -5,14 +5,13 @@ from typing import Any, ParamSpec
 import dramatiq
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
-from dramatiq import middleware
 
 from polar.config import settings
 
 # Import metrics FIRST to set PROMETHEUS_MULTIPROC_DIR before prometheus_client is imported
 from polar.observability import metrics as _prometheus_metrics
 
-from ._broker import get_broker
+from ._broker import CurrentMessageMiddleware, get_broker
 from ._encoder import JSONEncoder
 from ._enqueue import (
     BulkJobDelayCalculator,
@@ -43,13 +42,13 @@ class MaxRetriesMiddleware(dramatiq.Middleware):
 
 
 def get_retries() -> int:
-    message = middleware.CurrentMessage.get_current_message()
+    message = CurrentMessageMiddleware.get_current_message()
     assert message is not None
     return message.options.get("retries", 0)
 
 
 def can_retry() -> bool:
-    message = middleware.CurrentMessage.get_current_message()
+    message = CurrentMessageMiddleware.get_current_message()
     assert message is not None
     return get_retries() < message.options["max_retries"]
 

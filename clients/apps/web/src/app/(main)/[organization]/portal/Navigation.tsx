@@ -157,9 +157,7 @@ export const Navigation = ({
         }}
       >
         <SelectTrigger className="md:hidden">
-          <SelectValue>
-            {filteredLinks.find(({ href }) => href === currentPath)?.label}
-          </SelectValue>
+          <SelectValue placeholder="Select page" />
         </SelectTrigger>
         <SelectContent>
           {filteredLinks.map((link) => (

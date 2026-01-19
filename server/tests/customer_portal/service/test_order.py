@@ -114,6 +114,7 @@ class TestList:
 
         assert count == 1
         assert len(orders) == 1
+        assert orders[0].product is not None
         assert orders[0].product.name == "Premium Subscription"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
@@ -150,6 +151,7 @@ class TestList:
         )
 
         assert count == 1
+        assert orders[0].product is not None
         assert orders[0].product.name == "50% Off Deal"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
@@ -186,6 +188,7 @@ class TestList:
         )
 
         assert count == 1
+        assert orders[0].product is not None
         assert orders[0].product.name == "Pro_Plan"
 
 

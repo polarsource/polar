@@ -42,6 +42,8 @@ export interface CheckoutPWYWFormProps {
   themePreset: ThemingPresetProps
 }
 
+const ENFORCED_MINIMUM_IN_CENTS_USD = 50 // Stripe requires at least a $0.50 payment
+
 export const CheckoutPWYWForm = ({
   update,
   checkout,
@@ -50,9 +52,9 @@ export const CheckoutPWYWForm = ({
 }: CheckoutPWYWFormProps) => {
   const { amount } = checkout
 
-  // Stripe minimum payment amount (50 cents)
-  const stripeMinimum = 50
-  // Free is allowed when minimum_amount is explicitly set to 0
+  // For backwards compatibility,
+  // explicit `0` is considered free,
+  // while a null or undefined value means implies ${ENFORCED_MINIMUM_IN_CENTS_USD}
   const allowFree = productPrice.minimumAmount === 0
 
   const form = useForm<{ amount: number }>({
@@ -60,21 +62,20 @@ export const CheckoutPWYWForm = ({
   })
   const { control, trigger, reset, watch } = form
 
-  // Custom validation based on minimum_amount
   const validateAmount = useCallback(
     (value: number): string | true => {
       if (allowFree) {
-        // $0 is valid when minimum_amount is 0
         if (value === 0) {
           return true
         }
-        // Amounts between $0.01 and $0.49 are invalid (Stripe minimum)
-        if (value > 0 && value < stripeMinimum) {
-          return `Amount must be $0 or at least ${formatCurrencyNumber(stripeMinimum, checkout.currency)}`
+
+        if (value > 0 && value < ENFORCED_MINIMUM_IN_CENTS_USD) {
+          return `Amount must be either $0 or more than ${formatCurrencyNumber(ENFORCED_MINIMUM_IN_CENTS_USD, checkout.currency)}`
         }
       } else {
-        // Check minimum amount (if set, otherwise use Stripe minimum)
-        const minAmount = productPrice.minimumAmount ?? stripeMinimum
+        const minAmount =
+          productPrice.minimumAmount ?? ENFORCED_MINIMUM_IN_CENTS_USD
+
         if (value < minAmount) {
           return `Amount must be at least ${formatCurrencyNumber(minAmount, checkout.currency)}`
         }
@@ -119,27 +120,24 @@ export const CheckoutPWYWForm = ({
     reset({ amount: amount || 0 })
   }, [amount, reset])
 
-  // Generate labels for min/max amounts
-  const customAmountMinLabel = formatCurrencyNumber(
-    productPrice.minimumAmount || stripeMinimum,
-    checkout.currency,
-  )
-
-  const customAmountMaxLabel = productPrice.maximumAmount
-    ? formatCurrencyNumber(productPrice.maximumAmount, checkout.currency)
-    : null
-
-  // Label text depends on whether free is allowed
   const minLabelText = allowFree
-    ? `$0 or ${customAmountMinLabel}+ minimum`
-    : `${customAmountMinLabel} minimum`
+    ? false
+    : `${formatCurrencyNumber(
+        productPrice.minimumAmount || ENFORCED_MINIMUM_IN_CENTS_USD,
+        checkout.currency,
+      )} minimum`
 
   return (
     <Form {...form}>
       <form className="flex w-full flex-col gap-3">
         <FormLabel>
-          Name a fair price{' '}
-          <span className="text-gray-400">({minLabelText})</span>
+          Name a fair price
+          {minLabelText && (
+            <>
+              {' '}
+              <span className="text-gray-400">({minLabelText})</span>
+            </>
+          )}
         </FormLabel>
         <div className="flex flex-row items-center gap-2">
           <FormField

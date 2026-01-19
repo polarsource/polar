@@ -56,7 +56,7 @@ def can_retry() -> bool:
 
 broker = get_broker()
 dramatiq.set_broker(broker)
-dramatiq.set_encoder(JSONEncoder())
+dramatiq.set_encoder(JSONEncoder(broker))
 
 
 P = ParamSpec("P")

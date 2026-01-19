@@ -87,6 +87,10 @@ class LogContextMiddleware(dramatiq.Middleware):
 class LogfireMiddleware(dramatiq.Middleware):
     """Middleware to manage a Logfire span when handling a message."""
 
+    @property
+    def ephemeral_options(self) -> set[str]:
+        return {"logfire_stack"}
+
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:

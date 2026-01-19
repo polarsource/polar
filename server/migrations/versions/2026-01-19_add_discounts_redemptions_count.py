@@ -1,6 +1,6 @@
 """Add redemptions_count column to discounts with triggers
 
-Revision ID: 4b8c9d0e1f2a
+Revision ID: 5c9d0e1f2a3b
 Revises: 3af2d42a7578
 Create Date: 2026-01-19
 
@@ -14,7 +14,7 @@ from alembic_utils.pg_trigger import PGTrigger
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "4b8c9d0e1f2a"
+revision = "5c9d0e1f2a3b"
 down_revision = "3af2d42a7578"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None

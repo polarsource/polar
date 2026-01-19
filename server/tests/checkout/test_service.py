@@ -2585,10 +2585,27 @@ class TestUpdate:
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
 
-    @pytest.mark.parametrize("amount", [10, 20_000_000_000])
-    async def test_amount_update_max_limits(
+    @pytest.mark.parametrize("amount", [10, 25, 49])
+    async def test_amount_update_stripe_gap(
         self,
         amount: int,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        # Amounts 1-49 are in the "Stripe gap" - too low for Stripe but not free
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                locker,
+                checkout_one_time_custom,
+                CheckoutUpdate(
+                    amount=amount,
+                ),
+            )
+
+    async def test_amount_update_max_limit(
+        self,
         session: AsyncSession,
         locker: Locker,
         checkout_one_time_custom: Checkout,
@@ -2599,7 +2616,7 @@ class TestUpdate:
                 locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
-                    amount=amount,
+                    amount=20_000_000_000,
                 ),
             )
 

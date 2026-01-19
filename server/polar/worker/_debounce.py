@@ -173,22 +173,8 @@ class DebounceMiddleware(dramatiq.Middleware):
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
     ) -> None:
-        debounce_key = message.options.get("debounce_key")
-        if debounce_key is None:
-            return
-
         # Clean up ephemeral options to prevent memory leak
-        enqueue_timestamp: int | None = message.options.pop(
-            "debounce_enqueue_timestamp", None
-        )
-        if enqueue_timestamp is not None:
-            delay = now_timestamp() - enqueue_timestamp
-            queue_name = message.queue_name or "default"
-            TASK_DEBOUNCE_DELAY.labels(
-                queue=queue_name, task_name=message.actor_name
-            ).observe(delay)
-
-        # Also remove max_threshold_execution flag if present
+        message.options.pop("debounce_enqueue_timestamp", None)
         message.options.pop("debounce_max_threshold_execution", None)
 
     def _get_debounce_max_threshold(

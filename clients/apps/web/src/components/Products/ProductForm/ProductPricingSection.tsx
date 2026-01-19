@@ -102,68 +102,87 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
+  // Validate minimum amount: must be 0 (free) or >= 50 cents (Stripe minimum)
+  const validateMinimumAmount = (value: number | undefined): string | true => {
+    if (value === undefined || value === null) {
+      return true // null/undefined is valid (defaults to 50 cents)
+    }
+    if (value === 0) {
+      return true // 0 means "allow free"
+    }
+    if (value > 0 && value < 50) {
+      return 'Minimum must be $0 (to allow free) or at least $0.50'
+    }
+    return true
+  }
+
   return (
-    <div className="mt-1.5 flex flex-row gap-4 gap-x-6">
-      <FormField
-        control={control}
-        name={`prices.${index}.minimum_amount`}
-        rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem className="flex flex-1 flex-col gap-0.5">
-              <FormLabel>Minimum amount</FormLabel>
-              <FormControl>
-                <div ref={field.ref} tabIndex={-1}>
-                  <MoneyInput
-                    name={field.name}
-                    value={field.value}
-                    onChange={(v) => {
-                      field.onChange(v)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    placeholder={1000}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name={`prices.${index}.preset_amount`}
-        rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
-          max: {
-            value: 1_000_000,
-            message: 'Price cannot be greater than $10,000',
-          },
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem className="flex flex-1 flex-col gap-0.5">
-              <FormLabel>Suggested amount</FormLabel>
-              <FormControl>
-                <div ref={field.ref} tabIndex={-1}>
-                  <MoneyInput
-                    name={field.name}
-                    value={field.value}
-                    onChange={(v) => {
-                      field.onChange(v)
-                      setValue(`prices.${index}.id`, '')
-                    }}
-                    placeholder={5000}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
+    <div className="mt-1.5 flex flex-col gap-2">
+      <div className="flex flex-row gap-4 gap-x-6">
+        <FormField
+          control={control}
+          name={`prices.${index}.minimum_amount`}
+          rules={{
+            validate: validateMinimumAmount,
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem className="flex flex-1 flex-col gap-0.5">
+                <FormLabel>Minimum amount</FormLabel>
+                <FormControl>
+                  <div ref={field.ref} tabIndex={-1}>
+                    <MoneyInput
+                      name={field.name}
+                      value={field.value}
+                      onChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      placeholder={1000}
+                    />
+                  </div>
+                </FormControl>
+                <FormDescription className="text-muted-foreground text-xs">
+                  Set to $0 to allow free contributions
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={control}
+          name={`prices.${index}.preset_amount`}
+          rules={{
+            min: { value: 50, message: 'Price must be at least $0.50' },
+            max: {
+              value: 1_000_000,
+              message: 'Price cannot be greater than $10,000',
+            },
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem className="flex flex-1 flex-col gap-0.5">
+                <FormLabel>Suggested amount</FormLabel>
+                <FormControl>
+                  <div ref={field.ref} tabIndex={-1}>
+                    <MoneyInput
+                      name={field.name}
+                      value={field.value}
+                      onChange={(v) => {
+                        field.onChange(v)
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                      placeholder={5000}
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      </div>
     </div>
   )
 }

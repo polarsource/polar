@@ -2191,18 +2191,44 @@ class CheckoutService:
         if not is_custom_price(price):
             return
 
-        if price.minimum_amount is not None and amount < price.minimum_amount:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "greater_than_equal",
-                        "loc": loc,
-                        "msg": "Amount is below minimum.",
-                        "input": amount,
-                        "ctx": {"ge": price.minimum_amount},
-                    }
-                ]
-            )
+        # Stripe minimum payment amount
+        stripe_minimum = 50
+
+        # Determine if free is allowed (minimum_amount explicitly set to 0)
+        allow_free = price.minimum_amount == 0
+
+        if allow_free:
+            # $0 is valid when minimum_amount is 0
+            if amount == 0:
+                return
+            # Amounts between $0.01 and $0.49 are invalid (gap between free and Stripe minimum)
+            if 0 < amount < stripe_minimum:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid_amount",
+                            "loc": loc,
+                            "msg": "Amount must be $0 or at least $0.50.",
+                            "input": amount,
+                            "ctx": {"allowed": [0], "ge": stripe_minimum},
+                        }
+                    ]
+                )
+        else:
+            # When minimum_amount is None, default to Stripe minimum
+            effective_minimum = price.minimum_amount or stripe_minimum
+            if amount < effective_minimum:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "greater_than_equal",
+                            "loc": loc,
+                            "msg": "Amount is below minimum.",
+                            "input": amount,
+                            "ctx": {"ge": effective_minimum},
+                        }
+                    ]
+                )
 
         if price.maximum_amount is not None and amount > price.maximum_amount:
             raise PolarRequestValidationError(

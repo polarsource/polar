@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 import { formatCurrencyNumber } from '../utils/money'
@@ -50,10 +50,45 @@ export const CheckoutPWYWForm = ({
 }: CheckoutPWYWFormProps) => {
   const { amount } = checkout
 
+  // Stripe minimum payment amount (50 cents)
+  const stripeMinimum = 50
+  // Free is allowed when minimum_amount is explicitly set to 0
+  const allowFree = productPrice.minimumAmount === 0
+
   const form = useForm<{ amount: number }>({
     defaultValues: { amount: amount || 0 },
   })
   const { control, trigger, reset, watch } = form
+
+  // Custom validation based on minimum_amount
+  const validateAmount = useCallback(
+    (value: number): string | true => {
+      if (allowFree) {
+        // $0 is valid when minimum_amount is 0
+        if (value === 0) {
+          return true
+        }
+        // Amounts between $0.01 and $0.49 are invalid (Stripe minimum)
+        if (value > 0 && value < stripeMinimum) {
+          return `Amount must be $0 or at least ${formatCurrencyNumber(stripeMinimum, checkout.currency)}`
+        }
+      } else {
+        // Check minimum amount (if set, otherwise use Stripe minimum)
+        const minAmount = productPrice.minimumAmount ?? stripeMinimum
+        if (value < minAmount) {
+          return `Amount must be at least ${formatCurrencyNumber(minAmount, checkout.currency)}`
+        }
+      }
+
+      // Check maximum amount (if set)
+      if (productPrice.maximumAmount && value > productPrice.maximumAmount) {
+        return `Amount must be at most ${formatCurrencyNumber(productPrice.maximumAmount, checkout.currency)}`
+      }
+
+      return true
+    },
+    [allowFree, productPrice.minimumAmount, productPrice.maximumAmount, checkout.currency],
+  )
 
   const debouncedAmountUpdate = useDebouncedCallback(
     async (amount: number) => {
@@ -79,29 +114,27 @@ export const CheckoutPWYWForm = ({
     reset({ amount: amount || 0 })
   }, [amount, reset])
 
-  let customAmountMinLabel = null
-  let customAmountMaxLabel = null
-
-  customAmountMinLabel = formatCurrencyNumber(
-    productPrice.minimumAmount || 50,
+  // Generate labels for min/max amounts
+  const customAmountMinLabel = formatCurrencyNumber(
+    productPrice.minimumAmount || stripeMinimum,
     checkout.currency,
   )
 
-  if (productPrice.maximumAmount) {
-    customAmountMaxLabel = formatCurrencyNumber(
-      productPrice.maximumAmount,
-      checkout.currency,
-    )
-  }
+  const customAmountMaxLabel = productPrice.maximumAmount
+    ? formatCurrencyNumber(productPrice.maximumAmount, checkout.currency)
+    : null
+
+  // Label text depends on whether free is allowed
+  const minLabelText = allowFree
+    ? `$0 or ${customAmountMinLabel}+ minimum`
+    : `${customAmountMinLabel} minimum`
 
   return (
     <Form {...form}>
       <form className="flex w-full flex-col gap-3">
         <FormLabel>
           Name a fair price{' '}
-          <span className="text-gray-400">
-            ({customAmountMinLabel} minimum)
-          </span>
+          <span className="text-gray-400">({minLabelText})</span>
         </FormLabel>
         <div className="flex flex-row items-center gap-2">
           <FormField
@@ -109,18 +142,7 @@ export const CheckoutPWYWForm = ({
             shouldUnregister={true}
             name="amount"
             rules={{
-              min: {
-                value: productPrice.minimumAmount || 50,
-                message: `Price must be greater than ${customAmountMinLabel}`,
-              },
-              ...(productPrice.maximumAmount
-                ? {
-                    max: {
-                      value: productPrice.maximumAmount,
-                      message: `Price must be less than ${customAmountMaxLabel}`,
-                    },
-                  }
-                : {}),
+              validate: validateAmount,
             }}
             render={({ field }) => {
               return (

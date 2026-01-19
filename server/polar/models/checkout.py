@@ -318,11 +318,19 @@ class Checkout(
     def is_payment_setup_required(self) -> bool:
         if self.product is None:
             return False
-        return self.product.is_recurring and not self.is_free_product_price
+        # Don't require payment setup for free products or $0 PWYW checkouts
+        if self.is_free_product_price or self.amount == 0:
+            return False
+        return self.product.is_recurring
 
     @property
     def should_save_payment_method(self) -> bool:
-        return self.product is not None and self.product.is_recurring
+        if self.product is None:
+            return False
+        # Don't save payment method for free or $0 checkouts (no payment to save from)
+        if self.is_free_product_price or self.amount == 0:
+            return False
+        return self.product.is_recurring
 
     @property
     def is_payment_form_required(self) -> bool:

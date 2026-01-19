@@ -89,6 +89,10 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    stored_redemptions_count: Mapped[int | None] = mapped_column(
+        "redemptions_count", Integer, nullable=True, default=None
+    )
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),

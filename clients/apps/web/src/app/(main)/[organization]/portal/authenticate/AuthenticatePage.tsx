@@ -54,7 +54,6 @@ const ClientPage = ({
         return
       }
 
-      // Always use customer_session_token - backend detects type by prefix
       router.push(
         `/${organization.slug}/portal/?customer_session_token=${data.token}`,
       )

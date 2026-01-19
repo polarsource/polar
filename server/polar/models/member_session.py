@@ -70,9 +70,6 @@ class MemberSession(RecordModel):
     def customer_portal_url(self) -> str:
         """
         Return the customer portal URL for API compatibility with CustomerSession.
-
-        Uses customer_session_token parameter name for frontend simplicity.
-        The backend detects token type by prefix (polar_mst_ vs polar_cst_).
         """
         query_string = urlencode(
             {"customer_session_token": self.raw_token, "email": self.member.email}

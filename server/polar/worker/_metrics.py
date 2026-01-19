@@ -8,6 +8,10 @@ from polar.observability.remote_write import start_remote_write_pusher
 
 
 class PrometheusMiddleware(dramatiq.Middleware):
+    @property
+    def ephemeral_options(self) -> set[str]:
+        return {"prometheus_start_time"}
+
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:

@@ -14,10 +14,13 @@ from polar.logging import Logger
 from polar.models import Customer, Organization, Subscription
 from polar.postgres import create_sync_engine
 
+log: Logger = structlog.get_logger()
+
 
 def enqueue_subscription_cycle(subscription_id: uuid.UUID) -> None:
     actor = dramatiq.get_broker().get_actor("subscription.cycle")
     actor.send(subscription_id=subscription_id)
+    log.debug("Enqueued subscription cycle", subscription_id=subscription_id)
 
 
 class SubscriptionJobStore(BaseJobStore):
@@ -29,7 +32,6 @@ class SubscriptionJobStore(BaseJobStore):
     def __init__(self, executor: str = "default") -> None:
         self.engine = create_sync_engine("scheduler")
         self.executor = executor
-        self.log: Logger = structlog.get_logger()
 
     def shutdown(self) -> None:
         self.engine.dispose()
@@ -43,7 +45,7 @@ class SubscriptionJobStore(BaseJobStore):
             Subscription.current_period_end <= now,
         )
         jobs = self._list_jobs_from_statement(statement)
-        self.log.debug("Due jobs", count=len(jobs))
+        log.debug("Due jobs", count=len(jobs))
         return jobs
 
     def get_next_run_time(self) -> datetime.datetime | None:
@@ -55,13 +57,13 @@ class SubscriptionJobStore(BaseJobStore):
         with self.engine.connect() as connection:
             result = connection.execute(statement)
             next_run_time = result.scalar_one_or_none()
-            self.log.debug("Next run time", next_run_time=next_run_time)
+            log.debug("Next run time", next_run_time=next_run_time)
             return next_run_time
 
     def get_all_jobs(self) -> list[Job]:
         statement = self._get_base_statement()
         jobs = self._list_jobs_from_statement(statement)
-        self.log.debug("All jobs", count=len(jobs))
+        log.debug("All jobs", count=len(jobs))
         return jobs
 
     def remove_job(self, job_id: str) -> None:

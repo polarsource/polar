@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 from polar.config import settings
 from polar.kit.db.postgres import Engine
+from polar.observability.otel_prometheus import PrometheusMeterProvider
 
 Matcher = Callable[[str, "Attributes | None"], bool]
 
@@ -107,8 +108,11 @@ def instrument_fastapi(app: FastAPI) -> None:
     logfire.instrument_fastapi(app, capture_headers=True)
 
 
+_meter_provider = PrometheusMeterProvider()
+
+
 def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
-    logfire.instrument_sqlalchemy(engines=engines)
+    logfire.instrument_sqlalchemy(engines=engines, meter_provider=_meter_provider)
 
 
 __all__ = [

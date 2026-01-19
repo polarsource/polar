@@ -20,10 +20,13 @@ from polar.kit.db.postgres import create_sync_engine as _create_sync_engine
 type ProcessName = Literal["app", "worker", "scheduler", "script"]
 
 
-def create_async_engine(process_name: ProcessName) -> AsyncEngine:
+def create_async_engine(
+    process_name: ProcessName, *, pool_logging_name: str | None = None
+) -> AsyncEngine:
     return _create_async_engine(
         dsn=str(settings.get_postgres_dsn("asyncpg")),
         application_name=f"{settings.ENV.value}.{process_name}",
+        pool_logging_name=pool_logging_name or process_name,
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
@@ -35,6 +38,7 @@ def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
     return _create_async_engine(
         dsn=str(settings.get_postgres_read_dsn("asyncpg")),
         application_name=f"{settings.ENV.value}.{process_name}",
+        pool_logging_name=f"{process_name}_read",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
@@ -46,6 +50,7 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
     return _create_sync_engine(
         dsn=str(settings.get_postgres_dsn("psycopg2")),
         application_name=f"{settings.ENV.value}.{process_name}",
+        pool_logging_name=f"{process_name}_sync",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,

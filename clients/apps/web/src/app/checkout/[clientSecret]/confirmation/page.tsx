@@ -66,7 +66,11 @@ export default async function Page(props: {
     redirect(checkout.url)
   }
 
-  const locale = await resolveCheckoutLocale(searchParamLocale, checkout.locale)
+  // Type cast needed until @polar-sh/sdk is updated with locale field
+  const locale = await resolveCheckoutLocale(
+    searchParamLocale,
+    (checkout as typeof checkout & { locale?: string }).locale,
+  )
 
   return (
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>

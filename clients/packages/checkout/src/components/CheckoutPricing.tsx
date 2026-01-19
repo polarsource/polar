@@ -23,7 +23,11 @@ const CheckoutProductAmountLabel = ({
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
     return (
-      <ProductPriceLabel product={product} price={productPrice} locale={locale} />
+      <ProductPriceLabel
+        product={product}
+        price={productPrice}
+        locale={locale}
+      />
     )
   }
 
@@ -48,7 +52,11 @@ const CheckoutProductAmountLabel = ({
       />
       <div className="flex flex-row items-center gap-x-2 text-lg">
         <div className="text-gray-400 line-through">
-          <ProductPriceLabel product={product} price={productPrice} locale={locale} />
+          <ProductPriceLabel
+            product={product}
+            price={productPrice}
+            locale={locale}
+          />
         </div>
 
         <div className="relative rounded-xs bg-linear-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
@@ -84,7 +92,11 @@ const CheckoutPricing = ({
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light">
           {productPrice.amountType !== 'custom' ? (
-            <CheckoutProductAmountLabel checkout={checkout} layout={layout} locale={locale} />
+            <CheckoutProductAmountLabel
+              checkout={checkout}
+              layout={layout}
+              locale={locale}
+            />
           ) : (
             formatCurrencyNumber(amount, productPrice.priceCurrency, 0)
           )}

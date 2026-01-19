@@ -3,10 +3,7 @@
 import Checkout from '@/components/Checkout/Checkout'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import type { ExperimentVariant } from '@/experiments'
-import {
-  type SupportedLocale,
-  useCheckout,
-} from '@polar-sh/checkout/providers'
+import { type SupportedLocale, useCheckout } from '@polar-sh/checkout/providers'
 
 const ClientPage = ({
   embed,

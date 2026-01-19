@@ -7473,6 +7473,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitCustom']
       properties: components['schemas']['BenefitGrantCustomProperties']
       previous_properties?:
@@ -7559,6 +7560,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDiscord']
       properties: components['schemas']['BenefitGrantDiscordProperties']
       previous_properties?:
@@ -7639,6 +7641,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitDownloadables']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
       previous_properties?:
@@ -7739,6 +7742,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitGitHubRepository']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
       previous_properties?:
@@ -7821,6 +7825,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitLicenseKeys']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
       previous_properties?:
@@ -7834,6 +7839,8 @@ export interface components {
       /** Benefit Grant Id */
       benefit_grant_id: string
       benefit_type: components['schemas']['BenefitType']
+      /** Member Id */
+      member_id?: string
     }
     /** BenefitGrantMeterCreditProperties */
     BenefitGrantMeterCreditProperties: {
@@ -7913,6 +7920,7 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
       benefit: components['schemas']['BenefitMeterCredit']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
       previous_properties?:
@@ -10295,12 +10303,12 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
-      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Locale
        * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
        */
       locale?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
        * Format: uuid4
@@ -10442,12 +10450,12 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
-      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Locale
        * @description Locale for translations. E.g. 'en', 'nl', 'sv'.
        */
       locale?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
        * @description List of product IDs available to select at that checkout. The first one will be selected by default.
@@ -31185,7 +31193,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -36060,7 +36067,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -38883,7 +38889,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39486,7 +39491,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']

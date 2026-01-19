@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  type CheckoutTranslations,
   DEFAULT_LOCALE,
   getTranslations,
   type SupportedLocale,
@@ -281,9 +280,13 @@ const BaseCheckoutForm = ({
   }, [checkout, resetField])
 
   // Sync locale to checkout if it differs from the resolved locale (e.g., from querystring)
+  // Type casts needed until @polar-sh/sdk is updated with locale field
   useEffect(() => {
-    if (locale && locale !== checkout.locale) {
-      update({ locale }).catch(() => {})
+    if (
+      locale &&
+      locale !== (checkout as CheckoutPublic & { locale?: string }).locale
+    ) {
+      update({ locale } as CheckoutUpdatePublic).catch(() => {})
     }
     // Only run on mount - we don't want to re-sync if checkout updates
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -860,7 +863,10 @@ const BaseCheckoutForm = ({
                         title={meteredPrice.meter.name}
                         key={meteredPrice.id}
                       >
-                        <MeteredPriceLabel price={meteredPrice} locale={locale} />
+                        <MeteredPriceLabel
+                          price={meteredPrice}
+                          locale={locale}
+                        />
                       </DetailRow>
                     ))}
                   </>

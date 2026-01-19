@@ -79,7 +79,11 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
-  const locale = await resolveCheckoutLocale(searchParamLocale, checkout.locale)
+  // Type cast needed until @polar-sh/sdk is updated with locale field
+  const locale = await resolveCheckoutLocale(
+    searchParamLocale,
+    (checkout as typeof checkout & { locale?: string }).locale,
+  )
   const layoutVariant = await getExperiment('checkout_layout_experiment')
 
   return (

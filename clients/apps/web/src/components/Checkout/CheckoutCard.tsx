@@ -32,7 +32,11 @@ export const CheckoutCard = ({
   return (
     <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
       {isSeatBased && update ? (
-        <CheckoutSeatSelector checkout={checkout} update={update} locale={locale} />
+        <CheckoutSeatSelector
+          checkout={checkout}
+          update={update}
+          locale={locale}
+        />
       ) : (
         <CheckoutPricing
           checkout={checkout}

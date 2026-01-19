@@ -1,10 +1,10 @@
 export {
-  SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
   isSupportedLocale,
-  type SupportedLocale,
   type CheckoutTranslations,
   type EmailTranslations,
+  type SupportedLocale,
 } from './types'
 
 export { getTranslations } from './context'

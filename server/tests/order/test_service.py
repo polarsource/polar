@@ -1535,16 +1535,8 @@ class TestCreateSubscriptionOrder:
             False,
         )
 
-    @pytest.mark.parametrize(
-        "billing_reason",
-        [
-            OrderBillingReasonInternal.subscription_cycle,
-            OrderBillingReasonInternal.subscription_update,
-        ],
-    )
-    async def test_metered(
+    async def test_metered_subscription_cycle_resets_meters(
         self,
-        billing_reason: OrderBillingReasonInternal,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1552,6 +1544,12 @@ class TestCreateSubscriptionOrder:
         customer: Customer,
         organization: Organization,
     ) -> None:
+        """
+        Test that subscription_cycle orders reset meters.
+
+        This is the expected behavior for new billing cycles - meters should be
+        reset to start fresh for the new period.
+        """
         subscription_service_mock = mocker.patch(
             "polar.order.service.subscription_service", spec=SubscriptionService
         )
@@ -1572,7 +1570,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, billing_reason
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
         )
 
         assert len(order.items) == 1
@@ -1581,6 +1579,56 @@ class TestCreateSubscriptionOrder:
         subscription_service_mock.reset_meters.assert_awaited_once_with(
             session, subscription
         )
+
+    async def test_subscription_update_does_not_reset_meters(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Regression test for meter credit loss during subscription updates.
+
+        When a subscription_update order is created, meters should NOT be reset.
+        This ensures that meter credits from benefit grants remain valid for
+        the current billing cycle.
+
+        Bug context: Customers were being charged for metered usage even when
+        they had sufficient credited units, because subscription_update orders
+        were resetting meters mid-cycle without re-applying benefit credits.
+        """
+        subscription_service_mock = mocker.patch(
+            "polar.order.service.subscription_service", spec=SubscriptionService
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+        )
+        await save_fixture(
+            BillingEntry.from_metered_event(
+                customer, subscription.subscription_product_prices[0], event
+            )
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_update
+        )
+
+        assert len(order.items) == 1
+        assert order.subtotal_amount == 100
+
+        # subscription_update should NOT reset meters
+        # This ensures meter credits from benefit grants remain valid
+        subscription_service_mock.reset_meters.assert_not_awaited()
 
     async def test_positive_order_positive_customer_balance(
         self,

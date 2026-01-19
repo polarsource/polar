@@ -2191,18 +2191,17 @@ class CheckoutService:
         if not is_custom_price(price):
             return
 
-        # Stripe minimum payment amount
-        stripe_minimum = 50
+        stripe_minimum_in_cents = 50
 
-        # Determine if free is allowed (minimum_amount explicitly set to 0)
+        # Only when minimum_amount is explicitly set to 0 do we allow free
+        # If it's null, minimum is #{stripe_minimum_in_cents}
         allow_free = price.minimum_amount == 0
 
         if allow_free:
-            # $0 is valid when minimum_amount is 0
             if amount == 0:
                 return
-            # Amounts between $0.01 and $0.49 are invalid (gap between free and Stripe minimum)
-            if 0 < amount < stripe_minimum:
+
+            if 0 < amount < stripe_minimum_in_cents:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -2210,13 +2209,12 @@ class CheckoutService:
                             "loc": loc,
                             "msg": "Amount must be $0 or at least $0.50.",
                             "input": amount,
-                            "ctx": {"allowed": [0], "ge": stripe_minimum},
+                            "ctx": {"allowed": [0], "ge": stripe_minimum_in_cents},
                         }
                     ]
                 )
         else:
-            # When minimum_amount is None, default to Stripe minimum
-            effective_minimum = price.minimum_amount or stripe_minimum
+            effective_minimum = price.minimum_amount or stripe_minimum_in_cents
             if amount < effective_minimum:
                 raise PolarRequestValidationError(
                     [

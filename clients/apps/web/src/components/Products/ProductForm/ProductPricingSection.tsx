@@ -102,17 +102,19 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 }) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
-  // Validate amount: must be 0 (free) or >= 50 cents (Stripe minimum)
-  // Values 1-49 are in the "Stripe gap" and not allowed
   const validatePWYWAmount = (
     value: number | null | undefined,
   ): string | true => {
     if (value === undefined || value === null) {
-      return true // null/undefined is valid
+      // Require any positive amount
+      return true
     }
+
     if (value === 0) {
+      // Opt-in to free
       return true // 0 is valid (free)
     }
+
     if (value > 0 && value < 50) {
       return 'Must be $0 (for free) or at least $0.50'
     }
@@ -159,15 +161,14 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
           rules={{
             deps: [`prices.${index}.minimum_amount`],
             validate: (value: number | null | undefined): string | true => {
-              // First, apply PWYW validation
               const pwywResult = validatePWYWAmount(value)
+
               if (pwywResult !== true) {
                 return pwywResult
               }
-              // Get current minimum_amount at validation time (not render time)
-              // to ensure deps-triggered re-validation uses the latest value
+
               const minimumAmount = getValues(`prices.${index}.minimum_amount`)
-              // Check that preset_amount is not less than minimum_amount
+
               if (
                 value != null &&
                 minimumAmount != null &&
@@ -175,6 +176,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
               ) {
                 return 'Suggested amount cannot be less than minimum amount'
               }
+
               return true
             },
             max: {

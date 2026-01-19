@@ -170,7 +170,7 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     @field_validator("minimum_amount", "preset_amount")
     @classmethod
     def validate_amount_not_in_stripe_gap(cls, v: int | None) -> int | None:
-        # Stripe minimum is 50 cents, so values 1-49 are invalid
+        # Stripe minimum is $0.50 USD, so values 1-49 are invalid
         # 0 is valid (free), None is valid (use default), >= 50 is valid
         if v is not None and 0 < v < 50:
             raise ValueError("Amount must be 0 (for free) or at least 50 cents")

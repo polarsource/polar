@@ -26,47 +26,6 @@ from ._sqlalchemy import SQLAlchemyMiddleware
 log: Logger = structlog.get_logger()
 
 
-class CurrentMessageMiddleware(dramatiq.Middleware):
-    """
-    Patched version of dramatiq.middleware.CurrentMessage that properly
-    clears the message reference when messages are skipped.
-
-    The upstream CurrentMessage middleware stores messages in a ContextVar
-    but only clears it in after_process_message, not after_skip_message.
-    With high skip rates (e.g., from debouncing), this causes message
-    references to accumulate in memory.
-    """
-
-    _MESSAGE: ClassVar[contextvars.ContextVar[dramatiq.MessageProxy | None]] = (
-        contextvars.ContextVar("_MESSAGE", default=None)
-    )
-
-    @classmethod
-    def get_current_message(cls) -> dramatiq.MessageProxy | None:
-        """Get the message that triggered the current actor."""
-        return cls._MESSAGE.get()
-
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
-    ) -> None:
-        self._MESSAGE.set(message)
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.MessageProxy,
-        *,
-        result: Any | None = None,
-        exception: BaseException | None = None,
-    ) -> None:
-        self._MESSAGE.set(None)
-
-    def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
-    ) -> None:
-        self._MESSAGE.set(None)
-
-
 class MaxRetriesMiddleware(dramatiq.Middleware):
     """Middleware to set the max_retries option for a message."""
 
@@ -221,7 +180,7 @@ def get_broker() -> dramatiq.Broker:
         ),
         middleware.AgeLimit(),
         middleware.TimeLimit(),
-        CurrentMessageMiddleware(),
+        middleware.CurrentMessage(),
     ]
 
     broker = RedisBroker(
@@ -234,7 +193,6 @@ def get_broker() -> dramatiq.Broker:
 
 
 __all__ = [
-    "CurrentMessageMiddleware",
     "get_broker",
     "scheduler_middleware",
 ]

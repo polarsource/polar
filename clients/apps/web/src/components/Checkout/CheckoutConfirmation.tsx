@@ -120,6 +120,7 @@ export const CheckoutConfirmation = ({
     if (status === 'succeeded' && !hasTrackedCompletion.current) {
       hasTrackedCompletion.current = true
       posthog.capture('storefront:subscriptions:checkout:complete', {
+        checkout_id: checkout.id,
         organization_slug: organization.slug,
         product_id: checkout.productId,
         amount: checkout.amount,
@@ -133,6 +134,7 @@ export const CheckoutConfirmation = ({
     checkout.amount,
     embed,
     posthog,
+    checkout.id,
   ])
 
   const updateCheckout = useCallback(async () => {

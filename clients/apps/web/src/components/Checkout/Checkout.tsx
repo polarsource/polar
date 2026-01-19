@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -25,6 +26,7 @@ import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
+import { cn } from '@polar-sh/ui/lib/utils'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -52,6 +54,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const posthog = usePostHog()
+  const { isTreatment: isFormFirstLayout } = useExperiment(
+    'checkout_form_first',
+  )
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
   const hasTrackedOpen = useRef(false)
@@ -227,7 +232,12 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   return (
     <div className="flex w-full flex-col gap-y-6">
       <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
-        <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
+        <div
+          className={cn(
+            'md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12',
+            isFormFirstLayout && 'md:order-2',
+          )}
+        >
           {checkout.returnUrl && (
             <Link
               href={checkout.returnUrl}
@@ -271,7 +281,12 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             </>
           )}
         </div>
-        <div className="flex flex-col gap-y-8 md:p-12">
+        <div
+          className={cn(
+            'flex flex-col gap-y-8 md:p-12',
+            isFormFirstLayout && 'md:order-1',
+          )}
+        >
           <PaymentNotReadyBanner />
           <CheckoutForm
             form={form}

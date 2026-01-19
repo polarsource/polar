@@ -616,7 +616,7 @@ wheels = [
 [[package]]
 name = "dramatiq"
 version = "2.0.0"
-source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter#4abf00a85af1e145b89a603b9334024410175db0" }
+source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter#63ea404e2204b2d2b3e644053b4b294cb1039ad4" }
 
 [package.optional-dependencies]
 redis = [

@@ -57,6 +57,10 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { isTreatment: isFormFirstLayout } = useExperiment(
     'checkout_form_first',
   )
+  const { isTreatment: isSubscribeNow } = useExperiment(
+    'checkout_button_subscribe',
+  )
+  const { isTreatment: isPayNow } = useExperiment('checkout_button_pay')
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
   const hasTrackedOpen = useRef(false)
@@ -224,6 +228,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          subscribeNowButtonExperiment={isSubscribeNow}
+          payNowButtonExperiment={isPayNow}
         />
       </ShadowBox>
     )
@@ -299,6 +305,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             themePreset={themePreset}
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
+            subscribeNowButtonExperiment={isSubscribeNow}
+            payNowButtonExperiment={isPayNow}
           />
         </div>
       </ShadowBoxOnMd>

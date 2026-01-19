@@ -85,7 +85,7 @@ class DebounceMiddleware(dramatiq.Middleware):
 
     @property
     def ephemeral_options(self) -> set[str]:
-        return {"debounce_enqueue_timestamp"}
+        return {"debounce_enqueue_timestamp", "debounce_max_threshold_execution"}
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

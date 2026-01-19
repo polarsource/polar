@@ -17,7 +17,6 @@ from polar.logging import Logger
 from ._debounce import DebounceMiddleware
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
-from ._memory import MemoryMonitorMiddleware
 from ._metrics import PrometheusMiddleware
 from ._redis import RedisMiddleware
 from ._sqlalchemy import SQLAlchemyMiddleware
@@ -136,39 +135,39 @@ def get_broker() -> dramatiq.Broker:
         settings.redis_url,
         client_name=f"{settings.ENV.value}.worker.dramatiq",
     )
-    broker = RedisBroker(
-        connection_pool=redis_pool,
-        # Override default middlewares
-        middleware=[
-            m()
-            for m in (
-                middleware.AgeLimit,
-                middleware.TimeLimit,
-                middleware.ShutdownNotifications,
-            )
-        ],
-        dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
-    )
 
-    broker.add_middleware(
+    middleware_list = [
+        # Infrastructure & async support
+        middleware.ShutdownNotifications(),
+        middleware.AsyncIO(),
+        # Resource lifecycle (worker boot/shutdown)
+        SQLAlchemyMiddleware(),
+        RedisMiddleware(),
+        HTTPXMiddleware(),
+        HealthMiddleware(),
+        scheduler_middleware,
+        # Observability (outer layer for message processing)
+        LogContextMiddleware(),
+        LogfireMiddleware(),
+        PrometheusMiddleware(),
+        # Message flow control
+        DebounceMiddleware(redis_pool),
+        # Retry & execution control (MaxRetries must precede Retries)
+        MaxRetriesMiddleware(),
         middleware.Retries(
             max_retries=settings.WORKER_MAX_RETRIES,
             min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
-        )
+        ),
+        middleware.AgeLimit(),
+        middleware.TimeLimit(),
+        middleware.CurrentMessage(),
+    ]
+
+    broker = RedisBroker(
+        connection_pool=redis_pool,
+        middleware=middleware_list,
+        dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
     )
-    broker.add_middleware(MemoryMonitorMiddleware())
-    broker.add_middleware(HealthMiddleware())
-    broker.add_middleware(middleware.AsyncIO())
-    broker.add_middleware(middleware.CurrentMessage())
-    broker.add_middleware(MaxRetriesMiddleware())
-    broker.add_middleware(SQLAlchemyMiddleware())
-    broker.add_middleware(RedisMiddleware())
-    broker.add_middleware(HTTPXMiddleware())
-    broker.add_middleware(scheduler_middleware)
-    broker.add_middleware(LogfireMiddleware())
-    broker.add_middleware(LogContextMiddleware())
-    broker.add_middleware(DebounceMiddleware(redis_pool))
-    broker.add_middleware(PrometheusMiddleware())
 
     return broker
 

@@ -4,7 +4,9 @@ import pytest
 from httpx import AsyncClient
 
 from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
-from polar.models import Customer, Organization, UserOrganization
+from polar.models import Customer, Member, Organization, UserOrganization
+from polar.models.member import MemberRole
+from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -167,14 +169,14 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_rejects_when_both_flags_enabled(
+    async def test_creates_member_session_when_member_model_enabled(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        # Enable both flags (fully migrated) - must use member-sessions
+        # When member_model_enabled is true, should create MemberSession for owner
         organization.feature_settings = {
             "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
@@ -187,11 +189,56 @@ class TestCreate:
             email="test@example.com",
         )
 
+        # Create owner member for the customer
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Owner Member",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
         response = await client.post(
             "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 201
         json = response.json()
-        assert "seat-based pricing enabled" in json["detail"]
-        assert "member-sessions" in json["detail"]
+        # Should return a member session token, not a customer session token
+        assert json["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer.id)
+        assert json["token"] in json["customer_portal_url"]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_fails_when_member_model_enabled_but_no_owner(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        # When member_model_enabled but no owner member exists, should return 422
+        organization.feature_settings = {
+            "seat_based_pricing_enabled": True,
+            "member_model_enabled": True,
+        }
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="test@example.com",
+        )
+
+        # No member created - should fail
+        response = await client.post(
+            "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
+        )
+
+        assert response.status_code == 422
+        json = response.json()
+        assert "No owner member found" in json["detail"][0]["msg"]

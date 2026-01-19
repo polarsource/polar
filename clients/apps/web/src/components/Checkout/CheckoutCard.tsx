@@ -12,14 +12,12 @@ export interface CheckoutCardProps {
   checkout: ProductCheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
-  isLayoutTreatment?: boolean
 }
 
 export const CheckoutCard = ({
   checkout,
   update,
   disabled,
-  isLayoutTreatment = false,
 }: CheckoutCardProps) => {
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
@@ -33,7 +31,6 @@ export const CheckoutCard = ({
           checkout={checkout}
           update={update}
           disabled={disabled}
-          layout={isLayoutTreatment ? 'stacked' : 'default'}
         />
       )}
 

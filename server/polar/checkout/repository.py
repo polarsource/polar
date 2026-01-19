@@ -43,6 +43,21 @@ class CheckoutRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_id_by_client_secret(self, client_secret: str) -> UUID | None:
+        """
+        Get checkout ID by client secret without loading the full object.
+
+        This is used to acquire a lock before loading the checkout, avoiding
+        SQLAlchemy identity map issues where a pre-loaded object wouldn't be
+        refreshed by subsequent queries.
+        """
+        statement = select(Checkout.id).where(
+            Checkout.client_secret == client_secret,
+            Checkout.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def expire_open_checkouts(self) -> None:
         statement = (
             update(Checkout)

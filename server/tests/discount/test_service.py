@@ -601,7 +601,7 @@ class TestCodeCaseInsensitivity:
         await checkout_service.update(
             session,
             locker,
-            checkout_product,
+            checkout_product.id,
             CheckoutUpdatePublic(
                 discount_code="FoObAr",
             ),

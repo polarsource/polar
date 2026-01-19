@@ -181,13 +181,13 @@ async def update(
     locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """Update a checkout session."""
+    # Verify the user has access to this checkout (without loading full object)
     checkout = await checkout_service.get_by_id(session, auth_subject, id)
-
     if checkout is None:
         raise ResourceNotFound()
 
     return await checkout_service.update(
-        session, locker, checkout, checkout_update, ip_geolocation_client
+        session, locker, id, checkout_update, ip_geolocation_client
     )
 
 
@@ -245,10 +245,8 @@ async def client_update(
     locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """Update a checkout session by client secret."""
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
-    return await checkout_service.update(
-        session, locker, checkout, checkout_update, ip_geolocation_client
+    return await checkout_service.update_by_client_secret(
+        session, locker, client_secret, checkout_update, ip_geolocation_client
     )
 
 
@@ -276,10 +274,8 @@ async def client_confirm(
 
     Orders and subscriptions will be processed.
     """
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
-    return await checkout_service.confirm(
-        session, locker, auth_subject, checkout, checkout_confirm
+    return await checkout_service.confirm_by_client_secret(
+        session, locker, auth_subject, client_secret, checkout_confirm
     )
 
 

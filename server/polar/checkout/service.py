@@ -931,11 +931,14 @@ class CheckoutService:
         self,
         session: AsyncSession,
         locker: Locker,
-        checkout: Checkout,
+        checkout_id: uuid.UUID,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+        async with self._lock_checkout(session, locker, checkout_id) as checkout:
+            if checkout.is_expired:
+                raise ExpiredCheckoutError()
+
             checkout = await self._update_checkout(
                 session, checkout, checkout_update, ip_geolocation_client
             )
@@ -948,15 +951,41 @@ class CheckoutService:
             await self._after_checkout_updated(session, checkout)
             return checkout
 
+    async def update_by_client_secret(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        client_secret: str,
+        checkout_update: CheckoutUpdatePublic,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
+    ) -> Checkout:
+        """
+        Update a checkout by client secret.
+
+        This method acquires the lock first (using only the checkout ID), then loads
+        the checkout fresh. This avoids SQLAlchemy identity map issues.
+        """
+        repository = CheckoutRepository.from_session(session)
+        checkout_id = await repository.get_id_by_client_secret(client_secret)
+        if checkout_id is None:
+            raise ResourceNotFound()
+
+        return await self.update(
+            session, locker, checkout_id, checkout_update, ip_geolocation_client
+        )
+
     async def confirm(
         self,
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[User | Anonymous],
-        checkout: Checkout,
+        checkout_id: uuid.UUID,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+        async with self._lock_checkout(session, locker, checkout_id) as checkout:
+            if checkout.is_expired:
+                raise ExpiredCheckoutError()
+
             checkout = await self._update_checkout(session, checkout, checkout_confirm)
             # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
             if checkout.discount is not None:
@@ -983,6 +1012,29 @@ class CheckoutService:
             return await self._confirm_inner(
                 session, auth_subject, checkout, checkout_confirm
             )
+
+    async def confirm_by_client_secret(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[User | Anonymous],
+        client_secret: str,
+        checkout_confirm: CheckoutConfirm,
+    ) -> Checkout:
+        """
+        Confirm a checkout by client secret.
+
+        This method acquires the lock first (using only the checkout ID), then loads
+        the checkout fresh. This avoids SQLAlchemy identity map issues.
+        """
+        repository = CheckoutRepository.from_session(session)
+        checkout_id = await repository.get_id_by_client_secret(client_secret)
+        if checkout_id is None:
+            raise ResourceNotFound()
+
+        return await self.confirm(
+            session, locker, auth_subject, checkout_id, checkout_confirm
+        )
 
     async def _confirm_inner(
         self,
@@ -1659,28 +1711,37 @@ class CheckoutService:
         return subscription, subscription.customer
 
     @contextlib.asynccontextmanager
-    async def _lock_checkout_update(
-        self, session: AsyncSession, locker: Locker, checkout: Checkout
+    async def _lock_checkout(
+        self, session: AsyncSession, locker: Locker, checkout_id: uuid.UUID
     ) -> AsyncIterator[Checkout]:
         """
-        Set a lock to prevent updating the checkout while confirming.
-        We've seen in the wild someone switching pricing while the payment was being made!
+        Acquire a lock and load the checkout fresh from the database.
+
+        This method acquires the lock FIRST, then loads the checkout. This ensures
+        the checkout is loaded fresh without SQLAlchemy identity map issues.
+
+        Previously, we loaded the checkout before acquiring the lock, then tried to
+        "refresh" it inside the lock. However, SQLAlchemy's identity map would return
+        the cached object without updating its attributes from the database, causing
+        race conditions where stale data was used.
+
+        See: https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#orm-queryguide-populate-existing
 
         The timeout is purposely set to 10 seconds, a high value.
         We've seen in the past Stripe payment requests taking more than 5 seconds,
         causing the lock to expire while waiting for the payment to complete.
         """
         async with locker.lock(
-            f"checkout:{checkout.id}", timeout=10, blocking_timeout=10
+            f"checkout:{checkout_id}", timeout=10, blocking_timeout=10
         ):
-            # Refresh the checkout: it may have changed while waiting for the lock
+            # Load checkout fresh - identity map is clean since we acquire lock first
             repository = CheckoutRepository.from_session(session)
-            checkout = typing.cast(
-                Checkout,
-                await repository.get_by_id(
-                    checkout.id, options=repository.get_eager_options()
-                ),
+            checkout = await repository.get_by_id(
+                checkout_id, options=repository.get_eager_options()
             )
+            if checkout is None:
+                raise ResourceNotFound()
+
             yield checkout
 
             # 🚨 It's not a mistake: we do explicitly commit here before releasing the lock.

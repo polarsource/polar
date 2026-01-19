@@ -2564,7 +2564,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdate(
                     product_id=uuid.uuid4(),
                 ),
@@ -2581,7 +2581,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
 
@@ -2597,7 +2597,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_custom,
+                checkout_one_time_custom.id,
                 CheckoutUpdate(
                     amount=amount,
                 ),
@@ -2623,7 +2623,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_custom,
+                checkout_one_time_custom.id,
                 CheckoutUpdate(
                     amount=amount,
                 ),
@@ -2639,7 +2639,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_confirmed_one_time,
+                checkout_confirmed_one_time.id,
                 CheckoutUpdate(
                     customer_email="customer@example.com",
                 ),
@@ -2682,7 +2682,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_recurring_fixed,
+                checkout_recurring_fixed.id,
                 CheckoutUpdate.model_validate(updated_values),
             )
 
@@ -2696,7 +2696,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdate(
                     discount_id=uuid.uuid4(),
                 ),
@@ -2712,7 +2712,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdatePublic(
                     discount_code="invalid",
                 ),
@@ -2729,7 +2729,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_free,
+                checkout_one_time_free.id,
                 CheckoutUpdate(discount_id=discount_fixed_once.id),
             )
 
@@ -2744,7 +2744,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_free,
+                checkout_one_time_free.id,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
 
@@ -2770,7 +2770,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
 
@@ -2796,7 +2796,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_recurring_fixed,
+            checkout_recurring_fixed.id,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2846,7 +2846,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_recurring_fixed,
+            checkout_recurring_fixed.id,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2893,7 +2893,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_recurring_fixed,
+            checkout_recurring_fixed.id,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -2917,7 +2917,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2936,7 +2936,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_custom,
+            checkout_one_time_custom.id,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2952,7 +2952,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutUpdate(
                 amount=4242,
             ),
@@ -2972,7 +2972,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_custom,
+            checkout_one_time_custom.id,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
                 customer_tax_id="FR61954506077",
@@ -2995,7 +2995,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_custom,
+            checkout_one_time_custom.id,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
                 customer_tax_id=None,
@@ -3019,7 +3019,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
             ),
@@ -3049,7 +3049,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
@@ -3077,7 +3077,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdate(customer_email="updatedemail@example.com"),
         )
 
@@ -3092,7 +3092,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutUpdate(
                 metadata={"key": "value"},
             ),
@@ -3109,7 +3109,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutUpdate(metadata={}),
         )
 
@@ -3126,7 +3126,7 @@ class TestUpdate:
         await save_fixture(checkout_one_time_free)
 
         checkout = await checkout_service.update(
-            session, locker, checkout_one_time_free, CheckoutUpdate()
+            session, locker, checkout_one_time_free.id, CheckoutUpdate()
         )
 
         assert checkout.user_metadata == {"key": "value"}
@@ -3140,7 +3140,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutUpdate(
                 customer_metadata={"key": "value"},
             ),
@@ -3163,7 +3163,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_custom_fields,
+                checkout_custom_fields.id,
                 CheckoutUpdate(custom_field_data=custom_field_data),
             )
 
@@ -3176,7 +3176,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_custom_fields,
+            checkout_custom_fields.id,
             CheckoutUpdate(
                 custom_field_data={"text": "abc", "select": "a"},
             ),
@@ -3190,7 +3190,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_custom_fields,
+            checkout_custom_fields.id,
             CheckoutUpdate(
                 custom_field_data={"text": "abc"},
             ),
@@ -3207,7 +3207,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutUpdate(
                 embed_origin="https://example.com",
             ),
@@ -3224,7 +3224,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_tax_not_applicable,
+            checkout_tax_not_applicable.id,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
             ),
@@ -3245,7 +3245,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdate(
                 discount_id=discount_fixed_once.id,
             ),
@@ -3272,7 +3272,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdatePublic(
                 discount_code=discount_fixed_once.code,
             ),
@@ -3306,7 +3306,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutUpdatePublic(
                 discount_code=discount_percentage_100.code,
             ),
@@ -3339,7 +3339,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_recurring_fixed,
+            checkout_recurring_fixed.id,
             CheckoutUpdate(customer_email=customer.email),
         )
 
@@ -3381,7 +3381,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_recurring_fixed,
+                checkout_recurring_fixed.id,
                 CheckoutUpdate(customer_email=customer.email),
             )
 
@@ -3391,7 +3391,7 @@ class TestUpdate:
 
         with pytest.raises(AlreadyActiveSubscriptionError):
             await checkout_service.update(
-                session, locker, checkout_recurring_fixed, CheckoutUpdate()
+                session, locker, checkout_recurring_fixed.id, CheckoutUpdate()
             )
 
     async def test_update_seats_on_seat_based_price(
@@ -3409,7 +3409,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_seat_based,
+            checkout_seat_based.id,
             CheckoutUpdate(seats=12),
         )
 
@@ -3433,7 +3433,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             locker,
-            checkout_seat_based,
+            checkout_seat_based.id,
             CheckoutUpdate(seats=3),
         )
 
@@ -3451,7 +3451,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutUpdate(seats=5),
             )
 
@@ -3469,7 +3469,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout_seat_based,
+                checkout_seat_based.id,
                 CheckoutUpdate(seats=0),
             )
 
@@ -3492,7 +3492,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(product_id=product_seat_based.id),
         )
 
@@ -3523,7 +3523,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(product_id=product_one_time.id),
         )
 
@@ -3551,7 +3551,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout,
+                checkout.id,
                 CheckoutUpdate(seats=1),  # Below minimum of 3
             )
 
@@ -3581,7 +3581,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout,
+                checkout.id,
                 CheckoutUpdate(seats=15),  # Above maximum of 10
             )
 
@@ -3610,7 +3610,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(seats=15),  # Still within range
         )
 
@@ -3637,7 +3637,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(trial_interval_count=14, trial_interval=TrialInterval.day),
         )
 
@@ -3663,7 +3663,7 @@ class TestUpdate:
         assert checkout.trial_end is not None
 
         updated_checkout = await checkout_service.update(
-            session, locker, checkout, CheckoutUpdatePublic(allow_trial=False)
+            session, locker, checkout.id, CheckoutUpdatePublic(allow_trial=False)
         )
 
         assert updated_checkout.trial_end is None
@@ -3694,7 +3694,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -3731,7 +3731,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(
                 product_id=new_product.id,
             ),
@@ -3761,7 +3761,7 @@ class TestUpdate:
         updated_checkout = await checkout_service.update(
             session,
             locker,
-            checkout,
+            checkout.id,
             CheckoutUpdate(currency=PresentmentCurrency.usd),
         )
 
@@ -3790,7 +3790,7 @@ class TestUpdate:
             await checkout_service.update(
                 session,
                 locker,
-                checkout,
+                checkout.id,
                 CheckoutUpdate(currency=PresentmentCurrency.eur),
             )
 
@@ -3881,7 +3881,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutConfirmStripe.model_validate(payload),
             )
 
@@ -3902,7 +3902,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_confirmed_one_time,
+                checkout_confirmed_one_time.id,
                 CheckoutConfirmStripe.model_validate(
                     {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"}
                 ),
@@ -3928,7 +3928,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -3951,7 +3951,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_custom_fields,
+                checkout_custom_fields.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -3979,7 +3979,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_custom_fields,
+                checkout_custom_fields.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4005,7 +4005,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4057,7 +4057,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4102,7 +4102,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4170,7 +4170,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_discount_percentage_100,
+            checkout_discount_percentage_100.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4225,7 +4225,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_custom,
+            checkout_one_time_custom.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "amount": 2000,
@@ -4283,7 +4283,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "customer_name": "Customer Name",
@@ -4333,7 +4333,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4372,7 +4372,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4412,7 +4412,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4447,7 +4447,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4504,7 +4504,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_recurring_fixed,
+            checkout_recurring_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4570,7 +4570,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_recurring_fixed,
+                checkout_recurring_fixed.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4613,7 +4613,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout,
+            checkout.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4658,7 +4658,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout,
+            checkout.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4696,7 +4696,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_discount_percentage_100,
+                checkout_discount_percentage_100.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4734,7 +4734,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_one_time_fixed,
+                checkout_one_time_fixed.id,
                 CheckoutConfirm(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
@@ -4781,7 +4781,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4831,7 +4831,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_free,
+            checkout_one_time_free.id,
             CheckoutConfirm(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
@@ -4863,7 +4863,7 @@ class TestConfirm:
                 session,
                 locker,
                 auth_subject,
-                checkout_recurring_fixed,
+                checkout_recurring_fixed.id,
                 CheckoutConfirmStripe.model_validate(
                     {
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4915,7 +4915,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
@@ -4985,7 +4985,7 @@ class TestConfirm:
             session,
             locker,
             auth_subject,
-            checkout_one_time_fixed,
+            checkout_one_time_fixed.id,
             CheckoutConfirmStripe.model_validate(
                 {
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",

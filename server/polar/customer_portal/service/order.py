@@ -87,7 +87,7 @@ class CustomerOrderService:
             statement = statement.where(Order.subscription_id.in_(subscription_id))
 
         if query is not None:
-            statement = statement.where(Product.name.ilike(f"%{query}%"))
+            statement = statement.where(Product.name.icontains(query, autoescape=True))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

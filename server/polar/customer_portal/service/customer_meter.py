@@ -40,7 +40,7 @@ class CustomerMeterService:
             statement = statement.where(CustomerMeter.meter_id.in_(meter_id))
 
         if query is not None:
-            statement = statement.where(Meter.name.ilike(f"%{query}%"))
+            statement = statement.where(Meter.name.icontains(query, autoescape=True))
 
         statement = repository.apply_sorting(statement, sorting)
 

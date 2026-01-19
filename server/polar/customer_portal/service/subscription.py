@@ -91,7 +91,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 statement = statement.where(Subscription.revoked.is_(True))
 
         if query is not None:
-            statement = statement.where(Product.name.ilike(f"%{query}%"))
+            statement = statement.where(Product.name.icontains(query, autoescape=True))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

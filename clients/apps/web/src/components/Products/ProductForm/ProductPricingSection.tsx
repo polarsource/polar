@@ -102,16 +102,17 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
-  // Validate minimum amount: must be 0 (free) or >= 50 cents (Stripe minimum)
-  const validateMinimumAmount = (value: number | undefined): string | true => {
+  // Validate amount: must be 0 (free) or >= 50 cents (Stripe minimum)
+  // Values 1-49 are in the "Stripe gap" and not allowed
+  const validatePWYWAmount = (value: number | undefined): string | true => {
     if (value === undefined || value === null) {
-      return true // null/undefined is valid (defaults to 50 cents)
+      return true // null/undefined is valid
     }
     if (value === 0) {
-      return true // 0 means "allow free"
+      return true // 0 is valid (free)
     }
     if (value > 0 && value < 50) {
-      return 'Minimum must be $0 (to allow free) or at least $0.50'
+      return 'Must be $0 (for free) or at least $0.50'
     }
     return true
   }
@@ -123,7 +124,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
           control={control}
           name={`prices.${index}.minimum_amount`}
           rules={{
-            validate: validateMinimumAmount,
+            validate: validatePWYWAmount,
           }}
           render={({ field }) => {
             return (
@@ -154,7 +155,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
           control={control}
           name={`prices.${index}.preset_amount`}
           rules={{
-            min: { value: 50, message: 'Price must be at least $0.50' },
+            validate: validatePWYWAmount,
             max: {
               value: 1_000_000,
               message: 'Price cannot be greater than $10,000',

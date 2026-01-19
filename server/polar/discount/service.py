@@ -380,8 +380,12 @@ class DiscountService(ResourceServiceReader[Discount]):
             return False
 
         if discount.max_redemptions is not None:
-            await session.refresh(discount, {"redemptions_count"})
-            return discount.redemptions_count < discount.max_redemptions
+            statement = select(func.count(DiscountRedemption.id)).where(
+                DiscountRedemption.discount_id == discount.id
+            )
+            result = await session.execute(statement)
+            redemptions_count = result.scalar_one()
+            return redemptions_count < discount.max_redemptions
 
         return True
 

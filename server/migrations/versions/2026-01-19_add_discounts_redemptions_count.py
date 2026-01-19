@@ -1,7 +1,7 @@
 """Add redemptions_count column to discounts with triggers
 
 Revision ID: 4b8c9d0e1f2a
-Revises: 3a7b8c9d0e1f
+Revises: 3af2d42a7578
 Create Date: 2026-01-19
 
 """
@@ -15,23 +15,12 @@ from alembic_utils.pg_trigger import PGTrigger
 
 # revision identifiers, used by Alembic.
 revision = "4b8c9d0e1f2a"
-down_revision = "3a7b8c9d0e1f"
+down_revision = "3af2d42a7578"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Add the redemptions_count column
-    op.add_column(
-        "discounts",
-        sa.Column(
-            "redemptions_count",
-            sa.Integer(),
-            nullable=False,
-            server_default="0",
-        ),
-    )
-
     # Backfill existing redemption counts
     op.execute(
         """

@@ -6,7 +6,7 @@ import {
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
-import { schemas } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -79,31 +79,21 @@ const links = (
   ]
 }
 
-export const Navigation = ({
+// Inner component that uses hooks - only rendered when token is available
+const NavigationContent = ({
   organization,
+  api,
+  currentPath,
+  searchParams,
 }: {
   organization: schemas['CustomerOrganization']
+  api: Client
+  currentPath: string
+  searchParams: URLSearchParams
 }) => {
   const router = useRouter()
-  const currentPath = usePathname()
-  const searchParams = useSearchParams()
-
-  const token =
-    searchParams.get('customer_session_token') ??
-    searchParams.get('member_session_token') ??
-    ''
-  const api = createClientSideAPI(token)
   const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
-
-  // Hide navigation on routes where portal access is being requested or authenticated
-  const hideNav =
-    currentPath.endsWith('/portal/request') ||
-    currentPath.endsWith('/portal/authenticate')
-
-  if (hideNav) {
-    return null
-  }
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
@@ -168,5 +158,43 @@ export const Navigation = ({
         </SelectContent>
       </Select>
     </>
+  )
+}
+
+export const Navigation = ({
+  organization,
+}: {
+  organization: schemas['CustomerOrganization']
+}) => {
+  const currentPath = usePathname()
+  const searchParams = useSearchParams()
+
+  // Hide navigation on routes where portal access is being requested or authenticated
+  const hideNav =
+    currentPath.endsWith('/portal/request') ||
+    currentPath.endsWith('/portal/authenticate')
+
+  if (hideNav) {
+    return null
+  }
+
+  const token =
+    searchParams.get('customer_session_token') ??
+    searchParams.get('member_session_token')
+
+  // Don't render until token is available (handles SSR/hydration)
+  if (!token) {
+    return null
+  }
+
+  const api = createClientSideAPI(token)
+
+  return (
+    <NavigationContent
+      organization={organization}
+      api={api}
+      currentPath={currentPath}
+      searchParams={searchParams}
+    />
   )
 }

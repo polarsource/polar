@@ -94,6 +94,8 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  subscribeNowButtonExperiment?: boolean
+  payNowButtonExperiment?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +109,8 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  subscribeNowButtonExperiment,
+  payNowButtonExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -333,11 +337,17 @@ const BaseCheckoutForm = ({
     }
 
     if (checkout.isPaymentFormRequired) {
-      return interval ? 'Subscribe' : 'Pay'
+      return interval
+        ? subscribeNowButtonExperiment
+          ? 'Subscribe now'
+          : 'Subscribe'
+        : payNowButtonExperiment
+          ? 'Pay now'
+          : 'Pay'
     }
 
     return 'Submit'
-  }, [checkout, interval])
+  }, [checkout, interval, subscribeNowButtonExperiment, payNowButtonExperiment])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -929,6 +939,8 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  subscribeNowButtonExperiment?: boolean
+  payNowButtonExperiment?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {

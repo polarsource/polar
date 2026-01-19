@@ -115,7 +115,7 @@ export const CheckoutPWYWForm = ({
                 message:
                   minimumAmount > 0
                     ? `Price must be at least ${customAmountMinLabel}`
-                    : 'Price must be non-negative',
+                    : 'Amount must be $0 or more',
               },
               ...(productPrice.maximumAmount
                 ? {

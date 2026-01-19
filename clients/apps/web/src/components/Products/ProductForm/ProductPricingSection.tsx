@@ -108,7 +108,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.minimum_amount`}
         rules={{
-          min: { value: 0, message: 'Price must be non-negative' },
+          min: { value: 0, message: 'Amount must be $0 or more' },
         }}
         render={({ field }) => {
           return (
@@ -136,7 +136,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.preset_amount`}
         rules={{
-          min: { value: 0, message: 'Price must be non-negative' },
+          min: { value: 0, message: 'Amount must be $0 or more' },
           max: {
             value: 1_000_000,
             message: 'Price cannot be greater than $10,000',

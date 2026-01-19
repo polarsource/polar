@@ -612,13 +612,13 @@ class TestAuthenticate:
         # Verify it's NOT the owner
         assert session_obj.member_id != owner_member.id
 
-    async def test_member_enabled_falls_back_to_owner(
+    async def test_member_enabled_raises_when_member_not_found(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that authenticate falls back to owner when member not found by email."""
+        """Test that authenticate raises error when member not found by email."""
         from polar.models import CustomerSessionCode
 
         organization.feature_settings = {"member_model_enabled": True}
@@ -647,13 +647,9 @@ class TestAuthenticate:
         await save_fixture(customer_session_code)
         await session.flush()
 
-        # Authenticate
-        token, session_obj = await customer_session_service.authenticate(session, code)
-
-        # Should fall back to owner's MemberSession
-        assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
-        assert isinstance(session_obj, MemberSession)
-        assert session_obj.member_id == owner_member.id
+        # Authenticate should raise error - no fallback to owner for security
+        with pytest.raises(CustomerSessionCodeInvalidOrExpired):
+            await customer_session_service.authenticate(session, code)
 
     async def test_email_verified_on_authenticate(
         self,

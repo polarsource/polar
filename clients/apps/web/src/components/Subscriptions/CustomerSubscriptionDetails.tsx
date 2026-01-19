@@ -3,11 +3,8 @@
 import revalidate from '@/app/actions'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
-import {
-  useCustomerCancelSubscription,
-  useCustomerUncancelSubscription,
-} from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
+import { useSubscription } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -53,7 +50,8 @@ const CustomerSubscriptionDetails = ({
     show: showBenefitGrantsModal,
   } = useModal()
 
-  const cancelSubscription = useCustomerCancelSubscription(api)
+  const { cancel: cancelSubscription, uncancel: uncancelSubscription } =
+    useSubscription(subscription.id, { initialData: subscription })
 
   const isCanceled =
     cancelSubscription.isPending ||
@@ -65,8 +63,6 @@ const CustomerSubscriptionDetails = ({
 
   const showSubscriptionUpdates =
     organization.customer_portal_settings.subscription.update_plan === true
-
-  const uncancelSubscription = useCustomerUncancelSubscription(api)
   const router = useRouter()
 
   const primaryAction = useMemo(() => {
@@ -93,7 +89,7 @@ const CustomerSubscriptionDetails = ({
         label: 'Uncancel',
         loading: uncancelSubscription.isPending,
         onClick: async () => {
-          await uncancelSubscription.mutateAsync({ id: subscription.id })
+          await uncancelSubscription.mutateAsync()
           await revalidate(`customer_portal`)
           router.refresh()
         },

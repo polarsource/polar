@@ -79,13 +79,11 @@ export const CheckoutPWYWForm = ({
     reset({ amount: amount || 0 })
   }, [amount, reset])
 
+  const minimumAmount = productPrice.minimumAmount ?? 0
   let customAmountMinLabel = null
   let customAmountMaxLabel = null
 
-  customAmountMinLabel = formatCurrencyNumber(
-    productPrice.minimumAmount || 50,
-    checkout.currency,
-  )
+  customAmountMinLabel = formatCurrencyNumber(minimumAmount, checkout.currency)
 
   if (productPrice.maximumAmount) {
     customAmountMaxLabel = formatCurrencyNumber(
@@ -98,10 +96,13 @@ export const CheckoutPWYWForm = ({
     <Form {...form}>
       <form className="flex w-full flex-col gap-3">
         <FormLabel>
-          Name a fair price{' '}
-          <span className="text-gray-400">
-            ({customAmountMinLabel} minimum)
-          </span>
+          Name a fair price
+          {minimumAmount > 0 && (
+            <span className="text-gray-400">
+              {' '}
+              ({customAmountMinLabel} minimum)
+            </span>
+          )}
         </FormLabel>
         <div className="flex flex-row items-center gap-2">
           <FormField
@@ -110,8 +111,11 @@ export const CheckoutPWYWForm = ({
             name="amount"
             rules={{
               min: {
-                value: productPrice.minimumAmount || 50,
-                message: `Price must be greater than ${customAmountMinLabel}`,
+                value: minimumAmount,
+                message:
+                  minimumAmount > 0
+                    ? `Price must be at least ${customAmountMinLabel}`
+                    : 'Price must be non-negative',
               },
               ...(productPrice.maximumAmount
                 ? {

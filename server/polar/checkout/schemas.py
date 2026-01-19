@@ -74,10 +74,11 @@ Amount = Annotated[
     Field(
         description=(
             "Amount in cents, before discounts and taxes. "
-            "Only useful for custom prices, it'll be ignored for fixed and free prices."
+            "Only useful for custom prices, it'll be ignored for fixed and free prices. "
+            "Can be 0 for free contributions on pay-what-you-want prices."
         )
     ),
-    Ge(MINIMUM_PRICE_AMOUNT),
+    Ge(0),
     Le(MAXIMUM_PRICE_AMOUNT),
 ]
 CustomerEmail = Annotated[

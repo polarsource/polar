@@ -424,11 +424,13 @@ class CheckoutService:
             amount = price.price_amount
         elif is_custom_price(price):
             if amount is None:
-                amount = (
-                    price.preset_amount
-                    or price.minimum_amount
-                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
-                )
+                # Use explicit None checks since 0 is a valid amount for free contributions
+                if price.preset_amount is not None:
+                    amount = price.preset_amount
+                elif price.minimum_amount is not None:
+                    amount = price.minimum_amount
+                else:
+                    amount = settings.CUSTOM_PRICE_PRESET_FALLBACK
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -653,11 +655,13 @@ class CheckoutService:
         if is_fixed_price(price):
             amount = price.price_amount
         elif is_custom_price(price):
-            amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            # Use explicit None checks since 0 is a valid amount for free contributions
+            if price.preset_amount is not None:
+                amount = price.preset_amount
+            elif price.minimum_amount is not None:
+                amount = price.minimum_amount
+            else:
+                amount = settings.CUSTOM_PRICE_PRESET_FALLBACK
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -792,12 +796,15 @@ class CheckoutService:
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
 
-            amount = (
-                valid_query_amount
-                or price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            # Use explicit None checks since 0 is a valid amount for free contributions
+            if valid_query_amount is not None:
+                amount = valid_query_amount
+            elif price.preset_amount is not None:
+                amount = price.preset_amount
+            elif price.minimum_amount is not None:
+                amount = price.minimum_amount
+            else:
+                amount = settings.CUSTOM_PRICE_PRESET_FALLBACK
         elif is_seat_price(price):
             # Default to minimum seats for checkout links with seat-based pricing
             seats = price.get_minimum_seats()
@@ -1998,11 +2005,13 @@ class CheckoutService:
             checkout.amount = price.price_amount
             checkout.seats = None
         elif is_custom_price(price):
-            checkout.amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            # Use explicit None checks since 0 is a valid amount for free contributions
+            if price.preset_amount is not None:
+                checkout.amount = price.preset_amount
+            elif price.minimum_amount is not None:
+                checkout.amount = price.minimum_amount
+            else:
+                checkout.amount = settings.CUSTOM_PRICE_PRESET_FALLBACK
             checkout.seats = None
         elif is_seat_price(price):
             # Use minimum_seats as default if no seats are set

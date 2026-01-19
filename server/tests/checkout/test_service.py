@@ -316,6 +316,32 @@ async def product_custom_price_no_amounts(
 
 
 @pytest_asyncio.fixture
+async def product_custom_price_zero_minimum(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Product with pay-what-you-want pricing with minimum_amount=0 (free contributions)."""
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(0, None, None, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_custom_price_zero_preset(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    """Product with pay-what-you-want pricing with preset_amount=0 (default to free)."""
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(None, None, 0, "usd")],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1581,6 +1607,8 @@ class TestCreate:
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
             ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+            ("product_custom_price_zero_minimum", 0),
+            ("product_custom_price_zero_preset", 0),
         ],
         indirect=["product_parametrization_helper"],
     )
@@ -2160,6 +2188,8 @@ class TestClientCreate:
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
             ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+            ("product_custom_price_zero_minimum", 0),
+            ("product_custom_price_zero_preset", 0),
         ],
         indirect=["product_parametrization_helper"],
     )
@@ -2367,6 +2397,8 @@ class TestCheckoutLinkCreate:
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
             ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
+            ("product_custom_price_zero_minimum", 0),
+            ("product_custom_price_zero_preset", 0),
         ],
         indirect=["product_parametrization_helper"],
     )

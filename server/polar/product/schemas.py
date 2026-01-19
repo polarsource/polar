@@ -141,18 +141,22 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: PriceCurrency = "usd"
-    minimum_amount: PriceAmount | None = Field(
-        default=None, ge=50, description="The minimum amount the customer can pay."
+    minimum_amount: int | None = Field(
+        default=None,
+        ge=0,
+        le=MAXIMUM_PRICE_AMOUNT,
+        description="The minimum amount the customer can pay. Set to 0 to allow free contributions.",
     )
     maximum_amount: PriceAmount | None = Field(
         default=None,
         le=1_000_000,  # $10K
         description="The maximum amount the customer can pay.",
     )
-    preset_amount: PriceAmount | None = Field(
+    preset_amount: int | None = Field(
         default=None,
-        le=1_000_000,  # $10K
-        description="The initial amount shown to the customer.",
+        ge=0,
+        le=MAXIMUM_PRICE_AMOUNT,
+        description="The initial amount shown to the customer. Set to 0 for free-by-default contributions.",
     )
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:

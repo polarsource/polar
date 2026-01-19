@@ -173,9 +173,7 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         # Stripe minimum is 50 cents, so values 1-49 are invalid
         # 0 is valid (free), None is valid (use default), >= 50 is valid
         if v is not None and 0 < v < 50:
-            raise ValueError(
-                "Amount must be 0 (for free) or at least 50 cents"
-            )
+            raise ValueError("Amount must be 0 (for free) or at least 50 cents")
         return v
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:

@@ -87,7 +87,12 @@ export const CheckoutPWYWForm = ({
 
       return true
     },
-    [allowFree, productPrice.minimumAmount, productPrice.maximumAmount, checkout.currency],
+    [
+      allowFree,
+      productPrice.minimumAmount,
+      productPrice.maximumAmount,
+      checkout.currency,
+    ],
   )
 
   const debouncedAmountUpdate = useDebouncedCallback(

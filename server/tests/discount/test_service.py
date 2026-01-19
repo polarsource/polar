@@ -10,7 +10,6 @@ from polar.discount.schemas import (
     DiscountFixedOnceForeverDurationCreate,
     DiscountUpdate,
 )
-from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.utils import utc_now

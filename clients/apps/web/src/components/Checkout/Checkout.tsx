@@ -81,6 +81,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     if (hasTrackedOpen.current) return
     hasTrackedOpen.current = true
     posthog.capture('storefront:subscriptions:checkout:open', {
+      checkout_id: checkout.id,
       organization_slug: checkout.organization.slug,
       product_id: checkout.productId,
       amount: checkout.amount,
@@ -92,6 +93,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     checkout.amount,
     embed,
     posthog,
+    checkout.id,
   ])
 
   // Track payment not ready state

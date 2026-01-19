@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 import logfire
 import structlog
+from opentelemetry import trace
 from sqlalchemy import (
     Select,
     String,
@@ -748,12 +749,19 @@ class EventService:
         )
         events = await repository.get_all(statement)
         customers: set[Customer] = set()
+        organization_ids: set[uuid.UUID] = set()
         organization_ids_for_revops: set[uuid.UUID] = set()
         for event in events:
+            organization_ids.add(event.organization_id)
             if event.customer:
                 customers.add(event.customer)
             if "_cost" in event.user_metadata:
                 organization_ids_for_revops.add(event.organization_id)
+
+        span = trace.get_current_span()
+        span.set_attribute(
+            "organization_ids", [str(org_id) for org_id in organization_ids]
+        )
 
         # Temporarily do this sync on ingestion instead
         # await self._create_meter_events(session, events)

@@ -8,38 +8,22 @@ import { Slideshow } from '../Products/Slideshow'
 interface CheckoutProductInfoProps {
   organization: CheckoutOrganization
   product: CheckoutProduct
-  isLayoutTreatment?: boolean
 }
 
 const CheckoutProductInfo = ({
   organization,
   product,
-  isLayoutTreatment = false,
 }: CheckoutProductInfoProps) => {
   return (
-    <div
-      className={
-        isLayoutTreatment
-          ? 'contents md:flex md:flex-col md:gap-y-4'
-          : 'contents'
-      }
-    >
+    <div className="contents">
       <div className="flex flex-col gap-y-6 md:gap-y-8">
         <Avatar
-          className={
-            isLayoutTreatment
-              ? 'h-12 w-12 md:hidden'
-              : 'h-12 w-12 md:h-16 md:w-16'
-          }
+          className="h-12 w-12 md:h-16 md:w-16"
           avatar_url={organization.avatarUrl}
           name={organization.name}
         />
         {product.name ? (
-          <h1
-            className={isLayoutTreatment ? 'text-3xl md:text-xl' : 'text-3xl'}
-          >
-            {product.name}
-          </h1>
+          <h1 className="text-3xl">{product.name}</h1>
         ) : (
           <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
         )}

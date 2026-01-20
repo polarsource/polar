@@ -4,6 +4,7 @@ import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
+import { getServerURL } from '@/utils/api'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -76,25 +77,17 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const isPaymentRequired = checkout.isPaymentRequired
   const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
 
-  // Track checkout page open
   useEffect(() => {
     if (hasTrackedOpen.current) return
     hasTrackedOpen.current = true
-    posthog.capture('storefront:subscriptions:checkout:open', {
-      checkout_id: checkout.id,
-      organization_slug: checkout.organization.slug,
-      product_id: checkout.productId,
-      amount: checkout.amount,
-      embed,
-    })
-  }, [
-    checkout.organization.slug,
-    checkout.productId,
-    checkout.amount,
-    embed,
-    posthog,
-    checkout.id,
-  ])
+
+    fetch(
+      `${getServerURL()}/v1/checkouts/client/${checkout.clientSecret}/opened`,
+      {
+        method: 'POST',
+      },
+    )
+  }, [checkout.clientSecret])
 
   // Track payment not ready state
   useEffect(() => {

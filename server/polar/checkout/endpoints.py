@@ -279,6 +279,29 @@ async def client_confirm(
     )
 
 
+@inner_router.post(
+    "/client/{client_secret}/opened",
+    response_model=CheckoutPublic,
+    summary="Mark Checkout Session as Opened",
+    responses={
+        200: {"description": "Checkout session marked as opened."},
+        404: CheckoutNotFound,
+        410: CheckoutExpired,
+    },
+    tags=[APITag.private],
+    include_in_schema=False,
+)
+async def client_opened(
+    client_secret: CheckoutClientSecret,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Mark a checkout session as opened by client for analytics/experiment purposes.
+    """
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+    return await checkout_service.mark_opened(session, checkout)
+
+
 @inner_router.get("/client/{client_secret}/stream", include_in_schema=False)
 async def client_stream(
     request: Request,

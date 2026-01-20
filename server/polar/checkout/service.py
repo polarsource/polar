@@ -86,6 +86,7 @@ from polar.observability.checkout_metrics import (
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.posthog import posthog
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -1265,6 +1266,17 @@ class CheckoutService:
 
         CHECKOUT_SUCCEEDED_TOTAL.inc()
 
+        posthog.capture(
+            distinct_id=checkout.customer_email or "anonymous",
+            event="storefront:subscriptions:checkout:complete",
+            properties={
+                "checkout_id": str(checkout.id),
+                "organization_slug": checkout.organization.slug,
+                "product_id": str(checkout.product_id) if checkout.product_id else None,
+                "amount": checkout.amount,
+            },
+        )
+
         return checkout
 
     async def handle_failure(
@@ -1308,6 +1320,32 @@ class CheckoutService:
             raise ResourceNotFound()
         if checkout.is_expired:
             raise ExpiredCheckoutError()
+        return checkout
+
+    async def mark_opened(self, session: AsyncSession, checkout: Checkout) -> Checkout:
+        """
+        Mark a checkout as opened. This is called when the checkout page is first viewed.
+        """
+        if checkout.opened_at is not None:
+            return checkout
+
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.update(
+            checkout,
+            update_dict={"opened_at": utc_now()},
+        )
+
+        posthog.capture(
+            distinct_id=checkout.customer_email or "anonymous",
+            event="storefront:subscriptions:checkout:open",
+            properties={
+                "checkout_id": str(checkout.id),
+                "organization_slug": checkout.organization.slug,
+                "product_id": str(checkout.product_id) if checkout.product_id else None,
+                "amount": checkout.amount,
+            },
+        )
+
         return checkout
 
     async def _get_validated_price(

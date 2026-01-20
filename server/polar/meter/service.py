@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     ColumnElement,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
 )
 from sqlalchemy.orm import joinedload
 
@@ -312,11 +314,13 @@ class MeterService:
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: TimeInterval,
+        timezone: ZoneInfo,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         metadata: MetadataQuery | None = None,
         customer_aggregation_function: AggregationFunction | None = None,
     ) -> MeterQuantities:
+        await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
         )

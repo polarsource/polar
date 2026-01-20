@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 from typing import Literal
 from unittest.mock import AsyncMock
@@ -256,6 +257,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 1
@@ -342,6 +344,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 1
@@ -405,6 +408,7 @@ class TestGetQuantities:
             start_timestamp=past_timestamp,
             end_timestamp=future_timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 3
@@ -520,6 +524,7 @@ class TestGetQuantities:
             start_timestamp=past_timestamp,
             end_timestamp=future_timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 3
@@ -581,6 +586,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 1
@@ -643,6 +649,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
         )
 
         assert len(result.quantities) == 1
@@ -719,6 +726,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
             metadata={"model": ["lite"]},
         )
 
@@ -809,6 +817,7 @@ class TestGetQuantities:
             start_timestamp=timestamp,
             end_timestamp=timestamp,
             interval=TimeInterval.day,
+            timezone=ZoneInfo("UTC"),
             customer_aggregation_function=customer_aggregation_function,
         )
 

@@ -6,7 +6,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Organization, is_user
 from polar.config import settings
 from polar.email.react import render_email_template
 from polar.email.schemas import (
@@ -41,7 +41,7 @@ class OrganizationAccessTokenService:
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
@@ -83,7 +83,7 @@ class OrganizationAccessTokenService:
         )
 
     async def get(
-        self, session: AsyncSession, auth_subject: AuthSubject[User], id: UUID
+        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization], id: UUID
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
@@ -102,7 +102,7 @@ class OrganizationAccessTokenService:
     async def create(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Organization],
         create_schema: OrganizationAccessTokenCreate,
     ) -> tuple[OrganizationAccessToken, str]:
         organization = await get_payload_organization(
@@ -127,8 +127,10 @@ class OrganizationAccessTokenService:
             organization_access_token, flush=True
         )
 
-        user = auth_subject.subject
-        await loops_service.user_created_personal_access_token(session, user)
+        if is_user(auth_subject):
+            await loops_service.user_created_personal_access_token(
+                session, auth_subject.subject
+            )
 
         return organization_access_token, token
 

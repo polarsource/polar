@@ -13,7 +13,6 @@ from polar.kit.schemas import (
     MultipleQueryFilter,
     SetSchemaReference,
 )
-from polar.locker import Locker, get_locker
 from polar.models import Checkout
 from polar.models.checkout import CheckoutStatus
 from polar.openapi import APITag
@@ -178,7 +177,6 @@ async def update(
     auth_subject: auth.CheckoutWrite,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """Update a checkout session."""
     checkout = await checkout_service.get_by_id(session, auth_subject, id)
@@ -187,7 +185,7 @@ async def update(
         raise ResourceNotFound()
 
     return await checkout_service.update(
-        session, locker, checkout, checkout_update, ip_geolocation_client
+        session, checkout, checkout_update, ip_geolocation_client
     )
 
 
@@ -242,13 +240,12 @@ async def client_update(
     checkout_update: CheckoutUpdatePublic,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """Update a checkout session by client secret."""
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
 
     return await checkout_service.update(
-        session, locker, checkout, checkout_update, ip_geolocation_client
+        session, checkout, checkout_update, ip_geolocation_client
     )
 
 
@@ -269,7 +266,6 @@ async def client_confirm(
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
-    locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """
     Confirm a checkout session by client secret.
@@ -279,7 +275,7 @@ async def client_confirm(
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
 
     return await checkout_service.confirm(
-        session, locker, auth_subject, checkout, checkout_confirm
+        session, auth_subject, checkout, checkout_confirm
     )
 
 

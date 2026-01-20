@@ -2074,14 +2074,13 @@ class TestUpdateDiscount:
 
         with pytest.raises(PolarRequestValidationError):
             await subscription_service.update_discount(
-                session, locker, subscription, discount_id=uuid.uuid4()
+                session, subscription, discount_id=uuid.uuid4()
             )
 
     async def test_same_discount(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
@@ -2096,14 +2095,13 @@ class TestUpdateDiscount:
 
         with pytest.raises(PolarRequestValidationError):
             await subscription_service.update_discount(
-                session, locker, subscription, discount_id=discount_percentage_50.id
+                session, subscription, discount_id=discount_percentage_50.id
             )
 
     async def test_valid_removed(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
@@ -2116,7 +2114,7 @@ class TestUpdateDiscount:
         )
 
         subscription = await subscription_service.update_discount(
-            session, locker, subscription, discount_id=None
+            session, subscription, discount_id=None
         )
 
         assert subscription.discount is None
@@ -2125,7 +2123,6 @@ class TestUpdateDiscount:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
@@ -2135,7 +2132,7 @@ class TestUpdateDiscount:
         )
 
         subscription = await subscription_service.update_discount(
-            session, locker, subscription, discount_id=discount_percentage_50.id
+            session, subscription, discount_id=discount_percentage_50.id
         )
 
         assert subscription.discount == discount_percentage_50
@@ -2144,7 +2141,6 @@ class TestUpdateDiscount:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
@@ -2158,7 +2154,7 @@ class TestUpdateDiscount:
         )
 
         subscription = await subscription_service.update_discount(
-            session, locker, subscription, discount_id=discount_percentage_100.id
+            session, subscription, discount_id=discount_percentage_100.id
         )
 
         assert subscription.discount == discount_percentage_100

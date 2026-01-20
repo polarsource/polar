@@ -1,4 +1,3 @@
-import asyncio
 from datetime import timedelta
 from typing import Literal
 
@@ -11,11 +10,9 @@ from polar.discount.schemas import (
     DiscountFixedOnceForeverDurationCreate,
     DiscountUpdate,
 )
-from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.models import (
     Checkout,
     Discount,
@@ -498,67 +495,11 @@ class TestIsRedeemableDiscount:
 
 
 @pytest.mark.asyncio
-class TestRedeemDiscount:
-    async def test_concurrency(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        product: Product,
-    ) -> None:
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.repeating,
-            duration_in_months=1,
-            organization=organization,
-            max_redemptions=1,
-        )
-        first_checkout = await create_checkout(save_fixture, products=[product])
-        second_checkout = await create_checkout(save_fixture, products=[product])
-
-        async def _redemption_task(
-            session: AsyncSession,
-            locker: Locker,
-            discount: Discount,
-            checkout: Checkout,
-        ) -> DiscountRedemption:
-            async with discount_service.redeem_discount(
-                session, locker, discount
-            ) as redemption:
-                redemption.checkout = checkout
-                session.add(redemption)
-                await session.flush()
-                return redemption
-
-        first_redemption = asyncio.create_task(
-            _redemption_task(session, locker, discount, first_checkout)
-        )
-        second_redemption = asyncio.create_task(
-            _redemption_task(session, locker, discount, second_checkout)
-        )
-
-        done, _ = await asyncio.wait(
-            [first_redemption, second_redemption], return_when=asyncio.ALL_COMPLETED
-        )
-
-        assert first_redemption in done
-        assert isinstance(first_redemption.result(), DiscountRedemption)
-
-        assert second_redemption in done
-        with pytest.raises(DiscountNotRedeemableError):
-            second_redemption.result()
-
-
-@pytest.mark.asyncio
 class TestCodeCaseInsensitivity:
     async def test_code_case_insensitive(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -600,7 +541,6 @@ class TestCodeCaseInsensitivity:
         checkout_product = await create_checkout(save_fixture, products=[product])
         await checkout_service.update(
             session,
-            locker,
             checkout_product,
             CheckoutUpdatePublic(
                 discount_code="FoObAr",

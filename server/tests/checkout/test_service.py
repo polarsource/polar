@@ -44,7 +44,6 @@ from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.models import (
     Account,
     Checkout,
@@ -2557,13 +2556,11 @@ class TestUpdate:
     async def test_not_existing_product(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     product_id=uuid.uuid4(),
@@ -2573,14 +2570,12 @@ class TestUpdate:
     async def test_product_not_on_checkout(
         self,
         session: AsyncSession,
-        locker: Locker,
         product_one_time_custom_price: Product,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
@@ -2590,13 +2585,11 @@ class TestUpdate:
         self,
         amount: int,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
@@ -2609,7 +2602,6 @@ class TestUpdate:
         amount: int,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         assert has_product_checkout(checkout_one_time_custom)
@@ -2622,7 +2614,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
@@ -2632,13 +2623,11 @@ class TestUpdate:
     async def test_not_open(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_confirmed_one_time,
                 CheckoutUpdate(
                     customer_email="customer@example.com",
@@ -2671,7 +2660,6 @@ class TestUpdate:
         updated_values: dict[str, Any],
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         checkout_recurring_fixed: Checkout,
     ) -> None:
         for key, value in initial_values.items():
@@ -2681,7 +2669,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_recurring_fixed,
                 CheckoutUpdate.model_validate(updated_values),
             )
@@ -2689,13 +2676,11 @@ class TestUpdate:
     async def test_invalid_discount_id(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
                     discount_id=uuid.uuid4(),
@@ -2705,13 +2690,11 @@ class TestUpdate:
     async def test_invalid_discount_code(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdatePublic(
                     discount_code="invalid",
@@ -2721,14 +2704,12 @@ class TestUpdate:
     async def test_invalid_discount_id_not_applicable(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_free,
                 CheckoutUpdate(discount_id=discount_fixed_once.id),
             )
@@ -2736,14 +2717,12 @@ class TestUpdate:
     async def test_invalid_discount_code_not_applicable(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_free,
                 CheckoutUpdatePublic(discount_code=discount_fixed_once.code),
             )
@@ -2752,7 +2731,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
         organization: Organization,
     ) -> None:
@@ -2769,7 +2747,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
@@ -2778,7 +2755,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -2795,7 +2771,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
@@ -2814,7 +2789,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -2845,7 +2819,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
@@ -2860,7 +2833,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
@@ -2892,7 +2864,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_recurring_fixed,
             CheckoutUpdate(
                 product_id=new_product.id,
@@ -2911,12 +2882,10 @@ class TestUpdate:
     async def test_valid_fixed_price_amount_update(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 amount=4242,
@@ -2930,12 +2899,10 @@ class TestUpdate:
     async def test_valid_custom_price_amount_update(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 amount=4242,
@@ -2946,12 +2913,10 @@ class TestUpdate:
     async def test_valid_free_price_amount_update(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 amount=4242,
@@ -2966,12 +2931,10 @@ class TestUpdate:
     async def test_valid_tax_id(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
@@ -2985,7 +2948,6 @@ class TestUpdate:
     async def test_valid_unset_tax_id(
         self,
         session: AsyncSession,
-        locker: Locker,
         save_fixture: SaveFixture,
         checkout_one_time_custom: Checkout,
     ) -> None:
@@ -2994,7 +2956,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_custom,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
@@ -3010,7 +2971,6 @@ class TestUpdate:
     async def test_silent_calculate_tax_error(
         self,
         session: AsyncSession,
-        locker: Locker,
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -3018,7 +2978,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "US"}),
@@ -3035,7 +2994,6 @@ class TestUpdate:
     async def test_valid_calculate_tax(
         self,
         session: AsyncSession,
-        locker: Locker,
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -3048,7 +3006,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
@@ -3065,7 +3022,6 @@ class TestUpdate:
     async def test_ignore_email_update_if_customer_set(
         self,
         session: AsyncSession,
-        locker: Locker,
         save_fixture: SaveFixture,
         customer: Customer,
         checkout_one_time_fixed: Checkout,
@@ -3076,7 +3032,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(customer_email="updatedemail@example.com"),
         )
@@ -3086,12 +3041,10 @@ class TestUpdate:
     async def test_valid_metadata(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 metadata={"key": "value"},
@@ -3103,12 +3056,10 @@ class TestUpdate:
     async def test_valid_metadata_reset(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_free,
             CheckoutUpdate(metadata={}),
         )
@@ -3119,14 +3070,13 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout_one_time_free.user_metadata = {"key": "value"}
         await save_fixture(checkout_one_time_free)
 
         checkout = await checkout_service.update(
-            session, locker, checkout_one_time_free, CheckoutUpdate()
+            session, checkout_one_time_free, CheckoutUpdate()
         )
 
         assert checkout.user_metadata == {"key": "value"}
@@ -3134,12 +3084,10 @@ class TestUpdate:
     async def test_valid_customer_metadata(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 customer_metadata={"key": "value"},
@@ -3156,13 +3104,11 @@ class TestUpdate:
         self,
         custom_field_data: dict[str, Any],
         session: AsyncSession,
-        locker: Locker,
         checkout_custom_fields: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                locker,
                 checkout_custom_fields,
                 CheckoutUpdate(custom_field_data=custom_field_data),
             )
@@ -3171,11 +3117,10 @@ class TestUpdate:
             assert error["loc"][0:2] == ("body", "custom_field_data")
 
     async def test_valid_custom_field_data(
-        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
+        self, session: AsyncSession, checkout_custom_fields: Checkout
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_custom_fields,
             CheckoutUpdate(
                 custom_field_data={"text": "abc", "select": "a"},
@@ -3185,11 +3130,10 @@ class TestUpdate:
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
 
     async def test_valid_missing_required_custom_field(
-        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
+        self, session: AsyncSession, checkout_custom_fields: Checkout
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_custom_fields,
             CheckoutUpdate(
                 custom_field_data={"text": "abc"},
@@ -3201,12 +3145,10 @@ class TestUpdate:
     async def test_valid_embed_origin(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_free,
             CheckoutUpdate(
                 embed_origin="https://example.com",
@@ -3218,12 +3160,10 @@ class TestUpdate:
     async def test_valid_tax_not_applicable(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_tax_not_applicable: Checkout,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_tax_not_applicable,
             CheckoutUpdate(
                 customer_billing_address=AddressInput.model_validate({"country": "FR"}),
@@ -3238,13 +3178,11 @@ class TestUpdate:
     async def test_valid_discount_id(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdate(
                 discount_id=discount_fixed_once.id,
@@ -3265,13 +3203,11 @@ class TestUpdate:
     async def test_valid_discount_code(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
         discount_fixed_once: Discount,
     ) -> None:
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdatePublic(
                 discount_code=discount_fixed_once.code,
@@ -3293,7 +3229,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
         discount_percentage_100: Discount,
     ) -> None:
@@ -3305,7 +3240,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_one_time_fixed,
             CheckoutUpdatePublic(
                 discount_code=discount_percentage_100.code,
@@ -3320,7 +3254,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         checkout_recurring_fixed: Checkout,
         customer: Customer,
@@ -3338,7 +3271,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_recurring_fixed,
             CheckoutUpdate(customer_email=customer.email),
         )
@@ -3357,7 +3289,6 @@ class TestUpdate:
         subscription_status: SubscriptionStatus,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         checkout_recurring_fixed: Checkout,
         customer: Customer,
@@ -3380,7 +3311,6 @@ class TestUpdate:
         with pytest.raises(AlreadyActiveSubscriptionError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_recurring_fixed,
                 CheckoutUpdate(customer_email=customer.email),
             )
@@ -3391,13 +3321,12 @@ class TestUpdate:
 
         with pytest.raises(AlreadyActiveSubscriptionError):
             await checkout_service.update(
-                session, locker, checkout_recurring_fixed, CheckoutUpdate()
+                session, checkout_recurring_fixed, CheckoutUpdate()
             )
 
     async def test_update_seats_on_seat_based_price(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_seat_based: Checkout,
     ) -> None:
         price = checkout_seat_based.product_price
@@ -3408,7 +3337,6 @@ class TestUpdate:
 
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_seat_based,
             CheckoutUpdate(seats=12),
         )
@@ -3419,7 +3347,6 @@ class TestUpdate:
     async def test_update_seats_amount_recalculation(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_seat_based: Checkout,
     ) -> None:
         price = checkout_seat_based.product_price
@@ -3432,7 +3359,6 @@ class TestUpdate:
         # Update seats to 3
         checkout = await checkout_service.update(
             session,
-            locker,
             checkout_seat_based,
             CheckoutUpdate(seats=3),
         )
@@ -3444,13 +3370,11 @@ class TestUpdate:
     async def test_update_seats_on_non_seat_based(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(seats=5),
             )
@@ -3462,13 +3386,11 @@ class TestUpdate:
     async def test_update_seats_to_zero(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout_seat_based: Checkout,
     ) -> None:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_seat_based,
                 CheckoutUpdate(seats=0),
             )
@@ -3477,7 +3399,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time: Product,
         product_seat_based: Product,
     ) -> None:
@@ -3491,7 +3412,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(product_id=product_seat_based.id),
         )
@@ -3506,7 +3426,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time: Product,
         product_seat_based: Product,
     ) -> None:
@@ -3522,7 +3441,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(product_id=product_one_time.id),
         )
@@ -3534,7 +3452,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_seat_based_with_min: Product,
     ) -> None:
         """Test that updating seats below minimum fails."""
@@ -3550,7 +3467,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                locker,
                 checkout,
                 CheckoutUpdate(seats=1),  # Below minimum of 3
             )
@@ -3564,7 +3480,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_seat_based_with_max: Product,
     ) -> None:
         """Test that updating seats above maximum fails."""
@@ -3580,7 +3495,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.update(
                 session,
-                locker,
                 checkout,
                 CheckoutUpdate(seats=15),  # Above maximum of 10
             )
@@ -3594,7 +3508,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_seat_based_with_min_max: Product,
     ) -> None:
         """Test that updating seats within limits succeeds."""
@@ -3609,7 +3522,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(seats=15),  # Still within range
         )
@@ -3621,7 +3533,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -3636,7 +3547,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(trial_interval_count=14, trial_interval=TrialInterval.day),
         )
@@ -3650,7 +3560,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_recurring_trial: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -3663,7 +3572,7 @@ class TestUpdate:
         assert checkout.trial_end is not None
 
         updated_checkout = await checkout_service.update(
-            session, locker, checkout, CheckoutUpdatePublic(allow_trial=False)
+            session, checkout, CheckoutUpdatePublic(allow_trial=False)
         )
 
         assert updated_checkout.trial_end is None
@@ -3674,7 +3583,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time_multiple_currencies: Product,
     ) -> None:
         new_product = await create_product(
@@ -3693,7 +3601,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(
                 product_id=new_product.id,
@@ -3711,7 +3618,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time_multiple_currencies: Product,
     ) -> None:
         new_product = await create_product(
@@ -3730,7 +3636,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(
                 product_id=new_product.id,
@@ -3748,7 +3653,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time_multiple_currencies: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -3760,7 +3664,6 @@ class TestUpdate:
 
         updated_checkout = await checkout_service.update(
             session,
-            locker,
             checkout,
             CheckoutUpdate(currency=PresentmentCurrency.usd),
         )
@@ -3776,7 +3679,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         product_one_time: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -3789,7 +3691,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout,
                 CheckoutUpdate(currency=PresentmentCurrency.eur),
             )
@@ -3872,14 +3773,12 @@ class TestConfirm:
         payload: dict[str, str],
         missing_fields: set[tuple[str, ...]],
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
@@ -3893,14 +3792,12 @@ class TestConfirm:
     async def test_not_open(
         self,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_confirmed_one_time: Checkout,
     ) -> None:
         with pytest.raises(NotOpenCheckout):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_confirmed_one_time,
                 CheckoutConfirmStripe.model_validate(
@@ -3912,7 +3809,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -3926,7 +3822,6 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -3942,14 +3837,12 @@ class TestConfirm:
     async def test_missing_required_custom_field(
         self,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_custom_fields: Checkout,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
@@ -3966,7 +3859,6 @@ class TestConfirm:
     async def test_validate_custom_fields_even_if_data_unset(
         self,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_custom_fields: Checkout,
     ) -> None:
@@ -3977,7 +3869,6 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_custom_fields,
                 CheckoutConfirmStripe.model_validate(
@@ -3994,7 +3885,6 @@ class TestConfirm:
         self,
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -4003,7 +3893,6 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -4045,7 +3934,6 @@ class TestConfirm:
         payload: dict[str, Any],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -4055,7 +3943,6 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -4085,7 +3972,6 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -4100,7 +3986,6 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4155,7 +4040,6 @@ class TestConfirm:
         expected_tax_metadata: dict[str, str],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
         discount_percentage_100: Discount,
@@ -4168,7 +4052,6 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_discount_percentage_100,
             CheckoutConfirmStripe.model_validate(
@@ -4210,7 +4093,6 @@ class TestConfirm:
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_custom: Checkout,
         discount_percentage_50: Discount,
@@ -4223,7 +4105,6 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_custom,
             CheckoutConfirmStripe.model_validate(
@@ -4269,7 +4150,6 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
         mocker: MockerFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_free: Checkout,
     ) -> None:
@@ -4281,7 +4161,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_free,
             CheckoutConfirmStripe.model_validate(
@@ -4309,7 +4188,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -4331,7 +4209,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4354,7 +4231,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         customer: Customer,
@@ -4370,7 +4246,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4394,7 +4269,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -4410,7 +4284,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4432,7 +4305,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -4445,7 +4317,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4480,7 +4351,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -4502,7 +4372,6 @@ class TestConfirm:
         )
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_recurring_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4532,7 +4401,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -4568,7 +4436,6 @@ class TestConfirm:
         with pytest.raises(TrialAlreadyRedeemed):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -4586,7 +4453,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -4611,7 +4477,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -4637,7 +4502,6 @@ class TestConfirm:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         product: Product,
@@ -4656,7 +4520,6 @@ class TestConfirm:
 
         checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout,
             CheckoutConfirmStripe.model_validate(
@@ -4680,7 +4543,6 @@ class TestConfirm:
         self,
         calculate_tax_mock: AsyncMock,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
@@ -4694,7 +4556,6 @@ class TestConfirm:
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_discount_percentage_100,
                 CheckoutConfirmStripe.model_validate(
@@ -4717,7 +4578,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -4732,7 +4592,6 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirm(
@@ -4746,7 +4605,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -4779,7 +4637,6 @@ class TestConfirm:
         # Should be allowed since account setup is complete (is_details_submitted=True)
         confirmed_checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4805,7 +4662,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_free: Checkout,
@@ -4829,7 +4685,6 @@ class TestConfirm:
         # Free products should be allowed even when payment not ready
         confirmed_checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_free,
             CheckoutConfirm(
@@ -4846,7 +4701,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_recurring_fixed: Checkout,
@@ -4861,7 +4715,6 @@ class TestConfirm:
         with pytest.raises(PaymentNotReady):
             await checkout_service.confirm(
                 session,
-                locker,
                 auth_subject,
                 checkout_recurring_fixed,
                 CheckoutConfirmStripe.model_validate(
@@ -4884,7 +4737,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
@@ -4913,7 +4765,6 @@ class TestConfirm:
         # Grandfathered organizations should be allowed
         confirmed_checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(
@@ -4939,7 +4790,6 @@ class TestConfirm:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         account: Account,
@@ -4983,7 +4833,6 @@ class TestConfirm:
         # Should be allowed since account setup is complete (is_details_submitted=True)
         confirmed_checkout = await checkout_service.confirm(
             session,
-            locker,
             auth_subject,
             checkout_one_time_fixed,
             CheckoutConfirmStripe.model_validate(

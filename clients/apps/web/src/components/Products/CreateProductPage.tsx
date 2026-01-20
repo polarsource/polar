@@ -50,6 +50,7 @@ export const CreateProductPage = ({
   sourceProduct,
 }: CreateProductPageProps) => {
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
   })
@@ -104,47 +105,52 @@ export const CreateProductPage = ({
 
   const onSubmit = useCallback(
     async (productCreate: ProductEditOrCreateForm) => {
-      const { full_medias, metadata, ...productCreateRest } = productCreate
+      setIsSubmitting(true)
+      try {
+        const { full_medias, metadata, ...productCreateRest } = productCreate
 
-      // When duplicating, re-upload medias to create new files
-      let mediaIds = full_medias.map((media) => media.id)
-      if (sourceProduct && full_medias.length > 0) {
-        const reuploadedMedias = await Promise.all(
-          full_medias.map((media) => reuploadMedia(media, organization)),
-        )
-        mediaIds = reuploadedMedias.map((media) => media.id)
-      }
-
-      const { data: product, error } = await createProduct.mutateAsync({
-        ...productCreateRest,
-        medias: mediaIds,
-        metadata: metadata.reduce(
-          (acc, { key, value }) => ({ ...acc, [key]: value }),
-          {},
-        ),
-      } as schemas['ProductCreate'])
-
-      if (error) {
-        if (error.detail) {
-          setProductValidationErrors(error.detail, setError)
+        // When duplicating, re-upload medias to create new files
+        let mediaIds = full_medias.map((media) => media.id)
+        if (sourceProduct && full_medias.length > 0) {
+          const reuploadedMedias = await Promise.all(
+            full_medias.map((media) => reuploadMedia(media, organization)),
+          )
+          mediaIds = reuploadedMedias.map((media) => media.id)
         }
-        return
+
+        const { data: product, error } = await createProduct.mutateAsync({
+          ...productCreateRest,
+          medias: mediaIds,
+          metadata: metadata.reduce(
+            (acc, { key, value }) => ({ ...acc, [key]: value }),
+            {},
+          ),
+        } as schemas['ProductCreate'])
+
+        if (error) {
+          if (error.detail) {
+            setProductValidationErrors(error.detail, setError)
+          }
+          return
+        }
+
+        await updateBenefits.mutateAsync({
+          id: product.id,
+          body: {
+            benefits: enabledBenefitIds,
+          },
+        })
+
+        router.push(
+          getStatusRedirect(
+            `/dashboard/${organization.slug}/products`,
+            'Product Created',
+            `Product ${product.name} was created successfully`,
+          ),
+        )
+      } finally {
+        setIsSubmitting(false)
       }
-
-      await updateBenefits.mutateAsync({
-        id: product.id,
-        body: {
-          benefits: enabledBenefitIds,
-        },
-      })
-
-      router.push(
-        getStatusRedirect(
-          `/dashboard/${organization.slug}/products`,
-          'Product Created',
-          `Product ${product.name} was created successfully`,
-        ),
-      )
     },
     [
       organization,
@@ -199,8 +205,8 @@ export const CreateProductPage = ({
       <div className="flex flex-row items-center gap-2 pb-12">
         <Button
           onClick={handleSubmit(onSubmit)}
-          loading={createProduct.isPending || updateBenefits.isPending}
-          disabled={createProduct.isPending || updateBenefits.isPending}
+          loading={isSubmitting}
+          disabled={isSubmitting}
         >
           Create Product
         </Button>

@@ -300,6 +300,10 @@ class TestCreateOrderItemsFromPending:
         metered_subscription: Subscription,
         order: Order,
     ) -> None:
+        """
+        Test that billing entries from multiple active prices are all billed.
+        Both prices must be in subscription_product_prices to be billed.
+        """
         old_price = await create_product_price_metered_unit(
             save_fixture,
             product=product_metered_unit,
@@ -308,6 +312,13 @@ class TestCreateOrderItemsFromPending:
         )
         current_price = product_metered_unit.prices[0]
         assert is_metered_price(current_price)
+
+        # Add old_price to the subscription's active prices
+        # (simulating a subscription that has both prices active)
+        metered_subscription.subscription_product_prices.append(
+            SubscriptionProductPrice.from_price(old_price)
+        )
+        await save_fixture(metered_subscription)
 
         entries = [
             await create_metered_event_billing_entry(

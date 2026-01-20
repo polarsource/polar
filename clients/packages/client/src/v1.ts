@@ -17291,7 +17291,7 @@ export interface components {
        * Minimum Amount
        * @description The minimum amount the customer can pay.
        */
-      minimum_amount: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.
@@ -21609,7 +21609,7 @@ export interface components {
        * Minimum Amount
        * @description The minimum amount the customer can pay.
        */
-      minimum_amount: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.
@@ -21640,8 +21640,9 @@ export interface components {
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay.
+       * @default 50
        */
-      minimum_amount?: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from math import ceil
 
 import structlog
+
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_portal.repository.customer_session_code import (
@@ -20,7 +21,6 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
-    Customer,
     CustomerSession,
     CustomerSessionCode,
     MemberSession,

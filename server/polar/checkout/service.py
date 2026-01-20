@@ -1339,9 +1339,13 @@ class CheckoutService:
         if checkout.analytics_metadata and checkout.analytics_metadata.get("opened_at"):
             return checkout
 
+        resolved_distinct_id = (
+            distinct_id or checkout.customer_email or f"checkout:{checkout.id}"
+        )
+
         analytics_metadata = {
             "opened_at": utc_now().isoformat(),
-            "distinct_id": distinct_id,
+            "distinct_id": resolved_distinct_id,
         }
 
         repository = CheckoutRepository.from_session(session)
@@ -1351,7 +1355,7 @@ class CheckoutService:
         )
 
         posthog.capture(
-            distinct_id=distinct_id or checkout.customer_email or "anonymous",
+            distinct_id=resolved_distinct_id,
             event="storefront:subscriptions:checkout:open",
             properties={
                 "checkout_id": str(checkout.id),

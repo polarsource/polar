@@ -85,9 +85,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       `${getServerURL()}/v1/checkouts/client/${checkout.clientSecret}/opened`,
       {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ distinct_id: posthog.getDistinctId() }),
       },
     )
-  }, [checkout.clientSecret])
+  }, [checkout.clientSecret, posthog])
 
   // Track payment not ready state
   useEffect(() => {

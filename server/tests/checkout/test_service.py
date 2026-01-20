@@ -5104,12 +5104,13 @@ class TestMarkOpened:
         assert checkout.analytics_metadata.get("opened_at") == original_opened_at
         posthog_mock.capture.assert_not_called()
 
-    async def test_anonymous_distinct_id(
+    async def test_fallback_distinct_id(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        """When no distinct_id or email, falls back to checkout:{id} for A/B test consistency."""
         posthog_mock = mocker.patch("polar.checkout.service.posthog")
 
         checkout_one_time_fixed.customer_email = None
@@ -5118,7 +5119,7 @@ class TestMarkOpened:
 
         posthog_mock.capture.assert_called_once()
         call_kwargs = posthog_mock.capture.call_args
-        assert call_kwargs[1]["distinct_id"] == "anonymous"
+        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_one_time_fixed.id}"
 
 
 @pytest.mark.asyncio

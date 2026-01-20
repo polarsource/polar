@@ -8,7 +8,7 @@ import structlog
 from pydantic import UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
@@ -1690,7 +1690,7 @@ class CheckoutService:
                 nowait=True,
                 options=repository.get_eager_options(),
             )
-        except OperationalError as e:
+        except DBAPIError as e:
             if "could not obtain lock" in str(e):
                 raise CheckoutLocked(checkout_id) from e
             raise

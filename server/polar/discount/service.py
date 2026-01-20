@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -401,7 +401,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
         try:
             await repository.get_by_id_for_update(discount.id, nowait=True)
-        except OperationalError as e:
+        except DBAPIError as e:
             if "could not obtain lock" in str(e):
                 raise DiscountNotRedeemableError(discount) from e
             raise

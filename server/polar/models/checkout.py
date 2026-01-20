@@ -91,6 +91,11 @@ class CheckoutBillingAddressFields(TypedDict):
     line2: BillingAddressFieldMode
 
 
+class CheckoutAnalyticsMetadata(TypedDict, total=False):
+    opened_at: str
+    distinct_id: str | None
+
+
 class Checkout(
     TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
 ):
@@ -116,6 +121,11 @@ class Checkout(
         "success_url", String, nullable=True, default=None
     )
     embed_origin: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    analytics_metadata: Mapped[CheckoutAnalyticsMetadata | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
+
     allow_discount_codes: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )

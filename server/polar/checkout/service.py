@@ -1267,10 +1267,14 @@ class CheckoutService:
         CHECKOUT_SUCCEEDED_TOTAL.inc()
 
         distinct_id = (
-            checkout.analytics_metadata.get("distinct_id")
-            if checkout.analytics_metadata
-            else None
-        ) or checkout.customer_email or "anonymous"
+            (
+                checkout.analytics_metadata.get("distinct_id")
+                if checkout.analytics_metadata
+                else None
+            )
+            or checkout.customer_email
+            or "anonymous"
+        )
 
         posthog.capture(
             distinct_id=distinct_id,

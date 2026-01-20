@@ -981,7 +981,9 @@ class TestClientOpened:
         assert updated_checkout is not None
         assert updated_checkout.analytics_metadata is not None
         assert updated_checkout.analytics_metadata.get("opened_at") is not None
-        assert updated_checkout.analytics_metadata.get("distinct_id") == "test-posthog-id"
+        assert (
+            updated_checkout.analytics_metadata.get("distinct_id") == "test-posthog-id"
+        )
 
     async def test_idempotent(
         self,
@@ -992,7 +994,10 @@ class TestClientOpened:
         checkout_open: Checkout,
     ) -> None:
         original_opened_at = (utc_now() - timedelta(hours=1)).isoformat()
-        checkout_open.analytics_metadata = {"opened_at": original_opened_at, "distinct_id": "original-id"}
+        checkout_open.analytics_metadata = {
+            "opened_at": original_opened_at,
+            "distinct_id": "original-id",
+        }
         await save_fixture(checkout_open)
 
         response = await client.post(
@@ -1006,5 +1011,7 @@ class TestClientOpened:
         updated_checkout = await repository.get_by_id(checkout_open.id)
         assert updated_checkout is not None
         assert updated_checkout.analytics_metadata is not None
-        assert updated_checkout.analytics_metadata.get("opened_at") == original_opened_at
+        assert (
+            updated_checkout.analytics_metadata.get("opened_at") == original_opened_at
+        )
         assert updated_checkout.analytics_metadata.get("distinct_id") == "original-id"

@@ -102,7 +102,13 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 }) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
-  const validatePWYWAmount = (value: number): string | true => {
+  const validatePWYWAmount = (
+    value: number | null | undefined,
+  ): string | true => {
+    // null/undefined is valid (not set yet)
+    if (value == null) {
+      return true
+    }
     // 0 is valid (free option), 50+ is valid (meets payment minimum)
     // 1-49 is invalid (gap between free and payment minimum)
     if (value === 0 || value >= 50) {
@@ -701,6 +707,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'custom',
           price_currency: 'usd',
+          minimum_amount: 0,
         })
       } else if (amountType === 'free') {
         replace({

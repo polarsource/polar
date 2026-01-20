@@ -21,7 +21,7 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.public
     response_model=ListResource[DownloadableRead],
 )
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None, title="BenefitID Filter", description="Filter by benefit ID."

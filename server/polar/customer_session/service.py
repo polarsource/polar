@@ -10,12 +10,14 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
-from polar.exceptions import BadRequest, PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import Customer, CustomerSession
+from polar.member.repository import MemberRepository
+from polar.member_session.service import member_session as member_session_service
+from polar.models import Customer, CustomerSession, MemberSession
 from polar.postgres import AsyncSession
 
 from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
@@ -31,7 +33,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         customer_create: CustomerSessionCreate,
-    ) -> CustomerSession:
+    ) -> CustomerSession | MemberSession:
         repository = CustomerRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
             joinedload(Customer.organization),
@@ -64,15 +66,29 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 ]
             )
 
-        # Reject if org has both flags enabled (must use member-sessions)
+        # For orgs with member_model_enabled, create MemberSession for owner member
         feature_settings = customer.organization.feature_settings
-        if feature_settings.get(
-            "seat_based_pricing_enabled", False
-        ) and feature_settings.get("member_model_enabled", False):
-            raise BadRequest(
-                "This organization has seat-based pricing enabled. "
-                "Use POST /v1/member-sessions/ with a member_id instead."
+        if feature_settings.get("member_model_enabled", False):
+            member_repository = MemberRepository.from_session(session)
+            owner_member = await member_repository.get_owner_by_customer_id(
+                session, customer.id
             )
+            if owner_member is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("body", id_field),
+                            "msg": "No owner member found for this customer.",
+                            "type": "value_error",
+                            "input": id_value,
+                        }
+                    ]
+                )
+            token, member_session = await member_session_service.create_member_session(
+                session, owner_member, customer_create.return_url
+            )
+            member_session.raw_token = token
+            return member_session
 
         token, customer_session = await self.create_customer_session(
             session, customer, customer_create.return_url

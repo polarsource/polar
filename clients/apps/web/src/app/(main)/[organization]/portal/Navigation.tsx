@@ -1,12 +1,12 @@
 'use client'
 
 import {
-  useAuthenticatedCustomer,
   useCustomerPortalSession,
+  usePortalAuthenticatedUser,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
-import { schemas } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -18,19 +18,46 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
-const links = (organization: schemas['CustomerOrganization']) => {
+const hasBillingPermission = (
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
+  // Unauthenticated users can't access billing
+  if (!authenticatedUser) {
+    return false
+  }
+  // Customers always have billing access (legacy behavior)
+  if (authenticatedUser.type === 'customer') {
+    return true
+  }
+  // Members need owner or billing_manager role
+  return (
+    authenticatedUser.role === 'owner' ||
+    authenticatedUser.role === 'billing_manager'
+  )
+}
+
+const links = (
+  organization: schemas['CustomerOrganization'],
+  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+) => {
   const portalSettings = organization.customer_portal_settings
+  const canAccessBilling = hasBillingPermission(authenticatedUser)
+
   return [
     {
       href: `/${organization.slug}/portal/overview`,
       label: 'Overview',
       isActive: (path: string) => path.includes('/overview'),
     },
-    {
-      href: `/${organization.slug}/portal/orders`,
-      label: 'Orders',
-      isActive: (path: string) => path.includes('/orders'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/orders`,
+            label: 'Orders',
+            isActive: (path: string) => path.includes('/orders'),
+          },
+        ]
+      : []),
     ...(portalSettings.usage.show
       ? [
           {
@@ -40,43 +67,39 @@ const links = (organization: schemas['CustomerOrganization']) => {
           },
         ]
       : []),
-    {
-      href: `/${organization.slug}/portal/settings`,
-      label: 'Billing',
-      isActive: (path: string) => path.includes('/settings'),
-    },
+    ...(canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/settings`,
+            label: 'Billing',
+            isActive: (path: string) => path.includes('/settings'),
+          },
+        ]
+      : []),
   ]
 }
 
-export const Navigation = ({
+// Inner component that uses hooks - only rendered when token is available
+const NavigationContent = ({
   organization,
+  api,
+  currentPath,
+  searchParams,
 }: {
   organization: schemas['CustomerOrganization']
+  api: Client
+  currentPath: string
+  searchParams: URLSearchParams
 }) => {
   const router = useRouter()
-  const currentPath = usePathname()
-  const searchParams = useSearchParams()
-
-  const api = createClientSideAPI(
-    searchParams.get('customer_session_token') as string,
-  )
   const { data: customerPortalSession } = useCustomerPortalSession(api)
-  const { data: authenticatedCustomer } = useAuthenticatedCustomer(api)
-
-  // Hide navigation on routes where portal access is being requested or authenticated
-  const hideNav =
-    currentPath.endsWith('/portal/request') ||
-    currentPath.endsWith('/portal/authenticate')
-
-  if (hideNav) {
-    return null
-  }
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization)
+  const filteredLinks = links(organization, authenticatedUser)
 
   return (
     <>
@@ -91,9 +114,9 @@ export const Navigation = ({
           </Link>
         )}
         <div className="flex flex-col">
-          <h3>{authenticatedCustomer?.name ?? '—'}</h3>
+          <h3>{authenticatedUser?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
-            {authenticatedCustomer?.email ?? '—'}
+            {authenticatedUser?.email ?? '—'}
           </span>
         </div>
         <div className="flex flex-col gap-y-1">
@@ -124,9 +147,7 @@ export const Navigation = ({
         }}
       >
         <SelectTrigger className="md:hidden">
-          <SelectValue>
-            {filteredLinks.find(({ href }) => href === currentPath)?.label}
-          </SelectValue>
+          <SelectValue placeholder="Select page" />
         </SelectTrigger>
         <SelectContent>
           {filteredLinks.map((link) => (
@@ -137,5 +158,43 @@ export const Navigation = ({
         </SelectContent>
       </Select>
     </>
+  )
+}
+
+export const Navigation = ({
+  organization,
+}: {
+  organization: schemas['CustomerOrganization']
+}) => {
+  const currentPath = usePathname()
+  const searchParams = useSearchParams()
+
+  // Hide navigation on routes where portal access is being requested or authenticated
+  const hideNav =
+    currentPath.endsWith('/portal/request') ||
+    currentPath.endsWith('/portal/authenticate')
+
+  if (hideNav) {
+    return null
+  }
+
+  const token =
+    searchParams.get('customer_session_token') ??
+    searchParams.get('member_session_token')
+
+  // Don't render until token is available (handles SSR/hydration)
+  if (!token) {
+    return null
+  }
+
+  const api = createClientSideAPI(token)
+
+  return (
+    <NavigationContent
+      organization={organization}
+      api={api}
+      currentPath={currentPath}
+      searchParams={searchParams}
+    />
   )
 }

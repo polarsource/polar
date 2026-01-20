@@ -65,3 +65,15 @@ class MemberSession(RecordModel):
     def customer(self) -> "Customer":
         """Return the customer from the member relationship."""
         return self.member.customer
+
+    @property
+    def customer_portal_url(self) -> str:
+        """
+        Return the customer portal URL for API compatibility with CustomerSession.
+        """
+        query_string = urlencode(
+            {"customer_session_token": self.raw_token, "email": self.member.email}
+        )
+        return settings.generate_frontend_url(
+            f"/{self.member.customer.organization.slug}/portal?{query_string}"
+        )

@@ -74,9 +74,7 @@ MINIMUM_PRICE_AMOUNT = 50
 def validate_amount_not_in_minimum_gap(v: int | None) -> int | None:
     """Validate that amount is not in the 1-49 cent gap (0 or >= 50 allowed)."""
     if v is not None and 0 < v < MINIMUM_PRICE_AMOUNT:
-        raise ValueError(
-            f"Amount must be 0 or at least {MINIMUM_PRICE_AMOUNT} cents"
-        )
+        raise ValueError(f"Amount must be 0 or at least {MINIMUM_PRICE_AMOUNT} cents")
     return v
 
 

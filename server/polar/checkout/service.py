@@ -8,6 +8,7 @@ import structlog
 from pydantic import UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
@@ -55,7 +56,6 @@ from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.logging import Logger
 from polar.member import member_service
 from polar.models import (
@@ -194,6 +194,15 @@ class TrialAlreadyRedeemed(CheckoutError):
             "Trials can only be used once per customer."
         )
         super().__init__(message, 403)
+
+
+class CheckoutLocked(CheckoutError):
+    """Raised when checkout is locked by another transaction."""
+
+    def __init__(self, checkout_id: uuid.UUID) -> None:
+        self.checkout_id = checkout_id
+        message = "Checkout is currently being processed. Please try again."
+        super().__init__(message, 409)
 
 
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
@@ -788,11 +797,7 @@ class CheckoutService:
                     pass
 
             # minimum_amount is always set (default 50)
-            amount = (
-                valid_query_amount
-                or price.preset_amount
-                or price.minimum_amount
-            )
+            amount = valid_query_amount or price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Default to minimum seats for checkout links with seat-based pricing
             seats = price.get_minimum_seats()
@@ -925,12 +930,11 @@ class CheckoutService:
     async def update(
         self,
         session: AsyncSession,
-        locker: Locker,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+        async with self._lock_checkout_update(session, checkout) as checkout:
             checkout = await self._update_checkout(
                 session, checkout, checkout_update, ip_geolocation_client
             )
@@ -946,18 +950,17 @@ class CheckoutService:
     async def confirm(
         self,
         session: AsyncSession,
-        locker: Locker,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
     ) -> Checkout:
-        async with self._lock_checkout_update(session, locker, checkout) as checkout:
+        async with self._lock_checkout_update(session, checkout) as checkout:
             checkout = await self._update_checkout(session, checkout, checkout_confirm)
             # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
             if checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
-                        session, locker, checkout.discount
+                        session, checkout.discount
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
@@ -1655,34 +1658,38 @@ class CheckoutService:
 
     @contextlib.asynccontextmanager
     async def _lock_checkout_update(
-        self, session: AsyncSession, locker: Locker, checkout: Checkout
+        self, session: AsyncSession, checkout: Checkout
     ) -> AsyncIterator[Checkout]:
         """
-        Set a lock to prevent updating the checkout while confirming.
-        We've seen in the wild someone switching pricing while the payment was being made!
+        Lock checkout with FOR UPDATE NOWAIT and reload fresh from database.
 
-        The timeout is purposely set to 10 seconds, a high value.
-        We've seen in the past Stripe payment requests taking more than 5 seconds,
-        causing the lock to expire while waiting for the payment to complete.
+        Uses PostgreSQL row-level locking instead of Redis distributed locks.
+        If another transaction holds the lock, immediately raises CheckoutLocked
+        instead of waiting (NOWAIT behavior).
+
+        Uses FOR UPDATE OF checkouts to lock only the checkout row while still
+        allowing eager loading of relationships via LEFT OUTER JOINs.
+
+        See: https://www.postgresql.org/docs/current/explicit-locking.html
         """
-        async with locker.lock(
-            f"checkout:{checkout.id}", timeout=10, blocking_timeout=10
-        ):
-            # Refresh the checkout: it may have changed while waiting for the lock
-            repository = CheckoutRepository.from_session(session)
-            checkout = typing.cast(
-                Checkout,
-                await repository.get_by_id(
-                    checkout.id, options=repository.get_eager_options()
-                ),
-            )
-            yield checkout
+        repository = CheckoutRepository.from_session(session)
+        checkout_id = checkout.id
 
-            # 🚨 It's not a mistake: we do explicitly commit here before releasing the lock.
-            # The goal is to avoid race conditions where waiting updates take the lock and refresh
-            # the Checkout object _before_ the previous operation had the chance to commit
-            # See: https://github.com/polarsource/polar/issues/7260
-            await session.commit()
+        try:
+            locked_checkout = await repository.get_by_id_for_update(
+                checkout_id,
+                nowait=True,
+                options=repository.get_eager_options(),
+            )
+        except DBAPIError as e:
+            if "could not obtain lock" in str(e):
+                raise CheckoutLocked(checkout_id) from e
+            raise
+
+        if locked_checkout is None:
+            raise ResourceNotFound()
+
+        yield locked_checkout
 
     async def _update_checkout(
         self,

@@ -557,6 +557,11 @@ class ProductPriceCustomBase(ProductPriceBase):
         description="The initial amount shown to the customer."
     )
 
+    @field_validator("minimum_amount", mode="before")
+    @classmethod
+    def set_minimum_amount_default(cls, v: int | None) -> int:
+        return v if v is not None else MINIMUM_PRICE_AMOUNT
+
 
 class ProductPriceFreeBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.free]

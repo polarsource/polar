@@ -2,7 +2,6 @@
 
 import { useMetrics } from '@/hooks/queries/metrics'
 import { api } from '@/utils/client'
-import { CONFIG } from '@/utils/config'
 import { formatAccountingFriendlyCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -103,7 +102,7 @@ export const CustomerContextView = ({
           <div className="flex flex-col gap-4">
             {customerSession ? (
               <CopyToClipboardInput
-                value={`${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${customerSession.token}`}
+                value={customerSession.customer_portal_url}
                 buttonLabel="Copy"
                 className="bg-white"
                 onCopy={() => {

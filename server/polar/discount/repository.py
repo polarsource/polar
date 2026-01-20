@@ -1,9 +1,24 @@
 from uuid import UUID
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import DiscountRedemption
+from polar.models import Discount, DiscountRedemption
+
+
+class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
+    model = Discount
+
+    async def get_by_id_for_update(
+        self, discount_id: UUID, *, nowait: bool = True
+    ) -> Discount | None:
+        """Get discount by ID with FOR UPDATE lock."""
+        statement = (
+            select(Discount)
+            .where(Discount.id == discount_id, Discount.deleted_at.is_(None))
+            .with_for_update(nowait=nowait)
+        )
+        return await self.get_one_or_none(statement)
 
 
 class DiscountRedemptionRepository(

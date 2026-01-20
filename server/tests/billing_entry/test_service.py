@@ -300,6 +300,10 @@ class TestCreateOrderItemsFromPending:
         metered_subscription: Subscription,
         order: Order,
     ) -> None:
+        """
+        Test that billing entries from multiple active prices are all billed.
+        Both prices must be in subscription_product_prices to be billed.
+        """
         old_price = await create_product_price_metered_unit(
             save_fixture,
             product=product_metered_unit,
@@ -308,6 +312,13 @@ class TestCreateOrderItemsFromPending:
         )
         current_price = product_metered_unit.prices[0]
         assert is_metered_price(current_price)
+
+        # Add old_price to the subscription's active prices
+        # (simulating a subscription that has both prices active)
+        metered_subscription.subscription_product_prices.append(
+            SubscriptionProductPrice.from_price(old_price)
+        )
+        await save_fixture(metered_subscription)
 
         entries = [
             await create_metered_event_billing_entry(
@@ -622,3 +633,109 @@ class TestCreateOrderItemsFromPending:
         for entry in entries:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_inactive_price_skipped_after_product_switch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that billing entries from an inactive price (after product/price switch)
+        are skipped and not re-billed.
+
+        This tests the fix for a bug where billing entries from discontinued prices
+        would be re-billed every cycle after a customer switched products.
+        """
+        # Create initial product with metered price
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        assert is_metered_price(old_price)
+
+        # Create subscription on old product
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+
+        # Create billing entries on old price (usage during first period)
+        old_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=old_price,
+                subscription=subscription,
+                tokens=100,
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=old_price,
+                subscription=subscription,
+                tokens=200,
+            ),
+        ]
+
+        # Customer switches to a new product with a different price
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],  # Different rate
+        )
+        new_price = product_new.prices[0]
+        assert is_metered_price(new_price)
+
+        # Update subscription to use only the new price
+        # (simulating what happens when customer switches products)
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(new_price)
+        ]
+        await save_fixture(subscription)
+
+        # Create new billing entries on new price (usage after switch)
+        new_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=new_price,
+                subscription=subscription,
+                tokens=50,
+            ),
+        ]
+
+        # When computing order items, old price entries should be SKIPPED
+        # because old_price is no longer in subscription_product_prices
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should create only ONE line item for the new price
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            assert order_item.product_price == new_price
+            # Only 50 tokens at new rate ($0.50/token) = $25
+            assert order_item.amount == 25_00
+
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        # New entries should be linked to the order item
+        for entry in new_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
+
+        # Old entries should remain PENDING (not linked to any order item)
+        # This is the key assertion: they were skipped, not re-billed
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id is None

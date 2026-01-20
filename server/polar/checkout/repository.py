@@ -43,6 +43,25 @@ class CheckoutRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_id_for_update(
+        self, checkout_id: UUID, *, nowait: bool = True, options: Options = ()
+    ) -> Checkout | None:
+        """
+        Get checkout by ID with FOR UPDATE lock.
+
+        Uses FOR UPDATE OF checkouts to lock only the checkout row, allowing
+        LEFT OUTER JOINs for eager loading of relationships.
+
+        See: https://www.postgresql.org/docs/current/explicit-locking.html
+        """
+        statement = (
+            self.get_base_statement()
+            .where(Checkout.id == checkout_id)
+            .options(*options)
+            .with_for_update(nowait=nowait, of=Checkout)
+        )
+        return await self.get_one_or_none(statement)
+
     async def expire_open_checkouts(self) -> None:
         statement = (
             update(Checkout)

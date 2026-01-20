@@ -58,6 +58,7 @@ class EmbedCheckout {
   private loaded: boolean
   private closable: boolean
   private eventTarget: EventTarget
+  private windowMessageListener: (event: MessageEvent) => void
 
   public constructor(iframe: HTMLIFrameElement, loader: HTMLDivElement) {
     this.iframe = iframe
@@ -65,7 +66,8 @@ class EmbedCheckout {
     this.loaded = false
     this.closable = true
     this.eventTarget = new EventTarget()
-    this.initWindowListener()
+    this.windowMessageListener = this.handleWindowMessage.bind(this)
+    window.addEventListener('message', this.windowMessageListener)
     this.addEventListener('loaded', this.loadedListener.bind(this))
     this.addEventListener('close', this.closeListener.bind(this))
     this.addEventListener('confirmed', this.confirmedListener.bind(this))
@@ -206,6 +208,7 @@ class EmbedCheckout {
    * Close the embedded checkout.
    */
   public close(): void {
+    window.removeEventListener('message', this.windowMessageListener)
     if (document.body.contains(this.iframe))
       document.body.removeChild(this.iframe)
     document.body.classList.remove('polar-no-scroll')
@@ -353,26 +356,23 @@ class EmbedCheckout {
   }
 
   /**
-   * Initialize the window message listener to receive messages from the embedded checkout
-   * and re-dispatch them as events for the embedded checkout instance.
+   * Handle window message events from the embedded checkout iframe.
    */
-  private initWindowListener(): void {
-    window.addEventListener('message', ({ data, origin }) => {
-      if (
-        // @ts-ignore
-        !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
-          .split(',')
-          .includes(origin)
-      ) {
-        return
-      }
-      if (!isEmbedCheckoutMessage(data)) {
-        return
-      }
-      this.eventTarget.dispatchEvent(
-        new CustomEvent(data.event, { detail: data, cancelable: true }),
-      )
-    })
+  private handleWindowMessage({ data, origin }: MessageEvent): void {
+    if (
+      // @ts-ignore
+      !__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__
+        .split(',')
+        .includes(origin)
+    ) {
+      return
+    }
+    if (!isEmbedCheckoutMessage(data)) {
+      return
+    }
+    this.eventTarget.dispatchEvent(
+      new CustomEvent(data.event, { detail: data, cancelable: true }),
+    )
   }
 }
 

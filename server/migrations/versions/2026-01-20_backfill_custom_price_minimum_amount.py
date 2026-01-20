@@ -1,7 +1,7 @@
 """Backfill minimum_amount for custom prices
 
-Revision ID: 5f8e2a3b4c6d
-Revises: 3a7b8c9d0e1f
+Revision ID: 597080a0dd14
+Revises: 6145195fc43a
 Create Date: 2026-01-20
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "597080a0dd14"
-down_revision = "3a7b8c9d0e1f"
+down_revision = "6145195fc43a"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

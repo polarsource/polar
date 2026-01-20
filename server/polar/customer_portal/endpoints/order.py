@@ -46,7 +46,7 @@ ListSorting = Annotated[
 
 @router.get("/", summary="List Orders", response_model=ListResource[CustomerOrder])
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     product_id: MultipleQueryFilter[ProductID] | None = Query(
@@ -97,7 +97,7 @@ async def list(
 )
 async def get(
     id: OrderID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Get an order by ID for the authenticated customer."""
@@ -118,7 +118,7 @@ async def get(
 async def update(
     id: OrderID,
     order_update: CustomerOrderUpdate,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Update an order for the authenticated customer."""
@@ -143,7 +143,7 @@ async def update(
 )
 async def generate_invoice(
     id: OrderID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Trigger generation of an order's invoice."""
@@ -163,7 +163,7 @@ async def generate_invoice(
 )
 async def invoice(
     id: OrderID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerOrderInvoice:
     """Get an order's invoice data."""
@@ -183,7 +183,7 @@ async def invoice(
 )
 async def get_payment_status(
     id: OrderID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerOrderPaymentStatus:
     """Get the current payment status for an order."""
@@ -226,7 +226,7 @@ async def get_payment_status(
 async def confirm_retry_payment(
     id: OrderID,
     confirm_data: CustomerOrderConfirmPayment,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerOrderPaymentConfirmation:
     """Confirm a retry payment using a Stripe confirmation token."""

@@ -495,7 +495,7 @@ async def create_product_price_custom(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    minimum_amount: int | None = None,
+    minimum_amount: int = 50,
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
     currency: str = "usd",
@@ -1194,7 +1194,7 @@ async def product_one_time_custom_price(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(None, None, None, "usd")],
+        prices=[(50, None, None, "usd")],
     )
 
 
@@ -1230,7 +1230,7 @@ async def product_recurring_custom_price(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(None, None, None, "usd")],
+        prices=[(50, None, None, "usd")],
     )
 
 

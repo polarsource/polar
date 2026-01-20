@@ -1,6 +1,6 @@
 from fastapi import Depends
 
-from polar.models import CustomerSession
+from polar.models import CustomerSession, MemberSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -27,8 +27,13 @@ async def create(
     customer_session_create: CustomerSessionCreate,
     auth_subject: auth.CustomerSessionWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> CustomerSession:
-    """Create a customer session."""
+) -> CustomerSession | MemberSession:
+    """
+    Create a customer session.
+
+    For organizations with `member_model_enabled`, this will automatically
+    create a member session for the owner member of the customer.
+    """
     return await customer_session_service.create(
         session, auth_subject, customer_session_create
     )

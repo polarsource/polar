@@ -55,20 +55,23 @@ export const CheckoutPWYWForm = ({
   })
   const { control, trigger, reset, watch } = form
 
+  // minimumAmount is always set by the backend (defaults to 50)
+  const minimumAmount = productPrice.minimumAmount ?? 50
+
   const validateAmount = useCallback(
     (value: number): string | true => {
       // Handle gap validation when free is allowed (minimumAmount = 0)
-      if (productPrice.minimumAmount === 0 && value > 0 && value < 50) {
+      if (minimumAmount === 0 && value > 0 && value < 50) {
         return `Amount must be $0 or at least ${formatCurrencyNumber(50, checkout.currency)}`
       }
 
-      if (value < productPrice.minimumAmount) {
-        return `Amount must be at least ${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)}`
+      if (value < minimumAmount) {
+        return `Amount must be at least ${formatCurrencyNumber(minimumAmount, checkout.currency)}`
       }
 
       return true
     },
-    [productPrice.minimumAmount, checkout.currency],
+    [minimumAmount, checkout.currency],
   )
 
   const debouncedAmountUpdate = useDebouncedCallback(
@@ -96,9 +99,9 @@ export const CheckoutPWYWForm = ({
   }, [amount, reset])
 
   const minLabelText =
-    productPrice.minimumAmount === 0
+    minimumAmount === 0
       ? false
-      : `${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)} minimum`
+      : `${formatCurrencyNumber(minimumAmount, checkout.currency)} minimum`
 
   return (
     <Form {...form}>

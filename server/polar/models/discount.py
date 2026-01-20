@@ -3,6 +3,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
@@ -13,13 +16,11 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
-    select,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import (
     Mapped,
-    column_property,
     declared_attr,
     mapped_column,
     relationship,
@@ -89,6 +90,10 @@ class Discount(MetadataMixin, RecordModel):
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    redemptions_count: Mapped[int] = mapped_column(
+        "redemptions_count", Integer, nullable=False, default=0
+    )
+
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
@@ -115,17 +120,6 @@ class Discount(MetadataMixin, RecordModel):
     products: AssociationProxy[list["Product"]] = association_proxy(
         "discount_products", "product"
     )
-
-    @declared_attr
-    def redemptions_count(cls) -> Mapped[int]:
-        from .discount_redemption import DiscountRedemption
-
-        return column_property(
-            select(func.count(DiscountRedemption.id))
-            .where(DiscountRedemption.discount_id == cls.id)
-            .correlate_except(DiscountRedemption)
-            .scalar_subquery()
-        )
 
     def get_discount_amount(self, amount: int) -> int:
         raise NotImplementedError()
@@ -212,3 +206,64 @@ class DiscountPercentage(Discount):
         "polymorphic_identity": DiscountType.percentage,
         "polymorphic_load": "inline",
     }
+
+
+# Trigger functions to maintain redemptions_count on the discounts table
+discount_redemptions_count_increment_function = PGFunction(
+    schema="public",
+    signature="discount_redemptions_count_increment()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        UPDATE discounts
+        SET redemptions_count = redemptions_count + 1
+        WHERE id = NEW.discount_id;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+discount_redemptions_count_decrement_function = PGFunction(
+    schema="public",
+    signature="discount_redemptions_count_decrement()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        UPDATE discounts
+        SET redemptions_count = redemptions_count - 1
+        WHERE id = OLD.discount_id;
+        RETURN OLD;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+discount_redemptions_count_increment_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_increment_trigger",
+    on_entity="discount_redemptions",
+    definition="""
+    AFTER INSERT ON discount_redemptions
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_increment();
+    """,
+)
+
+discount_redemptions_count_decrement_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_decrement_trigger",
+    on_entity="discount_redemptions",
+    definition="""
+    AFTER DELETE ON discount_redemptions
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_decrement();
+    """,
+)
+
+register_entities(
+    (
+        discount_redemptions_count_increment_function,
+        discount_redemptions_count_decrement_function,
+        discount_redemptions_count_increment_trigger,
+        discount_redemptions_count_decrement_trigger,
+    )
+)

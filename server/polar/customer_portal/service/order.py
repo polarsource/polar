@@ -6,14 +6,14 @@ from typing import Any
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Order, Product
+from polar.models import Order, Product
 from polar.models.product import ProductBillingType
 from polar.order.service import InvoiceDoesNotExist
 from polar.order.service import order as order_service
@@ -55,7 +55,7 @@ class CustomerOrderService:
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         product_id: Sequence[uuid.UUID] | None = None,
         product_billing_type: Sequence[ProductBillingType] | None = None,
@@ -87,7 +87,7 @@ class CustomerOrderService:
             statement = statement.where(Order.subscription_id.in_(subscription_id))
 
         if query is not None:
-            statement = statement.where(Product.name.ilike(f"%{query}%"))
+            statement = statement.where(Product.name.icontains(query, autoescape=True))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -112,7 +112,7 @@ class CustomerOrderService:
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> Order | None:
         repository = CustomerOrderRepository.from_session(session)

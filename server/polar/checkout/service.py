@@ -434,7 +434,6 @@ class CheckoutService:
             amount = price.price_amount
         elif is_custom_price(price):
             if amount is None:
-                # minimum_amount is always set (default 50)
                 amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
@@ -660,7 +659,7 @@ class CheckoutService:
         if is_fixed_price(price):
             amount = price.price_amount
         elif is_custom_price(price):
-            # minimum_amount is always set (default 50)
+            assert price.minimum_amount is not None
             amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
@@ -796,7 +795,7 @@ class CheckoutService:
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
 
-            # minimum_amount is always set (default 50)
+            assert price.minimum_amount is not None
             amount = valid_query_amount or price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Default to minimum seats for checkout links with seat-based pricing
@@ -2000,7 +1999,8 @@ class CheckoutService:
             checkout.amount = price.price_amount
             checkout.seats = None
         elif is_custom_price(price):
-            # minimum_amount is always set (default 50)
+            # minimum_amount is always set (default 50), or 0 for free
+            assert price.minimum_amount is not None
             checkout.amount = price.preset_amount or price.minimum_amount
             checkout.seats = None
         elif is_seat_price(price):
@@ -2190,11 +2190,10 @@ class CheckoutService:
         if not is_custom_price(price):
             return
 
-        # minimum_amount is always set (default 50, or 0 for free-allowed prices)
-        minimum_amount = price.minimum_amount
-        allow_free = minimum_amount == 0
+        # custom prices always has minimum_amount set
+        assert price.minimum_amount is not None
 
-        if allow_free:
+        if price.minimum_amount == 0:
             # Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
             if amount == 0:
                 return
@@ -2212,8 +2211,7 @@ class CheckoutService:
                     ]
                 )
         else:
-            # Free not allowed: amount must be >= minimum_amount
-            if amount < minimum_amount:
+            if amount < price.minimum_amount:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -2221,7 +2219,7 @@ class CheckoutService:
                             "loc": loc,
                             "msg": "Amount is below minimum.",
                             "input": amount,
-                            "ctx": {"ge": minimum_amount},
+                            "ctx": {"ge": price.minimum_amount},
                         }
                     ]
                 )

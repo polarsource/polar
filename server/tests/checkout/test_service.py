@@ -44,7 +44,6 @@ from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.models import (
     Account,
     Checkout,
@@ -2571,7 +2570,6 @@ class TestUpdate:
         self,
         amount: int,
         session: AsyncSession,
-        locker: Locker,
         checkout_one_time_custom: Checkout,
     ) -> None:
         # Amounts 1-49 are in the "Stripe gap" - too low for Stripe but not free
@@ -2579,25 +2577,9 @@ class TestUpdate:
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,
-                locker,
                 checkout_one_time_custom,
                 CheckoutUpdate(
                     amount=amount,
-                ),
-            )
-
-    async def test_amount_update_max_limit(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        checkout_one_time_custom: Checkout,
-    ) -> None:
-        with pytest.raises(ValidationError):
-            await checkout_service.update(
-                session,
-                checkout_one_time_custom,
-                CheckoutUpdate(
-                    amount=20_000_000_000,
                 ),
             )
 

@@ -55,8 +55,7 @@ export const CheckoutPWYWForm = ({
   })
   const { control, trigger, reset, watch } = form
 
-  // minimumAmount is always set by the backend (defaults to 50)
-  const minimumAmount = productPrice.minimumAmount ?? 50
+  const minimumAmount = productPrice.minimumAmount ?? 50 // should be set, but fallback to 50 for type safety
 
   const validateAmount = useCallback(
     (value: number): string | true => {
@@ -100,7 +99,7 @@ export const CheckoutPWYWForm = ({
 
   const minLabelText =
     minimumAmount === 0
-      ? false
+      ? null
       : `${formatCurrencyNumber(minimumAmount, checkout.currency)} minimum`
 
   return (

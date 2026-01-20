@@ -105,15 +105,14 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   const validatePWYWAmount = (
     value: number | null | undefined,
   ): string | true => {
-    // null/undefined is valid (not set yet)
     if (value == null) {
-      return true
+      return 'This field is required'
     }
-    // 0 is valid (free option), 50+ is valid (meets payment minimum)
-    // 1-49 is invalid (gap between free and payment minimum)
+
     if (value === 0 || value >= 50) {
       return true
     }
+
     return 'Must be $0 (for free) or at least $0.50'
   }
 

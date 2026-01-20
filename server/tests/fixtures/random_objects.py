@@ -458,6 +458,7 @@ async def create_product(
                 preset_amount,
                 currency,
             ) = price
+            assert minimum_amount is not None
             product_price = await create_product_price_custom(
                 save_fixture,
                 product=product,

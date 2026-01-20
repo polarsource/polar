@@ -118,7 +118,7 @@ concurrency = ["thread", "greenlet"]
 exclude_lines = [
   "pragma: no cover",
   "if TYPE_CHECKING:",
-] # See: https://github.com/nedbat/coveragepy/issues/831
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -126,13 +126,13 @@ target-version = "py312"
 [tool.ruff.lint]
 extend-select = ["I", "UP", "T20", "B039", "PT", "RUF022", "RUF023", "RUF10", "RUF20"]
 ignore = [
-  "F841",  # remove unused variables
+  "F841",
   "PT012",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/*" = [
-  "F401", # remove unused import
+  "F401",
 ]
 "scripts/*" = ["T20"]
 
@@ -156,8 +156,3 @@ warn_untyped_fields = true
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
-```
-
-**The only change is on line 69** - the `api` task now uses:
-```
---host ${POLAR_HOST:-127.0.0.1} --port ${POLAR_PORT:-8000}

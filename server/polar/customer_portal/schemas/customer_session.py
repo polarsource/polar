@@ -54,3 +54,16 @@ class CustomerSelectionRequiredResponse(Schema):
     customers: list[CustomerSelectionOption] = Field(
         description="List of customers to choose from."
     )
+
+
+class PortalAuthenticatedUser(Schema):
+    """Information about the authenticated portal user."""
+
+    type: str = Field(description="Type of authenticated user: 'customer' or 'member'")
+    name: str | None = Field(description="User's name, if available.")
+    email: str = Field(description="User's email address.")
+    customer_id: UUID4 = Field(description="Associated customer ID.")
+    role: str | None = Field(
+        default=None,
+        description="Member role (owner, billing_manager, member). Only set for members.",
+    )

@@ -20,6 +20,7 @@ from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription
+from ..utils import get_customer
 
 log = structlog.get_logger()
 
@@ -37,14 +38,14 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
     },
 )
 async def list_seats(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
     subscription_id: Annotated[
         UUID4 | None, Query(description="Subscription ID")
     ] = None,
     order_id: Annotated[UUID4 | None, Query(description="Order ID")] = None,
 ) -> SeatsList:
-    customer = auth_subject.subject
+    customer = get_customer(auth_subject)
 
     subscription: Subscription | None = None
     order: Order | None = None
@@ -113,10 +114,10 @@ async def list_seats(
 )
 async def assign_seat(
     seat_assign: SeatAssign,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    customer = auth_subject.subject
+    customer = get_customer(auth_subject)
 
     subscription: Subscription | None = None
     order: Order | None = None
@@ -195,10 +196,10 @@ async def assign_seat(
 )
 async def revoke_seat(
     seat_id: UUID4,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    customer = auth_subject.subject
+    customer = get_customer(auth_subject)
 
     seat = await seat_service.get_seat_for_customer(session, customer, seat_id)
     if not seat:
@@ -220,10 +221,10 @@ async def revoke_seat(
 )
 async def resend_invitation(
     seat_id: UUID4,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
-    customer = auth_subject.subject
+    customer = get_customer(auth_subject)
 
     seat = await seat_service.get_seat_for_customer(session, customer, seat_id)
     if not seat:
@@ -241,7 +242,7 @@ async def resend_invitation(
     },
 )
 async def list_claimed_subscriptions(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> list[Subscription]:
     """List all subscriptions where the authenticated customer has claimed a seat."""

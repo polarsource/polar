@@ -99,3 +99,61 @@ _CustomerPortalUnionWrite = Authenticator(
 CustomerPortalUnionWrite = Annotated[
     AuthSubject[Customer | Member], Depends(_CustomerPortalUnionWrite)
 ]
+
+
+# Union billing authenticators (Customer always allowed, Member needs billing role)
+_union_billing_roles = {MemberRole.owner, MemberRole.billing_manager}
+
+
+class _UnionBillingRoleCheck:
+    """Dependency that accepts Customer (always allowed) or Member with billing roles."""
+
+    def __init__(self, allowed_roles: set[MemberRole]) -> None:
+        self.allowed_roles = allowed_roles
+
+    def _check_billing_permission(
+        self, auth_subject: AuthSubject[Customer | Member]
+    ) -> AuthSubject[Customer | Member]:
+        """Shared permission checking logic for billing access."""
+        # Customers always have billing access (legacy behavior)
+        if isinstance(auth_subject.subject, Customer):
+            return auth_subject
+        # Members must have billing role
+        if isinstance(auth_subject.subject, Member):
+            if auth_subject.subject.role not in self.allowed_roles:
+                raise NotPermitted(
+                    "Only owners and billing managers can access billing features."
+                )
+            return auth_subject
+        raise NotPermitted("Invalid auth subject type")
+
+    async def __call__(
+        self,
+        auth_subject: AuthSubject[Customer | Member] = Depends(
+            _CustomerPortalUnionWrite
+        ),
+    ) -> AuthSubject[Customer | Member]:
+        return self._check_billing_permission(auth_subject)
+
+
+class _UnionBillingRoleCheckRead(_UnionBillingRoleCheck):
+    """Read-scope variant of billing role check."""
+
+    async def __call__(
+        self,
+        auth_subject: AuthSubject[Customer | Member] = Depends(
+            _CustomerPortalUnionRead
+        ),
+    ) -> AuthSubject[Customer | Member]:
+        return self._check_billing_permission(auth_subject)
+
+
+CustomerPortalUnionBillingRead = Annotated[
+    AuthSubject[Customer | Member],
+    Depends(_UnionBillingRoleCheckRead(allowed_roles=_union_billing_roles)),
+]
+
+CustomerPortalUnionBillingWrite = Annotated[
+    AuthSubject[Customer | Member],
+    Depends(_UnionBillingRoleCheck(allowed_roles=_union_billing_roles)),
+]

@@ -2,6 +2,7 @@
 
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -18,8 +19,6 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -54,17 +53,17 @@ const ClientPage = ({
         return
       }
 
+      // Invalidate cached queries before redirect to ensure fresh data
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({ queryKey: ['portal_authenticated_user'] })
+      queryClient.invalidateQueries({ queryKey: ['customer_portal_session'] })
+      queryClient.invalidateQueries({ queryKey: ['customer'] })
+
       router.push(
         `/${organization.slug}/portal/?customer_session_token=${data.token}`,
       )
     },
     [sessionRequest, setError, router, organization],
-  )
-
-  const theme = useTheme()
-  const themePreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
   )
 
   return (

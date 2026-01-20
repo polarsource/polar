@@ -6,7 +6,7 @@ import structlog
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.config import settings
 from polar.exceptions import (
     BadRequest,
@@ -19,7 +19,8 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, Customer
+from polar.models import Benefit
+from polar.models import Customer as CustomerModel
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -30,6 +31,7 @@ from ..schemas.downloadables import (
     DownloadableUpdate,
     DownloadableURL,
 )
+from ..utils import get_customer_id
 
 log = structlog.get_logger()
 
@@ -44,7 +46,7 @@ class DownloadableService(
     async def get_list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         pagination: PaginationParams,
         benefit_id: Sequence[UUID] | None = None,
@@ -59,7 +61,7 @@ class DownloadableService(
     async def grant_for_benefit_file(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         benefit_id: UUID,
         file_id: UUID,
     ) -> Downloadable | None:
@@ -111,7 +113,7 @@ class DownloadableService(
     async def revoke_for_benefit(
         self,
         session: AsyncSession,
-        customer: Customer,
+        customer: CustomerModel,
         benefit_id: UUID,
     ) -> None:
         statement = (
@@ -220,7 +222,7 @@ class DownloadableService(
         )
 
     def _get_base_query(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> sql.Select[tuple[Downloadable]]:
         return (
             sql.select(Downloadable)
@@ -234,7 +236,7 @@ class DownloadableService(
                 File.is_uploaded == True,  # noqa
                 File.is_enabled == True,  # noqa
                 Benefit.deleted_at.is_(None),
-                Downloadable.customer_id == auth_subject.subject.id,
+                Downloadable.customer_id == get_customer_id(auth_subject),
             )
             .order_by(Downloadable.created_at.desc())
         )

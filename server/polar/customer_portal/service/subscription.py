@@ -6,14 +6,13 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Customer, Member
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import (
-    Customer,
     Organization,
     Product,
     Subscription,
@@ -27,6 +26,7 @@ from ..schemas.subscription import (
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
 )
+from ..utils import get_customer_id
 
 
 class CustomerSubscriptionError(PolarError): ...
@@ -54,7 +54,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         *,
         product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
@@ -113,7 +113,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[Customer],
+        auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
     ) -> Subscription | None:
         statement = (
@@ -213,11 +213,11 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         )
 
     def _get_readable_subscription_statement(
-        self, auth_subject: AuthSubject[Customer]
+        self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[Subscription]]:
         return select(Subscription).where(
             Subscription.deleted_at.is_(None),
-            Subscription.customer_id == auth_subject.subject.id,
+            Subscription.customer_id == get_customer_id(auth_subject),
         )
 
 

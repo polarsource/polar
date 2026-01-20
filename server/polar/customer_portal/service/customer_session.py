@@ -5,11 +5,12 @@ from dataclasses import dataclass
 from math import ceil
 
 import structlog
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer_portal.repository.customer_session_code import (
+    CustomerSessionCodeRepository,
+)
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.react import render_email_template
 from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodeProps
@@ -20,7 +21,6 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
-    Customer,
     CustomerSession,
     CustomerSessionCode,
     MemberSession,
@@ -227,20 +227,8 @@ class CustomerSessionService:
     ) -> tuple[str, CustomerSession | MemberSession]:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
-        statement = (
-            select(CustomerSessionCode)
-            .where(
-                CustomerSessionCode.expires_at > utc_now(),
-                CustomerSessionCode.code == code_hash,
-            )
-            .options(
-                joinedload(CustomerSessionCode.customer).joinedload(
-                    Customer.organization
-                )
-            )
-        )
-        result = await session.execute(statement)
-        customer_session_code = result.scalar_one_or_none()
+        code_repository = CustomerSessionCodeRepository.from_session(session)
+        customer_session_code = await code_repository.get_valid_by_code_hash(code_hash)
 
         if customer_session_code is None:
             raise CustomerSessionCodeInvalidOrExpired()
@@ -266,16 +254,11 @@ class CustomerSessionService:
             )
 
             if member is None:
-                # Fallback to owner if member not found (edge case)
-                member = await member_repository.get_owner_by_customer_id(
-                    session, customer.id
-                )
+                # Member not found - code is no longer valid for this email
+                raise CustomerSessionCodeInvalidOrExpired()
 
-            if member:
-                # Use create_member_session directly (not create() which checks seat_based_pricing)
-                return await member_session_service.create_member_session(
-                    session, member
-                )
+            # Use create_member_session directly (not create() which checks seat_based_pricing)
+            return await member_session_service.create_member_session(session, member)
 
         # Legacy: create CustomerSession
         return await customer_session_service.create_customer_session(session, customer)

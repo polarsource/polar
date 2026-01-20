@@ -8,11 +8,18 @@ export const useCustomerPortalSessionRequest = (
   organizationId: string,
 ) =>
   useMutation({
-    mutationFn: async ({ email }: { email: string }) =>
+    mutationFn: async ({
+      email,
+      customer_id,
+    }: {
+      email: string
+      customer_id?: string
+    }) =>
       api.POST('/v1/customer-portal/customer-session/request', {
         body: {
           email,
           organization_id: organizationId,
+          ...(customer_id && { customer_id }),
         },
       }),
   })
@@ -51,6 +58,13 @@ export const useAuthenticatedCustomer = (api: Client) =>
   useQuery({
     queryKey: ['customer'],
     queryFn: () => unwrap(api.GET('/v1/customer-portal/customers/me')),
+    retry: defaultRetry,
+  })
+
+export const usePortalAuthenticatedUser = (api: Client) =>
+  useQuery({
+    queryKey: ['portal_authenticated_user'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/customer-session/user')),
     retry: defaultRetry,
   })
 

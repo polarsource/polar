@@ -27,7 +27,7 @@ ListSorting = Annotated[
 
 @router.get("/", summary="List Wallets", response_model=ListResource[CustomerWallet])
 async def list(
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     session: AsyncSession = Depends(get_db_session),
@@ -55,7 +55,7 @@ async def list(
 )
 async def get(
     id: WalletID,
-    auth_subject: auth.CustomerPortalRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Wallet:
     """Get a wallet by ID for the authenticated customer."""

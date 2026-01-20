@@ -83,7 +83,10 @@ class OrganizationAccessTokenService:
         )
 
     async def get(
-        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization], id: UUID
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(

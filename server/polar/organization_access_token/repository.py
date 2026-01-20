@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import Select, or_, select, update
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,

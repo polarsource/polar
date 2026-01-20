@@ -1,7 +1,6 @@
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from .auth import OrganizationAccessTokensRead, OrganizationAccessTokensWrite
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -12,6 +11,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import sorting
+from .auth import OrganizationAccessTokensRead, OrganizationAccessTokensWrite
 from .schemas import (
     OrganizationAccessToken as OrganizationAccessTokenSchema,
 )

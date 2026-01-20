@@ -108,7 +108,8 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.minimum_amount`}
         rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
+          required: 'This field is required',
+          min: { value: 50, message: 'Price must be greater than $0.50' },
         }}
         render={({ field }) => {
           return (
@@ -668,6 +669,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'custom',
           price_currency: 'usd',
+          minimum_amount: 50,
         })
       } else if (amountType === 'free') {
         replace({

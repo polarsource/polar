@@ -421,6 +421,15 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
+class CheckoutOpened(Schema):
+    """Schema for marking a checkout as opened."""
+
+    distinct_id: str | None = Field(
+        default=None,
+        description="PostHog distinct ID from the frontend for session reconciliation.",
+    )
+
+
 class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     status: CheckoutStatus = Field(

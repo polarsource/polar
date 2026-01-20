@@ -1266,8 +1266,14 @@ class CheckoutService:
 
         CHECKOUT_SUCCEEDED_TOTAL.inc()
 
+        distinct_id = (
+            checkout.analytics_metadata.get("distinct_id")
+            if checkout.analytics_metadata
+            else None
+        ) or checkout.customer_email or "anonymous"
+
         posthog.capture(
-            distinct_id=checkout.customer_email or "anonymous",
+            distinct_id=distinct_id,
             event="storefront:subscriptions:checkout:complete",
             properties={
                 "checkout_id": str(checkout.id),
@@ -1322,21 +1328,30 @@ class CheckoutService:
             raise ExpiredCheckoutError()
         return checkout
 
-    async def mark_opened(self, session: AsyncSession, checkout: Checkout) -> Checkout:
+    async def mark_opened(
+        self, session: AsyncSession, checkout: Checkout, distinct_id: str | None = None
+    ) -> Checkout:
         """
         Mark a checkout as opened. This is called when the checkout page is first viewed.
+        Stores opened_at timestamp and posthog distinct_id in analytics_metadata.
         """
-        if checkout.opened_at is not None:
+        # Already opened - no-op
+        if checkout.analytics_metadata and checkout.analytics_metadata.get("opened_at"):
             return checkout
+
+        analytics_metadata = {
+            "opened_at": utc_now().isoformat(),
+            "distinct_id": distinct_id,
+        }
 
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.update(
             checkout,
-            update_dict={"opened_at": utc_now()},
+            update_dict={"analytics_metadata": analytics_metadata},
         )
 
         posthog.capture(
-            distinct_id=checkout.customer_email or "anonymous",
+            distinct_id=distinct_id or checkout.customer_email or "anonymous",
             event="storefront:subscriptions:checkout:open",
             properties={
                 "checkout_id": str(checkout.id),

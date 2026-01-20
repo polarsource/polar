@@ -5058,11 +5058,12 @@ class TestMarkOpened:
     ) -> None:
         posthog_mock = mocker.patch("polar.checkout.service.posthog")
 
-        assert checkout_one_time_fixed.opened_at is None
+        assert checkout_one_time_fixed.analytics_metadata is None
 
         checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
 
-        assert checkout.opened_at is not None
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") is not None
 
     async def test_fires_posthog_event(
         self,
@@ -5093,13 +5094,14 @@ class TestMarkOpened:
     ) -> None:
         posthog_mock = mocker.patch("polar.checkout.service.posthog")
 
-        original_opened_at = utc_now()
-        checkout_one_time_fixed.opened_at = original_opened_at
+        original_opened_at = utc_now().isoformat()
+        checkout_one_time_fixed.analytics_metadata = {"opened_at": original_opened_at}
         await save_fixture(checkout_one_time_fixed)
 
         checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
 
-        assert checkout.opened_at == original_opened_at
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") == original_opened_at
         posthog_mock.capture.assert_not_called()
 
     async def test_anonymous_distinct_id(

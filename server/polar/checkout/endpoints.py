@@ -33,6 +33,7 @@ from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
     CheckoutCreatePublic,
+    CheckoutOpened,
     CheckoutPublic,
     CheckoutPublicConfirmed,
     CheckoutUpdate,
@@ -293,13 +294,16 @@ async def client_confirm(
 )
 async def client_opened(
     client_secret: CheckoutClientSecret,
+    checkout_opened: CheckoutOpened,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
     Mark a checkout session as opened by client for analytics/experiment purposes.
     """
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
-    return await checkout_service.mark_opened(session, checkout)
+    return await checkout_service.mark_opened(
+        session, checkout, checkout_opened.distinct_id
+    )
 
 
 @inner_router.get("/client/{client_secret}/stream", include_in_schema=False)

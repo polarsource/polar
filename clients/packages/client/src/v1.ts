@@ -3971,10 +3971,15 @@ export interface paths {
     /**
      * List
      * @description List organization access tokens.
+     *
+     *     **Scopes**: `organization_access_tokens:read` `organization_access_tokens:write`
      */
     get: operations['organization_access_token:list']
     put?: never
-    /** Create */
+    /**
+     * Create
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     post: operations['organization_access_token:create']
     delete?: never
     options?: never
@@ -3992,11 +3997,17 @@ export interface paths {
     get?: never
     put?: never
     post?: never
-    /** Delete */
+    /**
+     * Delete
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     delete: operations['organization_access_token:delete']
     options?: never
     head?: never
-    /** Update */
+    /**
+     * Update
+     * @description **Scopes**: `organization_access_tokens:write`
+     */
     patch: operations['organization_access_token:update']
     trace?: never
   }
@@ -5809,7 +5820,9 @@ export interface components {
        *       "notifications:read": "Read notifications",
        *       "notifications:write": "Mark notifications as read",
        *       "notification_recipients:read": "Read notification recipients",
-       *       "notification_recipients:write": "Create or modify notification recipients"
+       *       "notification_recipients:write": "Create or modify notification recipients",
+       *       "organization_access_tokens:read": "Read organization access tokens",
+       *       "organization_access_tokens:write": "Create or modify organization access tokens"
        *     }
        */
       scope_display_names: {
@@ -5893,7 +5906,9 @@ export interface components {
        *       "notifications:read": "Read notifications",
        *       "notifications:write": "Mark notifications as read",
        *       "notification_recipients:read": "Read notification recipients",
-       *       "notification_recipients:write": "Create or modify notification recipients"
+       *       "notification_recipients:write": "Create or modify notification recipients",
+       *       "organization_access_tokens:read": "Read organization access tokens",
+       *       "organization_access_tokens:write": "Create or modify organization access tokens"
        *     }
        */
       scope_display_names: {
@@ -5984,6 +5999,8 @@ export interface components {
       | 'notifications:write'
       | 'notification_recipients:read'
       | 'notification_recipients:write'
+      | 'organization_access_tokens:read'
+      | 'organization_access_tokens:write'
     /**
      * BalanceDisputeEvent
      * @description An event created by Polar when an order is disputed.
@@ -19179,7 +19196,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19244,7 +19261,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19290,7 +19307,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -22565,6 +22582,8 @@ export interface components {
       | 'notifications:write'
       | 'notification_recipients:read'
       | 'notification_recipients:write'
+      | 'organization_access_tokens:read'
+      | 'organization_access_tokens:write'
     /** SearchResultCustomer */
     SearchResultCustomer: {
       /**
@@ -39954,6 +39973,8 @@ export const availableScopeValues: ReadonlyArray<
   'notifications:write',
   'notification_recipients:read',
   'notification_recipients:write',
+  'organization_access_tokens:read',
+  'organization_access_tokens:write',
 ]
 export const balanceDisputeEventNameValues: ReadonlyArray<
   components['schemas']['BalanceDisputeEvent']['name']
@@ -41271,6 +41292,8 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'notifications:write',
   'notification_recipients:read',
   'notification_recipients:write',
+  'organization_access_tokens:read',
+  'organization_access_tokens:write',
 ]
 export const searchResultCustomerTypeValues: ReadonlyArray<
   components['schemas']['SearchResultCustomer']['type']

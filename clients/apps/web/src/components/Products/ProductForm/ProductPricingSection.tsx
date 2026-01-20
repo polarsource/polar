@@ -100,7 +100,8 @@ export interface ProductPriceCustomItemProps {
 export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
 }) => {
-  const { control, setValue } = useFormContext<ProductFormType>()
+  const { control, setValue, watch } = useFormContext<ProductFormType>()
+  const minimumAmount = watch(`prices.${index}.minimum_amount`) ?? 50
 
   return (
     <div className="mt-1.5 flex flex-row gap-4 gap-x-6">
@@ -108,7 +109,12 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.minimum_amount`}
         rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
+          required: 'This field is required',
+          min: { value: 50, message: 'Price must be at least $0.50' },
+          max: {
+            value: 1_000_000,
+            message: 'Price cannot be greater than $10,000',
+          },
         }}
         render={({ field }) => {
           return (
@@ -118,12 +124,12 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                 <div ref={field.ref} tabIndex={-1}>
                   <MoneyInput
                     name={field.name}
-                    value={field.value}
+                    value={field.value ?? 50}
                     onChange={(v) => {
                       field.onChange(v)
                       setValue(`prices.${index}.id`, '')
                     }}
-                    placeholder={1000}
+                    placeholder={50}
                   />
                 </div>
               </FormControl>
@@ -136,7 +142,10 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
         control={control}
         name={`prices.${index}.preset_amount`}
         rules={{
-          min: { value: 50, message: 'Price must be greater than $0.5' },
+          min: {
+            value: minimumAmount,
+            message: `Suggested amount must be at least the minimum ($${(minimumAmount / 100).toFixed(2)})`,
+          },
           max: {
             value: 1_000_000,
             message: 'Price cannot be greater than $10,000',
@@ -668,6 +677,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         replace({
           amount_type: 'custom',
           price_currency: 'usd',
+          minimum_amount: 50,
         })
       } else if (amountType === 'free') {
         replace({

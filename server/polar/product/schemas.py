@@ -141,19 +141,45 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: PriceCurrency = "usd"
-    minimum_amount: PriceAmount | None = Field(
-        default=None, ge=50, description="The minimum amount the customer can pay."
+    minimum_amount: int = Field(
+        default=MINIMUM_PRICE_AMOUNT,
+        ge=MINIMUM_PRICE_AMOUNT,
+        le=1_000_000,  # $10K
+        description="The minimum amount the customer can pay.",
     )
-    maximum_amount: PriceAmount | None = Field(
+    maximum_amount: int | None = Field(
         default=None,
+        ge=MINIMUM_PRICE_AMOUNT,
         le=1_000_000,  # $10K
         description="The maximum amount the customer can pay.",
     )
-    preset_amount: PriceAmount | None = Field(
+    preset_amount: int | None = Field(
         default=None,
+        ge=MINIMUM_PRICE_AMOUNT,
         le=1_000_000,  # $10K
         description="The initial amount shown to the customer.",
     )
+
+    @field_validator("maximum_amount")
+    @classmethod
+    def validate_maximum_amount(cls, v: int | None, info: Any) -> int | None:
+        if v is not None:
+            minimum_amount = info.data.get("minimum_amount", MINIMUM_PRICE_AMOUNT)
+            if v < minimum_amount:
+                raise ValueError("Maximum amount must be greater than or equal to minimum amount")
+        return v
+
+    @field_validator("preset_amount")
+    @classmethod
+    def validate_preset_amount(cls, v: int | None, info: Any) -> int | None:
+        if v is not None:
+            minimum_amount = info.data.get("minimum_amount", MINIMUM_PRICE_AMOUNT)
+            if v < minimum_amount:
+                raise ValueError("Preset amount must be greater than or equal to minimum amount")
+            maximum_amount = info.data.get("maximum_amount")
+            if maximum_amount is not None and v > maximum_amount:
+                raise ValueError("Preset amount must be less than or equal to maximum amount")
+        return v
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
         return ProductPriceCustomModel
@@ -520,8 +546,9 @@ class ProductPriceFixedBase(ProductPriceBase):
 class ProductPriceCustomBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: str = Field(description="The currency.")
-    minimum_amount: int | None = Field(
-        description="The minimum amount the customer can pay."
+    minimum_amount: int = Field(
+        default=MINIMUM_PRICE_AMOUNT,
+        description="The minimum amount the customer can pay.",
     )
     maximum_amount: int | None = Field(
         description="The maximum amount the customer can pay."
@@ -529,6 +556,11 @@ class ProductPriceCustomBase(ProductPriceBase):
     preset_amount: int | None = Field(
         description="The initial amount shown to the customer."
     )
+
+    @field_validator("minimum_amount", mode="before")
+    @classmethod
+    def set_default_minimum_amount(cls, v: int | None) -> int:
+        return v if v is not None else MINIMUM_PRICE_AMOUNT
 
 
 class ProductPriceFreeBase(ProductPriceBase):

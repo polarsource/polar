@@ -49,7 +49,6 @@ def auth_subject(
     organization: Organization,
     organization_second: Organization,
     customer: Customer,
-    member: Member,
 ) -> AuthSubject[Subject]:
     """
     This fixture generates an AuthSubject instance used by the `client` fixture
@@ -60,6 +59,8 @@ def auth_subject(
     See `pytest_generate_tests` below for more information.
     """
     auth_subject_fixture: AuthSubjectFixture = request.param
+
+    # Build subjects map, loading member lazily only when needed
     subjects_map: dict[str, Anonymous | Customer | Member | User | Organization] = {
         "anonymous": Anonymous(),
         "user": user,
@@ -67,8 +68,14 @@ def auth_subject(
         "organization": organization,
         "organization_second": organization_second,
         "customer": customer,
-        "member": member,
     }
+
+    # Only load member fixture when it's actually needed to avoid creating
+    # extra Member records that pollute member count tests
+    if auth_subject_fixture.subject == "member":
+        member: Member = request.getfixturevalue("member")
+        subjects_map["member"] = member
+
     return AuthSubject(
         subjects_map[auth_subject_fixture.subject], auth_subject_fixture.scopes, None
     )

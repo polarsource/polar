@@ -23,6 +23,7 @@ class MeterEvent(Model):
             "external_customer_id",
             "ingested_at",
         ),
+        Index("ix_meter_events_event_id", "event_id"),
     )
 
     meter_id: Mapped[UUID] = mapped_column(

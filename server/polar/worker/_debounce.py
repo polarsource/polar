@@ -134,6 +134,12 @@ class DebounceMiddleware(dramatiq.Middleware):
         )
         self._skip_debounced(message)
 
+    def after_skip_message(
+        self, broker: dramatiq.Broker, message: dramatiq.MessageProxy
+    ) -> None:
+        message.options.pop("debounce_enqueue_timestamp", None)
+        message.options.pop("debounce_max_threshold_execution", None)
+
     def after_process_message(
         self,
         broker: dramatiq.Broker,

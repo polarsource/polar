@@ -5,9 +5,11 @@ from typing import Any
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -398,10 +400,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         Uses PostgreSQL row-level locking instead of Redis distributed locks.
         The lock is held until the parent transaction commits.
         """
-        from sqlalchemy.exc import OperationalError
-
-        from polar.discount.repository import DiscountRepository
-
         repository = DiscountRepository.from_session(session)
 
         # Acquire FOR UPDATE lock (we're already inside checkout's transaction)

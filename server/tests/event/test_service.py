@@ -1,7 +1,7 @@
 import uuid
 from datetime import timedelta
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import ANY, AsyncMock, MagicMock, call
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -54,6 +54,11 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment,
 )
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.event.service.enqueue_job")
 
 
 @pytest.fixture
@@ -1178,6 +1183,7 @@ class TestAggregateFieldsDoNotPersist:
 class TestIngested:
     async def test_basic(
         self,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1213,8 +1219,19 @@ class TestIngested:
 
         await event_service.ingested(session, [event.id for event in events])
 
-        assert customer.meters_dirtied_at is not None
-        assert customer_second.meters_dirtied_at is not None
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "customer_meter.update_customer", customer.id, meters_dirtied_at=ANY
+                ),
+                call(
+                    "customer_meter.update_customer",
+                    customer_second.id,
+                    meters_dirtied_at=ANY,
+                ),
+            ],
+            any_order=True,
+        )
 
     async def test_auto_enable_revops_for_cost_events(
         self,

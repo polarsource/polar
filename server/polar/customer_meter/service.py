@@ -11,7 +11,6 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
@@ -118,9 +117,6 @@ class CustomerMeterService:
             enqueue_job(
                 "customer.webhook", WebhookEventType.customer_state_changed, customer.id
             )
-
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.set_meters_updated_at((customer,))
 
     async def update_customer_meter(
         self,

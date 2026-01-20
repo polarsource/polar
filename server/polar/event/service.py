@@ -24,7 +24,6 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -50,7 +49,7 @@ from polar.models import (
 from polar.models.event import EventSource
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_events
+from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
 from .schemas import (
@@ -770,8 +769,12 @@ class EventService:
             session, repository, event_ids, customers
         )
 
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.touch_meters(customers)
+        for customer in customers:
+            enqueue_job(
+                "customer_meter.update_customer",
+                customer.id,
+                meters_dirtied_at=utc_now().isoformat(),
+            )
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)
@@ -881,6 +884,8 @@ class EventService:
             )
             if await event_repository.get_one_or_none(matching_statement) is not None:
                 cm.activated_at = utc_now()
+                session.add(cm)
+        await session.flush()
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

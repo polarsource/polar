@@ -35,7 +35,7 @@ from polar.personal_access_token.service import (
 )
 from polar.postgres import AsyncSession
 from polar.sentry import set_sentry_user
-from polar.worker._enqueue import enqueue_job
+from polar.worker import enqueue_job
 
 from .models import Anonymous, AuthSubject, Subject
 from .scope import Scope

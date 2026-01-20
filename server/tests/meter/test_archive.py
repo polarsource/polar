@@ -1,7 +1,9 @@
 from decimal import Decimal
+from unittest.mock import ANY, MagicMock
 
 import pytest
 import pytest_asyncio
+from pytest_mock.plugin import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -15,6 +17,11 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
 )
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.meter.service.enqueue_job")
 
 
 @pytest_asyncio.fixture
@@ -135,6 +142,7 @@ class TestMeterArchive:
     async def test_unarchive_queues_customer_meter_updates(
         self,
         save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         meter: Meter,
         customer: Customer,
@@ -155,21 +163,17 @@ class TestMeterArchive:
         await meter_service.archive(session, meter)
         assert meter.archived_at is not None
 
-        # Clear any existing meters_dirtied_at
-        customer.meters_dirtied_at = None
-        await save_fixture(customer)
-
         # Unarchive the meter - should queue customer meter updates
         await meter_service.unarchive(session, meter)
 
-        # Refresh the customer to see the updated value
-        await session.refresh(customer)
-
-        # Customer should now have meters_dirtied_at set
-        assert customer.meters_dirtied_at is not None
+        # Job is enqueued
+        enqueue_job_mock.assert_called_once_with(
+            "customer_meter.update_customer", customer.id, meters_dirtied_at=ANY
+        )
 
     async def test_unarchive_does_not_touch_unrelated_customers(
         self,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         meter: Meter,
@@ -182,15 +186,8 @@ class TestMeterArchive:
         await meter_service.archive(session, meter)
         assert meter.archived_at is not None
 
-        # Clear any existing meters_dirtied_at
-        customer.meters_dirtied_at = None
-        await save_fixture(customer)
-
         # Unarchive the meter - should NOT touch customers without matching events
         await meter_service.unarchive(session, meter)
 
-        # Refresh the customer to see the updated value
-        await session.refresh(customer)
-
-        # Customer should NOT have meters_dirtied_at set (no events for this meter)
-        assert customer.meters_dirtied_at is None
+        # Job is not enqueued
+        enqueue_job_mock.assert_not_called()

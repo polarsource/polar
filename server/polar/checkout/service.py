@@ -8,6 +8,7 @@ import structlog
 from pydantic import UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
@@ -1680,13 +1681,9 @@ class CheckoutService:
 
         See: https://www.postgresql.org/docs/current/explicit-locking.html
         """
-        from sqlalchemy.exc import OperationalError
-
         repository = CheckoutRepository.from_session(session)
         checkout_id = checkout.id
 
-        # Acquire lock and load fresh in one query
-        # Uses FOR UPDATE OF checkouts to allow joins while locking only the checkout
         try:
             locked_checkout = await repository.get_by_id_for_update(
                 checkout_id,
@@ -1702,12 +1699,6 @@ class CheckoutService:
             raise ResourceNotFound()
 
         yield locked_checkout
-
-        # 🚨 It's not a mistake: we do explicitly commit here to release the FOR UPDATE lock.
-        # The goal is to avoid race conditions where waiting requests acquire the lock and
-        # load the Checkout object _before_ the previous operation had the chance to commit.
-        # See: https://github.com/polarsource/polar/issues/7260
-        await session.commit()
 
     async def _update_checkout(
         self,

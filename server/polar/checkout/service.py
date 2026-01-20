@@ -1273,7 +1273,7 @@ class CheckoutService:
                 else None
             )
             or checkout.customer_email
-            or "anonymous"
+            or f"checkout:{checkout.id}"
         )
 
         posthog.capture(

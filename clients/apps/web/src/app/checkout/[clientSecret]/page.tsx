@@ -1,3 +1,4 @@
+import { getDistinctId } from '@/experiments/distinct-id'
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
@@ -74,6 +75,15 @@ export default async function Page(props: {
   if (checkout.status !== 'open') {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
+
+  const distinctId = await getDistinctId()
+  fetch(`${getServerURL()}/v1/checkouts/client/${clientSecret}/opened`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ distinct_id: distinctId }),
+  }).catch(() => {
+    // Don't block page render if this fails
+  })
 
   return (
     <CheckoutProvider

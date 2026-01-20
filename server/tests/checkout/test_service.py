@@ -5147,7 +5147,7 @@ class TestHandleSuccessPostHogTracking:
         assert call_kwargs[1]["event"] == "storefront:subscriptions:checkout:complete"
         assert call_kwargs[1]["properties"]["checkout_id"] == str(checkout.id)
 
-    async def test_anonymous_customer_email(
+    async def test_fallback_distinct_id(
         self,
         mocker: MockerFixture,
         order_service_mock: MagicMock,
@@ -5155,6 +5155,7 @@ class TestHandleSuccessPostHogTracking:
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
+        """When no distinct_id or email, falls back to checkout:{id} for A/B test consistency."""
         posthog_mock = mocker.patch("polar.checkout.service.posthog")
         checkout_confirmed_one_time.customer_email = None
 
@@ -5164,4 +5165,4 @@ class TestHandleSuccessPostHogTracking:
 
         posthog_mock.capture.assert_called_once()
         call_kwargs = posthog_mock.capture.call_args
-        assert call_kwargs[1]["distinct_id"] == "anonymous"
+        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_confirmed_one_time.id}"

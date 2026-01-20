@@ -141,14 +141,14 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: PriceCurrency = "usd"
-    minimum_amount: PriceAmount | None = Field(
-        default=None,
+    minimum_amount: int = Field(
+        default=MINIMUM_PRICE_AMOUNT,
         ge=0,
         description=(
             "The minimum amount the customer can pay. "
             "If set to 0, the price is 'free or pay what you want' and $0 is accepted. "
-            "If set to a value between 1-49, it will be rejected (Stripe minimum is 50 cents). "
-            "If None, defaults to 50 cents."
+            "If set to a value between 1-49, it will be rejected. "
+            "Defaults to 50 cents."
         ),
     )
     maximum_amount: PriceAmount | None = Field(
@@ -163,17 +163,19 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         description=(
             "The initial amount shown to the customer. "
             "If 0, the customer will see $0 as the default. "
-            "Values between 1-49 are rejected (Stripe minimum is 50 cents)."
+            "Values between 1-49 are rejected."
         ),
     )
 
     @field_validator("minimum_amount", "preset_amount")
     @classmethod
-    def validate_amount_not_in_stripe_gap(cls, v: int | None) -> int | None:
-        # Stripe minimum is $0.50 USD, so values 1-49 are invalid
+    def validate_amount_not_in_minimum_gap(cls, v: int | None) -> int | None:
+        # Minimum payment is $0.50, so values 1-49 are invalid
         # 0 is valid (free), None is valid (use default), >= 50 is valid
-        if v is not None and 0 < v < 50:
-            raise ValueError("Amount must be 0 (for free) or at least 50 cents")
+        if v is not None and 0 < v < MINIMUM_PRICE_AMOUNT:
+            raise ValueError(
+                f"Amount must be 0 (for free) or at least {MINIMUM_PRICE_AMOUNT} cents"
+            )
         return v
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
@@ -541,11 +543,11 @@ class ProductPriceFixedBase(ProductPriceBase):
 class ProductPriceCustomBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: str = Field(description="The currency.")
-    minimum_amount: int | None = Field(
+    minimum_amount: int = Field(
         description=(
             "The minimum amount the customer can pay. "
             "If 0, the price is 'free or pay what you want'. "
-            "If None, defaults to 50 cents."
+            "Defaults to 50 cents."
         )
     )
     maximum_amount: int | None = Field(

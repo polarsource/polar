@@ -13,6 +13,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
+    MINIMUM_PRICE_AMOUNT,
     CheckoutConfirm,
     CheckoutConfirmStripe,
     CheckoutCreate,
@@ -2191,17 +2192,16 @@ class CheckoutService:
         if not is_custom_price(price):
             return
 
-        stripe_minimum_in_cents = 50
-
-        # Only when minimum_amount is explicitly set to 0 do we allow free
-        # If it's null, minimum is #{stripe_minimum_in_cents}
-        allow_free = price.minimum_amount == 0
+        # minimum_amount is always set (default 50, or 0 for free-allowed prices)
+        minimum_amount = price.minimum_amount
+        allow_free = minimum_amount == 0
 
         if allow_free:
+            # Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
             if amount == 0:
                 return
 
-            if 0 < amount < stripe_minimum_in_cents:
+            if 0 < amount < MINIMUM_PRICE_AMOUNT:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -2209,13 +2209,13 @@ class CheckoutService:
                             "loc": loc,
                             "msg": "Amount must be $0 or at least $0.50.",
                             "input": amount,
-                            "ctx": {"allowed": [0], "ge": stripe_minimum_in_cents},
+                            "ctx": {"allowed": [0], "ge": MINIMUM_PRICE_AMOUNT},
                         }
                     ]
                 )
         else:
-            effective_minimum = price.minimum_amount or stripe_minimum_in_cents
-            if amount < effective_minimum:
+            # Free not allowed: amount must be >= minimum_amount
+            if amount < minimum_amount:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -2223,7 +2223,7 @@ class CheckoutService:
                             "loc": loc,
                             "msg": "Amount is below minimum.",
                             "input": amount,
-                            "ctx": {"ge": effective_minimum},
+                            "ctx": {"ge": minimum_amount},
                         }
                     ]
                 )

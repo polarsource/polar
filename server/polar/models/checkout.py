@@ -325,12 +325,7 @@ class Checkout(
 
     @property
     def should_save_payment_method(self) -> bool:
-        if self.product is None:
-            return False
-        # Don't save payment method for free or $0 checkouts (no payment to save from)
-        if self.is_free_product_price or self.amount == 0:
-            return False
-        return self.product.is_recurring
+        return self.product is not None and self.product.is_recurring
 
     @property
     def is_payment_form_required(self) -> bool:

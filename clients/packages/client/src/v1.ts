@@ -2951,10 +2951,7 @@ export interface paths {
      */
     get: operations['customer_portal:seats:list_seats']
     put?: never
-    /**
-     * Assign Seat
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Assign Seat */
     post: operations['customer_portal:seats:assign_seat']
     delete?: never
     options?: never
@@ -2972,10 +2969,7 @@ export interface paths {
     get?: never
     put?: never
     post?: never
-    /**
-     * Revoke Seat
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Revoke Seat */
     delete: operations['customer_portal:seats:revoke_seat']
     options?: never
     head?: never
@@ -2991,10 +2985,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Resend Invitation
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Resend Invitation */
     post: operations['customer_portal:seats:resend_invitation']
     delete?: never
     options?: never
@@ -3686,6 +3677,9 @@ export interface paths {
     /**
      * Create Customer Session
      * @description Create a customer session.
+     *
+     *     For organizations with `member_model_enabled`, this will automatically
+     *     create a member session for the owner member of the customer.
      *
      *     **Scopes**: `customer_sessions:write`
      */
@@ -17290,8 +17284,9 @@ export interface components {
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay.
+       * @default 50
        */
-      minimum_amount: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.
@@ -21608,8 +21603,9 @@ export interface components {
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay.
+       * @default 50
        */
-      minimum_amount: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.
@@ -21640,8 +21636,9 @@ export interface components {
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay.
+       * @default 50
        */
-      minimum_amount?: number | null
+      minimum_amount: number
       /**
        * Maximum Amount
        * @description The maximum amount the customer can pay.

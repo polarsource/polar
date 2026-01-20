@@ -166,7 +166,9 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         if v is not None:
             minimum_amount = info.data.get("minimum_amount", MINIMUM_PRICE_AMOUNT)
             if v < minimum_amount:
-                raise ValueError("Maximum amount must be greater than or equal to minimum amount")
+                raise ValueError(
+                    "Maximum amount must be greater than or equal to minimum amount"
+                )
         return v
 
     @field_validator("preset_amount")
@@ -175,10 +177,14 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
         if v is not None:
             minimum_amount = info.data.get("minimum_amount", MINIMUM_PRICE_AMOUNT)
             if v < minimum_amount:
-                raise ValueError("Preset amount must be greater than or equal to minimum amount")
+                raise ValueError(
+                    "Preset amount must be greater than or equal to minimum amount"
+                )
             maximum_amount = info.data.get("maximum_amount")
             if maximum_amount is not None and v > maximum_amount:
-                raise ValueError("Preset amount must be less than or equal to maximum amount")
+                raise ValueError(
+                    "Preset amount must be less than or equal to maximum amount"
+                )
         return v
 
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:

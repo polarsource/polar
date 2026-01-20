@@ -5121,6 +5121,25 @@ class TestMarkOpened:
         call_kwargs = posthog_mock.capture.call_args
         assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_one_time_fixed.id}"
 
+    async def test_posthog_failure_does_not_break_checkout(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """PostHog failures should be caught and logged, not break the checkout flow."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.capture.side_effect = Exception("PostHog is down")
+        log_mock = mocker.patch("polar.checkout.service.log")
+
+        assert checkout_one_time_fixed.analytics_metadata is None
+
+        checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") is not None
+        log_mock.error.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestHandleSuccessPostHogTracking:
@@ -5165,4 +5184,27 @@ class TestHandleSuccessPostHogTracking:
 
         posthog_mock.capture.assert_called_once()
         call_kwargs = posthog_mock.capture.call_args
-        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_confirmed_one_time.id}"
+        assert (
+            call_kwargs[1]["distinct_id"]
+            == f"checkout:{checkout_confirmed_one_time.id}"
+        )
+
+    async def test_posthog_failure_does_not_break_checkout(
+        self,
+        mocker: MockerFixture,
+        order_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        """PostHog failures should be caught and logged, not break the checkout flow."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.capture.side_effect = Exception("PostHog is down")
+        log_mock = mocker.patch("polar.checkout.service.log")
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        log_mock.error.assert_called_once()

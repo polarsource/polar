@@ -1276,16 +1276,21 @@ class CheckoutService:
             or f"checkout:{checkout.id}"
         )
 
-        posthog.capture(
-            distinct_id=distinct_id,
-            event="storefront:subscriptions:checkout:complete",
-            properties={
-                "checkout_id": str(checkout.id),
-                "organization_slug": checkout.organization.slug,
-                "product_id": str(checkout.product_id) if checkout.product_id else None,
-                "amount": checkout.amount,
-            },
-        )
+        try:
+            posthog.capture(
+                distinct_id=distinct_id,
+                event="storefront:subscriptions:checkout:complete",
+                properties={
+                    "checkout_id": str(checkout.id),
+                    "organization_slug": checkout.organization.slug,
+                    "product_id": str(checkout.product_id)
+                    if checkout.product_id
+                    else None,
+                    "amount": checkout.amount,
+                },
+            )
+        except Exception as e:
+            log.error("Failed to capture PostHog event", error=str(e))
 
         return checkout
 
@@ -1358,16 +1363,21 @@ class CheckoutService:
             update_dict={"analytics_metadata": analytics_metadata},
         )
 
-        posthog.capture(
-            distinct_id=resolved_distinct_id,
-            event="storefront:subscriptions:checkout:open",
-            properties={
-                "checkout_id": str(checkout.id),
-                "organization_slug": checkout.organization.slug,
-                "product_id": str(checkout.product_id) if checkout.product_id else None,
-                "amount": checkout.amount,
-            },
-        )
+        try:
+            posthog.capture(
+                distinct_id=resolved_distinct_id,
+                event="storefront:subscriptions:checkout:open",
+                properties={
+                    "checkout_id": str(checkout.id),
+                    "organization_slug": checkout.organization.slug,
+                    "product_id": str(checkout.product_id)
+                    if checkout.product_id
+                    else None,
+                    "amount": checkout.amount,
+                },
+            )
+        except Exception as e:
+            log.error("Failed to capture PostHog event", error=str(e))
 
         return checkout
 

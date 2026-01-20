@@ -61,7 +61,6 @@ export interface PolarHog {
   capture: (event: EventName, properties?: { [key: string]: JsonType }) => void
   identify: (user: schemas['UserRead']) => void
   logout: () => void
-  getDistinctId: () => string
 }
 
 export const usePostHog = (): PolarHog => {
@@ -99,19 +98,14 @@ export const usePostHog = (): PolarHog => {
     posthog?.reset()
   }, [capture, posthog])
 
-  const getDistinctId: PolarHog['getDistinctId'] = useCallback(() => {
-    return posthog.get_distinct_id()
-  }, [posthog])
-
   const context = useMemo(
     () => ({
       setPersistence,
       capture,
       identify,
       logout,
-      getDistinctId,
     }),
-    [setPersistence, capture, identify, logout, getDistinctId],
+    [setPersistence, capture, identify, logout],
   )
 
   return context

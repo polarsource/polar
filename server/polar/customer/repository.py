@@ -1,9 +1,9 @@
 import contextlib
-from collections.abc import AsyncGenerator, Iterable, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, func, select
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -16,7 +16,6 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.kit.utils import utc_now
 from polar.models import Customer, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
@@ -141,22 +140,6 @@ class CustomerRepository(
         enqueue_job("customer.event", customer.id, SystemEvent.customer_deleted)
 
         return customer
-
-    async def touch_meters(self, customers: Iterable[Customer]) -> None:
-        statement = (
-            update(Customer)
-            .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_dirtied_at=utc_now())
-        )
-        await self.session.execute(statement)
-
-    async def set_meters_updated_at(self, customers: Iterable[Customer]) -> None:
-        statement = (
-            update(Customer)
-            .where(Customer.id.in_([c.id for c in customers]))
-            .values(meters_updated_at=utc_now())
-        )
-        await self.session.execute(statement)
 
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID

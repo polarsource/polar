@@ -3,13 +3,12 @@ from datetime import datetime
 
 from opentelemetry import trace
 
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .service import customer_meter as customer_meter_service
-
-UPDATE_CUSTOMER_LOCK_PREFIX = "customer_meter.update_customer:lock:"
 
 
 class CustomerMeterTaskError(PolarTaskError): ...
@@ -22,11 +21,24 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
         super().__init__(message)
 
 
+def _update_customer_debounce_key(
+    customer_id: uuid.UUID, meters_dirtied_at: str | None
+) -> str:
+    return f"customer_meter.update_customer:{customer_id}"
+
+
 @actor(
     actor_name="customer_meter.update_customer",
     priority=TaskPriority.LOW,
     max_retries=1,
     min_backoff=30_000,
+    debounce_key=_update_customer_debounce_key,
+    debounce_min_threshold=int(
+        settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD.total_seconds()
+    ),
+    debounce_max_threshold=int(
+        settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD.total_seconds()
+    ),
 )
 async def update_customer(
     customer_id: uuid.UUID, meters_dirtied_at: str | None = None
@@ -40,10 +52,7 @@ async def update_customer(
         span = trace.get_current_span()
         span.set_attribute("organization_id", str(customer.organization_id))
 
-        redis = RedisMiddleware.get()
         meters_dirtied = (
             datetime.fromisoformat(meters_dirtied_at) if meters_dirtied_at else None
         )
         await customer_meter_service.update_customer(session, customer, meters_dirtied)
-
-        await redis.delete(f"{UPDATE_CUSTOMER_LOCK_PREFIX}{customer_id}")

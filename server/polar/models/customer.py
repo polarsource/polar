@@ -31,7 +31,6 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
-from polar.kit.utils import utc_now
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
@@ -172,10 +171,10 @@ class Customer(MetadataMixin, RecordModel):
     """
 
     meters_dirtied_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True, deferred=True
     )
     meters_updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True, deferred=True
     )
 
     invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -318,9 +317,6 @@ class Customer(MetadataMixin, RecordModel):
     @property
     def actual_billing_name(self) -> str | None:
         return self._billing_name
-
-    def touch_meters_dirtied_at(self) -> None:
-        self.meters_dirtied_at = utc_now()
 
 
 # ID generation algorithm based on https://instagram-engineering.com/sharding-ids-at-instagram-1cf5a71e5a5c

@@ -140,7 +140,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       )}
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
         <div className="flex flex-col gap-6 p-4 md:p-8">
-          <div className="flex flex-col gap-4 md:gap-1">
+          <div className="flex flex-col gap-1">
             <DetailRow label="Invoice number" value={order.invoice_number} />
             <DetailRow
               label="Order ID"
@@ -184,7 +184,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             <Separator className="dark:bg-polar-700 my-4 h-px bg-gray-300" />
 
-            <div className="flex flex-col gap-y-6 pb-4">
+            <div className="flex flex-col gap-1 pb-4">
               {order.items.map((item) => (
                 <DetailRow
                   key={item.id}

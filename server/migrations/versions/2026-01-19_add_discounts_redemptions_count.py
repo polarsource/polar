@@ -21,18 +21,6 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Backfill existing redemption counts
-    op.execute(
-        """
-        UPDATE discounts d
-        SET redemptions_count = (
-            SELECT COUNT(*)
-            FROM discount_redemptions dr
-            WHERE dr.discount_id = d.id
-        )
-        """
-    )
-
     # Create trigger function to increment count on INSERT
     discount_redemptions_count_increment = PGFunction(
         schema="public",
@@ -84,6 +72,18 @@ def upgrade() -> None:
     FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_decrement()""",
     )
     op.create_entity(discount_redemptions_count_decrement_trigger)
+
+    # Backfill existing redemption counts
+    op.execute(
+        """
+        UPDATE discounts d
+        SET redemptions_count = (
+            SELECT COUNT(*)
+            FROM discount_redemptions dr
+            WHERE dr.discount_id = d.id
+        )
+        """
+    )
 
 
 def downgrade() -> None:

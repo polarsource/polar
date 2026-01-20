@@ -2,7 +2,7 @@
 
 import { twMerge } from 'tailwind-merge'
 
-type MemberRole = 'owner' | 'billing_manager' | 'member'
+export type MemberRole = 'owner' | 'billing_manager' | 'member'
 
 const roleConfig: Record<MemberRole, { label: string; className: string }> = {
   owner: {

@@ -30,7 +30,6 @@ from ..schemas.benefit_grant import (
     CustomerBenefitGrantGitHubRepositoryUpdate,
     CustomerBenefitGrantUpdate,
 )
-from ..utils import get_customer_id
 
 
 class CustomerBenefitGrantSortProperty(StrEnum):

@@ -17,10 +17,15 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { RoleBadge } from './RoleBadge'
+import { MemberRole, RoleBadge } from './RoleBadge'
 
 // Helper to extract user info from the PortalAuthenticatedUser type
-function getUserInfo(user: schemas['PortalAuthenticatedUser'] | undefined) {
+function getUserInfo(user: schemas['PortalAuthenticatedUser'] | undefined): {
+  name: string | null
+  email: string | null
+  isMember: boolean
+  role: MemberRole | null
+} {
   if (!user) {
     return { name: null, email: null, isMember: false, role: null }
   }
@@ -30,7 +35,7 @@ function getUserInfo(user: schemas['PortalAuthenticatedUser'] | undefined) {
       name: user.name,
       email: user.email,
       isMember: true,
-      role: user.role,
+      role: user.role as MemberRole,
     }
   }
 

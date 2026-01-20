@@ -42,8 +42,6 @@ export interface CheckoutPWYWFormProps {
   themePreset: ThemingPresetProps
 }
 
-const MINIMUM_PRICE_AMOUNT = 50 // Minimum payment amount in cents
-
 export const CheckoutPWYWForm = ({
   update,
   checkout,
@@ -52,9 +50,6 @@ export const CheckoutPWYWForm = ({
 }: CheckoutPWYWFormProps) => {
   const { amount } = checkout
 
-  // minimumAmount is always set (default 50, or 0 for free-allowed prices)
-  const allowFree = productPrice.minimumAmount === 0
-
   const form = useForm<{ amount: number }>({
     defaultValues: { amount: amount || 0 },
   })
@@ -62,35 +57,18 @@ export const CheckoutPWYWForm = ({
 
   const validateAmount = useCallback(
     (value: number): string | true => {
-      if (allowFree) {
-        // Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
-        if (value === 0) {
-          return true
-        }
-
-        if (value > 0 && value < MINIMUM_PRICE_AMOUNT) {
-          return `Amount must be either $0 or more than ${formatCurrencyNumber(MINIMUM_PRICE_AMOUNT, checkout.currency)}`
-        }
-      } else {
-        // Free not allowed: amount must be >= minimumAmount
-        if (value < productPrice.minimumAmount) {
-          return `Amount must be at least ${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)}`
-        }
+      // Handle gap validation when free is allowed (minimumAmount = 0)
+      if (productPrice.minimumAmount === 0 && value > 0 && value < 50) {
+        return `Amount must be $0 or at least ${formatCurrencyNumber(50, checkout.currency)}`
       }
 
-      // Check maximum amount (if set)
-      if (productPrice.maximumAmount && value > productPrice.maximumAmount) {
-        return `Amount must be at most ${formatCurrencyNumber(productPrice.maximumAmount, checkout.currency)}`
+      if (value < productPrice.minimumAmount) {
+        return `Amount must be at least ${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)}`
       }
 
       return true
     },
-    [
-      allowFree,
-      productPrice.minimumAmount,
-      productPrice.maximumAmount,
-      checkout.currency,
-    ],
+    [productPrice.minimumAmount, checkout.currency],
   )
 
   const debouncedAmountUpdate = useDebouncedCallback(
@@ -117,9 +95,10 @@ export const CheckoutPWYWForm = ({
     reset({ amount: amount || 0 })
   }, [amount, reset])
 
-  const minLabelText = allowFree
-    ? false
-    : `${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)} minimum`
+  const minLabelText =
+    productPrice.minimumAmount === 0
+      ? false
+      : `${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)} minimum`
 
   return (
     <Form {...form}>

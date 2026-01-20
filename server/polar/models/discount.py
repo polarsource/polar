@@ -3,6 +3,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
@@ -216,3 +219,64 @@ class DiscountPercentage(Discount):
         "polymorphic_identity": DiscountType.percentage,
         "polymorphic_load": "inline",
     }
+
+
+# Trigger functions to maintain redemptions_count on the discounts table
+discount_redemptions_count_increment_function = PGFunction(
+    schema="public",
+    signature="discount_redemptions_count_increment()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        UPDATE discounts
+        SET redemptions_count = redemptions_count + 1
+        WHERE id = NEW.discount_id;
+        RETURN NEW;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+discount_redemptions_count_decrement_function = PGFunction(
+    schema="public",
+    signature="discount_redemptions_count_decrement()",
+    definition="""
+    RETURNS trigger AS $$
+    BEGIN
+        UPDATE discounts
+        SET redemptions_count = redemptions_count - 1
+        WHERE id = OLD.discount_id;
+        RETURN OLD;
+    END
+    $$ LANGUAGE plpgsql;
+    """,
+)
+
+discount_redemptions_count_increment_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_increment_trigger",
+    on_entity="discount_redemptions",
+    definition="""
+    AFTER INSERT ON discount_redemptions
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_increment();
+    """,
+)
+
+discount_redemptions_count_decrement_trigger = PGTrigger(
+    schema="public",
+    signature="discount_redemptions_count_decrement_trigger",
+    on_entity="discount_redemptions",
+    definition="""
+    AFTER DELETE ON discount_redemptions
+    FOR EACH ROW EXECUTE FUNCTION discount_redemptions_count_decrement();
+    """,
+)
+
+register_entities(
+    (
+        discount_redemptions_count_increment_function,
+        discount_redemptions_count_decrement_function,
+        discount_redemptions_count_increment_trigger,
+        discount_redemptions_count_decrement_trigger,
+    )
+)

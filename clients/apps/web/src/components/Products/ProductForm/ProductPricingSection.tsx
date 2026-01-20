@@ -102,23 +102,13 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 }) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
-  const validatePWYWAmount = (
-    value: number | null | undefined,
-  ): string | true => {
-    if (value === undefined || value === null) {
-      // Require any positive amount
+  const validatePWYWAmount = (value: number): string | true => {
+    // 0 is valid (free option), 50+ is valid (meets payment minimum)
+    // 1-49 is invalid (gap between free and payment minimum)
+    if (value === 0 || value >= 50) {
       return true
     }
-
-    if (value === 0) {
-      // Opt-in to free
-      return true // 0 is valid (free)
-    }
-
-    if (value > 0 && value < 50) {
-      return 'Must be $0 (for free) or at least $0.50'
-    }
-    return true
+    return 'Must be $0 (for free) or at least $0.50'
   }
 
   return (

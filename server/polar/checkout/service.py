@@ -425,11 +425,8 @@ class CheckoutService:
             amount = price.price_amount
         elif is_custom_price(price):
             if amount is None:
-                amount = (
-                    price.preset_amount
-                    or price.minimum_amount
-                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
-                )
+                # minimum_amount is always set (default 50)
+                amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -654,11 +651,8 @@ class CheckoutService:
         if is_fixed_price(price):
             amount = price.price_amount
         elif is_custom_price(price):
-            amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            # minimum_amount is always set (default 50)
+            amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -793,11 +787,11 @@ class CheckoutService:
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
 
+            # minimum_amount is always set (default 50)
             amount = (
                 valid_query_amount
                 or price.preset_amount
                 or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
             )
         elif is_seat_price(price):
             # Default to minimum seats for checkout links with seat-based pricing
@@ -1999,11 +1993,8 @@ class CheckoutService:
             checkout.amount = price.price_amount
             checkout.seats = None
         elif is_custom_price(price):
-            checkout.amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            # minimum_amount is always set (default 50)
+            checkout.amount = price.preset_amount or price.minimum_amount
             checkout.seats = None
         elif is_seat_price(price):
             # Use minimum_seats as default if no seats are set

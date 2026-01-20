@@ -42,7 +42,7 @@ export interface CheckoutPWYWFormProps {
   themePreset: ThemingPresetProps
 }
 
-const ENFORCED_MINIMUM_IN_CENTS_USD = 50 // Stripe requires at least a $0.50 payment
+const MINIMUM_PRICE_AMOUNT = 50 // Minimum payment amount in cents
 
 export const CheckoutPWYWForm = ({
   update,
@@ -52,9 +52,7 @@ export const CheckoutPWYWForm = ({
 }: CheckoutPWYWFormProps) => {
   const { amount } = checkout
 
-  // For backwards compatibility,
-  // explicit `0` is considered free,
-  // while a null or undefined value means implies ${ENFORCED_MINIMUM_IN_CENTS_USD}
+  // minimumAmount is always set (default 50, or 0 for free-allowed prices)
   const allowFree = productPrice.minimumAmount === 0
 
   const form = useForm<{ amount: number }>({
@@ -65,19 +63,18 @@ export const CheckoutPWYWForm = ({
   const validateAmount = useCallback(
     (value: number): string | true => {
       if (allowFree) {
+        // Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
         if (value === 0) {
           return true
         }
 
-        if (value > 0 && value < ENFORCED_MINIMUM_IN_CENTS_USD) {
-          return `Amount must be either $0 or more than ${formatCurrencyNumber(ENFORCED_MINIMUM_IN_CENTS_USD, checkout.currency)}`
+        if (value > 0 && value < MINIMUM_PRICE_AMOUNT) {
+          return `Amount must be either $0 or more than ${formatCurrencyNumber(MINIMUM_PRICE_AMOUNT, checkout.currency)}`
         }
       } else {
-        const minAmount =
-          productPrice.minimumAmount ?? ENFORCED_MINIMUM_IN_CENTS_USD
-
-        if (value < minAmount) {
-          return `Amount must be at least ${formatCurrencyNumber(minAmount, checkout.currency)}`
+        // Free not allowed: amount must be >= minimumAmount
+        if (value < productPrice.minimumAmount) {
+          return `Amount must be at least ${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)}`
         }
       }
 
@@ -122,10 +119,7 @@ export const CheckoutPWYWForm = ({
 
   const minLabelText = allowFree
     ? false
-    : `${formatCurrencyNumber(
-        productPrice.minimumAmount || ENFORCED_MINIMUM_IN_CENTS_USD,
-        checkout.currency,
-      )} minimum`
+    : `${formatCurrencyNumber(productPrice.minimumAmount, checkout.currency)} minimum`
 
   return (
     <Form {...form}>

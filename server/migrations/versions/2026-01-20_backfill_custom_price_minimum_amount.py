@@ -11,7 +11,7 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "5f8e2a3b4c6d"
+revision = "597080a0dd14"
 down_revision = "3a7b8c9d0e1f"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None

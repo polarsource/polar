@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.15
+
+### Patch Changes
+
+- d283219: Fix event handler accumulation when creating multiple EmbedCheckout instances by properly removing window message listeners on close
+
 ## 0.1.14
 
 ### Patch Changes

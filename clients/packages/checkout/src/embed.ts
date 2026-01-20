@@ -67,7 +67,7 @@ class EmbedCheckout {
     this.closable = true
     this.eventTarget = new EventTarget()
     this.windowMessageListener = this.handleWindowMessage.bind(this)
-    this.initWindowListener()
+    window.addEventListener('message', this.windowMessageListener)
     this.addEventListener('loaded', this.loadedListener.bind(this))
     this.addEventListener('close', this.closeListener.bind(this))
     this.addEventListener('confirmed', this.confirmedListener.bind(this))
@@ -353,14 +353,6 @@ class EmbedCheckout {
     if (event.detail.redirect) {
       window.location.href = event.detail.successURL
     }
-  }
-
-  /**
-   * Initialize the window message listener to receive messages from the embedded checkout
-   * and re-dispatch them as events for the embedded checkout instance.
-   */
-  private initWindowListener(): void {
-    window.addEventListener('message', this.windowMessageListener)
   }
 
   /**

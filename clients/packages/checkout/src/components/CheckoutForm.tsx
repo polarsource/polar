@@ -1,6 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
+import { SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -94,6 +95,9 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  subscribeNowButtonExperiment?: boolean
+  payNowButtonExperiment?: boolean
+  locale?: SupportedLocale
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +111,9 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  subscribeNowButtonExperiment,
+  payNowButtonExperiment,
+  locale: localeProp,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -134,6 +141,10 @@ const BaseCheckoutForm = ({
     () => (product && prices ? getMeteredPrices(prices[product.id]) : []),
     [product],
   )
+
+  const locale: SupportedLocale = localeProp || 'en'
+
+  const t = useTranslations(locale)
 
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
@@ -909,7 +920,7 @@ const BaseCheckoutForm = ({
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
       >
-        <span>Powered by</span>
+        <span>{t('checkout.poweredBy')}</span>
         <PolarLogo className="h-5" />
       </a>
     </div>

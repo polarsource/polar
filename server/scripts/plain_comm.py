@@ -207,12 +207,20 @@ async def _send_email(
 
         customer_id = customer_result.customer.id
 
+        # Check if not already sent
+        existing_thread_result = await plain.thread_by_external_id(
+            customer_id, f"webhooks-incident-{organization_id}"
+        )
+        if existing_thread_result is not None:
+            return
+
         # Create thread
         thread_result = await plain.create_thread(
             pl.CreateThreadInput(
                 customer_identifier=pl.CustomerIdentifierInput(customer_id=customer_id),
                 title="Polar Incident: Incorrect webhook events (Jan 19–21)",
                 label_type_ids=["lt_01KFGJRK3DEV0TYT7D084G1MVQ"],
+                external_id=f"webhooks-incident-{organization_id}",
             )
         )
         if thread_result.error is not None:

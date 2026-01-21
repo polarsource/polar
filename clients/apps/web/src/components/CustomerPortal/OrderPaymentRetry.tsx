@@ -48,6 +48,7 @@ export const OrderPaymentRetry = ({
   const [showRetryButton, setShowRetryButton] = useState(false)
 
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const hasInitiatedPaymentRef = useRef(false)
 
   const cleanupPolling = () => {
     if (pollingIntervalRef.current) {
@@ -62,6 +63,7 @@ export const OrderPaymentRetry = ({
     setHasSubmitted(false)
     setPaymentComplete(false)
     setShowRetryButton(false)
+    hasInitiatedPaymentRef.current = false
     cleanupPolling()
   }
 
@@ -354,18 +356,19 @@ export const OrderPaymentRetry = ({
   }, [])
 
   // Auto-trigger payment for saved payment methods
+  // Use ref for synchronous guard to prevent double-calls in React Strict Mode
   useEffect(() => {
-    if (paymentMethodId && !hasSubmitted && !isProcessing && !isPolling) {
+    if (
+      paymentMethodId &&
+      !hasInitiatedPaymentRef.current &&
+      !isProcessing &&
+      !isPolling
+    ) {
+      hasInitiatedPaymentRef.current = true
       setHasSubmitted(true)
       handleSavedPaymentMethod()
     }
-  }, [
-    paymentMethodId,
-    hasSubmitted,
-    isProcessing,
-    isPolling,
-    handleSavedPaymentMethod,
-  ])
+  }, [paymentMethodId, isProcessing, isPolling, handleSavedPaymentMethod])
 
   return (
     <div className="space-y-4">

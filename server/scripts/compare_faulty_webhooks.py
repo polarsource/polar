@@ -19,7 +19,12 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import BenefitGrant, Customer, Order, Subscription
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import create_async_engine
+from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.webhook.service import webhook as webhook_service
+from polar.worker import enqueue_job
 
 cli = typer.Typer()
 console = Console()
@@ -211,7 +216,7 @@ def extract_organization_id(resource_data: dict[str, Any]) -> UUID | None:
     return None
 
 
-async def compare_webhooks(csv_path: Path) -> ComparisonResult:
+async def compare_webhooks_from_rows(rows: list[dict[str, Any]]) -> ComparisonResult:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
 
@@ -221,10 +226,6 @@ async def compare_webhooks(csv_path: Path) -> ComparisonResult:
     diffs_by_organization: dict[UUID, int] = {}
     found_count = 0
     matching_count = 0
-
-    with open(csv_path) as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
 
     total_rows = len(rows)
     console.print(f"[cyan]Processing {total_rows} webhook events from CSV...[/cyan]")
@@ -358,7 +359,9 @@ def print_results(result: ComparisonResult, output_json: bool = False) -> None:
                 {
                     "resource_type": rd.resource_type,
                     "resource_id": str(rd.resource_id),
-                    "organization_id": str(rd.organization_id) if rd.organization_id else None,
+                    "organization_id": str(rd.organization_id)
+                    if rd.organization_id
+                    else None,
                     "event_type": rd.event_type,
                     "changed_fields": [d.field for d in rd.diffs],
                     "action": rd.recommended_action,
@@ -379,7 +382,9 @@ def print_results(result: ComparisonResult, output_json: bool = False) -> None:
     console.print(f"  Resources missing:   {result.resources_missing}")
     console.print(f"  Resources matching:  {result.resources_matching}")
     console.print(f"  [red]Resources differing: {result.resources_differing}[/red]")
-    console.print(f"  [cyan]Organizations affected: {len(result.diffs_by_organization)}[/cyan]")
+    console.print(
+        f"  [cyan]Organizations affected: {len(result.diffs_by_organization)}[/cyan]"
+    )
 
     if result.diffs_by_organization:
         console.print("\n[bold]Diffs by Organization[/bold]")
@@ -448,6 +453,104 @@ async def download_file(url: str) -> Path:
     return Path(temp_file.name)
 
 
+def extract_customer_id(
+    resource_data: dict[str, Any], resource_type: str
+) -> UUID | None:
+    if resource_type == "customer":
+        return UUID(resource_data["id"])
+    customer_id = resource_data.get("customer_id")
+    if customer_id:
+        return UUID(customer_id)
+    customer = resource_data.get("customer")
+    if customer and customer.get("id"):
+        return UUID(customer["id"])
+    return None
+
+
+async def send_webhooks(result: ComparisonResult, rows: list[dict[str, Any]]) -> None:
+    engine = create_async_engine("script")
+    sessionmaker = create_async_sessionmaker(engine)
+
+    customer_ids: set[UUID] = set()
+    subscription_ids_with_status_diff: set[UUID] = set()
+
+    for rd in result.resource_diffs:
+        if rd.resource_type == "subscription":
+            diff_fields = {d.field for d in rd.diffs}
+            if "status" in diff_fields:
+                subscription_ids_with_status_diff.add(rd.resource_id)
+
+    for row in rows:
+        payload_str = row["payload"]
+        try:
+            payload = json.loads(payload_str)
+        except json.JSONDecodeError:
+            continue
+
+        resource_data = payload.get("data", {})
+        resource_type = get_resource_type(row["type"])
+        customer_id = extract_customer_id(resource_data, resource_type)
+
+        if customer_id:
+            customer_ids.add(customer_id)
+
+    if subscription_ids_with_status_diff:
+        console.print(
+            f"\n[cyan]Sending subscription.updated for {len(subscription_ids_with_status_diff)} subscriptions...[/cyan]"
+        )
+        async with sessionmaker() as session:
+            sub_repo = SubscriptionRepository.from_session(session)
+            prod_repo = ProductRepository.from_session(session)
+
+            for i, sub_id in enumerate(subscription_ids_with_status_diff):
+                subscription = await sub_repo.get_by_id(
+                    sub_id, options=sub_repo.get_eager_options()
+                )
+                if subscription is None:
+                    continue
+
+                product = await prod_repo.get_by_id(
+                    subscription.product_id, options=prod_repo.get_eager_options()
+                )
+                if product is None:
+                    continue
+
+                await webhook_service.send(
+                    session,
+                    product.organization,
+                    WebhookEventType.subscription_updated,
+                    subscription,
+                )
+
+                if (i + 1) % 100 == 0:
+                    console.print(
+                        f"  Sent {i + 1}/{len(subscription_ids_with_status_diff)}..."
+                    )
+
+        console.print(
+            f"[green]Sent {len(subscription_ids_with_status_diff)} subscription.updated webhooks[/green]"
+        )
+
+    await engine.dispose()
+
+    console.print(
+        f"\n[cyan]Enqueueing customer_state_changed for {len(customer_ids)} customers...[/cyan]"
+    )
+
+    for i, customer_id in enumerate(customer_ids):
+        enqueue_job(
+            "customer.webhook",
+            WebhookEventType.customer_state_changed,
+            customer_id,
+        )
+        if (i + 1) % 100 == 0:
+            console.print(f"  Enqueued {i + 1}/{len(customer_ids)}...")
+
+    console.print(
+        f"[green]Enqueued {len(customer_ids)} customer_state_changed webhooks[/green]"
+    )
+
+
 @cli.command()
 @typer_async
 async def compare(
@@ -455,6 +558,11 @@ async def compare(
         ..., help="Path or URL to CSV file with faulty webhook data"
     ),
     output_json: bool = typer.Option(False, "--json", help="Output as JSON to stdout"),
+    execute: bool = typer.Option(
+        False,
+        "--execute",
+        help="Send customer_state_changed webhooks for affected customers",
+    ),
 ) -> None:
     """Compare faulty webhook payload data against actual resources in the database."""
     if is_url(csv_source):
@@ -469,8 +577,15 @@ async def compare(
             console.print(f"[red]File not found: {csv_path}[/red]")
             raise typer.Exit(1)
 
-    result = await compare_webhooks(csv_path)
+    with open(csv_path) as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    result = await compare_webhooks_from_rows(rows)
     print_results(result, output_json=output_json)
+
+    if execute and result.resource_diffs:
+        await send_webhooks(result, rows)
 
 
 if __name__ == "__main__":

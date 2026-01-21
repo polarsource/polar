@@ -74,7 +74,7 @@ class GithubUserService:
             oauth_account = user.get_oauth_account(OAuthPlatform.github)
             assert oauth_account is not None
             oauth_account.access_token = token["access_token"]
-            oauth_account.expires_at = token["expires_at"]
+            oauth_account.expires_at = token.get("expires_at")
             oauth_account.account_username = authenticated.login
             session.add(oauth_account)
             return (user, False)
@@ -89,7 +89,8 @@ class GithubUserService:
             account_email=email,
             account_username=authenticated.login,
             access_token=token["access_token"],
-            expires_at=token["expires_at"],
+            expires_at=token.get("expires_at"),
+
         )
 
         user = await user_repository.get_by_email(email)
@@ -147,7 +148,7 @@ class GithubUserService:
             )
 
         oauth_account.access_token = token["access_token"]
-        oauth_account.expires_at = token["expires_at"]
+        oauth_account.expires_at = token.get("expires_at")
         oauth_account.account_email = email
         oauth_account.account_username = github_user.login
         session.add(oauth_account)

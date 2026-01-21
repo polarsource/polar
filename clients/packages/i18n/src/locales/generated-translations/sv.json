@@ -1,9 +1,6 @@
 {
   "checkout": {
     "poweredBy": "Drivs av",
-    "email": "E-post",
-    "fooooo": "Foobar",
-    "beep": "Beep",
-    "boop": "Boop"
+    "email": "E-post"
   }
 }

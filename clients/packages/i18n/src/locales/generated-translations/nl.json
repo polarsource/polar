@@ -1,9 +1,6 @@
 {
   "checkout": {
     "poweredBy": "Mogelijk gemaakt door",
-    "email": "E-mail",
-    "fooooo": "Foobar",
-    "beep": "Beep",
-    "boop": "Boop"
+    "email": "E-mail"
   }
 }

@@ -2,6 +2,8 @@
   "checkout": {
     "poweredBy": "Drivs av",
     "email": "E-post",
-    "demoTime": "Demotid"
+    "fooooo": "Foobar",
+    "beep": "Beep",
+    "boop": "Boop"
   }
 }

@@ -163,6 +163,9 @@ async function translate(
         updatedFlat.set(key, translations[key])
         localeCache[key] = getStringValue(sourceKeys.get(key) as EntryValue)
         translatedCount++
+        log.item(`${log.dim(key)}`)
+        log.item(`  ${log.gray('en:')} ${getStringValue(sourceKeys.get(key) as EntryValue)}`)
+        log.item(`  ${log.cyan(locale + ':')} ${translations[key]}`)
       } else {
         log.warning(`No translation received for "${key}"`)
       }

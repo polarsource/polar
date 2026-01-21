@@ -2,6 +2,8 @@
   "checkout": {
     "poweredBy": "Desarrollado por",
     "email": "Correo electrónico",
-    "demoTime": "Tiempo de demostración"
+    "fooooo": "Foobar",
+    "beep": "Beep",
+    "boop": "Boop"
   }
 }

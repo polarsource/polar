@@ -2,21 +2,29 @@
   "sv": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.demoTime": "Demo time"
+    "checkout.fooooo": "Foobar",
+    "checkout.beep": "Beep",
+    "checkout.boop": "Boop"
   },
   "es": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.demoTime": "Demo time"
+    "checkout.fooooo": "Foobar",
+    "checkout.beep": "Beep",
+    "checkout.boop": "Boop"
   },
   "fr": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.demoTime": "Demo time"
+    "checkout.fooooo": "Foobar",
+    "checkout.beep": "Beep",
+    "checkout.boop": "Boop"
   },
   "nl": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.demoTime": "Demo time"
+    "checkout.fooooo": "Foobar",
+    "checkout.beep": "Beep",
+    "checkout.boop": "Boop"
   }
 }

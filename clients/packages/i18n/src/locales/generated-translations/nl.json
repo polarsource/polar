@@ -2,6 +2,8 @@
   "checkout": {
     "poweredBy": "Mogelijk gemaakt door",
     "email": "E-mail",
-    "demoTime": "Demo tijd"
+    "fooooo": "Foobar",
+    "beep": "Beep",
+    "boop": "Boop"
   }
 }

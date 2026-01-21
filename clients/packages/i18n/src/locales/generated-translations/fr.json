@@ -1,6 +1,8 @@
 {
   "checkout": {
     "poweredBy": "Propulsé par",
-    "email": "E-mail"
+    "email": "E-mail",
+    "beep": "Bip bip",
+    "jeep": "Je suis un Jeep"
   }
 }

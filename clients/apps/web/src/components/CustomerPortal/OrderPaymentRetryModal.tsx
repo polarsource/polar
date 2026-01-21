@@ -6,8 +6,8 @@ import { type Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
-import { loadStripe } from '@stripe/stripe-js'
-import { useMemo, useState } from 'react'
+import { Stripe, loadStripe } from '@stripe/stripe-js'
+import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
 import { SavedCardsSelector } from './SavedCardsSelector'
@@ -44,6 +44,12 @@ export const OrderPaymentRetryModal = ({
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
     [],
   )
+
+  // Resolve Stripe instance for saved payment methods that may require 3DS authentication
+  const [stripe, setStripe] = useState<Stripe | null>(null)
+  useEffect(() => {
+    stripePromise.then(setStripe)
+  }, [stripePromise])
 
   const handleClose = () => {
     setError('')
@@ -107,10 +113,11 @@ export const OrderPaymentRetryModal = ({
                   />
                 )}
 
-                {selectedPaymentMethodId && (
+                {selectedPaymentMethodId && stripe && (
                   <OrderPaymentRetry
                     order={order}
                     api={api}
+                    stripe={stripe}
                     paymentMethodId={selectedPaymentMethodId}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}

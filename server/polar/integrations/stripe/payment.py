@@ -195,7 +195,15 @@ async def handle_failure(
         await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
-        await order_service.handle_payment_failure(session, order)
+        # Check if this is a manual retry - skip dunning progression if so
+        skip_dunning = (
+            hasattr(object, "metadata")
+            and object.metadata is not None
+            and object.metadata.get("manual_retry") == "true"
+        )
+        await order_service.handle_payment_failure(
+            session, order, skip_dunning=skip_dunning
+        )
 
 
 __all__ = [

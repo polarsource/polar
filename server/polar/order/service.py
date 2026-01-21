@@ -1071,6 +1071,7 @@ class OrderService:
 
         metadata: dict[str, Any] = {
             "order_id": str(order.id),
+            "manual_retry": "true",  # Flag to skip dunning progression on failure
         }
         if order.tax_rate is not None:
             metadata["tax_amount"] = str(order.tax_amount)
@@ -1089,12 +1090,13 @@ class OrderService:
                         payment_method=saved_payment_method.processor_id,
                         customer=customer.stripe_customer_id,
                         confirm=True,
+                        automatic_payment_methods={
+                            "enabled": True,
+                            "allow_redirects": "never",
+                        },
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
-                        return_url=settings.generate_frontend_url(
-                            f"/portal/orders/{str(order.id)}"
-                        ),
                     )
                 else:
                     # Using confirmation token (new payment method)
@@ -1102,7 +1104,10 @@ class OrderService:
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.total_amount,
                         currency=order.currency,
-                        automatic_payment_methods={"enabled": True},
+                        automatic_payment_methods={
+                            "enabled": True,
+                            "allow_redirects": "never",
+                        },
                         confirm=True,
                         confirmation_token=confirmation_token_id,
                         customer=customer.stripe_customer_id,
@@ -1110,9 +1115,6 @@ class OrderService:
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
-                        return_url=settings.generate_frontend_url(
-                            f"/portal/orders/{str(order.id)}"
-                        ),
                     )
 
                 if payment_intent.status == "succeeded":
@@ -1690,9 +1692,16 @@ class OrderService:
             )
 
     async def handle_payment_failure(
-        self, session: AsyncSession, order: Order
+        self, session: AsyncSession, order: Order, *, skip_dunning: bool = False
     ) -> Order:
-        """Handle payment failure for an order, initiating dunning if necessary."""
+        """Handle payment failure for an order, initiating dunning if necessary.
+
+        Args:
+            session: Database session
+            order: The order that failed payment
+            skip_dunning: If True, skip dunning progression (e.g., for manual retries
+                where the user can try again without advancing the dunning state machine)
+        """
         # Don't process payment failure if the order is already paid
         if order.status == OrderStatus.paid:
             log.warning(
@@ -1709,6 +1718,14 @@ class OrderService:
             )
             repository = OrderRepository.from_session(session)
             order = await repository.release_payment_lock(order)
+
+        # Skip dunning for manual retries - user can retry again
+        if skip_dunning:
+            log.info(
+                "Skipping dunning progression for manual retry failure",
+                order_id=order.id,
+            )
+            return order
 
         if order.subscription is None:
             return order

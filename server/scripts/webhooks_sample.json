@@ -1,0 +1,52 @@
+{
+  "summary": {
+    "total_csv_rows": 5,
+    "organizations_affected": 1,
+    "subscriptions_with_status_diff": 1
+  },
+  "organizations": {
+    "29201986-843d-48fb-b232-eaa1a52d8fd3": {
+      "bogus_order_ids": [
+        "48fd1a3c-ca52-430e-9b46-1249dc05e781",
+        "e0b3ef7a-0356-45a2-9e39-e0817079d2bf",
+        "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      ],
+      "real_order_ids": [],
+      "customers": {
+        "97cd9d0d-b59e-4e47-ace4-483b88708d9e": {
+          "benefit_grants": [
+            {
+              "id": "bbcff8a8-4368-407c-b1d2-8df2837bcc37",
+              "benefit_id": "445f9985-dfae-4706-a706-6cdedefb8de0",
+              "subscription_id": "892b8a73-17a7-49fd-9a41-f45e8fb57c41",
+              "order_id": null,
+              "is_granted": true,
+              "is_revoked": false,
+              "granted_at": "2026-01-07T13:29:37.374304+00:00",
+              "revoked_at": null
+            }
+          ],
+          "subscriptions": [
+            {
+              "id": "892b8a73-17a7-49fd-9a41-f45e8fb57c41",
+              "status": "active",
+              "amount": 0,
+              "currency": "usd",
+              "recurring_interval": "day",
+              "current_period_start": "2026-01-21T13:29:31.134657+00:00",
+              "current_period_end": "2026-01-22T13:29:31.134657+00:00",
+              "cancel_at_period_end": false,
+              "canceled_at": null,
+              "started_at": "2026-01-07T13:29:31.134657+00:00",
+              "ends_at": null,
+              "ended_at": null,
+              "customer_id": "97cd9d0d-b59e-4e47-ace4-483b88708d9e",
+              "product_id": "01a31c1a-7af7-4958-9b73-c10e2fac5f70",
+              "discount_id": null
+            }
+          ]
+        }
+      }
+    }
+  }
+}

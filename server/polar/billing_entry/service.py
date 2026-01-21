@@ -137,10 +137,10 @@ class BillingEntryService:
                         break
 
                 if active_price is None:
-                    log.info(
-                        f"No active price found for meter {meter_id} in subscription {subscription.id}"
-                    )
-                    continue
+                    # No active price for this meter on current subscription
+                    # (customer switched to a product without this meter)
+                    # Bill at the original price from the billing entry
+                    active_price = metered_price
 
                 metered_line_item = await self._get_metered_line_item_by_meter(
                     session, active_price, subscription, start_timestamp, end_timestamp

@@ -856,3 +856,116 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_mid_cycle_switch_to_product_without_meter_max_aggregation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        When a customer switches to a product without a meter for certain usage,
+        usage before the switch should still be charged at the old price.
+        This tests non-summable aggregations (MAX) specifically.
+
+        Scenario:
+        1. Customer subscribes to Product A with $10/server MAX aggregation
+        2. Customer's peak usage is 3 servers
+        3. Customer switches to Product C (fixed price, no meter)
+        4. Expected: Invoice has MAX(3) × $10 = $30 for usage before switch
+
+        This test verifies that non-summable aggregation usage before a subscription
+        change is charged even if the new product doesn't have that meter.
+        """
+        # Create meter with MAX aggregation (non-summable)
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A with $10/server metered pricing
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],  # $10 per server
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create subscription on Product A
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_a
+        )
+
+        # Create billing entries with varying server counts (MAX will be 3)
+        entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=1,
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=3,  # MAX here
+                metadata_key="servers",
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=2,
+                metadata_key="servers",
+            ),
+        ]
+
+        # Create Product C with NO metered pricing (only fixed price)
+        product_c = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],  # Fixed $10/month, no meter
+        )
+        price_c = product_c.prices[0]
+        assert is_fixed_price(price_c)
+
+        # Switch subscription to Product C (which has no meter)
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_c)
+        ]
+        await save_fixture(subscription)
+
+        # Compute order items - should still charge for MAX usage on old price A
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 1 line item for the old usage on price A
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            assert order_item.product_price == price_a
+            # MAX of all events is 3, billed at $10 per server = $30
+            assert order_item.amount == 30_00
+
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        # All entries should be linked to the order item
+        for entry in entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id

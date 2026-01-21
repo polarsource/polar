@@ -20,6 +20,7 @@ import type {
 import { createContext, useCallback, useContext, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
+import TrialAlreadyUsedModal from '../components/TrialAlreadyUsedModal'
 import { setValidationErrors } from '../utils/form'
 import { useCheckout } from './CheckoutProvider'
 
@@ -51,6 +52,13 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
   const [isUpdatePending, setIsUpdatePending] = useState(false)
+  const [showTrialAlreadyUsedModal, setShowTrialAlreadyUsedModal] =
+    useState(false)
+  const [pendingConfirmRetry, setPendingConfirmRetry] = useState<{
+    data: CheckoutConfirmStripe
+    stripe: Stripe | null
+    elements: StripeElements | null
+  } | null>(null)
 
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
@@ -107,13 +115,9 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
         error instanceof AlreadyActiveSubscriptionError ||
         error instanceof NotOpenCheckout ||
         error instanceof PaymentError ||
-        error instanceof PaymentNotReady ||
-        error instanceof TrialAlreadyRedeemed
+        error instanceof PaymentNotReady
       ) {
         setError('root', { message: error.detail })
-        if (error instanceof TrialAlreadyRedeemed) {
-          await update({ allowTrial: false })
-        }
       }
       throw error
     },
@@ -133,7 +137,20 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
-        } catch (e) {
+        } catch (e: unknown) {
+          const err = e as Record<string, unknown>
+          const isTrialAlreadyRedeemed =
+            e instanceof TrialAlreadyRedeemed ||
+            err?.name === 'TrialAlreadyRedeemed' ||
+            err?.error === 'TrialAlreadyRedeemed' ||
+            (typeof err?.message === 'string' &&
+              err.message.includes('TrialAlreadyRedeemed'))
+          if (isTrialAlreadyRedeemed) {
+            setPendingConfirmRetry({ data, stripe, elements })
+            setShowTrialAlreadyUsedModal(true)
+            setLoading(false)
+            return undefined as unknown as CheckoutPublicConfirmed
+          }
           throw e
         } finally {
           setLoading(false)
@@ -206,7 +223,20 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
           ...data,
           confirmationTokenId: confirmationToken.id,
         })
-      } catch (e) {
+      } catch (e: unknown) {
+        const err = e as Record<string, unknown>
+        const isTrialAlreadyRedeemed =
+          e instanceof TrialAlreadyRedeemed ||
+          err?.name === 'TrialAlreadyRedeemed' ||
+          err?.error === 'TrialAlreadyRedeemed' ||
+          (typeof err?.message === 'string' &&
+            err.message.includes('TrialAlreadyRedeemed'))
+        if (isTrialAlreadyRedeemed) {
+          setPendingConfirmRetry({ data, stripe, elements })
+          setShowTrialAlreadyUsedModal(true)
+          setLoading(false)
+          return undefined as unknown as CheckoutPublicConfirmed
+        }
         setLoading(false)
         throw e
       }
@@ -233,6 +263,21 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
     [checkout, setError, _confirm],
   )
 
+  const handleTrialModalContinue = useCallback(async () => {
+    setShowTrialAlreadyUsedModal(false)
+    if (pendingConfirmRetry) {
+      await update({ allowTrial: false })
+      const { data, stripe, elements } = pendingConfirmRetry
+      setPendingConfirmRetry(null)
+      await confirm(data, stripe, elements)
+    }
+  }, [update, confirm, pendingConfirmRetry])
+
+  const handleTrialModalCancel = useCallback(() => {
+    setShowTrialAlreadyUsedModal(false)
+    setPendingConfirmRetry(null)
+  }, [])
+
   return (
     <CheckoutFormContext.Provider
       value={{
@@ -246,6 +291,12 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
       }}
     >
       {children}
+      <TrialAlreadyUsedModal
+        open={showTrialAlreadyUsedModal}
+        checkout={checkout}
+        onContinue={handleTrialModalContinue}
+        onCancel={handleTrialModalCancel}
+      />
     </CheckoutFormContext.Provider>
   )
 }

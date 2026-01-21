@@ -9,11 +9,14 @@ import {
   type TranslationCache,
   getStringValue,
   flattenKeys,
+  flattenKeysToStrings,
   unflattenKeys,
   findChangedKeys,
   findOrphanedKeys,
   prepareForLLM,
   normalizeResponse,
+  extractPlaceholders,
+  arraysEqual,
 } from './utils'
 
 dotenv.config({ path: path.join(import.meta.dirname, '../.env.local') })
@@ -87,21 +90,14 @@ function saveCache(cache: TranslationCache): void {
   fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2) + '\n')
 }
 
-async function translate() {
-  const en = JSON.parse(fs.readFileSync(EN_FILE, 'utf-8')) as NestedObject
-  const locks = JSON.parse(
-    fs.readFileSync(LOCKS_FILE, 'utf-8')
-  ) as Record<string, string[]>
-  const { supportedLocales } = JSON.parse(
-    fs.readFileSync(SUPPORTED_LOCALES_FILE, 'utf-8')
-  ) as { supportedLocales: string[] }
-  const prompt = fs.readFileSync(PROMPT_FILE, 'utf-8')
-  const cache = loadCache()
-
-  const sourceKeys = flattenKeys(en)
-  const targetLocales = supportedLocales.filter((l) => l !== 'en')
-
-  log.header('LLM i18n translation')
+async function translate(
+  sourceKeys: Map<string, EntryValue>,
+  targetLocales: string[],
+  locks: Record<string, string[]>,
+  prompt: string,
+  cache: TranslationCache
+) {
+  log.header('Polar i18n')
   log.info(`Source: ${log.bold(sourceKeys.size.toString())} keys in en.json`)
   log.info(`Targets: ${targetLocales.map((l) => log.cyan(l)).join(', ')}`)
 
@@ -191,10 +187,125 @@ async function translate() {
   saveCache(cache)
 
   log.summary(stats)
-  log.done('OpenAI translation complete')
 }
 
-translate().catch((error) => {
+function validate(
+  sourceKeys: Map<string, EntryValue>,
+  targetLocales: string[]
+): boolean {
+  const errors: string[] = []
+
+  log.blank()
+  log.step('Validating translations...')
+
+  for (const locale of targetLocales) {
+    const localeFile = path.join(
+      LOCALES_DIR,
+      'generated-translations',
+      `${locale}.json`
+    )
+
+    if (!fs.existsSync(localeFile)) {
+      errors.push(`${locale}: File does not exist`)
+      log.error(`${locale}: File does not exist`)
+      continue
+    }
+
+    const translation = JSON.parse(
+      fs.readFileSync(localeFile, 'utf-8')
+    ) as NestedObject
+    const translationKeys = flattenKeysToStrings(translation)
+
+    const missingKeys: string[] = []
+    for (const key of sourceKeys.keys()) {
+      if (!translationKeys.has(key)) {
+        missingKeys.push(key)
+      }
+    }
+
+    if (missingKeys.length > 0) {
+      errors.push(`${locale}: Missing ${missingKeys.length} keys`)
+      log.warning(`${locale}: Missing ${missingKeys.length} key${missingKeys.length > 1 ? 's' : ''}`)
+      for (const key of missingKeys) {
+        log.item(log.dim(key))
+      }
+    }
+
+    const extraKeys: string[] = []
+    for (const key of translationKeys.keys()) {
+      if (!sourceKeys.has(key)) {
+        extraKeys.push(key)
+      }
+    }
+
+    if (extraKeys.length > 0) {
+      errors.push(`${locale}: ${extraKeys.length} extra keys`)
+      log.warning(`${locale}: ${extraKeys.length} extra key${extraKeys.length > 1 ? 's' : ''}`)
+      for (const key of extraKeys) {
+        log.item(log.dim(key))
+      }
+    }
+
+    const placeholderErrors: string[] = []
+    const sourceStrings = flattenKeysToStrings(en)
+    for (const [key, sourceValue] of sourceStrings) {
+      const translationValue = translationKeys.get(key)
+      if (!translationValue) continue
+
+      const sourcePlaceholders = extractPlaceholders(sourceValue)
+      const translationPlaceholders = extractPlaceholders(translationValue)
+
+      if (!arraysEqual(sourcePlaceholders, translationPlaceholders)) {
+        placeholderErrors.push(key)
+        errors.push(`${locale}.${key}: Placeholder mismatch`)
+      }
+    }
+
+    if (placeholderErrors.length > 0) {
+      log.warning(`${locale}: ${placeholderErrors.length} placeholder mismatch${placeholderErrors.length > 1 ? 'es' : ''}`)
+      for (const key of placeholderErrors) {
+        log.item(log.dim(key))
+      }
+    }
+
+    if (missingKeys.length === 0 && extraKeys.length === 0 && placeholderErrors.length === 0) {
+      log.success(`${locale}: All keys valid`)
+    }
+  }
+
+  return errors.length === 0
+}
+
+let en: NestedObject
+
+async function main() {
+  en = JSON.parse(fs.readFileSync(EN_FILE, 'utf-8')) as NestedObject
+  const locks = JSON.parse(
+    fs.readFileSync(LOCKS_FILE, 'utf-8')
+  ) as Record<string, string[]>
+  const { supportedLocales } = JSON.parse(
+    fs.readFileSync(SUPPORTED_LOCALES_FILE, 'utf-8')
+  ) as { supportedLocales: string[] }
+  const prompt = fs.readFileSync(PROMPT_FILE, 'utf-8')
+  const cache = loadCache()
+
+  const sourceKeys = flattenKeys(en)
+  const targetLocales = supportedLocales.filter((l) => l !== 'en')
+
+  await translate(sourceKeys, targetLocales, locks, prompt, cache)
+
+  const isValid = validate(sourceKeys, targetLocales)
+
+  if (!isValid) {
+    log.blank()
+    log.error('Validation failed')
+    process.exit(1)
+  }
+
+  log.done('Translation and validation complete')
+}
+
+main().catch((error) => {
   log.blank()
   log.error(`Translation failed: ${error.message}`)
   process.exit(1)

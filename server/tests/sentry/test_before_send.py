@@ -1,6 +1,7 @@
 """Tests for Sentry before_send filtering logic."""
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -186,6 +187,26 @@ class TestBeforeSend:
         result = before_send(event, hint)
 
         assert result is event  # Event should be sent
+
+    def test_logs_warning_when_lock_error_but_no_actor_name(self) -> None:
+        """Should log warning when LockNotAvailableError detected but actor name missing.
+
+        This helps detect if Sentry SDK changes the event structure.
+        """
+        exc = MockLockNotAvailableError()
+        event = self._make_event(None)  # No dramatiq context
+        hint = self._make_hint(exc)
+
+        with patch("polar.sentry.logfire") as mock_logfire:
+            result = before_send(event, hint)
+
+            # Event should still be sent (not filtered)
+            assert result is event
+            # But a warning should be logged
+            mock_logfire.warn.assert_called_once()
+            call_args = mock_logfire.warn.call_args
+            assert "LockNotAvailableError" in call_args[0][0]
+            assert "actor_name" in call_args[0][0]
 
     def test_does_not_filter_other_exceptions(self) -> None:
         """Should NOT filter non-lock exceptions."""

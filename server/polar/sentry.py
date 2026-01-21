@@ -2,6 +2,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any
 
+import logfire
 import sentry_sdk
 from dramatiq import get_broker
 from sentry_sdk.integrations.argv import ArgvIntegration
@@ -79,6 +80,14 @@ def before_send(event: "Event", hint: "Hint") -> "Event | None":
             actor_name = _get_dramatiq_actor_name(event)
             if actor_name in _LOCK_EXPECTED_ACTORS:
                 return None
+            # Log if we couldn't extract actor name - helps detect if Sentry SDK
+            # changes the event structure for dramatiq context
+            if actor_name is None:
+                logfire.warn(
+                    "LockNotAvailableError detected but could not extract dramatiq "
+                    "actor_name from Sentry event - check if SDK structure changed",
+                    event_contexts=event.get("contexts"),
+                )
 
     return event
 

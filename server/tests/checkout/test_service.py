@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import ANY, AsyncMock, MagicMock
@@ -51,6 +52,7 @@ from polar.models import (
     Customer,
     Discount,
     DiscountRedemption,
+    Meter,
     Organization,
     Payment,
     Product,
@@ -780,6 +782,41 @@ class TestCreate:
         assert checkout.products == [product_recurring_fixed_and_metered]
         assert checkout.amount == static_price.price_amount
         assert checkout.currency == static_price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_custom_price_with_metered_requires_payment_setup(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        # Custom price with minimum_amount=0 + metered price should require payment setup
+        # even when the checkout amount is $0
+        product_custom_and_metered = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                (0, None, 0, "usd"),  # Custom price: min=0, max=None, preset=0
+                (meter, Decimal(100), None, "usd"),  # Metered price
+            ],
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_custom_and_metered.id]),
+            auth_subject,
+        )
+
+        assert checkout.amount == 0
+        assert checkout.has_metered_prices is True
+        assert checkout.is_payment_setup_required is True
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

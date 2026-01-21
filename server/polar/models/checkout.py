@@ -318,9 +318,13 @@ class Checkout(
     def is_payment_setup_required(self) -> bool:
         if self.product is None:
             return False
-        # Don't require payment setup for free products or $0 PWYW checkouts
-        if self.is_free_product_price or self.amount == 0:
+
+        if self.is_free_product_price:
             return False
+
+        if self.amount == 0 and not self.has_metered_prices:
+            return False
+
         return self.product.is_recurring
 
     @property

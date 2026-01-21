@@ -6,17 +6,18 @@ from typing import Any
 
 import logfire
 from sqlalchemy import Float, Select, func, or_, select, union_all
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
 from polar.event.repository import EventRepository
+from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
     PropertyAggregation,
@@ -93,7 +94,6 @@ class CustomerMeterService:
     async def update_customer(
         self,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meters_dirtied_at: datetime | None = None,
     ) -> None:
@@ -110,7 +110,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, locker, customer, meter, meters_dirtied_at=meters_dirtied_at
+                session, customer, meter, meters_dirtied_at=meters_dirtied_at
             )
             updated = updated or meter_updated
 
@@ -125,130 +125,133 @@ class CustomerMeterService:
     async def update_customer_meter(
         self,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
         meters_dirtied_at: datetime | None = None,
     ) -> tuple[CustomerMeter | None, bool]:
-        async with locker.lock(
-            f"customer_meter:{customer.id}:{meter.id}",
-            timeout=30.0,
-            blocking_timeout=0.2,
-        ):
-            repository = CustomerMeterRepository.from_session(session)
-            customer_meter = await repository.get_by_customer_and_meter(
+        repository = CustomerMeterRepository.from_session(session)
+        # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
+        # concurrent changes. If lock can't be acquired, the task will be retried.
+        try:
+            customer_meter = await repository.get_by_customer_and_meter_for_update(
                 customer.id, meter.id
             )
-
-            if customer_meter is not None and customer_meter.activated_at is None:
-                if not activate_meter:
-                    return customer_meter, False
-                customer_meter.activated_at = utc_now()
-
-            # Optimization: only look for events ingested after meters_dirtied_at
-            # minus a small buffer. This avoids scanning all historical events
-            # when checking if there are new events to process.
-            ingested_at_lower_bound: datetime | None = None
-            if meters_dirtied_at is not None:
-                ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
-
-            # A/B Test: Compare old (JSONB) vs new (MeterEvent) implementations
-            with logfire.span("get_latest_event.old"):
-                last_event = await self._get_latest_current_window_event(
-                    session, customer, meter, ingested_at_lower_bound
+        except DBAPIError as e:
+            if is_lock_not_available_error(e):
+                logfire.warn(
+                    "Could not obtain lock for customer meter update, will retry",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
                 )
+            raise
 
-            # with logfire.span("get_latest_event.new"):
-            #     new_last_event = await self._get_latest_current_window_event_new(
-            #         session, customer, meter, ingested_at_lower_bound
-            #     )
-
-            # old_last_event_id = last_event.id if last_event else None
-            # new_last_event_id = new_last_event.id if new_last_event else None
-            # if old_last_event_id != new_last_event_id:
-            #     logfire.error(
-            #         "last_event mismatch",
-            #         customer_id=str(customer.id),
-            #         meter_id=str(meter.id),
-            #         old_event_id=str(old_last_event_id) if old_last_event_id else None,
-            #         new_event_id=str(new_last_event_id) if new_last_event_id else None,
-            #     )
-
-            if customer_meter is None:
-                activated_at = (
-                    utc_now() if (last_event is not None or activate_meter) else None
-                )
-                customer_meter = await repository.create(
-                    CustomerMeter(
-                        customer=customer, meter=meter, activated_at=activated_at
-                    )
-                )
-
-            if last_event is None:
+        if customer_meter is not None and customer_meter.activated_at is None:
+            if not activate_meter:
                 return customer_meter, False
+            customer_meter.activated_at = utc_now()
 
-            if customer_meter.last_balanced_event_id == last_event.id:
-                return customer_meter, False
+        # Optimization: only look for events ingested after meters_dirtied_at
+        # minus a small buffer. This avoids scanning all historical events
+        # when checking if there are new events to process.
+        ingested_at_lower_bound: datetime | None = None
+        if meters_dirtied_at is not None:
+            ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
 
-            event_repository = EventRepository.from_session(session)
-
-            with logfire.span("get_usage.old"):
-                usage_units = await self._get_usage_quantity(session, customer, meter)
-
-            # with logfire.span("get_usage.new"):
-            #     new_usage_units = await self._get_usage_quantity_new(
-            #         session, customer, meter
-            #     )
-
-            # if usage_units != new_usage_units:
-            #     logfire.error(
-            #         "usage mismatch",
-            #         customer_id=str(customer.id),
-            #         meter_id=str(meter.id),
-            #         old_usage=usage_units,
-            #         new_usage=new_usage_units,
-            #     )
-
-            customer_meter.consumed_units = Decimal(usage_units)
-
-            with logfire.span("get_credits.old"):
-                credit_events = await self._get_credit_events(
-                    customer, meter, event_repository
-                )
-
-            # with logfire.span("get_credits.new"):
-            #     new_credit_events = await self._get_credit_events_new(
-            #         session, customer, meter
-            #     )
-
-            # old_credit_ids = {e.id for e in credit_events}
-            # new_credit_ids = {e.id for e in new_credit_events}
-            # if old_credit_ids != new_credit_ids:
-            #     logfire.error(
-            #         "credit_events mismatch",
-            #         customer_id=str(customer.id),
-            #         meter_id=str(meter.id),
-            #         old_count=len(old_credit_ids),
-            #         new_count=len(new_credit_ids),
-            #         only_in_old=[
-            #             str(e) for e in list(old_credit_ids - new_credit_ids)[:5]
-            #         ],
-            #         only_in_new=[
-            #             str(e) for e in list(new_credit_ids - old_credit_ids)[:5]
-            #         ],
-            #     )
-
-            credited_units = non_negative_running_sum(
-                event.user_metadata["units"] for event in credit_events
+        # A/B Test: Compare old (JSONB) vs new (MeterEvent) implementations
+        with logfire.span("get_latest_event.old"):
+            last_event = await self._get_latest_current_window_event(
+                session, customer, meter, ingested_at_lower_bound
             )
-            customer_meter.credited_units = credited_units
-            customer_meter.balance = (
-                customer_meter.credited_units - customer_meter.consumed_units
-            )
-            customer_meter.last_balanced_event = last_event
 
-            return await repository.update(customer_meter), True
+        # with logfire.span("get_latest_event.new"):
+        #     new_last_event = await self._get_latest_current_window_event_new(
+        #         session, customer, meter, ingested_at_lower_bound
+        #     )
+
+        # old_last_event_id = last_event.id if last_event else None
+        # new_last_event_id = new_last_event.id if new_last_event else None
+        # if old_last_event_id != new_last_event_id:
+        #     logfire.error(
+        #         "last_event mismatch",
+        #         customer_id=str(customer.id),
+        #         meter_id=str(meter.id),
+        #         old_event_id=str(old_last_event_id) if old_last_event_id else None,
+        #         new_event_id=str(new_last_event_id) if new_last_event_id else None,
+        #     )
+
+        if customer_meter is None:
+            activated_at = (
+                utc_now() if (last_event is not None or activate_meter) else None
+            )
+            customer_meter = await repository.create(
+                CustomerMeter(customer=customer, meter=meter, activated_at=activated_at)
+            )
+
+        if last_event is None:
+            return customer_meter, False
+
+        if customer_meter.last_balanced_event_id == last_event.id:
+            return customer_meter, False
+
+        event_repository = EventRepository.from_session(session)
+
+        with logfire.span("get_usage.old"):
+            usage_units = await self._get_usage_quantity(session, customer, meter)
+
+        # with logfire.span("get_usage.new"):
+        #     new_usage_units = await self._get_usage_quantity_new(
+        #         session, customer, meter
+        #     )
+
+        # if usage_units != new_usage_units:
+        #     logfire.error(
+        #         "usage mismatch",
+        #         customer_id=str(customer.id),
+        #         meter_id=str(meter.id),
+        #         old_usage=usage_units,
+        #         new_usage=new_usage_units,
+        #     )
+
+        customer_meter.consumed_units = Decimal(usage_units)
+
+        with logfire.span("get_credits.old"):
+            credit_events = await self._get_credit_events(
+                customer, meter, event_repository
+            )
+
+        # with logfire.span("get_credits.new"):
+        #     new_credit_events = await self._get_credit_events_new(
+        #         session, customer, meter
+        #     )
+
+        # old_credit_ids = {e.id for e in credit_events}
+        # new_credit_ids = {e.id for e in new_credit_events}
+        # if old_credit_ids != new_credit_ids:
+        #     logfire.error(
+        #         "credit_events mismatch",
+        #         customer_id=str(customer.id),
+        #         meter_id=str(meter.id),
+        #         old_count=len(old_credit_ids),
+        #         new_count=len(new_credit_ids),
+        #         only_in_old=[
+        #             str(e) for e in list(old_credit_ids - new_credit_ids)[:5]
+        #         ],
+        #         only_in_new=[
+        #             str(e) for e in list(new_credit_ids - old_credit_ids)[:5]
+        #         ],
+        #     )
+
+        credited_units = non_negative_running_sum(
+            event.user_metadata["units"] for event in credit_events
+        )
+        customer_meter.credited_units = credited_units
+        customer_meter.balance = (
+            customer_meter.credited_units - customer_meter.consumed_units
+        )
+        customer_meter.last_balanced_event = last_event
+
+        return await repository.update(customer_meter), True
 
     async def get_rollover_units(
         self, session: AsyncSession, customer: Customer, meter: Meter

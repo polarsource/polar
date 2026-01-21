@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -402,7 +403,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         try:
             await repository.get_by_id_for_update(discount.id, nowait=True)
         except DBAPIError as e:
-            if "could not obtain lock" in str(e):
+            if is_lock_not_available_error(e):
                 raise DiscountNotRedeemableError(discount) from e
             raise
 

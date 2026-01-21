@@ -2,6 +2,7 @@
   "checkout": {
     "poweredBy": "Propulsé par",
     "email": "E-mail",
-    "helloWorld": "Bonjour le monde"
+    "helloWorld": "Bonjour le monde",
+    "foobar": "Foobar"
   }
 }

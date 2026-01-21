@@ -1,7 +1,7 @@
 {
   "name": "@polar-sh/i18n",
   "version": "0.1.0",
-  "description": "Polar i18n - Internationalization utilities and translations",
+  "description": "Polar i18n - Locale files and translation utilities",
   "author": "Polar",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,48 +11,28 @@
     "directory": "clients/packages/i18n"
   },
   "scripts": {
-    "build": "rm -rf dist/ && tsup",
     "translate": "tsx scripts/translate.ts",
-    "generate-types": "tsx scripts/generate-types.ts",
     "validate": "tsx scripts/validate.ts",
     "lint": "prettier -c .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./messages": {
-      "types": "./dist/messages.d.ts",
-      "default": "./dist/messages.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "default": "./dist/server.js"
-    },
-    "./locales/en.json": {
-      "types": "./src/locales/en.json",
-      "default": "./src/locales/en.json"
-    }
-  },
-  "dependencies": {
-    "next-intl": "^4.1.0"
+    "./locales/en.json": "./src/locales/en.json",
+    "./locales/sv.json": "./src/locales/generated-translations/sv.json",
+    "./locales/es.json": "./src/locales/generated-translations/es.json",
+    "./locales/fr.json": "./src/locales/generated-translations/fr.json",
+    "./locales/nl.json": "./src/locales/generated-translations/nl.json"
   },
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^22.16.1",
-    "@types/react": "19.2.7",
     "dotenv": "^16.4.5",
     "openai": "^4.103.0",
     "prettier": "^3.7.4",
-    "react": "^19.2.3",
-    "tsup": "^8.5.1",
     "tsx": "^4.19.0",
-    "typescript": "latest"
-  },
-  "peerDependencies": {
-    "next": ">=14",
-    "react": "^18 || ^19"
+    "typescript": "latest",
+    "vitest": "^3.2.4"
   }
 }

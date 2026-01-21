@@ -2,6 +2,7 @@
   "checkout": {
     "poweredBy": "Drivs av",
     "email": "E-post",
-    "helloWorld": "Hej världen"
+    "helloWorld": "Hej Världen",
+    "foobar": "Foobar"
   }
 }

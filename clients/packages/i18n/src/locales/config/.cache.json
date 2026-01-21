@@ -2,21 +2,25 @@
   "sv": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.helloWorld": "Hello World"
+    "checkout.helloWorld": "Hello World",
+    "checkout.foobar": "Foobar"
   },
   "es": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.helloWorld": "Hello World"
+    "checkout.helloWorld": "Hello World",
+    "checkout.foobar": "Foobar"
   },
   "fr": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.helloWorld": "Hello World"
+    "checkout.helloWorld": "Hello World",
+    "checkout.foobar": "Foobar"
   },
   "nl": {
     "checkout.poweredBy": "Powered by",
     "checkout.email": "Email",
-    "checkout.helloWorld": "Hello World"
+    "checkout.helloWorld": "Hello World",
+    "checkout.foobar": "Foobar"
   }
 }

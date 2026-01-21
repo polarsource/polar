@@ -5,6 +5,7 @@
       "llmContext": "Followed by the Polar logo image. Keep it short."
     },
     "email": "Email",
-    "helloWorld": "Hello World"
+    "helloWorld": "Hello World",
+    "foobar": "Foobar"
   }
 }

@@ -30,6 +30,10 @@
     "./server": {
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"
+    },
+    "./locales/en.json": {
+      "types": "./src/locales/en.json",
+      "default": "./src/locales/en.json"
     }
   },
   "dependencies": {

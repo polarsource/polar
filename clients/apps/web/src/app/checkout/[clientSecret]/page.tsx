@@ -3,8 +3,6 @@ import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
-import { I18nProvider, type SupportedLocale } from '@polar-sh/i18n'
-import { loadLocale } from '@polar-sh/i18n/messages'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
@@ -14,11 +12,11 @@ import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark'; locale?: string }>
+  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed: _embed, theme, locale: localeParam } = searchParams
+  const { embed: _embed, theme } = searchParams
 
   const params = await props.params
 
@@ -77,25 +75,14 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
-  // Locale resolution priority:
-  // 1. ?locale query string
-  // 2. checkout.locale (TODO: backend to implement)
-  // 3. customer.locale (TODO: backend to implement)
-  // 4. Accept-Language (TODO: backend to implement)
-  // 5. English fallback
-  const locale: SupportedLocale = (localeParam as SupportedLocale) ?? 'en'
-  const messages = loadLocale(locale)
-
   return (
-    <I18nProvider locale={locale} messages={messages}>
-      <CheckoutProvider
-        clientSecret={checkout.clientSecret}
-        serverURL={getPublicServerURL()}
-      >
-        <CheckoutFormProvider>
-          <CheckoutPage theme={theme} embed={embed} />
-        </CheckoutFormProvider>
-      </CheckoutProvider>
-    </I18nProvider>
+    <CheckoutProvider
+      clientSecret={checkout.clientSecret}
+      serverURL={getPublicServerURL()}
+    >
+      <CheckoutFormProvider>
+        <CheckoutPage theme={theme} embed={embed} />
+      </CheckoutFormProvider>
+    </CheckoutProvider>
   )
 }

@@ -95,10 +95,6 @@ function findChangedKeys(
     const cachedSource = cache[key]
     const hasExistingTranslation = existingKeys.has(key)
 
-
-
-
-
     if (!hasExistingTranslation || cachedSource !== currentSource) {
       changed.push(key)
     }

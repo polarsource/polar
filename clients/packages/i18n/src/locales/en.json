@@ -4,6 +4,8 @@
       "value": "Powered by",
       "llmContext": "Followed by the Polar logo image. Keep it short."
     },
-    "email": "Email"
+    "email": "Email",
+    "beep": "Beep beep",
+    "jeep": "I'm a Jeep"
   }
 }

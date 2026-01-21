@@ -4,6 +4,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getLastVisitedOrg } from '@/utils/cookies'
 import { getUserOrganizations } from '@/utils/user'
 import { cookies } from 'next/headers'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export default async function Page(props: {
@@ -31,10 +32,9 @@ export default async function Page(props: {
           <LogoIcon className="text-blue-500 dark:text-white" size={80} />
 
           <div className="flex flex-col gap-y-4">
-            <h1 className="text-3xl">Sign Up</h1>
+            <h1 className="text-3xl">Sign up to Spaire</h1>
             <p className="dark:text-polar-500 text-xl text-gray-500">
-              Join thousands of developers getting paid to code on their
-              passions
+              The financial backbone for SaaS selling worldwide
             </p>
           </div>
 
@@ -48,13 +48,24 @@ export default async function Page(props: {
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login
-              returnTo={return_to}
-              returnParams={rest}
-              signup={{
-                intent: 'creator',
-              }}
-            />
+            <div className="flex flex-col gap-4">
+              <Login
+                returnTo={return_to}
+                returnParams={rest}
+                signup={{
+                  intent: 'creator',
+                }}
+              />
+              <p className="text-center text-sm text-gray-500 dark:text-polar-400">
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 col-span-2 hidden overflow-hidden rounded-4xl rounded-r-none border border-r-0 border-gray-200 bg-gray-100 md:flex">
@@ -74,3 +85,4 @@ export default async function Page(props: {
     </div>
   )
 }
+

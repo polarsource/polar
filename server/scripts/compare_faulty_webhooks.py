@@ -386,7 +386,11 @@ async def download_file(url: str) -> Path:
     return Path(temp_file.name)
 
 
-async def send_webhooks(result: AnalysisResult) -> None:
+async def send_webhooks(
+    result: AnalysisResult,
+    resume_subscription: UUID | None = None,
+    resume_customer: UUID | None = None,
+) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     redis = create_redis("script")
@@ -394,13 +398,26 @@ async def send_webhooks(result: AnalysisResult) -> None:
 
     async with JobQueueManager.open(broker, redis) as manager:
         if result.touched_subscription_ids:
+            sorted_sub_ids = sorted(result.touched_subscription_ids)
+            start_idx = 0
+            if resume_subscription:
+                try:
+                    start_idx = sorted_sub_ids.index(resume_subscription)
+                    console.print(
+                        f"[yellow]Resuming from subscription {resume_subscription} (index {start_idx})[/yellow]"
+                    )
+                except ValueError:
+                    console.print(
+                        f"[red]Resume subscription {resume_subscription} not found, starting from beginning[/red]"
+                    )
+
             console.print(
-                f"\n[cyan]Sending subscription.updated for {len(result.touched_subscription_ids)} subscriptions...[/cyan]"
+                f"\n[cyan]Sending subscription.updated for {len(sorted_sub_ids) - start_idx} subscriptions...[/cyan]"
             )
             async with sessionmaker() as session:
                 sub_repo = SubscriptionRepository.from_session(session)
 
-                for i, sub_id in enumerate(result.touched_subscription_ids):
+                for i, sub_id in enumerate(sorted_sub_ids[start_idx:], start=start_idx):
                     subscription = await sub_repo.get_by_id(
                         sub_id, options=sub_repo.get_eager_options()
                     )
@@ -419,22 +436,35 @@ async def send_webhooks(result: AnalysisResult) -> None:
 
                     if (i + 1) % 100 == 0:
                         console.print(
-                            f"  Sent {i + 1}/{len(result.touched_subscription_ids)}..."
+                            f"  Sent {i + 1}/{len(sorted_sub_ids)} (current: {sub_id})..."
                         )
-            console.print(
-                f"[green]Sent {len(result.touched_subscription_ids)} subscription.updated webhooks[/green]"
-            )
+            console.print("[green]Sent subscription.updated webhooks[/green]")
 
         all_customer_ids: set[UUID] = set()
         for org_info in result.organizations.values():
             all_customer_ids.update(org_info.customers.keys())
 
+        sorted_customer_ids = sorted(all_customer_ids)
+        start_idx = 0
+        if resume_customer:
+            try:
+                start_idx = sorted_customer_ids.index(resume_customer)
+                console.print(
+                    f"[yellow]Resuming from customer {resume_customer} (index {start_idx})[/yellow]"
+                )
+            except ValueError:
+                console.print(
+                    f"[red]Resume customer {resume_customer} not found, starting from beginning[/red]"
+                )
+
         console.print(
-            f"\n[cyan]Enqueueing customer_state_changed for {len(all_customer_ids)} customers...[/cyan]"
+            f"\n[cyan]Enqueueing customer_state_changed for {len(sorted_customer_ids) - start_idx} customers...[/cyan]"
         )
 
         async with sessionmaker() as session:
-            for i, customer_id in enumerate(all_customer_ids):
+            for i, customer_id in enumerate(
+                sorted_customer_ids[start_idx:], start=start_idx
+            ):
                 enqueue_job(
                     "customer.webhook",
                     WebhookEventType.customer_state_changed,
@@ -445,11 +475,11 @@ async def send_webhooks(result: AnalysisResult) -> None:
                 await manager.flush(broker, redis)
 
                 if (i + 1) % 100 == 0:
-                    console.print(f"  Enqueued {i + 1}/{len(all_customer_ids)}...")
+                    console.print(
+                        f"  Enqueued {i + 1}/{len(sorted_customer_ids)} (current: {customer_id})..."
+                    )
 
-        console.print(
-            f"[green]Enqueued {len(all_customer_ids)} customer_state_changed webhooks[/green]"
-        )
+        console.print("[green]Enqueued customer_state_changed webhooks[/green]")
 
     await engine.dispose()
 
@@ -465,6 +495,16 @@ async def compare(
         False,
         "--execute",
         help="Send webhooks to correct the state",
+    ),
+    resume_subscription: str | None = typer.Option(
+        None,
+        "--resume-subscription",
+        help="Resume from this subscription ID (skip earlier ones)",
+    ),
+    resume_customer: str | None = typer.Option(
+        None,
+        "--resume-customer",
+        help="Resume from this customer ID (skip earlier ones)",
     ),
 ) -> None:
     """Analyze faulty webhook data and optionally send corrective webhooks."""
@@ -488,7 +528,13 @@ async def compare(
     print_results(result, output_json=output_json)
 
     if execute:
-        await send_webhooks(result)
+        await send_webhooks(
+            result,
+            resume_subscription=UUID(resume_subscription)
+            if resume_subscription
+            else None,
+            resume_customer=UUID(resume_customer) if resume_customer else None,
+        )
 
 
 if __name__ == "__main__":

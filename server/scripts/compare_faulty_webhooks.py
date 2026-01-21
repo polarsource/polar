@@ -53,7 +53,20 @@ class ResourceDiff:
     resource_type: str
     event_type: str
     webhook_event_id: UUID
+    organization_id: UUID | None = None
     diffs: list[FieldDiff] = field(default_factory=list)
+
+    @property
+    def recommended_action(self) -> str:
+        if self.event_type == "order.created":
+            return "NOTIFY_MERCHANT_REMOVE_ORDER"
+        if self.event_type == "customer.created":
+            return "NOTIFY_MERCHANT_REMOVE_CUSTOMER"
+        if self.event_type == "subscription.created":
+            return "NOTIFY_MERCHANT_REMOVE_SUBSCRIPTION"
+        if self.event_type == "benefit_grant.created":
+            return "NOTIFY_MERCHANT_REMOVE_BENEFIT_GRANT"
+        return "RESEND_WEBHOOK"
 
 
 @dataclass
@@ -66,6 +79,7 @@ class ComparisonResult:
     resource_diffs: list[ResourceDiff]
     missing_resource_ids: list[tuple[UUID, str]]
     diffs_by_event_type: dict[str, int] = field(default_factory=dict)
+    diffs_by_organization: dict[UUID, int] = field(default_factory=dict)
 
 
 SUBSCRIPTION_FIELDS = [
@@ -184,6 +198,19 @@ def get_fields_for_type(resource_type: str) -> list[str]:
     return []
 
 
+def extract_organization_id(resource_data: dict[str, Any]) -> UUID | None:
+    org_id = resource_data.get("organization_id")
+    if org_id:
+        return UUID(org_id)
+    customer = resource_data.get("customer")
+    if customer and customer.get("organization_id"):
+        return UUID(customer["organization_id"])
+    product = resource_data.get("product")
+    if product and product.get("organization_id"):
+        return UUID(product["organization_id"])
+    return None
+
+
 async def compare_webhooks(csv_path: Path) -> ComparisonResult:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -191,6 +218,7 @@ async def compare_webhooks(csv_path: Path) -> ComparisonResult:
     resource_diffs: list[ResourceDiff] = []
     missing_resource_ids: list[tuple[UUID, str]] = []
     diffs_by_event_type: dict[str, int] = {}
+    diffs_by_organization: dict[UUID, int] = {}
     found_count = 0
     matching_count = 0
 
@@ -275,18 +303,24 @@ async def compare_webhooks(csv_path: Path) -> ComparisonResult:
                     )
 
             if field_diffs:
+                org_id = extract_organization_id(resource_data)
                 resource_diffs.append(
                     ResourceDiff(
                         resource_id=resource_id,
                         resource_type=resource_type,
                         event_type=event_type,
                         webhook_event_id=webhook_event_id,
+                        organization_id=org_id,
                         diffs=field_diffs,
                     )
                 )
                 diffs_by_event_type[event_type] = (
                     diffs_by_event_type.get(event_type, 0) + 1
                 )
+                if org_id:
+                    diffs_by_organization[org_id] = (
+                        diffs_by_organization.get(org_id, 0) + 1
+                    )
             else:
                 matching_count += 1
 
@@ -301,16 +335,58 @@ async def compare_webhooks(csv_path: Path) -> ComparisonResult:
         resource_diffs=resource_diffs,
         missing_resource_ids=missing_resource_ids,
         diffs_by_event_type=diffs_by_event_type,
+        diffs_by_organization=diffs_by_organization,
     )
 
 
-def print_results(result: ComparisonResult, show_all_diffs: bool = False) -> None:
+def print_results(result: ComparisonResult, output_json: bool = False) -> None:
+    if output_json:
+        output = {
+            "summary": {
+                "total_csv_rows": result.total_csv_rows,
+                "resources_found": result.resources_found,
+                "resources_missing": result.resources_missing,
+                "resources_matching": result.resources_matching,
+                "resources_differing": result.resources_differing,
+                "organizations_affected": len(result.diffs_by_organization),
+            },
+            "diffs_by_organization": {
+                str(k): v for k, v in result.diffs_by_organization.items()
+            },
+            "diffs_by_event_type": result.diffs_by_event_type,
+            "actions": [
+                {
+                    "resource_type": rd.resource_type,
+                    "resource_id": str(rd.resource_id),
+                    "organization_id": str(rd.organization_id) if rd.organization_id else None,
+                    "event_type": rd.event_type,
+                    "changed_fields": [d.field for d in rd.diffs],
+                    "action": rd.recommended_action,
+                }
+                for rd in result.resource_diffs
+            ],
+            "missing_resources": [
+                {"resource_id": str(rid), "resource_type": rtype}
+                for rid, rtype in result.missing_resource_ids
+            ],
+        }
+        print(json.dumps(output, indent=2))
+        return
+
     console.print("\n[bold]Summary[/bold]")
     console.print(f"  Total CSV rows:      {result.total_csv_rows}")
     console.print(f"  Resources found:     {result.resources_found}")
     console.print(f"  Resources missing:   {result.resources_missing}")
     console.print(f"  Resources matching:  {result.resources_matching}")
     console.print(f"  [red]Resources differing: {result.resources_differing}[/red]")
+    console.print(f"  [cyan]Organizations affected: {len(result.diffs_by_organization)}[/cyan]")
+
+    if result.diffs_by_organization:
+        console.print("\n[bold]Diffs by Organization[/bold]")
+        for org_id, count in sorted(
+            result.diffs_by_organization.items(), key=lambda x: -x[1]
+        ):
+            console.print(f"  {org_id}: [red]{count}[/red]")
 
     if result.diffs_by_event_type:
         console.print("\n[bold]Diffs by Event Type[/bold]")
@@ -320,49 +396,38 @@ def print_results(result: ComparisonResult, show_all_diffs: bool = False) -> Non
             console.print(f"  {event_type}: [red]{count}[/red]")
 
     if result.resource_diffs:
-        console.print("\n[bold red]Differences Found:[/bold red]")
+        console.print("\n[bold]Action Plan[/bold]")
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Type")
+        table.add_column("Resource ID")
+        table.add_column("Organization")
+        table.add_column("Event")
+        table.add_column("Changed Fields")
+        table.add_column("Action")
 
-        diffs_to_show = (
-            result.resource_diffs if show_all_diffs else result.resource_diffs[:20]
-        )
-
-        for rd in diffs_to_show:
-            console.print(f"\n[bold]{rd.resource_type}[/bold] {rd.resource_id}")
-            console.print(
-                f"  Event: {rd.event_type} (webhook_event: {rd.webhook_event_id})"
+        for rd in result.resource_diffs[:50]:
+            changed_fields = ", ".join(d.field for d in rd.diffs)
+            table.add_row(
+                rd.resource_type,
+                str(rd.resource_id)[:8] + "...",
+                str(rd.organization_id)[:8] + "..." if rd.organization_id else "N/A",
+                rd.event_type,
+                changed_fields[:30] + ("..." if len(changed_fields) > 30 else ""),
+                rd.recommended_action,
             )
 
-            table = Table(show_header=True, header_style="bold", box=None)
-            table.add_column("Field")
-            table.add_column("Sent Value")
-            table.add_column("DB Value")
+        console.print(table)
 
-            for diff in rd.diffs:
-                table.add_row(
-                    diff.field,
-                    str(diff.sent_value)[:50],
-                    str(diff.db_value)[:50],
-                )
-
-            console.print(table)
-
-        if not show_all_diffs and len(result.resource_diffs) > 20:
+        if len(result.resource_diffs) > 50:
             console.print(
-                f"\n[yellow]... and {len(result.resource_diffs) - 20} more differing resources. "
-                "Use --show-all to see all.[/yellow]"
+                f"\n[yellow]... and {len(result.resource_diffs) - 50} more. "
+                "Use --json for full output.[/yellow]"
             )
 
     if result.missing_resource_ids:
         console.print(
             f"\n[yellow]Missing {len(result.missing_resource_ids)} resources from DB[/yellow]"
         )
-        if len(result.missing_resource_ids) <= 10:
-            for rid, rtype in result.missing_resource_ids:
-                console.print(f"  {rtype}: {rid}")
-        else:
-            for rid, rtype in result.missing_resource_ids[:5]:
-                console.print(f"  {rtype}: {rid}")
-            console.print(f"  ... and {len(result.missing_resource_ids) - 5} more")
 
 
 def is_url(path: str) -> bool:
@@ -389,7 +454,7 @@ async def compare(
     csv_source: str = typer.Argument(
         ..., help="Path or URL to CSV file with faulty webhook data"
     ),
-    show_all: bool = typer.Option(False, "--show-all", help="Show all differences"),
+    output_json: bool = typer.Option(False, "--json", help="Output as JSON to stdout"),
 ) -> None:
     """Compare faulty webhook payload data against actual resources in the database."""
     if is_url(csv_source):
@@ -405,7 +470,7 @@ async def compare(
             raise typer.Exit(1)
 
     result = await compare_webhooks(csv_path)
-    print_results(result, show_all_diffs=show_all)
+    print_results(result, output_json=output_json)
 
 
 if __name__ == "__main__":

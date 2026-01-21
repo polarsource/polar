@@ -390,8 +390,9 @@ async def send_webhooks(result: AnalysisResult) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     redis = create_redis("script")
+    broker = dramatiq.get_broker()
 
-    async with JobQueueManager.open(dramatiq.get_broker(), redis):
+    async with JobQueueManager.open(broker, redis) as manager:
         if result.touched_subscription_ids:
             console.print(
                 f"\n[cyan]Sending subscription.updated for {len(result.touched_subscription_ids)} subscriptions...[/cyan]"
@@ -413,16 +414,16 @@ async def send_webhooks(result: AnalysisResult) -> None:
                         subscription,
                     )
 
+                    await session.commit()
+                    await manager.flush(broker, redis)
+
                     if (i + 1) % 100 == 0:
                         console.print(
                             f"  Sent {i + 1}/{len(result.touched_subscription_ids)}..."
                         )
-
             console.print(
                 f"[green]Sent {len(result.touched_subscription_ids)} subscription.updated webhooks[/green]"
             )
-
-        await engine.dispose()
 
         all_customer_ids: set[UUID] = set()
         for org_info in result.organizations.values():
@@ -432,18 +433,25 @@ async def send_webhooks(result: AnalysisResult) -> None:
             f"\n[cyan]Enqueueing customer_state_changed for {len(all_customer_ids)} customers...[/cyan]"
         )
 
-        for i, customer_id in enumerate(all_customer_ids):
-            enqueue_job(
-                "customer.webhook",
-                WebhookEventType.customer_state_changed,
-                customer_id,
-            )
-            if (i + 1) % 100 == 0:
-                console.print(f"  Enqueued {i + 1}/{len(all_customer_ids)}...")
+        async with sessionmaker() as session:
+            for i, customer_id in enumerate(all_customer_ids):
+                enqueue_job(
+                    "customer.webhook",
+                    WebhookEventType.customer_state_changed,
+                    customer_id,
+                )
+
+                await session.commit()
+                await manager.flush(broker, redis)
+
+                if (i + 1) % 100 == 0:
+                    console.print(f"  Enqueued {i + 1}/{len(all_customer_ids)}...")
 
         console.print(
             f"[green]Enqueued {len(all_customer_ids)} customer_state_changed webhooks[/green]"
         )
+
+    await engine.dispose()
 
 
 @cli.command()

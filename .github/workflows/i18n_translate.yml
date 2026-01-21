@@ -46,12 +46,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: pnpm --filter @polar-sh/i18n translate
 
-      - name: Generate types
-        run: pnpm --filter @polar-sh/i18n generate-types
-
-      - name: Validate translations
-        run: pnpm --filter @polar-sh/i18n validate
-
       - name: Commit translations
         run: |
           git config user.name "github-actions[bot]"

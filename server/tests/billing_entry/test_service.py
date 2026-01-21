@@ -739,3 +739,226 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+    async def test_mid_cycle_product_switch_charges_both_prices(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        When a customer switches products mid-billing-cycle, both prices should
+        be charged: the old price for usage before the switch, and the new price
+        for usage after the switch.
+
+        Scenario:
+        1. Customer subscribes to Product A with $1/unit metered pricing
+        2. Customer uses 10 units (10 billing entries)
+        3. Customer switches to Product B with $0.50/unit metered pricing (same meter)
+        4. Customer uses 10 more units (10 billing entries)
+        5. Expected: Invoice has 10 × $1 + 10 × $0.50 = $15
+
+        This test verifies that usage before a subscription change is still
+        charged at the rate that was active when the usage occurred.
+        """
+        # Create meter with SUM aggregation (summable)
+        meter_sum = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A with $1/unit metered pricing
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_sum, Decimal(100), None, "usd")],  # $1.00 per unit
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create subscription on Product A
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_a
+        )
+
+        # Create 10 billing entries on price A (usage before switch)
+        # Each entry represents 1 unit of usage
+        old_entries = []
+        for _ in range(10):
+            entry = await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=1,
+            )
+            old_entries.append(entry)
+
+        # Create Product B with $0.50/unit metered pricing (same meter)
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_sum, Decimal(50), None, "usd")],  # $0.50 per unit
+        )
+        price_b = product_b.prices[0]
+        assert is_metered_price(price_b)
+
+        # Switch subscription to Product B
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # Create 10 billing entries on price B (usage after switch)
+        new_entries = []
+        for _ in range(10):
+            entry = await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_b,
+                subscription=subscription,
+                tokens=1,
+            )
+            new_entries.append(entry)
+
+        # Compute order items - BOTH prices should be charged
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 2 line items: one for price A, one for price B
+            assert len(order_items) == 2
+
+            order_item_a = next(
+                (item for item in order_items if item.product_price == price_a), None
+            )
+            assert order_item_a is not None, "Expected line item for price A (old price)"
+            assert order_item_a.amount == 10_00  # 10 units × $1.00 = $10.00
+
+            order_item_b = next(
+                (item for item in order_items if item.product_price == price_b), None
+            )
+            assert order_item_b is not None, "Expected line item for price B (new price)"
+            assert order_item_b.amount == 5_00  # 10 units × $0.50 = $5.00
+
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        # All old entries should be linked to order_item_a
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item_a.id
+
+        # All new entries should be linked to order_item_b
+        for entry in new_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item_b.id
+
+    async def test_mid_cycle_switch_to_product_without_meter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        When a customer switches to a product without a meter for certain usage,
+        usage before the switch should still be charged at the old price.
+
+        Scenario:
+        1. Customer subscribes to Product A with $1/unit metered pricing
+        2. Customer uses 10 units (10 billing entries)
+        3. Customer switches to Product C (fixed price, no meter)
+        4. Customer ingests 10 more events (no billing entries, no matching meter)
+        5. Expected: Invoice has 10 × $1 = $10 for usage before switch
+
+        This test verifies that usage before a subscription change is charged
+        even if the new product doesn't have metered pricing for that meter.
+        """
+        # Create meter with SUM aggregation (summable)
+        meter_sum = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A with $1/unit metered pricing
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_sum, Decimal(100), None, "usd")],  # $1.00 per unit
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create subscription on Product A
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_a
+        )
+
+        # Create 10 billing entries on price A (usage before switch)
+        old_entries = []
+        for _ in range(10):
+            entry = await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price_a,
+                subscription=subscription,
+                tokens=1,
+            )
+            old_entries.append(entry)
+
+        # Create Product C with NO metered pricing (only fixed price)
+        product_c = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],  # Fixed $10/month, no meter
+        )
+        price_c = product_c.prices[0]
+        assert is_fixed_price(price_c)
+
+        # Switch subscription to Product C (which has no meter)
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_c)
+        ]
+        await save_fixture(subscription)
+
+        # Note: After switching to product C, new events would not create billing
+        # entries because there's no metered price to match. We don't create any
+        # new billing entries here to simulate that scenario.
+
+        # Compute order items - should still charge for usage on old price A
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 1 line item for the old usage on price A
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            assert order_item.product_price == price_a
+            assert order_item.amount == 10_00  # 10 units × $1.00 = $10.00
+
+            order = await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        # All old entries should be linked to the order item
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id

@@ -1,6 +1,7 @@
 {
   "checkout": {
     "poweredBy": "Mogelijk gemaakt door",
-    "email": "E-mail"
+    "email": "E-mail",
+    "helloWorld": "Hallo Wereld"
   }
 }

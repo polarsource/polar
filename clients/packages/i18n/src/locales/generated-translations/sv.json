@@ -1,6 +1,7 @@
 {
   "checkout": {
     "poweredBy": "Drivs av",
-    "email": "E-post"
+    "email": "E-post",
+    "helloWorld": "Hej världen"
   }
 }

@@ -1,18 +1,22 @@
 {
   "sv": {
     "checkout.poweredBy": "Powered by",
-    "checkout.email": "Email"
+    "checkout.email": "Email",
+    "checkout.helloWorld": "Hello World"
   },
   "es": {
     "checkout.poweredBy": "Powered by",
-    "checkout.email": "Email"
+    "checkout.email": "Email",
+    "checkout.helloWorld": "Hello World"
   },
   "fr": {
     "checkout.poweredBy": "Powered by",
-    "checkout.email": "Email"
+    "checkout.email": "Email",
+    "checkout.helloWorld": "Hello World"
   },
   "nl": {
     "checkout.poweredBy": "Powered by",
-    "checkout.email": "Email"
+    "checkout.email": "Email",
+    "checkout.helloWorld": "Hello World"
   }
 }

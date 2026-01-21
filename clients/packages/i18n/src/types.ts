@@ -6,5 +6,6 @@ export interface Messages {
   checkout: {
     poweredBy: string
     email: string
+    helloWorld: string
   }
 }

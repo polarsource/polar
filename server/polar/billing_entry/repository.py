@@ -13,6 +13,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.utils import utc_now
 from polar.models import BillingEntry
 from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
 
@@ -37,6 +38,32 @@ class BillingEntryRepository(
                 .values(order_item_id=order_item_id)
             )
             await self.session.execute(statement)
+
+    async def soft_delete_by_ids(self, billing_entry_ids: Sequence[UUID]) -> int:
+        """
+        Soft-delete billing entries by their IDs.
+
+        This is used to clean up orphaned billing entries that are linked to
+        inactive prices (e.g., after a customer switches products).
+
+        Returns the number of entries deleted.
+        """
+        if not billing_entry_ids:
+            return 0
+
+        deleted_count = 0
+        for batch in batched(billing_entry_ids, 1000):
+            statement = (
+                update(self.model)
+                .where(
+                    self.model.id.in_(batch),
+                    self.model.deleted_at.is_(None),
+                )
+                .values(deleted_at=utc_now())
+            )
+            result = await self.session.execute(statement)
+            deleted_count += result.rowcount
+        return deleted_count
 
     async def get_pending_by_subscription(
         self, subscription_id: UUID, *, options: Options = ()

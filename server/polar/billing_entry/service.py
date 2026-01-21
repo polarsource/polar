@@ -137,8 +137,22 @@ class BillingEntryService:
                         break
 
                 if active_price is None:
+                    # Clean up orphaned billing entries for meter with no active price.
+                    # This happens when the customer switched to a product that doesn't
+                    # include this meter.
+                    orphaned_entry_ids = (
+                        await repository.get_pending_ids_by_subscription_and_meter(
+                            subscription.id, meter_id
+                        )
+                    )
+                    deleted_count = await repository.soft_delete_by_ids(
+                        orphaned_entry_ids
+                    )
                     log.info(
-                        f"No active price found for meter {meter_id} in subscription {subscription.id}"
+                        "Cleaned up orphaned billing entries for meter with no active price",
+                        meter_id=str(meter_id),
+                        subscription_id=str(subscription.id),
+                        deleted_count=deleted_count,
                     )
                     continue
 
@@ -160,9 +174,22 @@ class BillingEntryService:
                     for spp in subscription.subscription_product_prices
                 )
                 if not is_active_price:
+                    # Clean up orphaned billing entries for inactive prices.
+                    # These entries were created when the customer was on a different
+                    # product/price, and should not be billed or left pending.
+                    orphaned_entry_ids = (
+                        await repository.get_pending_ids_by_subscription_and_price(
+                            subscription.id, product_price_id
+                        )
+                    )
+                    deleted_count = await repository.soft_delete_by_ids(
+                        orphaned_entry_ids
+                    )
                     log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
+                        "Cleaned up orphaned billing entries for inactive price",
+                        product_price_id=str(product_price_id),
+                        subscription_id=str(subscription.id),
+                        deleted_count=deleted_count,
                     )
                     continue
 

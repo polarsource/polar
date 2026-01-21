@@ -634,7 +634,7 @@ class TestCreateOrderItemsFromPending:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
 
-    async def test_inactive_price_skipped_after_product_switch(
+    async def test_inactive_price_soft_deleted_after_product_switch(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -644,10 +644,12 @@ class TestCreateOrderItemsFromPending:
     ) -> None:
         """
         Test that billing entries from an inactive price (after product/price switch)
-        are skipped and not re-billed.
+        are soft-deleted and cleaned up properly.
 
         This tests the fix for a bug where billing entries from discontinued prices
         would be re-billed every cycle after a customer switched products.
+        The fix soft-deletes these orphaned entries so they don't remain in the
+        pending state forever.
         """
         # Create initial product with metered price
         product_old = await create_product(
@@ -710,7 +712,7 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        # When computing order items, old price entries should be SKIPPED
+        # When computing order items, old price entries should be SOFT-DELETED
         # because old_price is no longer in subscription_product_prices
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
@@ -734,8 +736,9 @@ class TestCreateOrderItemsFromPending:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
 
-        # Old entries should remain PENDING (not linked to any order item)
-        # This is the key assertion: they were skipped, not re-billed
+        # Old entries should be SOFT-DELETED (deleted_at set)
+        # This ensures they won't be picked up again on the next cycle
         for entry in old_entries:
             await session.refresh(entry)
-            assert entry.order_item_id is None
+            assert entry.deleted_at is not None
+            assert entry.order_item_id is None  # Never billed

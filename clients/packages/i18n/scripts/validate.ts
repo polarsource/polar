@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const LOCALES_DIR = path.join(import.meta.dirname, '../src/locales')
-const EN_FILE = path.join(LOCALES_DIR, 'en.json')
-const SUPPORTED_LOCALES_FILE = path.join(import.meta.dirname, '../src/supported_locales.json')
+const LOCALES_DIR = path.join(import.meta.dirname, '../src/locales/generated-translations')
+const EN_FILE = path.join(import.meta.dirname, '../src/locales/en.json')
+const SUPPORTED_LOCALES_FILE = path.join(import.meta.dirname, '../src/locales/config/supported.json')
 
 type EntryValue = string | { value: string; llmContext?: string }
 type NestedObject = { [key: string]: EntryValue | NestedObject }

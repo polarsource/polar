@@ -1,6 +1,7 @@
 # pyright: reportCallIssue=false
 import asyncio
 import contextlib
+import gzip
 import json
 import logging.config
 import pathlib
@@ -130,6 +131,17 @@ async def _upload_attachment(
 
     file_size = file_path.stat().st_size
 
+    # If file is larger than 6MB, compress it with gzip
+    if file_size >= 6 * 1024 * 1024:
+        compressed_path = file_path.with_suffix(file_path.suffix + ".gz")
+        with open(file_path, "rb") as f_in:
+            with gzip.open(compressed_path, "wb") as f_out:
+                f_out.writelines(f_in)
+        file_path.unlink()
+        file_path = compressed_path
+        file_name = file_name + ".gz"
+        file_size = file_path.stat().st_size
+
     attachment_result = await plain.create_attachment_upload_url(
         pl.CreateAttachmentUploadUrlInput(
             customer_id=customer_id,
@@ -209,8 +221,9 @@ async def _send_email(
         customer_id = customer_result.customer.id
 
         # Check if not already sent
+        thread_key = f"webhooks-incident-2-{organization_id}"
         existing_thread_result = await plain.thread_by_external_id(
-            customer_id, f"webhooks-incident-{organization_id}"
+            customer_id, thread_key
         )
         if existing_thread_result is not None:
             return
@@ -221,7 +234,7 @@ async def _send_email(
                 customer_identifier=pl.CustomerIdentifierInput(customer_id=customer_id),
                 title="Polar Incident: Incorrect webhook events (Jan 19–21)",
                 label_type_ids=["lt_01KFGJRK3DEV0TYT7D084G1MVQ"],
-                external_id=f"webhooks-incident-{organization_id}",
+                external_id=thread_key,
             )
         )
         if thread_result.error is not None:

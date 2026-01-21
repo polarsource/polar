@@ -51,6 +51,7 @@ from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.currency import get_presentment_currency
+from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -1691,7 +1692,7 @@ class CheckoutService:
                 options=repository.get_eager_options(),
             )
         except DBAPIError as e:
-            if "could not obtain lock" in str(e):
+            if is_lock_not_available_error(e):
                 raise CheckoutLocked(checkout_id) from e
             raise
 

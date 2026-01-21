@@ -8,7 +8,6 @@ from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
-from polar.locker import Locker
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Customer, Organization, User
 
@@ -183,9 +182,8 @@ class BenefitMeterCreditService(
         meter_repository = MeterRepository.from_session(self.session)
         meter = await meter_repository.get_by_id(meter_id)
         if meter is not None:
-            locker = Locker(self.redis)
             await customer_meter_service.update_customer_meter(
-                self.session, locker, customer, meter, activate_meter=True
+                self.session, customer, meter, activate_meter=True
             )
 
         return {

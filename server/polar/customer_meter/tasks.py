@@ -5,7 +5,6 @@ from opentelemetry import trace
 
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
-from polar.locker import Locker
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
 
 from .service import customer_meter as customer_meter_service
@@ -42,12 +41,11 @@ async def update_customer(
         span.set_attribute("organization_id", str(customer.organization_id))
 
         redis = RedisMiddleware.get()
-        locker = Locker(redis)
         meters_dirtied = (
             datetime.fromisoformat(meters_dirtied_at) if meters_dirtied_at else None
         )
         await customer_meter_service.update_customer(
-            session, locker, customer, meters_dirtied
+            session, customer, meters_dirtied
         )
 
         await redis.delete(f"{UPDATE_CUSTOMER_LOCK_PREFIX}{customer_id}")

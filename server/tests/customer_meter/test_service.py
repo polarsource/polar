@@ -9,7 +9,6 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import generate_uuid, utc_now
-from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
     PropertyAggregation,
@@ -177,10 +176,10 @@ async def events_for_external_customer(
 @pytest.mark.asyncio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
-        self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter
+        self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> None:
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -191,7 +190,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -208,7 +206,7 @@ class TestUpdateCustomerMeter:
             updated_customer_meter,
             updated,
         ) = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert updated_customer_meter is not None
@@ -222,14 +220,13 @@ class TestUpdateCustomerMeter:
     async def test_new_customer_meter(
         self,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
     ) -> None:
         before = utc_now()
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
         after = utc_now()
 
@@ -249,7 +246,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -269,7 +265,7 @@ class TestUpdateCustomerMeter:
             updated_customer_meter,
             updated,
         ) = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert updated_customer_meter is not None
@@ -284,7 +280,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -303,7 +298,7 @@ class TestUpdateCustomerMeter:
             updated_customer_meter,
             updated,
         ) = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert updated_customer_meter is not None
@@ -318,7 +313,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -356,7 +350,7 @@ class TestUpdateCustomerMeter:
             updated_customer_meter,
             updated,
         ) = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert updated_customer_meter is not None
@@ -370,7 +364,6 @@ class TestUpdateCustomerMeter:
     async def test_customer_with_external_id(
         self,
         session: AsyncSession,
-        locker: Locker,
         customer_with_external_id: Customer,
         events_for_external_customer: list[Event],
         meter: Meter,
@@ -382,7 +375,7 @@ class TestUpdateCustomerMeter:
         assert customer_with_external_id.external_id is not None
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer_with_external_id, meter
+            session, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -402,7 +395,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -438,7 +430,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -451,7 +443,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -486,7 +477,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -499,7 +490,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -535,7 +525,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -548,7 +538,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -579,7 +568,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -592,7 +581,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -650,7 +638,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None
@@ -664,7 +652,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -716,7 +703,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer_with_external_id, meter
+            session, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -728,7 +715,6 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -782,7 +768,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer_with_external_id, meter
+            session, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -1104,7 +1090,6 @@ class TestUpdateCustomer:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1115,7 +1100,7 @@ class TestUpdateCustomer:
         await save_fixture(meter)
 
         # Run update_customer - should not create customer_meter for archived meter
-        await customer_meter_service.update_customer(session, locker, customer)
+        await customer_meter_service.update_customer(session, customer)
 
         # Check that no customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository
@@ -1130,7 +1115,6 @@ class TestUpdateCustomer:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1140,7 +1124,7 @@ class TestUpdateCustomer:
         assert meter.archived_at is None
 
         # Run update_customer - should create customer_meter
-        await customer_meter_service.update_customer(session, locker, customer)
+        await customer_meter_service.update_customer(session, customer)
 
         # Check that customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository
@@ -1158,7 +1142,6 @@ class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         customer: Customer,
         meter: Meter,
@@ -1189,7 +1172,7 @@ class TestBulkEventProcessing:
         assert duplicates == 0
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, locker, customer, meter
+            session, customer, meter
         )
 
         assert customer_meter is not None

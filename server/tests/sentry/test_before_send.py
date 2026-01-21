@@ -1,6 +1,6 @@
 """Tests for Sentry before_send filtering logic."""
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from polar.sentry import (
@@ -9,6 +9,9 @@ from polar.sentry import (
     _is_lock_not_available_error,
     before_send,
 )
+
+if TYPE_CHECKING:
+    from sentry_sdk._types import Event, Hint
 
 
 class MockLockNotAvailableError(Exception):
@@ -90,71 +93,77 @@ class TestGetDramatiqActorName:
 
     def test_extracts_actor_name(self) -> None:
         """Should extract actor_name from dramatiq context."""
-        event: dict[str, Any] = {
-            "contexts": {
-                "dramatiq": {
-                    "data": {
-                        "actor_name": "customer_meter.update_customer",
-                        "message_id": "abc123",
+        event = cast(
+            "Event",
+            {
+                "contexts": {
+                    "dramatiq": {
+                        "data": {
+                            "actor_name": "customer_meter.update_customer",
+                            "message_id": "abc123",
+                        }
                     }
                 }
-            }
-        }
+            },
+        )
         assert _get_dramatiq_actor_name(event) == "customer_meter.update_customer"
 
     def test_no_contexts(self) -> None:
         """Should return None if no contexts."""
-        event: dict[str, Any] = {}
+        event = cast("Event", {})
         assert _get_dramatiq_actor_name(event) is None
 
     def test_no_dramatiq_context(self) -> None:
         """Should return None if no dramatiq context."""
-        event: dict[str, Any] = {"contexts": {"other": {}}}
+        event = cast("Event", {"contexts": {"other": {}}})
         assert _get_dramatiq_actor_name(event) is None
 
     def test_no_data_in_dramatiq(self) -> None:
         """Should return None if no data in dramatiq context."""
-        event: dict[str, Any] = {"contexts": {"dramatiq": {}}}
+        event = cast("Event", {"contexts": {"dramatiq": {}}})
         assert _get_dramatiq_actor_name(event) is None
 
     def test_no_actor_name_in_data(self) -> None:
         """Should return None if no actor_name in data."""
-        event: dict[str, Any] = {"contexts": {"dramatiq": {"data": {"other": "value"}}}}
+        event = cast("Event", {"contexts": {"dramatiq": {"data": {"other": "value"}}}})
         assert _get_dramatiq_actor_name(event) is None
 
     def test_dramatiq_context_not_dict(self) -> None:
         """Should return None if dramatiq context is not a dict."""
-        event: dict[str, Any] = {"contexts": {"dramatiq": "not a dict"}}
+        event = cast("Event", {"contexts": {"dramatiq": "not a dict"}})
         assert _get_dramatiq_actor_name(event) is None
 
     def test_data_not_dict(self) -> None:
         """Should return None if data is not a dict."""
-        event: dict[str, Any] = {"contexts": {"dramatiq": {"data": "not a dict"}}}
+        event = cast("Event", {"contexts": {"dramatiq": {"data": "not a dict"}}})
         assert _get_dramatiq_actor_name(event) is None
 
 
 class TestBeforeSend:
     """Tests for before_send Sentry hook."""
 
-    def _make_event(self, actor_name: str | None = None) -> dict[str, Any]:
+    def _make_event(self, actor_name: str | None = None) -> "Event":
         """Create a mock Sentry event."""
         if actor_name is None:
-            return {}
-        return {
-            "contexts": {
-                "dramatiq": {
-                    "data": {
-                        "actor_name": actor_name,
+            return cast("Event", {})
+        return cast(
+            "Event",
+            {
+                "contexts": {
+                    "dramatiq": {
+                        "data": {
+                            "actor_name": actor_name,
+                        }
                     }
                 }
-            }
-        }
+            },
+        )
 
-    def _make_hint(self, exc: Exception | None = None) -> dict[str, Any]:
+    def _make_hint(self, exc: Exception | None = None) -> "Hint":
         """Create a mock Sentry hint with exception info."""
         if exc is None:
-            return {}
-        return {"exc_info": (type(exc), exc, None)}
+            return cast("Hint", {})
+        return cast("Hint", {"exc_info": (type(exc), exc, None)})
 
     def test_filters_lock_error_for_expected_actor(self) -> None:
         """Should filter LockNotAvailableError for actors in _LOCK_EXPECTED_ACTORS."""
@@ -219,7 +228,7 @@ class TestBeforeSend:
     def test_passes_through_events_without_exception(self) -> None:
         """Should pass through events without exception info."""
         event = self._make_event("customer_meter.update_customer")
-        hint: dict[str, Any] = {}
+        hint = cast("Hint", {})
 
         result = before_send(event, hint)
 

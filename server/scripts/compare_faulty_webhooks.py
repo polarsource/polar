@@ -17,7 +17,7 @@ from rich.console import Console
 from sqlalchemy import select
 
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import Customer, Order, Subscription
+from polar.models import BenefitGrant, Customer, Order, Subscription
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import create_async_engine
 from polar.product.repository import ProductRepository
@@ -56,6 +56,19 @@ def serialize_value(val: Any) -> Any:
     return val
 
 
+def serialize_benefit_grant(grant: BenefitGrant) -> dict[str, Any]:
+    return {
+        "id": str(grant.id),
+        "benefit_id": serialize_value(grant.benefit_id),
+        "subscription_id": serialize_value(grant.subscription_id),
+        "order_id": serialize_value(grant.order_id),
+        "is_granted": grant.is_granted,
+        "is_revoked": grant.is_revoked,
+        "granted_at": serialize_value(grant.granted_at),
+        "revoked_at": serialize_value(grant.revoked_at),
+    }
+
+
 def serialize_subscription(sub: Subscription) -> dict[str, Any]:
     return {
         "id": str(sub.id),
@@ -81,6 +94,7 @@ def serialize_subscription(sub: Subscription) -> dict[str, Any]:
 @dataclass
 class CustomerInfo:
     subscriptions: list[dict[str, Any]] = field(default_factory=list)
+    benefit_grants: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -116,6 +130,11 @@ def extract_customer_id_from_payload(
         resource_id = resource_data.get("id")
         if resource_id:
             return UUID(resource_id)
+        return None
+    if resource_type == "benefit_grant":
+        customer = resource_data.get("customer")
+        if customer and customer.get("id"):
+            return UUID(customer["id"])
         return None
     customer_id = resource_data.get("customer_id")
     if customer_id:
@@ -214,8 +233,14 @@ async def analyze_webhooks(rows: list[dict[str, Any]]) -> AnalysisResult:
                 )
                 db_subscriptions = sub_result.scalars().all()
 
+                grant_result = await session.execute(
+                    select(BenefitGrant).where(BenefitGrant.customer_id == cust_id)
+                )
+                db_grants = grant_result.scalars().all()
+
                 org_info.customers[cust_id] = CustomerInfo(
                     subscriptions=[serialize_subscription(s) for s in db_subscriptions],
+                    benefit_grants=[serialize_benefit_grant(g) for g in db_grants],
                 )
 
             organizations[org_id] = org_info
@@ -268,6 +293,7 @@ def print_results(result: AnalysisResult, output_json: bool = False) -> None:
                 "customers": {
                     str(cust_id): {
                         "subscriptions": info.subscriptions,
+                        "benefit_grants": info.benefit_grants,
                     }
                     for cust_id, info in org_info.customers.items()
                 },

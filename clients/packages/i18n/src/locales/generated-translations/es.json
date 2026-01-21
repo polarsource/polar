@@ -2,7 +2,6 @@
   "checkout": {
     "poweredBy": "Desarrollado por",
     "email": "Correo electrónico",
-    "helloWorld": "Hola Mundo",
-    "foobar": "Foobar"
+    "demoTime": "Tiempo de demostración"
   }
 }

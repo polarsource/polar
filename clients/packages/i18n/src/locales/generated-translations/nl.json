@@ -2,7 +2,6 @@
   "checkout": {
     "poweredBy": "Mogelijk gemaakt door",
     "email": "E-mail",
-    "helloWorld": "Hallo Wereld",
-    "foobar": "Foobar"
+    "demoTime": "Demo tijd"
   }
 }

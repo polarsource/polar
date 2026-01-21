@@ -2,7 +2,6 @@
   "checkout": {
     "poweredBy": "Drivs av",
     "email": "E-post",
-    "helloWorld": "Hej Världen",
-    "foobar": "Foobar"
+    "demoTime": "Demotid"
   }
 }

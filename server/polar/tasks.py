@@ -1,6 +1,7 @@
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
 from polar.billing_entry import tasks as billing_entry
+from polar.billing_oracle import tasks as billing_oracle
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_meter import tasks as customer_meter
@@ -30,6 +31,7 @@ __all__ = [
     "auth",
     "benefit",
     "billing_entry",
+    "billing_oracle",
     "chargeback_stop",
     "checkout",
     "customer",

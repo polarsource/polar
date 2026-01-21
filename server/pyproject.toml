@@ -83,6 +83,7 @@ dev = [
   "minio>=7.2.9",
   "polar-sdk==0.27.3",
   "locust>=2.20.0",
+  "hypothesis>=6.100.0",
 ]
 
 [tool.taskipy.tasks]

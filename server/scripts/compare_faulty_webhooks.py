@@ -537,5 +537,81 @@ async def compare(
         )
 
 
+def load_result_from_json(data: dict[str, Any]) -> AnalysisResult:
+    """Load AnalysisResult from JSON output."""
+    organizations: dict[UUID, OrganizationInfo] = {}
+    for org_id_str, org_data in data.get("organizations", {}).items():
+        org_id = UUID(org_id_str)
+        customers: dict[UUID, CustomerInfo] = {}
+        for cust_id_str, cust_data in org_data.get("customers", {}).items():
+            customers[UUID(cust_id_str)] = CustomerInfo(
+                subscriptions=cust_data.get("subscriptions", []),
+                benefit_grants=cust_data.get("benefit_grants", []),
+            )
+        organizations[org_id] = OrganizationInfo(
+            customers=customers,
+            bogus_order_ids=[UUID(oid) for oid in org_data.get("bogus_order_ids", [])],
+            real_order_ids=[UUID(oid) for oid in org_data.get("real_order_ids", [])],
+        )
+
+    touched_sub_ids: set[UUID] = set()
+    for org_info in organizations.values():
+        for cust_info in org_info.customers.values():
+            for sub in cust_info.subscriptions:
+                touched_sub_ids.add(UUID(sub["id"]))
+
+    return AnalysisResult(
+        total_csv_rows=data.get("summary", {}).get("total_csv_rows", 0),
+        organizations=organizations,
+        subscription_status_diffs=set(),
+        touched_subscription_ids=touched_sub_ids,
+    )
+
+
+@cli.command()
+@typer_async
+async def resume(
+    json_source: str = typer.Argument(
+        ..., help="Path or URL to JSON file from previous analysis"
+    ),
+    resume_subscription: str | None = typer.Option(
+        None,
+        "--resume-subscription",
+        help="Resume from this subscription ID (skip earlier ones)",
+    ),
+    resume_customer: str | None = typer.Option(
+        None,
+        "--resume-customer",
+        help="Resume from this customer ID (skip earlier ones)",
+    ),
+) -> None:
+    """Resume sending webhooks from a previous JSON analysis output."""
+    if is_url(json_source):
+        try:
+            json_path = await download_file(json_source)
+        except httpx.HTTPError as e:
+            console.print(f"[red]Failed to download file: {e}[/red]")
+            raise typer.Exit(1)
+    else:
+        json_path = Path(json_source)
+        if not json_path.exists():
+            console.print(f"[red]File not found: {json_path}[/red]")
+            raise typer.Exit(1)
+
+    with open(json_path) as f:
+        data = json.load(f)
+
+    result = load_result_from_json(data)
+    console.print(
+        f"[cyan]Loaded {len(result.touched_subscription_ids)} subscriptions and {sum(len(o.customers) for o in result.organizations.values())} customers[/cyan]"
+    )
+
+    await send_webhooks(
+        result,
+        resume_subscription=UUID(resume_subscription) if resume_subscription else None,
+        resume_customer=UUID(resume_customer) if resume_customer else None,
+    )
+
+
 if __name__ == "__main__":
     cli()

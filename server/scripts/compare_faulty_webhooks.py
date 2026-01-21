@@ -323,7 +323,7 @@ def print_results(result: AnalysisResult, output_json: bool = False) -> None:
     }
 
     if output_json:
-        print(json.dumps(output, indent=2), flush=True)
+        print(json.dumps(output), flush=True)
         return
 
     console.print("\n[bold]Summary[/bold]")
@@ -467,7 +467,7 @@ async def compare(
     if execute:
         await send_webhooks(result)
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(10)
 
 
 if __name__ == "__main__":

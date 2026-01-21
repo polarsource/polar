@@ -3,8 +3,8 @@ import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
-import { I18nProvider } from '@polar-sh/i18n'
-import { getLocaleData } from '@polar-sh/i18n/server'
+import { I18nProvider, type SupportedLocale } from '@polar-sh/i18n'
+import { loadLocale } from '@polar-sh/i18n/messages'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
@@ -14,17 +14,15 @@ import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
+  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark'; locale?: string }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed: _embed, theme } = searchParams
+  const { embed: _embed, theme, locale: localeParam } = searchParams
 
   const params = await props.params
 
   const { clientSecret } = params
-
-  const { locale, messages } = await getLocaleData()
 
   const embed = _embed === 'true'
   const client = new PolarCore({ serverURL: getServerURL() })
@@ -78,6 +76,15 @@ export default async function Page(props: {
   if (checkout.status !== 'open') {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
+
+  // Locale resolution priority:
+  // 1. ?locale query string
+  // 2. checkout.locale (TODO: backend to implement)
+  // 3. customer.locale (TODO: backend to implement)
+  // 4. Accept-Language (TODO: backend to implement)
+  // 5. English fallback
+  const locale: SupportedLocale = (localeParam as SupportedLocale) ?? 'en'
+  const messages = loadLocale(locale)
 
   return (
     <I18nProvider locale={locale} messages={messages}>

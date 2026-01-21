@@ -5,5 +5,5 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  external: ['react', 'next-intl', 'next'],
+  external: ['react', 'next-intl'],
 })

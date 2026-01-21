@@ -1,4 +1,8 @@
 import en from './locales/en.json'
+import es from './locales/generated-translations/es.json'
+import fr from './locales/generated-translations/fr.json'
+import nl from './locales/generated-translations/nl.json'
+import sv from './locales/generated-translations/sv.json'
 import type { Messages } from './types'
 
 // Helper to extract value from entries that may have llmContext
@@ -24,22 +28,47 @@ function extractValues(obj: Record<string, unknown>): Record<string, unknown> {
 // Process English messages (strips llmContext)
 const enMessages = extractValues(en as Record<string, unknown>) as unknown as Messages
 
-// Lazy load other locales
-async function loadLocale(locale: string): Promise<Messages> {
-  switch (locale) {
-    case 'sv':
-      return (await import('./locales/generated-translations/sv.json')).default as Messages
-    case 'es':
-      return (await import('./locales/generated-translations/es.json')).default as Messages
-    case 'fr':
-      return (await import('./locales/generated-translations/fr.json')).default as Messages
-    case 'nl':
-      return (await import('./locales/generated-translations/nl.json')).default as Messages
-    default:
-      return enMessages
-  }
+const messages: Record<string, Messages> = {
+  en: enMessages,
+  sv: sv as Messages,
+  es: es as Messages,
+  fr: fr as Messages,
+  nl: nl as Messages,
 }
 
-export { enMessages, loadLocale }
+function loadLocale(locale: string): Messages {
+  return messages[locale] ?? enMessages
+}
+
+// Get nested value by dot-notation key
+function getByPath(obj: Record<string, unknown>, path: string): string {
+  const value = path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object' && key in acc) {
+      return (acc as Record<string, unknown>)[key]
+    }
+    return undefined
+  }, obj)
+
+  if (typeof value !== 'string') {
+    console.warn(`Translation key "${path}" not found`)
+    return path
+  }
+
+  return value
+}
+
+/**
+ * Create a translator function for server-side use (emails, API responses).
+ *
+ * @example
+ * const t = translations('es')
+ * t('checkout.poweredBy') // "Desarrollado por"
+ */
+function translations(locale: string): (key: string) => string {
+  const msgs = loadLocale(locale)
+  return (key: string) => getByPath(msgs as unknown as Record<string, unknown>, key)
+}
+
+export { enMessages, loadLocale, translations }
 
 export type { Messages }

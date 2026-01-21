@@ -40,7 +40,6 @@
     "@types/node": "^22.16.1",
     "@types/react": "19.2.7",
     "dotenv": "^16.4.5",
-    "next": "16.1.1",
     "openai": "^4.103.0",
     "prettier": "^3.7.4",
     "react": "^19.2.3",

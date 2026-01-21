@@ -6,7 +6,7 @@ from typing import Any
 
 import logfire
 from sqlalchemy import Float, Select, func, or_, select, union_all
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
@@ -184,25 +184,11 @@ class CustomerMeterService:
             activated_at = (
                 utc_now() if (last_event is not None or activate_meter) else None
             )
-            # Handle race condition: if another transaction created the row
-            # concurrently, catch the IntegrityError and re-query with lock.
-            nested = await session.begin_nested()
-            try:
-                customer_meter = await repository.create(
-                    CustomerMeter(
-                        customer=customer, meter=meter, activated_at=activated_at
-                    )
+            customer_meter = await repository.create(
+                CustomerMeter(
+                    customer=customer, meter=meter, activated_at=activated_at
                 )
-                await session.flush()
-            except IntegrityError:
-                await nested.rollback()
-                # Row was created by concurrent transaction, acquire lock and continue
-                customer_meter = await repository.get_by_customer_and_meter_for_update(
-                    customer.id, meter.id
-                )
-                if customer_meter is None:
-                    # Should not happen, but handle gracefully
-                    raise
+            )
 
         if last_event is None:
             return customer_meter, False

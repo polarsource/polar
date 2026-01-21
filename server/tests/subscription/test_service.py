@@ -3440,3 +3440,356 @@ class TestEnqueueBenefitsGrantsGracePeriod:
             subscription_id=subscription.id,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestScheduleProductChange:
+    """Tests for the schedule_product_change method."""
+
+    async def test_canceled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Should not allow scheduling a change on a canceled subscription."""
+        subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.schedule_product_change(
+                session, subscription, product_id=new_product.id
+            )
+
+    async def test_trialing_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Should not allow scheduling a change on a trialing subscription."""
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+
+        with pytest.raises(TrialingSubscription):
+            await subscription_service.schedule_product_change(
+                session, subscription, product_id=new_product.id
+            )
+
+    async def test_same_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Should not allow scheduling a change to the same product."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.schedule_product_change(
+                session, subscription, product_id=product.id
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert "schedule_change_product_id" in str(errors[0]["loc"])
+        assert "same product" in errors[0]["msg"].lower()
+
+    async def test_nonexistent_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Should not allow scheduling a change to a nonexistent product."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.schedule_product_change(
+                session, subscription, product_id=uuid.uuid4()
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert "schedule_change_product_id" in str(errors[0]["loc"])
+        assert "does not exist" in errors[0]["msg"].lower()
+
+    async def test_unavailable_currency(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_multiple_currencies: Product,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Should not allow scheduling a change if new product lacks subscription currency."""
+        # Create subscription with EUR
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_multiple_currencies,
+            customer=customer,
+            currency="eur",
+        )
+
+        # product only has USD prices
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.schedule_product_change(
+                session, subscription, product_id=product.id
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert "schedule_change_product_id" in str(errors[0]["loc"])
+        assert "currency" in errors[0]["msg"].lower()
+
+    async def test_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+        subscription_hooks: Hooks,
+    ) -> None:
+        """Should successfully schedule a product change."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        original_product_id = subscription.product_id
+
+        # Create a new cheaper product
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+
+        updated_subscription = await subscription_service.schedule_product_change(
+            session, subscription, product_id=new_product.id
+        )
+
+        # Verify the scheduled change is set
+        assert updated_subscription.scheduled_change_product_id == new_product.id
+        # Product hasn't changed yet
+        assert updated_subscription.product_id == original_product_id
+
+        # Verify hooks were called
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+
+@pytest.mark.asyncio
+class TestClearScheduledProductChange:
+    """Tests for the clear_scheduled_product_change method."""
+
+    async def test_no_scheduled_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Should fail if no change is scheduled."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.clear_scheduled_product_change(
+                session, subscription
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert "clear_scheduled_change" in str(errors[0]["loc"])
+
+    async def test_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+        subscription_hooks: Hooks,
+    ) -> None:
+        """Should successfully clear a scheduled product change."""
+        # Create a new product to schedule
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.scheduled_change_product_id = new_product.id
+        await save_fixture(subscription)
+
+        reset_hooks(subscription_hooks)
+
+        updated_subscription = (
+            await subscription_service.clear_scheduled_product_change(
+                session, subscription
+            )
+        )
+
+        # Verify the scheduled change is cleared
+        assert updated_subscription.scheduled_change_product_id is None
+
+        # Verify hooks were called
+        assert_hooks_called_once(subscription_hooks, {"updated"})
+
+
+@pytest.mark.asyncio
+class TestCycleWithScheduledChange:
+    """Tests for the cycle method when a scheduled product change exists."""
+
+    async def test_applies_scheduled_product_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Should apply the scheduled product change when cycling."""
+        # Create a new cheaper product
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+
+        # Create subscription with scheduled change
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.scheduled_change_product_id = new_product.id
+        await save_fixture(subscription)
+
+        original_period_end = subscription.current_period_end
+
+        # Cycle the subscription
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # Verify the product has changed
+        assert updated_subscription.product_id == new_product.id
+        assert updated_subscription.scheduled_change_product_id is None
+
+        # Verify the period has advanced
+        assert updated_subscription.current_period_start == original_period_end
+
+        # Verify benefits grants were enqueued
+        enqueue_benefits_grants_mock.assert_called()
+
+    async def test_scheduled_product_archived_clears_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Should clear the scheduled change if the target product is archived."""
+        # Create a new product and archive it
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, "usd")],
+        )
+        new_product.is_archived = True
+        await save_fixture(new_product)
+
+        # Create subscription with scheduled change to archived product
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.scheduled_change_product_id = new_product.id
+        await save_fixture(subscription)
+
+        # Cycle the subscription
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # Product should NOT have changed (archived product is invalid)
+        assert updated_subscription.product_id == product.id
+        # Scheduled change should be cleared
+        assert updated_subscription.scheduled_change_product_id is None
+
+    async def test_scheduled_product_different_interval(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Should update recurring interval when switching to a product with different interval."""
+        # Create a yearly product
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(5000, "usd")],
+        )
+
+        # Create monthly subscription with scheduled change to yearly
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.recurring_interval == SubscriptionRecurringInterval.month
+        subscription.scheduled_change_product_id = yearly_product.id
+        await save_fixture(subscription)
+
+        # Cycle the subscription
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # Verify product and interval have changed
+        assert updated_subscription.product_id == yearly_product.id
+        assert (
+            updated_subscription.recurring_interval == SubscriptionRecurringInterval.year
+        )
+        assert updated_subscription.scheduled_change_product_id is None

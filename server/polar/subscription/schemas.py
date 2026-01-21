@@ -122,6 +122,14 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
+    scheduled_change_product_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ID of the product the subscription will change to at the end "
+            "of the current billing period. If `null`, no change is scheduled."
+        ),
+    )
+
     price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
@@ -197,6 +205,13 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
     product: Product
     discount: SubscriptionDiscount | None
+    scheduled_change_product: Product | None = Field(
+        default=None,
+        description=(
+            "The product the subscription will change to at the end of the current "
+            "billing period. If `null`, no change is scheduled."
+        ),
+    )
 
     price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
@@ -373,6 +388,41 @@ class SubscriptionRevoke(SubscriptionCancelBase):
     )
 
 
+class SubscriptionScheduleProductChange(Schema):
+    """
+    Schedule a product change to take effect at the end of the current billing period.
+
+    This allows for plan changes (upgrades or downgrades) without immediate proration.
+    The customer keeps their current plan until the period ends, then automatically
+    switches to the new plan with a clean invoice at the new price.
+    """
+
+    schedule_change_product_id: UUID4 = Field(
+        description=inspect.cleandoc(
+            """
+            The ID of the product to change to at the end of the current billing period.
+
+            The change will take effect when the current period ends and the subscription
+            renews. No proration will be applied - the customer will simply be charged
+            the new price for the next period.
+            """
+        ),
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
+
+
+class SubscriptionClearScheduledChange(Schema):
+    """
+    Clear a previously scheduled product change.
+
+    This cancels a pending product change, keeping the subscription on its current plan.
+    """
+
+    clear_scheduled_change: Literal[True] = Field(
+        description="Set to `true` to clear any scheduled product change."
+    )
+
+
 SubscriptionUpdate = Annotated[
     SubscriptionUpdateProduct
     | SubscriptionUpdateDiscount
@@ -380,7 +430,9 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateSeats
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
-    | SubscriptionRevoke,
+    | SubscriptionRevoke
+    | SubscriptionScheduleProductChange
+    | SubscriptionClearScheduledChange,
     SetSchemaReference("SubscriptionUpdate"),
 ]
 

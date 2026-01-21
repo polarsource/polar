@@ -195,7 +195,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:
-        return relationship("Product", lazy="raise")
+        return relationship(
+            "Product",
+            lazy="raise",
+            foreign_keys=[cls.product_id],  # type: ignore
+        )
 
     subscription_product_prices: Mapped[list["SubscriptionProductPrice"]] = (
         relationship(
@@ -240,6 +244,25 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     checkout_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
     )
+
+    scheduled_change_product_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("products.id", ondelete="set null"),
+        nullable=True,
+        index=True,
+    )
+    """
+    If set, the subscription will change to this product at the end of the current
+    billing period. This allows for plan downgrades/upgrades without immediate proration.
+    """
+
+    @declared_attr
+    def scheduled_change_product(cls) -> Mapped["Product | None"]:
+        return relationship(
+            "Product",
+            lazy="joined",
+            foreign_keys=[cls.scheduled_change_product_id],  # type: ignore
+        )
 
     customer_cancellation_reason: Mapped[CustomerCancellationReason | None] = (
         mapped_column(String, nullable=True)

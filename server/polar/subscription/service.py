@@ -98,9 +98,11 @@ from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionCancel,
     SubscriptionChargePreview,
+    SubscriptionClearScheduledChange,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
     SubscriptionRevoke,
+    SubscriptionScheduleProductChange,
     SubscriptionUpdate,
     SubscriptionUpdateBillingPeriod,
     SubscriptionUpdateDiscount,
@@ -657,6 +659,10 @@ class SubscriptionService:
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
+            # Apply scheduled product change if one exists
+            if subscription.scheduled_change_product_id is not None:
+                await self._apply_scheduled_product_change(session, subscription)
+
             if update_cycle_dates:
                 current_period_end = subscription.current_period_end
                 assert current_period_end is not None
@@ -905,6 +911,16 @@ class SubscriptionService:
                 customer_comment=update.customer_cancellation_comment,
                 immediately=True,
             )
+
+        if isinstance(update, SubscriptionScheduleProductChange):
+            return await self.schedule_product_change(
+                session,
+                subscription,
+                product_id=update.schedule_change_product_id,
+            )
+
+        if isinstance(update, SubscriptionClearScheduledChange):
+            return await self.clear_scheduled_product_change(session, subscription)
 
     async def update_product(
         self,
@@ -1188,6 +1204,266 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def schedule_product_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_id: uuid.UUID,
+    ) -> Subscription:
+        """
+        Schedule a product change to take effect at the end of the current billing period.
+
+        This allows for plan changes (upgrades or downgrades) without immediate proration.
+        The customer keeps their current plan until the period ends, then automatically
+        switches to the new plan with a clean invoice at the new price.
+        """
+        if subscription.revoked or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.trialing:
+            raise TrialingSubscription(subscription)
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id_and_organization(
+            product_id,
+            subscription.product.organization_id,
+            options=product_repository.get_eager_options(),
+        )
+
+        if product is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "Product does not exist.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if not product.is_recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "Product is not recurring.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.is_legacy_recurring_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "Product has legacy recurring prices.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.id == subscription.product_id:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "Cannot schedule a change to the same product.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        try:
+            PriceSet.from_product(product, subscription.currency)
+        except NoPricesForCurrencies as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "schedule_change_product_id"),
+                        "msg": "This product doesn't have a price for the subscription currency.",
+                        "input": product_id,
+                    }
+                ]
+            ) from e
+
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+
+        subscription.scheduled_change_product_id = product_id
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription, flush=True)
+
+        log.info(
+            "subscription.scheduled_product_change",
+            subscription_id=subscription.id,
+            current_product_id=subscription.product_id,
+            scheduled_product_id=product_id,
+            current_period_end=subscription.current_period_end,
+        )
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
+
+    async def clear_scheduled_product_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Subscription:
+        """
+        Clear a previously scheduled product change.
+
+        This cancels a pending product change, keeping the subscription on its current plan.
+        """
+        if subscription.scheduled_change_product_id is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "clear_scheduled_change"),
+                        "msg": "No product change is scheduled for this subscription.",
+                        "input": True,
+                    }
+                ]
+            )
+
+        previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
+
+        subscription.scheduled_change_product_id = None
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription, flush=True)
+
+        log.info(
+            "subscription.cleared_scheduled_product_change",
+            subscription_id=subscription.id,
+        )
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_is_canceled=previous_is_canceled,
+        )
+
+        return subscription
+
+    async def _apply_scheduled_product_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        """
+        Apply a scheduled product change during subscription cycle.
+
+        This is called by the cycle method when there's a scheduled_change_product_id.
+        It updates the subscription's product, prices, and recurring interval without
+        creating any proration billing entries.
+        """
+        scheduled_product_id = subscription.scheduled_change_product_id
+        if scheduled_product_id is None:
+            return
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            scheduled_product_id, options=product_repository.get_eager_options()
+        )
+
+        if product is None or product.is_archived or not product.is_recurring:
+            # Product no longer valid, clear the scheduled change and continue
+            log.warning(
+                "subscription.scheduled_product_change_invalid",
+                subscription_id=subscription.id,
+                scheduled_product_id=scheduled_product_id,
+                reason="product_not_found_or_invalid",
+            )
+            subscription.scheduled_change_product_id = None
+            return
+
+        previous_product = subscription.product
+
+        # Get prices for the new product in the subscription's currency
+        try:
+            currency_prices = PriceSet.from_product(product, subscription.currency)
+        except NoPricesForCurrencies:
+            # No prices available, clear the scheduled change and continue
+            log.warning(
+                "subscription.scheduled_product_change_invalid",
+                subscription_id=subscription.id,
+                scheduled_product_id=scheduled_product_id,
+                reason="no_prices_for_currency",
+            )
+            subscription.scheduled_change_product_id = None
+            return
+
+        log.info(
+            "subscription.applying_scheduled_product_change",
+            subscription_id=subscription.id,
+            old_product_id=previous_product.id,
+            new_product_id=product.id,
+        )
+
+        # Update subscription to the new product
+        subscription.product = product
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price, seats=subscription.seats)
+            for price in currency_prices
+        ]
+
+        # Update recurring interval if the new product has a different one
+        assert product.recurring_interval is not None
+        assert product.recurring_interval_count is not None
+        subscription.recurring_interval = product.recurring_interval
+        subscription.recurring_interval_count = product.recurring_interval_count
+
+        # Clear the scheduled change since it's now applied
+        subscription.scheduled_change_product_id = None
+
+        # Create event for the product change
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_product_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(previous_product.id),
+                    "new_product_id": str(product.id),
+                    "scheduled_change": True,
+                },
+            ),
+        )
+
+        # Enqueue benefits grants for the new product
+        await self.enqueue_benefits_grants(session, subscription)
 
     async def update_discount(
         self,

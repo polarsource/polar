@@ -23,6 +23,7 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
+from polar.user.repository import UserRepository
 
 cli = typer.Typer()
 console = Console()
@@ -189,7 +190,11 @@ async def _send_email(
         raise PlainScriptError("Organization not found")
     admin = await organization_repository.get_admin_user(session, organization)
     if admin is None:
-        raise PlainScriptError("Admin user not found")
+        user_repository = UserRepository.from_session(session)
+        users = await user_repository.get_all_by_organization(organization_id)
+        if not users:
+            raise PlainScriptError("Admin user not found")
+        admin = users[0]
 
     async with _get_plain_client() as plain:
         # By email
@@ -396,7 +401,7 @@ Founder & CEO, Polar
 @typer_async
 async def webhooks_comm(
     path: str,
-    organization_id: str | None = typer.Option(None),
+    organization_id: list[str] | None = typer.Option(None),
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -432,7 +437,7 @@ async def webhooks_comm(
             data: WebhooksData = json.loads(f.read())
             if organization_id is not None:
                 organizations = {
-                    organization_id: data["organizations"][organization_id]
+                    id: data["organizations"][id] for id in organization_id
                 }
             else:
                 organizations = data["organizations"]

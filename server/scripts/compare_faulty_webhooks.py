@@ -17,6 +17,8 @@ import typer
 from rich.console import Console
 from sqlalchemy import select
 
+import polar.customer.tasks
+import polar.webhook.tasks  # noqa: F401 - register dramatiq actors
 from polar.config import settings
 from polar.integrations.aws.s3 import S3Service
 from polar.kit.db.postgres import create_async_sessionmaker

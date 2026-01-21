@@ -26,9 +26,11 @@ if TYPE_CHECKING:
 POSTHOG_ID_TAG = "posthog_distinct_id"
 
 # Tasks that use FOR UPDATE NOWAIT and expect lock failures to trigger retries
-_LOCK_EXPECTED_ACTORS: frozenset[str] = frozenset({
-    "customer_meter.update_customer",
-})
+_LOCK_EXPECTED_ACTORS: frozenset[str] = frozenset(
+    {
+        "customer_meter.update_customer",
+    }
+)
 
 
 def _is_lock_not_available_error(exc_value: Any) -> bool:

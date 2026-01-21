@@ -321,6 +321,18 @@ async def compare_webhooks_from_rows(rows: list[dict[str, Any]]) -> ComparisonRe
                         webhook_event_id=webhook_event_id,
                     )
                 )
+                diffs_by_event_type[event_type] = (
+                    diffs_by_event_type.get(event_type, 0) + 1
+                )
+                if org_id:
+                    diffs_by_organization[org_id] = (
+                        diffs_by_organization.get(org_id, 0) + 1
+                    )
+                    if org_id not in diffs_by_org_event_type:
+                        diffs_by_org_event_type[org_id] = {}
+                    diffs_by_org_event_type[org_id][event_type] = (
+                        diffs_by_org_event_type[org_id].get(event_type, 0) + 1
+                    )
                 continue
 
             found_count += 1
@@ -427,7 +439,7 @@ def print_results(result: ComparisonResult, output_json: bool = False) -> None:
                 for fr in result.faulty_resources
             ],
         }
-        print(json.dumps(output, indent=2))
+        print(json.dumps(output, indent=2), flush=True)
         return
 
     console.print("\n[bold]Summary[/bold]")

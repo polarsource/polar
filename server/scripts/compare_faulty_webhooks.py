@@ -209,17 +209,25 @@ async def analyze_webhooks(rows: list[dict[str, Any]]) -> AnalysisResult:
             if sent_status and sub_id_str:
                 subscription_sent_statuses[UUID(sub_id_str)] = sent_status
 
+    total_customers = sum(len(cids) for cids in org_customer_ids.values())
     console.print(
-        "[cyan]Phase 2: Fetching customer and subscription data from DB...[/cyan]"
+        f"[cyan]Phase 2: Fetching customer and subscription data from DB ({total_customers} customers)...[/cyan]"
     )
 
     organizations: dict[UUID, OrganizationInfo] = {}
+    customers_processed = 0
 
     async with sessionmaker() as session:
         for org_id, customer_ids in org_customer_ids.items():
             org_info = OrganizationInfo()
 
             for cust_id in customer_ids:
+                customers_processed += 1
+                if customers_processed % 100 == 0:
+                    console.print(
+                        f"  Processed {customers_processed}/{total_customers} customers..."
+                    )
+
                 cust_result = await session.execute(
                     select(Customer).where(Customer.id == cust_id)
                 )
@@ -245,13 +253,23 @@ async def analyze_webhooks(rows: list[dict[str, Any]]) -> AnalysisResult:
 
             organizations[org_id] = org_info
 
-        console.print("[cyan]Phase 3: Checking order validity...[/cyan]")
+        total_orders = sum(len(oids) for oids in org_order_ids.values())
+        console.print(
+            f"[cyan]Phase 3: Checking order validity ({total_orders} orders)...[/cyan]"
+        )
 
+        orders_processed = 0
         for org_id, order_ids in org_order_ids.items():
             if org_id not in organizations:
                 organizations[org_id] = OrganizationInfo()
 
             for order_id in order_ids:
+                orders_processed += 1
+                if orders_processed % 100 == 0:
+                    console.print(
+                        f"  Processed {orders_processed}/{total_orders} orders..."
+                    )
+
                 order_result = await session.execute(
                     select(Order.id).where(Order.id == order_id)
                 )

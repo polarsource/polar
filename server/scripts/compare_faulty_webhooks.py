@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 from uuid import UUID
 
+import dramatiq
 import httpx
 import structlog
 import typer
@@ -23,9 +24,10 @@ from polar.kit.utils import utc_now
 from polar.models import BenefitGrant, Customer, Order, Subscription
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import create_async_engine
+from polar.redis import create_redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
-from polar.worker import enqueue_job
+from polar.worker import JobQueueManager, enqueue_job
 
 cli = typer.Typer()
 console = Console()
@@ -387,59 +389,61 @@ async def download_file(url: str) -> Path:
 async def send_webhooks(result: AnalysisResult) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
+    redis = create_redis("script")
 
-    if result.touched_subscription_ids:
-        console.print(
-            f"\n[cyan]Sending subscription.updated for {len(result.touched_subscription_ids)} subscriptions...[/cyan]"
-        )
-        async with sessionmaker() as session:
-            sub_repo = SubscriptionRepository.from_session(session)
+    async with JobQueueManager.open(dramatiq.get_broker(), redis):
+        if result.touched_subscription_ids:
+            console.print(
+                f"\n[cyan]Sending subscription.updated for {len(result.touched_subscription_ids)} subscriptions...[/cyan]"
+            )
+            async with sessionmaker() as session:
+                sub_repo = SubscriptionRepository.from_session(session)
 
-            for i, sub_id in enumerate(result.touched_subscription_ids):
-                subscription = await sub_repo.get_by_id(
-                    sub_id, options=sub_repo.get_eager_options()
-                )
-                if subscription is None:
-                    continue
+                for i, sub_id in enumerate(result.touched_subscription_ids):
+                    subscription = await sub_repo.get_by_id(
+                        sub_id, options=sub_repo.get_eager_options()
+                    )
+                    if subscription is None:
+                        continue
 
-                await webhook_service.send(
-                    session,
-                    subscription.organization,
-                    WebhookEventType.subscription_updated,
-                    subscription,
-                )
-
-                if (i + 1) % 100 == 0:
-                    console.print(
-                        f"  Sent {i + 1}/{len(result.touched_subscription_ids)}..."
+                    await webhook_service.send(
+                        session,
+                        subscription.organization,
+                        WebhookEventType.subscription_updated,
+                        subscription,
                     )
 
+                    if (i + 1) % 100 == 0:
+                        console.print(
+                            f"  Sent {i + 1}/{len(result.touched_subscription_ids)}..."
+                        )
+
+            console.print(
+                f"[green]Sent {len(result.touched_subscription_ids)} subscription.updated webhooks[/green]"
+            )
+
+        await engine.dispose()
+
+        all_customer_ids: set[UUID] = set()
+        for org_info in result.organizations.values():
+            all_customer_ids.update(org_info.customers.keys())
+
         console.print(
-            f"[green]Sent {len(result.touched_subscription_ids)} subscription.updated webhooks[/green]"
+            f"\n[cyan]Enqueueing customer_state_changed for {len(all_customer_ids)} customers...[/cyan]"
         )
 
-    await engine.dispose()
+        for i, customer_id in enumerate(all_customer_ids):
+            enqueue_job(
+                "customer.webhook",
+                WebhookEventType.customer_state_changed,
+                customer_id,
+            )
+            if (i + 1) % 100 == 0:
+                console.print(f"  Enqueued {i + 1}/{len(all_customer_ids)}...")
 
-    all_customer_ids: set[UUID] = set()
-    for org_info in result.organizations.values():
-        all_customer_ids.update(org_info.customers.keys())
-
-    console.print(
-        f"\n[cyan]Enqueueing customer_state_changed for {len(all_customer_ids)} customers...[/cyan]"
-    )
-
-    for i, customer_id in enumerate(all_customer_ids):
-        enqueue_job(
-            "customer.webhook",
-            WebhookEventType.customer_state_changed,
-            customer_id,
+        console.print(
+            f"[green]Enqueued {len(all_customer_ids)} customer_state_changed webhooks[/green]"
         )
-        if (i + 1) % 100 == 0:
-            console.print(f"  Enqueued {i + 1}/{len(all_customer_ids)}...")
-
-    console.print(
-        f"[green]Enqueued {len(all_customer_ids)} customer_state_changed webhooks[/green]"
-    )
 
 
 @cli.command()

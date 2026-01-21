@@ -424,12 +424,18 @@ async def send_webhooks(
                     if subscription is None:
                         continue
 
-                    await webhook_service.send(
-                        session,
-                        subscription.organization,
-                        WebhookEventType.subscription_updated,
-                        subscription,
-                    )
+                    try:
+                        await webhook_service.send(
+                            session,
+                            subscription.organization,
+                            WebhookEventType.subscription_updated,
+                            subscription,
+                        )
+                    except Exception as e:
+                        console.print(
+                            f"[red]Error sending webhook for subscription {sub_id}: {e}[/red]"
+                        )
+                        raise
 
                     await session.commit()
                     await manager.flush(broker, redis)
@@ -465,11 +471,17 @@ async def send_webhooks(
             for i, customer_id in enumerate(
                 sorted_customer_ids[start_idx:], start=start_idx
             ):
-                enqueue_job(
-                    "customer.webhook",
-                    WebhookEventType.customer_state_changed,
-                    customer_id,
-                )
+                try:
+                    enqueue_job(
+                        "customer.webhook",
+                        WebhookEventType.customer_state_changed,
+                        customer_id,
+                    )
+                except Exception as e:
+                    console.print(
+                        f"[red]Error enqueueing webhook for customer {customer_id}: {e}[/red]"
+                    )
+                    raise
 
                 await session.commit()
                 await manager.flush(broker, redis)

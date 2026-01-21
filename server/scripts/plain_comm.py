@@ -14,6 +14,7 @@ import httpx
 import plain_client as pl
 import structlog
 import typer
+from rich.console import Console
 from rich.progress import Progress
 
 from polar.config import settings
@@ -22,6 +23,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
 
 cli = typer.Typer()
+console = Console()
 
 
 class BenefitGrantData(TypedDict):
@@ -380,8 +382,13 @@ async def webhooks_comm(
                 )
                 for id, organization_data in organizations.items():
                     progress.update(task, description=f"[cyan]Handling {id}")
-                    await _send_email(session, uuid.UUID(id), organization_data)
-                    progress.update(task, advance=1)
+                    try:
+                        await _send_email(session, uuid.UUID(id), organization_data)
+                        progress.update(task, advance=1)
+                    except PlainScriptError as e:
+                        progress.stop()
+                        console.print(f"[red] Error while handling {id}: {e}")
+                        raise typer.Exit(1)
     await engine.dispose()
 
 

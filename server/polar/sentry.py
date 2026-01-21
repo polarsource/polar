@@ -57,10 +57,10 @@ def _get_dramatiq_actor_name(event: "Event") -> str | None:
     if contexts is None:
         return None
     dramatiq_ctx = contexts.get("dramatiq")
-    if dramatiq_ctx is None:
+    if dramatiq_ctx is None or not isinstance(dramatiq_ctx, dict):
         return None
     data = dramatiq_ctx.get("data")
-    if data is None:
+    if data is None or not isinstance(data, dict):
         return None
     return data.get("actor_name")
 

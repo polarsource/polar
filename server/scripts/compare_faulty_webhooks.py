@@ -16,7 +16,10 @@ import typer
 from rich.console import Console
 from sqlalchemy import select
 
+from polar.config import settings
+from polar.integrations.aws.s3 import S3Service
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.utils import utc_now
 from polar.models import BenefitGrant, Customer, Order, Subscription
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import create_async_engine
@@ -323,7 +326,17 @@ def print_results(result: AnalysisResult, output_json: bool = False) -> None:
     }
 
     if output_json:
-        print(json.dumps(output), flush=True)
+        s3 = S3Service(bucket=settings.S3_FILES_BUCKET_NAME)
+        timestamp = utc_now().strftime("%Y%m%d-%H%M%S")
+        path = f"exports/webhook_analysis_{timestamp}.json"
+        data = json.dumps(output).encode("utf-8")
+        s3.upload(data, path, "application/json")
+        url, _ = s3.generate_presigned_download_url(
+            path=path,
+            filename=f"webhook_analysis_{timestamp}.json",
+            mime_type="application/json",
+        )
+        console.print(f"[green]Uploaded to S3: {url}[/green]")
         return
 
     console.print("\n[bold]Summary[/bold]")
@@ -466,8 +479,6 @@ async def compare(
 
     if execute:
         await send_webhooks(result)
-
-    await asyncio.sleep(10)
 
 
 if __name__ == "__main__":

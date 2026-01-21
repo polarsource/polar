@@ -2,9 +2,8 @@
   "extends": "@polar-sh/typescript-config/react-library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "resolveJsonModule": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "scripts"]
+  "include": ["src", "scripts"],
+  "exclude": ["node_modules", "dist"]
 }

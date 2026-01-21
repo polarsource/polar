@@ -3,16 +3,17 @@ import fs from 'node:fs'
 import path from 'node:path'
 import OpenAI from 'openai'
 
-// Load .env.local first (if exists), then .env as fallback
+
 dotenv.config({ path: path.join(import.meta.dirname, '../.env.local') })
 dotenv.config({ path: path.join(import.meta.dirname, '../.env') })
 
 const LOCALES_DIR = path.join(import.meta.dirname, '../src/locales')
+const CONFIG_DIR = path.join(LOCALES_DIR, 'config')
 const EN_FILE = path.join(LOCALES_DIR, 'en.json')
-const PROMPT_FILE = path.join(import.meta.dirname, '../src/prompt.md')
-const LOCKS_FILE = path.join(import.meta.dirname, '../src/locks.json')
-const SUPPORTED_LOCALES_FILE = path.join(import.meta.dirname, '../src/supported_locales.json')
-const CACHE_FILE = path.join(import.meta.dirname, '../src/.translation-cache.json')
+const PROMPT_FILE = path.join(CONFIG_DIR, 'prompt.md')
+const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
+const SUPPORTED_LOCALES_FILE = path.join(CONFIG_DIR, 'supported.json')
+const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
 const LOCALE_NAMES: Record<string, string> = {
   sv: 'Swedish',
@@ -23,9 +24,9 @@ const LOCALE_NAMES: Record<string, string> = {
 
 type EntryValue = string | { value: string; llmContext?: string }
 type NestedObject = { [key: string]: EntryValue | NestedObject }
-type TranslationCache = Record<string, Record<string, string>> // locale -> key -> english source
+type TranslationCache = Record<string, Record<string, string>>
 
-// Extract the string value from an entry (handles both plain strings and objects with llmContext)
+
 function getStringValue(entry: EntryValue): string {
   if (typeof entry === 'string') {
     return entry
@@ -33,12 +34,12 @@ function getStringValue(entry: EntryValue): string {
   return entry.value
 }
 
-// Check if an entry has llmContext
+
 function hasLlmContext(entry: EntryValue): entry is { value: string; llmContext: string } {
   return typeof entry === 'object' && 'llmContext' in entry && entry.llmContext !== undefined
 }
 
-// Flatten nested object to dot-notation keys
+
 function flattenKeys(obj: NestedObject, prefix = ''): Map<string, EntryValue> {
   const result = new Map<string, EntryValue>()
 
@@ -58,7 +59,7 @@ function flattenKeys(obj: NestedObject, prefix = ''): Map<string, EntryValue> {
   return result
 }
 
-// Unflatten dot-notation keys back to nested object (values only, no llmContext)
+
 function unflattenKeys(map: Map<string, string>): NestedObject {
   const result: NestedObject = {}
 
@@ -80,10 +81,10 @@ function unflattenKeys(map: Map<string, string>): NestedObject {
   return result
 }
 
-// Find keys that need translation by comparing current English source with cached English source
+
 function findChangedKeys(
   sourceKeys: Map<string, EntryValue>,
-  cache: Record<string, string>, // key -> cached english source
+  cache: Record<string, string>,
   existingTranslation: NestedObject
 ): string[] {
   const existingKeys = flattenKeys(existingTranslation)
@@ -94,10 +95,10 @@ function findChangedKeys(
     const cachedSource = cache[key]
     const hasExistingTranslation = existingKeys.has(key)
 
-    // Translate if:
-    // 1. Key doesn't exist in translation file
-    // 2. English source has changed since last translation (cache mismatch)
-    // 3. No cache entry exists (never translated before)
+
+
+
+
     if (!hasExistingTranslation || cachedSource !== currentSource) {
       changed.push(key)
     }
@@ -106,7 +107,7 @@ function findChangedKeys(
   return changed
 }
 
-// Find keys that exist in translation but not in source
+
 function findOrphanedKeys(
   sourceKeys: Map<string, EntryValue>,
   existingTranslation: NestedObject
@@ -123,7 +124,7 @@ function findOrphanedKeys(
   return orphaned
 }
 
-// Prepare strings for LLM translation (includes llmContext if present)
+
 function prepareForLLM(
   sourceKeys: Map<string, EntryValue>,
   keys: string[]
@@ -144,7 +145,7 @@ function prepareForLLM(
   return result
 }
 
-// Normalize LLM response - extract plain string values if objects are returned
+
 function normalizeResponse(response: Record<string, unknown>): Record<string, string> {
   const result: Record<string, string> = {}
 
@@ -152,7 +153,7 @@ function normalizeResponse(response: Record<string, unknown>): Record<string, st
     if (typeof value === 'string') {
       result[key] = value
     } else if (typeof value === 'object' && value !== null && 'value' in value) {
-      // LLM returned object format - extract the value
+
       result[key] = (value as { value: string }).value
     } else {
       console.warn(`  Warning: Unexpected value type for key "${key}": ${typeof value}`)
@@ -211,7 +212,7 @@ function saveCache(cache: TranslationCache): void {
 }
 
 async function translate() {
-  // Load source files
+
   const en = JSON.parse(fs.readFileSync(EN_FILE, 'utf-8')) as NestedObject
   const locks = JSON.parse(fs.readFileSync(LOCKS_FILE, 'utf-8')) as Record<string, string[]>
   const { supportedLocales } = JSON.parse(
@@ -229,11 +230,11 @@ async function translate() {
   for (const locale of targetLocales) {
     console.log(`Processing ${locale}...`)
 
-    const localeFile = path.join(LOCALES_DIR, `${locale}.json`)
+    const localeFile = path.join(LOCALES_DIR, 'generated-translations', `${locale}.json`)
     const lockedKeys = locks[locale] ?? []
     const localeCache = cache[locale] ?? {}
 
-    // Load existing translation if it exists
+
     let existing: NestedObject = {}
     if (fs.existsSync(localeFile)) {
       const content = fs.readFileSync(localeFile, 'utf-8').trim()
@@ -242,12 +243,12 @@ async function translate() {
       }
     }
 
-    // Find keys that need translation (comparing English source with cache)
+
     const changedKeys = findChangedKeys(sourceKeys, localeCache, existing).filter(
       (key) => !lockedKeys.includes(key)
     )
 
-    // Find orphaned keys to remove
+
     const orphanedKeys = findOrphanedKeys(sourceKeys, existing)
 
     if (changedKeys.length === 0 && orphanedKeys.length === 0) {
@@ -258,50 +259,50 @@ async function translate() {
     console.log(`  Keys to translate: ${changedKeys.length}`)
     console.log(`  Keys to remove: ${orphanedKeys.length}`)
 
-    // Prepare and call LLM
+
     let translations: Record<string, string> = {}
     if (changedKeys.length > 0) {
       const toTranslate = prepareForLLM(sourceKeys, changedKeys)
       translations = await callLLM(locale, toTranslate, prompt)
     }
 
-    // Build updated translation
+
     const existingFlat = flattenKeys(existing)
     const updatedFlat = new Map<string, string>()
 
-    // Keep existing translations for unchanged keys
+
     for (const [key, value] of existingFlat) {
       if (!orphanedKeys.includes(key) && !changedKeys.includes(key)) {
         updatedFlat.set(key, getStringValue(value))
       }
     }
 
-    // Add new translations and update cache
+
     for (const key of changedKeys) {
       if (translations[key]) {
         updatedFlat.set(key, translations[key])
-        // Update cache with the English source that was used for this translation
+
         localeCache[key] = getStringValue(sourceKeys.get(key)!)
       } else {
         console.warn(`  Warning: No translation received for key "${key}"`)
       }
     }
 
-    // Remove orphaned keys from cache
+
     for (const key of orphanedKeys) {
       delete localeCache[key]
     }
 
-    // Update cache for this locale
+
     cache[locale] = localeCache
 
-    // Unflatten and write
+
     const updated = unflattenKeys(updatedFlat)
     fs.writeFileSync(localeFile, JSON.stringify(updated, null, 2) + '\n')
     console.log(`  Written to ${locale}.json\n`)
   }
 
-  // Save cache
+
   saveCache(cache)
 
   console.log('Translation complete!')

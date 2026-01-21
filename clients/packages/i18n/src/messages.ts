@@ -28,13 +28,13 @@ const enMessages = extractValues(en as Record<string, unknown>) as unknown as Me
 async function loadLocale(locale: string): Promise<Messages> {
   switch (locale) {
     case 'sv':
-      return (await import('./locales/sv.json')).default as Messages
+      return (await import('./locales/generated-translations/sv.json')).default as Messages
     case 'es':
-      return (await import('./locales/es.json')).default as Messages
+      return (await import('./locales/generated-translations/es.json')).default as Messages
     case 'fr':
-      return (await import('./locales/fr.json')).default as Messages
+      return (await import('./locales/generated-translations/fr.json')).default as Messages
     case 'nl':
-      return (await import('./locales/nl.json')).default as Messages
+      return (await import('./locales/generated-translations/nl.json')).default as Messages
     default:
       return enMessages
   }

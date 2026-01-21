@@ -8,7 +8,6 @@ const SUPPORTED_LOCALES_FILE = path.join(import.meta.dirname, '../src/supported_
 type EntryValue = string | { value: string; llmContext?: string }
 type NestedObject = { [key: string]: EntryValue | NestedObject }
 
-// Extract the string value from an entry
 function getStringValue(entry: EntryValue): string {
   if (typeof entry === 'string') {
     return entry
@@ -16,7 +15,6 @@ function getStringValue(entry: EntryValue): string {
   return entry.value
 }
 
-// Check if value is a leaf node
 function isLeafNode(value: unknown): value is EntryValue {
   return (
     typeof value === 'string' ||
@@ -24,7 +22,6 @@ function isLeafNode(value: unknown): value is EntryValue {
   )
 }
 
-// Flatten nested object to dot-notation keys
 function flattenKeys(obj: NestedObject, prefix = ''): Map<string, string> {
   const result = new Map<string, string>()
 
@@ -44,11 +41,9 @@ function flattenKeys(obj: NestedObject, prefix = ''): Map<string, string> {
   return result
 }
 
-// Extract placeholders from a string
 function extractPlaceholders(str: string): string[] {
   const placeholders: string[] = []
 
-  // Match {name} style (but not ICU syntax keywords)
   const simpleMatch = str.matchAll(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g)
   for (const match of simpleMatch) {
     if (!['plural', 'select', 'selectordinal'].includes(match[1])) {
@@ -56,7 +51,6 @@ function extractPlaceholders(str: string): string[] {
     }
   }
 
-  // Match {{name}} style
   const doubleMatch = str.matchAll(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g)
   for (const match of doubleMatch) {
     placeholders.push(match[1])
@@ -73,7 +67,6 @@ function arraysEqual(a: string[], b: string[]): boolean {
 function validate() {
   const errors: string[] = []
 
-  // Load source
   const en = JSON.parse(fs.readFileSync(EN_FILE, 'utf-8')) as NestedObject
   const { supportedLocales } = JSON.parse(
     fs.readFileSync(SUPPORTED_LOCALES_FILE, 'utf-8')
@@ -98,7 +91,6 @@ function validate() {
     const translation = JSON.parse(fs.readFileSync(localeFile, 'utf-8')) as NestedObject
     const translationKeys = flattenKeys(translation)
 
-    // Check for missing keys
     const missingKeys: string[] = []
     for (const key of sourceKeys.keys()) {
       if (!translationKeys.has(key)) {
@@ -110,7 +102,6 @@ function validate() {
       errors.push(`${locale}: Missing keys: ${missingKeys.join(', ')}`)
     }
 
-    // Check for extra keys
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
       if (!sourceKeys.has(key)) {
@@ -122,7 +113,6 @@ function validate() {
       errors.push(`${locale}: Extra keys: ${extraKeys.join(', ')}`)
     }
 
-    // Check placeholders
     for (const [key, sourceValue] of sourceKeys) {
       const translationValue = translationKeys.get(key)
       if (!translationValue) continue

@@ -15,7 +15,8 @@
     "translate": "tsx scripts/translate.ts",
     "generate-types": "tsx scripts/generate-types.ts",
     "validate": "tsx scripts/validate.ts",
-    "lint": "prettier -c ."
+    "lint": "prettier -c .",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

@@ -919,7 +919,7 @@ const BaseCheckoutForm = ({
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
       >
-        <span>{t('checkout.poweredBy')}</span>
+        <span>{t('helloWorld')}</span>
         <PolarLogo className="h-5" />
       </a>
     </div>

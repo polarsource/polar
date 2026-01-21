@@ -1,0 +1,61 @@
+name: Generate Translations
+
+on:
+  pull_request:
+    paths:
+      - 'clients/packages/i18n/src/locales/en.json'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/clients
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: clients/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: clients/.node-version
+          cache: 'pnpm'
+          cache-dependency-path: 'clients/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate translations
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: pnpm --filter @polar-sh/i18n translate
+
+      - name: Generate types
+        run: pnpm --filter @polar-sh/i18n generate-types
+
+      - name: Validate translations
+        run: pnpm --filter @polar-sh/i18n validate
+
+      - name: Commit translations
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/i18n/
+          git diff --staged --quiet || git commit -m "chore(i18n): update translations"
+          git push

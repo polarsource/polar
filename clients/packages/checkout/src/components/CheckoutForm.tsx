@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -112,6 +113,7 @@ const BaseCheckoutForm = ({
   subscribeNowButtonExperiment,
   payNowButtonExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
+  const t = useTranslations()
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
       ? checkout.productPrice.recurringInterval
@@ -917,7 +919,7 @@ const BaseCheckoutForm = ({
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
       >
-        <span>Powered by</span>
+        <span>{t('checkout.poweredBy')}</span>
         <PolarLogo className="h-5" />
       </a>
     </div>

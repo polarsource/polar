@@ -1,0 +1,54 @@
+{
+  "name": "@polar-sh/i18n",
+  "version": "0.1.0",
+  "description": "Polar i18n - Internationalization utilities and translations",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/i18n"
+  },
+  "scripts": {
+    "build": "rm -rf dist/ && tsup",
+    "translate": "tsx scripts/translate.ts",
+    "generate-types": "tsx scripts/generate-types.ts",
+    "validate": "tsx scripts/validate.ts",
+    "lint": "prettier -c ."
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./messages": {
+      "types": "./dist/messages.d.ts",
+      "default": "./dist/messages.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    }
+  },
+  "dependencies": {
+    "next-intl": "^4.1.0"
+  },
+  "devDependencies": {
+    "@polar-sh/typescript-config": "workspace:*",
+    "@types/node": "^22.16.1",
+    "@types/react": "19.2.7",
+    "dotenv": "^16.4.5",
+    "next": "16.1.1",
+    "openai": "^4.103.0",
+    "prettier": "^3.7.4",
+    "react": "^19.2.3",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "latest"
+  },
+  "peerDependencies": {
+    "next": ">=14",
+    "react": "^18 || ^19"
+  }
+}

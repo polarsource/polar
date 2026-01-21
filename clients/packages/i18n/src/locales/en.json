@@ -1,0 +1,9 @@
+{
+  "checkout": {
+    "poweredBy": {
+      "value": "Powered by",
+      "llmContext": "Followed by the Polar logo image. Keep it short."
+    },
+    "email": "Email"
+  }
+}

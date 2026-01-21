@@ -3,6 +3,8 @@ import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
+import { I18nProvider } from '@polar-sh/i18n'
+import { getLocaleData } from '@polar-sh/i18n/server'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
@@ -21,6 +23,8 @@ export default async function Page(props: {
   const params = await props.params
 
   const { clientSecret } = params
+
+  const { locale, messages } = await getLocaleData()
 
   const embed = _embed === 'true'
   const client = new PolarCore({ serverURL: getServerURL() })
@@ -76,13 +80,15 @@ export default async function Page(props: {
   }
 
   return (
-    <CheckoutProvider
-      clientSecret={checkout.clientSecret}
-      serverURL={getPublicServerURL()}
-    >
-      <CheckoutFormProvider>
-        <CheckoutPage theme={theme} embed={embed} />
-      </CheckoutFormProvider>
-    </CheckoutProvider>
+    <I18nProvider locale={locale} messages={messages}>
+      <CheckoutProvider
+        clientSecret={checkout.clientSecret}
+        serverURL={getPublicServerURL()}
+      >
+        <CheckoutFormProvider>
+          <CheckoutPage theme={theme} embed={embed} />
+        </CheckoutFormProvider>
+      </CheckoutProvider>
+    </I18nProvider>
   )
 }

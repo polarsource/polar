@@ -205,9 +205,7 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
@@ -264,9 +262,7 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -297,9 +293,7 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -349,9 +343,7 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)

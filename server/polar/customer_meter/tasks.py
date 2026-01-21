@@ -44,8 +44,6 @@ async def update_customer(
         meters_dirtied = (
             datetime.fromisoformat(meters_dirtied_at) if meters_dirtied_at else None
         )
-        await customer_meter_service.update_customer(
-            session, customer, meters_dirtied
-        )
+        await customer_meter_service.update_customer(session, customer, meters_dirtied)
 
         await redis.delete(f"{UPDATE_CUSTOMER_LOCK_PREFIX}{customer_id}")

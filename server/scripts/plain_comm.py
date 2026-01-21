@@ -192,7 +192,7 @@ async def _send_email(
         raise PlainScriptError("Admin user not found")
 
     async with _get_plain_client() as plain:
-        # Fetch customer in Plain
+        # By email
         customer_result = await plain.upsert_customer(
             pl.UpsertCustomerInput(
                 identifier=pl.UpsertCustomerIdentifierInput(email_address=admin.email),
@@ -211,9 +211,30 @@ async def _send_email(
             )
         )
         if customer_result.error is not None:
-            raise PlainScriptError(
-                f"Failed to upsert customer: {customer_result.error.message}"
+            # By External ID
+            customer_result = await plain.upsert_customer(
+                pl.UpsertCustomerInput(
+                    identifier=pl.UpsertCustomerIdentifierInput(
+                        external_id=str(admin.id)
+                    ),
+                    on_create=pl.UpsertCustomerOnCreateInput(
+                        external_id=str(admin.id),
+                        full_name=admin.email,
+                        email=pl.EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                    on_update=pl.UpsertCustomerOnUpdateInput(
+                        email=pl.EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                )
             )
+            if customer_result.error is not None:
+                raise PlainScriptError(
+                    f"Failed to upsert customer: {customer_result.error.message}"
+                )
 
         if customer_result.customer is None:
             raise PlainScriptError("Failed to upsert customer: no customer returned")
@@ -404,6 +425,8 @@ async def webhooks_comm(
     else:
         file = pathlib.Path(path)
 
+    failed_orgs: list[tuple[str, str]] = []
+
     async with sessionmaker() as session:
         with file.open() as f:
             data: WebhooksData = json.loads(f.read())
@@ -421,12 +444,14 @@ async def webhooks_comm(
                     progress.update(task, description=f"[cyan]Handling {id}")
                     try:
                         await _send_email(session, uuid.UUID(id), organization_data)
-                        progress.update(task, advance=1)
                     except PlainScriptError as e:
-                        progress.stop()
-                        console.print(f"[red] Error while handling {id}: {e}")
-                        raise typer.Exit(1)
+                        failed_orgs.append((id, str(e)))
+                    finally:
+                        progress.update(task, advance=1)
     await engine.dispose()
+
+    for failed_org, error in failed_orgs:
+        print(f"{failed_org}: {error}")
 
 
 if __name__ == "__main__":

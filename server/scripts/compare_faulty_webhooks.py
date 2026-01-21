@@ -23,7 +23,6 @@ from polar.kit.utils import utc_now
 from polar.models import BenefitGrant, Customer, Order, Subscription
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import create_async_engine
-from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -112,6 +111,7 @@ class AnalysisResult:
     total_csv_rows: int
     organizations: dict[UUID, OrganizationInfo]
     subscription_status_diffs: set[UUID]
+    touched_subscription_ids: set[UUID]
 
 
 def get_resource_type(event_type: str) -> str:
@@ -299,6 +299,7 @@ async def analyze_webhooks(rows: list[dict[str, Any]]) -> AnalysisResult:
         total_csv_rows=total_rows,
         organizations=organizations,
         subscription_status_diffs=verified_status_diffs,
+        touched_subscription_ids=set(subscription_sent_statuses.keys()),
     )
 
 
@@ -308,6 +309,7 @@ def print_results(result: AnalysisResult, output_json: bool = False) -> None:
             "total_csv_rows": result.total_csv_rows,
             "organizations_affected": len(result.organizations),
             "subscriptions_with_status_diff": len(result.subscription_status_diffs),
+            "touched_subscriptions": len(result.touched_subscription_ids),
         },
         "organizations": {
             str(org_id): {
@@ -342,6 +344,9 @@ def print_results(result: AnalysisResult, output_json: bool = False) -> None:
     console.print("\n[bold]Summary[/bold]")
     console.print(f"  Total CSV rows:              {result.total_csv_rows}")
     console.print(f"  Organizations affected:      {len(result.organizations)}")
+    console.print(
+        f"  Touched subscriptions:       {len(result.touched_subscription_ids)}"
+    )
     console.print(
         f"  Subscriptions with status diff: {len(result.subscription_status_diffs)}"
     )
@@ -383,41 +388,34 @@ async def send_webhooks(result: AnalysisResult) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
 
-    if result.subscription_status_diffs:
+    if result.touched_subscription_ids:
         console.print(
-            f"\n[cyan]Sending subscription.updated for {len(result.subscription_status_diffs)} subscriptions...[/cyan]"
+            f"\n[cyan]Sending subscription.updated for {len(result.touched_subscription_ids)} subscriptions...[/cyan]"
         )
         async with sessionmaker() as session:
             sub_repo = SubscriptionRepository.from_session(session)
-            prod_repo = ProductRepository.from_session(session)
 
-            for i, sub_id in enumerate(result.subscription_status_diffs):
+            for i, sub_id in enumerate(result.touched_subscription_ids):
                 subscription = await sub_repo.get_by_id(
                     sub_id, options=sub_repo.get_eager_options()
                 )
                 if subscription is None:
                     continue
 
-                product = await prod_repo.get_by_id(
-                    subscription.product_id, options=prod_repo.get_eager_options()
-                )
-                if product is None:
-                    continue
-
                 await webhook_service.send(
                     session,
-                    product.organization,
+                    subscription.organization,
                     WebhookEventType.subscription_updated,
                     subscription,
                 )
 
                 if (i + 1) % 100 == 0:
                     console.print(
-                        f"  Sent {i + 1}/{len(result.subscription_status_diffs)}..."
+                        f"  Sent {i + 1}/{len(result.touched_subscription_ids)}..."
                     )
 
         console.print(
-            f"[green]Sent {len(result.subscription_status_diffs)} subscription.updated webhooks[/green]"
+            f"[green]Sent {len(result.touched_subscription_ids)} subscription.updated webhooks[/green]"
         )
 
     await engine.dispose()

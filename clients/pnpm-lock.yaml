@@ -771,6 +771,9 @@ importers:
 
   packages/i18n:
     dependencies:
+      next:
+        specifier: '>=14'
+        version: 16.1.1(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       next-intl:
         specifier: ^4.1.0
         version: 4.7.0(next@16.1.1(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -787,9 +790,6 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
-      next:
-        specifier: 16.1.1
-        version: 16.1.1(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       openai:
         specifier: ^4.103.0
         version: 4.104.0(ws@8.18.3)

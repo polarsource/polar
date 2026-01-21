@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -5,12 +6,14 @@ import pytest_asyncio
 
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.service import event as event_service
 from polar.event.system import SystemEvent
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     BillingEntry,
     Customer,
+    Event,
     Meter,
     Order,
     OrderItem,
@@ -99,12 +102,14 @@ async def create_metered_event_billing_entry(
     pending: bool = True,
     order: Order | None = None,
     metadata_key: str = "tokens",
+    timestamp: datetime | None = None,
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
         customer=customer,
         metadata={metadata_key: tokens},
+        timestamp=timestamp,
     )
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
@@ -732,13 +737,17 @@ class TestCreateOrderItemsFromPending:
             order_item_a = next(
                 (item for item in order_items if item.product_price == price_a), None
             )
-            assert order_item_a is not None, "Expected line item for price A (old price)"
+            assert order_item_a is not None, (
+                "Expected line item for price A (old price)"
+            )
             assert order_item_a.amount == 10_00  # 10 units × $1.00 = $10.00
 
             order_item_b = next(
                 (item for item in order_items if item.product_price == price_b), None
             )
-            assert order_item_b is not None, "Expected line item for price B (new price)"
+            assert order_item_b is not None, (
+                "Expected line item for price B (new price)"
+            )
             assert order_item_b.amount == 5_00  # 10 units × $0.50 = $5.00
 
             order = await create_order(
@@ -969,3 +978,514 @@ class TestCreateOrderItemsFromPending:
         for entry in entries:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_non_summable_proration_single_switch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that non-summable aggregations are prorated when switching products
+        mid-cycle. The subscription_product_updated event determines when the
+        switch happened for proration calculations.
+
+        Scenario:
+        - 30-day billing period
+        - Customer on Product A ($10/server MAX) for first 10 days
+        - Switches to Product B ($15/server MAX) for remaining 20 days
+        - MAX on A = 3 servers, MAX on B = 2 servers
+        - Expected: (3 × $10 × 10/30) + (2 × $15 × 20/30) = $10 + $20 = $30
+        """
+        # Create meter with MAX aggregation
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A ($10/server)
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create Product B ($15/server)
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(15_00), None, "usd")],
+        )
+        price_b = product_b.prices[0]
+        assert is_metered_price(price_b)
+
+        # Set up billing period: 30 days
+        period_start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        period_end = datetime(2024, 1, 31, 0, 0, 0, tzinfo=UTC)
+        switch_time = datetime(2024, 1, 11, 0, 0, 0, tzinfo=UTC)  # Day 10
+
+        # Create subscription starting on Product A
+        subscription = await create_active_subscription(
+            save_fixture,
+            customer=customer,
+            product=product_a,
+            current_period_start=period_start,
+            current_period_end=period_end,
+        )
+
+        # Create events on Product A (days 1-10), MAX = 3
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=3,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 5, 0, 0, 0, tzinfo=UTC),
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=1,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 8, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Create the subscription_product_updated system event
+        await event_service.create_event(
+            session,
+            Event(
+                name=SystemEvent.subscription_product_updated,
+                source=EventSource.system,
+                customer_id=customer.id,
+                organization=organization,
+                user_metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(product_a.id),
+                    "new_product_id": str(product_b.id),
+                },
+                timestamp=switch_time,
+            ),
+        )
+        await session.flush()
+
+        # Update subscription to Product B
+        subscription.product = product_b
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # Create events on Product B (days 11-30), MAX = 2
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=2,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 15, 0, 0, 0, tzinfo=UTC),
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=1,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 25, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Compute order items
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 2 line items: one for each segment
+            assert len(order_items) == 2
+
+            # Segment 1: Product A, 10 days out of 30, MAX = 3, $10/server
+            # Prorated: 3 × $10 × (10/30) = $10
+            order_item_a = next(
+                (item for item in order_items if item.product_price == price_a), None
+            )
+            assert order_item_a is not None
+            assert order_item_a.amount == 10_00
+
+            # Segment 2: Product B, 20 days out of 30, MAX = 2, $15/server
+            # Prorated: 2 × $15 × (20/30) = $20
+            order_item_b = next(
+                (item for item in order_items if item.product_price == price_b), None
+            )
+            assert order_item_b is not None
+            assert order_item_b.amount == 20_00
+
+            # Create order to satisfy foreign key constraint
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+    async def test_non_summable_proration_multiple_switches(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test proration when switching A → B → A in a single billing cycle.
+        Each time period should be billed at the rate that was active during that period.
+
+        Scenario:
+        - 30-day billing period
+        - Days 1-10: Product A ($10/server MAX), MAX = 3
+        - Days 11-20: Product B ($15/server MAX), MAX = 4
+        - Days 21-30: Product A ($10/server MAX), MAX = 2
+        - Expected:
+          - Segment 1: 3 × $10 × (10/30) = $10.00
+          - Segment 2: 4 × $15 × (10/30) = $20.00
+          - Segment 3: 2 × $10 × (10/30) = $6.67
+        """
+        # Create meter with MAX aggregation
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A ($10/server)
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create Product B ($15/server)
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(15_00), None, "usd")],
+        )
+        price_b = product_b.prices[0]
+        assert is_metered_price(price_b)
+
+        # Set up billing period: 30 days
+        period_start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        period_end = datetime(2024, 1, 31, 0, 0, 0, tzinfo=UTC)
+        switch_1_time = datetime(2024, 1, 11, 0, 0, 0, tzinfo=UTC)  # Day 10 -> 11
+        switch_2_time = datetime(2024, 1, 21, 0, 0, 0, tzinfo=UTC)  # Day 20 -> 21
+
+        # Create subscription starting on Product A
+        subscription = await create_active_subscription(
+            save_fixture,
+            customer=customer,
+            product=product_a,
+            current_period_start=period_start,
+            current_period_end=period_end,
+        )
+
+        # Segment 1: Events on Product A (days 1-10), MAX = 3
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=3,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 5, 0, 0, 0, tzinfo=UTC),
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=1,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 8, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # First switch: A -> B
+        await event_service.create_event(
+            session,
+            Event(
+                name=SystemEvent.subscription_product_updated,
+                source=EventSource.system,
+                customer_id=customer.id,
+                organization=organization,
+                user_metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(product_a.id),
+                    "new_product_id": str(product_b.id),
+                },
+                timestamp=switch_1_time,
+            ),
+        )
+        await session.flush()
+
+        # Update subscription to Product B
+        subscription.product = product_b
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # Segment 2: Events on Product B (days 11-20), MAX = 4
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=4,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 15, 0, 0, 0, tzinfo=UTC),
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=2,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 18, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Second switch: B -> A
+        await event_service.create_event(
+            session,
+            Event(
+                name=SystemEvent.subscription_product_updated,
+                source=EventSource.system,
+                customer_id=customer.id,
+                organization=organization,
+                user_metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(product_b.id),
+                    "new_product_id": str(product_a.id),
+                },
+                timestamp=switch_2_time,
+            ),
+        )
+        await session.flush()
+
+        # Update subscription back to Product A
+        subscription.product = product_a
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_a)
+        ]
+        await save_fixture(subscription)
+
+        # Segment 3: Events on Product A again (days 21-30), MAX = 2
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=2,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 25, 0, 0, 0, tzinfo=UTC),
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=1,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 28, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Compute order items
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 3 line items: one for each segment
+            assert len(order_items) == 3
+
+            # Find order items by price and approximate amount
+            order_items_a = [
+                item for item in order_items if item.product_price == price_a
+            ]
+            order_item_b = next(
+                (item for item in order_items if item.product_price == price_b), None
+            )
+
+            # Segment 1: 3 × $10 × (10/30) = $10
+            # Segment 3: 2 × $10 × (10/30) = $6.67 (rounded to nearest cent)
+            assert len(order_items_a) == 2
+            # Sort by amount to identify which is which
+            order_items_a_sorted = sorted(order_items_a, key=lambda x: x.amount)
+            assert order_items_a_sorted[0].amount == 667  # Segment 3: $6.67
+            assert order_items_a_sorted[1].amount == 10_00  # Segment 1: $10.00
+
+            # Segment 2: 4 × $15 × (10/30) = $20
+            assert order_item_b is not None
+            assert order_item_b.amount == 20_00
+
+            # Create order to satisfy foreign key constraint
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+    async def test_non_summable_proration_late_arriving_events(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that late-arriving events (ingested after switch but with timestamp before)
+        are correctly attributed to the segment when they occurred.
+
+        Scenario:
+        - 30-day billing period
+        - Days 1-15: Product A ($10/server MAX)
+        - Days 16-30: Product B ($15/server MAX)
+        - Event at day 5 with 4 servers (ingested late)
+        - Event at day 20 with 2 servers
+        - Expected: 4 × $10 × (15/30) + 2 × $15 × (15/30) = $20 + $15 = $35
+        """
+        # Create meter with MAX aggregation
+        meter_max = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="servers"
+            ),
+            organization=organization,
+        )
+
+        # Create Product A ($10/server)
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(10_00), None, "usd")],
+        )
+        price_a = product_a.prices[0]
+        assert is_metered_price(price_a)
+
+        # Create Product B ($15/server)
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_max, Decimal(15_00), None, "usd")],
+        )
+        price_b = product_b.prices[0]
+        assert is_metered_price(price_b)
+
+        # Set up billing period: 30 days
+        period_start = datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        period_end = datetime(2024, 1, 31, 0, 0, 0, tzinfo=UTC)
+        switch_time = datetime(2024, 1, 16, 0, 0, 0, tzinfo=UTC)  # Day 15 -> 16
+
+        # Create subscription starting on Product A
+        subscription = await create_active_subscription(
+            save_fixture,
+            customer=customer,
+            product=product_a,
+            current_period_start=period_start,
+            current_period_end=period_end,
+        )
+
+        # Switch: A -> B (happens first in real time)
+        await event_service.create_event(
+            session,
+            Event(
+                name=SystemEvent.subscription_product_updated,
+                source=EventSource.system,
+                customer_id=customer.id,
+                organization=organization,
+                user_metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(product_a.id),
+                    "new_product_id": str(product_b.id),
+                },
+                timestamp=switch_time,
+            ),
+        )
+        await session.flush()
+
+        # Update subscription to Product B
+        subscription.product = product_b
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price_b)
+        ]
+        await save_fixture(subscription)
+
+        # Event on Product B (day 20), MAX = 2
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=2,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 20, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Late-arriving event: timestamp is day 5 (before switch), but ingested now
+        # This event should still be attributed to Product A's segment
+        # Note: In practice, the billing entry would be created with price_a since
+        # that was the active price at timestamp=day 5. We simulate this scenario.
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,  # Would have been the active price at event timestamp
+            subscription=subscription,
+            tokens=4,
+            metadata_key="servers",
+            timestamp=datetime(2024, 1, 5, 0, 0, 0, tzinfo=UTC),
+        )
+
+        # Compute order items
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # Should have 2 line items: one for each segment
+            assert len(order_items) == 2
+
+            # Segment 1: Product A, 15 days out of 30, MAX = 4, $10/server
+            # Prorated: 4 × $10 × (15/30) = $20
+            order_item_a = next(
+                (item for item in order_items if item.product_price == price_a), None
+            )
+            assert order_item_a is not None
+            assert order_item_a.amount == 20_00
+
+            # Segment 2: Product B, 15 days out of 30, MAX = 2, $15/server
+            # Prorated: 2 × $15 × (15/30) = $15
+            order_item_b = next(
+                (item for item in order_items if item.product_price == price_b), None
+            )
+            assert order_item_b is not None
+            assert order_item_b.amount == 15_00
+
+            # Create order to satisfy foreign key constraint
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )

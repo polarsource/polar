@@ -3,8 +3,6 @@
 from typing import Any
 from unittest.mock import patch
 
-import pytest
-
 from polar.sentry import (
     _LOCK_EXPECTED_ACTORS,
     _get_dramatiq_actor_name,

@@ -8,10 +8,11 @@ import tempfile
 import uuid
 from collections.abc import AsyncIterator
 from functools import wraps
-from typing import Annotated, Any, TypedDict
+from typing import Any, TypedDict
 
 import httpx
 import plain_client as pl
+import rich.progress
 import structlog
 import typer
 from rich.console import Console
@@ -360,21 +361,36 @@ Founder & CEO, Polar
 @cli.command()
 @typer_async
 async def webhooks_comm(
-    file: Annotated[
-        pathlib.Path,
-        typer.Argument(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-            writable=False,
-            readable=True,
-            resolve_path=True,
-        ),
-    ],
+    path: str,
     organization_id: str | None = typer.Option(None),
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
+
+    if path.startswith("http://") or path.startswith("https://"):
+        with Progress() as progress:
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                async with httpx.AsyncClient() as client:
+                    async with client.stream("GET", path) as response:
+                        response.raise_for_status()
+                        total = int(response.headers["Content-Length"])
+                        with rich.progress.Progress(
+                            "[progress.percentage]{task.percentage:>3.0f}%",
+                            rich.progress.BarColumn(bar_width=None),
+                            rich.progress.DownloadColumn(),
+                            rich.progress.TransferSpeedColumn(),
+                        ) as progress:
+                            download_task = progress.add_task("Download", total=total)
+                            async for chunk in response.aiter_bytes():
+                                f.write(chunk)
+                                progress.update(
+                                    download_task,
+                                    completed=response.num_bytes_downloaded,
+                                )
+                file = pathlib.Path(f.name)
+    else:
+        file = pathlib.Path(path)
+
     async with sessionmaker() as session:
         with file.open() as f:
             data: WebhooksData = json.loads(f.read())
@@ -384,7 +400,7 @@ async def webhooks_comm(
                 }
             else:
                 organizations = data["organizations"]
-            with Progress() as progress:
+            with rich.progress.Progress() as progress:
                 task = progress.add_task(
                     "[cyan]Sending communication...", total=len(organizations)
                 )

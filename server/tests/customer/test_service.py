@@ -545,6 +545,7 @@ class TestDelete:
     async def test_valid(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -556,7 +557,7 @@ class TestDelete:
             user_metadata={"user_id": "ABC"},
         )
         assert customer.deleted_at is None
-        soft_deleted = await customer_service.delete(session, customer)
+        soft_deleted = await customer_service.delete(session, redis, customer)
         assert soft_deleted.deleted_at is not None
         assert soft_deleted.external_id is None
         assert soft_deleted.user_metadata["__external_id"] == "external-id"
@@ -566,6 +567,7 @@ class TestDelete:
     async def test_valid_recycled_email(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -576,9 +578,33 @@ class TestDelete:
             external_id="will-be-recycled",
             user_metadata={"user_id": "ABC"},
         )
-        soft_deleted = await customer_service.delete(session, customer)
+        soft_deleted = await customer_service.delete(session, redis, customer)
         assert soft_deleted.deleted_at
         assert soft_deleted.external_id is None
+        await session.flush()
+
+    async def test_delete_with_anonymize(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Delete with anonymize=True should anonymize and delete."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-anon@example.com",
+            name="Delete Anon User",
+            user_metadata={"user_id": "ABC"},
+        )
+        deleted = await customer_service.delete(
+            session, redis, customer, anonymize=True
+        )
+        assert deleted.deleted_at is not None
+        assert deleted.email.endswith("@anonymized.invalid")
+        assert deleted.name != "Delete Anon User"
+        assert len(deleted.name) == 64  # SHA-256 hex
         await session.flush()
 
         try:

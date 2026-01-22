@@ -998,35 +998,11 @@ class TestUpdateCustomer:
 
 
 @pytest.mark.asyncio
-class TestAnonymizeCustomer:
-    async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
-        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
-    async def test_missing_scope(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        customer: Customer,
-    ) -> None:
-        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
-
-        assert response.status_code == 403
+class TestDeleteCustomerWithAnonymize:
+    """Tests for DELETE /customers/{id}?anonymize=true"""
 
     @pytest.mark.auth
-    async def test_not_found(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(f"/v1/customers/{uuid.uuid4()}/anonymize")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_individual_customer(
+    async def test_delete_with_anonymize(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -1041,10 +1017,14 @@ class TestAnonymizeCustomer:
             name="John Doe",
         )
 
-        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+        response = await client.delete(f"/v1/customers/{customer.id}?anonymize=true")
 
-        assert response.status_code == 200
-        json = response.json()
+        assert response.status_code == 204
+
+        # Verify anonymization by fetching the customer
+        get_response = await client.get(f"/v1/customers/{customer.id}")
+        assert get_response.status_code == 200
+        json = get_response.json()
 
         # Email should be hashed
         assert json["email"].endswith("@anonymized.invalid")
@@ -1059,7 +1039,7 @@ class TestAnonymizeCustomer:
         assert json["deleted_at"] is not None
 
     @pytest.mark.auth
-    async def test_business_customer(
+    async def test_business_customer_preserves_name(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -1075,10 +1055,13 @@ class TestAnonymizeCustomer:
             tax_id=("DE123456789", TaxIDFormat.eu_vat),
         )
 
-        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+        response = await client.delete(f"/v1/customers/{customer.id}?anonymize=true")
 
-        assert response.status_code == 200
-        json = response.json()
+        assert response.status_code == 204
+
+        # Verify by fetching the customer
+        get_response = await client.get(f"/v1/customers/{customer.id}")
+        json = get_response.json()
 
         # Email should be hashed
         assert json["email"].endswith("@anonymized.invalid")
@@ -1105,51 +1088,57 @@ class TestAnonymizeCustomer:
             external_id="ext-123",
         )
 
-        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+        response = await client.delete(f"/v1/customers/{customer.id}?anonymize=true")
 
-        assert response.status_code == 200
-        json = response.json()
+        assert response.status_code == 204
+
+        # Verify by fetching the customer
+        get_response = await client.get(f"/v1/customers/{customer.id}")
+        json = get_response.json()
 
         # External ID should be PRESERVED
         assert json["external_id"] == "ext-123"
 
+    @pytest.mark.auth
+    async def test_delete_without_anonymize(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Delete without anonymize should not anonymize data."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="noanon@example.com",
+            name="No Anon User",
+        )
+
+        response = await client.delete(f"/v1/customers/{customer.id}")
+
+        assert response.status_code == 204
+
+        # Verify customer is deleted but NOT anonymized
+        get_response = await client.get(f"/v1/customers/{customer.id}")
+        json = get_response.json()
+
+        # Email should NOT be hashed
+        assert json["email"] == "noanon@example.com"
+
+        # Name should NOT be hashed
+        assert json["name"] == "No Anon User"
+
+        # Customer should be marked as deleted
+        assert json["deleted_at"] is not None
+
 
 @pytest.mark.asyncio
-class TestAnonymizeCustomerExternal:
-    async def test_anonymous(
-        self, client: AsyncClient, customer_external_id: Customer
-    ) -> None:
-        response = await client.post(
-            f"/v1/customers/external/{customer_external_id.external_id}/anonymize"
-        )
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
-    async def test_missing_scope(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        customer_external_id: Customer,
-    ) -> None:
-        response = await client.post(
-            f"/v1/customers/external/{customer_external_id.external_id}/anonymize"
-        )
-
-        assert response.status_code == 403
+class TestDeleteCustomerExternalWithAnonymize:
+    """Tests for DELETE /customers/external/{external_id}?anonymize=true"""
 
     @pytest.mark.auth
-    async def test_not_found(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post("/v1/customers/external/not-existing/anonymize")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_valid(
+    async def test_delete_with_anonymize(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -1164,12 +1153,17 @@ class TestAnonymizeCustomerExternal:
             name="External User",
         )
 
-        response = await client.post(
-            f"/v1/customers/external/{customer.external_id}/anonymize"
+        response = await client.delete(
+            f"/v1/customers/external/{customer.external_id}?anonymize=true"
         )
 
-        assert response.status_code == 200
-        json = response.json()
+        assert response.status_code == 204
+
+        # Verify by fetching the customer
+        get_response = await client.get(
+            f"/v1/customers/external/{customer.external_id}"
+        )
+        json = get_response.json()
 
         # Email should be hashed
         assert json["email"].endswith("@anonymized.invalid")

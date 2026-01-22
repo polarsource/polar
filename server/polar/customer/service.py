@@ -251,9 +251,20 @@ class CustomerService:
             ),
         )
 
-    async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
+    async def delete(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+        *,
+        anonymize: bool = False,
+    ) -> Customer:
         enqueue_job("subscription.cancel_customer", customer_id=customer.id)
         enqueue_job("benefit.revoke_customer", customer_id=customer.id)
+
+        if anonymize:
+            # Anonymize also sets deleted_at
+            return await self.anonymize(session, redis, customer)
 
         repository = CustomerRepository.from_session(session)
         return await repository.soft_delete(customer)

@@ -5,22 +5,26 @@ This fake provides deterministic tax calculations for testing,
 tracking all calculations performed for verification.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
-from polar.kit.money import polar_round
-from polar.tax.calculation import TaxabilityReason, TaxCalculation
+from polar.kit.address import Address
+from polar.kit.math import polar_round
+from polar.tax.calculation import TaxabilityReason, TaxCalculation, TaxCode
+from polar.tax.tax_id import TaxID
 
 
 @dataclass
 class TaxCalculationRecord:
     """Record of a tax calculation for verification."""
 
+    identifier: str
     amount: int
     currency: str
-    customer_id: str | None
     tax_amount: int
     processor_id: str
+    customer_exempt: bool
 
 
 @dataclass
@@ -70,22 +74,25 @@ class TaxStatefulFake:
 
     async def calculate(
         self,
-        *,
-        amount: int,
+        identifier: uuid.UUID | str,
         currency: str,
-        customer_id: str | None = None,
-        product_id: str | None = None,
-        **kwargs: Any,
+        amount: int,
+        tax_code: TaxCode,
+        address: Address,
+        tax_ids: list[TaxID],
+        customer_exempt: bool,
     ) -> TaxCalculation:
         """
         Calculate tax for an amount.
 
+        Matches the signature of the real TaxService.calculate method.
         Returns a TaxCalculation dict matching the expected interface.
         """
         processor_id = self._next_id()
+        identifier_str = str(identifier)
 
         # Check if customer is exempt
-        is_exempt = customer_id in self.exempt_customers if customer_id else False
+        is_exempt = customer_exempt or identifier_str in self.exempt_customers
 
         if is_exempt:
             tax_amount = 0
@@ -97,11 +104,12 @@ class TaxStatefulFake:
         # Record the calculation
         self.calculations.append(
             TaxCalculationRecord(
+                identifier=identifier_str,
                 amount=amount,
                 currency=currency,
-                customer_id=customer_id,
                 tax_amount=tax_amount,
                 processor_id=processor_id,
+                customer_exempt=is_exempt,
             )
         )
 
@@ -121,7 +129,9 @@ class TaxStatefulFake:
     async def revert(
         self,
         transaction_id: str,
-        amount: int | None = None,
+        reference: str,
+        total_amount: int | None = None,
+        tax_amount: int | None = None,
     ) -> str:
         """Revert a tax transaction. Returns the reversal ID."""
         return f"tax_rev_{transaction_id}"
@@ -143,7 +153,7 @@ class TaxStatefulFake:
         else:
             assert len(self.calculations) > 0, "No tax calculations were performed"
 
-    def assert_tax_for_amount(self, amount: int, expected_tax: int | None = None) -> None:
+    def assert_tax_for_amount(self, amount: int, expected_tax: int | None = None) -> TaxCalculationRecord:
         """Assert a tax calculation was performed for a specific amount."""
         matching = [c for c in self.calculations if c.amount == amount]
         assert len(matching) > 0, f"No tax calculation found for amount {amount}"
@@ -152,3 +162,4 @@ class TaxStatefulFake:
             assert actual == expected_tax, (
                 f"Expected tax {expected_tax} for amount {amount}, got {actual}"
             )
+        return matching[-1]

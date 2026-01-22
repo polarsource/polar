@@ -76,7 +76,7 @@ export const NewOAuthClientModal = ({
   )
 
   return (
-    <div className="flex flex-col overflow-y-auto">
+    <div className="flex flex-col">
       <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">New OAuth App</h2>

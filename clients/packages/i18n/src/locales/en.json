@@ -1,5 +1,8 @@
 {
   "checkout": {
     "poweredBy": "Powered by"
+  },
+  "playground": {
+    "interpolation": "This is a {test}"
   }
 }

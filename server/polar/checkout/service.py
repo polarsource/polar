@@ -308,7 +308,7 @@ class CheckoutService:
             product = products[0]
 
             currencies = self._get_currencies(
-                checkout_create.currency, product.organization, ip_country
+                checkout_create.currency, product, product.organization, ip_country
             )
 
             try:
@@ -621,7 +621,9 @@ class CheckoutService:
             )
 
         ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currencies = self._get_currencies(None, product.organization, ip_country)
+        currencies = self._get_currencies(
+            None, product, product.organization, ip_country
+        )
 
         try:
             currency_prices = PriceSet.from_product(product, *currencies)
@@ -766,7 +768,9 @@ class CheckoutService:
                     break
 
         ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
-        currencies = self._get_currencies(None, product.organization, ip_country)
+        currencies = self._get_currencies(
+            None, product, product.organization, ip_country
+        )
 
         try:
             currency_prices = PriceSet.from_product(product, *currencies)
@@ -1409,7 +1413,9 @@ class CheckoutService:
                 ]
             )
 
-        currencies = self._get_currencies(currency, product.organization, ip_country)
+        currencies = self._get_currencies(
+            currency, product, product.organization, ip_country
+        )
         try:
             currency_prices = PriceSet.from_product(product, *currencies)
         except NoPricesForCurrencies as e:
@@ -2091,13 +2097,18 @@ class CheckoutService:
     def _get_currencies(
         self,
         currency_request: str | None,
+        product: Product,
         organization: Organization,
         ip_country: str | None,
     ) -> Sequence[str]:
         if currency_request is not None:
             return [currency_request]
 
+        if len(product.prices) == 1 and not is_currency_price(product.prices[0]):
+            return [organization.default_presentment_currency]
+
         currencies: list[str] = []
+
         if ip_country is not None:
             if (country_currency := get_presentment_currency(ip_country)) is not None:
                 currencies.append(country_currency)

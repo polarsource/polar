@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
 from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
@@ -32,6 +33,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_event,
     create_order,
+    create_payment_transaction,
     create_product,
     create_subscription,
 )
@@ -219,13 +221,61 @@ async def _create_fixtures(
         )
         orders[key] = order
 
+        payment_transaction = await create_payment_transaction(
+            save_fixture,
+            order=order,
+            amount=order.net_amount,
+            tax_amount=order.tax_amount,
+        )
+
+        metadata: dict[str, str | int | bool | float] = {
+            "transaction_id": str(payment_transaction.id),
+            "order_id": str(order.id),
+            "product_id": str(order.product_id),
+            "amount": payment_transaction.amount,
+            "currency": payment_transaction.currency,
+            "presentment_amount": payment_transaction.presentment_amount
+            or payment_transaction.amount,
+            "presentment_currency": payment_transaction.presentment_currency
+            or payment_transaction.currency,
+            "tax_amount": order.tax_amount,
+            "fee": 0,
+        }
+        if order_subscription is not None:
+            metadata["subscription_id"] = str(order_subscription.id)
+
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.balance_order.value,
+            timestamp=order.created_at,
+            metadata=metadata,
+        )
+
     return products, subscriptions, orders
+
+
+@pytest.fixture(params=[False, True], ids=["order_metrics", "settlement_metrics"])
+def use_settlement_metrics(request: pytest.FixtureRequest) -> bool:
+    return request.param
 
 
 @pytest_asyncio.fixture
 async def fixtures(
-    save_fixture: SaveFixture, customer: Customer, organization: Organization
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+    use_settlement_metrics: bool,
 ) -> tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]]:
+    if use_settlement_metrics:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "settlement_currency_metrics": True,
+        }
+        await save_fixture(organization)
+
     return await _create_fixtures(
         save_fixture, customer, organization, PRODUCTS, SUBSCRIPTIONS, ORDERS
     )
@@ -1011,7 +1061,15 @@ class TestGetMetrics:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        use_settlement_metrics: bool,
     ) -> None:
+        if use_settlement_metrics:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "settlement_currency_metrics": True,
+            }
+            await save_fixture(organization)
+
         orders: dict[str, OrderFixture] = {
             "order_1": {
                 "created_at": date(2024, 1, 1),
@@ -1314,7 +1372,15 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        use_settlement_metrics: bool,
     ) -> None:
+        if use_settlement_metrics:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "settlement_currency_metrics": True,
+            }
+            await save_fixture(organization)
+
         subscriptions_customer_1: dict[str, SubscriptionFixture] = {
             "subscription_1": {
                 "started_at": date(2024, 1, 1),
@@ -1969,6 +2035,7 @@ class TestMetricsFiltering:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        use_settlement_metrics: bool,
     ) -> None:
         """
         Test that LTV properly resolves recursive dependencies.
@@ -1977,6 +2044,13 @@ class TestMetricsFiltering:
         active_subscriptions, new_subscriptions, churned_subscriptions,
         and canceled_subscriptions.
         """
+        if use_settlement_metrics:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "settlement_currency_metrics": True,
+            }
+            await save_fixture(organization)
+
         subscriptions: dict[str, SubscriptionFixture] = {
             "subscription_1": {
                 "started_at": date(2024, 1, 1),
@@ -2163,3 +2237,104 @@ class TestMetricsFiltering:
         )
 
         assert metrics.totals.checkouts_conversion is not None
+
+
+@pytest.mark.asyncio
+class TestSettlementMetricsCodePath:
+    """
+    Test that verifies the settlement metrics code path is actually being used.
+    Uses different amounts for orders vs balance events to prove the correct code path runs.
+    """
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_settlement_metrics_uses_balance_events_not_orders(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """
+        Verify that when settlement_metrics is enabled, revenue comes from balance events,
+        not from orders. We create an order with amount 1000 and a balance event with
+        amount 500 (simulating currency conversion), then verify:
+        - With flag OFF: revenue = 1000 (from order)
+        - With flag ON: revenue = 500 (from balance event)
+        """
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        order_amount = 1000_00
+        settlement_amount = 500_00
+
+        order = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subtotal_amount=order_amount,
+            created_at=datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC),
+        )
+
+        payment_transaction = await create_payment_transaction(
+            save_fixture,
+            order=order,
+            amount=settlement_amount,
+            tax_amount=0,
+        )
+
+        metadata: dict[str, str | int | bool | float] = {
+            "transaction_id": str(payment_transaction.id),
+            "order_id": str(order.id),
+            "product_id": str(product.id),
+            "amount": settlement_amount,
+            "currency": "usd",
+            "presentment_amount": order_amount,
+            "presentment_currency": "eur",
+            "tax_amount": 0,
+            "fee": 0,
+        }
+
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.balance_order.value,
+            timestamp=order.created_at,
+            metadata=metadata,
+        )
+
+        metrics_without_flag = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=["revenue"],
+        )
+
+        assert metrics_without_flag.totals.revenue == order_amount
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "settlement_currency_metrics": True,
+        }
+        await save_fixture(organization)
+
+        metrics_with_flag = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=["revenue"],
+        )
+
+        assert metrics_with_flag.totals.revenue == settlement_amount
+
+        assert metrics_without_flag.totals.revenue != metrics_with_flag.totals.revenue

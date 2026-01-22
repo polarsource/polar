@@ -70,7 +70,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product_price import ProductPriceSeatUnit
+from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (

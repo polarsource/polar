@@ -598,6 +598,7 @@ class TestDelete:
         deleted = await customer_service.delete(session, customer, anonymize=True)
         assert deleted.deleted_at is not None
         assert deleted.email.endswith("@anonymized.invalid")
+        assert deleted.name is not None
         assert deleted.name != "Delete Anon User"
         assert len(deleted.name) == 64  # SHA-256 hex
         await session.flush()

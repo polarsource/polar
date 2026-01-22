@@ -11,6 +11,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -1005,6 +1006,7 @@ class TestDeleteCustomerWithAnonymize:
     async def test_delete_with_anonymize(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1021,27 +1023,28 @@ class TestDeleteCustomerWithAnonymize:
 
         assert response.status_code == 204
 
-        # Verify anonymization by fetching the customer
-        get_response = await client.get(f"/v1/customers/{customer.id}")
-        assert get_response.status_code == 200
-        json = get_response.json()
+        # Verify anonymization by fetching directly from DB
+        # (API filters out deleted customers)
+        deleted = await session.get(Customer, customer.id)
+        assert deleted is not None
 
         # Email should be hashed
-        assert json["email"].endswith("@anonymized.invalid")
-        assert json["email_verified"] is False
+        assert deleted.email.endswith("@anonymized.invalid")
+        assert deleted.email_verified is False
 
         # Name should be hashed (64-char hex string from SHA-256)
-        assert json["name"] is not None
-        assert len(json["name"]) == 64
-        assert json["name"] != "John Doe"
+        assert deleted.name is not None
+        assert len(deleted.name) == 64
+        assert deleted.name != "John Doe"
 
         # Customer should be marked as deleted
-        assert json["deleted_at"] is not None
+        assert deleted.deleted_at is not None
 
     @pytest.mark.auth
     async def test_business_customer_preserves_name(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1059,23 +1062,24 @@ class TestDeleteCustomerWithAnonymize:
 
         assert response.status_code == 204
 
-        # Verify by fetching the customer
-        get_response = await client.get(f"/v1/customers/{customer.id}")
-        json = get_response.json()
+        # Verify by fetching directly from DB
+        deleted = await session.get(Customer, customer.id)
+        assert deleted is not None
 
         # Email should be hashed
-        assert json["email"].endswith("@anonymized.invalid")
+        assert deleted.email.endswith("@anonymized.invalid")
 
         # Name should be PRESERVED for businesses
-        assert json["name"] == "Acme Corp"
+        assert deleted.name == "Acme Corp"
 
         # Tax ID should be PRESERVED
-        assert json["tax_id"] is not None
+        assert deleted.tax_id is not None
 
     @pytest.mark.auth
     async def test_preserves_external_id(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1092,17 +1096,18 @@ class TestDeleteCustomerWithAnonymize:
 
         assert response.status_code == 204
 
-        # Verify by fetching the customer
-        get_response = await client.get(f"/v1/customers/{customer.id}")
-        json = get_response.json()
+        # Verify by fetching directly from DB
+        deleted = await session.get(Customer, customer.id)
+        assert deleted is not None
 
         # External ID should be PRESERVED
-        assert json["external_id"] == "ext-123"
+        assert deleted.external_id == "ext-123"
 
     @pytest.mark.auth
     async def test_delete_without_anonymize(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1119,18 +1124,18 @@ class TestDeleteCustomerWithAnonymize:
 
         assert response.status_code == 204
 
-        # Verify customer is deleted but NOT anonymized
-        get_response = await client.get(f"/v1/customers/{customer.id}")
-        json = get_response.json()
+        # Verify customer is deleted but NOT anonymized (fetch from DB)
+        deleted = await session.get(Customer, customer.id)
+        assert deleted is not None
 
         # Email should NOT be hashed
-        assert json["email"] == "noanon@example.com"
+        assert deleted.email == "noanon@example.com"
 
         # Name should NOT be hashed
-        assert json["name"] == "No Anon User"
+        assert deleted.name == "No Anon User"
 
         # Customer should be marked as deleted
-        assert json["deleted_at"] is not None
+        assert deleted.deleted_at is not None
 
 
 @pytest.mark.asyncio
@@ -1141,6 +1146,7 @@ class TestDeleteCustomerExternalWithAnonymize:
     async def test_delete_with_anonymize(
         self,
         save_fixture: SaveFixture,
+        session: AsyncSession,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1159,14 +1165,12 @@ class TestDeleteCustomerExternalWithAnonymize:
 
         assert response.status_code == 204
 
-        # Verify by fetching the customer
-        get_response = await client.get(
-            f"/v1/customers/external/{customer.external_id}"
-        )
-        json = get_response.json()
+        # Verify by fetching directly from DB
+        deleted = await session.get(Customer, customer.id)
+        assert deleted is not None
 
         # Email should be hashed
-        assert json["email"].endswith("@anonymized.invalid")
+        assert deleted.email.endswith("@anonymized.invalid")
 
         # External ID should be preserved
-        assert json["external_id"] == "ext-anon-123"
+        assert deleted.external_id == "ext-anon-123"

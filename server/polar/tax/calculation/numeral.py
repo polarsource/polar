@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from typing import Literal, NotRequired, TypedDict
 
@@ -16,6 +17,7 @@ from .base import (
     TaxCalculationError,
     TaxCode,
     TaxRate,
+    TaxRecordError,
     TaxServiceProtocol,
 )
 
@@ -144,6 +146,7 @@ class NumeralTaxService(TaxServiceProtocol):
         address: Address,
         tax_ids: list[TaxID],
         customer_exempt: bool,
+        attempt: int = 1,
     ) -> TaxCalculation:
         customer_type = "BUSINESS" if len(tax_ids) > 0 else "CONSUMER"
         product_category = "EXEMPT" if customer_exempt else tax_code.to_numeral()
@@ -188,6 +191,23 @@ class NumeralTaxService(TaxServiceProtocol):
             response = await self.client.post("/tax/calculations", json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                log.debug("Numeral rate limit exceeded")
+                retry_after = int(e.response.headers.get("Retry-After", "1"))
+                if attempt <= 3:
+                    await asyncio.sleep(retry_after)
+                    return await self.calculate(
+                        identifier,
+                        currency,
+                        amount,
+                        tax_code,
+                        address,
+                        tax_ids,
+                        customer_exempt,
+                        attempt=attempt + 1,
+                    )
+                raise TaxCalculationError("Rate limit exceeded") from e
+
             log.debug("Numeral tax calculation error: %s", e.response.text)
             error_response: NumeralTaxCalculationErrorResponse = e.response.json()
             error_code = error_response["error"].get("error_code")
@@ -239,14 +259,18 @@ class NumeralTaxService(TaxServiceProtocol):
         )
 
     async def record(self, calculation_id: str, reference: str) -> str:
-        response = await self.client.post(
-            "/tax/transactions",
-            json={
-                "calculation_id": calculation_id,
-                "reference_order_id": reference,
-            },
-        )
-        response.raise_for_status()
+        try:
+            response = await self.client.post(
+                "/tax/transactions",
+                json={
+                    "calculation_id": calculation_id,
+                    "reference_order_id": reference,
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            log.debug("Numeral tax record error: %s", e.response.text)
+            raise TaxRecordError() from e
 
         transaction: NumeralTaxTransactionResponse = response.json()
         return transaction["id"]

@@ -24,6 +24,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import { useParams, useRouter } from 'next/navigation'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useState } from 'react'
 
 export default function ClientPage({
@@ -38,6 +39,23 @@ export default function ClientPage({
   const { id }: { id: string } = useParams()
   const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+
+  const [succeeded, setSucceeded] = useQueryState(
+    'succeeded',
+    parseAsString.withDefault('all'),
+  )
+  const [httpCodeClass, setHttpCodeClass] = useQueryState(
+    'httpCodeClass',
+    parseAsString.withDefault('all'),
+  )
+  const [eventTypes, setEventTypes] = useQueryState(
+    'eventTypes',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  )
+  const [query, setQuery] = useQueryState(
+    'query',
+    parseAsString.withDefault(''),
+  )
 
   const { data: endpoint } = useWebhookEndpoint(id)
 
@@ -168,11 +186,19 @@ export default function ClientPage({
         />
       </div>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col gap-4">
           <h2 className="text-xl font-medium">Deliveries</h2>
           <WebhookFilter
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
+            succeeded={succeeded}
+            onSucceededChange={(value) => setSucceeded(value)}
+            httpCodeClass={httpCodeClass}
+            onHttpCodeClassChange={(value) => setHttpCodeClass(value)}
+            eventTypes={eventTypes}
+            onEventTypesChange={setEventTypes}
+            query={query}
+            onQueryChange={setQuery}
           />
         </div>
         <DeliveriesTable
@@ -181,6 +207,14 @@ export default function ClientPage({
           sorting={sorting}
           organization={organization}
           dateRange={dateRange}
+          succeeded={succeeded !== 'all' ? succeeded === 'true' : undefined}
+          httpCodeClass={
+            httpCodeClass !== 'all'
+              ? (httpCodeClass as '2xx' | '3xx' | '4xx' | '5xx')
+              : undefined
+          }
+          eventTypes={eventTypes.length > 0 ? eventTypes : undefined}
+          query={query || undefined}
         />
       </div>
 

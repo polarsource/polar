@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, Path, Query
 from pydantic import UUID4, AwareDatetime
@@ -7,6 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -173,6 +174,19 @@ async def list_webhook_deliveries(
     end_timestamp: AwareDatetime | None = Query(
         None, description="Filter deliveries before this timestamp."
     ),
+    succeeded: bool | None = Query(
+        None, description="Filter by delivery success status."
+    ),
+    query: str | None = Query(
+        None,
+        description="Query to filter webhook deliveries.",
+    ),
+    http_code_class: Literal["2xx", "3xx", "4xx", "5xx"] | None = Query(
+        None, description="Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx)."
+    ),
+    event_type: MultipleQueryFilter[WebhookEventType] | None = Query(
+        None, description="Filter by webhook event type."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[WebhookDeliverySchema]:
     """
@@ -186,6 +200,10 @@ async def list_webhook_deliveries(
         endpoint_id=endpoint_id,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
+        succeeded=succeeded,
+        query=query,
+        http_code_class=http_code_class,
+        event_type=event_type,
         pagination=pagination,
     )
 

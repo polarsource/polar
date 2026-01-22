@@ -33,6 +33,10 @@ interface DeliveriesTableProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   dateRange?: DateRange
+  succeeded?: boolean
+  httpCodeClass?: '2xx' | '3xx' | '4xx' | '5xx'
+  eventTypes?: string[]
+  query?: string
 }
 
 type DeliveryRow = schemas['WebhookDelivery'] & {
@@ -45,6 +49,10 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   pagination,
   sorting,
   dateRange,
+  succeeded,
+  httpCodeClass,
+  eventTypes,
+  query,
 }) => {
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -97,6 +105,10 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     ...getAPIParams(pagination, sorting),
     ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
     ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
+    ...(succeeded !== undefined ? { succeeded } : {}),
+    ...(httpCodeClass ? { http_code_class: httpCodeClass } : {}),
+    ...(eventTypes && eventTypes.length > 0 ? { event_type: eventTypes } : {}),
+    ...(query ? { query } : {}),
   })
 
   const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []

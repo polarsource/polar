@@ -5059,3 +5059,165 @@ class TestCheckoutCreatedEvent:
         assert event.user_metadata["checkout_id"] == str(checkout.id)
         assert event.user_metadata["checkout_status"] == checkout.status
         assert event.user_metadata["product_id"] == str(checkout.product_id)
+
+
+@pytest.mark.asyncio
+class TestMarkOpened:
+    async def test_sets_opened_at(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+
+        assert checkout_one_time_fixed.analytics_metadata is None
+
+        checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") is not None
+
+    async def test_fires_posthog_event(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+
+        checkout_one_time_fixed.customer_email = "test@example.com"
+
+        await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        posthog_mock.capture.assert_called_once()
+        call_kwargs = posthog_mock.capture.call_args
+        assert call_kwargs[1]["distinct_id"] == "test@example.com"
+        assert call_kwargs[1]["event"] == "storefront:subscriptions:checkout:open"
+        assert call_kwargs[1]["properties"]["checkout_id"] == str(
+            checkout_one_time_fixed.id
+        )
+
+    async def test_idempotent_no_update(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+
+        original_opened_at = utc_now().isoformat()
+        checkout_one_time_fixed.analytics_metadata = {"opened_at": original_opened_at}
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") == original_opened_at
+        posthog_mock.capture.assert_not_called()
+
+    async def test_fallback_distinct_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """When no distinct_id or email, falls back to checkout:{id} for A/B test consistency."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+
+        checkout_one_time_fixed.customer_email = None
+
+        await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        posthog_mock.capture.assert_called_once()
+        call_kwargs = posthog_mock.capture.call_args
+        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_one_time_fixed.id}"
+
+    async def test_posthog_failure_does_not_break_checkout(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """PostHog failures should be caught and logged, not break the checkout flow."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.capture.side_effect = Exception("PostHog is down")
+        log_mock = mocker.patch("polar.checkout.service.log")
+
+        assert checkout_one_time_fixed.analytics_metadata is None
+
+        checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
+
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata.get("opened_at") is not None
+        log_mock.error.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestHandleSuccessPostHogTracking:
+    async def test_fires_checkout_complete_event(
+        self,
+        mocker: MockerFixture,
+        order_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        checkout_confirmed_one_time.customer_email = "customer@example.com"
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+
+        posthog_mock.capture.assert_called_once()
+        call_kwargs = posthog_mock.capture.call_args
+        assert call_kwargs[1]["distinct_id"] == "customer@example.com"
+        assert call_kwargs[1]["event"] == "storefront:subscriptions:checkout:complete"
+        assert call_kwargs[1]["properties"]["checkout_id"] == str(checkout.id)
+
+    async def test_fallback_distinct_id(
+        self,
+        mocker: MockerFixture,
+        order_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        """When no distinct_id or email, falls back to checkout:{id} for A/B test consistency."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        checkout_confirmed_one_time.customer_email = None
+
+        await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        posthog_mock.capture.assert_called_once()
+        call_kwargs = posthog_mock.capture.call_args
+        assert (
+            call_kwargs[1]["distinct_id"]
+            == f"checkout:{checkout_confirmed_one_time.id}"
+        )
+
+    async def test_posthog_failure_does_not_break_checkout(
+        self,
+        mocker: MockerFixture,
+        order_service_mock: MagicMock,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        payment: Payment,
+    ) -> None:
+        """PostHog failures should be caught and logged, not break the checkout flow."""
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.capture.side_effect = Exception("PostHog is down")
+        log_mock = mocker.patch("polar.checkout.service.log")
+
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
+        )
+
+        assert checkout.status == CheckoutStatus.succeeded
+        log_mock.error.assert_called_once()

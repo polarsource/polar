@@ -33,6 +33,7 @@ from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
     CheckoutCreatePublic,
+    CheckoutOpened,
     CheckoutPublic,
     CheckoutPublicConfirmed,
     CheckoutUpdate,
@@ -276,6 +277,32 @@ async def client_confirm(
 
     return await checkout_service.confirm(
         session, auth_subject, checkout, checkout_confirm
+    )
+
+
+@inner_router.post(
+    "/client/{client_secret}/opened",
+    response_model=CheckoutPublic,
+    summary="Mark Checkout Session as Opened",
+    responses={
+        200: {"description": "Checkout session marked as opened."},
+        404: CheckoutNotFound,
+        410: CheckoutExpired,
+    },
+    tags=[APITag.private],
+    include_in_schema=False,
+)
+async def client_opened(
+    client_secret: CheckoutClientSecret,
+    checkout_opened: CheckoutOpened,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Mark a checkout session as opened by client for analytics/experiment purposes.
+    """
+    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+    return await checkout_service.mark_opened(
+        session, checkout, checkout_opened.distinct_id
     )
 
 

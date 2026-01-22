@@ -30,7 +30,7 @@ import { cn } from '@polar-sh/ui/lib/utils'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -63,7 +63,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { isTreatment: isPayNow } = useExperiment('checkout_button_pay')
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
-  const hasTrackedOpen = useRef(false)
 
   // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(
@@ -75,26 +74,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
   const isPaymentRequired = checkout.isPaymentRequired
   const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
-
-  // Track checkout page open
-  useEffect(() => {
-    if (hasTrackedOpen.current) return
-    hasTrackedOpen.current = true
-    posthog.capture('storefront:subscriptions:checkout:open', {
-      checkout_id: checkout.id,
-      organization_slug: checkout.organization.slug,
-      product_id: checkout.productId,
-      amount: checkout.amount,
-      embed,
-    })
-  }, [
-    checkout.organization.slug,
-    checkout.productId,
-    checkout.amount,
-    embed,
-    posthog,
-    checkout.id,
-  ])
 
   // Track payment not ready state
   useEffect(() => {

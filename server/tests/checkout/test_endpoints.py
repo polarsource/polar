@@ -927,3 +927,91 @@ class TestClientConfirm:
         json = response.json()
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
+
+
+@pytest.mark.asyncio
+class TestClientOpened:
+    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
+        response = await client.post(f"{api_prefix}/client/123/opened", json={})
+
+        assert response.status_code == 404
+
+    async def test_expired(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout.client_secret}/opened",
+            json={},
+        )
+
+        assert response.status_code == 410
+
+    async def test_valid(
+        self,
+        api_prefix: str,
+        session: AsyncSession,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        assert checkout_open.analytics_metadata is None
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/opened",
+            json={"distinct_id": "test-posthog-id"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(checkout_open.id)
+
+        repository = CheckoutRepository.from_session(session)
+        updated_checkout = await repository.get_by_id(checkout_open.id)
+        assert updated_checkout is not None
+        assert updated_checkout.analytics_metadata is not None
+        assert updated_checkout.analytics_metadata.get("opened_at") is not None
+        assert (
+            updated_checkout.analytics_metadata.get("distinct_id") == "test-posthog-id"
+        )
+
+    async def test_idempotent(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        original_opened_at = (utc_now() - timedelta(hours=1)).isoformat()
+        checkout_open.analytics_metadata = {
+            "opened_at": original_opened_at,
+            "distinct_id": "original-id",
+        }
+        await save_fixture(checkout_open)
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/opened",
+            json={"distinct_id": "new-id"},
+        )
+
+        assert response.status_code == 200
+
+        repository = CheckoutRepository.from_session(session)
+        updated_checkout = await repository.get_by_id(checkout_open.id)
+        assert updated_checkout is not None
+        assert updated_checkout.analytics_metadata is not None
+        assert (
+            updated_checkout.analytics_metadata.get("opened_at") == original_opened_at
+        )
+        assert updated_checkout.analytics_metadata.get("distinct_id") == "original-id"

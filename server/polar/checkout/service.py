@@ -87,6 +87,7 @@ from polar.observability.checkout_metrics import (
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.posthog import posthog
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
@@ -1270,6 +1271,32 @@ class CheckoutService:
 
         CHECKOUT_SUCCEEDED_TOTAL.inc()
 
+        distinct_id = (
+            (
+                checkout.analytics_metadata.get("distinct_id")
+                if checkout.analytics_metadata
+                else None
+            )
+            or checkout.customer_email
+            or f"checkout:{checkout.id}"
+        )
+
+        try:
+            posthog.capture(
+                distinct_id=distinct_id,
+                event="storefront:subscriptions:checkout:complete",
+                properties={
+                    "checkout_id": str(checkout.id),
+                    "organization_slug": checkout.organization.slug,
+                    "product_id": str(checkout.product_id)
+                    if checkout.product_id
+                    else None,
+                    "amount": checkout.amount,
+                },
+            )
+        except Exception as e:
+            log.error("Failed to capture PostHog event", error=str(e))
+
         return checkout
 
     async def handle_failure(
@@ -1313,6 +1340,50 @@ class CheckoutService:
             raise ResourceNotFound()
         if checkout.is_expired:
             raise ExpiredCheckoutError()
+        return checkout
+
+    async def mark_opened(
+        self, session: AsyncSession, checkout: Checkout, distinct_id: str | None = None
+    ) -> Checkout:
+        """
+        Mark a checkout as opened. This is called when the checkout page is first viewed.
+        Stores opened_at timestamp and posthog distinct_id in analytics_metadata.
+        """
+        # Already opened - no-op
+        if checkout.analytics_metadata and checkout.analytics_metadata.get("opened_at"):
+            return checkout
+
+        resolved_distinct_id = (
+            distinct_id or checkout.customer_email or f"checkout:{checkout.id}"
+        )
+
+        analytics_metadata = {
+            "opened_at": utc_now().isoformat(),
+            "distinct_id": resolved_distinct_id,
+        }
+
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.update(
+            checkout,
+            update_dict={"analytics_metadata": analytics_metadata},
+        )
+
+        try:
+            posthog.capture(
+                distinct_id=resolved_distinct_id,
+                event="storefront:subscriptions:checkout:open",
+                properties={
+                    "checkout_id": str(checkout.id),
+                    "organization_slug": checkout.organization.slug,
+                    "product_id": str(checkout.product_id)
+                    if checkout.product_id
+                    else None,
+                    "amount": checkout.amount,
+                },
+            )
+        except Exception as e:
+            log.error("Failed to capture PostHog event", error=str(e))
+
         return checkout
 
     async def _get_validated_price(

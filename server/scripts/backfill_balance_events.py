@@ -2,17 +2,18 @@ import asyncio
 import logging.config
 import uuid
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import structlog
 import typer
-from rich.progress import Progress
-from sqlalchemy import func, select
+from sqlalchemy import func, literal, select, text, tuple_
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import selectinload
 
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.event.system import (
+    BalanceCreditOrderMetadata,
     BalanceDisputeMetadata,
     BalanceOrderMetadata,
     BalanceRefundMetadata,
@@ -22,6 +23,7 @@ from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Customer, Dispute, Event, Order, Refund, Transaction
 from polar.models.event import EventSource
+from polar.models.order import OrderStatus
 from polar.models.refund import RefundStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 
@@ -38,26 +40,6 @@ def typer_async(f):  # type: ignore
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
-
-
-async def _compute_fees_by_order(session: AsyncSession) -> dict[str, int]:
-    """
-    Compute total platform fees for each order.
-
-    Fees are stored as balance transactions with platform_fee_type set,
-    where account_id is NULL (Polar's share).
-    """
-    fees_result = await session.execute(
-        select(Transaction.order_id, func.sum(Transaction.amount))
-        .where(
-            Transaction.type == TransactionType.balance,
-            Transaction.order_id.is_not(None),
-            Transaction.platform_fee_type.is_not(None),
-            Transaction.account_id.is_(None),
-        )
-        .group_by(Transaction.order_id)
-    )
-    return {str(row[0]): row[1] for row in fees_result.fetchall()}
 
 
 async def _compute_dispute_fees_by_order(session: AsyncSession) -> dict[str, int]:
@@ -80,6 +62,217 @@ async def _compute_dispute_fees_by_order(session: AsyncSession) -> dict[str, int
     return {str(row[0]): row[1] for row in fees_result.fetchall()}
 
 
+async def fix_balance_order_timestamps(session: AsyncSession) -> int:
+    """Fix balance.order event timestamps to match order.created_at."""
+    typer.echo("\n=== Fixing balance.order timestamps ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET timestamp = o.created_at
+            FROM orders o
+            WHERE (e.user_metadata->>'order_id')::uuid = o.id
+              AND e.source = 'system'
+              AND e.name = 'balance.order'
+              AND e.timestamp != o.created_at
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Fixed {count} timestamps")
+    return count
+
+
+async def fix_balance_order_fees(session: AsyncSession) -> int:
+    """Fix balance.order event fees to match order.platform_fee_amount."""
+    typer.echo("\n=== Fixing balance.order fees ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{fee}',
+                to_jsonb(o.platform_fee_amount)
+            )
+            FROM orders o
+            WHERE (e.user_metadata->>'order_id')::uuid = o.id
+              AND e.source = 'system'
+              AND e.name = 'balance.order'
+              AND o.platform_fee_amount != COALESCE((e.user_metadata->>'fee')::numeric::int, 0)
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Fixed {count} fees")
+    return count
+
+
+async def fix_refund_subscription_id(session: AsyncSession) -> int:
+    """Add subscription_id to balance.refund events missing it."""
+    typer.echo("\n=== Adding subscription_id to refund events ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{subscription_id}',
+                to_jsonb(o.subscription_id::text)
+            )
+            FROM orders o
+            WHERE (e.user_metadata->>'order_id')::uuid = o.id
+              AND e.source = 'system'
+              AND e.name = 'balance.refund'
+              AND NOT e.user_metadata ? 'subscription_id'
+              AND o.subscription_id IS NOT NULL
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Added subscription_id to {count} events")
+    return count
+
+
+async def fix_refund_order_created_at(session: AsyncSession) -> int:
+    """Add order_created_at to balance.refund events missing it."""
+    typer.echo("\n=== Adding order_created_at to refund events ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{order_created_at}',
+                to_jsonb(o.created_at)
+            )
+            FROM orders o
+            WHERE (e.user_metadata->>'order_id')::uuid = o.id
+              AND e.source = 'system'
+              AND e.name = 'balance.refund'
+              AND NOT e.user_metadata ? 'order_created_at'
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Added order_created_at to {count} refund events")
+    return count
+
+
+async def fix_dispute_order_created_at(session: AsyncSession) -> int:
+    """Add order_created_at to balance.dispute events missing it."""
+    typer.echo("\n=== Adding order_created_at to dispute events ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{order_created_at}',
+                to_jsonb(o.created_at)
+            )
+            FROM orders o, disputes d
+            WHERE d.id = (e.user_metadata->>'dispute_id')::uuid
+              AND o.id = d.order_id
+              AND e.source = 'system'
+              AND e.name = 'balance.dispute'
+              AND NOT e.user_metadata ? 'order_created_at'
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Added order_created_at to {count} dispute events")
+    return count
+
+
+async def fix_dispute_reversal_order_created_at(session: AsyncSession) -> int:
+    """Add order_created_at to balance.dispute_reversal events missing it."""
+    typer.echo("\n=== Adding order_created_at to dispute_reversal events ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{order_created_at}',
+                to_jsonb(o.created_at)
+            )
+            FROM orders o, disputes d
+            WHERE d.id = (e.user_metadata->>'dispute_id')::uuid
+              AND o.id = d.order_id
+              AND e.source = 'system'
+              AND e.name = 'balance.dispute_reversal'
+              AND NOT e.user_metadata ? 'order_created_at'
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Added order_created_at to {count} dispute_reversal events")
+    return count
+
+
+async def fix_refund_reversal_order_created_at(session: AsyncSession) -> int:
+    """Add order_created_at to balance.refund_reversal events missing it."""
+    typer.echo("\n=== Adding order_created_at to refund_reversal events ===")
+
+    result = await session.execute(
+        text("""
+            UPDATE events e
+            SET user_metadata = jsonb_set(
+                e.user_metadata,
+                '{order_created_at}',
+                to_jsonb(o.created_at)
+            )
+            FROM orders o, refunds r
+            WHERE r.id = (e.user_metadata->>'refund_id')::uuid
+              AND o.id = r.order_id
+              AND e.source = 'system'
+              AND e.name = 'balance.refund_reversal'
+              AND NOT e.user_metadata ? 'order_created_at'
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Added order_created_at to {count} refund_reversal events")
+    return count
+
+
+async def delete_duplicate_balance_order_events(session: AsyncSession) -> int:
+    """Delete duplicate balance.order events, keeping only the oldest per order."""
+    typer.echo("\n=== Deleting duplicate balance.order events ===")
+
+    result = await session.execute(
+        text("""
+            DELETE FROM events WHERE id IN (
+                SELECT id FROM (
+                    SELECT
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY user_metadata->>'order_id'
+                            ORDER BY ingested_at ASC
+                        ) as rn
+                    FROM events
+                    WHERE source = 'system'
+                      AND name = 'balance.order'
+                ) ranked
+                WHERE rn > 1
+            )
+        """)
+    )
+    await session.commit()
+
+    count = cast(CursorResult[Any], result).rowcount
+    typer.echo(f"Deleted {count} duplicate events")
+    return count
+
+
 async def create_missing_balance_order_events(
     session: AsyncSession,
     batch_size: int,
@@ -87,120 +280,219 @@ async def create_missing_balance_order_events(
 ) -> int:
     """
     Create balance.order events for payment transactions that don't have one.
+    Uses batch-check pattern to avoid querying all existing events upfront.
     """
     typer.echo("\n=== Creating missing balance.order events ===")
 
-    typer.echo("Computing fees by order...")
-    fees_by_order = await _compute_fees_by_order(session)
-    typer.echo(f"Computed fees for {len(fees_by_order)} orders")
-
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_order,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.order events")
-
-    all_tx_ids_result = await session.execute(
-        select(Transaction.id).where(
-            Transaction.type == TransactionType.payment,
-            Transaction.order_id.is_not(None),
-        )
-    )
-    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
-
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.order events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} payment transactions without balance.order events"
-    )
-
     created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
 
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Creating balance.order events...", total=total_to_create
+    typer.echo("Processing payment transactions...")
+
+    while True:
+        query = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.payment,
+                Transaction.order_id.is_not(None),
+            )
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Transaction.order).selectinload(Order.customer),
+            )
         )
-
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
-
-            statement = (
-                select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
-                .options(
-                    selectinload(Transaction.order).selectinload(Order.customer),
-                    selectinload(Transaction.order).selectinload(Order.subscription),
-                )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Transaction.created_at, Transaction.id)
+                > tuple_(literal(last_created_at), literal(last_id))
             )
 
-            result = await session.execute(statement)
-            transactions = result.scalars().all()
+        batch_result = await session.execute(query)
+        transactions = batch_result.scalars().all()
 
-            if not transactions:
-                break
+        if not transactions:
+            break
 
-            events = []
-            for tx in transactions:
-                if tx.order is None or tx.order.customer is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no order or customer")
-                    continue
+        batch_tx_ids = [str(tx.id) for tx in transactions]
+        existing_result = await session.execute(
+            select(Event.user_metadata["transaction_id"].as_string()).where(
+                Event.name == SystemEvent.balance_order,
+                Event.source == EventSource.system,
+                Event.user_metadata["transaction_id"].as_string().in_(batch_tx_ids),
+            )
+        )
+        existing_tx_ids = {row[0] for row in existing_result.fetchall()}
 
-                assert tx.presentment_amount is not None
-                assert tx.presentment_currency is not None
+        events = []
+        for tx in transactions:
+            if str(tx.id) in existing_tx_ids:
+                continue
 
-                order_id_str = str(tx.order.id)
-                metadata: BalanceOrderMetadata = {
-                    "transaction_id": str(tx.id),
-                    "order_id": order_id_str,
-                    "amount": tx.amount,
-                    "currency": tx.currency,
-                    "presentment_amount": tx.presentment_amount,
-                    "presentment_currency": tx.presentment_currency,
-                    "tax_amount": tx.order.tax_amount,
-                    "fee": fees_by_order.get(order_id_str, 0),
+            if tx.order is None or tx.order.customer is None:
+                continue
+
+            if tx.presentment_amount is None or tx.presentment_currency is None:
+                continue
+
+            metadata: BalanceOrderMetadata = {
+                "transaction_id": str(tx.id),
+                "order_id": str(tx.order.id),
+                "amount": tx.amount,
+                "currency": tx.currency,
+                "presentment_amount": tx.presentment_amount,
+                "presentment_currency": tx.presentment_currency,
+                "tax_amount": tx.order.tax_amount,
+                "fee": tx.order.platform_fee_amount,
+            }
+            if tx.order.tax_rate is not None:
+                if tx.order.tax_rate["country"] is not None:
+                    metadata["tax_country"] = tx.order.tax_rate["country"]
+                if tx.order.tax_rate["state"] is not None:
+                    metadata["tax_state"] = tx.order.tax_rate["state"]
+            if tx.order.subscription_id is not None:
+                metadata["subscription_id"] = str(tx.order.subscription_id)
+            if tx.order.product_id is not None:
+                metadata["product_id"] = str(tx.order.product_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_order,
+                    "source": EventSource.system,
+                    "timestamp": tx.order.created_at,
+                    "customer_id": tx.order.customer.id,
+                    "organization_id": tx.order.customer.organization_id,
+                    "user_metadata": metadata,
                 }
-                if tx.order.tax_rate is not None:
-                    if tx.order.tax_rate["country"] is not None:
-                        metadata["tax_country"] = tx.order.tax_rate["country"]
-                    if tx.order.tax_rate["state"] is not None:
-                        metadata["tax_state"] = tx.order.tax_rate["state"]
-                if tx.order.subscription_id is not None:
-                    metadata["subscription_id"] = str(tx.order.subscription_id)
-                if tx.order.product_id is not None:
-                    metadata["product_id"] = str(tx.order.product_id)
+            )
 
-                events.append(
-                    {
-                        "name": SystemEvent.balance_order,
-                        "source": EventSource.system,
-                        "timestamp": tx.created_at,
-                        "customer_id": tx.order.customer.id,
-                        "organization_id": tx.order.customer.organization_id,
-                        "user_metadata": metadata,
-                    }
-                )
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
 
-            if events:
-                await EventRepository.from_session(session).insert_batch(events)
-                await session.commit()
-                created_count += len(events)
-
-            progress.update(task, advance=len(transactions))
-            await asyncio.sleep(rate_limit_delay)
+        last_created_at, last_id = transactions[-1].created_at, transactions[-1].id
+        processed_count += len(transactions)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} transactions...")
+        await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.order events")
+    return created_count
+
+
+async def create_missing_balance_credit_order_events(
+    session: AsyncSession,
+    batch_size: int,
+    rate_limit_delay: float,
+) -> int:
+    """
+    Create balance.credit_order events for orders paid via customer balance (no payment transaction).
+    Uses batch-check pattern to avoid querying all existing events upfront.
+    """
+    typer.echo("\n=== Creating missing balance.credit_order events ===")
+
+    created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
+
+    typer.echo("Processing credit orders (paid by balance)...")
+
+    while True:
+        query = (
+            select(Order)
+            .where(
+                Order.status.in_(
+                    [
+                        OrderStatus.paid,
+                        OrderStatus.refunded,
+                        OrderStatus.partially_refunded,
+                    ]
+                ),
+                ~Order.id.in_(
+                    select(Transaction.order_id).where(
+                        Transaction.type == TransactionType.payment,
+                        Transaction.order_id.is_not(None),
+                    )
+                ),
+            )
+            .order_by(Order.created_at, Order.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Order.customer),
+            )
+        )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Order.created_at, Order.id)
+                > tuple_(literal(last_created_at), literal(last_id))
+            )
+
+        batch_result = await session.execute(query)
+        orders = batch_result.scalars().all()
+
+        if not orders:
+            break
+
+        batch_order_ids = [str(o.id) for o in orders]
+        existing_result = await session.execute(
+            select(Event.user_metadata["order_id"].as_string()).where(
+                Event.name == SystemEvent.balance_credit_order,
+                Event.source == EventSource.system,
+                Event.user_metadata["order_id"].as_string().in_(batch_order_ids),
+            )
+        )
+        existing_order_ids = {row[0] for row in existing_result.fetchall()}
+
+        events = []
+        for order in orders:
+            if str(order.id) in existing_order_ids:
+                continue
+
+            if order.customer is None:
+                continue
+
+            metadata: BalanceCreditOrderMetadata = {
+                "order_id": str(order.id),
+                "amount": order.net_amount,
+                "currency": order.currency,
+                "tax_amount": order.tax_amount,
+                "fee": order.platform_fee_amount,
+            }
+            if order.tax_rate is not None:
+                if order.tax_rate["country"] is not None:
+                    metadata["tax_country"] = order.tax_rate["country"]
+                if order.tax_rate["state"] is not None:
+                    metadata["tax_state"] = order.tax_rate["state"]
+            if order.subscription_id is not None:
+                metadata["subscription_id"] = str(order.subscription_id)
+            if order.product_id is not None:
+                metadata["product_id"] = str(order.product_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_credit_order,
+                    "source": EventSource.system,
+                    "timestamp": order.created_at,
+                    "customer_id": order.customer.id,
+                    "organization_id": order.customer.organization_id,
+                    "user_metadata": metadata,
+                }
+            )
+
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
+
+        last_created_at, last_id = orders[-1].created_at, orders[-1].id
+        processed_count += len(orders)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} orders...")
+        await asyncio.sleep(rate_limit_delay)
+
+    typer.echo(f"Created {created_count} balance.credit_order events")
     return created_count
 
 
@@ -258,6 +550,7 @@ async def create_missing_balance_refund_events(
 ) -> int:
     """
     Create balance.refund events for refund transactions that don't have one.
+    Uses batch-check pattern to avoid querying all existing events upfront.
     """
     typer.echo("\n=== Creating missing balance.refund events ===")
 
@@ -265,124 +558,110 @@ async def create_missing_balance_refund_events(
     refundable_amounts = await _compute_refundable_amounts(session)
     typer.echo(f"Computed refundable amounts for {len(refundable_amounts)} refunds")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_refund,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.refund events")
-
-    all_tx_ids_result = await session.execute(
-        select(Transaction.id).where(
-            Transaction.type == TransactionType.refund,
-            Transaction.refund_id.is_not(None),
-        )
-    )
-    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
-
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.refund events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} refund transactions without balance.refund events"
-    )
-
     created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
 
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Creating balance.refund events...", total=total_to_create
+    typer.echo("Processing refund transactions...")
+
+    while True:
+        query = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.refund,
+                Transaction.refund_id.is_not(None),
+            )
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Transaction.refund).selectinload(Refund.customer),
+                selectinload(Transaction.refund).selectinload(Refund.organization),
+                selectinload(Transaction.refund).selectinload(Refund.order),
+            )
         )
-
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
-
-            statement = (
-                select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
-                .options(
-                    selectinload(Transaction.refund).selectinload(Refund.customer),
-                    selectinload(Transaction.refund).selectinload(Refund.organization),
-                    selectinload(Transaction.refund).selectinload(Refund.order),
-                )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Transaction.created_at, Transaction.id)
+                > tuple_(literal(last_created_at), literal(last_id))
             )
 
-            result = await session.execute(statement)
-            transactions = result.scalars().all()
+        batch_result = await session.execute(query)
+        transactions = batch_result.scalars().all()
 
-            if not transactions:
-                break
+        if not transactions:
+            break
 
-            events = []
-            for tx in transactions:
-                if tx.refund is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no refund")
-                    continue
-                if tx.refund.customer is None or tx.refund.organization is None:
-                    typer.echo(
-                        f"Warning: Refund {tx.refund.id} has no customer or organization"
-                    )
-                    continue
+        batch_tx_ids = [str(tx.id) for tx in transactions]
+        existing_result = await session.execute(
+            select(Event.user_metadata["transaction_id"].as_string()).where(
+                Event.name == SystemEvent.balance_refund,
+                Event.source == EventSource.system,
+                Event.user_metadata["transaction_id"].as_string().in_(batch_tx_ids),
+            )
+        )
+        existing_tx_ids = {row[0] for row in existing_result.fetchall()}
 
-                assert tx.presentment_amount is not None
-                assert tx.presentment_currency is not None
+        events = []
+        for tx in transactions:
+            if str(tx.id) in existing_tx_ids:
+                continue
 
-                metadata: BalanceRefundMetadata = {
-                    "transaction_id": str(tx.id),
-                    "refund_id": str(tx.refund.id),
-                    "amount": tx.amount,
-                    "currency": tx.currency,
-                    "presentment_amount": tx.presentment_amount,
-                    "presentment_currency": tx.presentment_currency,
-                    "tax_amount": tx.tax_amount,
-                    "tax_country": tx.tax_country or "",
-                    "tax_state": tx.tax_state or "",
-                    "fee": 0,
+            if tx.refund is None:
+                continue
+            if tx.refund.customer is None or tx.refund.organization is None:
+                continue
+            if tx.presentment_amount is None or tx.presentment_currency is None:
+                continue
+
+            metadata: BalanceRefundMetadata = {
+                "transaction_id": str(tx.id),
+                "refund_id": str(tx.refund.id),
+                "amount": tx.amount,
+                "currency": tx.currency,
+                "presentment_amount": tx.presentment_amount,
+                "presentment_currency": tx.presentment_currency,
+                "tax_amount": tx.tax_amount,
+                "tax_country": tx.tax_country or "",
+                "tax_state": tx.tax_state or "",
+                "fee": 0,
+            }
+            if tx.order_id is not None:
+                metadata["order_id"] = str(tx.order_id)
+            if tx.refund.order is not None:
+                order = tx.refund.order
+                if order.product_id is not None:
+                    metadata["product_id"] = str(order.product_id)
+                metadata["order_created_at"] = order.created_at.isoformat()
+            refund_id_str = str(tx.refund.id)
+            if refund_id_str in refundable_amounts:
+                metadata["refundable_amount"] = refundable_amounts[refund_id_str]
+            if (
+                tx.refund.order is not None
+                and tx.refund.order.subscription_id is not None
+            ):
+                metadata["subscription_id"] = str(tx.refund.order.subscription_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_refund,
+                    "source": EventSource.system,
+                    "timestamp": tx.created_at,
+                    "customer_id": tx.refund.customer.id,
+                    "organization_id": tx.refund.organization.id,
+                    "user_metadata": metadata,
                 }
-                if tx.order_id is not None:
-                    metadata["order_id"] = str(tx.order_id)
-                if tx.refund.order is not None:
-                    order = tx.refund.order
-                    if order.product_id is not None:
-                        metadata["product_id"] = str(order.product_id)
-                refund_id_str = str(tx.refund.id)
-                if refund_id_str in refundable_amounts:
-                    metadata["refundable_amount"] = refundable_amounts[refund_id_str]
-                if tx.refund.subscription_id is not None:
-                    metadata["subscription_id"] = str(tx.refund.subscription_id)
-                if tx.presentment_amount is not None:
-                    metadata["presentment_amount"] = tx.presentment_amount
-                if tx.presentment_currency is not None:
-                    metadata["presentment_currency"] = tx.presentment_currency
+            )
 
-                events.append(
-                    {
-                        "name": SystemEvent.balance_refund,
-                        "source": EventSource.system,
-                        "timestamp": tx.created_at,
-                        "customer_id": tx.refund.customer.id,
-                        "organization_id": tx.refund.organization.id,
-                        "user_metadata": metadata,
-                    }
-                )
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
 
-            if events:
-                await EventRepository.from_session(session).insert_batch(events)
-                await session.commit()
-                created_count += len(events)
-
-            progress.update(task, advance=len(transactions))
-            await asyncio.sleep(rate_limit_delay)
+        last_created_at, last_id = transactions[-1].created_at, transactions[-1].id
+        processed_count += len(transactions)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} transactions...")
+        await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.refund events")
     return created_count
@@ -395,6 +674,7 @@ async def create_missing_balance_dispute_events(
 ) -> int:
     """
     Create balance.dispute events for dispute transactions that don't have one.
+    Uses batch-check pattern to avoid querying all existing events upfront.
     """
     typer.echo("\n=== Creating missing balance.dispute events ===")
 
@@ -402,131 +682,117 @@ async def create_missing_balance_dispute_events(
     dispute_fees_by_order = await _compute_dispute_fees_by_order(session)
     typer.echo(f"Computed dispute fees for {len(dispute_fees_by_order)} orders")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_dispute,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.dispute events")
-
-    all_tx_ids_result = await session.execute(
-        select(Transaction.id).where(
-            Transaction.type == TransactionType.dispute,
-            Transaction.dispute_id.is_not(None),
-        )
-    )
-    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
-
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.dispute events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} dispute transactions without balance.dispute events"
-    )
-
     created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
 
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Creating balance.dispute events...", total=total_to_create
+    typer.echo("Processing dispute transactions...")
+
+    while True:
+        query = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.dispute,
+                Transaction.dispute_id.is_not(None),
+            )
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Transaction.dispute)
+                .selectinload(Dispute.order)
+                .selectinload(Order.customer)
+                .selectinload(Customer.organization),
+            )
         )
-
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
-
-            statement = (
-                select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
-                .options(
-                    selectinload(Transaction.dispute)
-                    .selectinload(Dispute.order)
-                    .selectinload(Order.customer)
-                    .selectinload(Customer.organization),
-                )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Transaction.created_at, Transaction.id)
+                > tuple_(literal(last_created_at), literal(last_id))
             )
 
-            result = await session.execute(statement)
-            transactions = result.scalars().all()
+        batch_result = await session.execute(query)
+        transactions = batch_result.scalars().all()
 
-            if not transactions:
-                break
+        if not transactions:
+            break
 
-            events = []
-            for tx in transactions:
-                if tx.dispute is None or tx.dispute.order is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no dispute or order")
-                    continue
-                customer = tx.dispute.order.customer
-                if customer is None or customer.organization is None:
-                    typer.echo(
-                        f"Warning: Transaction {tx.id} has no customer or organization"
-                    )
-                    continue
+        batch_tx_ids = [str(tx.id) for tx in transactions]
+        existing_result = await session.execute(
+            select(Event.user_metadata["transaction_id"].as_string()).where(
+                Event.name == SystemEvent.balance_dispute,
+                Event.source == EventSource.system,
+                Event.user_metadata["transaction_id"].as_string().in_(batch_tx_ids),
+            )
+        )
+        existing_tx_ids = {row[0] for row in existing_result.fetchall()}
 
-                presentment_amount = (
-                    tx.presentment_amount
-                    if tx.presentment_amount is not None
-                    else tx.amount
-                )
-                presentment_currency = (
-                    tx.presentment_currency
-                    if tx.presentment_currency is not None
-                    else "usd"
-                )
+        events = []
+        for tx in transactions:
+            if str(tx.id) in existing_tx_ids:
+                continue
 
-                order_id_str = str(tx.order_id) if tx.order_id else None
-                metadata: BalanceDisputeMetadata = {
-                    "transaction_id": str(tx.id),
-                    "dispute_id": str(tx.dispute.id),
-                    "amount": tx.amount,
-                    "currency": tx.currency,
-                    "presentment_amount": presentment_amount,
-                    "presentment_currency": presentment_currency,
-                    "tax_amount": tx.tax_amount,
-                    "tax_country": tx.tax_country or "",
-                    "tax_state": tx.tax_state or "",
-                    "fee": dispute_fees_by_order.get(order_id_str, 0)
-                    if order_id_str
-                    else 0,
+            if tx.dispute is None or tx.dispute.order is None:
+                continue
+            customer = tx.dispute.order.customer
+            if customer is None or customer.organization is None:
+                continue
+
+            presentment_amount = (
+                tx.presentment_amount
+                if tx.presentment_amount is not None
+                else tx.amount
+            )
+            presentment_currency = (
+                tx.presentment_currency
+                if tx.presentment_currency is not None
+                else "usd"
+            )
+
+            order_id_str = str(tx.order_id) if tx.order_id else None
+            metadata: BalanceDisputeMetadata = {
+                "transaction_id": str(tx.id),
+                "dispute_id": str(tx.dispute.id),
+                "amount": tx.amount,
+                "currency": tx.currency,
+                "presentment_amount": presentment_amount,
+                "presentment_currency": presentment_currency,
+                "tax_amount": tx.tax_amount,
+                "tax_country": tx.tax_country or "",
+                "tax_state": tx.tax_state or "",
+                "fee": dispute_fees_by_order.get(order_id_str, 0)
+                if order_id_str
+                else 0,
+            }
+            if tx.order_id is not None:
+                metadata["order_id"] = str(tx.order_id)
+            if tx.dispute.order is not None:
+                metadata["order_created_at"] = tx.dispute.order.created_at.isoformat()
+                if tx.dispute.order.product_id is not None:
+                    metadata["product_id"] = str(tx.dispute.order.product_id)
+                if tx.dispute.order.subscription_id is not None:
+                    metadata["subscription_id"] = str(tx.dispute.order.subscription_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_dispute,
+                    "source": EventSource.system,
+                    "timestamp": tx.created_at,
+                    "customer_id": customer.id,
+                    "organization_id": customer.organization.id,
+                    "user_metadata": metadata,
                 }
-                if tx.order_id is not None:
-                    metadata["order_id"] = str(tx.order_id)
-                if tx.dispute.order is not None:
-                    if tx.dispute.order.product_id is not None:
-                        metadata["product_id"] = str(tx.dispute.order.product_id)
-                    if tx.dispute.order.subscription_id is not None:
-                        metadata["subscription_id"] = str(
-                            tx.dispute.order.subscription_id
-                        )
+            )
 
-                events.append(
-                    {
-                        "name": SystemEvent.balance_dispute,
-                        "source": EventSource.system,
-                        "timestamp": tx.created_at,
-                        "customer_id": customer.id,
-                        "organization_id": customer.organization.id,
-                        "user_metadata": metadata,
-                    }
-                )
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
 
-            if events:
-                await EventRepository.from_session(session).insert_batch(events)
-                await session.commit()
-                created_count += len(events)
-
-            progress.update(task, advance=len(transactions))
-            await asyncio.sleep(rate_limit_delay)
+        last_created_at, last_id = transactions[-1].created_at, transactions[-1].id
+        processed_count += len(transactions)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} transactions...")
+        await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.dispute events")
     return created_count
@@ -539,134 +805,121 @@ async def create_missing_balance_dispute_reversal_events(
 ) -> int:
     """
     Create balance.dispute_reversal events for dispute_reversal transactions that don't have one.
+    Uses batch-check pattern to avoid querying all existing events upfront.
     """
     typer.echo("\n=== Creating missing balance.dispute_reversal events ===")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_dispute_reversal,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.dispute_reversal events")
-
-    all_tx_ids_result = await session.execute(
-        select(Transaction.id).where(
-            Transaction.type == TransactionType.dispute_reversal,
-            Transaction.dispute_id.is_not(None),
-        )
-    )
-    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
-
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.dispute_reversal events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} dispute_reversal transactions without balance.dispute_reversal events"
-    )
-
     created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
 
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Creating balance.dispute_reversal events...", total=total_to_create
+    typer.echo("Processing dispute_reversal transactions...")
+
+    while True:
+        query = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.dispute_reversal,
+                Transaction.dispute_id.is_not(None),
+            )
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Transaction.dispute)
+                .selectinload(Dispute.order)
+                .selectinload(Order.customer)
+                .selectinload(Customer.organization),
+                selectinload(Transaction.incurred_transactions),
+            )
         )
-
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
-
-            statement = (
-                select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
-                .options(
-                    selectinload(Transaction.dispute)
-                    .selectinload(Dispute.order)
-                    .selectinload(Order.customer)
-                    .selectinload(Customer.organization),
-                    selectinload(Transaction.incurred_transactions),
-                )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Transaction.created_at, Transaction.id)
+                > tuple_(literal(last_created_at), literal(last_id))
             )
 
-            result = await session.execute(statement)
-            transactions = result.scalars().all()
+        batch_result = await session.execute(query)
+        transactions = batch_result.scalars().all()
 
-            if not transactions:
-                break
+        if not transactions:
+            break
 
-            events = []
-            for tx in transactions:
-                if tx.dispute is None or tx.dispute.order is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no dispute or order")
-                    continue
-                customer = tx.dispute.order.customer
-                if customer is None or customer.organization is None:
-                    typer.echo(
-                        f"Warning: Transaction {tx.id} has no customer or organization"
-                    )
-                    continue
+        batch_tx_ids = [str(tx.id) for tx in transactions]
+        existing_result = await session.execute(
+            select(Event.user_metadata["transaction_id"].as_string()).where(
+                Event.name == SystemEvent.balance_dispute_reversal,
+                Event.source == EventSource.system,
+                Event.user_metadata["transaction_id"].as_string().in_(batch_tx_ids),
+            )
+        )
+        existing_tx_ids = {row[0] for row in existing_result.fetchall()}
 
-                presentment_amount = (
-                    tx.presentment_amount
-                    if tx.presentment_amount is not None
-                    else tx.amount
-                )
-                presentment_currency = (
-                    tx.presentment_currency
-                    if tx.presentment_currency is not None
-                    else "usd"
-                )
+        events = []
+        for tx in transactions:
+            if str(tx.id) in existing_tx_ids:
+                continue
 
-                reversal_fee = sum(-fee.amount for fee in tx.incurred_transactions)
+            if tx.dispute is None or tx.dispute.order is None:
+                continue
+            customer = tx.dispute.order.customer
+            if customer is None or customer.organization is None:
+                continue
 
-                metadata: BalanceDisputeMetadata = {
-                    "transaction_id": str(tx.id),
-                    "dispute_id": str(tx.dispute.id),
-                    "amount": tx.amount,
-                    "currency": tx.currency,
-                    "presentment_amount": presentment_amount,
-                    "presentment_currency": presentment_currency,
-                    "tax_amount": tx.tax_amount,
-                    "tax_country": tx.tax_country or "",
-                    "tax_state": tx.tax_state or "",
-                    "fee": reversal_fee,
+            presentment_amount = (
+                tx.presentment_amount
+                if tx.presentment_amount is not None
+                else tx.amount
+            )
+            presentment_currency = (
+                tx.presentment_currency
+                if tx.presentment_currency is not None
+                else "usd"
+            )
+
+            reversal_fee = sum(-fee.amount for fee in tx.incurred_transactions)
+
+            metadata: BalanceDisputeMetadata = {
+                "transaction_id": str(tx.id),
+                "dispute_id": str(tx.dispute.id),
+                "amount": tx.amount,
+                "currency": tx.currency,
+                "presentment_amount": presentment_amount,
+                "presentment_currency": presentment_currency,
+                "tax_amount": tx.tax_amount,
+                "tax_country": tx.tax_country or "",
+                "tax_state": tx.tax_state or "",
+                "fee": reversal_fee,
+            }
+            if tx.order_id is not None:
+                metadata["order_id"] = str(tx.order_id)
+            if tx.dispute.order is not None:
+                metadata["order_created_at"] = tx.dispute.order.created_at.isoformat()
+                if tx.dispute.order.product_id is not None:
+                    metadata["product_id"] = str(tx.dispute.order.product_id)
+                if tx.dispute.order.subscription_id is not None:
+                    metadata["subscription_id"] = str(tx.dispute.order.subscription_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_dispute_reversal,
+                    "source": EventSource.system,
+                    "timestamp": tx.created_at,
+                    "customer_id": customer.id,
+                    "organization_id": customer.organization.id,
+                    "user_metadata": metadata,
                 }
-                if tx.order_id is not None:
-                    metadata["order_id"] = str(tx.order_id)
-                if tx.dispute.order is not None:
-                    if tx.dispute.order.product_id is not None:
-                        metadata["product_id"] = str(tx.dispute.order.product_id)
-                    if tx.dispute.order.subscription_id is not None:
-                        metadata["subscription_id"] = str(
-                            tx.dispute.order.subscription_id
-                        )
+            )
 
-                events.append(
-                    {
-                        "name": SystemEvent.balance_dispute_reversal,
-                        "source": EventSource.system,
-                        "timestamp": tx.created_at,
-                        "customer_id": customer.id,
-                        "organization_id": customer.organization.id,
-                        "user_metadata": metadata,
-                    }
-                )
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
 
-            if events:
-                await EventRepository.from_session(session).insert_batch(events)
-                await session.commit()
-                created_count += len(events)
-
-            progress.update(task, advance=len(transactions))
-            await asyncio.sleep(rate_limit_delay)
+        last_created_at, last_id = transactions[-1].created_at, transactions[-1].id
+        processed_count += len(transactions)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} transactions...")
+        await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.dispute_reversal events")
     return created_count
@@ -679,120 +932,108 @@ async def create_missing_balance_refund_reversal_events(
 ) -> int:
     """
     Create balance.refund_reversal events for refund_reversal transactions that don't have one.
+    Uses batch-check pattern to avoid querying all existing events upfront.
     """
     typer.echo("\n=== Creating missing balance.refund_reversal events ===")
 
-    existing_tx_ids_result = await session.execute(
-        select(Event.user_metadata["transaction_id"].as_string())
-        .where(
-            Event.name == SystemEvent.balance_refund_reversal,
-            Event.source == EventSource.system,
-        )
-        .distinct()
-    )
-    existing_tx_ids = {row[0] for row in existing_tx_ids_result.fetchall()}
-    typer.echo(f"Found {len(existing_tx_ids)} existing balance.refund_reversal events")
-
-    all_tx_ids_result = await session.execute(
-        select(Transaction.id).where(
-            Transaction.type == TransactionType.refund_reversal,
-            Transaction.refund_id.is_not(None),
-        )
-    )
-    all_tx_ids = [row[0] for row in all_tx_ids_result.fetchall()]
-
-    missing_tx_ids = [
-        tx_id for tx_id in all_tx_ids if str(tx_id) not in existing_tx_ids
-    ]
-    total_to_create = len(missing_tx_ids)
-
-    if total_to_create == 0:
-        typer.echo("No missing balance.refund_reversal events to create")
-        return 0
-
-    typer.echo(
-        f"Found {total_to_create} refund_reversal transactions without balance.refund_reversal events"
-    )
-
     created_count = 0
+    last_created_at, last_id = None, None
+    processed_count = 0
 
-    with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Creating balance.refund_reversal events...", total=total_to_create
+    typer.echo("Processing refund_reversal transactions...")
+
+    while True:
+        query = (
+            select(Transaction)
+            .where(
+                Transaction.type == TransactionType.refund_reversal,
+                Transaction.refund_id.is_not(None),
+            )
+            .order_by(Transaction.created_at, Transaction.id)
+            .limit(batch_size)
+            .options(
+                selectinload(Transaction.refund).selectinload(Refund.customer),
+                selectinload(Transaction.refund).selectinload(Refund.organization),
+                selectinload(Transaction.refund).selectinload(Refund.order),
+            )
         )
-
-        for i in range(0, total_to_create, batch_size):
-            batch_ids = missing_tx_ids[i : i + batch_size]
-
-            statement = (
-                select(Transaction)
-                .where(Transaction.id.in_(batch_ids))
-                .options(
-                    selectinload(Transaction.refund).selectinload(Refund.customer),
-                    selectinload(Transaction.refund).selectinload(Refund.organization),
-                    selectinload(Transaction.refund).selectinload(Refund.order),
-                )
+        if last_created_at is not None:
+            query = query.where(
+                tuple_(Transaction.created_at, Transaction.id)
+                > tuple_(literal(last_created_at), literal(last_id))
             )
 
-            result = await session.execute(statement)
-            transactions = result.scalars().all()
+        batch_result = await session.execute(query)
+        transactions = batch_result.scalars().all()
 
-            if not transactions:
-                break
+        if not transactions:
+            break
 
-            events = []
-            for tx in transactions:
-                if tx.refund is None:
-                    typer.echo(f"Warning: Transaction {tx.id} has no refund")
-                    continue
-                if tx.refund.customer is None or tx.refund.organization is None:
-                    typer.echo(
-                        f"Warning: Refund {tx.refund.id} has no customer or organization"
-                    )
-                    continue
+        batch_tx_ids = [str(tx.id) for tx in transactions]
+        existing_result = await session.execute(
+            select(Event.user_metadata["transaction_id"].as_string()).where(
+                Event.name == SystemEvent.balance_refund_reversal,
+                Event.source == EventSource.system,
+                Event.user_metadata["transaction_id"].as_string().in_(batch_tx_ids),
+            )
+        )
+        existing_tx_ids = {row[0] for row in existing_result.fetchall()}
 
-                assert tx.presentment_amount is not None
-                assert tx.presentment_currency is not None
+        events = []
+        for tx in transactions:
+            if str(tx.id) in existing_tx_ids:
+                continue
 
-                metadata: BalanceRefundMetadata = {
-                    "transaction_id": str(tx.id),
-                    "refund_id": str(tx.refund.id),
-                    "amount": tx.amount,
-                    "currency": tx.currency,
-                    "presentment_amount": tx.presentment_amount,
-                    "presentment_currency": tx.presentment_currency,
-                    "tax_amount": tx.tax_amount,
-                    "tax_country": tx.tax_country or "",
-                    "tax_state": tx.tax_state or "",
-                    "fee": 0,
+            if tx.refund is None:
+                continue
+            if tx.refund.customer is None or tx.refund.organization is None:
+                continue
+            if tx.presentment_amount is None or tx.presentment_currency is None:
+                continue
+
+            metadata: BalanceRefundMetadata = {
+                "transaction_id": str(tx.id),
+                "refund_id": str(tx.refund.id),
+                "amount": tx.amount,
+                "currency": tx.currency,
+                "presentment_amount": tx.presentment_amount,
+                "presentment_currency": tx.presentment_currency,
+                "tax_amount": tx.tax_amount,
+                "tax_country": tx.tax_country or "",
+                "tax_state": tx.tax_state or "",
+                "fee": 0,
+            }
+            if tx.order_id is not None:
+                metadata["order_id"] = str(tx.order_id)
+            if tx.refund.order is not None:
+                order = tx.refund.order
+                if order.product_id is not None:
+                    metadata["product_id"] = str(order.product_id)
+                metadata["order_created_at"] = order.created_at.isoformat()
+                if order.subscription_id is not None:
+                    metadata["subscription_id"] = str(order.subscription_id)
+
+            events.append(
+                {
+                    "name": SystemEvent.balance_refund_reversal,
+                    "source": EventSource.system,
+                    "timestamp": tx.created_at,
+                    "customer_id": tx.refund.customer.id,
+                    "organization_id": tx.refund.organization.id,
+                    "user_metadata": metadata,
                 }
-                if tx.order_id is not None:
-                    metadata["order_id"] = str(tx.order_id)
-                if tx.refund.order is not None:
-                    order = tx.refund.order
-                    if order.product_id is not None:
-                        metadata["product_id"] = str(order.product_id)
-                if tx.refund.subscription_id is not None:
-                    metadata["subscription_id"] = str(tx.refund.subscription_id)
+            )
 
-                events.append(
-                    {
-                        "name": SystemEvent.balance_refund_reversal,
-                        "source": EventSource.system,
-                        "timestamp": tx.created_at,
-                        "customer_id": tx.refund.customer.id,
-                        "organization_id": tx.refund.organization.id,
-                        "user_metadata": metadata,
-                    }
-                )
+        if events:
+            await EventRepository.from_session(session).insert_batch(events)
+            await session.commit()
+            created_count += len(events)
 
-            if events:
-                await EventRepository.from_session(session).insert_batch(events)
-                await session.commit()
-                created_count += len(events)
-
-            progress.update(task, advance=len(transactions))
-            await asyncio.sleep(rate_limit_delay)
+        last_created_at, last_id = transactions[-1].created_at, transactions[-1].id
+        processed_count += len(transactions)
+        if processed_count % 10000 == 0:
+            typer.echo(f"  Processed {processed_count} transactions...")
+        await asyncio.sleep(rate_limit_delay)
 
     typer.echo(f"Created {created_count} balance.refund_reversal events")
     return created_count
@@ -825,26 +1066,48 @@ async def run_backfill(
     results: dict[str, int] = {}
 
     try:
+        results["duplicates_deleted"] = await delete_duplicate_balance_order_events(
+            session
+        )
+        results["timestamps_fixed"] = await fix_balance_order_timestamps(session)
+        results["fees_fixed"] = await fix_balance_order_fees(session)
+        results["refund_subscription_id_added"] = await fix_refund_subscription_id(
+            session
+        )
+        results["refund_order_created_at_added"] = await fix_refund_order_created_at(
+            session
+        )
+        results["dispute_order_created_at_added"] = await fix_dispute_order_created_at(
+            session
+        )
+        results[
+            "dispute_reversal_order_created_at_added"
+        ] = await fix_dispute_reversal_order_created_at(session)
+        results[
+            "refund_reversal_order_created_at_added"
+        ] = await fix_refund_reversal_order_created_at(session)
+
         results["balance_order_created"] = await create_missing_balance_order_events(
             session, batch_size, rate_limit_delay
         )
-
+        results[
+            "balance_credit_order_created"
+        ] = await create_missing_balance_credit_order_events(
+            session, batch_size, rate_limit_delay
+        )
         results["balance_refund_created"] = await create_missing_balance_refund_events(
             session, batch_size, rate_limit_delay
         )
-
         results[
             "balance_dispute_created"
         ] = await create_missing_balance_dispute_events(
             session, batch_size, rate_limit_delay
         )
-
         results[
             "balance_dispute_reversal_created"
         ] = await create_missing_balance_dispute_reversal_events(
             session, batch_size, rate_limit_delay
         )
-
         results[
             "balance_refund_reversal_created"
         ] = await create_missing_balance_refund_reversal_events(

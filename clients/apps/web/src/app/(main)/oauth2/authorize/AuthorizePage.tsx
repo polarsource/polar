@@ -44,7 +44,7 @@ const AuthorizePage = ({
 
   return (
     <form method="post" action={actionURL}>
-      <div className="dark:bg-polar-950 flex h-full min-h-screen w-full grow items-center justify-center bg-gray-50 py-12">
+      <div className="dark:bg-polar-950 flex h-full min-h-screen w-full grow items-center justify-center bg-white py-12">
         <div className="flex w-80 flex-col items-center gap-6">
           <div className="flex flex-row items-center gap-2">
             <LogoType className="h-10" />
@@ -58,11 +58,11 @@ const AuthorizePage = ({
           </div>
           {sub && isSubTypeOrganization(sub_type, sub) && (
             <>
-              <div className="w-full text-center">
+              <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
                 <span className="font-medium">{clientName}</span> wants to
-                access one of your Polar organizations.
+                access your Polar organization.
               </div>
-              <div className="flex w-full flex-row items-center justify-center gap-2 text-sm">
+              <div className="dark:border-polar-700 flex w-full flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 p-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
@@ -74,11 +74,11 @@ const AuthorizePage = ({
           )}
           {sub && isSubTypeUser(sub_type, sub) && (
             <>
-              <div className="w-full text-center">
+              <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
                 <span className="font-medium">{clientName}</span> wants to
                 access your personal Polar account.
               </div>
-              <div className="flex w-full flex-row items-center justify-center gap-2 text-sm">
+              <div className="dark:border-polar-700 flex w-full flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 p-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
@@ -88,7 +88,7 @@ const AuthorizePage = ({
               </div>
             </>
           )}
-          <div className="w-full text-center">
+          <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
             They&apos;ll be able to do the following:
           </div>
           <div className="w-full">
@@ -116,7 +116,10 @@ const AuthorizePage = ({
               ))}
             </List>
           </div>
-          <div className="grid w-full grid-cols-2 gap-2">
+          <div className="flex w-full flex-col gap-3">
+            <Button className="grow" type="submit" name="action" value="allow">
+              Allow
+            </Button>
             <Button
               variant="secondary"
               className="grow"
@@ -125,10 +128,6 @@ const AuthorizePage = ({
               value="deny"
             >
               Deny
-            </Button>
-
-            <Button className="grow" type="submit" name="action" value="allow">
-              Allow
             </Button>
           </div>
           {hasTerms && (

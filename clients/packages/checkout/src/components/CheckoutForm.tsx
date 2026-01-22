@@ -921,6 +921,14 @@ const BaseCheckoutForm = ({
         target="_blank"
       >
         <span>{t('checkout.poweredBy')}</span>
+        <span>{t('playground.interpolation', { test: 123 })}</span>
+        <span>{t('playground.plurals', { count: 4 })}</span>
+        <span>
+          {t('playground.pluralsWithInterpolation', {
+            count: 4,
+            query: 'test',
+          })}
+        </span>
         <PolarLogo className="h-5" />
       </a>
     </div>

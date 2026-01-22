@@ -8,25 +8,20 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
   return SUPPORTED_LOCALES.includes(locale as SupportedLocale)
 }
 
-// import en from './locales/en.json'
-
-const en = {
-  checkout: {
-    poweredBy: 'Powered by',
-  },
-  playground: {
-    interpolation: 'This is a {test}',
-  },
-} as const
+import { en } from './locales/en'
 
 export type Translations = typeof en
 
 type LeafPaths<T> = T extends object
-  ? {
-      [K in keyof T & string]: T[K] extends object
-        ? `${K}.${LeafPaths<T[K]>}`
-        : K
-    }[keyof T & string]
+  ? '_mode' extends keyof T
+    ? never
+    : {
+        [K in keyof T & string]: '_mode' extends keyof T[K]
+          ? K
+          : T[K] extends object
+            ? `${K}.${LeafPaths<T[K]>}`
+            : K
+      }[keyof T & string]
   : never
 
 export type TranslationKey = LeafPaths<Translations>
@@ -49,22 +44,29 @@ type ExtractPlaceholders<S extends string> =
     ? Key | ExtractPlaceholders<Rest>
     : never
 
-// Build the interpolations type for a given key
-type InterpolationsFor<K extends TranslationKey> = ExtractPlaceholders<
-  ValueAtPath<Translations, K> & string
->
+// Get all required interpolation keys for a translation key
+// Plurals always require 'count' + any {placeholders} in the templates
+type InterpolationKeys<K extends TranslationKey> =
+  ValueAtPath<Translations, K> extends infer V
+    ? '_mode' extends keyof V
+      ? 'count' | ExtractPlaceholders<V[Exclude<keyof V, '_mode'>] & string>
+      : V extends string
+        ? ExtractPlaceholders<V>
+        : never
+    : never
+
+type InterpolationValue = string | number | { toString(): string }
+
+type InterpolationsRecord<Keys extends string> = {
+  [K in Keys]: K extends 'count' ? number : InterpolationValue
+}
 
 // The translate function type with conditional interpolations
 type TranslateFn = <K extends TranslationKey>(
   key: K,
-  ...args: InterpolationsFor<K> extends never
+  ...args: InterpolationKeys<K> extends never
     ? []
-    : [
-        interpolations: Record<
-          InterpolationsFor<K>,
-          string | { toString(): string }
-        >,
-      ]
+    : [interpolations: InterpolationsRecord<InterpolationKeys<K>>]
 ) => string
 
 const translations: Record<SupportedLocale, typeof en> = {
@@ -79,33 +81,58 @@ export function getTranslations(
 
 export const useTranslations = (locale: SupportedLocale): TranslateFn => {
   return useCallback(
-    (
-      key: TranslationKey,
-      interpolations?: Record<string, string | { toString(): string }>,
-    ): string => {
+    ((key: string, interpolations?: Record<string, unknown>) => {
       const translations = getTranslations(locale)
 
-      const template = key
+      const value = key
         .split('.')
         .reduce<unknown>(
           (obj, k) => (obj as Record<string, unknown>)[k],
           translations,
-        ) as string
+        )
+
+      // Handle plural objects
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        '_mode' in value &&
+        (value as { _mode: string })._mode === 'plural'
+      ) {
+        const pluralObj = value as Record<string, string>
+        const count = (interpolations as { count: number })?.count ?? 0
+
+        // Exact match first (=0, =1, etc.), then fall back to 'other'
+        const template = pluralObj[`=${count}`] ?? pluralObj.other
+
+        // Replace # with count, then handle other interpolations
+        let result = template.replace(/#/g, count.toString())
+
+        if (interpolations) {
+          result = result.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
+            const val = interpolations[k]
+            return val === undefined ? `{${k}}` : String(val)
+          })
+        }
+
+        return result
+      }
+
+      // Regular string template
+      const template = value as string
 
       if (!interpolations) {
         return template
       }
 
-      return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, interpolationKey) => {
-        const value = interpolations[interpolationKey]
-
-        if (value === undefined) {
-          return `{${interpolationKey}}`
-        }
-
-        return value.toString()
+      return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_, k) => {
+        const val = interpolations[k]
+        return val === undefined ? `{${k}}` : String(val)
       })
-    },
+    }) as TranslateFn,
     [locale],
   )
 }
+
+type _DebugValue = ValueAtPath<Translations, 'playground.interpolation'>
+type _DebugExtract = ExtractPlaceholders<'This is a {test}'>
+type _DebugDirect = Translations['playground']['interpolation']

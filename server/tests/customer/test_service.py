@@ -632,9 +632,9 @@ class TestAnonymize:
         assert anonymized.email != "individual@example.com"
         assert anonymized.email_verified is False
 
-        # Name should be hashed (32-char hex string)
+        # Name should be hashed (64-char hex string from SHA-256)
         assert anonymized.name is not None
-        assert len(anonymized.name) == 32
+        assert len(anonymized.name) == 64
         assert anonymized.name != "John Doe"
 
         # Metadata should have anonymization timestamp
@@ -788,9 +788,9 @@ class TestAnonymize:
 
         anonymized = await customer_service.anonymize(session, redis, customer)
 
-        # Billing name should be hashed
+        # Billing name should be hashed (64-char hex string from SHA-256)
         assert anonymized._billing_name is not None
-        assert len(anonymized._billing_name) == 32
+        assert len(anonymized._billing_name) == 64
         assert anonymized._billing_name != "Business Billing Name"
 
     async def test_already_deleted_customer(

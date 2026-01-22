@@ -1050,9 +1050,9 @@ class TestAnonymizeCustomer:
         assert json["email"].endswith("@anonymized.invalid")
         assert json["email_verified"] is False
 
-        # Name should be hashed (32-char hex string)
+        # Name should be hashed (64-char hex string from SHA-256)
         assert json["name"] is not None
-        assert len(json["name"]) == 32
+        assert len(json["name"]) == 64
         assert json["name"] != "John Doe"
 
     @pytest.mark.auth

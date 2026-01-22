@@ -994,3 +994,181 @@ class TestUpdateCustomer:
         json = response.json()
         assert "members" in json
         assert len(json["members"]) == 0
+
+
+@pytest.mark.asyncio
+class TestAnonymizeCustomer:
+    async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
+        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(f"/v1/customers/{uuid.uuid4()}/anonymize")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_individual_customer(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Individual customers (no tax_id) should have name anonymized."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+            name="John Doe",
+        )
+
+        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # Email should be hashed
+        assert json["email"].endswith("@anonymized.invalid")
+        assert json["email_verified"] is False
+
+        # Name should be hashed (32-char hex string)
+        assert json["name"] is not None
+        assert len(json["name"]) == 32
+        assert json["name"] != "John Doe"
+
+    @pytest.mark.auth
+    async def test_business_customer(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Business customers (has tax_id) should have name preserved."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="business@example.com",
+            name="Acme Corp",
+            tax_id=("DE123456789", "eu_vat"),
+        )
+
+        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # Email should be hashed
+        assert json["email"].endswith("@anonymized.invalid")
+
+        # Name should be PRESERVED for businesses
+        assert json["name"] == "Acme Corp"
+
+        # Tax ID should be PRESERVED
+        assert json["tax_id"] is not None
+
+    @pytest.mark.auth
+    async def test_preserves_external_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """External ID should be preserved for legal reasons."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="external@example.com",
+            external_id="ext-123",
+        )
+
+        response = await client.post(f"/v1/customers/{customer.id}/anonymize")
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # External ID should be PRESERVED
+        assert json["external_id"] == "ext-123"
+
+
+@pytest.mark.asyncio
+class TestAnonymizeCustomerExternal:
+    async def test_anonymous(
+        self, client: AsyncClient, customer_external_id: Customer
+    ) -> None:
+        response = await client.post(
+            f"/v1/customers/external/{customer_external_id.external_id}/anonymize"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            f"/v1/customers/external/{customer_external_id.external_id}/anonymize"
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_found(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post("/v1/customers/external/not-existing/anonymize")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="external-anon@example.com",
+            external_id="ext-anon-123",
+            name="External User",
+        )
+
+        response = await client.post(
+            f"/v1/customers/external/{customer.external_id}/anonymize"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+
+        # Email should be hashed
+        assert json["email"].endswith("@anonymized.invalid")
+
+        # External ID should be preserved
+        assert json["external_id"] == "ext-anon-123"

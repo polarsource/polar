@@ -476,3 +476,72 @@ async def delete_external(
         raise ResourceNotFound()
 
     await customer_service.delete(session, customer)
+
+
+@router.post(
+    "/{id}/anonymize",
+    response_model=CustomerSchema,
+    summary="Anonymize Customer",
+    responses={
+        200: {"description": "Customer anonymized."},
+        404: CustomerNotFound,
+    },
+)
+async def anonymize(
+    id: CustomerID,
+    auth_subject: auth.CustomerWrite,
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
+) -> CustomerSchema:
+    """
+    Anonymize a customer's personal data for GDPR compliance.
+
+    This operation:
+    - Replaces the email with a hashed version
+    - Hashes name and billing name (name preserved for businesses with tax_id)
+    - Clears billing address (invoices retain original)
+    - Removes OAuth account data
+    - Preserves external_id, tax_id, and Stripe customer ID for legal reasons
+
+    This is idempotent - calling it on an already-anonymized customer
+    will return success without making changes.
+
+    Note: This does NOT cancel subscriptions or revoke benefits.
+    Use the delete endpoint if you want to fully remove customer access.
+    """
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    anonymized = await customer_service.anonymize(session, redis, customer)
+    return CustomerSchema.model_validate(anonymized)
+
+
+@router.post(
+    "/external/{external_id}/anonymize",
+    response_model=CustomerSchema,
+    summary="Anonymize Customer by External ID",
+    responses={
+        200: {"description": "Customer anonymized."},
+        404: CustomerNotFound,
+    },
+)
+async def anonymize_external(
+    external_id: ExternalCustomerID,
+    auth_subject: auth.CustomerWrite,
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
+) -> CustomerSchema:
+    """
+    Anonymize a customer's personal data by external ID for GDPR compliance.
+
+    See the main anonymize endpoint for full documentation.
+    """
+    customer = await customer_service.get_external(session, auth_subject, external_id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    anonymized = await customer_service.anonymize(session, redis, customer)
+    return CustomerSchema.model_validate(anonymized)

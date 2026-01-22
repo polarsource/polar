@@ -7,8 +7,11 @@ def anonymize_for_deletion(value: str) -> str:
     return ret.hexdigest()
 
 
+ANONYMIZED_EMAIL_DOMAIN = "anonymized.invalid"
+
+
 def anonymize_email_for_deletion(email: str) -> str:
     assert "@" in email
 
     # user, domain = email.split('@')
-    return f"{anonymize_for_deletion(email)}@deleted.com"
+    return f"{anonymize_for_deletion(email)}@{ANONYMIZED_EMAIL_DOMAIN}"

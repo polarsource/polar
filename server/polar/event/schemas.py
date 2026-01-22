@@ -16,6 +16,7 @@ from typing_extensions import TypedDict
 
 from polar.customer.schemas.customer import Customer
 from polar.event.system import (
+    BalanceCreditOrderMetadata,
     BalanceDisputeMetadata,
     BalanceOrderMetadata,
     BalanceRefundMetadata,
@@ -451,6 +452,17 @@ class BalanceOrderEvent(SystemEventBase):
     )
 
 
+class BalanceCreditOrderEvent(SystemEventBase):
+    """An event created by Polar when an order is paid via customer balance."""
+
+    name: Literal[SystemEventEnum.balance_credit_order] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BalanceCreditOrderMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class BalanceRefundEvent(SystemEventBase):
     """An event created by Polar when an order is refunded."""
 
@@ -515,6 +527,7 @@ SystemEvent = Annotated[
     | CustomerUpdatedEvent
     | CustomerDeletedEvent
     | BalanceOrderEvent
+    | BalanceCreditOrderEvent
     | BalanceRefundEvent
     | BalanceRefundReversalEvent
     | BalanceDisputeEvent

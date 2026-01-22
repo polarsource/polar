@@ -32,6 +32,7 @@ class SystemEvent(StrEnum):
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"
     balance_order = "balance.order"
+    balance_credit_order = "balance.credit_order"
     balance_refund = "balance.refund"
     balance_refund_reversal = "balance.refund_reversal"
     balance_dispute = "balance.dispute"
@@ -59,6 +60,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "meter.credited": "Meter Credited",
     "meter.reset": "Meter Reset",
     "balance.order": "Balance Order",
+    "balance.credit_order": "Balance Credit Order",
     "balance.refund": "Balance Refund",
     "balance.dispute": "Balance Dispute",
     "balance.dispute_reversal": "Balance Dispute Reversal",
@@ -373,10 +375,30 @@ class BalanceOrderEvent(Event):
         user_metadata: Mapped[BalanceOrderMetadata]  # type: ignore[assignment]
 
 
+class BalanceCreditOrderMetadata(TypedDict):
+    order_id: str
+    product_id: NotRequired[str]
+    subscription_id: NotRequired[str]
+    amount: int
+    currency: str
+    tax_amount: int
+    tax_state: NotRequired[str | None]
+    tax_country: NotRequired[str | None]
+    fee: int
+
+
+class BalanceCreditOrderEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.balance_credit_order]]
+        user_metadata: Mapped[BalanceCreditOrderMetadata]  # type: ignore[assignment]
+
+
 class BalanceRefundMetadata(TypedDict):
     transaction_id: str
     refund_id: str
     order_id: NotRequired[str]
+    order_created_at: NotRequired[str]
     product_id: NotRequired[str]
     subscription_id: NotRequired[str]
     amount: int
@@ -408,6 +430,7 @@ class BalanceDisputeMetadata(TypedDict):
     transaction_id: str
     dispute_id: str
     order_id: NotRequired[str]
+    order_created_at: NotRequired[str]
     product_id: NotRequired[str]
     subscription_id: NotRequired[str]
     amount: int
@@ -611,6 +634,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: BalanceOrderMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_credit_order],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceCreditOrderMetadata,
 ) -> Event: ...
 
 

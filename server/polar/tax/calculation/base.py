@@ -8,7 +8,10 @@ from polar.kit.address import Address
 from ..tax_id import TaxID
 
 
-class TaxCalculationError(PolarError):
+class TaxError(PolarError): ...
+
+
+class TaxCalculationError(TaxError):
     def __init__(
         self,
         message: str = "An error occurred while calculating tax.",
@@ -19,6 +22,12 @@ class TaxCalculationError(PolarError):
 class InvalidTaxIDError(TaxCalculationError):
     def __init__(self) -> None:
         message = "The provided tax ID is invalid."
+        super().__init__(message)
+
+
+class TaxRecordError(TaxError):
+    def __init__(self) -> None:
+        message = "An error occurred while recording the tax calculation."
         super().__init__(message)
 
 

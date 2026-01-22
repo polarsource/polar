@@ -2,7 +2,7 @@ import hashlib
 
 
 def anonymize_for_deletion(value: str) -> str:
-    ret = hashlib.md5()
+    ret = hashlib.sha256()
     ret.update(value.encode("utf-8"))
     return ret.hexdigest()
 

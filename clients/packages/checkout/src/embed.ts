@@ -93,23 +93,35 @@ class EmbedCheckout {
    * Create a new embedded checkout instance by injecting an iframe into the DOM.
    *
    * @param url A Checkout Link.
-   * @param theme The theme of the embedded checkout. Defaults to `light`.
-
+   * @param options Configuration options for the embedded checkout.
+   * @param options.theme The theme of the embedded checkout. Defaults to `light`.
+   * @param options.onLoaded Callback function that will be invoked when the checkout is fully loaded.
+   *
    * @returns A promise that resolves to an instance of EmbedCheckout.
    * The promise resolves when the embedded checkout is fully loaded.
    */
   public static async create(
     url: string,
-    theme?: 'light' | 'dark',
+    options?: {
+      theme?: 'light' | 'dark'
+      onLoaded?: (event: CustomEvent<EmbedCheckoutMessageLoaded>) => void
+    },
   ): Promise<EmbedCheckout> {
+    if (typeof options === 'string') {
+      console.warn(
+        `Passing theme as string is deprecated. Use { theme: "${options}" } instead.`,
+      )
+      options = { theme: options }
+    }
+
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
       .polar-loader-spinner {
         width: 20px;
         aspect-ratio: 1;
         border-radius: 50%;
-        background: ${theme === 'dark' ? '#000' : '#fff'};
-        box-shadow: 0 0 0 0 ${theme === 'dark' ? '#fff' : '#000'};
+        background: ${options?.theme === 'dark' ? '#000' : '#fff'};
+        box-shadow: 0 0 0 0 ${options?.theme === 'dark' ? '#fff' : '#000'};
         animation: polar-loader-spinner-animation 1s infinite;
       }
       @keyframes polar-loader-spinner-animation {
@@ -143,8 +155,8 @@ class EmbedCheckout {
     const parsedURL = new URL(url)
     parsedURL.searchParams.set('embed', 'true')
     parsedURL.searchParams.set('embed_origin', window.location.origin)
-    if (theme) {
-      parsedURL.searchParams.set('theme', theme)
+    if (options?.theme) {
+      parsedURL.searchParams.set('theme', options.theme)
     }
     const embedURL = parsedURL.toString()
 
@@ -170,6 +182,11 @@ class EmbedCheckout {
     document.body.appendChild(iframe)
 
     const embedCheckout = new EmbedCheckout(iframe, loader)
+
+    if (options?.onLoaded) {
+      embedCheckout.addEventListener('loaded', options.onLoaded, { once: true })
+    }
+
     return new Promise((resolve) => {
       embedCheckout.addEventListener('loaded', () => resolve(embedCheckout), {
         once: true,
@@ -294,7 +311,7 @@ class EmbedCheckout {
       | 'light'
       | 'dark'
       | undefined
-    EmbedCheckout.create(url, theme)
+    EmbedCheckout.create(url, theme ? { theme } : undefined)
   }
 
   /**

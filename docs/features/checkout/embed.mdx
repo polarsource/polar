@@ -105,7 +105,9 @@ const openCheckout = async () => {
   try {
     // This creates the checkout iframe and returns a Promise
     // that resolves when the checkout is fully loaded
-    const checkout = await PolarEmbedCheckout.create(checkoutLink, theme);
+    const checkout = await PolarEmbedCheckout.create(checkoutLink, {
+      theme,
+    });
 
     // Now you can interact with the checkout instance
     return checkout;
@@ -122,20 +124,16 @@ document.getElementById("buy-button").addEventListener("click", () => {
 
 ### Listening for checkout events
 
-You can listen for checkout events to respond to user interactions:
+You can listen for checkout events to respond to user interactions. For the `loaded` event, we recommend using the `onLoaded` callback in the `create` method to ensure it's always executed, even if the checkout loads very quickly.
 
 ```ts
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 
 const openCheckoutWithEvents = async () => {
-  const checkout = await PolarEmbedCheckout.create("__CHECKOUT_LINK__");
-
-  // Listen for when the checkout is loaded
-  checkout.addEventListener("loaded", (event) => {
-    console.log("Checkout loaded");
-    // Call event.preventDefault() if you want to prevent the standard behavior
-    // event.preventDefault()
-    // Note: This would prevent removing the loader if it's still visible
+  const checkout = await PolarEmbedCheckout.create("__CHECKOUT_LINK__", {
+    onLoaded: (event) => {
+      console.log("Checkout loaded");
+    },
   });
 
   // Listen for when the checkout has been closed
@@ -196,7 +194,13 @@ const CheckoutButton = () => {
       try {
         const checkout = await PolarEmbedCheckout.create(
           '__CHECKOUT_LINK__',
-          'light'
+          {
+            theme: 'light',
+            onLoaded: (event) => {
+              console.log('Checkout loaded successfully');
+              // This is guaranteed to be called even if checkout loads quickly
+            }
+          }
         )
 
       setCheckoutInstance(checkout)

@@ -672,19 +672,30 @@ class TestCreate:
         assert checkout.currency == price.price_currency
         assert checkout.user_metadata == {"key": "value"}
 
+    @pytest.mark.parametrize(
+        "ip_country",
+        [None, "US", "FR", "CN"],
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_valid_free_price(
         self,
+        ip_country: str | None,
+        mocker: MockerFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         user_organization: UserOrganization,
         product_one_time_free_price: Product,
     ) -> None:
         price = product_one_time_free_price.prices[0]
         assert isinstance(price, ProductPriceFree)
+        mocker.patch.object(
+            checkout_service, "_get_ip_country", return_value=ip_country
+        )
+
         checkout = await checkout_service.create(
             session,
             CheckoutProductsCreate(
@@ -698,8 +709,10 @@ class TestCreate:
         assert checkout.product == product_one_time_free_price
         assert checkout.products == [product_one_time_free_price]
         assert checkout.amount == 0
-        assert checkout.currency == "usd"
         assert checkout.user_metadata == {"key": "value"}
+        assert checkout.currency == organization.default_presentment_currency, (
+            "Free price should use org currency"
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

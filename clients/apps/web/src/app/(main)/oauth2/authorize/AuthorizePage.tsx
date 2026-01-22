@@ -1,10 +1,9 @@
-import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
-import AddOutlined from '@mui/icons-material/AddOutlined'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import SharedLayout from './components/SharedLayout'
 
 const isSubTypeOrganization = (
   sub_type: string,
@@ -43,26 +42,17 @@ const AuthorizePage = ({
   const hasTerms = client.policy_uri || client.tos_uri
 
   return (
-    <form method="post" action={actionURL}>
-      <div className="dark:bg-polar-950 flex h-full min-h-screen w-full grow items-center justify-center bg-white py-12">
-        <div className="flex w-80 flex-col items-center gap-6">
-          <div className="flex flex-row items-center gap-2">
-            <LogoType className="h-10" />
-            {client.logo_uri && (
-              <>
-                <AddOutlined className="h-5" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={client.logo_uri} className="h-10" alt={clientName} />
-              </>
-            )}
-          </div>
+    <SharedLayout
+      client={client}
+      introduction={
+        <>
           {sub && isSubTypeOrganization(sub_type, sub) && (
             <>
               <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
-                <span className="font-medium">{clientName}</span> wants to
-                access your Polar organization.
+                <span className="font-medium">{clientName}</span> requests the
+                following permissions to your Polar organization.
               </div>
-              <div className="dark:border-polar-700 flex w-full flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 p-4 text-sm">
+              <div className="dark:border-polar-700 border-gray-0 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border bg-gray-50 p-2 pr-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
@@ -75,10 +65,10 @@ const AuthorizePage = ({
           {sub && isSubTypeUser(sub_type, sub) && (
             <>
               <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
-                <span className="font-medium">{clientName}</span> wants to
-                access your personal Polar account.
+                <span className="font-medium">{clientName}</span> requests the
+                following permissions to your personal Polar account.
               </div>
-              <div className="dark:border-polar-700 flex w-full flex-row items-center justify-center gap-2 rounded-2xl border border-gray-200 p-4 text-sm">
+              <div className="dark:border-polar-700 border-gray-0 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border bg-gray-50 p-2 pr-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
@@ -88,74 +78,75 @@ const AuthorizePage = ({
               </div>
             </>
           )}
-          <div className="dark:text-polar-400 w-full text-center text-lg text-gray-600">
-            They&apos;ll be able to do the following:
-          </div>
-          <div className="w-full">
-            <List size="small">
-              {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
-                <ListItem
-                  key={key}
-                  className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
-                  size="small"
-                >
-                  <h3 className="font-medium capitalize">
-                    {key.replace('_', ' ')}
-                  </h3>
-                  <ul>
-                    {scopes.map((scope) => (
-                      <li
-                        key={scope}
-                        className="dark:text-polar-500 text-sm text-gray-500"
-                      >
-                        {scope_display_names[scope]}
-                      </li>
-                    ))}
-                  </ul>
-                </ListItem>
-              ))}
-            </List>
-          </div>
-          <div className="flex w-full flex-col gap-3">
-            <Button className="grow" type="submit" name="action" value="allow">
-              Allow
-            </Button>
-            <Button
-              variant="secondary"
-              className="grow"
-              type="submit"
-              name="action"
-              value="deny"
-            >
-              Deny
-            </Button>
-          </div>
-          {hasTerms && (
-            <div className="mt-8 text-center text-sm text-gray-500">
-              Before using this app, you can review {clientName}&apos;s{' '}
-              {client.tos_uri && (
-                <a
-                  className="dark:text-polar-300 text-gray-700"
-                  href={client.tos_uri}
-                >
-                  Terms of Service
-                </a>
-              )}
-              {client.tos_uri && client.policy_uri && ' and '}
-              {client.policy_uri && (
-                <a
-                  className="dark:text-polar-300 text-gray-700"
-                  href={client.policy_uri}
-                >
-                  Privacy Policy
-                </a>
-              )}
-              .
-            </div>
-          )}
+        </>
+      }
+    >
+      <form method="post" action={actionURL}>
+        <div className="mb-6 w-full">
+          <List size="small">
+            {Object.entries(groupScopes(scopes)).map(([key, scopes]) => (
+              <ListItem
+                key={key}
+                className="dark:bg-polar-800 dark:hover:bg-polar-800 flex flex-col items-start gap-y-1 bg-white py-3 text-sm hover:bg-white"
+                size="small"
+              >
+                <h3 className="font-medium capitalize">
+                  {key === 'openid' ? 'OpenID' : key.replace('_', ' ')}
+                </h3>
+                <ul>
+                  {scopes.map((scope) => (
+                    <li
+                      key={scope}
+                      className="dark:text-polar-500 text-sm text-gray-500"
+                    >
+                      {scope_display_names[scope]}
+                    </li>
+                  ))}
+                </ul>
+              </ListItem>
+            ))}
+          </List>
         </div>
-      </div>
-    </form>
+
+        <div className="flex w-full flex-col gap-3">
+          <Button className="grow" type="submit" name="action" value="allow">
+            Allow
+          </Button>
+          <Button
+            variant="secondary"
+            className="grow"
+            type="submit"
+            name="action"
+            value="deny"
+          >
+            Deny
+          </Button>
+        </div>
+        {hasTerms && (
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Before using this app, you can review {clientName}&apos;s{' '}
+            {client.tos_uri && (
+              <a
+                className="dark:text-polar-300 text-gray-700"
+                href={client.tos_uri}
+              >
+                Terms of Service
+              </a>
+            )}
+            {client.tos_uri && client.policy_uri && ' and '}
+            {client.policy_uri && (
+              <a
+                className="dark:text-polar-300 text-gray-700"
+                href={client.policy_uri}
+              >
+                Privacy Policy
+              </a>
+            )}
+            .
+          </div>
+        )}
+      </form>
+    </SharedLayout>
   )
 }
 

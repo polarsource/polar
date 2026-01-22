@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@scalar/openapi-parser": "^0.23.7",
-    "@types/node": "^22.19.3",
+    "@types/node": "^24.0.0",
     "js-yaml": "^4.1.1",
     "openapi-sampler": "^1.6.2",
     "tsx": "^4.21.0"

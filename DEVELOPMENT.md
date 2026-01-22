@@ -43,7 +43,7 @@ flowchart TD
 
 ## Prerequisites
 
-Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 22](https://nodejs.org/en/download/package-manager) installations.
+Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 24](https://nodejs.org/en/download/package-manager) installations.
 
 ## Setup environment
 
@@ -248,6 +248,7 @@ For a fully containerized development environment with hot-reloading, you can us
 ```
 
 This single command will:
+
 1. Build the necessary Docker images
 2. Start PostgreSQL, Redis, and MinIO
 3. Install Python and Node.js dependencies
@@ -256,10 +257,10 @@ This single command will:
 
 ### Access Points
 
-| Service | URL |
-|---------|-----|
-| Web Frontend | http://localhost:3000 |
-| API Server | http://localhost:8000 |
+| Service       | URL                   |
+| ------------- | --------------------- |
+| Web Frontend  | http://localhost:3000 |
+| API Server    | http://localhost:8000 |
 | MinIO Console | http://localhost:9001 |
 
 ### Common Commands
@@ -303,6 +304,7 @@ For parallel development or testing, you can run multiple isolated instances:
 ```
 
 Each instance has its own:
+
 - Docker containers and networks
 - PostgreSQL database
 - Redis instance
@@ -310,14 +312,14 @@ Each instance has its own:
 
 ### Port Mapping
 
-| Service | Instance 0 | Instance 1 | Instance 2 |
-|---------|------------|------------|------------|
-| API | 8000 | 8100 | 8200 |
-| Web | 3000 | 3100 | 3200 |
-| PostgreSQL | 5432 | 5532 | 5632 |
-| Redis | 6379 | 6479 | 6579 |
-| MinIO API | 9000 | 9100 | 9200 |
-| MinIO Console | 9001 | 9101 | 9201 |
+| Service       | Instance 0 | Instance 1 | Instance 2 |
+| ------------- | ---------- | ---------- | ---------- |
+| API           | 8000       | 8100       | 8200       |
+| Web           | 3000       | 3100       | 3200       |
+| PostgreSQL    | 5432       | 5532       | 5632       |
+| Redis         | 6379       | 6479       | 6579       |
+| MinIO API     | 9000       | 9100       | 9200       |
+| MinIO Console | 9001       | 9101       | 9201       |
 
 ### Hot-Reloading
 

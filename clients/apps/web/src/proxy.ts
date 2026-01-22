@@ -19,18 +19,14 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('^/oauth2(/.*)?'),
 ]
 
-const setDistinctIdCookie = (
+const getOrCreateDistinctId = (
   request: NextRequest,
-  response: NextResponse,
-): void => {
-  if (!request.cookies.get(DISTINCT_ID_COOKIE)) {
-    response.cookies.set(DISTINCT_ID_COOKIE, `anon_${nanoid()}`, {
-      maxAge: DISTINCT_ID_COOKIE_MAX_AGE,
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    })
+): { id: string; isNew: boolean } => {
+  const existing = request.cookies.get(DISTINCT_ID_COOKIE)?.value
+  if (existing) {
+    return { id: existing, isNew: false }
   }
+  return { id: `anon_${nanoid()}`, isNew: true }
 }
 
 const isForwardedRoute = (request: NextRequest): boolean => {
@@ -187,10 +183,26 @@ export async function proxy(request: NextRequest) {
     return getLoginResponse(request)
   }
 
-  const headers = user ? { 'x-polar-user': JSON.stringify(user) } : undefined
+  const { id: distinctId, isNew: isNewDistinctId } =
+    getOrCreateDistinctId(request)
+
+  const headers: Record<string, string> = {
+    'x-polar-distinct-id': distinctId,
+  }
+  if (user) {
+    headers['x-polar-user'] = JSON.stringify(user)
+  }
+
   const response = NextResponse.next({ headers })
 
-  setDistinctIdCookie(request, response)
+  if (isNewDistinctId) {
+    response.cookies.set(DISTINCT_ID_COOKIE, distinctId, {
+      maxAge: DISTINCT_ID_COOKIE_MAX_AGE,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    })
+  }
 
   return response
 }

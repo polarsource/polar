@@ -54,13 +54,21 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const posthog = usePostHog()
+
+  // Skip experiment tracking for embeds due to third-party cookie limitations
+  const experimentOptions = { trackExposure: !embed }
   const { isTreatment: isFormFirstLayout } = useExperiment(
     'checkout_form_first',
+    experimentOptions,
   )
   const { isTreatment: isSubscribeNow } = useExperiment(
     'checkout_button_subscribe',
+    experimentOptions,
   )
-  const { isTreatment: isPayNow } = useExperiment('checkout_button_pay')
+  const { isTreatment: isPayNow } = useExperiment(
+    'checkout_button_pay',
+    experimentOptions,
+  )
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
 

@@ -5,7 +5,8 @@ from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import CursorResult, desc, func, select, text, update
+from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
+from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
@@ -187,6 +188,10 @@ class WebhookService:
         endpoint_id: Sequence[UUID] | None = None,
         start_timestamp: datetime.datetime | None = None,
         end_timestamp: datetime.datetime | None = None,
+        succeeded: bool | None = None,
+        query: str | None = None,
+        http_code_class: Literal["2xx", "3xx", "4xx", "5xx"] | None = None,
+        event_type: Sequence[WebhookEventType] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         repository = WebhookDeliveryRepository.from_session(session)
@@ -207,6 +212,47 @@ class WebhookService:
 
         if end_timestamp is not None:
             statement = statement.where(WebhookDelivery.created_at < end_timestamp)
+
+        if succeeded is not None:
+            statement = statement.where(WebhookDelivery.succeeded == succeeded)
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    sql_cast(WebhookDelivery.id, String).ilike(f"%{query}%"),
+                    sql_cast(WebhookDelivery.webhook_event_id, String).ilike(
+                        f"%{query}%"
+                    ),
+                    sql_cast(WebhookDelivery.http_code, String).ilike(f"%{query}%"),
+                )
+            )
+
+        if http_code_class is not None:
+            if http_code_class == "2xx":
+                statement = statement.where(
+                    WebhookDelivery.http_code >= 200,
+                    WebhookDelivery.http_code < 300,
+                )
+            elif http_code_class == "3xx":
+                statement = statement.where(
+                    WebhookDelivery.http_code >= 300,
+                    WebhookDelivery.http_code < 400,
+                )
+            elif http_code_class == "4xx":
+                statement = statement.where(
+                    WebhookDelivery.http_code >= 400,
+                    WebhookDelivery.http_code < 500,
+                )
+            elif http_code_class == "5xx":
+                statement = statement.where(
+                    WebhookDelivery.http_code >= 500,
+                    WebhookDelivery.http_code < 600,
+                )
+
+        if event_type is not None:
+            statement = statement.join(
+                WebhookEvent, WebhookDelivery.webhook_event_id == WebhookEvent.id
+            ).where(WebhookEvent.type.in_(event_type))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

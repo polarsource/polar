@@ -10,6 +10,10 @@ export const useListWebhooksDeliveries = (variables: {
   page: number
   start_timestamp?: Date
   end_timestamp?: Date
+  succeeded?: boolean
+  query?: string
+  http_code_class?: '2xx' | '3xx' | '4xx' | '5xx'
+  event_type?: string[]
 }) =>
   useQuery({
     queryKey: ['webhookDeliveries', 'list', { ...variables }],
@@ -27,6 +31,19 @@ export const useListWebhooksDeliveries = (variables: {
               ...(variables.end_timestamp && {
                 end_timestamp: variables.end_timestamp.toISOString(),
               }),
+              ...(variables.succeeded !== undefined && {
+                succeeded: variables.succeeded,
+              }),
+              ...(variables.query && {
+                query: variables.query,
+              }),
+              ...(variables.http_code_class && {
+                http_code_class: variables.http_code_class,
+              }),
+              ...(variables.event_type &&
+                variables.event_type.length > 0 && {
+                  event_type: variables.event_type,
+                }),
             },
           },
         }),

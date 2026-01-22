@@ -24,7 +24,7 @@ from .service import organization_access_token as organization_access_token_serv
 
 router = APIRouter(
     prefix="/organization-access-tokens",
-    tags=["organization_access_token", APITag.public, APITag.mcp],
+    tags=["organization_access_tokens", APITag.public, APITag.mcp],
 )
 
 

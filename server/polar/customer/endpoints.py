@@ -436,7 +436,6 @@ async def delete(
         ),
     ),
     session: AsyncSession = Depends(get_db_session),
-    redis: Redis = Depends(get_redis),
 ) -> None:
     """
     Delete a customer.
@@ -460,7 +459,7 @@ async def delete(
     if customer is None:
         raise ResourceNotFound()
 
-    await customer_service.delete(session, redis, customer, anonymize=anonymize)
+    await customer_service.delete(session, customer, anonymize=anonymize)
 
 
 @router.delete(
@@ -482,7 +481,6 @@ async def delete_external(
         ),
     ),
     session: AsyncSession = Depends(get_db_session),
-    redis: Redis = Depends(get_redis),
 ) -> None:
     """
     Delete a customer by external ID.
@@ -496,4 +494,4 @@ async def delete_external(
     if customer is None:
         raise ResourceNotFound()
 
-    await customer_service.delete(session, redis, customer, anonymize=anonymize)
+    await customer_service.delete(session, customer, anonymize=anonymize)

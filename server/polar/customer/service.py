@@ -254,7 +254,6 @@ class CustomerService:
     async def delete(
         self,
         session: AsyncSession,
-        redis: Redis,
         customer: Customer,
         *,
         anonymize: bool = False,
@@ -264,7 +263,7 @@ class CustomerService:
 
         if anonymize:
             # Anonymize also sets deleted_at
-            return await self.anonymize(session, redis, customer)
+            return await self.anonymize(session, customer)
 
         repository = CustomerRepository.from_session(session)
         return await repository.soft_delete(customer)
@@ -272,7 +271,6 @@ class CustomerService:
     async def anonymize(
         self,
         session: AsyncSession,
-        redis: Redis,
         customer: Customer,
     ) -> Customer:
         """

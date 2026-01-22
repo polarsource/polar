@@ -545,7 +545,6 @@ class TestDelete:
     async def test_valid(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -557,7 +556,7 @@ class TestDelete:
             user_metadata={"user_id": "ABC"},
         )
         assert customer.deleted_at is None
-        soft_deleted = await customer_service.delete(session, redis, customer)
+        soft_deleted = await customer_service.delete(session, customer)
         assert soft_deleted.deleted_at is not None
         assert soft_deleted.external_id is None
         assert soft_deleted.user_metadata["__external_id"] == "external-id"
@@ -567,7 +566,6 @@ class TestDelete:
     async def test_valid_recycled_email(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -578,7 +576,7 @@ class TestDelete:
             external_id="will-be-recycled",
             user_metadata={"user_id": "ABC"},
         )
-        soft_deleted = await customer_service.delete(session, redis, customer)
+        soft_deleted = await customer_service.delete(session, customer)
         assert soft_deleted.deleted_at
         assert soft_deleted.external_id is None
         await session.flush()
@@ -586,7 +584,6 @@ class TestDelete:
     async def test_delete_with_anonymize(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -598,9 +595,7 @@ class TestDelete:
             name="Delete Anon User",
             user_metadata={"user_id": "ABC"},
         )
-        deleted = await customer_service.delete(
-            session, redis, customer, anonymize=True
-        )
+        deleted = await customer_service.delete(session, customer, anonymize=True)
         assert deleted.deleted_at is not None
         assert deleted.email.endswith("@anonymized.invalid")
         assert deleted.name != "Delete Anon User"
@@ -638,7 +633,6 @@ class TestAnonymize:
     async def test_individual_customer(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -651,7 +645,7 @@ class TestAnonymize:
             user_metadata={"user_id": "ABC"},
         )
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
         assert anonymized.email.endswith("@anonymized.invalid")
@@ -674,7 +668,6 @@ class TestAnonymize:
     async def test_business_customer(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -687,7 +680,7 @@ class TestAnonymize:
             tax_id=("DE123456789", TaxIDFormat.eu_vat),
         )
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         # Email should be hashed
         assert anonymized.email.endswith("@anonymized.invalid")
@@ -703,7 +696,6 @@ class TestAnonymize:
     async def test_idempotent(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -716,12 +708,12 @@ class TestAnonymize:
         )
 
         # First anonymize
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
         first_email = anonymized.email
         first_name = anonymized.name
 
         # Second anonymize should be no-op
-        anonymized_again = await customer_service.anonymize(session, redis, anonymized)
+        anonymized_again = await customer_service.anonymize(session, anonymized)
 
         assert anonymized_again.email == first_email
         assert anonymized_again.name == first_name
@@ -729,7 +721,6 @@ class TestAnonymize:
     async def test_clears_billing_address(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -750,14 +741,13 @@ class TestAnonymize:
         )
         assert customer.billing_address is not None
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         assert anonymized.billing_address is None
 
     async def test_clears_oauth_accounts(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -773,14 +763,13 @@ class TestAnonymize:
         }
         await save_fixture(customer)
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         assert anonymized._oauth_accounts == {}
 
     async def test_preserves_external_id(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -792,7 +781,7 @@ class TestAnonymize:
             external_id="ext-123",
         )
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         # External ID should be PRESERVED
         assert anonymized.external_id == "ext-123"
@@ -800,7 +789,6 @@ class TestAnonymize:
     async def test_hashes_billing_name(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -815,7 +803,7 @@ class TestAnonymize:
         customer._billing_name = "Business Billing Name"
         await save_fixture(customer)
 
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         # Billing name should be hashed (64-char hex string from SHA-256)
         assert anonymized._billing_name is not None
@@ -825,7 +813,6 @@ class TestAnonymize:
     async def test_already_deleted_customer(
         self,
         session: AsyncSession,
-        redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -842,7 +829,7 @@ class TestAnonymize:
         assert customer.deleted_at is not None
 
         # Should still be able to anonymize
-        anonymized = await customer_service.anonymize(session, redis, customer)
+        anonymized = await customer_service.anonymize(session, customer)
 
         assert anonymized.email.endswith("@anonymized.invalid")
         assert anonymized.deleted_at is not None

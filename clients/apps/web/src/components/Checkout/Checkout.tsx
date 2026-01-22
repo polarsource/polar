@@ -4,6 +4,7 @@ import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
+import { getServerURL } from '@/utils/api'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
@@ -30,7 +31,7 @@ import { cn } from '@polar-sh/ui/lib/utils'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -69,6 +70,29 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     'checkout_button_pay',
     experimentOptions,
   )
+
+  const openedTrackedRef = useRef(false)
+  useEffect(() => {
+    if (openedTrackedRef.current) return
+    openedTrackedRef.current = true
+
+    const cookies = document.cookie.split(';')
+    const distinctIdCookie = cookies.find((c) =>
+      c.trim().startsWith('polar_distinct_id='),
+    )
+    const distinctId = distinctIdCookie?.split('=')[1]?.trim()
+
+    fetch(
+      getServerURL(`/v1/checkouts/client/${checkout.clientSecret}/opened`),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ distinct_id: distinctId }),
+      },
+    ).catch(() => {
+      // Silently ignore - don't affect checkout experience
+    })
+  }, [checkout.clientSecret])
 
   const themePreset = getThemePreset(checkout.organization.slug, theme)
 

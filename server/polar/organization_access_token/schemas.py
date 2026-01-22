@@ -13,7 +13,7 @@ AvailableScope = StrEnum(  # type: ignore
 
 
 class OrganizationAccessTokenCreate(Schema):
-    organization_id: UUID4
+    organization_id: UUID4 | None = None
     comment: str
     expires_in: timedelta | None = None
     scopes: list[AvailableScope]  # pyright: ignore

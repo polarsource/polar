@@ -67,7 +67,7 @@ class TestCreateMissingBalanceOrderEvents:
         assert event.user_metadata["tax_amount"] == order.tax_amount
         assert event.user_metadata["fee"] == 0
 
-    async def test_computes_fees_from_balance_transactions(
+    async def test_uses_order_platform_fee_amount(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -80,38 +80,13 @@ class TestCreateMissingBalanceOrderEvents:
             product=product,
             customer=customer,
         )
+        order.platform_fee_amount = 75
+        await save_fixture(order)
+
         payment_transaction = await create_payment_transaction(
             save_fixture,
             order=order,
         )
-
-        fee_balance_transaction = Transaction(
-            type=TransactionType.balance,
-            processor=None,
-            currency="usd",
-            amount=50,
-            account_currency="usd",
-            account_amount=50,
-            tax_amount=0,
-            account=None,
-            order=order,
-            platform_fee_type=PlatformFeeType.payment,
-        )
-        await save_fixture(fee_balance_transaction)
-
-        international_fee_transaction = Transaction(
-            type=TransactionType.balance,
-            processor=None,
-            currency="usd",
-            amount=25,
-            account_currency="usd",
-            account_amount=25,
-            tax_amount=0,
-            account=None,
-            order=order,
-            platform_fee_type=PlatformFeeType.international_payment,
-        )
-        await save_fixture(international_fee_transaction)
 
         created = await create_missing_balance_order_events(
             session, batch_size=10, rate_limit_delay=0

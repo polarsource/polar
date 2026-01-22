@@ -770,11 +770,7 @@ class EventService:
         )
 
         for customer in customers:
-            enqueue_job(
-                "customer_meter.update_customer",
-                customer.id,
-                meters_dirtied_at=utc_now().isoformat(),
-            )
+            enqueue_job("customer_meter.update_customer", customer.id)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

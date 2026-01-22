@@ -1,7 +1,7 @@
 import uuid
 from datetime import timedelta
 from typing import Any
-from unittest.mock import ANY, AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -1221,14 +1221,8 @@ class TestIngested:
 
         enqueue_job_mock.assert_has_calls(
             [
-                call(
-                    "customer_meter.update_customer", customer.id, meters_dirtied_at=ANY
-                ),
-                call(
-                    "customer_meter.update_customer",
-                    customer_second.id,
-                    meters_dirtied_at=ANY,
-                ),
+                call("customer_meter.update_customer", customer.id),
+                call("customer_meter.update_customer", customer_second.id),
             ],
             any_order=True,
         )

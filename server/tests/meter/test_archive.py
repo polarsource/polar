@@ -1,5 +1,5 @@
 from decimal import Decimal
-from unittest.mock import ANY, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
@@ -168,7 +168,7 @@ class TestMeterArchive:
 
         # Job is enqueued
         enqueue_job_mock.assert_called_once_with(
-            "customer_meter.update_customer", customer.id, meters_dirtied_at=ANY
+            "customer_meter.update_customer", customer.id
         )
 
     async def test_unarchive_does_not_touch_unrelated_customers(

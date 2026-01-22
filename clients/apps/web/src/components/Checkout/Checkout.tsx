@@ -71,6 +71,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     experimentOptions,
   )
 
+  // Track checkout opened - MUST be client-side and AFTER useExperiment() hooks above.
+  // This ensures PostHog receives events in correct order: exposure -> checkout:open.
+  // Moving this to server-side (page.tsx) will break the funnel - see experiments.ts for details.
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return

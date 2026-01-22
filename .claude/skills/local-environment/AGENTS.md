@@ -11,15 +11,16 @@ echo $CONDUCTOR_PORT
 ```
 
 **Instance Calculation:**
+
 - If `CONDUCTOR_PORT` is **not set**: Not running in Conductor, use instance 0
 - If `CONDUCTOR_PORT` is **set**: `INSTANCE=$((CONDUCTOR_PORT - 55090))`
 
 | CONDUCTOR_PORT | Instance | API Port | Web Port |
-|----------------|----------|----------|----------|
-| 55090 | 0 | 8000 | 3000 |
-| 55091 | 1 | 8100 | 3100 |
-| 55092 | 2 | 8200 | 3200 |
-| 55093 | 3 | 8300 | 3300 |
+| -------------- | -------- | -------- | -------- |
+| 55090          | 0        | 8000     | 3000     |
+| 55091          | 1        | 8100     | 3100     |
+| 55092          | 2        | 8200     | 3200     |
+| 55093          | 3        | 8300     | 3300     |
 
 **All docker-dev commands must include `-i $INSTANCE`** to use the correct isolated environment when running in Conductor.
 
@@ -28,6 +29,7 @@ echo $CONDUCTOR_PORT
 ## Overview
 
 The Polar development environment runs as a Docker Compose stack with:
+
 - **Backend**: Python/FastAPI API server + background worker
 - **Frontend**: Next.js web application
 - **Infrastructure**: PostgreSQL, Redis, MinIO (S3-compatible storage)
@@ -65,6 +67,7 @@ INSTANCE=$(( (${CONDUCTOR_PORT: -2} - 90) / 10 ))
 ### Why This Matters
 
 Each Conductor workspace runs in parallel and needs isolated Docker environments:
+
 - Different database instances
 - Different ports for API, web, etc.
 - No conflicts between workspaces
@@ -215,6 +218,7 @@ Shows container names, status, and port mappings.
 ### What Are Instances?
 
 Instances allow running multiple isolated development environments simultaneously. Each instance:
+
 - Uses different ports (offset by instance × 100)
 - Has its own database and storage
 - Runs in separate Docker containers
@@ -226,16 +230,16 @@ Instances allow running multiple isolated development environments simultaneousl
 Port = Base Port + (Instance Number × 100)
 ```
 
-| Service | Base | Instance 0 | Instance 1 | Instance 2 |
-|---------|------|------------|------------|------------|
-| API | 8000 | 8000 | 8100 | 8200 |
-| Web | 3000 | 3000 | 3100 | 3200 |
-| DB | 5432 | 5432 | 5532 | 5632 |
-| Redis | 6379 | 6379 | 6479 | 6579 |
-| MinIO API | 9000 | 9000 | 9100 | 9200 |
-| MinIO Console | 9001 | 9001 | 9101 | 9201 |
-| Prometheus | 9090 | 9090 | 9190 | 9290 |
-| Grafana | 3001 | 3001 | 3101 | 3201 |
+| Service       | Base | Instance 0 | Instance 1 | Instance 2 |
+| ------------- | ---- | ---------- | ---------- | ---------- |
+| API           | 8000 | 8000       | 8100       | 8200       |
+| Web           | 3000 | 3000       | 3100       | 3200       |
+| DB            | 5432 | 5432       | 5532       | 5632       |
+| Redis         | 6379 | 6379       | 6479       | 6579       |
+| MinIO API     | 9000 | 9000       | 9100       | 9200       |
+| MinIO Console | 9001 | 9001       | 9101       | 9201       |
+| Prometheus    | 9090 | 9090       | 9190       | 9290       |
+| Grafana       | 3001 | 3001       | 3101       | 3201       |
 
 ### Start Instance
 
@@ -283,6 +287,7 @@ Port = Base Port + (Instance Number × 100)
 ### Useful Commands Inside Containers
 
 **API/Worker Container:**
+
 ```bash
 uv run task test              # Run tests
 uv run alembic upgrade head   # Run migrations
@@ -291,6 +296,7 @@ uv run python -c "..."        # Run Python code
 ```
 
 **Web Container:**
+
 ```bash
 pnpm test                     # Run frontend tests
 pnpm build                    # Build frontend
@@ -298,6 +304,7 @@ pnpm lint                     # Run linter
 ```
 
 **DB Container:**
+
 ```bash
 psql -U polar -d polar        # Connect to database
 ```
@@ -321,6 +328,7 @@ psql -U polar -d polar        # Connect to database
 ```
 
 **When to Restart:**
+
 - After pulling new code (hot-reload handles most changes)
 - After changing environment variables
 - After container crashes
@@ -350,6 +358,7 @@ psql -U polar -d polar        # Connect to database
 ```
 
 **When to Rebuild:**
+
 - After changing Dockerfile
 - After changing system dependencies
 - After changing Python version
@@ -362,6 +371,7 @@ psql -U polar -d polar        # Connect to database
 ### Infrastructure Services
 
 **db (PostgreSQL 15.1)**
+
 - Primary database
 - Port: 5432 (default)
 - Credentials: polar/polar
@@ -369,11 +379,13 @@ psql -U polar -d polar        # Connect to database
 - Health check: `pg_isready`
 
 **redis (Redis Alpine)**
+
 - Cache and job queue backend
 - Port: 6379 (default)
 - Health check: `redis-cli ping`
 
 **minio (S3-Compatible Storage)**
+
 - File storage (images, downloads, etc.)
 - API Port: 9000
 - Console Port: 9001
@@ -384,6 +396,7 @@ psql -U polar -d polar        # Connect to database
 ### Application Services
 
 **api (FastAPI Backend)**
+
 - Python 3.14 with uvicorn
 - Port: 8000 (default)
 - Hot-reload enabled
@@ -392,6 +405,7 @@ psql -U polar -d polar        # Connect to database
 - Loads seed data on first run
 
 **worker (Background Jobs)**
+
 - Dramatiq with 3 queues: high/medium/low priority
 - No exposed port
 - Hot-reload enabled
@@ -399,7 +413,8 @@ psql -U polar -d polar        # Connect to database
 - Shares code with API container
 
 **web (Next.js Frontend)**
-- Node 22 with Turbopack
+
+- Node 24 with Turbopack
 - Port: 3000 (default)
 - Hot-reload enabled
 - Memory limit: 4GB
@@ -408,11 +423,13 @@ psql -U polar -d polar        # Connect to database
 ### Optional Services
 
 **prometheus (Metrics)**
+
 - Port: 9090
 - 1-day retention
 - Enable with: `--monitoring`
 
 **grafana (Dashboards)**
+
 - Port: 3001
 - Credentials: polar/polar
 - Pre-configured dashboards
@@ -449,6 +466,7 @@ POLAR_S3_FILES_BUCKET_NAME=polar-s3
 ### Accessing Services Internally
 
 Services use Docker network hostnames:
+
 - Database: `db:5432`
 - Redis: `redis:6379`
 - MinIO: `minio:9000`
@@ -461,108 +479,118 @@ Services use Docker network hostnames:
 ### Service Won't Start
 
 1. Check if ports are in use:
-   ```bash
-   lsof -i :8000    # Check if API port is in use
-   lsof -i :3000    # Check if web port is in use
-   ```
+
+    ```bash
+    lsof -i :8000    # Check if API port is in use
+    lsof -i :3000    # Check if web port is in use
+    ```
 
 2. Check Docker is running:
-   ```bash
-   docker info
-   ```
+
+    ```bash
+    docker info
+    ```
 
 3. Check logs for errors:
-   ```bash
-   ./dev/docker-dev logs api
-   ```
+
+    ```bash
+    ./dev/docker-dev logs api
+    ```
 
 4. Try cleanup and restart:
-   ```bash
-   ./dev/docker-dev down
-   ./dev/docker-dev -d
-   ```
+    ```bash
+    ./dev/docker-dev down
+    ./dev/docker-dev -d
+    ```
 
 ### Database Connection Failed
 
 1. Check db container is healthy:
-   ```bash
-   ./dev/docker-dev ps
-   ```
+
+    ```bash
+    ./dev/docker-dev ps
+    ```
 
 2. Wait for health check (takes ~40 seconds on first start)
 
 3. Check db logs:
-   ```bash
-   ./dev/docker-dev logs db
-   ```
+    ```bash
+    ./dev/docker-dev logs db
+    ```
 
 ### Hot-Reload Not Working
 
 1. Check file is being mounted:
-   ```bash
-   ./dev/docker-dev shell api
-   ls -la /app/server/polar/
-   ```
+
+    ```bash
+    ./dev/docker-dev shell api
+    ls -la /app/server/polar/
+    ```
 
 2. Restart the service:
-   ```bash
-   ./dev/docker-dev restart api
-   ```
+
+    ```bash
+    ./dev/docker-dev restart api
+    ```
 
 3. Rebuild if needed:
-   ```bash
-   ./dev/docker-dev -b restart api
-   ```
+    ```bash
+    ./dev/docker-dev -b restart api
+    ```
 
 ### Out of Memory
 
 1. Check Docker memory allocation (should be 8GB+)
 
 2. Stop unused instances:
-   ```bash
-   ./dev/docker-dev -i 1 down
-   ./dev/docker-dev -i 2 down
-   ```
+
+    ```bash
+    ./dev/docker-dev -i 1 down
+    ./dev/docker-dev -i 2 down
+    ```
 
 3. Clear unused Docker resources:
-   ```bash
-   docker system prune
-   ```
+    ```bash
+    docker system prune
+    ```
 
 ### MinIO/S3 Issues
 
 1. Check minio-setup completed:
-   ```bash
-   ./dev/docker-dev logs minio-setup
-   ```
+
+    ```bash
+    ./dev/docker-dev logs minio-setup
+    ```
 
 2. Access MinIO console: http://localhost:9001
-   - Username: polar
-   - Password: polarpolar
+    - Username: polar
+    - Password: polarpolar
 
 3. Verify buckets exist in console
 
 ### Frontend Build Errors
 
 1. Clear Next.js cache:
-   ```bash
-   ./dev/docker-dev shell web
-   rm -rf .next
-   exit
-   ./dev/docker-dev restart web
-   ```
+
+    ```bash
+    ./dev/docker-dev shell web
+    rm -rf .next
+    exit
+    ./dev/docker-dev restart web
+    ```
 
 2. Reinstall dependencies:
-   ```bash
-   ./dev/docker-dev shell web
-   pnpm install
-   exit
-   ./dev/docker-dev restart web
-   ```
+    ```bash
+    ./dev/docker-dev shell web
+    pnpm install
+    exit
+    ./dev/docker-dev restart web
+    ```
 
 ### Complete Reset
 
 When all else fails:
+
 ```bash
 ./dev/docker-dev cleanup
 ./dev/docker-dev -b -d
@@ -645,48 +673,48 @@ psql -U polar -d polar
 
 ## 13. Differences from Production
 
-| Aspect | Development | Production |
-|--------|-------------|------------|
-| Source Code | Mounted from host | Copied into image |
-| Hot-Reload | Enabled | Disabled |
-| Debug Mode | ON | OFF |
-| Database | Local container | Managed service |
-| S3 | MinIO | AWS S3 |
-| Ports | Configurable | Fixed |
-| Instances | Multiple supported | Single deployment |
+| Aspect      | Development        | Production        |
+| ----------- | ------------------ | ----------------- |
+| Source Code | Mounted from host  | Copied into image |
+| Hot-Reload  | Enabled            | Disabled          |
+| Debug Mode  | ON                 | OFF               |
+| Database    | Local container    | Managed service   |
+| S3          | MinIO              | AWS S3            |
+| Ports       | Configurable       | Fixed             |
+| Instances   | Multiple supported | Single deployment |
 
 ---
 
 ## 14. Quick Command Reference
 
-| Task | Command |
-|------|---------|
-| Start (foreground) | `./dev/docker-dev` |
-| Start (background) | `./dev/docker-dev -d` |
-| Start instance | `./dev/docker-dev -i {n} -d` |
-| Stop | `./dev/docker-dev down` |
-| Cleanup (reset) | `./dev/docker-dev cleanup` |
-| Logs (all) | `./dev/docker-dev logs` |
-| Logs (follow) | `./dev/docker-dev logs -f` |
-| Logs (service) | `./dev/docker-dev logs {service}` |
-| Status | `./dev/docker-dev ps` |
-| Restart | `./dev/docker-dev restart {service}` |
-| Shell | `./dev/docker-dev shell {service}` |
-| Rebuild | `./dev/docker-dev -b -d` |
-| Monitoring | `./dev/docker-dev --monitoring -d` |
-| Help | `./dev/docker-dev -h` |
+| Task               | Command                              |
+| ------------------ | ------------------------------------ |
+| Start (foreground) | `./dev/docker-dev`                   |
+| Start (background) | `./dev/docker-dev -d`                |
+| Start instance     | `./dev/docker-dev -i {n} -d`         |
+| Stop               | `./dev/docker-dev down`              |
+| Cleanup (reset)    | `./dev/docker-dev cleanup`           |
+| Logs (all)         | `./dev/docker-dev logs`              |
+| Logs (follow)      | `./dev/docker-dev logs -f`           |
+| Logs (service)     | `./dev/docker-dev logs {service}`    |
+| Status             | `./dev/docker-dev ps`                |
+| Restart            | `./dev/docker-dev restart {service}` |
+| Shell              | `./dev/docker-dev shell {service}`   |
+| Rebuild            | `./dev/docker-dev -b -d`             |
+| Monitoring         | `./dev/docker-dev --monitoring -d`   |
+| Help               | `./dev/docker-dev -h`                |
 
 ---
 
 ## 15. Service URLs (Default Instance)
 
-| Service | URL |
-|---------|-----|
-| Web Frontend | http://localhost:3000 |
-| API | http://localhost:8000 |
-| API Docs | http://localhost:8000/docs |
-| MinIO Console | http://localhost:9001 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3001 |
+| Service       | URL                        |
+| ------------- | -------------------------- |
+| Web Frontend  | http://localhost:3000      |
+| API           | http://localhost:8000      |
+| API Docs      | http://localhost:8000/docs |
+| MinIO Console | http://localhost:9001      |
+| Prometheus    | http://localhost:9090      |
+| Grafana       | http://localhost:3001      |
 
 For instance N, add N×100 to each port.

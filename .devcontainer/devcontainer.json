@@ -1,74 +1,71 @@
 {
-	"name": "Polar",
-	"dockerComposeFile": "docker-compose.yaml",
-	"service": "app",
-	"workspaceFolder": "/workspace",
+  "name": "Polar",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
 
-	"features": {
+  "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
+      "version": "24",
     },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker": {}
-	},
+    "ghcr.io/devcontainers/features/docker-outside-of-docker": {},
+  },
 
-	// Configure tool-specific properties.
-	"customizations": {
+  // Configure tool-specific properties.
+  "customizations": {
+    // Auto open these files when running on GitHub Codespaces
+    "codespaces": {
+      "openFiles": ["DEVELOPMENT.md"],
+    },
 
-		// Auto open these files when running on GitHub Codespaces
-		"codespaces": {
-			"openFiles": [
-			  "DEVELOPMENT.md"
-			]
-		},
+    // Configure properties specific to VS Code.
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
 
-		// Configure properties specific to VS Code.
-		"vscode": {
-			"settings": {
-				"python.defaultInterpreterPath": "/usr/local/bin/python",
+        // We're doing most of our configuration in the .code-workspace, instead of here.
+        // Try to auto-open the workspace
 
-				// We're doing most of our configuration in the .code-workspace, instead of here.
-				// Try to auto-open the workspace
-
-				"autoOpenWorkspace.enableAutoOpenAlwaysFirst": true
-			},
-			// Extensions that are installed when the devcontainer is setup
-			"extensions": [
+        "autoOpenWorkspace.enableAutoOpenAlwaysFirst": true,
+      },
+      // Extensions that are installed when the devcontainer is setup
+      "extensions": [
         "EditorConfig.EditorConfig",
-				"ms-python.python",
-				"charliermarsh.ruff",
-				"ms-python.mypy-type-checker",
-				"littlefoxteam.vscode-python-test-adapter",
-				"esbenp.prettier-vscode",
-				"bradlc.vscode-tailwindcss",
-				"zoma.vscode-auto-open-workspace",
-        "redhat.vscode-yaml"
-			]
-		}
-	},
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "littlefoxteam.vscode-python-test-adapter",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "zoma.vscode-auto-open-workspace",
+        "redhat.vscode-yaml",
+      ],
+    },
+  },
 
-	"postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
+  "postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// This can be used to network with other containers or the host.
-	"forwardPorts": [3000, 5432, 6006, 6379, 8000, 8080],
-	"portsAttributes": {
-		"3000": {
-			"label": "web",
-			"onAutoForward": "ignore"
-		},
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // This can be used to network with other containers or the host.
+  "forwardPorts": [3000, 5432, 6006, 6379, 8000, 8080],
+  "portsAttributes": {
+    "3000": {
+      "label": "web",
+      "onAutoForward": "ignore",
+    },
     "5432": {
-      "label": "db"
+      "label": "db",
     },
     "6379": {
-      "label": "redis"
+      "label": "redis",
     },
-		"8000": {
-			"label": "api",
-			"onAutoForward": "ignore"
-		},
-		"8080": {
-			"label": "server",
-			"onAutoForward": "notify"
-		}
-	}
+    "8000": {
+      "label": "api",
+      "onAutoForward": "ignore",
+    },
+    "8080": {
+      "label": "server",
+      "onAutoForward": "notify",
+    },
+  },
 }

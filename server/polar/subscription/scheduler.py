@@ -75,6 +75,7 @@ class SubscriptionJobStore(BaseJobStore):
         )
         with self.engine.begin() as connection:
             connection.execute(statement)
+        log.debug("Removed subscription scheduler job", subscription_id=subscription_id)
 
     def add_job(self, job: Job) -> None:
         raise RuntimeError("This job store does not support managing jobs directly.")

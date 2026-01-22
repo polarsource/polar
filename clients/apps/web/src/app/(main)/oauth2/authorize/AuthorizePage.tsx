@@ -52,7 +52,7 @@ const AuthorizePage = ({
                 <span className="font-medium">{clientName}</span> requests the
                 following permissions to your Polar organization.
               </div>
-              <div className="dark:border-polar-700 border-gray-0 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border bg-gray-50 p-2 pr-4 text-sm">
+              <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
@@ -68,7 +68,7 @@ const AuthorizePage = ({
                 <span className="font-medium">{clientName}</span> requests the
                 following permissions to your personal Polar account.
               </div>
-              <div className="dark:border-polar-700 border-gray-0 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border bg-gray-50 p-2 pr-4 text-sm">
+              <div className="dark:border-polar-700 dark:bg-polar-800 mt-6 mb-0 inline-flex flex-row items-center justify-start gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-2 pr-4 text-sm">
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}

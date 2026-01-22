@@ -29,7 +29,6 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadat
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.models import (
     Benefit,
@@ -285,11 +284,7 @@ class MeterService:
         if clauses:
             statement = customer_repository.get_base_statement().where(or_(*clauses))
             async for customer in customer_repository.stream(statement):
-                enqueue_job(
-                    "customer_meter.update_customer",
-                    customer.id,
-                    meters_dirtied_at=utc_now().isoformat(),
-                )
+                enqueue_job("customer_meter.update_customer", customer.id)
 
         return meter
 

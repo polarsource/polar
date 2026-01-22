@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
@@ -90,12 +91,7 @@ class CustomerMeterService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def update_customer(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        meters_dirtied_at: datetime | None = None,
-    ) -> None:
+    async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -109,7 +105,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, customer, meter, meters_dirtied_at=meters_dirtied_at
+                session, customer, meter
             )
             updated = updated or meter_updated
 
@@ -124,7 +120,6 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
-        meters_dirtied_at: datetime | None = None,
     ) -> tuple[CustomerMeter | None, bool]:
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
@@ -147,12 +142,12 @@ class CustomerMeterService:
                 return customer_meter, False
             customer_meter.activated_at = utc_now()
 
-        # Optimization: only look for events ingested after meters_dirtied_at
-        # minus a small buffer. This avoids scanning all historical events
+        # Optimization: only look for events ingested after the maximum debounce window
+        # This avoids scanning all historical events
         # when checking if there are new events to process.
-        ingested_at_lower_bound: datetime | None = None
-        if meters_dirtied_at is not None:
-            ingested_at_lower_bound = meters_dirtied_at - timedelta(minutes=1)
+        ingested_at_lower_bound = (
+            utc_now() - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD
+        )
 
         # A/B Test: Compare old (JSONB) vs new (MeterEvent) implementations
         with logfire.span("get_latest_event.old"):

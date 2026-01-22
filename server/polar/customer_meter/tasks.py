@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 
 from opentelemetry import trace
 
@@ -21,9 +20,7 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
         super().__init__(message)
 
 
-def _update_customer_debounce_key(
-    customer_id: uuid.UUID, meters_dirtied_at: str | None
-) -> str:
+def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
     return f"customer_meter.update_customer:{customer_id}"
 
 
@@ -40,9 +37,7 @@ def _update_customer_debounce_key(
         settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD.total_seconds()
     ),
 )
-async def update_customer(
-    customer_id: uuid.UUID, meters_dirtied_at: str | None = None
-) -> None:
+async def update_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id)
@@ -52,7 +47,4 @@ async def update_customer(
         span = trace.get_current_span()
         span.set_attribute("organization_id", str(customer.organization_id))
 
-        meters_dirtied = (
-            datetime.fromisoformat(meters_dirtied_at) if meters_dirtied_at else None
-        )
-        await customer_meter_service.update_customer(session, customer, meters_dirtied)
+        await customer_meter_service.update_customer(session, customer)

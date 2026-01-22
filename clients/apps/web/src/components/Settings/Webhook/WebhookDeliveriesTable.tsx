@@ -131,9 +131,9 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
             }}
           >
             {row.getIsExpanded() ? (
-              <KeyboardArrowDownOutlined />
+              <KeyboardArrowDownOutlined className="dark:text-polar-500 text-gray-500" />
             ) : (
-              <KeyboardArrowRightOutlined />
+              <KeyboardArrowRightOutlined className="dark:text-polar-500 text-gray-500" />
             )}
           </button>
         )

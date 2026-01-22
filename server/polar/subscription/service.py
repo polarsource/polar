@@ -525,18 +525,21 @@ class SubscriptionService:
         currency_prices = PriceSet.from_prices(checkout.prices[product.id], currency)
         recurring_interval: SubscriptionRecurringInterval
         recurring_interval_count: int
+        subscription_prices: list[ProductPrice]
         if product.is_legacy_recurring_price:
-            prices = [checkout.product_price]
-            recurring_interval = prices[0].recurring_interval
+            # For legacy products, use only the selected price from checkout
+            subscription_prices = [checkout.product_price]
+            recurring_interval = subscription_prices[0].recurring_interval
             recurring_interval_count = 1
         else:
             assert product.recurring_interval is not None
             assert product.recurring_interval_count is not None
             recurring_interval = product.recurring_interval
             recurring_interval_count = product.recurring_interval_count
+            subscription_prices = list(currency_prices)
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in currency_prices:
+        for price in subscription_prices:
             subscription_product_prices.append(
                 SubscriptionProductPrice.from_price(
                     price, checkout.amount, checkout.seats

@@ -294,7 +294,9 @@ class CustomerService:
 
         # Anonymize billing_name (always, if present)
         if customer._billing_name:
-            update_dict["_billing_name"] = anonymize_for_deletion(customer._billing_name)
+            update_dict["_billing_name"] = anonymize_for_deletion(
+                customer._billing_name
+            )
 
         # Clear address (invoices retain original)
         update_dict["billing_address"] = None

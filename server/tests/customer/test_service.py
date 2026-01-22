@@ -16,8 +16,8 @@ from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from tests.fixtures.auth import AuthSubjectFixture
 from polar.tax.tax_id import TaxIDFormat
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 

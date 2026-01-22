@@ -12,6 +12,7 @@ from polar.models import (
     UserOrganization,
 )
 from tests.fixtures.auth import AuthSubjectFixture
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -1068,7 +1069,7 @@ class TestAnonymizeCustomer:
             organization=organization,
             email="business@example.com",
             name="Acme Corp",
-            tax_id=("DE123456789", "eu_vat"),
+            tax_id=("DE123456789", TaxIDFormat.eu_vat),
         )
 
         response = await client.post(f"/v1/customers/{customer.id}/anonymize")

@@ -8,7 +8,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.address import AddressInput, CountryAlpha2Input
+from polar.kit.address import AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
@@ -17,6 +17,7 @@ from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEvent
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 
@@ -654,7 +655,7 @@ class TestAnonymize:
             organization=organization,
             email="business@example.com",
             name="Acme Corp",
-            tax_id=("DE123456789", "eu_vat"),
+            tax_id=("DE123456789", TaxIDFormat.eu_vat),
         )
 
         anonymized = await customer_service.anonymize(session, redis, customer)
@@ -715,7 +716,7 @@ class TestAnonymize:
                 city="San Francisco",
                 state="CA",
                 postal_code="94102",
-                country="US",
+                country=CountryAlpha2("US"),
             ),
         )
         assert customer.billing_address is not None

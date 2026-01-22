@@ -71,6 +71,7 @@ const ClientPage = ({
                     pattern="^[a-zA-Z0-9]+$"
                     inputMode="text"
                     {...field}
+                    autoFocus={true}
                     onChange={(value) => field.onChange(value.toUpperCase())}
                     onComplete={() => {
                       if (formRef.current) {
@@ -90,7 +91,7 @@ const ClientPage = ({
                     </InputOTPGroup>
                   </InputOTP>
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-center" />
               </FormItem>
             )
           }}

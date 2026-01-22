@@ -1055,6 +1055,9 @@ class TestAnonymizeCustomer:
         assert len(json["name"]) == 64
         assert json["name"] != "John Doe"
 
+        # Customer should be marked as deleted
+        assert json["deleted_at"] is not None
+
     @pytest.mark.auth
     async def test_business_customer(
         self,

@@ -642,6 +642,9 @@ class TestAnonymize:
         # Original user metadata should be preserved
         assert anonymized.user_metadata["user_id"] == "ABC"
 
+        # Customer should be marked as deleted
+        assert anonymized.deleted_at is not None
+
     async def test_business_customer(
         self,
         session: AsyncSession,

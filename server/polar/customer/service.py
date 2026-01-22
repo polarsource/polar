@@ -304,6 +304,9 @@ class CustomerService:
         # Clear OAuth tokens
         update_dict["_oauth_accounts"] = {}
 
+        # Mark as deleted (soft-delete)
+        update_dict["deleted_at"] = utc_now()
+
         # Record anonymization timestamp in metadata
         user_metadata = dict(customer.user_metadata) if customer.user_metadata else {}
         user_metadata["__anonymized_at"] = utc_now().isoformat()

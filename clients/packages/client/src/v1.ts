@@ -2951,10 +2951,7 @@ export interface paths {
      */
     get: operations['customer_portal:seats:list_seats']
     put?: never
-    /**
-     * Assign Seat
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Assign Seat */
     post: operations['customer_portal:seats:assign_seat']
     delete?: never
     options?: never
@@ -2972,10 +2969,7 @@ export interface paths {
     get?: never
     put?: never
     post?: never
-    /**
-     * Revoke Seat
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Revoke Seat */
     delete: operations['customer_portal:seats:revoke_seat']
     options?: never
     head?: never
@@ -2991,10 +2985,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Resend Invitation
-     * @description **Scopes**: `customer_portal:write`
-     */
+    /** Resend Invitation */
     post: operations['customer_portal:seats:resend_invitation']
     delete?: never
     options?: never
@@ -3686,6 +3677,9 @@ export interface paths {
     /**
      * Create Customer Session
      * @description Create a customer session.
+     *
+     *     For organizations with `member_model_enabled`, this will automatically
+     *     create a member session for the owner member of the customer.
      *
      *     **Scopes**: `customer_sessions:write`
      */
@@ -5994,6 +5988,92 @@ export interface components {
       | 'organization_access_tokens:read'
       | 'organization_access_tokens:write'
     /**
+     * BalanceCreditOrderEvent
+     * @description An event created by Polar when an order is paid via customer balance.
+     */
+    BalanceCreditOrderEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'balance.credit_order'
+      metadata: components['schemas']['BalanceCreditOrderMetadata']
+    }
+    /** BalanceCreditOrderMetadata */
+    BalanceCreditOrderMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Product Id */
+      product_id?: string
+      /** Subscription Id */
+      subscription_id?: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+      /** Tax Amount */
+      tax_amount: number
+      /** Tax State */
+      tax_state?: string | null
+      /** Tax Country */
+      tax_country?: string | null
+      /** Fee */
+      fee: number
+    }
+    /**
      * BalanceDisputeEvent
      * @description An event created by Polar when an order is disputed.
      */
@@ -6066,6 +6146,8 @@ export interface components {
       dispute_id: string
       /** Order Id */
       order_id?: string
+      /** Order Created At */
+      order_created_at?: string
       /** Product Id */
       product_id?: string
       /** Subscription Id */
@@ -6317,6 +6399,8 @@ export interface components {
       refund_id: string
       /** Order Id */
       order_id?: string
+      /** Order Created At */
+      order_created_at?: string
       /** Product Id */
       product_id?: string
       /** Subscription Id */
@@ -17304,7 +17388,7 @@ export interface components {
       price_currency: string
       /**
        * Minimum Amount
-       * @description The minimum amount the customer can pay.
+       * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
        */
       minimum_amount: number
       /**
@@ -21619,7 +21703,7 @@ export interface components {
       price_currency: string
       /**
        * Minimum Amount
-       * @description The minimum amount the customer can pay.
+       * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
        */
       minimum_amount: number
       /**
@@ -21651,7 +21735,7 @@ export interface components {
       price_currency: string
       /**
        * Minimum Amount
-       * @description The minimum amount the customer can pay.
+       * @description The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.
        * @default 50
        */
       minimum_amount: number
@@ -21662,7 +21746,7 @@ export interface components {
       maximum_amount?: number | null
       /**
        * Preset Amount
-       * @description The initial amount shown to the customer.
+       * @description The initial amount shown to the customer. If 0, the customer will see $0 as the default. Values between 1-49 are rejected.
        */
       preset_amount?: number | null
     }
@@ -24266,6 +24350,7 @@ export interface components {
       | components['schemas']['CustomerUpdatedEvent']
       | components['schemas']['CustomerDeletedEvent']
       | components['schemas']['BalanceOrderEvent']
+      | components['schemas']['BalanceCreditOrderEvent']
       | components['schemas']['BalanceRefundEvent']
       | components['schemas']['BalanceRefundReversalEvent']
       | components['schemas']['BalanceDisputeEvent']
@@ -29151,6 +29236,17 @@ export interface operations {
         start_timestamp?: string | null
         /** @description Filter deliveries before this timestamp. */
         end_timestamp?: string | null
+        /** @description Filter by delivery success status. */
+        succeeded?: boolean | null
+        /** @description Query to filter webhook deliveries. */
+        query?: string | null
+        /** @description Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx). */
+        http_code_class?: ('2xx' | '3xx' | '4xx' | '5xx') | null
+        /** @description Filter by webhook event type. */
+        event_type?:
+          | components['schemas']['WebhookEventType']
+          | components['schemas']['WebhookEventType'][]
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -38229,11 +38325,21 @@ export interface operations {
     }
   }
 }
+type FlattenedDeepRequired<T> = {
+  [K in keyof T]-?: FlattenedDeepRequired<
+    T[K] extends unknown[] | undefined | null
+      ? Extract<T[K], unknown[]>[number]
+      : T[K]
+  >
+}
 type ReadonlyArray<T> = [Exclude<T, undefined>] extends [unknown[]]
   ? Readonly<Exclude<T, undefined>>
   : Readonly<Exclude<T, undefined>[]>
+export const pathsV1WebhooksDeliveriesGetParametersQueryHttp_code_classAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<paths>['/v1/webhooks/deliveries']['get']['parameters']['query']['http_code_class']
+> = ['2xx', '3xx', '4xx', '5xx']
 export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
-  paths['/v1/metrics/']['get']['parameters']['query']['timezone']
+  FlattenedDeepRequired<paths>['/v1/metrics/']['get']['parameters']['query']['timezone']
 > = [
   'Africa/Abidjan',
   'Africa/Accra',
@@ -38835,7 +38941,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'Zulu',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
-  paths['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
+  FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
 > = [
   'Africa/Abidjan',
   'Africa/Accra',
@@ -39437,10 +39543,10 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'Zulu',
 ]
 export const accountTypeValues: ReadonlyArray<
-  components['schemas']['AccountType']
+  FlattenedDeepRequired<components>['schemas']['AccountType']
 > = ['stripe', 'manual']
 export const addressCountryValues: ReadonlyArray<
-  components['schemas']['Address']['country']
+  FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
   'AD',
   'AE',
@@ -39693,7 +39799,7 @@ export const addressCountryValues: ReadonlyArray<
   'ZW',
 ]
 export const addressInputCountryValues: ReadonlyArray<
-  components['schemas']['AddressInput']['country']
+  FlattenedDeepRequired<components>['schemas']['AddressInput']['country']
 > = [
   'AD',
   'AE',
@@ -39941,19 +40047,19 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZW',
 ]
 export const aggregationFunctionValues: ReadonlyArray<
-  components['schemas']['AggregationFunction']
+  FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']
 export const appealDecisionValues: ReadonlyArray<
-  components['schemas']['AppealDecision']
+  FlattenedDeepRequired<components>['schemas']['AppealDecision']
 > = ['approved', 'rejected']
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<
-  components['schemas']['AuthorizeResponseOrganization']['sub_type']
+  FlattenedDeepRequired<components>['schemas']['AuthorizeResponseOrganization']['sub_type']
 > = ['organization']
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<
-  components['schemas']['AuthorizeResponseUser']['sub_type']
+  FlattenedDeepRequired<components>['schemas']['AuthorizeResponseUser']['sub_type']
 > = ['user']
 export const availableScopeValues: ReadonlyArray<
-  components['schemas']['AvailableScope']
+  FlattenedDeepRequired<components>['schemas']['AvailableScope']
 > = [
   'openid',
   'profile',
@@ -40022,47 +40128,50 @@ export const availableScopeValues: ReadonlyArray<
   'organization_access_tokens:read',
   'organization_access_tokens:write',
 ]
+export const balanceCreditOrderEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BalanceCreditOrderEvent']['name']
+> = ['balance.credit_order']
 export const balanceDisputeEventNameValues: ReadonlyArray<
-  components['schemas']['BalanceDisputeEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BalanceDisputeEvent']['name']
 > = ['balance.dispute']
 export const balanceDisputeReversalEventNameValues: ReadonlyArray<
-  components['schemas']['BalanceDisputeReversalEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BalanceDisputeReversalEvent']['name']
 > = ['balance.dispute_reversal']
 export const balanceOrderEventNameValues: ReadonlyArray<
-  components['schemas']['BalanceOrderEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BalanceOrderEvent']['name']
 > = ['balance.order']
 export const balanceRefundEventNameValues: ReadonlyArray<
-  components['schemas']['BalanceRefundEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BalanceRefundEvent']['name']
 > = ['balance.refund']
 export const balanceRefundReversalEventNameValues: ReadonlyArray<
-  components['schemas']['BalanceRefundReversalEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BalanceRefundReversalEvent']['name']
 > = ['balance.refund_reversal']
 export const benefitCustomCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitCustomCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitCustomCreate']['type']
 > = ['custom']
 export const benefitCycledEventNameValues: ReadonlyArray<
-  components['schemas']['BenefitCycledEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BenefitCycledEvent']['name']
 > = ['benefit.cycled']
 export const benefitDiscordCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitDiscordCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitDiscordCreate']['type']
 > = ['discord']
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitDownloadablesCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesCreate']['type']
 > = ['downloadables']
 export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitGitHubRepositoryCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryCreate']['type']
 > = ['github_repository']
 export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<
-  components['schemas']['BenefitGitHubRepositoryCreateProperties']['permission']
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryCreateProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<
-  components['schemas']['BenefitGitHubRepositoryProperties']['permission']
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<
-  components['schemas']['BenefitGrantGitHubRepositoryProperties']['permission']
+  FlattenedDeepRequired<components>['schemas']['BenefitGrantGitHubRepositoryProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
 export const benefitGrantSortPropertyValues: ReadonlyArray<
-  components['schemas']['BenefitGrantSortProperty']
+  FlattenedDeepRequired<components>['schemas']['BenefitGrantSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40072,22 +40181,22 @@ export const benefitGrantSortPropertyValues: ReadonlyArray<
   '-revoked_at',
 ]
 export const benefitGrantedEventNameValues: ReadonlyArray<
-  components['schemas']['BenefitGrantedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BenefitGrantedEvent']['name']
 > = ['benefit.granted']
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<
-  components['schemas']['BenefitLicenseKeyExpirationProperties']['timeframe']
+  FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeyExpirationProperties']['timeframe']
 > = ['year', 'month', 'day']
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitLicenseKeysCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysCreate']['type']
 > = ['license_keys']
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
-  components['schemas']['BenefitMeterCreditCreate']['type']
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']
 export const benefitRevokedEventNameValues: ReadonlyArray<
-  components['schemas']['BenefitRevokedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BenefitRevokedEvent']['name']
 > = ['benefit.revoked']
 export const benefitSortPropertyValues: ReadonlyArray<
-  components['schemas']['BenefitSortProperty']
+  FlattenedDeepRequired<components>['schemas']['BenefitSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40099,7 +40208,7 @@ export const benefitSortPropertyValues: ReadonlyArray<
   '-user_order',
 ]
 export const benefitTypeValues: ReadonlyArray<
-  components['schemas']['BenefitType']
+  FlattenedDeepRequired<components>['schemas']['BenefitType']
 > = [
   'custom',
   'discord',
@@ -40109,19 +40218,19 @@ export const benefitTypeValues: ReadonlyArray<
   'meter_credit',
 ]
 export const benefitUpdatedEventNameValues: ReadonlyArray<
-  components['schemas']['BenefitUpdatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
 > = ['benefit.updated']
 export const billingAddressFieldModeValues: ReadonlyArray<
-  components['schemas']['BillingAddressFieldMode']
+  FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']
 export const body_oauth2_consentActionValues: ReadonlyArray<
-  components['schemas']['Body_oauth2_consent']['action']
+  FlattenedDeepRequired<components>['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']
 export const checkoutCreatedEventNameValues: ReadonlyArray<
-  components['schemas']['CheckoutCreatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']
 export const checkoutLinkSortPropertyValues: ReadonlyArray<
-  components['schemas']['CheckoutLinkSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CheckoutLinkSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40133,7 +40242,7 @@ export const checkoutLinkSortPropertyValues: ReadonlyArray<
   '-allow_discount_codes',
 ]
 export const checkoutSortPropertyValues: ReadonlyArray<
-  components['schemas']['CheckoutSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CheckoutSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40143,13 +40252,13 @@ export const checkoutSortPropertyValues: ReadonlyArray<
   '-status',
 ]
 export const checkoutStatusValues: ReadonlyArray<
-  components['schemas']['CheckoutStatus']
+  FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
 export const countAggregationFuncValues: ReadonlyArray<
-  components['schemas']['CountAggregation']['func']
+  FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']
 export const countryAlpha2Values: ReadonlyArray<
-  components['schemas']['CountryAlpha2']
+  FlattenedDeepRequired<components>['schemas']['CountryAlpha2']
 > = [
   'AD',
   'AE',
@@ -40402,7 +40511,7 @@ export const countryAlpha2Values: ReadonlyArray<
   'ZW',
 ]
 export const countryAlpha2InputValues: ReadonlyArray<
-  components['schemas']['CountryAlpha2Input']
+  FlattenedDeepRequired<components>['schemas']['CountryAlpha2Input']
 > = [
   'AD',
   'AE',
@@ -40650,34 +40759,34 @@ export const countryAlpha2InputValues: ReadonlyArray<
   'ZW',
 ]
 export const customFieldCheckboxTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCheckbox']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCheckbox']['type']
 > = ['checkbox']
 export const customFieldCreateCheckboxTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCreateCheckbox']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCreateCheckbox']['type']
 > = ['checkbox']
 export const customFieldCreateDateTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCreateDate']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCreateDate']['type']
 > = ['date']
 export const customFieldCreateNumberTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCreateNumber']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCreateNumber']['type']
 > = ['number']
 export const customFieldCreateSelectTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCreateSelect']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCreateSelect']['type']
 > = ['select']
 export const customFieldCreateTextTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldCreateText']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldCreateText']['type']
 > = ['text']
 export const customFieldDateTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldDate']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldDate']['type']
 > = ['date']
 export const customFieldNumberTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldNumber']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldNumber']['type']
 > = ['number']
 export const customFieldSelectTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldSelect']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldSelect']['type']
 > = ['select']
 export const customFieldSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomFieldSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40689,46 +40798,46 @@ export const customFieldSortPropertyValues: ReadonlyArray<
   '-type',
 ]
 export const customFieldTextTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldText']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldText']['type']
 > = ['text']
 export const customFieldTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldType']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldType']
 > = ['text', 'number', 'date', 'checkbox', 'select']
 export const customFieldUpdateCheckboxTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldUpdateCheckbox']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldUpdateCheckbox']['type']
 > = ['checkbox']
 export const customFieldUpdateDateTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldUpdateDate']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldUpdateDate']['type']
 > = ['date']
 export const customFieldUpdateNumberTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldUpdateNumber']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldUpdateNumber']['type']
 > = ['number']
 export const customFieldUpdateSelectTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldUpdateSelect']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldUpdateSelect']['type']
 > = ['select']
 export const customFieldUpdateTextTypeValues: ReadonlyArray<
-  components['schemas']['CustomFieldUpdateText']['type']
+  FlattenedDeepRequired<components>['schemas']['CustomFieldUpdateText']['type']
 > = ['text']
 export const customerBenefitGrantCustomUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantCustomUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantCustomUpdate']['benefit_type']
 > = ['custom']
 export const customerBenefitGrantDiscordUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantDiscordUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantDiscordUpdate']['benefit_type']
 > = ['discord']
 export const customerBenefitGrantDownloadablesUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantDownloadablesUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantDownloadablesUpdate']['benefit_type']
 > = ['downloadables']
 export const customerBenefitGrantGitHubRepositoryUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantGitHubRepositoryUpdate']['benefit_type']
 > = ['github_repository']
 export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantLicenseKeysUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantLicenseKeysUpdate']['benefit_type']
 > = ['license_keys']
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantMeterCreditUpdate']['benefit_type']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantMeterCreditUpdate']['benefit_type']
 > = ['meter_credit']
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerBenefitGrantSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantSortProperty']
 > = [
   'granted_at',
   '-granted_at',
@@ -40740,7 +40849,7 @@ export const customerBenefitGrantSortPropertyValues: ReadonlyArray<
   '-product_benefit',
 ]
 export const customerCancellationReasonValues: ReadonlyArray<
-  components['schemas']['CustomerCancellationReason']
+  FlattenedDeepRequired<components>['schemas']['CustomerCancellationReason']
 > = [
   'customer_service',
   'low_quality',
@@ -40752,10 +40861,10 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'other',
 ]
 export const customerCreatedEventNameValues: ReadonlyArray<
-  components['schemas']['CustomerCreatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['CustomerCreatedEvent']['name']
 > = ['customer.created']
 export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerCustomerMeterSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerCustomerMeterSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40773,10 +40882,10 @@ export const customerCustomerMeterSortPropertyValues: ReadonlyArray<
   '-balance',
 ]
 export const customerDeletedEventNameValues: ReadonlyArray<
-  components['schemas']['CustomerDeletedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['CustomerDeletedEvent']['name']
 > = ['customer.deleted']
 export const customerMeterSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerMeterSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerMeterSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40798,10 +40907,10 @@ export const customerMeterSortPropertyValues: ReadonlyArray<
   '-balance',
 ]
 export const customerOAuthPlatformValues: ReadonlyArray<
-  components['schemas']['CustomerOAuthPlatform']
+  FlattenedDeepRequired<components>['schemas']['CustomerOAuthPlatform']
 > = ['github', 'discord']
 export const customerOrderSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerOrderSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerOrderSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40815,19 +40924,19 @@ export const customerOrderSortPropertyValues: ReadonlyArray<
   '-subscription',
 ]
 export const customerPaymentMethodCreateRequiresActionResponseStatusValues: ReadonlyArray<
-  components['schemas']['CustomerPaymentMethodCreateRequiresActionResponse']['status']
+  FlattenedDeepRequired<components>['schemas']['CustomerPaymentMethodCreateRequiresActionResponse']['status']
 > = ['requires_action']
 export const customerPaymentMethodCreateSucceededResponseStatusValues: ReadonlyArray<
-  components['schemas']['CustomerPaymentMethodCreateSucceededResponse']['status']
+  FlattenedDeepRequired<components>['schemas']['CustomerPaymentMethodCreateSucceededResponse']['status']
 > = ['succeeded']
 export const customerSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerSortProperty']
 > = ['created_at', '-created_at', 'email', '-email', 'name', '-name']
 export const customerStateSubscriptionStatusValues: ReadonlyArray<
-  components['schemas']['CustomerStateSubscription']['status']
+  FlattenedDeepRequired<components>['schemas']['CustomerStateSubscription']['status']
 > = ['active', 'trialing']
 export const customerSubscriptionSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerSubscriptionSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerSubscriptionSortProperty']
 > = [
   'started_at',
   '-started_at',
@@ -40841,16 +40950,16 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   '-product',
 ]
 export const customerUpdatedEventNameValues: ReadonlyArray<
-  components['schemas']['CustomerUpdatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['CustomerUpdatedEvent']['name']
 > = ['customer.updated']
 export const customerWalletSortPropertyValues: ReadonlyArray<
-  components['schemas']['CustomerWalletSortProperty']
+  FlattenedDeepRequired<components>['schemas']['CustomerWalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
 export const discountDurationValues: ReadonlyArray<
-  components['schemas']['DiscountDuration']
+  FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
 export const discountSortPropertyValues: ReadonlyArray<
-  components['schemas']['DiscountSortProperty']
+  FlattenedDeepRequired<components>['schemas']['DiscountSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -40862,13 +40971,13 @@ export const discountSortPropertyValues: ReadonlyArray<
   '-redemptions_count',
 ]
 export const discountTypeValues: ReadonlyArray<
-  components['schemas']['DiscountType']
+  FlattenedDeepRequired<components>['schemas']['DiscountType']
 > = ['fixed', 'percentage']
 export const disputeSortPropertyValues: ReadonlyArray<
-  components['schemas']['DisputeSortProperty']
+  FlattenedDeepRequired<components>['schemas']['DisputeSortProperty']
 > = ['created_at', '-created_at', 'amount', '-amount']
 export const disputeStatusValues: ReadonlyArray<
-  components['schemas']['DisputeStatus']
+  FlattenedDeepRequired<components>['schemas']['DisputeStatus']
 > = [
   'prevented',
   'early_warning',
@@ -40878,13 +40987,13 @@ export const disputeStatusValues: ReadonlyArray<
   'won',
 ]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
-  components['schemas']['DownloadableFileCreate']['service']
+  FlattenedDeepRequired<components>['schemas']['DownloadableFileCreate']['service']
 > = ['downloadable']
 export const downloadableFileReadServiceValues: ReadonlyArray<
-  components['schemas']['DownloadableFileRead']['service']
+  FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
 export const eventNamesSortPropertyValues: ReadonlyArray<
-  components['schemas']['EventNamesSortProperty']
+  FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
   'name',
   '-name',
@@ -40896,13 +41005,13 @@ export const eventNamesSortPropertyValues: ReadonlyArray<
   '-last_seen',
 ]
 export const eventSortPropertyValues: ReadonlyArray<
-  components['schemas']['EventSortProperty']
+  FlattenedDeepRequired<components>['schemas']['EventSortProperty']
 > = ['timestamp', '-timestamp']
 export const eventSourceValues: ReadonlyArray<
-  components['schemas']['EventSource']
+  FlattenedDeepRequired<components>['schemas']['EventSource']
 > = ['system', 'user']
 export const eventStatisticsSortPropertyValues: ReadonlyArray<
-  components['schemas']['EventStatisticsSortProperty']
+  FlattenedDeepRequired<components>['schemas']['EventStatisticsSortProperty']
 > = [
   'name',
   '-name',
@@ -40918,7 +41027,7 @@ export const eventStatisticsSortPropertyValues: ReadonlyArray<
   '-p99',
 ]
 export const eventTypesSortPropertyValues: ReadonlyArray<
-  components['schemas']['EventTypesSortProperty']
+  FlattenedDeepRequired<components>['schemas']['EventTypesSortProperty']
 > = [
   'name',
   '-name',
@@ -40932,91 +41041,91 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
   '-last_seen',
 ]
 export const fileServiceTypesValues: ReadonlyArray<
-  components['schemas']['FileServiceTypes']
+  FlattenedDeepRequired<components>['schemas']['FileServiceTypes']
 > = ['downloadable', 'product_media', 'organization_avatar']
 export const filterConjunctionValues: ReadonlyArray<
-  components['schemas']['FilterConjunction']
+  FlattenedDeepRequired<components>['schemas']['FilterConjunction']
 > = ['and', 'or']
 export const filterOperatorValues: ReadonlyArray<
-  components['schemas']['FilterOperator']
+  FlattenedDeepRequired<components>['schemas']['FilterOperator']
 > = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'like', 'not_like']
 export const identityVerificationStatusValues: ReadonlyArray<
-  components['schemas']['IdentityVerificationStatus']
+  FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
-  components['schemas']['IntrospectTokenResponse']['token_type']
+  FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
 export const legacyOrganizationStatusValues: ReadonlyArray<
-  components['schemas']['LegacyOrganizationStatus']
+  FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
 > = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
 export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
 > = ['fixed']
 export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<
-  components['schemas']['LegacyRecurringProductPriceFree']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFree']['amount_type']
 > = ['free']
 export const licenseKeyStatusValues: ReadonlyArray<
-  components['schemas']['LicenseKeyStatus']
+  FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
 export const maintainerAccountCreditsGrantedNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
+  FlattenedDeepRequired<components>['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
 > = ['MaintainerAccountCreditsGrantedNotification']
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerCreateAccountNotification']['type']
+  FlattenedDeepRequired<components>['schemas']['MaintainerCreateAccountNotification']['type']
 > = ['MaintainerCreateAccountNotification']
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
+  FlattenedDeepRequired<components>['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
 > = ['MaintainerNewPaidSubscriptionNotification']
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
-  components['schemas']['MaintainerNewProductSaleNotification']['type']
+  FlattenedDeepRequired<components>['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
 export const memberRoleValues: ReadonlyArray<
-  components['schemas']['MemberRole']
+  FlattenedDeepRequired<components>['schemas']['MemberRole']
 > = ['owner', 'billing_manager', 'member']
 export const memberSortPropertyValues: ReadonlyArray<
-  components['schemas']['MemberSortProperty']
+  FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
 export const meterCreditEventNameValues: ReadonlyArray<
-  components['schemas']['MeterCreditEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
 export const meterResetEventNameValues: ReadonlyArray<
-  components['schemas']['MeterResetEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['MeterResetEvent']['name']
 > = ['meter.reset']
 export const meterSortPropertyValues: ReadonlyArray<
-  components['schemas']['MeterSortProperty']
+  FlattenedDeepRequired<components>['schemas']['MeterSortProperty']
 > = ['created_at', '-created_at', 'name', '-name']
 export const metricTypeValues: ReadonlyArray<
-  components['schemas']['MetricType']
+  FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
 export const notificationRecipientPlatformValues: ReadonlyArray<
-  components['schemas']['NotificationRecipientPlatform']
+  FlattenedDeepRequired<components>['schemas']['NotificationRecipientPlatform']
 > = ['ios', 'android']
 export const oAuth2ClientToken_endpoint_auth_methodValues: ReadonlyArray<
-  components['schemas']['OAuth2Client']['token_endpoint_auth_method']
+  FlattenedDeepRequired<components>['schemas']['OAuth2Client']['token_endpoint_auth_method']
 > = ['client_secret_basic', 'client_secret_post', 'none']
 export const oAuth2ClientGrant_typesValues: ReadonlyArray<
-  components['schemas']['OAuth2Client']['grant_types']
+  FlattenedDeepRequired<components>['schemas']['OAuth2Client']['grant_types']
 > = ['authorization_code', 'refresh_token']
 export const oAuth2ClientConfigurationToken_endpoint_auth_methodValues: ReadonlyArray<
-  components['schemas']['OAuth2ClientConfiguration']['token_endpoint_auth_method']
+  FlattenedDeepRequired<components>['schemas']['OAuth2ClientConfiguration']['token_endpoint_auth_method']
 > = ['client_secret_basic', 'client_secret_post', 'none']
 export const oAuth2ClientConfigurationGrant_typesValues: ReadonlyArray<
-  components['schemas']['OAuth2ClientConfiguration']['grant_types']
+  FlattenedDeepRequired<components>['schemas']['OAuth2ClientConfiguration']['grant_types']
 > = ['authorization_code', 'refresh_token']
 export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: ReadonlyArray<
-  components['schemas']['OAuth2ClientConfigurationUpdate']['token_endpoint_auth_method']
+  FlattenedDeepRequired<components>['schemas']['OAuth2ClientConfigurationUpdate']['token_endpoint_auth_method']
 > = ['client_secret_basic', 'client_secret_post', 'none']
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
-  components['schemas']['OAuth2ClientConfigurationUpdate']['grant_types']
+  FlattenedDeepRequired<components>['schemas']['OAuth2ClientConfigurationUpdate']['grant_types']
 > = ['authorization_code', 'refresh_token']
 export const oAuthPlatformValues: ReadonlyArray<
-  components['schemas']['OAuthPlatform']
+  FlattenedDeepRequired<components>['schemas']['OAuthPlatform']
 > = ['github', 'github_repository_benefit', 'google', 'apple']
 export const orderBillingReasonValues: ReadonlyArray<
-  components['schemas']['OrderBillingReason']
+  FlattenedDeepRequired<components>['schemas']['OrderBillingReason']
 > = [
   'purchase',
   'subscription_create',
@@ -41024,7 +41133,7 @@ export const orderBillingReasonValues: ReadonlyArray<
   'subscription_update',
 ]
 export const orderBillingReasonInternalValues: ReadonlyArray<
-  components['schemas']['OrderBillingReasonInternal']
+  FlattenedDeepRequired<components>['schemas']['OrderBillingReasonInternal']
 > = [
   'purchase',
   'subscription_create',
@@ -41033,13 +41142,13 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_update',
 ]
 export const orderPaidEventNameValues: ReadonlyArray<
-  components['schemas']['OrderPaidEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['OrderPaidEvent']['name']
 > = ['order.paid']
 export const orderRefundedEventNameValues: ReadonlyArray<
-  components['schemas']['OrderRefundedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['OrderRefundedEvent']['name']
 > = ['order.refunded']
 export const orderSortPropertyValues: ReadonlyArray<
-  components['schemas']['OrderSortProperty']
+  FlattenedDeepRequired<components>['schemas']['OrderSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41061,10 +41170,10 @@ export const orderSortPropertyValues: ReadonlyArray<
   '-subscription',
 ]
 export const orderStatusValues: ReadonlyArray<
-  components['schemas']['OrderStatus']
+  FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['pending', 'paid', 'refunded', 'partially_refunded']
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<
-  components['schemas']['OrganizationAccessTokenSortProperty']
+  FlattenedDeepRequired<components>['schemas']['OrganizationAccessTokenSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41076,22 +41185,22 @@ export const organizationAccessTokenSortPropertyValues: ReadonlyArray<
   '-organization_id',
 ]
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<
-  components['schemas']['OrganizationAvatarFileCreate']['service']
+  FlattenedDeepRequired<components>['schemas']['OrganizationAvatarFileCreate']['service']
 > = ['organization_avatar']
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<
-  components['schemas']['OrganizationAvatarFileRead']['service']
+  FlattenedDeepRequired<components>['schemas']['OrganizationAvatarFileRead']['service']
 > = ['organization_avatar']
 export const organizationDeletionBlockedReasonValues: ReadonlyArray<
-  components['schemas']['OrganizationDeletionBlockedReason']
+  FlattenedDeepRequired<components>['schemas']['OrganizationDeletionBlockedReason']
 > = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
-export const organizationDetailsSwitching_fromValues: ReadonlyArray<
-  components['schemas']['OrganizationDetails']['switching_from']
+export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
-export const organizationReviewStatusVerdictValues: ReadonlyArray<
-  components['schemas']['OrganizationReviewStatus']['verdict']
+export const organizationReviewStatusVerdictAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationReviewStatus']['verdict']
 > = ['PASS', 'FAIL', 'UNCERTAIN']
 export const organizationSocialPlatformsValues: ReadonlyArray<
-  components['schemas']['OrganizationSocialPlatforms']
+  FlattenedDeepRequired<components>['schemas']['OrganizationSocialPlatforms']
 > = [
   'x',
   'github',
@@ -41103,7 +41212,7 @@ export const organizationSocialPlatformsValues: ReadonlyArray<
   'other',
 ]
 export const organizationSortPropertyValues: ReadonlyArray<
-  components['schemas']['OrganizationSortProperty']
+  FlattenedDeepRequired<components>['schemas']['OrganizationSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41117,7 +41226,7 @@ export const organizationSortPropertyValues: ReadonlyArray<
   '-days_in_status',
 ]
 export const organizationStatusValues: ReadonlyArray<
-  components['schemas']['OrganizationStatus']
+  FlattenedDeepRequired<components>['schemas']['OrganizationStatus']
 > = [
   'created',
   'onboarding_started',
@@ -41127,10 +41236,10 @@ export const organizationStatusValues: ReadonlyArray<
   'active',
 ]
 export const paymentProcessorValues: ReadonlyArray<
-  components['schemas']['PaymentProcessor']
+  FlattenedDeepRequired<components>['schemas']['PaymentProcessor']
 > = ['stripe']
 export const paymentSortPropertyValues: ReadonlyArray<
-  components['schemas']['PaymentSortProperty']
+  FlattenedDeepRequired<components>['schemas']['PaymentSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41142,10 +41251,10 @@ export const paymentSortPropertyValues: ReadonlyArray<
   '-method',
 ]
 export const paymentStatusValues: ReadonlyArray<
-  components['schemas']['PaymentStatus']
+  FlattenedDeepRequired<components>['schemas']['PaymentStatus']
 > = ['pending', 'succeeded', 'failed']
 export const payoutSortPropertyValues: ReadonlyArray<
-  components['schemas']['PayoutSortProperty']
+  FlattenedDeepRequired<components>['schemas']['PayoutSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41161,10 +41270,10 @@ export const payoutSortPropertyValues: ReadonlyArray<
   '-account_id',
 ]
 export const payoutStatusValues: ReadonlyArray<
-  components['schemas']['PayoutStatus']
+  FlattenedDeepRequired<components>['schemas']['PayoutStatus']
 > = ['pending', 'in_transit', 'succeeded']
 export const platformFeeTypeValues: ReadonlyArray<
-  components['schemas']['PlatformFeeType']
+  FlattenedDeepRequired<components>['schemas']['PlatformFeeType']
 > = [
   'payment',
   'international_payment',
@@ -41178,7 +41287,7 @@ export const platformFeeTypeValues: ReadonlyArray<
   'platform',
 ]
 export const pledgeStateValues: ReadonlyArray<
-  components['schemas']['PledgeState']
+  FlattenedDeepRequired<components>['schemas']['PledgeState']
 > = [
   'initiated',
   'created',
@@ -41189,58 +41298,58 @@ export const pledgeStateValues: ReadonlyArray<
   'cancelled',
 ]
 export const presentmentCurrencyValues: ReadonlyArray<
-  components['schemas']['PresentmentCurrency']
+  FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
 > = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
 export const processorValues: ReadonlyArray<
-  components['schemas']['Processor']
+  FlattenedDeepRequired<components>['schemas']['Processor']
 > = ['stripe', 'manual']
 export const productBillingTypeValues: ReadonlyArray<
-  components['schemas']['ProductBillingType']
+  FlattenedDeepRequired<components>['schemas']['ProductBillingType']
 > = ['one_time', 'recurring']
 export const productMediaFileCreateServiceValues: ReadonlyArray<
-  components['schemas']['ProductMediaFileCreate']['service']
+  FlattenedDeepRequired<components>['schemas']['ProductMediaFileCreate']['service']
 > = ['product_media']
 export const productMediaFileReadServiceValues: ReadonlyArray<
-  components['schemas']['ProductMediaFileRead']['service']
+  FlattenedDeepRequired<components>['schemas']['ProductMediaFileRead']['service']
 > = ['product_media']
 export const productPriceCustomAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceCustom']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceCustom']['amount_type']
 > = ['custom']
 export const productPriceCustomCreateAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceCustomCreate']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceCustomCreate']['amount_type']
 > = ['custom']
 export const productPriceFixedAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFixed']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceFixed']['amount_type']
 > = ['fixed']
 export const productPriceFixedCreateAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFixedCreate']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceFixedCreate']['amount_type']
 > = ['fixed']
 export const productPriceFreeAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFree']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceFree']['amount_type']
 > = ['free']
 export const productPriceFreeCreateAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceFreeCreate']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceFreeCreate']['amount_type']
 > = ['free']
 export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceMeteredUnit']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
 export const productPriceMeteredUnitCreateAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceMeteredUnitCreate']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceMeteredUnitCreate']['amount_type']
 > = ['metered_unit']
 export const productPriceSeatBasedAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceSeatBased']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceSeatBased']['amount_type']
 > = ['seat_based']
 export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
-  components['schemas']['ProductPriceSeatBasedCreate']['amount_type']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceSeatBasedCreate']['amount_type']
 > = ['seat_based']
 export const productPriceSourceValues: ReadonlyArray<
-  components['schemas']['ProductPriceSource']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceSource']
 > = ['catalog', 'ad_hoc']
 export const productPriceTypeValues: ReadonlyArray<
-  components['schemas']['ProductPriceType']
+  FlattenedDeepRequired<components>['schemas']['ProductPriceType']
 > = ['one_time', 'recurring']
 export const productSortPropertyValues: ReadonlyArray<
-  components['schemas']['ProductSortProperty']
+  FlattenedDeepRequired<components>['schemas']['ProductSortProperty']
 > = [
   'created_at',
   '-created_at',
@@ -41252,10 +41361,10 @@ export const productSortPropertyValues: ReadonlyArray<
   '-price_amount',
 ]
 export const propertyAggregationFuncValues: ReadonlyArray<
-  components['schemas']['PropertyAggregation']['func']
+  FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']
 export const refundReasonValues: ReadonlyArray<
-  components['schemas']['RefundReason']
+  FlattenedDeepRequired<components>['schemas']['RefundReason']
 > = [
   'duplicate',
   'fraudulent',
@@ -41266,12 +41375,14 @@ export const refundReasonValues: ReadonlyArray<
   'other',
 ]
 export const refundSortPropertyValues: ReadonlyArray<
-  components['schemas']['RefundSortProperty']
+  FlattenedDeepRequired<components>['schemas']['RefundSortProperty']
 > = ['created_at', '-created_at', 'amount', '-amount']
 export const refundStatusValues: ReadonlyArray<
-  components['schemas']['RefundStatus']
+  FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
-export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
+export const scopeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Scope']
+> = [
   'openid',
   'profile',
   'email',
@@ -41342,29 +41453,25 @@ export const scopeValues: ReadonlyArray<components['schemas']['Scope']> = [
   'organization_access_tokens:write',
 ]
 export const searchResultCustomerTypeValues: ReadonlyArray<
-  components['schemas']['SearchResultCustomer']['type']
+  FlattenedDeepRequired<components>['schemas']['SearchResultCustomer']['type']
 > = ['customer']
 export const searchResultOrderTypeValues: ReadonlyArray<
-  components['schemas']['SearchResultOrder']['type']
+  FlattenedDeepRequired<components>['schemas']['SearchResultOrder']['type']
 > = ['order']
 export const searchResultProductTypeValues: ReadonlyArray<
-  components['schemas']['SearchResultProduct']['type']
+  FlattenedDeepRequired<components>['schemas']['SearchResultProduct']['type']
 > = ['product']
 export const searchResultSubscriptionTypeValues: ReadonlyArray<
-  components['schemas']['SearchResultSubscription']['type']
+  FlattenedDeepRequired<components>['schemas']['SearchResultSubscription']['type']
 > = ['subscription']
 export const seatStatusValues: ReadonlyArray<
-  components['schemas']['SeatStatus']
+  FlattenedDeepRequired<components>['schemas']['SeatStatus']
 > = ['pending', 'claimed', 'revoked']
-export const statusValues: ReadonlyArray<components['schemas']['Status']> = [
-  'created',
-  'onboarding_started',
-  'under_review',
-  'denied',
-  'active',
-]
+export const statusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Status']
+> = ['created', 'onboarding_started', 'under_review', 'denied', 'active']
 export const stripeAccountCountryValues: ReadonlyArray<
-  components['schemas']['StripeAccountCountry']
+  FlattenedDeepRequired<components>['schemas']['StripeAccountCountry']
 > = [
   'AL',
   'AG',
@@ -41486,39 +41593,38 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'SM',
   'TW',
 ]
-export const subTypeValues: ReadonlyArray<components['schemas']['SubType']> = [
-  'user',
-  'organization',
-]
+export const subTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubType']
+> = ['user', 'organization']
 export const subscriptionBillingPeriodUpdatedEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionBillingPeriodUpdatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionBillingPeriodUpdatedEvent']['name']
 > = ['subscription.billing_period_updated']
 export const subscriptionCanceledEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionCanceledEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionCanceledEvent']['name']
 > = ['subscription.canceled']
 export const subscriptionCreatedEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionCreatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionCreatedEvent']['name']
 > = ['subscription.created']
 export const subscriptionCycledEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionCycledEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
 export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionProductUpdatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionProductUpdatedEvent']['name']
 > = ['subscription.product_updated']
 export const subscriptionProrationBehaviorValues: ReadonlyArray<
-  components['schemas']['SubscriptionProrationBehavior']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionProrationBehavior']
 > = ['invoice', 'prorate']
 export const subscriptionRecurringIntervalValues: ReadonlyArray<
-  components['schemas']['SubscriptionRecurringInterval']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionRecurringInterval']
 > = ['day', 'week', 'month', 'year']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionRevokedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
 export const subscriptionSeatsUpdatedEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionSeatsUpdatedEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionSeatsUpdatedEvent']['name']
 > = ['subscription.seats_updated']
 export const subscriptionSortPropertyValues: ReadonlyArray<
-  components['schemas']['SubscriptionSortProperty']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionSortProperty']
 > = [
   'customer',
   '-customer',
@@ -41540,7 +41646,7 @@ export const subscriptionSortPropertyValues: ReadonlyArray<
   '-discount',
 ]
 export const subscriptionStatusValues: ReadonlyArray<
-  components['schemas']['SubscriptionStatus']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionStatus']
 > = [
   'incomplete',
   'incomplete_expired',
@@ -41551,10 +41657,10 @@ export const subscriptionStatusValues: ReadonlyArray<
   'unpaid',
 ]
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
-  components['schemas']['SubscriptionUncanceledEvent']['name']
+  FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
 > = ['subscription.uncanceled']
 export const taxIDFormatValues: ReadonlyArray<
-  components['schemas']['TaxIDFormat']
+  FlattenedDeepRequired<components>['schemas']['TaxIDFormat']
 > = [
   'ad_nrt',
   'ae_trn',
@@ -41632,13 +41738,13 @@ export const taxIDFormatValues: ReadonlyArray<
   'za_vat',
 ]
 export const timeIntervalValues: ReadonlyArray<
-  components['schemas']['TimeInterval']
+  FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']
 export const transactionSortPropertyValues: ReadonlyArray<
-  components['schemas']['TransactionSortProperty']
+  FlattenedDeepRequired<components>['schemas']['TransactionSortProperty']
 > = ['created_at', '-created_at', 'amount', '-amount']
 export const transactionTypeValues: ReadonlyArray<
-  components['schemas']['TransactionType']
+  FlattenedDeepRequired<components>['schemas']['TransactionType']
 > = [
   'payment',
   'processor_fee',
@@ -41650,28 +41756,28 @@ export const transactionTypeValues: ReadonlyArray<
   'payout',
 ]
 export const trialIntervalValues: ReadonlyArray<
-  components['schemas']['TrialInterval']
+  FlattenedDeepRequired<components>['schemas']['TrialInterval']
 > = ['day', 'week', 'month', 'year']
 export const uniqueAggregationFuncValues: ReadonlyArray<
-  components['schemas']['UniqueAggregation']['func']
+  FlattenedDeepRequired<components>['schemas']['UniqueAggregation']['func']
 > = ['unique']
 export const userDeletionBlockedReasonValues: ReadonlyArray<
-  components['schemas']['UserDeletionBlockedReason']
+  FlattenedDeepRequired<components>['schemas']['UserDeletionBlockedReason']
 > = ['has_active_organizations']
 export const userEventSourceValues: ReadonlyArray<
-  components['schemas']['UserEvent']['source']
+  FlattenedDeepRequired<components>['schemas']['UserEvent']['source']
 > = ['user']
-export const userSignupAttributionIntentValues: ReadonlyArray<
-  components['schemas']['UserSignupAttribution']['intent']
+export const userSignupAttributionIntentAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['UserSignupAttribution']['intent']
 > = ['creator', 'pledge', 'purchase', 'subscription', 'newsletter_subscription']
 export const walletSortPropertyValues: ReadonlyArray<
-  components['schemas']['WalletSortProperty']
+  FlattenedDeepRequired<components>['schemas']['WalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
 export const walletTypeValues: ReadonlyArray<
-  components['schemas']['WalletType']
+  FlattenedDeepRequired<components>['schemas']['WalletType']
 > = ['usage', 'billing']
 export const webhookEventTypeValues: ReadonlyArray<
-  components['schemas']['WebhookEventType']
+  FlattenedDeepRequired<components>['schemas']['WebhookEventType']
 > = [
   'checkout.created',
   'checkout.updated',
@@ -41706,14 +41812,14 @@ export const webhookEventTypeValues: ReadonlyArray<
   'organization.updated',
 ]
 export const webhookFormatValues: ReadonlyArray<
-  components['schemas']['WebhookFormat']
+  FlattenedDeepRequired<components>['schemas']['WebhookFormat']
 > = ['raw', 'discord', 'slack']
 export const webTokenRequestSub_typeValues: ReadonlyArray<
-  components['schemas']['WebTokenRequest']['sub_type']
+  FlattenedDeepRequired<components>['schemas']['WebTokenRequest']['sub_type']
 > = ['user', 'organization']
-export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<
-  components['schemas']['RevokeTokenRequest']['token_type_hint']
+export const revokeTokenRequestToken_type_hintAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RevokeTokenRequest']['token_type_hint']
 > = ['access_token', 'refresh_token']
-export const introspectTokenRequestToken_type_hintValues: ReadonlyArray<
-  components['schemas']['IntrospectTokenRequest']['token_type_hint']
+export const introspectTokenRequestToken_type_hintAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['IntrospectTokenRequest']['token_type_hint']
 > = ['access_token', 'refresh_token']

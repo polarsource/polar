@@ -362,10 +362,7 @@ class ProductCreateBase(MetadataInputMixin, Schema):
 
 class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
     recurring_interval: SubscriptionRecurringInterval = Field(
-        description=(
-            "The recurring interval of the product. "
-            "Note that the `day` and `week` values are for internal Polar staff use only."
-        ),
+        description="The recurring interval of the product.",
     )
     recurring_interval_count: int = Field(
         default=1,

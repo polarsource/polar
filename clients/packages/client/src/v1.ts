@@ -3968,13 +3968,13 @@ export interface paths {
      *
      *     **Scopes**: `organization_access_tokens:read` `organization_access_tokens:write`
      */
-    get: operations['organization_access_token:list']
+    get: operations['organization_access_tokens:list']
     put?: never
     /**
      * Create
      * @description **Scopes**: `organization_access_tokens:write`
      */
-    post: operations['organization_access_token:create']
+    post: operations['organization_access_tokens:create']
     delete?: never
     options?: never
     head?: never
@@ -3995,14 +3995,14 @@ export interface paths {
      * Delete
      * @description **Scopes**: `organization_access_tokens:write`
      */
-    delete: operations['organization_access_token:delete']
+    delete: operations['organization_access_tokens:delete']
     options?: never
     head?: never
     /**
      * Update
      * @description **Scopes**: `organization_access_tokens:write`
      */
-    patch: operations['organization_access_token:update']
+    patch: operations['organization_access_tokens:update']
     trace?: never
   }
   '/v1/customer-meters/': {
@@ -20235,11 +20235,8 @@ export interface components {
     }
     /** OrganizationAccessTokenCreate */
     OrganizationAccessTokenCreate: {
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Comment */
       comment: string
       /** Expires In */
@@ -21473,7 +21470,7 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count?: number | null
-      /** @description The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only. */
+      /** @description The recurring interval of the product. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
       /**
        * Recurring Interval Count
@@ -36509,7 +36506,7 @@ export interface operations {
       }
     }
   }
-  'organization_access_token:list': {
+  'organization_access_tokens:list': {
     parameters: {
       query?: {
         /** @description Filter by organization ID. */
@@ -36549,7 +36546,7 @@ export interface operations {
       }
     }
   }
-  'organization_access_token:create': {
+  'organization_access_tokens:create': {
     parameters: {
       query?: never
       header?: never
@@ -36582,7 +36579,7 @@ export interface operations {
       }
     }
   }
-  'organization_access_token:delete': {
+  'organization_access_tokens:delete': {
     parameters: {
       query?: never
       header?: never
@@ -36611,7 +36608,7 @@ export interface operations {
       }
     }
   }
-  'organization_access_token:update': {
+  'organization_access_tokens:update': {
     parameters: {
       query?: never
       header?: never

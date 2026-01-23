@@ -82,8 +82,10 @@ async def subscribe(
 async def user_stream(
     request: Request,
     auth_subject: WebUserRead,
+    session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
+    await session.commit()
     receivers = Receivers(user_id=auth_subject.subject.id)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 
@@ -99,6 +101,8 @@ async def org_stream(
     organization = await organization_service.get(session, auth_subject, id)
     if organization is None:
         raise ResourceNotFound()
+
+    await session.commit()
 
     receivers = Receivers(
         user_id=auth_subject.subject.id, organization_id=organization.id

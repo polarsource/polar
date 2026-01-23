@@ -58,6 +58,7 @@ class WalletService:
         organization_id: Sequence[uuid.UUID] | None = None,
         type: Sequence[WalletType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[WalletSortProperty]] = [
             (WalletSortProperty.created_at, True)
@@ -74,6 +75,9 @@ class WalletService:
 
         if customer_id is not None:
             statement = statement.where(Customer.id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(Customer.external_id.in_(external_customer_id))
 
         statement = repository.apply_sorting(statement, sorting)
 

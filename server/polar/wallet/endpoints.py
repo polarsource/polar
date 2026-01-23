@@ -1,6 +1,6 @@
 from fastapi import Depends, Query
 
-from polar.customer.schemas.customer import CustomerID
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -39,6 +39,11 @@ async def list(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[WalletSchema]:
     """List wallets."""
@@ -48,6 +53,7 @@ async def list(
         organization_id=organization_id,
         type=type,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         pagination=pagination,
         sorting=sorting,
     )

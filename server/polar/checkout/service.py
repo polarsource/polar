@@ -14,6 +14,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
+    MINIMUM_PRICE_AMOUNT,
     CheckoutConfirm,
     CheckoutConfirmStripe,
     CheckoutCreate,
@@ -435,11 +436,7 @@ class CheckoutService:
             amount = price.price_amount
         elif is_custom_price(price):
             if amount is None:
-                amount = (
-                    price.preset_amount
-                    or price.minimum_amount
-                    or settings.CUSTOM_PRICE_PRESET_FALLBACK
-                )
+                amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -666,11 +663,7 @@ class CheckoutService:
         if is_fixed_price(price):
             amount = price.price_amount
         elif is_custom_price(price):
-            amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            amount = price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Calculate amount based on seat count
             # seats is guaranteed to be set above when is_seat_price(price) is True
@@ -807,12 +800,7 @@ class CheckoutService:
                 except (ValueError, TypeError, PolarRequestValidationError):
                     pass
 
-            amount = (
-                valid_query_amount
-                or price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            amount = valid_query_amount or price.preset_amount or price.minimum_amount
         elif is_seat_price(price):
             # Default to minimum seats for checkout links with seat-based pricing
             seats = price.get_minimum_seats()
@@ -2087,11 +2075,7 @@ class CheckoutService:
             checkout.amount = price.price_amount
             checkout.seats = None
         elif is_custom_price(price):
-            checkout.amount = (
-                price.preset_amount
-                or price.minimum_amount
-                or settings.CUSTOM_PRICE_PRESET_FALLBACK
-            )
+            checkout.amount = price.preset_amount or price.minimum_amount
             checkout.seats = None
         elif is_seat_price(price):
             # Use minimum_seats as default if no seats are set
@@ -2285,18 +2269,36 @@ class CheckoutService:
         if not is_custom_price(price):
             return
 
-        if price.minimum_amount is not None and amount < price.minimum_amount:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "greater_than_equal",
-                        "loc": loc,
-                        "msg": "Amount is below minimum.",
-                        "input": amount,
-                        "ctx": {"ge": price.minimum_amount},
-                    }
-                ]
-            )
+        if price.minimum_amount == 0:
+            # Free is allowed: accept $0 or any amount >= MINIMUM_PRICE_AMOUNT
+            if amount == 0:
+                return
+
+            if 0 < amount < MINIMUM_PRICE_AMOUNT:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "invalid_amount",
+                            "loc": loc,
+                            "msg": "Amount must be $0 or at least $0.50.",
+                            "input": amount,
+                            "ctx": {"allowed": [0], "ge": MINIMUM_PRICE_AMOUNT},
+                        }
+                    ]
+                )
+        else:
+            if amount < price.minimum_amount:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "greater_than_equal",
+                            "loc": loc,
+                            "msg": "Amount is below minimum.",
+                            "input": amount,
+                            "ctx": {"ge": price.minimum_amount},
+                        }
+                    ]
+                )
 
         if price.maximum_amount is not None and amount > price.maximum_amount:
             raise PolarRequestValidationError(

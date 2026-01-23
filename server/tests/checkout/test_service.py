@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import ANY, AsyncMock, MagicMock
@@ -30,7 +31,7 @@ from polar.checkout.service import (
     TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.config import Environment, settings
+from polar.config import Environment
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -51,6 +52,7 @@ from polar.models import (
     Customer,
     Discount,
     DiscountRedemption,
+    Meter,
     Organization,
     Payment,
     Product,
@@ -299,18 +301,6 @@ async def product_custom_price_preset(
         organization=organization,
         recurring_interval=None,
         prices=[(MINIMUM_AMOUNT, None, PRESET_AMOUNT, "usd")],
-    )
-
-
-@pytest_asyncio.fixture
-async def product_custom_price_no_amounts(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[(None, None, None, "usd")],
     )
 
 
@@ -805,6 +795,41 @@ class TestCreate:
         assert checkout.products == [product_recurring_fixed_and_metered]
         assert checkout.amount == static_price.price_amount
         assert checkout.currency == static_price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_custom_price_with_metered_requires_payment_setup(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        # Custom price with minimum_amount=0 + metered price should require payment setup
+        # even when the checkout amount is $0
+        product_custom_and_metered = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                (0, None, 0, "usd"),  # Custom price: min=0, max=None, preset=0
+                (meter, Decimal(100), None, "usd"),  # Metered price
+            ],
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_custom_and_metered.id]),
+            auth_subject,
+        )
+
+        assert checkout.amount == 0
+        assert checkout.has_metered_prices is True
+        assert checkout.is_payment_setup_required is True
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1592,7 +1617,6 @@ class TestCreate:
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
-            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
         ],
         indirect=["product_parametrization_helper"],
     )
@@ -2171,7 +2195,6 @@ class TestClientCreate:
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
-            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
         ],
         indirect=["product_parametrization_helper"],
     )
@@ -2378,7 +2401,6 @@ class TestCheckoutLinkCreate:
         [
             ("product_custom_price_minimum", MINIMUM_AMOUNT),
             ("product_custom_price_preset", PRESET_AMOUNT),
-            ("product_custom_price_no_amounts", settings.CUSTOM_PRICE_PRESET_FALLBACK),
         ],
         indirect=["product_parametrization_helper"],
     )
@@ -2593,13 +2615,15 @@ class TestUpdate:
                 CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
 
-    @pytest.mark.parametrize("amount", [10, 20_000_000_000])
-    async def test_amount_update_max_limits(
+    @pytest.mark.parametrize("amount", [10, 25, 49])
+    async def test_amount_update_stripe_gap(
         self,
         amount: int,
         session: AsyncSession,
         checkout_one_time_custom: Checkout,
     ) -> None:
+        # Amounts 1-49 are in the "Stripe gap" - too low for Stripe but not free
+        # Validated at the schema level, raising pydantic ValidationError
         with pytest.raises(ValidationError):
             await checkout_service.update(
                 session,

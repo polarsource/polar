@@ -328,7 +328,14 @@ class Checkout(
     def is_payment_setup_required(self) -> bool:
         if self.product is None:
             return False
-        return self.product.is_recurring and not self.is_free_product_price
+
+        if self.is_free_product_price:
+            return False
+
+        if self.amount == 0 and not self.has_metered_prices:
+            return False
+
+        return self.product.is_recurring
 
     @property
     def should_save_payment_method(self) -> bool:

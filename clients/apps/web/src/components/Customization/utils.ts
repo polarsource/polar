@@ -136,7 +136,7 @@ export const createCheckoutPreview = (
 
   const amount =
     price.amount_type === 'custom'
-      ? (price.minimum_amount ?? 0)
+      ? price.minimum_amount
       : price.amount_type === 'fixed'
         ? price.price_amount
         : 0

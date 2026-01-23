@@ -88,9 +88,6 @@ class Scope(StrEnum):
     license_keys_read = "license_keys:read"
     license_keys_write = "license_keys:write"
 
-    repositories_read = "repositories:read"
-    repositories_write = "repositories:write"
-
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 

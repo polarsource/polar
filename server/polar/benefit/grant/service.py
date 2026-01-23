@@ -138,6 +138,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         *,
         is_granted: bool | None = None,
         customer_id: Sequence[UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         pagination: PaginationParams,
         sorting: builtins.list[Sorting[BenefitGrantSortProperty]] = [
             (BenefitGrantSortProperty.created_at, True)
@@ -147,6 +148,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         statement = (
             select(BenefitGrant)
             .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .join(Customer, BenefitGrant.customer_id == Customer.id)
             .where(
                 Benefit.organization_id == organization_id,
                 BenefitGrant.deleted_at.is_(None),
@@ -162,6 +164,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if customer_id is not None:
             statement = statement.where(BenefitGrant.customer_id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(Customer.external_id.in_(external_customer_id))
 
         statement = repository.apply_sorting(statement, sorting)
 

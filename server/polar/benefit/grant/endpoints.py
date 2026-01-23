@@ -1,6 +1,6 @@
 from fastapi import Depends, Query
 
-from polar.customer.schemas.customer import CustomerID
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
@@ -30,6 +30,11 @@ async def list(
     ),
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
     ),
     is_granted: bool | None = Query(
         None,
@@ -62,6 +67,7 @@ async def list(
         org_id,
         is_granted=is_granted,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         pagination=pagination,
         sorting=sorting,
     )

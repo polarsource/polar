@@ -14,7 +14,7 @@ import {
 } from '@/utils/datatable'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
-import { schemas } from '@polar-sh/client'
+import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -34,8 +34,12 @@ interface DeliveriesTableProps {
   sorting: DataTableSortingState
   dateRange?: DateRange
   succeeded?: boolean
-  httpCodeClass?: '2xx' | '3xx' | '4xx' | '5xx'
-  eventTypes?: string[]
+  httpCodeClass?: NonNullable<
+    operations['webhooks:list_webhook_deliveries']['parameters']['query']
+  >['http_code_class']
+  eventTypes?: NonNullable<
+    operations['webhooks:list_webhook_deliveries']['parameters']['query']
+  >['event_type']
   query?: string
 }
 
@@ -101,10 +105,12 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   }
 
   const deliveriesHook = useListWebhooksDeliveries({
-    webhookEndpointId: endpoint.id,
+    endpoint_id: endpoint.id,
     ...getAPIParams(pagination, sorting),
-    ...(dateRange?.from ? { start_timestamp: dateRange.from } : {}),
-    ...(dateRange?.to ? { end_timestamp: dateRange.to } : {}),
+    ...(dateRange?.from
+      ? { start_timestamp: dateRange.from.toISOString() }
+      : {}),
+    ...(dateRange?.to ? { end_timestamp: dateRange.to.toISOString() } : {}),
     ...(succeeded !== undefined ? { succeeded } : {}),
     ...(httpCodeClass ? { http_code_class: httpCodeClass } : {}),
     ...(eventTypes && eventTypes.length > 0 ? { event_type: eventTypes } : {}),

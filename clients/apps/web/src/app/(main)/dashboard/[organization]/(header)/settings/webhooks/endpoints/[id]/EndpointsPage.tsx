@@ -19,7 +19,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
+import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
@@ -210,10 +210,16 @@ export default function ClientPage({
           succeeded={succeeded !== 'all' ? succeeded === 'true' : undefined}
           httpCodeClass={
             httpCodeClass !== 'all'
-              ? (httpCodeClass as '2xx' | '3xx' | '4xx' | '5xx')
+              ? (httpCodeClass as NonNullable<
+                  operations['webhooks:list_webhook_deliveries']['parameters']['query']
+                >['http_code_class'])
               : undefined
           }
-          eventTypes={eventTypes.length > 0 ? eventTypes : undefined}
+          eventTypes={
+            (eventTypes.length > 0 ? eventTypes : undefined) as NonNullable<
+              operations['webhooks:list_webhook_deliveries']['parameters']['query']
+            >['event_type']
+          }
           query={query || undefined}
         />
       </div>

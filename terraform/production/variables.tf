@@ -307,3 +307,10 @@ variable "numeral_api_key_production" {
   type        = string
   sensitive   = true
 }
+
+# Tinybird
+variable "tinybird_api_token" {
+  description = "Tinybird API Token"
+  type        = string
+  sensitive   = true
+}

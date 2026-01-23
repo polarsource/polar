@@ -174,6 +174,18 @@ resource "render_env_group" "prometheus" {
   }
 }
 
+resource "render_env_group" "tinybird" {
+  count          = var.tinybird_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "tinybird-${var.environment}"
+  env_vars = {
+    POLAR_TINYBIRD_API_URL      = { value = var.tinybird_config.api_url }
+    POLAR_TINYBIRD_API_TOKEN    = { value = var.tinybird_config.api_token }
+    POLAR_TINYBIRD_EVENTS_WRITE = { value = var.tinybird_config.events_write }
+    POLAR_TINYBIRD_EVENTS_READ  = { value = var.tinybird_config.events_read }
+  }
+}
+
 # Services
 
 
@@ -356,5 +368,11 @@ resource "render_env_group_link" "apple" {
 resource "render_env_group_link" "prometheus" {
   count        = var.prometheus_config != null ? 1 : 0
   env_group_id = render_env_group.prometheus[0].id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "tinybird" {
+  count        = var.tinybird_config != null ? 1 : 0
+  env_group_id = render_env_group.tinybird[0].id
   service_ids  = local.all_service_ids
 }

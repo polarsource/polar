@@ -235,3 +235,11 @@ resource "tfe_variable" "numeral_api_key_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "tinybird_api_token_sandbox" {
+  key             = "tinybird_api_token"
+  category        = "terraform"
+  description     = "Tinybird API Token for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

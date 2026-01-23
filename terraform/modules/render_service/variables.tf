@@ -231,3 +231,15 @@ variable "prometheus_config" {
   })
   sensitive = true
 }
+
+variable "tinybird_config" {
+  description = "Tinybird configuration (optional)"
+  type = object({
+    api_url      = string
+    api_token    = string
+    events_write = bool
+    events_read  = bool
+  })
+  default   = null
+  sensitive = true
+}

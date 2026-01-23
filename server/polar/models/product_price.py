@@ -249,9 +249,7 @@ class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
-    minimum_amount: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
-    )
+    minimum_amount: Mapped[int] = mapped_column(Integer, nullable=True, default=None)
     maximum_amount: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=None
     )

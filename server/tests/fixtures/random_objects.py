@@ -359,7 +359,7 @@ async def create_custom_field(
 
 type PriceFixtureType = (
     tuple[int, str]
-    | tuple[int | None, int | None, int | None, str]
+    | tuple[int, int | None, int | None, str]
     | tuple[None]
     | tuple[Meter, Decimal, int | None, str]
     | tuple[Literal["seat"], int, str]
@@ -458,7 +458,6 @@ async def create_product(
                 preset_amount,
                 currency,
             ) = price
-            assert minimum_amount is not None
             product_price = await create_product_price_custom(
                 save_fixture,
                 product=product,

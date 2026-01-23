@@ -1,50 +1,21 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useListWebhooksDeliveries = (variables: {
-  webhookEndpointId: string
-  limit: number
-  page: number
-  start_timestamp?: Date
-  end_timestamp?: Date
-  succeeded?: boolean
-  query?: string
-  http_code_class?: '2xx' | '3xx' | '4xx' | '5xx'
-  event_type?: string[]
-}) =>
+export const useListWebhooksDeliveries = (
+  parameters: NonNullable<
+    operations['webhooks:list_webhook_deliveries']['parameters']['query']
+  >,
+) =>
   useQuery({
-    queryKey: ['webhookDeliveries', 'list', { ...variables }],
+    queryKey: ['webhookDeliveries', 'list', { parameters }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/webhooks/deliveries', {
           params: {
-            query: {
-              endpoint_id: variables.webhookEndpointId,
-              limit: variables.limit,
-              page: variables.page,
-              ...(variables.start_timestamp && {
-                start_timestamp: variables.start_timestamp.toISOString(),
-              }),
-              ...(variables.end_timestamp && {
-                end_timestamp: variables.end_timestamp.toISOString(),
-              }),
-              ...(variables.succeeded !== undefined && {
-                succeeded: variables.succeeded,
-              }),
-              ...(variables.query && {
-                query: variables.query,
-              }),
-              ...(variables.http_code_class && {
-                http_code_class: variables.http_code_class,
-              }),
-              ...(variables.event_type &&
-                variables.event_type.length > 0 && {
-                  event_type: variables.event_type,
-                }),
-            },
+            query: parameters,
           },
         }),
       ),

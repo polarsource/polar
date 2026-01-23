@@ -62,215 +62,349 @@ async def _compute_dispute_fees_by_order(session: AsyncSession) -> dict[str, int
     return {str(row[0]): row[1] for row in fees_result.fetchall()}
 
 
-async def fix_balance_order_timestamps(session: AsyncSession) -> int:
+async def fix_balance_order_timestamps(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Fix balance.order event timestamps to match order.created_at."""
     typer.echo("\n=== Fixing balance.order timestamps ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET timestamp = o.created_at
-            FROM orders o
-            WHERE (e.user_metadata->>'order_id')::uuid = o.id
-              AND e.source = 'system'
-              AND e.name = 'balance.order'
-              AND e.timestamp != o.created_at
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET timestamp = o.created_at
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.order'
+                      AND e2.timestamp != o2.created_at
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Fixed {count} timestamps")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(f"  Fixed {count} timestamps (total: {total_fixed})...")
+
+    typer.echo(f"Fixed {total_fixed} timestamps")
+    return total_fixed
 
 
-async def fix_balance_order_fees(session: AsyncSession) -> int:
+async def fix_balance_order_fees(session: AsyncSession, batch_size: int = 1000) -> int:
     """Fix balance.order event fees to match order.platform_fee_amount."""
     typer.echo("\n=== Fixing balance.order fees ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{fee}',
-                to_jsonb(o.platform_fee_amount)
-            )
-            FROM orders o
-            WHERE (e.user_metadata->>'order_id')::uuid = o.id
-              AND e.source = 'system'
-              AND e.name = 'balance.order'
-              AND o.platform_fee_amount != COALESCE((e.user_metadata->>'fee')::numeric::int, 0)
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{fee}',
+                    to_jsonb(o.platform_fee_amount)
+                )
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.order'
+                      AND o2.platform_fee_amount != COALESCE((e2.user_metadata->>'fee')::numeric::int, 0)
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Fixed {count} fees")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(f"  Fixed {count} fees (total: {total_fixed})...")
+
+    typer.echo(f"Fixed {total_fixed} fees")
+    return total_fixed
 
 
-async def fix_refund_subscription_id(session: AsyncSession) -> int:
+async def fix_refund_subscription_id(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Add subscription_id to balance.refund events missing it."""
     typer.echo("\n=== Adding subscription_id to refund events ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{subscription_id}',
-                to_jsonb(o.subscription_id::text)
-            )
-            FROM orders o
-            WHERE (e.user_metadata->>'order_id')::uuid = o.id
-              AND e.source = 'system'
-              AND e.name = 'balance.refund'
-              AND NOT e.user_metadata ? 'subscription_id'
-              AND o.subscription_id IS NOT NULL
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{subscription_id}',
+                    to_jsonb(o.subscription_id::text)
+                )
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.refund'
+                      AND NOT e2.user_metadata ? 'subscription_id'
+                      AND o2.subscription_id IS NOT NULL
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Added subscription_id to {count} events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(
+            f"  Added subscription_id to {count} events (total: {total_fixed})..."
+        )
+
+    typer.echo(f"Added subscription_id to {total_fixed} events")
+    return total_fixed
 
 
-async def fix_refund_order_created_at(session: AsyncSession) -> int:
+async def fix_refund_order_created_at(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Add order_created_at to balance.refund events missing it."""
     typer.echo("\n=== Adding order_created_at to refund events ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{order_created_at}',
-                to_jsonb(o.created_at)
-            )
-            FROM orders o
-            WHERE (e.user_metadata->>'order_id')::uuid = o.id
-              AND e.source = 'system'
-              AND e.name = 'balance.refund'
-              AND NOT e.user_metadata ? 'order_created_at'
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{order_created_at}',
+                    to_jsonb(o.created_at)
+                )
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.refund'
+                      AND NOT e2.user_metadata ? 'order_created_at'
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Added order_created_at to {count} refund events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(
+            f"  Added order_created_at to {count} events (total: {total_fixed})..."
+        )
+
+    typer.echo(f"Added order_created_at to {total_fixed} refund events")
+    return total_fixed
 
 
-async def fix_dispute_order_created_at(session: AsyncSession) -> int:
+async def fix_dispute_order_created_at(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Add order_created_at to balance.dispute events missing it."""
     typer.echo("\n=== Adding order_created_at to dispute events ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{order_created_at}',
-                to_jsonb(o.created_at)
-            )
-            FROM orders o, disputes d
-            WHERE d.id = (e.user_metadata->>'dispute_id')::uuid
-              AND o.id = d.order_id
-              AND e.source = 'system'
-              AND e.name = 'balance.dispute'
-              AND NOT e.user_metadata ? 'order_created_at'
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{order_created_at}',
+                    to_jsonb(o.created_at)
+                )
+                FROM orders o, disputes d
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN disputes d2 ON d2.id = (e2.user_metadata->>'dispute_id')::uuid
+                    JOIN orders o2 ON o2.id = d2.order_id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.dispute'
+                      AND NOT e2.user_metadata ? 'order_created_at'
+                    LIMIT :batch_size
+                )
+                AND d.id = (e.user_metadata->>'dispute_id')::uuid
+                AND o.id = d.order_id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Added order_created_at to {count} dispute events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(
+            f"  Added order_created_at to {count} events (total: {total_fixed})..."
+        )
+
+    typer.echo(f"Added order_created_at to {total_fixed} dispute events")
+    return total_fixed
 
 
-async def fix_dispute_reversal_order_created_at(session: AsyncSession) -> int:
+async def fix_dispute_reversal_order_created_at(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Add order_created_at to balance.dispute_reversal events missing it."""
     typer.echo("\n=== Adding order_created_at to dispute_reversal events ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{order_created_at}',
-                to_jsonb(o.created_at)
-            )
-            FROM orders o, disputes d
-            WHERE d.id = (e.user_metadata->>'dispute_id')::uuid
-              AND o.id = d.order_id
-              AND e.source = 'system'
-              AND e.name = 'balance.dispute_reversal'
-              AND NOT e.user_metadata ? 'order_created_at'
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{order_created_at}',
+                    to_jsonb(o.created_at)
+                )
+                FROM orders o, disputes d
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN disputes d2 ON d2.id = (e2.user_metadata->>'dispute_id')::uuid
+                    JOIN orders o2 ON o2.id = d2.order_id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.dispute_reversal'
+                      AND NOT e2.user_metadata ? 'order_created_at'
+                    LIMIT :batch_size
+                )
+                AND d.id = (e.user_metadata->>'dispute_id')::uuid
+                AND o.id = d.order_id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Added order_created_at to {count} dispute_reversal events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(
+            f"  Added order_created_at to {count} events (total: {total_fixed})..."
+        )
+
+    typer.echo(f"Added order_created_at to {total_fixed} dispute_reversal events")
+    return total_fixed
 
 
-async def fix_refund_reversal_order_created_at(session: AsyncSession) -> int:
+async def fix_refund_reversal_order_created_at(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Add order_created_at to balance.refund_reversal events missing it."""
     typer.echo("\n=== Adding order_created_at to refund_reversal events ===")
 
-    result = await session.execute(
-        text("""
-            UPDATE events e
-            SET user_metadata = jsonb_set(
-                e.user_metadata,
-                '{order_created_at}',
-                to_jsonb(o.created_at)
-            )
-            FROM orders o, refunds r
-            WHERE r.id = (e.user_metadata->>'refund_id')::uuid
-              AND o.id = r.order_id
-              AND e.source = 'system'
-              AND e.name = 'balance.refund_reversal'
-              AND NOT e.user_metadata ? 'order_created_at'
-        """)
-    )
-    await session.commit()
+    total_fixed = 0
+    while True:
+        result = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{order_created_at}',
+                    to_jsonb(o.created_at)
+                )
+                FROM orders o, refunds r
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN refunds r2 ON r2.id = (e2.user_metadata->>'refund_id')::uuid
+                    JOIN orders o2 ON o2.id = r2.order_id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.refund_reversal'
+                      AND NOT e2.user_metadata ? 'order_created_at'
+                    LIMIT :batch_size
+                )
+                AND r.id = (e.user_metadata->>'refund_id')::uuid
+                AND o.id = r.order_id
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Added order_created_at to {count} refund_reversal events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_fixed += count
+        typer.echo(
+            f"  Added order_created_at to {count} events (total: {total_fixed})..."
+        )
+
+    typer.echo(f"Added order_created_at to {total_fixed} refund_reversal events")
+    return total_fixed
 
 
-async def delete_duplicate_balance_order_events(session: AsyncSession) -> int:
+async def delete_duplicate_balance_order_events(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
     """Delete duplicate balance.order events, keeping only the oldest per order."""
     typer.echo("\n=== Deleting duplicate balance.order events ===")
 
-    result = await session.execute(
-        text("""
-            DELETE FROM events WHERE id IN (
-                SELECT id FROM (
-                    SELECT
-                        id,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY user_metadata->>'order_id'
-                            ORDER BY ingested_at ASC
-                        ) as rn
-                    FROM events
-                    WHERE source = 'system'
-                      AND name = 'balance.order'
-                ) ranked
-                WHERE rn > 1
-            )
-        """)
-    )
-    await session.commit()
+    total_deleted = 0
+    while True:
+        result = await session.execute(
+            text("""
+                DELETE FROM events WHERE id IN (
+                    SELECT id FROM (
+                        SELECT
+                            id,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY user_metadata->>'order_id'
+                                ORDER BY ingested_at ASC
+                            ) as rn
+                        FROM events
+                        WHERE source = 'system'
+                          AND name = 'balance.order'
+                    ) ranked
+                    WHERE rn > 1
+                    LIMIT :batch_size
+                )
+            """),
+            {"batch_size": batch_size},
+        )
+        await session.commit()
 
-    count = cast(CursorResult[Any], result).rowcount
-    typer.echo(f"Deleted {count} duplicate events")
-    return count
+        count = cast(CursorResult[Any], result).rowcount
+        if count == 0:
+            break
+        total_deleted += count
+        typer.echo(f"  Deleted {count} duplicates (total: {total_deleted})...")
+
+    typer.echo(f"Deleted {total_deleted} duplicate events")
+    return total_deleted
 
 
 async def create_missing_balance_order_events(
@@ -1067,25 +1201,27 @@ async def run_backfill(
 
     try:
         results["duplicates_deleted"] = await delete_duplicate_balance_order_events(
-            session
+            session, batch_size
         )
-        results["timestamps_fixed"] = await fix_balance_order_timestamps(session)
-        results["fees_fixed"] = await fix_balance_order_fees(session)
+        results["timestamps_fixed"] = await fix_balance_order_timestamps(
+            session, batch_size
+        )
+        results["fees_fixed"] = await fix_balance_order_fees(session, batch_size)
         results["refund_subscription_id_added"] = await fix_refund_subscription_id(
-            session
+            session, batch_size
         )
         results["refund_order_created_at_added"] = await fix_refund_order_created_at(
-            session
+            session, batch_size
         )
         results["dispute_order_created_at_added"] = await fix_dispute_order_created_at(
-            session
+            session, batch_size
         )
         results[
             "dispute_reversal_order_created_at_added"
-        ] = await fix_dispute_reversal_order_created_at(session)
+        ] = await fix_dispute_reversal_order_created_at(session, batch_size)
         results[
             "refund_reversal_order_created_at_added"
-        ] = await fix_refund_reversal_order_created_at(session)
+        ] = await fix_refund_reversal_order_created_at(session, batch_size)
 
         results["balance_order_created"] = await create_missing_balance_order_events(
             session, batch_size, rate_limit_delay

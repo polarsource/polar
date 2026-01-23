@@ -67,5 +67,5 @@ SCHEMA >
     `user_metadata` String `json:$.user_metadata`
 
 ENGINE "MergeTree"
-ENGINE_PARTITION_KEY "toYYYYMM(ingested_at)"
-ENGINE_SORTING_KEY "organization_id, ingested_at, id"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "organization_id, timestamp, id"

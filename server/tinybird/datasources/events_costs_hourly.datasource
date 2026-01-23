@@ -1,0 +1,10 @@
+SCHEMA >
+    `organization_id` UUID,
+    `hour` DateTime,
+    `total_cost` AggregateFunction(sum, Float64),
+    `unique_customers` AggregateFunction(uniq, Nullable(UUID)),
+    `unique_external_customers` AggregateFunction(uniq, Nullable(String))
+
+ENGINE "AggregatingMergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(hour)"
+ENGINE_SORTING_KEY "organization_id, hour"

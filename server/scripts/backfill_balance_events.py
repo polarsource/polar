@@ -367,42 +367,31 @@ async def fix_refund_reversal_order_created_at(
     return total_fixed
 
 
-async def delete_duplicate_balance_order_events(
-    session: AsyncSession, batch_size: int = 1000
-) -> int:
+async def delete_duplicate_balance_order_events(session: AsyncSession) -> int:
     """Delete duplicate balance.order events, keeping only the oldest per order."""
     typer.echo("\n=== Deleting duplicate balance.order events ===")
 
-    total_deleted = 0
-    while True:
-        result = await session.execute(
-            text("""
-                DELETE FROM events WHERE id IN (
-                    SELECT id FROM (
-                        SELECT
-                            id,
-                            ROW_NUMBER() OVER (
-                                PARTITION BY user_metadata->>'order_id'
-                                ORDER BY ingested_at ASC
-                            ) as rn
-                        FROM events
-                        WHERE source = 'system'
-                          AND name = 'balance.order'
-                    ) ranked
-                    WHERE rn > 1
-                    LIMIT :batch_size
-                )
-            """),
-            {"batch_size": batch_size},
-        )
-        await session.commit()
+    result = await session.execute(
+        text("""
+            DELETE FROM events WHERE id IN (
+                SELECT id FROM (
+                    SELECT
+                        id,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY user_metadata->>'order_id'
+                            ORDER BY ingested_at ASC
+                        ) as rn
+                    FROM events
+                    WHERE source = 'system'
+                      AND name = 'balance.order'
+                ) ranked
+                WHERE rn > 1
+            )
+        """)
+    )
+    await session.commit()
 
-        count = cast(CursorResult[Any], result).rowcount
-        if count == 0:
-            break
-        total_deleted += count
-        typer.echo(f"  Deleted {count} duplicates (total: {total_deleted})...")
-
+    total_deleted = cast(CursorResult[Any], result).rowcount
     typer.echo(f"Deleted {total_deleted} duplicate events")
     return total_deleted
 
@@ -1191,7 +1180,7 @@ async def run_backfill(
             debug=False,
             pool_size=settings.DATABASE_POOL_SIZE,
             pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-            command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+            command_timeout=300,  # 5 minutes for long-running backfill queries
         )
         sessionmaker = create_async_sessionmaker(engine)
         session = sessionmaker()
@@ -1201,7 +1190,7 @@ async def run_backfill(
 
     try:
         results["duplicates_deleted"] = await delete_duplicate_balance_order_events(
-            session, batch_size
+            session
         )
         results["timestamps_fixed"] = await fix_balance_order_timestamps(
             session, batch_size

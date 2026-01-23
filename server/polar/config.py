@@ -225,9 +225,6 @@ class Settings(BaseSettings):
     # Numeral
     NUMERAL_API_KEY: str | None = None
 
-    # Open Collective
-    OPEN_COLLECTIVE_PERSONAL_TOKEN: str | None = None
-
     # Sentry
     SENTRY_DSN: str | None = None
 

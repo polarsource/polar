@@ -91,9 +91,6 @@ class Scope(StrEnum):
     repositories_read = "repositories:read"
     repositories_write = "repositories:write"
 
-    issues_read = "issues:read"
-    issues_write = "issues:write"
-
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 

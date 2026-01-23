@@ -148,7 +148,6 @@ class Account(Schema):
     account_type: AccountType
     status: AccountModel.Status
     stripe_id: str | None
-    open_collective_slug: str | None
     is_details_submitted: bool
     is_charges_enabled: bool
     is_payouts_enabled: bool

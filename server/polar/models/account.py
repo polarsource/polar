@@ -53,7 +53,7 @@ class Account(RecordModel):
         String(100), nullable=True, default=None
     )
     open_collective_slug: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
+        String(255), nullable=True, default=None, deferred=True
     )
 
     email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)

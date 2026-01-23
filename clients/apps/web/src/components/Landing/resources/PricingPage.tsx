@@ -162,10 +162,9 @@ export const PricingPage = () => {
       <ResourceSection id="payout-fees" title="Payout Fees">
         <div className="flex flex-col gap-4">
           <p>
-            While payouts may incur fees charged by the payout providers (such
-            as Stripe), Polar does not add any extra fees or markup. These are
-            strictly the provider&apos;s fees, and Polar does not profit from
-            them.
+            While payouts may incur fees charged by our payout providers
+            (Stripe), Polar does not add any extra fees or markup. These are
+            strictly Stripe&apos;s fees, and Polar does not profit from them.
           </p>
           <p>
             In addition, Polar offers manual withdrawals for developers. Keeping
@@ -192,11 +191,6 @@ export const PricingPage = () => {
                 </h4>
                 <p>0.25% (EU) - 1% in other countries</p>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg">Open Collective</h3>
-              <p className="text-sm">10% on amount transferred</p>
             </div>
           </div>
         </div>

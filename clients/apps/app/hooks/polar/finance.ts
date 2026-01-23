@@ -18,7 +18,6 @@ export enum AccountStatus {
 
 export enum AccountType {
   STRIPE = 'stripe',
-  OPEN_COLLECTIVE = 'open_collective',
 }
 
 export interface User {

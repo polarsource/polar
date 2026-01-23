@@ -55,7 +55,7 @@ class TestCreatePaymentFees:
         self, session: AsyncSession, save_fixture: SaveFixture
     ) -> None:
         payment_transaction = await create_payment_transaction(
-            save_fixture, processor=Processor.open_collective
+            save_fixture, processor=Processor.manual
         )
 
         fee_transactions = await processor_fee_transaction_service.create_payment_fees(
@@ -150,7 +150,7 @@ class TestCreateRefundFees:
         payment = await create_payment(save_fixture, customer.organization, order=order)
         refund = await create_refund(save_fixture, order, payment)
         refund_transaction = await create_refund_transaction(
-            save_fixture, processor=Processor.open_collective
+            save_fixture, processor=Processor.manual
         )
 
         # then

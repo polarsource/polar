@@ -21,12 +21,10 @@ class TaxProcessor(StrEnum):
 class AccountType(StrEnum):
     stripe = "stripe"
     manual = "manual"
-    open_collective = "open_collective"
 
     def get_display_name(self) -> str:
         return {
             AccountType.stripe: "Stripe Connect Express",
-            AccountType.open_collective: "Open Collective",
             AccountType.manual: "Manual",
         }[self]
 

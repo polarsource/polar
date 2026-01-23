@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import structlog
-from githubkit.exception import GitHubException
+from githubkit.exception import GitHubException, RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.oauth2 import OAuth2Token, RefreshTokenError
 from sqlalchemy.exc import IntegrityError
@@ -181,11 +181,21 @@ class GitHubRepositoryBenefitUserService:
             return r.parsed_data.installations
 
         installations: list[types.Installation] = []
-        async for install in client.paginate(
-            client.rest.apps.async_list_installations_for_authenticated_user,
-            map_func=map_installations_func,
-        ):
-            installations.append(install)
+        try:
+            async for install in client.paginate(
+                client.rest.apps.async_list_installations_for_authenticated_user,
+                map_func=map_installations_func,
+            ):
+                installations.append(install)
+        except RequestFailed as e:
+            if e.response.status_code == 401:
+                log.warning(
+                    "github.list_user_installations.unauthorized",
+                    oauth_account_id=oauth.id,
+                    user_id=oauth.user_id,
+                )
+                raise GitHubRepositoryRefreshTokenError() from e
+            raise
 
         return installations
 
@@ -292,17 +302,28 @@ class GitHubRepositoryBenefitUserService:
             if not isinstance(install.account, SimpleUser):
                 continue
 
-            async for repo in client.paginate(
-                client.rest.apps.async_list_installation_repos_for_authenticated_user,
-                map_func=map_repos_func,
-                installation_id=install.id,
-            ):
-                res.append(
-                    GitHubInvitesBenefitRepository(
-                        repository_owner=install.account.login,
-                        repository_name=repo.name,
+            try:
+                async for repo in client.paginate(
+                    client.rest.apps.async_list_installation_repos_for_authenticated_user,
+                    map_func=map_repos_func,
+                    installation_id=install.id,
+                ):
+                    res.append(
+                        GitHubInvitesBenefitRepository(
+                            repository_owner=install.account.login,
+                            repository_name=repo.name,
+                        )
                     )
-                )
+            except RequestFailed as e:
+                if e.response.status_code == 401:
+                    log.warning(
+                        "github.list_installation_repos.unauthorized",
+                        oauth_account_id=oauth.id,
+                        user_id=oauth.user_id,
+                        installation_id=install.id,
+                    )
+                    raise GitHubRepositoryRefreshTokenError() from e
+                raise
 
         return res
 

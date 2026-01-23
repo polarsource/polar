@@ -271,6 +271,12 @@ module "production" {
     interval = var.prometheus_remote_write_interval
   }
 
+  tinybird_config = {
+    api_url      = "https://api.us-east.aws.tinybird.co"
+    api_token    = var.tinybird_api_token
+    events_write = false
+    events_read  = false
+  }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
 }

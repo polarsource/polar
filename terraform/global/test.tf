@@ -251,3 +251,11 @@ resource "tfe_variable" "numeral_api_key_test" {
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "tinybird_api_token_test" {
+  key             = "tinybird_api_token"
+  category        = "terraform"
+  description     = "Tinybird API Token for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

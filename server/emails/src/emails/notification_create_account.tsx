@@ -20,8 +20,8 @@ export function NotificationCreateAccount({
         create a payout account in order to receive your funds.
       </IntroWithHi>
       <BodyText>
-        We support Stripe and Open Collective. This operation only takes a few
-        minutes and allows you to receive your money immediately.
+        This operation only takes a few minutes and allows you to receive your
+        money immediately.
       </BodyText>
       <Button href={url}>Create my payout account</Button>
       <Text>

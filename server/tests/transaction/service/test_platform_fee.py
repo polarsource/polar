@@ -580,7 +580,7 @@ class TestCreatePayoutFeesBalances:
             save_fixture,
             organization=organization,
             user=user,
-            account_type=AccountType.open_collective,
+            account_type=AccountType.manual,
         )
 
         # then

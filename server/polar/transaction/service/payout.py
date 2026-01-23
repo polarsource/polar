@@ -46,8 +46,6 @@ class PayoutTransactionService(BaseTransactionService):
 
         if account.account_type == AccountType.stripe:
             transaction.processor = Processor.stripe
-        elif account.account_type == AccountType.open_collective:
-            transaction.processor = Processor.open_collective
         elif account.account_type == AccountType.manual:
             transaction.processor = Processor.manual
 

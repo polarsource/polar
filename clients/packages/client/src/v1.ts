@@ -5007,8 +5007,6 @@ export interface components {
       status: components['schemas']['Status']
       /** Stripe Id */
       stripe_id: string | null
-      /** Open Collective Slug */
-      open_collective_slug: string | null
       /** Is Details Submitted */
       is_details_submitted: boolean
       /** Is Charges Enabled */
@@ -5078,7 +5076,7 @@ export interface components {
      * AccountType
      * @enum {string}
      */
-    AccountType: 'stripe' | 'manual' | 'open_collective'
+    AccountType: 'stripe' | 'manual'
     /** AccountUpdate */
     AccountUpdate: {
       /**
@@ -21233,7 +21231,7 @@ export interface components {
      * @description Supported payment or payout processors, i.e rails for transactions.
      * @enum {string}
      */
-    Processor: 'stripe' | 'manual' | 'open_collective'
+    Processor: 'stripe' | 'manual'
     /**
      * Product
      * @description A product.
@@ -39440,7 +39438,7 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
 ]
 export const accountTypeValues: ReadonlyArray<
   components['schemas']['AccountType']
-> = ['stripe', 'manual', 'open_collective']
+> = ['stripe', 'manual']
 export const addressCountryValues: ReadonlyArray<
   components['schemas']['Address']['country']
 > = [
@@ -41195,7 +41193,7 @@ export const presentmentCurrencyValues: ReadonlyArray<
 > = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
 export const processorValues: ReadonlyArray<
   components['schemas']['Processor']
-> = ['stripe', 'manual', 'open_collective']
+> = ['stripe', 'manual']
 export const productBillingTypeValues: ReadonlyArray<
   components['schemas']['ProductBillingType']
 > = ['one_time', 'recurring']

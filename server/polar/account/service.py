@@ -13,7 +13,6 @@ from polar.campaign.service import campaign as campaign_service
 from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
-from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
@@ -391,13 +390,6 @@ class AccountService:
             assert account.stripe_id is not None
             account_link = await stripe.create_login_link(account.stripe_id)
             return AccountLink(url=account_link.url)
-
-        elif account.account_type == AccountType.open_collective:
-            assert account.open_collective_slug is not None
-            dashboard_link = open_collective.create_dashboard_link(
-                account.open_collective_slug
-            )
-            return AccountLink(url=dashboard_link)
 
         return None
 

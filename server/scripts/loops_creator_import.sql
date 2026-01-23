@@ -8,7 +8,6 @@ WITH creator_signup_organizations AS (
 		organizations.created_at,
 		CASE WHEN organizations.donations_enabled THEN 1 ELSE 0 END AS organization_donation_enabled,
 		CASE WHEN accounts.account_type = 'stripe' THEN 1 ELSE 0 END AS organization_stripe_account,
-		CASE WHEN accounts.account_type = 'open_collective' THEN 1 ELSE 0 END AS organization_oc_account,
 		CASE WHEN organizations.profile_settings->'enabled' = 'true' THEN 1 ELSE 0 END AS storefront_enabled,
 		FIRST_VALUE (organizations.slug) OVER (PARTITION BY users.id ORDER BY organizations.created_at ASC) AS first_organization_slug
 	FROM users
@@ -28,7 +27,6 @@ WITH creator_signup_organizations AS (
 		first_organization_slug,
 		MAX(organization_donation_enabled) AS donations_enabled,
 		MAX(organization_stripe_account) AS stripe_account,
-		MAX(organization_oc_account) AS open_collective_account,
 		MAX(storefront_enabled) AS storefront_enabled,
 		COUNT(DISTINCT organization_id) AS organizations
 	FROM creator_signup_organizations
@@ -88,7 +86,6 @@ WITH creator_signup_organizations AS (
 
 		CASE
 			WHEN u.stripe_account > 0 THEN 'stripe'
-			WHEN u.open_collective_account > 0 THEN 'open_collective'
 			ELSE NULL
 		END AS "accountType",
 

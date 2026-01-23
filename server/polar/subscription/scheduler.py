@@ -1,5 +1,4 @@
 import datetime
-import uuid
 
 import dramatiq
 import structlog
@@ -15,12 +14,6 @@ from polar.models import Customer, Organization, Subscription
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
-
-
-def enqueue_subscription_cycle(subscription_id: uuid.UUID) -> None:
-    actor = dramatiq.get_broker().get_actor("subscription.cycle")
-    actor.send(subscription_id=subscription_id)
-    log.debug("Enqueued subscription cycle", subscription_id=subscription_id)
 
 
 class SubscriptionJobStore(BaseJobStore):
@@ -75,7 +68,8 @@ class SubscriptionJobStore(BaseJobStore):
         )
         with self.engine.begin() as connection:
             connection.execute(statement)
-        log.debug("Removed subscription scheduler job", subscription_id=subscription_id)
+        actor = dramatiq.get_broker().get_actor("subscription.cycle")
+        actor.send(subscription_id=subscription_id)
 
     def add_job(self, job: Job) -> None:
         raise RuntimeError("This job store does not support managing jobs directly.")
@@ -103,8 +97,8 @@ class SubscriptionJobStore(BaseJobStore):
                     **(self._scheduler._job_defaults if self._scheduler else {}),
                     "trigger": trigger,
                     "executor": self.executor,
-                    "func": enqueue_subscription_cycle,
-                    "args": (subscription_id,),
+                    "func": lambda: None,
+                    "args": (),
                     "kwargs": {},
                     "id": f"subscriptions:cycle:{subscription_id}",
                     "name": None,

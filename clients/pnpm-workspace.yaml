@@ -11,6 +11,7 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+  - openapi-typescript
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:

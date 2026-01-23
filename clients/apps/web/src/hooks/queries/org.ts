@@ -151,7 +151,7 @@ export const useOrganizationAccessTokens = (
   organization_id: string,
   params?: Omit<
     NonNullable<
-      operations['organization_access_token:list']['parameters']['query']
+      operations['organization_access_tokens:list']['parameters']['query']
     >,
     'organization_id'
   >,

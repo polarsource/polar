@@ -91,7 +91,7 @@ const AuthorizePage = ({
                 size="small"
               >
                 <h3 className="font-medium capitalize">
-                  {key === 'openid' ? 'OpenID' : key.replace('_', ' ')}
+                  {key === 'openid' ? 'OpenID' : key.replaceAll('_', ' ')}
                 </h3>
                 <ul>
                   {scopes.map((scope) => (

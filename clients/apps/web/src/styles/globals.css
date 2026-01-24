@@ -16,12 +16,18 @@
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: var(--font-geist-sans), sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  /* Fonts */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
 
   --text-xxs: 0.65rem;
 
-  /* Peach palette (primary brand color) */
+  /* Peach palette (primary) */
   --color-peach-50: oklch(0.97 0.02 40);
   --color-peach-100: oklch(0.94 0.04 40);
   --color-peach-200: oklch(0.88 0.08 40);
@@ -35,7 +41,7 @@
   --color-peach-950: oklch(0.28 0.04 40);
   --color-peach: var(--color-peach-600);
 
-  /* Blue fully aliased to peach (no blue rendering anywhere) */
+  /* Blue aliased to peach */
   --color-blue-50: var(--color-peach-50);
   --color-blue-100: var(--color-peach-100);
   --color-blue-200: var(--color-peach-200);
@@ -49,7 +55,7 @@
   --color-blue-950: var(--color-peach-950);
   --color-blue: var(--color-peach);
 
-  /* Status colors */
+  /* Greens */
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);
   --color-green-200: oklch(0.905 0.093 164.15);
@@ -62,6 +68,7 @@
   --color-green-900: oklch(0.378 0.077 168.94);
   --color-green-950: oklch(0.262 0.051 172.552);
 
+  /* Reds */
   --color-red-50: oklch(0.971 0.013 17.38);
   --color-red-100: oklch(0.936 0.032 17.717);
   --color-red-200: oklch(0.885 0.062 18.334);
@@ -74,7 +81,7 @@
   --color-red-900: oklch(0.396 0.141 25.723);
   --color-red-950: oklch(0.258 0.092 26.042);
 
-  /* Neutral grays */
+  /* Grays */
   --color-gray-50: oklch(0.985 0.002 247.839);
   --color-gray-100: oklch(0.967 0.003 264.542);
   --color-gray-200: oklch(0.928 0.006 264.531);
@@ -87,7 +94,7 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
-  /* Polar dark neutrals */
+  /* Polar */
   --color-polar-50: hsl(233, 5%, 85%);
   --color-polar-100: hsl(233, 5%, 79%);
   --color-polar-200: hsl(233, 5%, 68%);
@@ -100,7 +107,7 @@
   --color-polar-900: hsl(233, 5%, 6.5%);
   --color-polar-950: hsl(233, 5%, 3%);
 
-  /* shadcn mappings */
+  /* shadcn tokens */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -149,10 +156,20 @@
 }
 
 @layer base {
-  html { @apply text-gray-900; }
-  html.dark { @apply text-gray-200; }
+  html {
+    @apply text-gray-900 antialiased;
+    font-family: var(--font-sans);
+  }
 
-  *, ::before, ::after, ::backdrop, ::file-selector-button {
+  html.dark {
+    @apply text-gray-200;
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
     border-color: var(--border);
   }
 
@@ -168,7 +185,8 @@
   }
 }
 
-/* shadcn/ui tokens */
+/* shadcn/ui */
+
 @layer base {
   :root {
     --background: var(--color-gray-50);
@@ -266,4 +284,5 @@ pre.shiki {
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
 }
+
 

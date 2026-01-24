@@ -21,7 +21,7 @@
 
   --text-xxs: 0.65rem;
 
-  /* Claude's Peach Color Palette - replacing blue */
+  /* Peach palette (primary brand color) */
   --color-peach-50: oklch(0.97 0.02 40);
   --color-peach-100: oklch(0.94 0.04 40);
   --color-peach-200: oklch(0.88 0.08 40);
@@ -35,20 +35,21 @@
   --color-peach-950: oklch(0.28 0.04 40);
   --color-peach: var(--color-peach-600);
 
-  /* Keep blue as secondary if needed */
-  --color-blue-50: oklch(0.97 0.014 254.604);
-  --color-blue-100: oklch(0.932 0.032 255.585);
-  --color-blue-200: oklch(0.882 0.059 254.128);
-  --color-blue-300: oklch(0.809 0.105 251.813);
-  --color-blue-400: oklch(0.707 0.165 254.624);
-  --color-blue-500: oklch(0.623 0.214 259.815);
-  --color-blue-600: oklch(0.546 0.245 262.881);
-  --color-blue-700: oklch(0.488 0.243 264.376);
-  --color-blue-800: oklch(0.424 0.199 265.638);
-  --color-blue-900: oklch(0.379 0.146 265.522);
-  --color-blue-950: oklch(0.282 0.091 267.935);
-  --color-blue: var(--color-blue-600);
+  /* Blue fully aliased to peach (no blue rendering anywhere) */
+  --color-blue-50: var(--color-peach-50);
+  --color-blue-100: var(--color-peach-100);
+  --color-blue-200: var(--color-peach-200);
+  --color-blue-300: var(--color-peach-300);
+  --color-blue-400: var(--color-peach-400);
+  --color-blue-500: var(--color-peach-500);
+  --color-blue-600: var(--color-peach-600);
+  --color-blue-700: var(--color-peach-700);
+  --color-blue-800: var(--color-peach-800);
+  --color-blue-900: var(--color-peach-900);
+  --color-blue-950: var(--color-peach-950);
+  --color-blue: var(--color-peach);
 
+  /* Status colors */
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);
   --color-green-200: oklch(0.905 0.093 164.15);
@@ -73,6 +74,7 @@
   --color-red-900: oklch(0.396 0.141 25.723);
   --color-red-950: oklch(0.258 0.092 26.042);
 
+  /* Neutral grays */
   --color-gray-50: oklch(0.985 0.002 247.839);
   --color-gray-100: oklch(0.967 0.003 264.542);
   --color-gray-200: oklch(0.928 0.006 264.531);
@@ -85,6 +87,7 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
+  /* Polar dark neutrals */
   --color-polar-50: hsl(233, 5%, 85%);
   --color-polar-100: hsl(233, 5%, 79%);
   --color-polar-200: hsl(233, 5%, 68%);
@@ -97,7 +100,7 @@
   --color-polar-900: hsl(233, 5%, 6.5%);
   --color-polar-950: hsl(233, 5%, 3%);
 
-  /* shadcn */
+  /* shadcn mappings */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -132,21 +135,13 @@
   --radius-4xl: 2rem;
 
   @keyframes accordion-down {
-    0%: {
-      height: 0;
-    }
-    100% {
-      height: 'var(--radix-accordion-content-height)';
-    }
+    0% { height: 0; }
+    100% { height: var(--radix-accordion-content-height); }
   }
 
   @keyframes accordion-up {
-    0% {
-      height: 'var(--radix-accordion-content-height)';
-    }
-    100% {
-      height: 0;
-    }
+    0% { height: var(--radix-accordion-content-height); }
+    100% { height: 0; }
   }
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -154,19 +149,10 @@
 }
 
 @layer base {
-  html {
-    @apply text-gray-900;
-  }
+  html { @apply text-gray-900; }
+  html.dark { @apply text-gray-200; }
 
-  html.dark {
-    @apply text-gray-200;
-  }
-
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
+  *, ::before, ::after, ::backdrop, ::file-selector-button {
     border-color: var(--border);
   }
 
@@ -182,8 +168,7 @@
   }
 }
 
-/* shadcn/ui */
-
+/* shadcn/ui tokens */
 @layer base {
   :root {
     --background: var(--color-gray-50);
@@ -193,15 +178,15 @@
     --card-foreground: var(--color-gray-900);
 
     --popover: var(--color-white);
-    --popover-foreground: hsl(224 71.4% 4.1%);
+    --popover-foreground: var(--color-gray-900);
 
     --sidebar-background: var(--color-gray-100);
     --sidebar-foreground: var(--color-gray-900);
-    --sidebar-primary: var(--color-peach);  /* Changed from blue to peach */
+    --sidebar-primary: var(--color-peach);
     --sidebar-primary-foreground: var(--color-gray-50);
     --sidebar-border: var(--color-gray-300);
 
-    --primary: var(--color-peach);  /* Changed from blue to peach */
+    --primary: var(--color-peach);
     --primary-foreground: var(--color-gray-50);
 
     --secondary: var(--color-gray-100);
@@ -210,7 +195,7 @@
     --muted: var(--color-gray-100);
     --muted-foreground: var(--color-gray-500);
 
-    --accent: var(--color-peach);  /* Changed from blue to peach */
+    --accent: var(--color-peach);
     --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
@@ -218,7 +203,7 @@
 
     --border: var(--color-gray-200);
     --input: var(--color-gray-200);
-    --ring: var(--color-gray-200);
+    --ring: var(--color-peach);
     --radius: 0.6rem;
   }
 
@@ -234,11 +219,11 @@
 
     --sidebar-background: var(--color-polar-950);
     --sidebar-foreground: var(--color-polar-50);
-    --sidebar-primary: var(--color-peach);  /* Changed from blue to peach */
+    --sidebar-primary: var(--color-peach);
     --sidebar-primary-foreground: var(--color-polar-50);
     --sidebar-border: var(--color-polar-700);
 
-    --primary: var(--color-peach);  /* Changed from blue to peach */
+    --primary: var(--color-peach);
     --primary-foreground: var(--color-polar-50);
 
     --secondary: var(--color-polar-900);
@@ -247,7 +232,7 @@
     --muted: var(--color-polar-700);
     --muted-foreground: var(--color-polar-500);
 
-    --accent: var(--color-peach);  /* Changed from blue to peach */
+    --accent: var(--color-peach);
     --accent-foreground: var(--color-polar-50);
 
     --destructive: var(--color-red-500);
@@ -255,7 +240,7 @@
 
     --border: var(--color-polar-700);
     --input: var(--color-polar-700);
-    --ring: var(--color-polar-700);
+    --ring: var(--color-peach);
   }
 }
 
@@ -281,3 +266,4 @@ pre.shiki {
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
 }
+

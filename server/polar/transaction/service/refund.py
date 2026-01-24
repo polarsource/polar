@@ -150,6 +150,7 @@ class RefundTransactionService(BaseTransactionService):
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
+                    metadata["order_created_at"] = order.created_at.isoformat()
                     metadata["product_id"] = str(order.product_id)
                     if order.subscription_id is not None:
                         metadata["subscription_id"] = str(order.subscription_id)

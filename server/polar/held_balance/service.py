@@ -154,6 +154,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 organization=order.organization,
                 metadata=metadata,
             )
+            balance_order_event.timestamp = order.created_at
             await event_service.create_event(session, balance_order_event)
         except Exception as e:
             log.error("Could not save balance.order event", error=str(e))

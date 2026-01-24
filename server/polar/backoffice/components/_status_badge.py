@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from tagflow import classes, tag, text
+from markupflow import Fragment
 
 from polar.models.organization import OrganizationStatus
 
@@ -13,7 +13,7 @@ def status_badge(
     *,
     show_icon: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a status badge component with semantic coloring.
 
     Generates a badge element with appropriate styling based on organization status.
@@ -30,10 +30,10 @@ def status_badge(
         **kwargs: Additional HTML attributes to pass to the badge element.
 
     Yields:
-        None: Context manager yields control for optional additional badge content.
+        Fragment: The fragment for adding badge content.
 
     Example:
-        >>> with status_badge(OrganizationStatus.ACTIVE):
+        >>> with status_badge(OrganizationStatus.ACTIVE) as badge:
         ...     pass  # Displays "Active"
     """
     # Map status to badge variant with flat design
@@ -69,13 +69,14 @@ def status_badge(
         {"class": "badge-ghost border border-base-300", "aria": "unknown status"},
     )
 
-    with tag.span(classes="badge", **kwargs):
-        classes(config["class"])
+    fragment = Fragment()
+    with fragment.span(class_="badge", **kwargs):
+        fragment.classes(config["class"])
         if "aria-label" not in kwargs:
-            kwargs["aria-label"] = config["aria"]
+            fragment.attr("aria-label", config["aria"])
 
-        text(status.get_display_name())
-        yield
+        fragment.text(status.get_display_name())
+        yield fragment
 
 
 __all__ = ["status_badge"]

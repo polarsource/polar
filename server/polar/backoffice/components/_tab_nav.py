@@ -3,7 +3,7 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from typing import Any
 
-from tagflow import attr, tag, text
+from markupflow import Fragment
 
 
 @dataclass
@@ -23,7 +23,7 @@ def tab_nav(
     *,
     vertical: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a tab navigation component.
 
     Generates a tabbed navigation with support for active states, counts,
@@ -36,7 +36,7 @@ def tab_nav(
         **kwargs: Additional HTML attributes for the container.
 
     Yields:
-        None: Context manager yields control for additional content.
+        Fragment: Context manager yields control for additional content.
 
     Example:
         >>> tabs = [
@@ -57,12 +57,13 @@ def tab_nav(
     else:
         container_classes.append("tabs-bordered")
 
-    with tag.div(
-        classes=" ".join(container_classes),
+    fragment = Fragment()
+    with fragment.div(
+        class_=" ".join(container_classes),
         role=role,
         **kwargs,
     ):
-        attr("aria-orientation", orientation)
+        fragment.attr("aria-orientation", orientation)
 
         for tab in tabs:
             # Tab link classes
@@ -71,15 +72,15 @@ def tab_nav(
                 tab_classes.append("tab-active")
 
             if tab.url:
-                with tag.a(
+                with fragment.a(
                     href=tab.url,
-                    classes=" ".join(tab_classes),
+                    class_=" ".join(tab_classes),
                     role="tab",
                 ):
                     if tab.active:
-                        attr("aria-selected", "true")
+                        fragment.attr("aria-selected", "true")
 
-                    text(tab.label)
+                    fragment.text(tab.label)
 
                     # Optional count badge
                     if tab.count is not None:
@@ -88,19 +89,19 @@ def tab_nav(
                             if tab.badge_variant
                             else "badge-neutral"
                         )
-                        with tag.span(classes=f"badge {variant_class} ml-2"):
-                            text(str(tab.count))
+                        with fragment.span(class_=f"badge {variant_class} ml-2"):
+                            fragment.text(str(tab.count))
             else:
                 # No URL provided, render as button for HTMX interactions
-                with tag.button(
-                    classes=" ".join(tab_classes),
+                with fragment.button(
+                    class_=" ".join(tab_classes),
                     role="tab",
                     type="button",
                 ):
                     if tab.active:
-                        attr("aria-selected", "true")
+                        fragment.attr("aria-selected", "true")
 
-                    text(tab.label)
+                    fragment.text(tab.label)
 
                     if tab.count is not None:
                         variant_class = (
@@ -108,10 +109,10 @@ def tab_nav(
                             if tab.badge_variant
                             else "badge-neutral"
                         )
-                        with tag.span(classes=f"badge {variant_class} ml-2"):
-                            text(str(tab.count))
+                        with fragment.span(class_=f"badge {variant_class} ml-2"):
+                            fragment.text(str(tab.count))
 
-        yield
+        yield fragment
 
 
 __all__ = ["Tab", "tab_nav"]

@@ -2,9 +2,8 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
+from markupflow import Fragment
 from sqlalchemy.util.typing import Literal
-from tagflow import classes as _classes
-from tagflow import tag
 
 Variant = Literal["info", "success", "warning", "error"]
 
@@ -17,7 +16,7 @@ def alert(
     *,
     classes: str | None = None,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a styled alert component using DaisyUI classes.
 
     Generates an alert div with configurable styling variants and modifiers.
@@ -32,8 +31,8 @@ def alert(
         **kwargs: Additional HTML attributes to pass to the alert div element.
 
     Example:
-        >>> with alert(variant="success", soft=True):
-        ...     text("Operation completed successfully!")
+        >>> with alert(variant="success", soft=True) as alert_frag:
+        ...     alert_frag.text("Operation completed successfully!")
     """
     variants = {
         "info": "alert-info",
@@ -41,16 +40,17 @@ def alert(
         "warning": "alert-warning",
         "error": "alert-error",
     }
-    with tag.div(classes="alert", role="alert", **kwargs):
+    fragment = Fragment()
+    with fragment.div(class_="alert", role="alert", **kwargs):
         if variant:
-            _classes(variants[variant])
+            fragment.classes(variants[variant])
         if dash:
-            _classes("alert-dash")
+            fragment.classes("alert-dash")
         if soft:
-            _classes("alert-soft")
+            fragment.classes("alert-soft")
         if classes:
-            _classes(classes)
-        yield
+            fragment.classes(classes)
+        yield fragment
 
 
 __all__ = ["Variant"]

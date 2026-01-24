@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import classes, tag, text
+from markupflow import Fragment
 
 from polar.kit.sorting import Sorting
 from polar.models import Order
@@ -16,25 +16,26 @@ class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
     def __init__(self, label: str) -> None:
         super().__init__(label, sorting=OrderSortProperty.status)
 
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
+    def render(self, request: Request, item: Order) -> Generator[Fragment] | None:
         with order_status_badge(item.status):
             pass
         return None
 
 
 @contextlib.contextmanager
-def order_status_badge(status: OrderStatus) -> Generator[None]:
-    with tag.div(classes="badge"):
+def order_status_badge(status: OrderStatus) -> Generator[Fragment]:
+    fragment = Fragment()
+    with fragment.div(class_="badge"):
         if status == OrderStatus.paid:
-            classes("badge-success")
+            fragment.classes("badge-success")
         elif status == OrderStatus.pending:
-            classes("badge-warning")
+            fragment.classes("badge-warning")
         elif status == OrderStatus.refunded:
-            classes("badge-error")
+            fragment.classes("badge-error")
         elif status == OrderStatus.partially_refunded:
-            classes("badge-info")
-        text(status.replace("_", " ").title())
-    yield
+            fragment.classes("badge-info")
+        fragment.text(status.replace("_", " ").title())
+    yield fragment
 
 
 @contextlib.contextmanager
@@ -42,7 +43,7 @@ def orders_datatable(
     request: Request,
     items: Sequence[Order],
     sorting: list[Sorting[OrderSortProperty]] | None = None,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     d = datatable.Datatable[Order, OrderSortProperty](
         datatable.DatatableAttrColumn(
             "id", "ID", clipboard=True, href_route_name="orders:get"
@@ -67,4 +68,4 @@ def orders_datatable(
 
     with d.render(request, items, sorting=sorting):
         pass
-    yield
+    yield Fragment()

@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any, Literal
 
-from tagflow import tag, text
+from markupflow import Fragment
 
 Variant = Literal["default", "success", "warning", "error", "info"]
 
@@ -17,7 +17,7 @@ def metric_card(
     trend: Literal["up", "down", "neutral"] | None = None,
     compact: bool = False,
     **kwargs: Any,
-) -> Generator[None]:
+) -> Generator[Fragment]:
     """Create a metric display card component.
 
     Generates a card showing a key metric with label, value, and optional
@@ -33,10 +33,10 @@ def metric_card(
         **kwargs: Additional HTML attributes.
 
     Yields:
-        None: Context manager yields control for additional card content.
+        Fragment: The fragment for adding card content.
 
     Example:
-        >>> with metric_card("Total Revenue", "$1,234", variant="success", trend="up"):
+        >>> with metric_card("Total Revenue", "$1,234", variant="success", trend="up") as card:
         ...     pass
     """
     variant_classes = {
@@ -61,34 +61,35 @@ def metric_card(
 
     padding_class = "p-3" if compact else "p-4"
 
-    with tag.div(
-        classes=f"card border {padding_class} {variant_classes[variant]}",
+    fragment = Fragment()
+    with fragment.div(
+        class_=f"card border {padding_class} {variant_classes[variant]}",
         **kwargs,
     ):
-        with tag.div(classes="flex flex-col gap-1"):
+        with fragment.div(class_="flex flex-col gap-1"):
             # Label
-            with tag.div(
-                classes="text-xs uppercase font-semibold text-base-content/60"
+            with fragment.div(
+                class_="text-xs uppercase font-semibold text-base-content/60"
             ):
-                text(label)
+                fragment.text(label)
 
             # Value with optional trend
-            with tag.div(classes="flex items-baseline gap-2"):
+            with fragment.div(class_="flex items-baseline gap-2"):
                 size_class = "text-xl" if compact else "text-3xl"
-                with tag.div(classes=f"{size_class} font-bold font-mono"):
-                    text(str(value))
+                with fragment.div(class_=f"{size_class} font-bold font-mono"):
+                    fragment.text(str(value))
 
                 if trend:
-                    with tag.span(classes=f"text-lg {trend_colors[trend]}"):
-                        text(trend_icons[trend])
+                    with fragment.span(class_=f"text-lg {trend_colors[trend]}"):
+                        fragment.text(trend_icons[trend])
 
             # Optional subtitle
             if subtitle:
-                with tag.div(classes="text-sm text-base-content/70"):
-                    text(subtitle)
+                with fragment.div(class_="text-sm text-base-content/70"):
+                    fragment.text(subtitle)
 
             # Allow additional content
-            yield
+            yield fragment
 
 
 __all__ = ["Variant", "metric_card"]

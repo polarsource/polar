@@ -27,21 +27,24 @@
 
   --text-xxs: 0.65rem;
 
-  /* Peach palette (primary) */
-  --color-peach-50: oklch(0.97 0.02 40);
-  --color-peach-100: oklch(0.94 0.04 40);
-  --color-peach-200: oklch(0.88 0.08 40);
-  --color-peach-300: oklch(0.80 0.12 40);
-  --color-peach-400: oklch(0.72 0.14 40);
-  --color-peach-500: oklch(0.66 0.13 40);
-  --color-peach-600: oklch(0.58 0.12 40);
-  --color-peach-700: oklch(0.50 0.10 40);
-  --color-peach-800: oklch(0.42 0.08 40);
-  --color-peach-900: oklch(0.36 0.06 40);
-  --color-peach-950: oklch(0.28 0.04 40);
+  /* Brand palette (teal) - replacing peach, anchored around #1e5a6a */
+  --color-peach-50:  oklch(0.985 0.010 210);
+  --color-peach-100: oklch(0.965 0.018 210);
+  --color-peach-200: oklch(0.930 0.032 210);
+  --color-peach-300: oklch(0.880 0.055 210);
+  --color-peach-400: oklch(0.810 0.085 210);
+  --color-peach-500: oklch(0.720 0.110 210);
+  /* ~ #1e5a6a */
+  --color-peach-600: oklch(0.610 0.095 210);
+  --color-peach-700: oklch(0.520 0.080 210);
+  --color-peach-800: oklch(0.430 0.060 210);
+  --color-peach-900: oklch(0.360 0.045 210);
+  --color-peach-950: oklch(0.260 0.030 210);
+
+  /* Primary brand token */
   --color-peach: var(--color-peach-600);
 
-  /* Blue aliased to peach */
+  /* Blue aliased to brand */
   --color-blue-50: var(--color-peach-50);
   --color-blue-100: var(--color-peach-100);
   --color-blue-200: var(--color-peach-200);
@@ -284,5 +287,3 @@ pre.shiki {
     text-decoration: var(--shiki-dark-text-decoration) !important;
   }
 }
-
-

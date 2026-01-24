@@ -192,6 +192,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v6
 
@@ -238,6 +248,9 @@ jobs:
         run: |
           uv sync --dev
           uv run task generate_dev_jwks
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

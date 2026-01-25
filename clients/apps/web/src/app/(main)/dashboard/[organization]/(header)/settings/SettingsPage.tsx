@@ -59,7 +59,7 @@ export default function ClientPage({
         <Section id="developers">
           <SectionDescription
             title="Developers"
-            description="Manage access tokens to authenticate with the Polar API"
+            description="Manage access tokens to authenticate with the Spaire API"
           />
           <OrganizationAccessTokensSettings organization={org} />
         </Section>
@@ -75,3 +75,4 @@ export default function ClientPage({
     </DashboardBody>
   )
 }
+

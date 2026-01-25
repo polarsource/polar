@@ -20,7 +20,7 @@ const Header = () => (
                 alt="LinkedIn"
                 className="mx-[4px]"
                 height="36"
-                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/67115fa14af6293adb962bfd_linkedin+(1).svg"
+                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/Untitled+design+-+2026-01-25T152427.641.png"
                 width="36"
               />
             </Link>
@@ -31,7 +31,7 @@ const Header = () => (
                 alt="Discord"
                 className="mx-[4px]"
                 height="36"
-                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/67115ff4288cd64e56e2eb71_Instagram-1.svg"
+                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/Untitled+design+-+2026-01-25T152418.405.png"
                 width="36"
               />
             </Link>

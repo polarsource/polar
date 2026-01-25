@@ -107,7 +107,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     setActiveSeries((currentValue) => (currentValue === key ? null : key))
   }, [])
 
-  // 🔴 COLOR OVERRIDE IS HERE
+  // ✅ Only change: force color to #1e5a6a
   const config = useMemo(
     () =>
       series.reduce(
@@ -152,23 +152,40 @@ export const GenericChart = <T extends Record<string, unknown>>({
       if (value === undefined || value === null || !name) {
         return null
       }
-
-      const formatted = valueFormatter
-        ? valueFormatter(value, name)
-        : value
+      if (valueFormatter) {
+        const formattedValue = valueFormatter(value, name)
+        return (
+          <div className="flex w-40 flex-row justify-between gap-x-8">
+            <div className="flex flex-row items-center gap-x-2">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor: item?.color,
+                }}
+              />
+              <span className="capitalize">
+                {name.toString().split('_').join(' ')}
+              </span>
+            </div>
+            <span>{formattedValue}</span>
+          </div>
+        )
+      }
 
       return (
-        <div className="flex w-40 justify-between gap-x-8">
-          <div className="flex items-center gap-x-2">
+        <div className="flex w-40 flex-row justify-between gap-x-8">
+          <div className="flex flex-row items-center gap-x-2">
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: item?.color }}
+              style={{
+                backgroundColor: item?.color,
+              }}
             />
             <span className="capitalize">
               {name.toString().split('_').join(' ')}
             </span>
           </div>
-          <span>{formatted}</span>
+          <span>{value}</span>
         </div>
       )
     },
@@ -176,23 +193,29 @@ export const GenericChart = <T extends Record<string, unknown>>({
   )
 
   const primarySeries = series[0]
-
   const gradientInfo = useMemo(() => {
     if (!primarySeries) return { type: 'positive' as const, zeroOffset: 1 }
     const values = data.map((i) => (i[primarySeries.key] as number) || 0)
-    const max = Math.max(...values)
-    const min = Math.min(...values)
+    const dataMax = Math.max(...values)
+    const dataMin = Math.min(...values)
 
-    if (max <= 0) return { type: 'negative' as const, zeroOffset: 0 }
-    if (min >= 0) return { type: 'positive' as const, zeroOffset: 1 }
+    if (dataMax <= 0) {
+      return { type: 'negative' as const, zeroOffset: 0 }
+    }
+    if (dataMin >= 0) {
+      return { type: 'positive' as const, zeroOffset: 1 }
+    }
 
-    return { type: 'mixed' as const, zeroOffset: max / (max - min) }
+    return {
+      type: 'mixed' as const,
+      zeroOffset: dataMax / (dataMax - dataMin),
+    }
   }, [data, primarySeries])
 
   const chartContent = useMemo(() => {
     const commonProps = {
       accessibilityLayer: true,
-      data,
+      data: data,
       margin: {
         left: showYAxis ? 4 : 24,
         right: 24,
@@ -200,15 +223,22 @@ export const GenericChart = <T extends Record<string, unknown>>({
         bottom: showLegend ? 12 : undefined,
       },
       onMouseMove: ((state) => {
-        if (!onDataIndexHover) return
-        const index =
-          typeof state.activeTooltipIndex === 'number'
-            ? state.activeTooltipIndex
-            : null
-        onDataIndexHover(index)
+        if (onDataIndexHover) {
+          const index = state.activeTooltipIndex
+          const parsedIndex =
+            typeof index === 'number'
+              ? index
+              : typeof index === 'string'
+                ? parseInt(index, 10)
+                : null
+
+          onDataIndexHover(Number.isNaN(parsedIndex) ? null : parsedIndex)
+        }
       }) satisfies ExternalMouseEvents['onMouseMove'],
       onMouseLeave: (() => {
-        onDataIndexHover?.(null)
+        if (onDataIndexHover) {
+          onDataIndexHover(null)
+        }
       }) satisfies ExternalMouseEvents['onMouseLeave'],
     }
 
@@ -216,12 +246,12 @@ export const GenericChart = <T extends Record<string, unknown>>({
       showGrid || !simple ? (
         <CartesianGrid
           horizontal={false}
-          vertical
+          vertical={true}
           stroke={isDark ? '#222225' : '#ccc'}
           strokeDasharray="6 6"
-          syncWithTicks
+          syncWithTicks={true}
         />
-      ) : null
+      ) : undefined
 
     const xAxis = (
       <XAxis
@@ -231,7 +261,9 @@ export const GenericChart = <T extends Record<string, unknown>>({
         tickMargin={8}
         interval="equidistantPreserveStart"
         ticks={ticks}
-        tickFormatter={xAxisFormatter}
+        tickFormatter={
+          xAxisFormatter ? (value) => xAxisFormatter(value) : undefined
+        }
       />
     )
 
@@ -241,15 +273,17 @@ export const GenericChart = <T extends Record<string, unknown>>({
         axisLine={false}
         allowDecimals={hasDecimalValues}
         tickMargin={4}
+        width="auto"
       />
-    ) : null
+    ) : undefined
 
     const tooltip = (
-      <ChartTooltip
-        cursor
+      <ChartTooltip<number, string>
+        cursor={true}
         content={(props) => (
           <ChartTooltipContent
             {...props}
+            className="text-black dark:text-white"
             indicator="dot"
             labelKey={primarySeries?.key}
             formatter={formatter}
@@ -259,8 +293,36 @@ export const GenericChart = <T extends Record<string, unknown>>({
     )
 
     const legend = showLegend ? (
-      <ChartLegend content={<ChartLegendContent />} />
-    ) : null
+      <ChartLegend
+        content={
+          <ChartLegendContent>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
+              {series.map((s) => (
+                <div
+                  key={s.key}
+                  className={`flex items-center gap-1.5 whitespace-nowrap transition-opacity ${series.length > 1 ? 'cursor-pointer' : ''}`}
+                  style={{
+                    opacity:
+                      activeSeries === null || activeSeries === s.key ? 1 : 0.3,
+                  }}
+                  onClick={
+                    series.length > 1
+                      ? () => handleLegendClick(s.key)
+                      : undefined
+                  }
+                >
+                  <div
+                    className="h-2 w-2 shrink-0 rounded-[2px]"
+                    style={{ backgroundColor: '#1e5a6a' }}
+                  />
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          </ChartLegendContent>
+        }
+      />
+    ) : undefined
 
     if (chartType === 'bar') {
       return (
@@ -270,15 +332,22 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {series.map((s) => (
-            <Bar
-              key={s.key}
-              dataKey={s.key}
-              fill={`var(--color-${s.key})`}
-              radius={4}
-              shape={<MinHeightBar />}
-            />
-          ))}
+          {series
+            .slice()
+            .reverse()
+            .map((s) => (
+              <Bar
+                key={s.key}
+                dataKey={s.key}
+                fill={`var(--color-${s.key})`}
+                radius={4}
+                maxBarSize={32}
+                opacity={
+                  activeSeries === null || activeSeries === s.key ? 1 : 0.3
+                }
+                shape={<MinHeightBar />}
+              />
+            ))}
         </BarChart>
       )
     }
@@ -296,8 +365,12 @@ export const GenericChart = <T extends Record<string, unknown>>({
               key={s.key}
               dataKey={s.key}
               stroke={`var(--color-${s.key})`}
+              type="linear"
               dot={false}
               strokeWidth={1.5}
+              strokeOpacity={
+                activeSeries === null || activeSeries === s.key ? 1 : 0.3
+              }
             />
           ))}
         </LineChart>
@@ -306,8 +379,44 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
     if (!primarySeries) return null
 
+    const gradientStops = (() => {
+      const color = `var(--color-${primarySeries.key})`
+      if (gradientInfo.type === 'positive') {
+        return (
+          <>
+            <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.025} />
+          </>
+        )
+      }
+      if (gradientInfo.type === 'negative') {
+        return (
+          <>
+            <stop offset="0%" stopColor={color} stopOpacity={0.025} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+          </>
+        )
+      }
+      return (
+        <>
+          <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+          <stop
+            offset={`${gradientInfo.zeroOffset * 100}%`}
+            stopColor={color}
+            stopOpacity={0.025}
+          />
+          <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+        </>
+      )
+    })()
+
     return (
       <AreaChart {...commonProps}>
+        <defs>
+          <linearGradient id={`areaGradient-${id}`} x1="0" y1="0" x2="0" y2="1">
+            {gradientStops}
+          </linearGradient>
+        </defs>
         {grid}
         {xAxis}
         {yAxis}
@@ -316,7 +425,8 @@ export const GenericChart = <T extends Record<string, unknown>>({
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
-          fill={`var(--color-${primarySeries.key})`}
+          fill={`url(#areaGradient-${id})`}
+          type="linear"
           strokeWidth={1.5}
         />
       </AreaChart>
@@ -324,19 +434,23 @@ export const GenericChart = <T extends Record<string, unknown>>({
   }, [
     chartType,
     data,
-    series,
-    primarySeries,
     showGrid,
-    showYAxis,
-    showLegend,
     simple,
+    isDark,
     ticks,
     xAxisKey,
     xAxisFormatter,
     formatter,
-    hasDecimalValues,
-    isDark,
+    series,
+    primarySeries,
     onDataIndexHover,
+    showYAxis,
+    showLegend,
+    hasDecimalValues,
+    gradientInfo,
+    activeSeries,
+    handleLegendClick,
+    id,
   ])
 
   return (
@@ -353,4 +467,3 @@ export const GenericChart = <T extends Record<string, unknown>>({
 GenericChart.displayName = 'GenericChart'
 
 export default GenericChart
-

@@ -514,10 +514,10 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                How will you integrate Spaire into your business? *
+                How will you integrate Polar into your business? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Spaire, what features
+                Tell us: where customers will see Polar, what features
                 you&apos;ll use, and how it fits your workflow
               </p>
               <FormField
@@ -822,4 +822,3 @@ const OrganizationProfileSettings: React.FC<
 }
 
 export default OrganizationProfileSettings
-

@@ -15,12 +15,12 @@ const Header = () => (
       <Column align="right">
         <Row align="right">
           <Column>
-            <Link href="https://x.com/spairehq">
+            <Link href="https://www.linkedin.com/company/spaire">
               <Img
-                alt="X"
+                alt="LinkedIn"
                 className="mx-[4px]"
                 height="36"
-                src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/x-logo.png"
+                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/67115fa14af6293adb962bfd_linkedin+(1).svg"
                 width="36"
               />
             </Link>
@@ -31,7 +31,7 @@ const Header = () => (
                 alt="Discord"
                 className="mx-[4px]"
                 height="36"
-                src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/discord-logo.png"
+                src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/67115ff4288cd64e56e2eb71_Instagram-1.svg"
                 width="36"
               />
             </Link>
@@ -43,3 +43,4 @@ const Header = () => (
 )
 
 export default Header
+

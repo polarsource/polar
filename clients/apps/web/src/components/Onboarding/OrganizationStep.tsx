@@ -155,13 +155,13 @@ export const OrganizationStep = ({
             <h1 className="text-3xl">
               {hasExistingOrg
                 ? 'Create a new organization'
-                : "Let's get you started"}
+                : "Let's set up your account"}
             </h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
               {hasExistingOrg ? (
                 'Follow the instructions below to create a new organization'
               ) : (
-                <>You&rsquo;ll be up and running in no time</>
+                <>You&rsquo;re moments away from going live</>
               )}
             </p>
           </div>
@@ -220,27 +220,24 @@ export const OrganizationStep = ({
                   {/* Simple Product Restrictions */}
                   <div className="flex flex-col gap-y-4 text-sm">
                     <div className="flex flex-col gap-y-2">
-                      <p className="font-medium">Supported Usecases</p>
+                      <p className="font-medium">Supported Product Types</p>
                       <p className="dark:text-polar-500 text-sm text-gray-500">
-                        SaaS subscriptions, digital downloads, software
-                        licenses, online courses, and other purely digital
-                        products.
+                        Spaire is optimized for SaaS subscriptions, digital assets, software licensing, online courses, and all purely digital offerings.
                       </p>
                     </div>
 
                     <div className="flex flex-col gap-y-2">
-                      <p className="font-medium">Prohibited Usecases</p>
+                      <p className="font-medium">Restricted Categories</p>
                       <ul className="dark:text-polar-500 space-y-1 text-sm text-gray-500">
-                        <li>• Physical goods or products requiring shipping</li>
+                        <li>• Physical merchandise or shippable goods</li>
                         <li>
-                          • Human services (custom development, design and
-                          consultancy)
+                          • Professional services (bespoke development, design, or consulting)
                         </li>
-                        <li>• Marketplaces</li>
+                        <li>• Multi-vendor marketplaces</li>
                         <li>
                           • Anything in our list of{' '}
                           <a
-                            href="https://polar.sh/docs/merchant-of-record/acceptable-use"
+                            href="https://spairehq/docs/merchant-of-record/acceptable-use"
                             className="text-blue-500 underline dark:text-blue-400"
                             target="_blank"
                             rel="noreferrer"
@@ -253,8 +250,7 @@ export const OrganizationStep = ({
 
                     <div className="dark:border-polar-700 border-t border-gray-200 pt-4">
                       <p className="dark:text-polar-500 text-xs text-gray-500">
-                        Transactions that violate our policy will be canceled
-                        and refunded.
+                        Transactions found in violation of these policies will be automatically voided and refunded.
                       </p>
                     </div>
                   </div>
@@ -286,7 +282,7 @@ export const OrganizationStep = ({
                                 className="cursor-pointer leading-relaxed font-medium"
                               >
                                 I understand the restrictions above and agree to
-                                Polar&apos;s terms
+                                Spaire&apos;s terms
                               </label>
                               <ul className="dark:text-polar-500 flex flex-col gap-y-1 text-sm text-gray-500">
                                 <li>

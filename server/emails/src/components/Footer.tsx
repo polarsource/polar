@@ -9,7 +9,7 @@ const Footer = ({ email }: { email: string | null }) => (
           This email was sent to <span className="font-semibold">{email}</span>
         </Text>
       )}
-      <Text className="font-semibold">Polar Software Inc</Text>
+      <Text className="font-semibold">Spaire Software Inc</Text>
     </Section>
   </>
 )

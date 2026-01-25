@@ -94,8 +94,6 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
-  subscribeNowButtonExperiment?: boolean
-  payNowButtonExperiment?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -109,8 +107,6 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
-  subscribeNowButtonExperiment,
-  payNowButtonExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -337,17 +333,11 @@ const BaseCheckoutForm = ({
     }
 
     if (checkout.isPaymentFormRequired) {
-      return interval
-        ? subscribeNowButtonExperiment
-          ? 'Subscribe now'
-          : 'Subscribe'
-        : payNowButtonExperiment
-          ? 'Pay now'
-          : 'Pay'
+      return interval ? 'Subscribe' : 'Pay'
     }
 
     return 'Submit'
-  }, [checkout, interval, subscribeNowButtonExperiment, payNowButtonExperiment])
+  }, [checkout, interval])
 
   return (
     <div className="flex flex-col justify-between gap-y-24">
@@ -909,11 +899,11 @@ const BaseCheckoutForm = ({
         </Form>
         <p className="dark:text-polar-500 text-center text-xs text-gray-500">
           This order is processed by our online reseller & Merchant of Record,
-          Polar, who also handles order-related inquiries and returns.
+          Spaire, who also handles order-related inquiries and returns.
         </p>
       </div>
       <a
-        href="https://polar.sh?utm_source=checkout"
+        href="https://spairehq?utm_source=checkout"
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
       >
@@ -939,8 +929,6 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
-  subscribeNowButtonExperiment?: boolean
-  payNowButtonExperiment?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -1067,3 +1055,4 @@ const CheckoutForm = (props: CheckoutFormProps) => {
 }
 
 export default CheckoutForm
+

@@ -909,11 +909,11 @@ const BaseCheckoutForm = ({
         </Form>
         <p className="dark:text-polar-500 text-center text-xs text-gray-500">
           This order is processed by our online reseller & Merchant of Record,
-          Polar, who also handles order-related inquiries and returns.
+          Spaire, who also handles order-related inquiries and returns.
         </p>
       </div>
       <a
-        href="https://polar.sh?utm_source=checkout"
+        href="https://app.spairehq.com?utm_source=checkout"
         className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
         target="_blank"
       >

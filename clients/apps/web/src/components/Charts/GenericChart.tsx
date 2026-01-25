@@ -107,7 +107,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
     setActiveSeries((currentValue) => (currentValue === key ? null : key))
   }, [])
 
-  // ✅ Only change: force color to #1e5a6a
   const config = useMemo(
     () =>
       series.reduce(
@@ -115,7 +114,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           ...acc,
           [s.key]: {
             label: s.label,
-            color: '#1e5a6a',
+            color: s.color,
           },
         }),
         {} as Record<string, { label: string; color: string }>,
@@ -313,7 +312,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
                 >
                   <div
                     className="h-2 w-2 shrink-0 rounded-[2px]"
-                    style={{ backgroundColor: '#1e5a6a' }}
+                    style={{ backgroundColor: s.color }}
                   />
                   {s.label}
                 </div>
@@ -397,6 +396,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           </>
         )
       }
+      // Mixed: 0.5 at edges, 0.025 at zero line
       return (
         <>
           <stop offset="0%" stopColor={color} stopOpacity={0.5} />

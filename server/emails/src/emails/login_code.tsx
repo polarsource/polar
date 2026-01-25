@@ -18,9 +18,9 @@ export function LoginCode({
       </Preview>
       <PolarHeader />
       <IntroWithHi>
-        Here is your code to sign in to Polar.{' '}
+        Use the verification code below to securely sign in to your Spaire account.{' '}
         <span className="font-bold">
-          This code is only valid for the next {code_lifetime_minutes} minutes.
+          The code will expire in {code_lifetime_minutes} minutes.
         </span>
       </IntroWithHi>
       <Section className="text-center">

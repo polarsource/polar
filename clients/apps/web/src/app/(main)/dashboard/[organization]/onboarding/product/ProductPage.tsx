@@ -44,9 +44,9 @@ export default function ClientPage({
         <FadeUp className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
-            <h1 className="text-center text-3xl">Your first product</h1>
+            <h1 className="text-center text-3xl">Launch your first product</h1>
             <p className="dark:text-polar-400 text-center text-lg text-gray-600">
-              Setup your first digital product to get started.
+              Define your product parameters to start generating revenue.
             </p>
           </div>
         </FadeUp>

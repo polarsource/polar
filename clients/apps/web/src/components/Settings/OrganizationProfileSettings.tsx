@@ -514,17 +514,17 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                How will you integrate Polar into your business? *
+                How will you integrate Spaire into your business? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Polar, what features
+                Tell us: where customers will see Spaire, what features
                 you&apos;ll use, and how it fits your workflow
               </p>
               <FormField
                 control={control}
                 name="details.intended_use"
                 rules={{
-                  required: 'Please describe how you will use Polar',
+                  required: 'Please describe how you will use Spaire',
                   minLength: {
                     value: 30,
                     message: 'Please provide at least 30 characters',
@@ -818,6 +818,11 @@ const OrganizationProfileSettings: React.FC<
         </SettingsGroup>
       </form>
     </Form>
+  )
+}
+
+export default OrganizationProfileSettings
+
   )
 }
 

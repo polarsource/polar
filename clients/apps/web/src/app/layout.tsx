@@ -27,43 +27,62 @@ const poppins = Poppins({
   display: 'swap',
 })
 
+const SITE_NAME = 'Spaire'
+const SITE_URL = 'https://spairehq.com' // <-- change if your domain differs
+const OG_IMAGE = `${SITE_URL}/og.png` // <-- make sure this exists (or change path)
+
+const DEFAULT_TITLE = `${SITE_NAME} | The Global Revenue Layer for B2B SaaS`
+const DEFAULT_DESCRIPTION =
+  'Spaire is the financial and legal infrastructure that helps SaaS companies sell their software in 135+ countries, without the compliance headache.'
+
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {
     title: {
-      template: '%s | Polar',
-      default: 'Polar',
+      template: `%s | ${SITE_NAME}`,
+      default: SITE_NAME,
     },
-    description:
-      'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+    description: DEFAULT_DESCRIPTION,
+
     openGraph: {
-      images: 'https://polar.sh/assets/brand/polar_og.jpg',
       type: 'website',
-      siteName: 'Polar',
-      title: 'Polar | Monetize your software with ease',
-      description:
-        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+      siteName: SITE_NAME,
+      title: DEFAULT_TITLE,
+      description: DEFAULT_DESCRIPTION,
       locale: 'en_US',
+      images: [
+        {
+          url: OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: `${SITE_NAME} Open Graph Image`,
+        },
+      ],
     },
+
     twitter: {
-      images: 'https://polar.sh/assets/brand/polar_og.jpg',
       card: 'summary_large_image',
-      title: 'Polar | Monetize your software with ease',
-      description:
-        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+      title: DEFAULT_TITLE,
+      description: DEFAULT_DESCRIPTION,
+      images: [OG_IMAGE],
     },
-    metadataBase: new URL('https://polar.sh/'),
+
+    metadataBase: new URL(SITE_URL),
     alternates: {
-      canonical: 'https://polar.sh/',
+      canonical: SITE_URL,
     },
   }
 
+  // Environment-specific metadata
   if (CONFIG.IS_SANDBOX) {
     return {
       ...baseMetadata,
       robots: {
         index: false,
         follow: false,
-        googleBot: { index: false, follow: false },
+        googleBot: {
+          index: false,
+          follow: false,
+        },
       },
     }
   }
@@ -91,13 +110,14 @@ export default async function RootLayout({
 }) {
   const api = await getServerSideAPI()
 
-  let authenticatedUser: schemas['UserRead'] | undefined
+  let authenticatedUser: schemas['UserRead'] | undefined = undefined
   let userOrganizations: schemas['Organization'][] = []
 
   try {
     authenticatedUser = await getAuthenticatedUser()
     userOrganizations = await getUserOrganizations(api)
   } catch (e) {
+    // Silently swallow errors during build, typically when rendering static pages
     if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
       throw e
     }
@@ -148,7 +168,11 @@ export default async function RootLayout({
           </>
         )}
       </head>
-      <body style={{ textRendering: 'optimizeLegibility' }}>
+      <body
+        style={{
+          textRendering: 'optimizeLegibility',
+        }}
+      >
         <ExperimentProvider experiments={experimentVariants}>
           <UserContextProvider
             user={authenticatedUser}

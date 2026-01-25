@@ -909,7 +909,7 @@ const BaseCheckoutForm = ({
         </Form>
         <p className="dark:text-polar-500 text-center text-xs text-gray-500">
           This order is processed by our online reseller & Merchant of Record,
-          Spaire, who also handles order-related inquiries and returns.
+          Polar, who also handles order-related inquiries and returns.
         </p>
       </div>
       <a
@@ -1067,32 +1067,3 @@ const CheckoutForm = (props: CheckoutFormProps) => {
 }
 
 export default CheckoutForm
-const DummyCheckoutForm = (props: CheckoutFormProps) => {
-  const { checkout, disabled } = props
-  return (
-    <BaseCheckoutForm
-      {...props}
-      confirm={async () => ({
-        ...checkout,
-        status: 'confirmed',
-        customerSessionToken: '',
-      })}
-      update={async () => checkout}
-      disabled={disabled ?? true}
-    />
-  )
-}
-
-const CheckoutForm = (props: CheckoutFormProps) => {
-  const {
-    checkout: { paymentProcessor },
-  } = props
-
-  if (paymentProcessor === 'stripe') {
-    return <StripeCheckoutForm {...props} />
-  }
-  return <DummyCheckoutForm {...props} />
-}
-
-export default CheckoutForm
-

@@ -66,7 +66,7 @@ class LoginCodeService:
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         email = login_code.email
-        subject = "Sign in to Polar"
+        subject = "Sign in to Spaire"
         body = render_email_template(
             LoginCodeEmail(
                 props=LoginCodeProps(

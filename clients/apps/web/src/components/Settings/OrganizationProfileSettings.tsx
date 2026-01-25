@@ -524,7 +524,7 @@ export const OrganizationDetailsForm: React.FC<
                 control={control}
                 name="details.intended_use"
                 rules={{
-                  required: 'Please describe how you will use Spaire',
+                  required: 'Please describe how you will use Polar',
                   minLength: {
                     value: 30,
                     message: 'Please provide at least 30 characters',
@@ -823,7 +823,3 @@ const OrganizationProfileSettings: React.FC<
 
 export default OrganizationProfileSettings
 
-  )
-}
-
-export default OrganizationProfileSettings

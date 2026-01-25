@@ -7,15 +7,15 @@ const Header = () => (
     <Row>
       <Column className="w-[80%]">
         <Img
-          alt="Polar Logo"
+          alt="Spaire Logo"
           height="34"
-          src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-blue-combination.png"
+          src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/spaire-green-combination.png"
         />
       </Column>
       <Column align="right">
         <Row align="right">
           <Column>
-            <Link href="https://x.com/polar_sh">
+            <Link href="https://x.com/spairehq">
               <Img
                 alt="X"
                 className="mx-[4px]"
@@ -26,7 +26,7 @@ const Header = () => (
             </Link>
           </Column>
           <Column>
-            <Link href="https://discord.gg/Pnhfz3UThd">
+            <Link href="https://discord.gg/Pnhfz3UTh">
               <Img
                 alt="Discord"
                 className="mx-[4px]"

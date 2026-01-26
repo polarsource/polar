@@ -565,6 +565,8 @@ class OrderService:
             enqueue_job(
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
+        else:
+            await self._emit_balance_credit_order_event(session, order)
 
         # Record tax transaction
         if checkout.tax_processor_id is not None:
@@ -746,34 +748,7 @@ class OrderService:
                 order = await repository.update(
                     order, update_dict={"status": OrderStatus.paid}
                 )
-                try:
-                    credit_metadata: BalanceCreditOrderMetadata = {
-                        "order_id": str(order.id),
-                        "amount": order.net_amount,
-                        "currency": order.currency,
-                        "tax_amount": order.tax_amount,
-                        "fee": order.platform_fee_amount,
-                    }
-                    if order.tax_rate is not None:
-                        if order.tax_rate["country"] is not None:
-                            credit_metadata["tax_country"] = order.tax_rate["country"]
-                        if order.tax_rate["state"] is not None:
-                            credit_metadata["tax_state"] = order.tax_rate["state"]
-                    if order.subscription_id is not None:
-                        credit_metadata["subscription_id"] = str(order.subscription_id)
-                    if order.product_id is not None:
-                        credit_metadata["product_id"] = str(order.product_id)
-
-                    credit_event = build_system_event(
-                        SystemEvent.balance_credit_order,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata=credit_metadata,
-                    )
-                    credit_event.timestamp = order.created_at
-                    await event_service.create_event(session, credit_event)
-                except Exception as e:
-                    log.error("Could not save balance.credit_order event", error=str(e))
+                await self._emit_balance_credit_order_event(session, order)
             elif subscription.payment_method_id is None:
                 order = await self.handle_payment_failure(session, order)
             else:
@@ -1737,6 +1712,38 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+
+    async def _emit_balance_credit_order_event(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        try:
+            credit_metadata: BalanceCreditOrderMetadata = {
+                "order_id": str(order.id),
+                "amount": order.net_amount,
+                "currency": order.currency,
+                "tax_amount": order.tax_amount,
+                "fee": order.platform_fee_amount,
+            }
+            if order.tax_rate is not None:
+                if order.tax_rate["country"] is not None:
+                    credit_metadata["tax_country"] = order.tax_rate["country"]
+                if order.tax_rate["state"] is not None:
+                    credit_metadata["tax_state"] = order.tax_rate["state"]
+            if order.subscription_id is not None:
+                credit_metadata["subscription_id"] = str(order.subscription_id)
+            if order.product_id is not None:
+                credit_metadata["product_id"] = str(order.product_id)
+
+            credit_event = build_system_event(
+                SystemEvent.balance_credit_order,
+                customer=order.customer,
+                organization=order.organization,
+                metadata=credit_metadata,
+            )
+            credit_event.timestamp = order.created_at
+            await event_service.create_event(session, credit_event)
+        except Exception as e:
+            log.error("Could not save balance.credit_order event", error=str(e))
 
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False

@@ -7,7 +7,7 @@ from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.organization.schemas import OrganizationID
 
-AvailableScope = StrEnum(  # type: ignore
+AvailableScope = StrEnum(
     "AvailableScope", {s: s.value for s in Scope if s not in RESERVED_SCOPES}
 )
 
@@ -16,12 +16,12 @@ class OrganizationAccessTokenCreate(Schema):
     organization_id: UUID4 | None = None
     comment: str
     expires_in: timedelta | None = None
-    scopes: list[AvailableScope]  # pyright: ignore
+    scopes: list[AvailableScope]  # type: ignore[invalid-type-form]  # pyright: ignore
 
 
 class OrganizationAccessTokenUpdate(Schema):
     comment: str | None = None
-    scopes: list[AvailableScope] | None = None  # pyright: ignore
+    scopes: list[AvailableScope] | None = None  # type: ignore[invalid-type-form]  # pyright: ignore
 
 
 class OrganizationAccessToken(TimestampedSchema):

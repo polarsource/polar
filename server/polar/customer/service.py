@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -51,7 +52,7 @@ class CustomerService:
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerSortProperty]] = [
             (CustomerSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Customer], int]:

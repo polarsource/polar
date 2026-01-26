@@ -155,7 +155,7 @@ class CheckoutLinkBase(
     discount_id: UUID4 | None = Field(description=_discount_id_description)
     organization_id: OrganizationID
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def url(self) -> str:
         return settings.CHECKOUT_BASE_URL.format(client_secret=self.client_secret)

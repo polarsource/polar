@@ -1,3 +1,4 @@
+import builtins
 from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
@@ -31,7 +32,7 @@ class MemberService:
         *,
         customer_id: UUID | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[MemberSortProperty]] = [
+        sorting: builtins.list[Sorting[MemberSortProperty]] = [
             (MemberSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Member], int]:

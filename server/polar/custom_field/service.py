@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -41,7 +42,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         query: str | None = None,
         type: Sequence[CustomFieldType] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomFieldSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomFieldSortProperty]] = [
             (CustomFieldSortProperty.slug, False)
         ],
     ) -> tuple[Sequence[CustomField], int]:

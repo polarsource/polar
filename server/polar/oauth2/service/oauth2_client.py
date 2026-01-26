@@ -87,6 +87,9 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
                 "Security Notice - "
                 "Your Polar OAuth2 Client Registration Token has been leaked"
             )
+        else:
+            # Unreachable: validated by the first if/elif/else block above
+            raise AssertionError(f"Unexpected token type: {token_type}")
         session.add(client)
 
         if client.user is not None:

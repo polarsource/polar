@@ -118,7 +118,7 @@ class LLMMetadata(TypedDict):
     ]
 
 
-class EventMetadataInput(  # type: ignore[call-arg]
+class EventMetadataInput(
     TypedDict,
     total=False,
     extra_items=MetadataValue,
@@ -538,7 +538,7 @@ SystemEvent = Annotated[
 ]
 
 
-class EventMetadataOutput(  # type: ignore[call-arg]
+class EventMetadataOutput(
     TypedDict,
     total=False,
     extra_items=str | int | float | bool,

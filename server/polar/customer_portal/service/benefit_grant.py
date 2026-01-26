@@ -1,3 +1,4 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
@@ -53,7 +54,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         member_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
+        sorting: builtins.list[Sorting[CustomerBenefitGrantSortProperty]] = [
             (CustomerBenefitGrantSortProperty.product_benefit, False),
             (CustomerBenefitGrantSortProperty.granted_at, True),
         ],

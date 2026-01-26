@@ -622,7 +622,7 @@ class TestGetPaymentStatus:
         organization.account = account
         organization.account_id = account.id
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
         await save_fixture(organization)
 
         # Ensure relationships are loaded
@@ -680,7 +680,7 @@ class TestGetPaymentStatus:
         organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
-        organization.details = {"about": "Test"}  # type: ignore
+        organization.details = {"about": "Test"}
 
         # Set up user verification
         user.identity_verification_status = IdentityVerificationStatus.verified
@@ -759,7 +759,7 @@ class TestValidateWithAI:
         """Test successful AI validation through service layer."""
         # Given
         mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
+        organization.details = {"description": "A test software company"}
         session.add(organization)
         await session.flush()
 
@@ -804,7 +804,7 @@ class TestValidateWithAI:
         """Test AI validation flow works with TestModel."""
         # Given
         mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
+        organization.details = {"description": "A test software company"}
         session.add(organization)
         await session.flush()
 
@@ -846,7 +846,7 @@ class TestValidateWithAI:
         """Test AI validation timeout handling."""
         # Given
         mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
+        organization.details = {"description": "A test software company"}
         session.add(organization)
         await session.flush()
 
@@ -900,7 +900,7 @@ class TestValidateWithAI:
     ) -> None:
         """Test AI validation handles validator exceptions."""
         # Given
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
+        organization.details = {"description": "A test software company"}
         session.add(organization)
         await session.flush()
 
@@ -982,7 +982,7 @@ class TestValidateWithAI:
         """Test multiple AI validations for the same organization."""
         # Given
         mock_fetch_policy.return_value = "Mock policy content"
-        organization.details = {"description": "A test software company"}  # type: ignore[assignment]
+        organization.details = {"description": "A test software company"}
         session.add(organization)
         await session.flush()
 
@@ -1700,7 +1700,7 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         """Soft delete clears details and socials."""
-        organization.details = {"about": "Test company"}  # type: ignore[assignment]
+        organization.details = {"about": "Test company"}
         organization.socials = [
             {"platform": "twitter", "url": "https://twitter.com/test"}
         ]
@@ -1710,5 +1710,5 @@ class TestSoftDeleteOrganization:
             session, organization
         )
 
-        assert result.details == {}  # type: ignore[comparison-overlap]
+        assert result.details == {}
         assert result.socials == []

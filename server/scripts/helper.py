@@ -26,10 +26,10 @@ def configure_script_logging() -> None:
     )
 
 
-def typer_async(f):  # type: ignore
+def typer_async(f):
     # From https://github.com/tiangolo/typer/issues/85
     @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper

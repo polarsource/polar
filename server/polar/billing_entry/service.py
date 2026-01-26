@@ -197,6 +197,15 @@ class BillingEntryService:
         elif entry.direction == BillingEntryDirection.debit:
             label = f"{product.name} — From {start} to {end}"
             amount = amount
+        else:
+            # This should never happen - log if a new BillingEntryDirection is added
+            log.warning(
+                "billing_entry.unknown_direction",
+                direction=entry.direction,
+                entry_id=str(entry.id),
+            )
+            label = f"{product.name} — From {start} to {end}"
+            amount = amount
 
         return StaticLineItem(
             price=price,

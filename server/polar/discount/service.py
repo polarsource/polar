@@ -1,3 +1,4 @@
+import builtins
 import contextlib
 import uuid
 from collections.abc import AsyncIterator, Sequence
@@ -54,7 +55,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[DiscountSortProperty]] = [
+        sorting: builtins.list[Sorting[DiscountSortProperty]] = [
             (DiscountSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Discount], int]:

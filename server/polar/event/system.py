@@ -77,7 +77,7 @@ class MeterCreditedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.meter_credited]]
-        user_metadata: Mapped[MeterCreditedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[MeterCreditedMetadata]
 
 
 class MeterResetMetadata(TypedDict):
@@ -88,7 +88,7 @@ class MeterResetEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.meter_reset]]
-        user_metadata: Mapped[MeterResetMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[MeterResetMetadata]
 
 
 class BenefitGrantMetadata(TypedDict):
@@ -102,28 +102,28 @@ class BenefitGrantedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.benefit_granted]]
-        user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BenefitGrantMetadata]
 
 
 class BenefitCycledEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.benefit_cycled]]
-        user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BenefitGrantMetadata]
 
 
 class BenefitUpdatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.benefit_updated]]
-        user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BenefitGrantMetadata]
 
 
 class BenefitRevokedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.benefit_revoked]]
-        user_metadata: Mapped[BenefitGrantMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BenefitGrantMetadata]
 
 
 class CustomerCreatedMetadata(TypedDict):
@@ -137,7 +137,7 @@ class CustomerCreatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.customer_created]]
-        user_metadata: Mapped[CustomerCreatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[CustomerCreatedMetadata]
 
 
 class CustomerUpdatedFields(TypedDict):
@@ -160,7 +160,7 @@ class CustomerUpdatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.customer_updated]]
-        user_metadata: Mapped[CustomerUpdatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[CustomerUpdatedMetadata]
 
 
 class CustomerDeletedMetadata(TypedDict):
@@ -174,7 +174,7 @@ class CustomerDeletedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.customer_deleted]]
-        user_metadata: Mapped[CustomerDeletedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[CustomerDeletedMetadata]
 
 
 class SubscriptionCreatedMetadata(TypedDict):
@@ -191,7 +191,7 @@ class SubscriptionCreatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_created]]
-        user_metadata: Mapped[SubscriptionCreatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionCreatedMetadata]
 
 
 class SubscriptionCanceledMetadata(TypedDict):
@@ -212,7 +212,7 @@ class SubscriptionCanceledEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_canceled]]
-        user_metadata: Mapped[SubscriptionCanceledMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionCanceledMetadata]
 
 
 class SubscriptionCycledMetadata(TypedDict):
@@ -228,7 +228,7 @@ class SubscriptionCycledEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_cycled]]
-        user_metadata: Mapped[SubscriptionCycledMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionCycledMetadata]
 
 
 class SubscriptionRevokedMetadata(TypedDict):
@@ -244,7 +244,7 @@ class SubscriptionRevokedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_revoked]]
-        user_metadata: Mapped[SubscriptionRevokedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionRevokedMetadata]
 
 
 class SubscriptionUncanceledMetadata(TypedDict):
@@ -260,7 +260,7 @@ class SubscriptionUncanceledEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_uncanceled]]
-        user_metadata: Mapped[SubscriptionUncanceledMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionUncanceledMetadata]
 
 
 class SubscriptionProductUpdatedMetadata(TypedDict):
@@ -273,7 +273,7 @@ class SubscriptionProductUpdatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_product_updated]]
-        user_metadata: Mapped[SubscriptionProductUpdatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionProductUpdatedMetadata]
 
 
 class SubscriptionSeatsUpdatedMetadata(TypedDict):
@@ -287,7 +287,7 @@ class SubscriptionSeatsUpdatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_seats_updated]]
-        user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionSeatsUpdatedMetadata]
 
 
 class SubscriptionBillingPeriodUpdatedMetadata(TypedDict):
@@ -300,7 +300,7 @@ class SubscriptionBillingPeriodUpdatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_billing_period_updated]]
-        user_metadata: Mapped[SubscriptionBillingPeriodUpdatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[SubscriptionBillingPeriodUpdatedMetadata]
 
 
 class OrderPaidMetadata(TypedDict):
@@ -324,7 +324,7 @@ class OrderPaidEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.order_paid]]
-        user_metadata: Mapped[OrderPaidMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[OrderPaidMetadata]
 
 
 class OrderRefundedMetadata(TypedDict):
@@ -337,7 +337,7 @@ class OrderRefundedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.order_refunded]]
-        user_metadata: Mapped[OrderRefundedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[OrderRefundedMetadata]
 
 
 class CheckoutCreatedMetadata(TypedDict):
@@ -350,7 +350,7 @@ class CheckoutCreatedEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.checkout_created]]
-        user_metadata: Mapped[CheckoutCreatedMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[CheckoutCreatedMetadata]
 
 
 class BalanceOrderMetadata(TypedDict):
@@ -372,7 +372,7 @@ class BalanceOrderEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.balance_order]]
-        user_metadata: Mapped[BalanceOrderMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BalanceOrderMetadata]
 
 
 class BalanceCreditOrderMetadata(TypedDict):
@@ -416,14 +416,14 @@ class BalanceRefundEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.balance_refund]]
-        user_metadata: Mapped[BalanceRefundMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BalanceRefundMetadata]
 
 
 class BalanceRefundReversalEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.balance_refund_reversal]]
-        user_metadata: Mapped[BalanceRefundMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BalanceRefundMetadata]
 
 
 class BalanceDisputeMetadata(TypedDict):
@@ -447,14 +447,14 @@ class BalanceDisputeEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.balance_dispute]]
-        user_metadata: Mapped[BalanceDisputeMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BalanceDisputeMetadata]
 
 
 class BalanceDisputeReversalEvent(Event):
     if TYPE_CHECKING:
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.balance_dispute_reversal]]
-        user_metadata: Mapped[BalanceDisputeMetadata]  # type: ignore[assignment]
+        user_metadata: Mapped[BalanceDisputeMetadata]
 
 
 @overload

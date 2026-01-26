@@ -52,6 +52,16 @@ Polar needs a [Python 3](https://www.python.org/downloads/) and [Node.js 24](htt
 >
 > [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
 
+> [!TIP]
+> **New: `dev` CLI (beta)** - A single command to set up everything automatically.
+>
+> ```sh
+> ./dev/cli/install   # One-time setup to add the 'dev' alias
+> dev up              # Sets up the entire environment
+> ```
+>
+> It handles Docker, Node.js, dependencies, migrations, and more. See [dev/cli/README.md](dev/cli/README.md) for all commands.
+
 ### Setup environment variables
 
 For the Polar stack to run properly, it needs quite a bunch of settings defined as environment variables. To ease things, we provide a script to bootstrap them. It requires [uv](https://docs.astral.sh/uv/getting-started/installation/) to be installed on your system.

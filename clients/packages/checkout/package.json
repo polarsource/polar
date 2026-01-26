@@ -61,6 +61,5 @@
     "@stripe/react-stripe-js": "^3.6.0 || ^4.0.2",
     "@stripe/stripe-js": "^7.1.0",
     "react": "^18 || ^19"
-  },
-  "packageManager": "pnpm@10.28.1"
+  }
 }

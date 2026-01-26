@@ -10,6 +10,5 @@
   "dependencies": {
     "@polar-sh/checkout": "workspace:*",
     "http-server": "^14.1.1"
-  },
-  "packageManager": "pnpm@10.28.1"
+  }
 }

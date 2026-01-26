@@ -75,6 +75,5 @@
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
-  },
-  "packageManager": "pnpm@10.28.1"
+  }
 }

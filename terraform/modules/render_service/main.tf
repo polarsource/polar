@@ -181,6 +181,7 @@ resource "render_env_group" "tinybird" {
   env_vars = {
     POLAR_TINYBIRD_API_URL      = { value = var.tinybird_config.api_url }
     POLAR_TINYBIRD_API_TOKEN    = { value = var.tinybird_config.api_token }
+    POLAR_TINYBIRD_WORKSPACE    = { value = var.tinybird_config.workspace }
     POLAR_TINYBIRD_EVENTS_WRITE = { value = var.tinybird_config.events_write }
     POLAR_TINYBIRD_EVENTS_READ  = { value = var.tinybird_config.events_read }
   }

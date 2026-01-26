@@ -234,6 +234,7 @@ module "test" {
   tinybird_config = {
     api_url      = "https://api.us-east.aws.tinybird.co"
     api_token    = var.tinybird_api_token
+    workspace    = var.tinybird_workspace
     events_write = false
     events_read  = false
   }

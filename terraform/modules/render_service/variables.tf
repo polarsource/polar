@@ -237,6 +237,7 @@ variable "tinybird_config" {
   type = object({
     api_url      = string
     api_token    = string
+    workspace    = string
     events_write = bool
     events_read  = bool
   })

@@ -216,7 +216,7 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   return (
     <Select
       onValueChange={field.onChange}
-      defaultValue={field.value}
+      value={field.value || undefined}
       required={required}
     >
       <SelectTrigger>

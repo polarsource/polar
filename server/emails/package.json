@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "prettier src/** --write"
   },
-  "packageManager": "pnpm@10.5.2",
+  "packageManager": "pnpm@10.28.1",
   "dependencies": {
     "@react-email/components": "^1.0.1",
     "@react-email/render": "^2.0.0",

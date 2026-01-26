@@ -33,7 +33,7 @@ log: Logger = structlog.get_logger()
 @actor(
     actor_name="webhook_event.send",
     max_retries=settings.WEBHOOK_MAX_RETRIES,
-    priority=TaskPriority.MEDIUM,
+    queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
     async with AsyncSessionMaker() as session:

@@ -83,9 +83,7 @@ async def webhook_trigger(newer_than: datetime) -> None:
                 task = progress.add_task("[green]Processing...", total=count)
                 async for event in events:
                     event_id = event._tuple()[0]
-                    manager.enqueue_job(
-                        "webhook_event.send.v2", webhook_event_id=event_id
-                    )
+                    manager.enqueue_job("webhook_event.send", webhook_event_id=event_id)
                     progress.advance(task)
 
 

@@ -1,3 +1,4 @@
+# Stage 1: Build the email renderer binary
 FROM node:22-slim AS build-emails-bin
 
 ENV PNPM_HOME="/pnpm"
@@ -15,6 +16,7 @@ COPY ./emails/tsup.config.js .
 
 RUN pnpm run build
 
+# Stage 2: Build the backoffice static assets
 FROM node:22-slim AS build-backoffice
 
 ENV PNPM_HOME="/pnpm"
@@ -30,6 +32,19 @@ COPY ./polar/backoffice/ .
 
 RUN pnpm run build
 
+# Stage 3: Download IPInfo database with checksum validation
+FROM alpine:3.21 AS download-ipinfo
+
+RUN apk add --no-cache curl jq
+
+RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN \
+  mkdir /data && \
+  TOKEN=$(cat /run/secrets/IPINFO_ACCESS_TOKEN) && \
+  EXPECTED_SHA256=$(curl -fsSL "https://ipinfo.io/data/free/country_asn.mmdb/checksums?token=${TOKEN}" | jq -r '.checksums.sha256') && \
+  curl -fsSL "https://ipinfo.io/data/free/country_asn.mmdb?token=${TOKEN}" -o /data/country_asn.mmdb && \
+  echo "${EXPECTED_SHA256}  /data/country_asn.mmdb" | sha256sum -c -
+
+# Stage 4: Final production image
 FROM --platform=$BUILDPLATFORM python:3.14-slim
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
@@ -51,7 +66,6 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   build-essential \
   redis \
   libpq-dev \
-  curl \
   # tzdata-legacy is needed to accept legacy timezone names in Python like "Asia/Calcutta"
   tzdata-legacy \
   && uv sync --no-group dev --frozen \
@@ -65,7 +79,7 @@ ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
 COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
 RUN ls -la /app/server/polar/backoffice/static
 
-RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN mkdir /data && curl -fsSL https://ipinfo.io/data/free/country_asn.mmdb?token=$(cat /run/secrets/IPINFO_ACCESS_TOKEN) -o /data/country_asn.mmdb
+COPY --from=download-ipinfo /data /data
 ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data
 ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb
 

@@ -9,6 +9,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Benefit, Customer, Member, Organization, Subscription
+from polar.models.member import MemberRole
 from tests.fixtures.auth import MEMBER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant, create_member
@@ -271,7 +272,7 @@ class TestListMember:
             customer=customer,
             organization=organization,
             email="member.second@example.com",
-            role="member",
+            role=MemberRole.member,
         )
 
         # Create a grant for the other member
@@ -376,7 +377,7 @@ class TestGetByIdMember:
             customer=customer,
             organization=organization,
             email="member.second@example.com",
-            role="member",
+            role=MemberRole.member,
         )
 
         # Create a grant for the other member

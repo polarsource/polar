@@ -8,6 +8,7 @@ from githubkit.versions.latest.models import (
     SimpleUser,
     UserInstallationsGetResponse200,
     UserInstallationsInstallationIdRepositoriesGetResponse200,
+    UserInstallationsInstallationIdRepositoriesGetResponse200PropRepositoriesItems,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "SimpleUser",
     "UserInstallationsGetResponse200",
     "UserInstallationsInstallationIdRepositoriesGetResponse200",
+    "UserInstallationsInstallationIdRepositoriesGetResponse200PropRepositoriesItems",
 ]

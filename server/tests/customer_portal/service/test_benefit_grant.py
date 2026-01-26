@@ -8,7 +8,7 @@ from polar.customer_portal.service.benefit_grant import (
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Benefit, Customer, Member, Subscription
+from polar.models import Benefit, Customer, Member, Organization, Subscription
 from tests.fixtures.auth import MEMBER_AUTH_SUBJECT, AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant, create_member
@@ -252,6 +252,7 @@ class TestListMember:
         benefit_organization: Benefit,
         customer: Customer,
         member: Member,
+        organization: Organization,
     ) -> None:
         """Member should only see grants assigned to them, not other grants."""
         # Create a grant for the member
@@ -268,6 +269,7 @@ class TestListMember:
         member_second = await create_member(
             save_fixture,
             customer=customer,
+            organization=organization,
             email="member.second@example.com",
             role="member",
         )
@@ -365,12 +367,14 @@ class TestGetByIdMember:
         benefit_organization: Benefit,
         customer: Customer,
         member: Member,
+        organization: Organization,
     ) -> None:
         """Member should not be able to access another member's grant."""
         # Create another member for the same customer
         member_second = await create_member(
             save_fixture,
             customer=customer,
+            organization=organization,
             email="member.second@example.com",
             role="member",
         )

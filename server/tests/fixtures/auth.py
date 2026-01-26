@@ -5,7 +5,6 @@ import pytest
 from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import Scope
 from polar.models import Customer, Member, Organization, User
-from polar.models.member import MemberRole
 
 
 class AuthSubjectFixture:
@@ -94,12 +93,12 @@ def auth_subject(
         member_owner: Member = request.getfixturevalue("member_owner")
         subjects_map["member_owner"] = member_owner
     elif subject_key == "member_billing_manager":
-        member_billing_manager: Member = request.getfixturevalue("member_billing_manager")
+        member_billing_manager: Member = request.getfixturevalue(
+            "member_billing_manager"
+        )
         subjects_map["member_billing_manager"] = member_billing_manager
 
-    return AuthSubject(
-        subjects_map[subject_key], auth_subject_fixture.scopes, None
-    )
+    return AuthSubject(subjects_map[subject_key], auth_subject_fixture.scopes, None)
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

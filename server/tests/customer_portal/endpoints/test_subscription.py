@@ -435,7 +435,9 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
 
         assert response.status_code == 403
         error = response.json()
-        assert any(word in error["detail"].lower() for word in ["billing", "permission"])
+        assert any(
+            word in error["detail"].lower() for word in ["billing", "permission"]
+        )
 
 
 @pytest.mark.asyncio
@@ -518,4 +520,6 @@ class TestMemberRoleEnforcementSubscriptionCancel:
 
         assert response.status_code == 403
         error = response.json()
-        assert any(word in error["detail"].lower() for word in ["billing", "permission"])
+        assert any(
+            word in error["detail"].lower() for word in ["billing", "permission"]
+        )

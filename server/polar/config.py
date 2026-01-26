@@ -240,6 +240,7 @@ class Settings(BaseSettings):
     # Tinybird
     TINYBIRD_API_URL: str = "http://localhost:7181"
     TINYBIRD_API_TOKEN: str | None = None
+    TINYBIRD_WORKSPACE: str | None = None
     TINYBIRD_EVENTS_WRITE: bool = False
     TINYBIRD_EVENTS_READ: bool = False
 

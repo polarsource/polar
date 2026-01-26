@@ -190,23 +190,3 @@ def get_nested_metadata_attr[M: MetadataMixin](
     for part in parts[1:]:
         attr = attr[part]
     return attr
-
-
-def extract_metadata_value(
-    metadata: dict[str, Any], property_selector: str
-) -> str | None:
-    """
-    Extract a value from metadata using a property selector.
-
-    Supports:
-    - Simple keys: "subject" -> metadata["subject"]
-    - Nested keys: "metadata.subject" -> metadata["metadata"]["subject"]
-    - Dot-separated paths of any depth
-
-    Returns the value as a string if found, None otherwise.
-    """
-    if not property_selector:
-        return None
-
-    value = get_nested_metadata_value(metadata, property_selector)
-    return str(value) if value is not None else None

@@ -14,7 +14,7 @@ import {
   useGetNotificationRecipient,
 } from './polar/notifications'
 
-console.log('foo')
+console.log('foo2')
 
 const widgetStorage = new ExtensionStorage('group.com.polarsource.Polar')
 

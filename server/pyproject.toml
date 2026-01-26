@@ -81,7 +81,7 @@ dev = [
   "pytest-xdist[psutil]>=3.6.1",
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
-  "polar-sdk==0.27.3",
+  "polar-sdk==0.28.3",
   "locust>=2.20.0",
   "debugpy>=1.8.19",
 ]

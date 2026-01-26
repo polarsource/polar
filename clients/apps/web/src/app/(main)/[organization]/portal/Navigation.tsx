@@ -17,36 +17,6 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-import { MemberRole, RoleBadge } from './RoleBadge'
-
-// Helper to extract user info from the PortalAuthenticatedUser type
-function getUserInfo(user: schemas['PortalAuthenticatedUser'] | undefined): {
-  name: string | null
-  email: string | null
-  isMember: boolean
-  role: MemberRole | null
-} {
-  if (!user) {
-    return { name: null, email: null, isMember: false, role: null }
-  }
-
-  if (user.type === 'member') {
-    return {
-      name: user.name,
-      email: user.email,
-      isMember: true,
-      role: user.role as MemberRole,
-    }
-  }
-
-  // type === 'customer'
-  return {
-    name: user.name,
-    email: user.email,
-    isMember: false,
-    role: null,
-  }
-}
 
 const hasBillingPermission = (
   authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
@@ -124,7 +94,6 @@ const NavigationContent = ({
   const router = useRouter()
   const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
-  const userInfo = getUserInfo(authenticatedUser)
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
@@ -144,15 +113,10 @@ const NavigationContent = ({
             <span>Back to {organization.name}</span>
           </Link>
         )}
-        <div className="flex flex-col gap-y-1">
-          <div className="flex flex-row items-center gap-x-2">
-            <h3>{userInfo.name ?? '—'}</h3>
-            {userInfo.isMember && userInfo.role && (
-              <RoleBadge role={userInfo.role} />
-            )}
-          </div>
+        <div className="flex flex-col">
+          <h3>{authenticatedUser?.name ?? '—'}</h3>
           <span className="dark:text-polar-500 text-gray-500">
-            {userInfo.email ?? '—'}
+            {authenticatedUser?.email ?? '—'}
           </span>
         </div>
         <div className="flex flex-col gap-y-1">

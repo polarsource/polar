@@ -422,6 +422,39 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                 )
               }}
             />
+            <FormField
+              control={control}
+              name="max_redemptions_per_customer"
+              rules={{
+                min: { value: 1, message: 'This field must be at least 1' },
+              }}
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Maximum redemptions per customer</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          field.onChange(
+                            value === '' ? null : parseInt(value, 10),
+                          )
+                        }}
+                        min={1}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      Limit how many times a single customer can use this
+                      discount.
+                    </FormDescription>
+                  </FormItem>
+                )
+              }}
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

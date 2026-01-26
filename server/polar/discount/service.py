@@ -9,7 +9,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.discount.repository import DiscountRepository
+from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.pagination import PaginationParams, paginate
@@ -43,6 +43,15 @@ class DiscountError(PolarError): ...
 class DiscountNotRedeemableError(DiscountError):
     def __init__(self, discount: Discount):
         super().__init__(f"Discount {discount.id} is not redeemable.")
+
+
+class DiscountPerCustomerLimitReachedError(DiscountError):
+    def __init__(self, discount: Discount, customer_id: uuid.UUID):
+        self.customer_id = customer_id
+        super().__init__(
+            f"Discount {discount.id} per-customer limit reached "
+            f"for customer {customer_id}."
+        )
 
 
 class DiscountService(ResourceServiceReader[Discount]):
@@ -373,7 +382,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         return discount
 
     async def is_redeemable_discount(
-        self, session: AsyncSession, discount: Discount
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        *,
+        customer_id: uuid.UUID | None = None,
     ) -> bool:
         if discount.starts_at is not None and discount.starts_at > utc_now():
             return False
@@ -383,13 +396,26 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.max_redemptions is not None:
             await session.refresh(discount, {"redemptions_count"})
-            return discount.redemptions_count < discount.max_redemptions
+            if discount.redemptions_count >= discount.max_redemptions:
+                return False
+
+        if discount.max_redemptions_per_customer is not None and customer_id is not None:
+            redemption_repository = DiscountRedemptionRepository.from_session(session)
+            customer_redemptions = await redemption_repository.count_by_discount_and_customer(
+                discount.id, customer_id
+            )
+            if customer_redemptions >= discount.max_redemptions_per_customer:
+                return False
 
         return True
 
     @contextlib.asynccontextmanager
     async def redeem_discount(
-        self, session: AsyncSession, discount: Discount
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        *,
+        customer_id: uuid.UUID | None = None,
     ) -> AsyncIterator[DiscountRedemption]:
         """
         Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
@@ -407,10 +433,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                 raise DiscountNotRedeemableError(discount) from e
             raise
 
-        if not await self.is_redeemable_discount(session, discount):
+        if not await self.is_redeemable_discount(session, discount, customer_id=customer_id):
             raise DiscountNotRedeemableError(discount)
 
-        discount_redemption = DiscountRedemption(discount=discount)
+        # Check per-customer limit and raise specific error
+        if (
+            discount.max_redemptions_per_customer is not None
+            and customer_id is not None
+        ):
+            redemption_repository = DiscountRedemptionRepository.from_session(session)
+            customer_redemptions = await redemption_repository.count_by_discount_and_customer(
+                discount.id, customer_id
+            )
+            if customer_redemptions >= discount.max_redemptions_per_customer:
+                raise DiscountPerCustomerLimitReachedError(discount, customer_id)
+
+        discount_redemption = DiscountRedemption(discount=discount, customer_id=customer_id)
 
         yield discount_redemption
 

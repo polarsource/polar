@@ -29,7 +29,10 @@ from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.discount.service import DiscountNotRedeemableError
+from polar.discount.service import (
+    DiscountNotRedeemableError,
+    DiscountPerCustomerLimitReachedError,
+)
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
@@ -969,12 +972,26 @@ class CheckoutService:
             if checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
-                        session, checkout.discount
+                        session, checkout.discount, customer_id=checkout.customer_id
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
                             session, auth_subject, checkout, checkout_confirm
                         )
+                except DiscountPerCustomerLimitReachedError as e:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "discount_id"),
+                                "msg": (
+                                    "You have reached the maximum number of "
+                                    "redemptions for this discount."
+                                ),
+                                "input": checkout.discount.id,
+                            }
+                        ]
+                    ) from e
                 except DiscountNotRedeemableError as e:
                     raise PolarRequestValidationError(
                         [

@@ -86,6 +86,9 @@ class Discount(MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
     max_redemptions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_redemptions_per_customer: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
 
     duration: Mapped[DiscountDuration] = mapped_column(String, nullable=False)
     duration_in_months: Mapped[int | None] = mapped_column(Integer, nullable=True)

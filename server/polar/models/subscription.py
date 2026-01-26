@@ -60,19 +60,19 @@ class SubscriptionStatus(StrEnum):
 
     @classmethod
     def incomplete_statuses(cls) -> set[Self]:
-        return {cls.incomplete, cls.incomplete_expired}  # type: ignore
+        return {cls.incomplete, cls.incomplete_expired}  # pyright: ignore
 
     @classmethod
     def active_statuses(cls) -> set[Self]:
-        return {cls.trialing, cls.active}  # type: ignore
+        return {cls.trialing, cls.active}  # pyright: ignore
 
     @classmethod
     def revoked_statuses(cls) -> set[Self]:
-        return {cls.canceled, cls.unpaid}  # type: ignore
+        return {cls.canceled, cls.unpaid}  # pyright: ignore
 
     @classmethod
     def billable_statuses(cls) -> set[Self]:
-        return cls.active_statuses() | {cls.past_due}  # type: ignore
+        return cls.active_statuses() | {cls.past_due}  # pyright: ignore
 
     @classmethod
     def is_incomplete(cls, status: Self) -> bool:

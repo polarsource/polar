@@ -155,11 +155,11 @@ class OrganizationStatus(StrEnum):
 
     @classmethod
     def review_statuses(cls) -> set[Self]:
-        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # type: ignore
+        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # pyright: ignore
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:
-        return {cls.ACTIVE, *cls.review_statuses()}  # type: ignore
+        return {cls.ACTIVE, *cls.review_statuses()}  # pyright: ignore
 
 
 class Organization(RateLimitGroupMixin, RecordModel):

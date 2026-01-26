@@ -309,6 +309,15 @@ resource "cloudflare_dns_record" "api" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "api_alt" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "api-alt.polar.sh"
+  type    = "CNAME"
+  content = replace(module.production.api_service_url, "https://", "")
+  proxied = false
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "backoffice" {
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
   name    = "backoffice.polar.sh"

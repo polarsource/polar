@@ -17,6 +17,7 @@ jobs:
     outputs:
       server: ${{ steps.filter.outputs.server }}
       migrations: ${{ steps.filter.outputs.migrations }}
+      tinybird: ${{ steps.filter.outputs.tinybird }}
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v6
@@ -30,6 +31,8 @@ jobs:
               - '.github/workflows/test_server.yaml'
             migrations:
               - 'server/migrations/versions/**'
+            tinybird:
+              - 'server/tinybird/**'
 
   linters:
     name: "Server: Linters 📝"
@@ -70,6 +73,21 @@ jobs:
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
         run: uv run task lint_types
+
+  tinybird-check:
+    name: "Server: Tinybird Schema 🐦"
+    needs: changes
+    if: needs.changes.outputs.tinybird == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: 🐦 Validate Tinybird schema
+        working-directory: ./server/tinybird
+        run: tb build
 
   migration-check:
     name: "Server: Migration Check 📚"

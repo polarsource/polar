@@ -286,18 +286,8 @@ module "production" {
 # =============================================================================
 
 import {
-  to = cloudflare_dns_record.api
-  id = "22bcd1b07ec25452aab472486bc8df94/4207c475d8046532273c9ebec88fb55e"
-}
-
-import {
-  to = cloudflare_dns_record.backoffice
-  id = "22bcd1b07ec25452aab472486bc8df94/26980a2206bce3385e7567ce64174c37"
-}
-
-import {
-  to = cloudflare_dns_record.worker
-  id = "22bcd1b07ec25452aab472486bc8df94/52370ab4a0fbc82b3dd10bdd340682d7"
+  to = cloudflare_dns_record.api_alt
+  id = "22bcd1b07ec25452aab472486bc8df94/1a6c7816eb431628b77b6df3fc2bde51"
 }
 
 resource "cloudflare_dns_record" "api" {

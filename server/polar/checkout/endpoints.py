@@ -4,7 +4,7 @@ from fastapi import Depends, Path, Query, Request
 from pydantic import UUID4
 from sse_starlette.sse import EventSourceResponse
 
-from polar.customer.schemas.customer import CustomerID
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import PaymentNotReady, ResourceNotFound
@@ -95,6 +95,11 @@ async def list(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    ),
     status: MultipleQueryFilter[CheckoutStatus] | None = Query(
         None,
         title="Status Filter",
@@ -110,6 +115,7 @@ async def list(
         organization_id=organization_id,
         product_id=product_id,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         status=status,
         query=query,
         pagination=pagination,

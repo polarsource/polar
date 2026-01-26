@@ -267,6 +267,7 @@ class OrderService:
         product_billing_type: Sequence[ProductBillingType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -301,11 +302,14 @@ class OrderService:
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))
 
-        # TODO:
-        # Once we add `external_customer_id` be sure to filter for non-deleted.
-        # Since it could be shared across soft deleted records whereas the unique ID cannot.
         if customer_id is not None:
             statement = statement.where(Order.customer_id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(
+                Customer.external_id.in_(external_customer_id),
+                Customer.deleted_at.is_(None),
+            )
 
         if checkout_id is not None:
             statement = statement.where(Order.checkout_id.in_(checkout_id))

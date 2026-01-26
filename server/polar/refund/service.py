@@ -21,6 +21,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
+    Customer,
     Dispute,
     Order,
     Organization,
@@ -111,6 +112,7 @@ class RefundService:
         order_id: Sequence[UUID] | None = None,
         subscription_id: Sequence[UUID] | None = None,
         customer_id: Sequence[UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         succeeded: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[RefundSortProperty]] = [
@@ -134,6 +136,11 @@ class RefundService:
 
         if customer_id is not None:
             statement = statement.where(Refund.customer_id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.join(Customer).where(
+                Customer.external_id.in_(external_customer_id)
+            )
 
         if succeeded is not None:
             if succeeded:

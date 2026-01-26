@@ -30,6 +30,7 @@ class MemberService:
         auth_subject: AuthSubject[User | Organization],
         *,
         customer_id: UUID | None = None,
+        external_customer_id: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[MemberSortProperty]] = [
             (MemberSortProperty.created_at, True)
@@ -41,6 +42,11 @@ class MemberService:
 
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
+
+        if external_customer_id is not None:
+            statement = statement.join(Customer).where(
+                Customer.external_id == external_customer_id
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

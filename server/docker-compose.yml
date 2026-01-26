@@ -35,6 +35,23 @@ services:
       interval: 2s
       retries: 20
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    hostname: polar-rabbitmq
+    ports:
+      - "${POLAR_RABBITMQ_PORT}:5672"
+      - "${POLAR_RABBITMQ_MANAGEMENT_PORT}:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${POLAR_RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${POLAR_RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      timeout: 30s
+      interval: 10s
+      retries: 5
+
   minio:
     image: bitnamilegacy/minio:2024.5.28
     ports:
@@ -109,6 +126,7 @@ services:
       - "7181:7181"
 
 volumes:
+  rabbitmq_data:
   postgres_data:
   minio_data:
     driver: local

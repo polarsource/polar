@@ -76,7 +76,6 @@ from polar.models.benefit_grant import (
     BenefitGrantScope,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.member import MemberRole
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,
@@ -99,6 +98,7 @@ from polar.models.discount import (
 )
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.event import EventSource
+from polar.models.member import MemberRole
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
@@ -816,27 +816,6 @@ async def create_customer(
     )
     await save_fixture(customer)
     return customer
-
-
-async def create_member(
-    save_fixture: SaveFixture,
-    *,
-    customer: Customer,
-    email: str | None = None,
-    name: str | None = None,
-    role: str = "owner",
-    external_id: str | None = None,
-) -> Member:
-    member = Member(
-        customer_id=customer.id,
-        organization_id=customer.organization_id,
-        email=email or customer.email,
-        name=name or customer.name,
-        role=role,
-        external_id=external_id,
-    )
-    await save_fixture(member)
-    return member
 
 
 async def create_order(
@@ -1594,26 +1573,17 @@ async def customer(
 
 
 @pytest_asyncio.fixture
-async def member(
-    save_fixture: SaveFixture,
-    customer: Customer,
-) -> Member:
-    return await create_member(
-        save_fixture,
-        customer=customer,
-    )
-
-
-@pytest_asyncio.fixture
 async def member_second(
     save_fixture: SaveFixture,
     customer: Customer,
+    organization: Organization,
 ) -> Member:
     return await create_member(
         save_fixture,
         customer=customer,
+        organization=organization,
         email=lstr("member.second@example.com"),
-        role="member",
+        role=MemberRole.member,
     )
 
 

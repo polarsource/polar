@@ -250,6 +250,6 @@ resource "cloudflare_dns_record" "test_api" {
   name    = "test-api.polar.sh"
   type    = "CNAME"
   content = replace(module.test.api_service_url, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }

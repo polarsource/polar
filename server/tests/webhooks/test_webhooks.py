@@ -56,7 +56,7 @@ async def test_webhook_send(
     assert event.webhook_endpoint == endpoint
 
     enqueue_job_mock.assert_called_once_with(
-        "webhook_event.send.v2", webhook_event_id=event.id
+        "webhook_event.send", webhook_event_id=event.id
     )
 
 

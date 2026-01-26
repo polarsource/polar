@@ -11,7 +11,7 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0.34",
   "greenlet>=3.1.1",
   "structlog>=24.4.0",
-  "githubkit==0.14.2",
+  "githubkit==0.14.3",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
   "stripe>=10.12.0,<12",

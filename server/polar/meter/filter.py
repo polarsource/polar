@@ -19,8 +19,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+
 if TYPE_CHECKING:
     from polar.models import Event
+
 
 # PostgreSQL int4 range limits
 INT_MIN_VALUE = -2_147_483_648
@@ -67,7 +70,7 @@ class FilterClause(BaseModel):
                 return self._get_comparison_clause(attr, self._get_str_value())
             return self._get_comparison_clause(attr, self.value)
 
-        attr = model.user_metadata[self.property]
+        attr = get_nested_metadata_attr(model, self.property)
 
         # The operator is LIKE OR NOT LIKE, treat everything as a string
         if self.operator in (FilterOperator.like, FilterOperator.not_like):
@@ -144,7 +147,7 @@ class FilterClause(BaseModel):
                 return False
             actual_value = int(event.timestamp.timestamp())
         else:
-            actual_value = event.user_metadata.get(self.property)
+            actual_value = get_nested_metadata_value(event.user_metadata, self.property)
             if actual_value is None:
                 return False
 

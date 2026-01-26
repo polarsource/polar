@@ -158,30 +158,41 @@ def apply_metadata_clause[M: MetadataMixin](
     return statement.where(clause)
 
 
-def extract_metadata_value(
-    metadata: dict[str, Any], property_selector: str
-) -> str | None:
+def get_nested_metadata_value(data: dict[str, Any], property_path: str) -> Any:
     """
-    Extract a value from metadata using a property selector.
+    Get value from nested dict using dot-notation path.
 
     Supports:
     - Simple keys: "subject" -> metadata["subject"]
     - Nested keys: "metadata.subject" -> metadata["metadata"]["subject"]
     - Dot-separated paths of any depth
 
-    Returns the value as a string if found, None otherwise.
+    Returns the value if found, None otherwise.
     """
-    if not property_selector:
+    if not property_path:
         return None
 
-    keys = property_selector.split(".")
-    current: Any = metadata
-
-    for key in keys:
-        if not isinstance(current, dict):
+    parts = property_path.split(".")
+    value: Any = data
+    for part in parts:
+        if not isinstance(value, dict):
             return None
-        current = current.get(key)
-        if current is None:
+        value = value.get(part)
+        if value is None:
             return None
+    return value
 
-    return str(current) if current is not None else None
+
+def get_nested_metadata_attr[M: MetadataMixin](
+    model: type[M], property_path: str
+) -> Any:
+    """
+    Get SQLAlchemy attribute for nested metadata path.
+
+    Example: "_llm.total_tokens" -> model.user_metadata["_llm"]["total_tokens"]
+    """
+    parts = property_path.split(".")
+    attr = model.user_metadata[parts[0]]
+    for part in parts[1:]:
+        attr = attr[part]
+    return attr

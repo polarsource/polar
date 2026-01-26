@@ -89,6 +89,44 @@ class TestFilterClauseValueValidation:
 
 @pytest.mark.asyncio
 class TestFilter:
+    async def test_nested_property_path(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that dot-notation paths traverse nested metadata."""
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"_llm": {"model": "gpt-4"}},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"_llm": {"model": "gpt-3.5"}},
+            ),
+        ]
+
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(
+                    property="_llm.model", operator=FilterOperator.eq, value="gpt-4"
+                )
+            ],
+        )
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert len(matching_events) == 1
+        assert matching_events[0].id == events[0].id
+
     async def test_timestamp_clause(
         self,
         save_fixture: SaveFixture,
@@ -363,6 +401,30 @@ class TestFilterClauseMatches:
             organization_id=organization.id,
             source=EventSource.user,
             user_metadata={},
+        )
+        assert clause.matches(event) is False
+
+    def test_matches_nested_property(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="_llm.model", operator=FilterOperator.eq, value="gpt-4"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"_llm": {"model": "gpt-4"}},
+        )
+        assert clause.matches(event) is True
+
+    def test_matches_nested_property_missing(self, organization: Organization) -> None:
+        clause = FilterClause(
+            property="_llm.model", operator=FilterOperator.eq, value="gpt-4"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"_llm": {"other_field": "value"}},
         )
         assert clause.matches(event) is False
 

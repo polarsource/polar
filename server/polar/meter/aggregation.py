@@ -15,6 +15,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+
 if TYPE_CHECKING:
     from polar.models import Event
 
@@ -82,7 +84,7 @@ class PropertyAggregation(BaseModel):
             _, attr = model._filterable_fields[self.property]
             attr = func.cast(attr, Float)
         else:
-            attr = model.user_metadata[self.property].as_float()
+            attr = get_nested_metadata_attr(model, self.property).as_float()
 
         return self.func.get_sql_function(attr)
 
@@ -91,7 +93,10 @@ class PropertyAggregation(BaseModel):
             allowed_type, _ = model._filterable_fields[self.property]
             return true() if allowed_type is int else false()
 
-        return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
+        return (
+            func.jsonb_typeof(get_nested_metadata_attr(model, self.property))
+            == "number"
+        )
 
     def is_summable(self) -> bool:
         """
@@ -103,7 +108,7 @@ class PropertyAggregation(BaseModel):
     def matches(self, event: Event) -> bool:
         if self.property in ("name", "source", "timestamp"):
             return True
-        value = event.user_metadata.get(self.property)
+        value = get_nested_metadata_value(event.user_metadata, self.property)
         return isinstance(value, int | float)
 
 
@@ -112,7 +117,7 @@ class UniqueAggregation(BaseModel):
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 
     def get_sql_column(self, model: type[Any]) -> Any:
-        attr = model.user_metadata[self.property]
+        attr = get_nested_metadata_attr(model, self.property)
         return self.func.get_sql_function(attr)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:

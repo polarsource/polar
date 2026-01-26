@@ -41,7 +41,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.sql.elements import BinaryExpression
 
 from polar.kit.db.models import Model
-from polar.kit.metadata import MetadataMixin, extract_metadata_value
+from polar.kit.metadata import MetadataMixin, get_nested_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
 
 from .customer import Customer
@@ -265,11 +265,11 @@ class Event(Model, MetadataMixin):
         if self.event_types is not None:
             base_label = self.event_types.label
             if self.event_types.label_property_selector:
-                dynamic_label = extract_metadata_value(
+                dynamic_label = get_nested_metadata_value(
                     self.user_metadata, self.event_types.label_property_selector
                 )
                 if dynamic_label:
-                    return dynamic_label
+                    return str(dynamic_label)
             return base_label
         return self.name
 

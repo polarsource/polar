@@ -6,19 +6,26 @@ import {
   useCustomerBenefitGrants,
   useCustomerCancelSubscription,
   useCustomerOrders,
+  useCustomerPaymentMethods,
   useCustomerSeats,
+  usePortalAuthenticatedUser,
   useResendSeatInvitation,
   useRevokeSeat,
 } from '@/hooks/queries'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
+import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { useTheme } from 'next-themes'
 import { useState } from 'react'
+import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
@@ -26,7 +33,9 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
+import { AddPaymentMethodModal } from './AddPaymentMethodModal'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
+import PaymentMethod from './PaymentMethod'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -43,6 +52,28 @@ const CustomerPortalSubscription = ({
     hide: hideCancelModal,
     isShown: cancelModalIsShown,
   } = useModal()
+
+  const {
+    isShown: isAddPaymentMethodModalOpen,
+    hide: hideAddPaymentMethodModal,
+    show: showAddPaymentMethodModal,
+  } = useModal()
+
+  // Theme for Stripe Elements
+  const theme = useTheme()
+  const organization = subscription.product.organization
+  const themePreset = getThemePreset(
+    organization.slug,
+    theme.resolvedTheme as 'light' | 'dark',
+  )
+
+  // Get authenticated user to check billing permissions
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const canManageBilling = hasBillingPermission(authenticatedUser)
+
+  // Get customer data for payment methods
+  const { data: customer } = useCustomerPortalCustomer()
+  const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
@@ -106,11 +137,11 @@ const CustomerPortalSubscription = ({
       })
 
       if (result.error) {
-        const errorMessage =
+        setError(
           typeof result.error.detail === 'string'
             ? result.error.detail
-            : 'Failed to assign seat'
-        setError(errorMessage)
+            : 'Failed to assign seat',
+        )
       } else {
         setEmail('')
       }
@@ -155,8 +186,6 @@ const CustomerPortalSubscription = ({
     }
   }
 
-  console.log(seatsData)
-
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
@@ -191,13 +220,11 @@ const CustomerPortalSubscription = ({
           <DetailRow
             label="Start Date"
             value={
-              <span>
-                {new Date(subscription.started_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.started_at}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
@@ -207,16 +234,11 @@ const CustomerPortalSubscription = ({
               subscription.cancel_at_period_end ? 'Expiry Date' : 'Renewal Date'
             }
             value={
-              <span>
-                {new Date(subscription.current_period_end).toLocaleDateString(
-                  'en-US',
-                  {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  },
-                )}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.current_period_end}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
@@ -224,19 +246,18 @@ const CustomerPortalSubscription = ({
           <DetailRow
             label="Expired"
             value={
-              <span>
-                {new Date(subscription.ended_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.ended_at}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
       </div>
 
-      {!isCancelled && (
+      {/* Cancel button - only shown for users with billing permissions */}
+      {!isCancelled && canManageBilling && (
         <Button
           variant="secondary"
           fullWidth
@@ -247,7 +268,8 @@ const CustomerPortalSubscription = ({
         </Button>
       )}
 
-      {hasSeatBasedPricing && showSeatManagement && (
+      {/* Seat management - only shown for users with billing permissions */}
+      {hasSeatBasedPricing && showSeatManagement && canManageBilling && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <h3 className="text-lg">Seat Management</h3>
@@ -388,12 +410,59 @@ const CustomerPortalSubscription = ({
         )}
       </div>
 
+      {/* Payment Methods - only shown for users with billing permissions */}
+      {canManageBilling && customer && (
+        <div className="flex w-full flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg">Payment Methods</h3>
+            <Button variant="secondary" onClick={showAddPaymentMethodModal}>
+              Add Payment Method
+            </Button>
+          </div>
+          {paymentMethods?.items && paymentMethods.items.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {paymentMethods.items.map((pm) => (
+                <PaymentMethod
+                  key={pm.id}
+                  customer={customer}
+                  paymentMethod={pm}
+                  api={api}
+                  deletable={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
+              <span className="dark:text-polar-500 text-gray-500">
+                No payment methods on file
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       <CustomerCancellationModal
         subscription={subscription}
         isShown={cancelModalIsShown}
         hide={hideCancelModal}
         cancelSubscription={cancelSubscription}
       />
+
+      {customer && (
+        <Modal
+          title="Add Payment Method"
+          isShown={isAddPaymentMethodModalOpen}
+          hide={hideAddPaymentMethodModal}
+          modalContent={
+            <AddPaymentMethodModal
+              api={api}
+              onPaymentMethodAdded={hideAddPaymentMethodModal}
+              hide={hideAddPaymentMethodModal}
+              themePreset={themePreset}
+            />
+          }
+        />
+      )}
     </div>
   )
 }

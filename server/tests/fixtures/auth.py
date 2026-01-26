@@ -5,6 +5,7 @@ import pytest
 from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import Scope
 from polar.models import Customer, Member, Organization, User
+from polar.models.member import MemberRole
 
 
 class AuthSubjectFixture:
@@ -18,6 +19,8 @@ class AuthSubjectFixture:
             "organization",
             "organization_second",
             "customer",
+            "member_owner",
+            "member_billing_manager",
             "member",
         ] = "user",
         scopes: set[Scope] = {Scope.web_read, Scope.web_write},
@@ -36,8 +39,19 @@ CUSTOMER_AUTH_SUBJECT = AuthSubjectFixture(
     subject="customer", scopes={Scope.customer_portal_read, Scope.customer_portal_write}
 )
 
+MEMBER_OWNER_AUTH_SUBJECT = AuthSubjectFixture(
+    subject="member_owner",
+    scopes={Scope.customer_portal_read, Scope.customer_portal_write},
+)
+
+MEMBER_BILLING_MANAGER_AUTH_SUBJECT = AuthSubjectFixture(
+    subject="member_billing_manager",
+    scopes={Scope.customer_portal_read, Scope.customer_portal_write},
+)
+
 MEMBER_AUTH_SUBJECT = AuthSubjectFixture(
-    subject="member", scopes={Scope.customer_portal_read, Scope.customer_portal_write}
+    subject="member",
+    scopes={Scope.customer_portal_read, Scope.customer_portal_write},
 )
 
 
@@ -70,14 +84,21 @@ def auth_subject(
         "customer": customer,
     }
 
-    # Only load member fixture when it's actually needed to avoid creating
+    # Only load member fixtures when actually needed to avoid creating
     # extra Member records that pollute member count tests
-    if auth_subject_fixture.subject == "member":
+    subject_key = auth_subject_fixture.subject
+    if subject_key == "member":
         member: Member = request.getfixturevalue("member")
         subjects_map["member"] = member
+    elif subject_key == "member_owner":
+        member_owner: Member = request.getfixturevalue("member_owner")
+        subjects_map["member_owner"] = member_owner
+    elif subject_key == "member_billing_manager":
+        member_billing_manager: Member = request.getfixturevalue("member_billing_manager")
+        subjects_map["member_billing_manager"] = member_billing_manager
 
     return AuthSubject(
-        subjects_map[auth_subject_fixture.subject], auth_subject_fixture.scopes, None
+        subjects_map[subject_key], auth_subject_fixture.scopes, None
     )
 
 

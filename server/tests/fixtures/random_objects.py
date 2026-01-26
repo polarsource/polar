@@ -76,6 +76,7 @@ from polar.models.benefit_grant import (
     BenefitGrantScope,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.member import MemberRole
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,
@@ -1653,6 +1654,77 @@ async def customer_organization_second(
         organization=organization_second,
         email=lstr("customer.organization_second@example.com"),
         stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_4"),
+    )
+
+
+async def create_member(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    organization: Organization,
+    role: MemberRole = MemberRole.member,
+    email: str | None = None,
+    name: str = "Test Member",
+) -> Member:
+    """Create a member for testing purposes."""
+    member = Member(
+        customer_id=customer.id,
+        organization_id=organization.id,
+        email=email or customer.email,
+        name=name,
+        role=role,
+    )
+    await save_fixture(member)
+    # Attach the customer relationship for easy access
+    member.customer = customer
+    return member
+
+
+@pytest_asyncio.fixture
+async def member_owner(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+) -> Member:
+    """Member with owner role."""
+    return await create_member(
+        save_fixture,
+        customer=customer,
+        organization=organization,
+        role=MemberRole.owner,
+        name="Owner Member",
+    )
+
+
+@pytest_asyncio.fixture
+async def member_billing_manager(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+) -> Member:
+    """Member with billing_manager role."""
+    return await create_member(
+        save_fixture,
+        customer=customer,
+        organization=organization,
+        role=MemberRole.billing_manager,
+        name="Billing Manager Member",
+    )
+
+
+@pytest_asyncio.fixture
+async def member(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+) -> Member:
+    """Member with regular member role (read-only)."""
+    return await create_member(
+        save_fixture,
+        customer=customer,
+        organization=organization,
+        role=MemberRole.member,
+        name="Regular Member",
     )
 
 

@@ -6,7 +6,7 @@ from typing import Any, cast
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, Customer, Member
+from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
@@ -30,7 +30,6 @@ from ..schemas.benefit_grant import (
     CustomerBenefitGrantGitHubRepositoryUpdate,
     CustomerBenefitGrantUpdate,
 )
-from ..utils import get_customer_id
 
 
 class CustomerBenefitGrantSortProperty(StrEnum):
@@ -216,14 +215,13 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
     def _get_readable_benefit_grant_statement(
         self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[BenefitGrant]]:
-        return (
+        statement = (
             select(BenefitGrant)
             .join(Benefit, onclause=Benefit.id == BenefitGrant.benefit_id)
             .join(Organization, onclause=Benefit.organization_id == Organization.id)
             .where(
                 BenefitGrant.deleted_at.is_(None),
                 BenefitGrant.is_revoked.is_(False),
-                BenefitGrant.customer_id == get_customer_id(auth_subject),
             )
             .options(
                 contains_eager(BenefitGrant.benefit).options(
@@ -231,6 +229,20 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 ),
             )
         )
+
+        # Filter based on auth subject type
+        if is_member(auth_subject):
+            # Member: filter by member_id to show only this member's grants
+            statement = statement.where(
+                BenefitGrant.member_id == auth_subject.subject.id
+            )
+        elif is_customer(auth_subject):
+            # Customer: filter by customer_id to show all customer grants
+            statement = statement.where(
+                BenefitGrant.customer_id == auth_subject.subject.id
+            )
+
+        return statement
 
 
 customer_benefit_grant = CustomerBenefitGrantService(BenefitGrant)

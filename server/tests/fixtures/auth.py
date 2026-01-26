@@ -4,7 +4,7 @@ import pytest
 
 from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import Scope
-from polar.models import Customer, Organization, User
+from polar.models import Customer, Member, Organization, User
 
 
 class AuthSubjectFixture:
@@ -18,6 +18,7 @@ class AuthSubjectFixture:
             "organization",
             "organization_second",
             "customer",
+            "member",
         ] = "user",
         scopes: set[Scope] = {Scope.web_read, Scope.web_write},
     ):
@@ -33,6 +34,10 @@ class AuthSubjectFixture:
 
 CUSTOMER_AUTH_SUBJECT = AuthSubjectFixture(
     subject="customer", scopes={Scope.customer_portal_read, Scope.customer_portal_write}
+)
+
+MEMBER_AUTH_SUBJECT = AuthSubjectFixture(
+    subject="member", scopes={Scope.customer_portal_read, Scope.customer_portal_write}
 )
 
 
@@ -54,7 +59,9 @@ def auth_subject(
     See `pytest_generate_tests` below for more information.
     """
     auth_subject_fixture: AuthSubjectFixture = request.param
-    subjects_map: dict[str, Anonymous | Customer | User | Organization] = {
+
+    # Build subjects map, loading member lazily only when needed
+    subjects_map: dict[str, Anonymous | Customer | Member | User | Organization] = {
         "anonymous": Anonymous(),
         "user": user,
         "user_second": user_second,
@@ -62,6 +69,13 @@ def auth_subject(
         "organization_second": organization_second,
         "customer": customer,
     }
+
+    # Only load member fixture when it's actually needed to avoid creating
+    # extra Member records that pollute member count tests
+    if auth_subject_fixture.subject == "member":
+        member: Member = request.getfixturevalue("member")
+        subjects_map["member"] = member
+
     return AuthSubject(
         subjects_map[auth_subject_fixture.subject], auth_subject_fixture.scopes, None
     )

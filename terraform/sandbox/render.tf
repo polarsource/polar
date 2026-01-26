@@ -213,6 +213,6 @@ resource "cloudflare_dns_record" "api" {
   name    = "sandbox-api.polar.sh"
   type    = "CNAME"
   content = replace(module.sandbox.api_service_url, "https://", "")
-  proxied = false
+  proxied = true
   ttl     = 1
 }

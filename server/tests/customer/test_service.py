@@ -8,7 +8,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.address import AddressInput, CountryAlpha2Input
+from polar.kit.address import AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
@@ -16,6 +16,7 @@ from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -580,6 +581,28 @@ class TestDelete:
         assert soft_deleted.external_id is None
         await session.flush()
 
+    async def test_delete_with_anonymize(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Delete with anonymize=True should anonymize and delete."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-anon@example.com",
+            name="Delete Anon User",
+            user_metadata={"user_id": "ABC"},
+        )
+        deleted = await customer_service.delete(session, customer, anonymize=True)
+        assert deleted.deleted_at is not None
+        assert deleted.email.endswith("@anonymized.invalid")
+        assert deleted.name is not None
+        assert deleted.name != "Delete Anon User"
+        assert len(deleted.name) == 64  # SHA-256 hex
+        await session.flush()
+
         try:
             recycled = await create_customer(
                 save_fixture,
@@ -604,6 +627,213 @@ class TestDelete:
                 external_id=recycled.external_id,
                 user_metadata=recycled.user_metadata,
             )
+
+
+@pytest.mark.asyncio
+class TestAnonymize:
+    async def test_individual_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Individual customers (no tax_id) should have their name hashed."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+            name="John Doe",
+            user_metadata={"user_id": "ABC"},
+        )
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        # Email should be hashed
+        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.email != "individual@example.com"
+        assert anonymized.email_verified is False
+
+        # Name should be hashed (64-char hex string from SHA-256)
+        assert anonymized.name is not None
+        assert len(anonymized.name) == 64
+        assert anonymized.name != "John Doe"
+
+        # Metadata should have anonymization timestamp
+        assert "__anonymized_at" in anonymized.user_metadata
+        # Original user metadata should be preserved
+        assert anonymized.user_metadata["user_id"] == "ABC"
+
+        # Customer should be marked as deleted
+        assert anonymized.deleted_at is not None
+
+    async def test_business_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Business customers (has tax_id) should have their name preserved."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="business@example.com",
+            name="Acme Corp",
+            tax_id=("DE123456789", TaxIDFormat.eu_vat),
+        )
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        # Email should be hashed
+        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.email_verified is False
+
+        # Name should be PRESERVED for businesses
+        assert anonymized.name == "Acme Corp"
+
+        # Tax ID should be PRESERVED for legal reasons
+        assert anonymized.tax_id is not None
+        assert anonymized.tax_id[0] == "DE123456789"
+
+    async def test_idempotent(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Calling anonymize twice should succeed without changes."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="idempotent@example.com",
+            name="Test User",
+        )
+
+        # First anonymize
+        anonymized = await customer_service.anonymize(session, customer)
+        first_email = anonymized.email
+        first_name = anonymized.name
+
+        # Second anonymize should be no-op
+        anonymized_again = await customer_service.anonymize(session, anonymized)
+
+        assert anonymized_again.email == first_email
+        assert anonymized_again.name == first_name
+
+    async def test_clears_billing_address(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Billing address should be cleared (invoices retain original)."""
+        from polar.kit.address import Address
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+            billing_address=Address(
+                line1="123 Main St",
+                city="San Francisco",
+                state="CA",
+                postal_code="94102",
+                country=CountryAlpha2("US"),
+            ),
+        )
+        assert customer.billing_address is not None
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        assert anonymized.billing_address is None
+
+    async def test_clears_oauth_accounts(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """OAuth accounts should be cleared."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="oauth@example.com",
+        )
+        # Manually set OAuth accounts
+        customer._oauth_accounts = {
+            "github:12345": {"access_token": "secret", "account_id": "12345"}
+        }
+        await save_fixture(customer)
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        assert anonymized._oauth_accounts == {}
+
+    async def test_preserves_external_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """External ID should be preserved for legal reasons."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="external@example.com",
+            external_id="ext-123",
+        )
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        # External ID should be PRESERVED
+        assert anonymized.external_id == "ext-123"
+
+    async def test_hashes_billing_name(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Billing name should be hashed."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing-name@example.com",
+            name="Personal Name",
+        )
+        # Set billing_name directly since create_customer doesn't support it
+        customer._billing_name = "Business Billing Name"
+        await save_fixture(customer)
+
+        anonymized = await customer_service.anonymize(session, customer)
+
+        # Billing name should be hashed (64-char hex string from SHA-256)
+        assert anonymized._billing_name is not None
+        assert len(anonymized._billing_name) == 64
+        assert anonymized._billing_name != "Business Billing Name"
+
+    async def test_already_deleted_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Can anonymize already-deleted customers for GDPR compliance."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="deleted@example.com",
+            name="Deleted User",
+        )
+
+        # Soft delete first
+        await customer_service.delete(session, customer)
+        assert customer.deleted_at is not None
+
+        # Should still be able to anonymize
+        anonymized = await customer_service.anonymize(session, customer)
+
+        assert anonymized.email.endswith("@anonymized.invalid")
+        assert anonymized.deleted_at is not None
 
 
 @pytest.mark.asyncio

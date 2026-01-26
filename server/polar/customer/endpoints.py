@@ -426,6 +426,15 @@ async def update_external(
 async def delete(
     id: CustomerID,
     auth_subject: auth.CustomerWrite,
+    anonymize: bool = Query(
+        default=False,
+        description=(
+            "If true, also anonymize the customer's personal data for GDPR compliance. "
+            "This replaces email with a hashed version, hashes name and billing name "
+            "(name preserved for businesses with tax_id), clears billing address, "
+            "and removes OAuth account data."
+        ),
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """
@@ -442,13 +451,15 @@ async def delete(
 
     Note: The customers information will nonetheless be retained for historic
     orders and subscriptions.
+
+    Set `anonymize=true` to also anonymize PII for GDPR compliance.
     """
     customer = await customer_service.get(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    await customer_service.delete(session, customer)
+    await customer_service.delete(session, customer, anonymize=anonymize)
 
 
 @router.delete(
@@ -463,16 +474,24 @@ async def delete(
 async def delete_external(
     external_id: ExternalCustomerID,
     auth_subject: auth.CustomerWrite,
+    anonymize: bool = Query(
+        default=False,
+        description=(
+            "If true, also anonymize the customer's personal data for GDPR compliance."
+        ),
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """
     Delete a customer by external ID.
 
     Immediately cancels any active subscriptions and revokes any active benefits.
+
+    Set `anonymize=true` to also anonymize PII for GDPR compliance.
     """
     customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()
 
-    await customer_service.delete(session, customer)
+    await customer_service.delete(session, customer, anonymize=anonymize)

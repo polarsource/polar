@@ -10,9 +10,15 @@ from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
+from polar.kit.anonymization import (
+    ANONYMIZED_EMAIL_DOMAIN,
+    anonymize_email_for_deletion,
+    anonymize_for_deletion,
+)
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
@@ -245,12 +251,82 @@ class CustomerService:
             ),
         )
 
-    async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
+    async def delete(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        *,
+        anonymize: bool = False,
+    ) -> Customer:
         enqueue_job("subscription.cancel_customer", customer_id=customer.id)
         enqueue_job("benefit.revoke_customer", customer_id=customer.id)
 
+        if anonymize:
+            # Anonymize also sets deleted_at
+            return await self.anonymize(session, customer)
+
         repository = CustomerRepository.from_session(session)
         return await repository.soft_delete(customer)
+
+    async def anonymize(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> Customer:
+        """
+        Anonymize customer PII for GDPR compliance.
+
+        This anonymizes personal data while:
+        - Preserving the Stripe customer ID for payment history
+        - Preserving external_id and tax_id for legal/tax reasons
+        - Preserving name for businesses (identified by having tax_id)
+        - Keeping order and subscription records intact (invoices are immutable)
+
+        This is idempotent - calling it on an already-anonymized customer
+        will return success without making changes.
+        """
+        # Skip if already anonymized (idempotent)
+        if customer.email.endswith(f"@{ANONYMIZED_EMAIL_DOMAIN}"):
+            return customer
+
+        repository = CustomerRepository.from_session(session)
+        update_dict: dict[str, Any] = {}
+
+        # Anonymize email (always)
+        update_dict["email"] = anonymize_email_for_deletion(customer.email)
+        update_dict["email_verified"] = False
+
+        # Anonymize name only for individuals (no tax_id = individual)
+        # Businesses (has tax_id) retain name for legal reasons
+        if customer.tax_id is None and customer.name:
+            update_dict["name"] = anonymize_for_deletion(customer.name)
+
+        # Anonymize billing_name (always, if present)
+        if customer._billing_name:
+            update_dict["_billing_name"] = anonymize_for_deletion(
+                customer._billing_name
+            )
+
+        # Clear address (invoices retain original)
+        update_dict["billing_address"] = None
+
+        # Clear OAuth tokens
+        update_dict["_oauth_accounts"] = {}
+
+        # Mark as deleted (soft-delete)
+        update_dict["deleted_at"] = utc_now()
+
+        # Record anonymization timestamp in metadata
+        user_metadata = dict(customer.user_metadata) if customer.user_metadata else {}
+        user_metadata["__anonymized_at"] = utc_now().isoformat()
+        update_dict["user_metadata"] = user_metadata
+
+        # NOTE: external_id and tax_id are RETAINED for legal reasons
+
+        # The repository.update() method automatically enqueues the webhook job
+        customer = await repository.update(customer, update_dict=update_dict)
+
+        return customer
 
     async def get_state(
         self,

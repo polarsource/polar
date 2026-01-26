@@ -66,10 +66,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     'checkout_button_subscribe',
     experimentOptions,
   )
-  const { isTreatment: isPayNow } = useExperiment(
-    'checkout_button_pay',
-    experimentOptions,
-  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -242,7 +238,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           subscribeNowButtonExperiment={isSubscribeNow}
-          payNowButtonExperiment={isPayNow}
         />
       </ShadowBox>
     )
@@ -319,7 +314,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
             subscribeNowButtonExperiment={isSubscribeNow}
-            payNowButtonExperiment={isPayNow}
           />
         </div>
       </ShadowBoxOnMd>

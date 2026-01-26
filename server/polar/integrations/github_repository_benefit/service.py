@@ -292,7 +292,9 @@ class GitHubRepositoryBenefitUserService:
             r: github.Response[
                 "types.UserInstallationsInstallationIdRepositoriesGetResponse200"
             ],
-        ) -> list["types.Repository"]:
+        ) -> list[
+            "types.UserInstallationsInstallationIdRepositoriesGetResponse200PropRepositoriesItems"
+        ]:
             return r.parsed_data.repositories
 
         # get repos

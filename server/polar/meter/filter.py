@@ -19,38 +19,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+
 if TYPE_CHECKING:
     from polar.models import Event
-
-
-def _get_nested_metadata_attr(model: type[Any], property_path: str) -> Any:
-    """
-    Get SQLAlchemy attribute for nested metadata path.
-
-    Example: "_llm.total_tokens" -> model.user_metadata["_llm"]["total_tokens"]
-    """
-    parts = property_path.split(".")
-    attr = model.user_metadata[parts[0]]
-    for part in parts[1:]:
-        attr = attr[part]
-    return attr
-
-
-def _get_nested_value(data: dict[str, Any], property_path: str) -> Any:
-    """
-    Get value from nested dict using dot-notation path.
-
-    Example: "_llm.total_tokens" with {"_llm": {"total_tokens": 100}} -> 100
-    """
-    parts = property_path.split(".")
-    value: Any = data
-    for part in parts:
-        if not isinstance(value, dict):
-            return None
-        value = value.get(part)
-        if value is None:
-            return None
-    return value
 
 
 # PostgreSQL int4 range limits
@@ -98,7 +70,7 @@ class FilterClause(BaseModel):
                 return self._get_comparison_clause(attr, self._get_str_value())
             return self._get_comparison_clause(attr, self.value)
 
-        attr = _get_nested_metadata_attr(model, self.property)
+        attr = get_nested_metadata_attr(model, self.property)
 
         # The operator is LIKE OR NOT LIKE, treat everything as a string
         if self.operator in (FilterOperator.like, FilterOperator.not_like):
@@ -175,7 +147,7 @@ class FilterClause(BaseModel):
                 return False
             actual_value = int(event.timestamp.timestamp())
         else:
-            actual_value = _get_nested_value(event.user_metadata, self.property)
+            actual_value = get_nested_metadata_value(event.user_metadata, self.property)
             if actual_value is None:
                 return False
 

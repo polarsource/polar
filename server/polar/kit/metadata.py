@@ -158,6 +158,40 @@ def apply_metadata_clause[M: MetadataMixin](
     return statement.where(clause)
 
 
+def get_nested_metadata_value(data: dict[str, Any], property_path: str) -> Any:
+    """
+    Get value from nested dict using dot-notation path.
+
+    Example: "_llm.total_tokens" with {"_llm": {"total_tokens": 100}} -> 100
+
+    Returns the value if found (preserving type), None otherwise.
+    """
+    parts = property_path.split(".")
+    value: Any = data
+    for part in parts:
+        if not isinstance(value, dict):
+            return None
+        value = value.get(part)
+        if value is None:
+            return None
+    return value
+
+
+def get_nested_metadata_attr[M: MetadataMixin](
+    model: type[M], property_path: str
+) -> Any:
+    """
+    Get SQLAlchemy attribute for nested metadata path.
+
+    Example: "_llm.total_tokens" -> model.user_metadata["_llm"]["total_tokens"]
+    """
+    parts = property_path.split(".")
+    attr = model.user_metadata[parts[0]]
+    for part in parts[1:]:
+        attr = attr[part]
+    return attr
+
+
 def extract_metadata_value(
     metadata: dict[str, Any], property_selector: str
 ) -> str | None:
@@ -174,14 +208,5 @@ def extract_metadata_value(
     if not property_selector:
         return None
 
-    keys = property_selector.split(".")
-    current: Any = metadata
-
-    for key in keys:
-        if not isinstance(current, dict):
-            return None
-        current = current.get(key)
-        if current is None:
-            return None
-
-    return str(current) if current is not None else None
+    value = get_nested_metadata_value(metadata, property_selector)
+    return str(value) if value is not None else None

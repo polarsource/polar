@@ -15,38 +15,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
+from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+
 if TYPE_CHECKING:
     from polar.models import Event
-
-
-def _get_nested_metadata_attr(model: type[Any], property_path: str) -> Any:
-    """
-    Get SQLAlchemy attribute for nested metadata path.
-
-    Example: "_llm.total_tokens" -> model.user_metadata["_llm"]["total_tokens"]
-    """
-    parts = property_path.split(".")
-    attr = model.user_metadata[parts[0]]
-    for part in parts[1:]:
-        attr = attr[part]
-    return attr
-
-
-def _get_nested_value(data: dict[str, Any], property_path: str) -> Any:
-    """
-    Get value from nested dict using dot-notation path.
-
-    Example: "_llm.total_tokens" with {"_llm": {"total_tokens": 100}} -> 100
-    """
-    parts = property_path.split(".")
-    value: Any = data
-    for part in parts:
-        if not isinstance(value, dict):
-            return None
-        value = value.get(part)
-        if value is None:
-            return None
-    return value
 
 
 class AggregationFunction(StrEnum):
@@ -112,7 +84,7 @@ class PropertyAggregation(BaseModel):
             _, attr = model._filterable_fields[self.property]
             attr = func.cast(attr, Float)
         else:
-            attr = _get_nested_metadata_attr(model, self.property).as_float()
+            attr = get_nested_metadata_attr(model, self.property).as_float()
 
         return self.func.get_sql_function(attr)
 
@@ -122,7 +94,7 @@ class PropertyAggregation(BaseModel):
             return true() if allowed_type is int else false()
 
         return (
-            func.jsonb_typeof(_get_nested_metadata_attr(model, self.property))
+            func.jsonb_typeof(get_nested_metadata_attr(model, self.property))
             == "number"
         )
 
@@ -136,7 +108,7 @@ class PropertyAggregation(BaseModel):
     def matches(self, event: Event) -> bool:
         if self.property in ("name", "source", "timestamp"):
             return True
-        value = _get_nested_value(event.user_metadata, self.property)
+        value = get_nested_metadata_value(event.user_metadata, self.property)
         return isinstance(value, int | float)
 
 
@@ -145,7 +117,7 @@ class UniqueAggregation(BaseModel):
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 
     def get_sql_column(self, model: type[Any]) -> Any:
-        attr = _get_nested_metadata_attr(model, self.property)
+        attr = get_nested_metadata_attr(model, self.property)
         return self.func.get_sql_function(attr)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:

@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "turbo run build --filter=web",
+  "buildCommand": "cat package.json && turbo run build --filter=web",
   "git": {
     "deploymentEnabled": {
       "main": false

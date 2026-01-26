@@ -314,3 +314,8 @@ variable "tinybird_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "tinybird_workspace" {
+  description = "Tinybird Workspace name"
+  type        = string
+}

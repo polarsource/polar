@@ -102,6 +102,7 @@
     "typescript": "^5.9.3"
   },
   "private": true,
+  "packageManager": "pnpm@10.28.1",
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {

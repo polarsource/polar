@@ -36,5 +36,6 @@
   "dependencies": {
     "openapi-fetch": "^0.15.0",
     "openapi-typescript-helpers": "^0.0.15"
-  }
+  },
+  "packageManager": "pnpm@10.28.1"
 }

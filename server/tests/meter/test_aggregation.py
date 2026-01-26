@@ -52,6 +52,34 @@ async def _get_aggregation_result(
 
 @pytest.mark.asyncio
 class TestPropertyAggregation:
+    async def test_nested_property_path(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that dot-notation paths traverse nested metadata."""
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"_llm": {"total_tokens": 100}},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"_llm": {"total_tokens": 200}},
+            ),
+        ]
+
+        aggregation = PropertyAggregation(
+            func=AggregationFunction.sum, property="_llm.total_tokens"
+        )
+
+        assert await _get_aggregation_result(session, aggregation) == 300.0
+
     async def test_floating_number_property(
         self,
         save_fixture: SaveFixture,
@@ -242,3 +270,29 @@ class TestAggregationMatches:
             user_metadata={},
         )
         assert agg.matches(event) is True
+
+    def test_property_matches_nested_number(self, organization: Organization) -> None:
+        agg = PropertyAggregation(
+            func=AggregationFunction.sum, property="_llm.total_tokens"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"_llm": {"total_tokens": 100}},
+        )
+        assert agg.matches(event) is True
+
+    def test_property_not_matches_nested_missing(
+        self, organization: Organization
+    ) -> None:
+        agg = PropertyAggregation(
+            func=AggregationFunction.sum, property="_llm.total_tokens"
+        )
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"_llm": {"other_field": 100}},
+        )
+        assert agg.matches(event) is False

@@ -162,10 +162,16 @@ def get_nested_metadata_value(data: dict[str, Any], property_path: str) -> Any:
     """
     Get value from nested dict using dot-notation path.
 
-    Example: "_llm.total_tokens" with {"_llm": {"total_tokens": 100}} -> 100
+    Supports:
+    - Simple keys: "subject" -> metadata["subject"]
+    - Nested keys: "metadata.subject" -> metadata["metadata"]["subject"]
+    - Dot-separated paths of any depth
 
-    Returns the value if found (preserving type), None otherwise.
+    Returns the value if found, None otherwise.
     """
+    if not property_path:
+        return None
+
     parts = property_path.split(".")
     value: Any = data
     for part in parts:

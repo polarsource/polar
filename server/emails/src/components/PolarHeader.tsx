@@ -9,7 +9,7 @@ const Header = () => (
         <Img
           alt="Spaire Logo"
           height="34"
-          src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/spaire-green-combination.png"
+          src="https://spaire-production-files-public.s3.us-east-1.amazonaws.com/spaire-blue-logo.png"
         />
       </Column>
       <Column align="right">

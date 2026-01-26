@@ -101,7 +101,9 @@ export const CustomerPortalOverview = ({
       {!hasAnyActiveSubscriptions && (
         <EmptyState
           icon={<AllInclusiveOutlined />}
-          title={canManageBilling ? 'No Active Subscriptions' : 'No Team Access'}
+          title={
+            canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+          }
           description={
             canManageBilling
               ? "You don't have any active subscriptions at the moment."

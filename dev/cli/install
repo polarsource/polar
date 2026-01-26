@@ -1,0 +1,39 @@
+#!/bin/bash
+# Installs the 'dev' alias for easy access to the Polar development CLI
+# Usage: ./dev/cli/install
+
+set -e
+
+# Determine shell config file
+if [[ "$SHELL" == */zsh ]]; then
+    SHELL_RC="$HOME/.zshrc"
+elif [[ "$SHELL" == */bash ]]; then
+    if [[ -f "$HOME/.bash_profile" ]]; then
+        SHELL_RC="$HOME/.bash_profile"
+    else
+        SHELL_RC="$HOME/.bashrc"
+    fi
+else
+    SHELL_RC="$HOME/.profile"
+fi
+
+# The alias uses git to find the repo root, so it works from any subdirectory
+ALIAS_LINE='alias dev='\''$(git rev-parse --show-toplevel 2>/dev/null)/dev/cli/dev'\'''
+
+if grep -q 'alias dev=' "$SHELL_RC" 2>/dev/null; then
+    echo "The 'dev' alias already exists in $SHELL_RC"
+    echo "To update it, remove the existing alias and run this script again."
+    exit 0
+fi
+
+echo "$ALIAS_LINE" >> "$SHELL_RC"
+
+echo "Added 'dev' alias to $SHELL_RC"
+echo ""
+echo "Restart your terminal or run:"
+echo "  source $SHELL_RC"
+echo ""
+echo "Then you can use 'dev' from anywhere in the Polar repo:"
+echo "  dev up       # Start development environment"
+echo "  dev down     # Stop infrastructure"
+echo "  dev status   # Check status"

@@ -1,0 +1,27 @@
+#!/bin/bash
+# Polar Development CLI - Bootstrap wrapper
+# This script ensures uv is installed, then runs the actual CLI
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CLI_SCRIPT="$SCRIPT_DIR/cli.py"
+
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "uv not found, installing..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Add to PATH for this session
+    export PATH="$HOME/.local/bin:$PATH"
+
+    if ! command -v uv &> /dev/null; then
+        echo "Failed to install uv. Please install manually: https://docs.astral.sh/uv/"
+        exit 1
+    fi
+    echo "uv installed successfully!"
+    echo ""
+fi
+
+# Run the actual CLI script
+exec uv run -s "$CLI_SCRIPT" "$@"

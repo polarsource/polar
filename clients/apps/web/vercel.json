@@ -1,11 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "cd ../.. && turbo run build --filter=web",
-  "build": {
-    "env": {
-      "ENABLE_COREPACK": "1"
-    }
-  },
   "git": {
     "deploymentEnabled": {
       "main": false

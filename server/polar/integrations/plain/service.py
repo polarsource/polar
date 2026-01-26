@@ -88,6 +88,13 @@ class NoUserFoundError(PlainServiceError):
         super().__init__(f"No user found for organization {organization_id}")
 
 
+class PlainCustomerError(PlainServiceError):
+    def __init__(self, user_id: uuid.UUID, message: str) -> None:
+        self.user_id = user_id
+        self.message = message
+        super().__init__(f"Error with Plain customer for user ID {user_id}: {message}")
+
+
 _card_getter_semaphore = asyncio.Semaphore(3)
 
 
@@ -156,27 +163,12 @@ class PlainService:
             raise AccountAdminDoesNotExistError(organization.account.admin_id)
 
         async with self._get_plain_client() as plain:
-            customer_result = await plain.upsert_customer(
-                UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
-                    on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(admin.id),
-                        full_name=admin.email,
-                        email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
-                        ),
-                    ),
-                    on_update=UpsertCustomerOnUpdateInput(
-                        email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
-                        ),
-                    ),
-                )
-            )
-            if customer_result.error is not None:
+            try:
+                customer_identifier = await self._get_or_create_customer(plain, admin)
+            except PlainCustomerError as e:
                 raise AccountReviewThreadCreationError(
-                    organization.account.id, customer_result.error.message
-                )
+                    organization.account.id, e.message
+                ) from e
 
             match organization.status:
                 case OrganizationStatus.INITIAL_REVIEW:
@@ -188,9 +180,7 @@ class PlainService:
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=self._get_customer_identifier(
-                        customer_result, admin.email
-                    ),
+                    customer_identifier=customer_identifier,
                     title=title,
                     label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
                     components=[
@@ -238,35 +228,15 @@ class PlainService:
 
         # Create Plain ticket for appeal review
         async with self._get_plain_client() as plain:
-            customer_result = await plain.upsert_customer(
-                UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(email_address=user.email),
-                    on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(user.id),
-                        full_name=user.email,
-                        email=EmailAddressInput(
-                            email=user.email, is_verified=user.email_verified
-                        ),
-                    ),
-                    on_update=UpsertCustomerOnUpdateInput(
-                        email=EmailAddressInput(
-                            email=user.email, is_verified=user.email_verified
-                        ),
-                    ),
-                )
-            )
-
-            if customer_result.error is not None:
-                raise AccountReviewThreadCreationError(
-                    user.id, customer_result.error.message
-                )
+            try:
+                customer_identifier = await self._get_or_create_customer(plain, user)
+            except PlainCustomerError as e:
+                raise AccountReviewThreadCreationError(user.id, e.message) from e
 
             # Create the thread with detailed appeal information
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=self._get_customer_identifier(
-                        customer_result, user.email
-                    ),
+                    customer_identifier=customer_identifier,
                     title=f"Organization Appeal - {organization.slug}",
                     label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
                     components=[
@@ -350,39 +320,20 @@ class PlainService:
             return
 
         async with self._get_plain_client() as plain:
-            customer_result = await plain.upsert_customer(
-                UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(
-                        email_address=requesting_user.email
-                    ),
-                    on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(requesting_user.id),
-                        full_name=requesting_user.email,
-                        email=EmailAddressInput(
-                            email=requesting_user.email,
-                            is_verified=requesting_user.email_verified,
-                        ),
-                    ),
-                    on_update=UpsertCustomerOnUpdateInput(
-                        email=EmailAddressInput(
-                            email=requesting_user.email,
-                            is_verified=requesting_user.email_verified,
-                        ),
-                    ),
+            try:
+                customer_identifier = await self._get_or_create_customer(
+                    plain, requesting_user
                 )
-            )
-            if customer_result.error is not None:
+            except PlainCustomerError as e:
                 raise AccountReviewThreadCreationError(
-                    organization.id, customer_result.error.message
-                )
+                    organization.id, e.message
+                ) from e
 
             reasons_text = ", ".join(blocked_reasons) if blocked_reasons else "unknown"
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=self._get_customer_identifier(
-                        customer_result, requesting_user.email
-                    ),
+                    customer_identifier=customer_identifier,
                     title=f"Organization Deletion Request - {organization.slug}",
                     label_type_ids=["lt_01JKD9ASBPVX09YYXGHSXZRWSA"],
                     components=[
@@ -1395,6 +1346,55 @@ class PlainService:
 
         return CustomerIdentifierInput(email_address=email)
 
+    async def _get_or_create_customer(
+        self,
+        plain: Plain,
+        user: User,
+    ) -> CustomerIdentifierInput:
+        """
+        Get or create a Plain customer, handling email changes gracefully.
+
+        1. Try to find by email (handles legacy customers)
+        2. If not found, upsert with external_id (handles email changes + new customers)
+
+        This approach avoids duplicate customer creation when users change their email.
+        """
+        # Step 1: Try read-only lookup by email (handles legacy customers)
+        customer = await plain.customer_by_email(email=user.email)
+
+        if customer:
+            # Found by email - use external_id if available, otherwise email
+            if customer.external_id:
+                return CustomerIdentifierInput(external_id=customer.external_id)
+            return CustomerIdentifierInput(email_address=user.email)
+
+        # Step 2: Not found by email - upsert with external_id as identifier
+        # This handles:
+        # - Users who changed their email (finds by external_id, updates email)
+        # - New users (creates with external_id)
+        customer_result = await plain.upsert_customer(
+            UpsertCustomerInput(
+                identifier=UpsertCustomerIdentifierInput(external_id=str(user.id)),
+                on_create=UpsertCustomerOnCreateInput(
+                    external_id=str(user.id),
+                    full_name=user.email,
+                    email=EmailAddressInput(
+                        email=user.email, is_verified=user.email_verified
+                    ),
+                ),
+                on_update=UpsertCustomerOnUpdateInput(
+                    email=EmailAddressInput(
+                        email=user.email, is_verified=user.email_verified
+                    ),
+                ),
+            )
+        )
+
+        if customer_result.error is not None:
+            raise PlainCustomerError(user.id, customer_result.error.message)
+
+        return self._get_customer_identifier(customer_result, user.email)
+
     async def check_thread_exists(
         self, customer_email: str, thread_title: str, fuzzy: bool = False
     ) -> bool:
@@ -1457,33 +1457,16 @@ class PlainService:
             return ""
 
         async with self._get_plain_client() as plain:
-            customer_result = await plain.upsert_customer(
-                UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
-                    on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(admin.id),
-                        full_name=admin.email,
-                        email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
-                        ),
-                    ),
-                    on_update=UpsertCustomerOnUpdateInput(
-                        email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
-                        ),
-                    ),
-                )
-            )
-            if customer_result.error is not None:
+            try:
+                customer_identifier = await self._get_or_create_customer(plain, admin)
+            except PlainCustomerError as e:
                 raise AccountReviewThreadCreationError(
-                    organization.id, customer_result.error.message
-                )
+                    organization.id, e.message
+                ) from e
 
             thread_result = await plain.create_thread(
                 CreateThreadInput(
-                    customer_identifier=self._get_customer_identifier(
-                        customer_result, admin.email
-                    ),
+                    customer_identifier=customer_identifier,
                     title=title,
                     components=[
                         ComponentInput(

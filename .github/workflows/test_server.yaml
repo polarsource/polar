@@ -79,6 +79,16 @@ jobs:
     needs: changes
     if: needs.changes.outputs.tinybird == 'true'
     runs-on: ubuntu-latest
+    services:
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+        options: >-
+          --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
 
@@ -87,7 +97,10 @@ jobs:
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
-        run: tb build
+        run: |
+          export TB_HOST=http://localhost:7181
+          export TB_ADMIN_TOKEN=$(curl -s http://localhost:7181/tokens | jq -r .admin_token)
+          tb build
 
   migration-check:
     name: "Server: Migration Check 📚"

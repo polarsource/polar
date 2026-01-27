@@ -57,6 +57,11 @@ def short_id_to_base26(short_id: int) -> str:
     return result.rjust(8, "A")
 
 
+class CustomerType(StrEnum):
+    individual = "individual"
+    team = "team"
+
+
 class CustomerOAuthPlatform(StrEnum):
     github = "github"
     discord = "discord"
@@ -137,6 +142,11 @@ class Customer(MetadataMixin, RecordModel):
     )
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    type: Mapped[CustomerType] = mapped_column(
+        String, nullable=False, default=CustomerType.individual
+    )
+
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=False
     )

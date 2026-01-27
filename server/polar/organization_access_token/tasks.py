@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
+from polar.worker._broker import BrokerType
 
 from .repository import OrganizationAccessTokenRepository
 
@@ -18,6 +19,7 @@ def _record_usage_debounce_key(
     max_retries=1,
     min_backoff=5_000,
     debounce_key=_record_usage_debounce_key,
+    broker_type=BrokerType.RABBITMQ,
 )
 async def record_usage(
     organization_access_token_id: uuid.UUID, last_used_at: float

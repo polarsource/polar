@@ -43,7 +43,7 @@ services:
       - "${POLAR_RABBITMQ_MANAGEMENT_PORT}:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=${POLAR_RABBITMQ_USER}
-      - RABBITMQ_DEFAULT_PASS=${POLAR_RABBITMQ_PASS}
+      - RABBITMQ_DEFAULT_PASS=${POLAR_RABBITMQ_PWD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:

@@ -23,6 +23,7 @@ from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.rabbitmq import get_rabbitmq
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
@@ -1030,11 +1031,12 @@ def seeds_load() -> None:
 
     async def run() -> None:
         redis = create_redis("app")
-        async with JobQueueManager.open(dramatiq.get_broker(), redis):
-            engine = create_async_engine("script")
-            sessionmaker = create_async_sessionmaker(engine)
-            async with sessionmaker() as session:
-                await create_seed_data(session, redis)
+        async with get_rabbitmq("script") as rabbitmq:
+            async with JobQueueManager.open(dramatiq.get_broker(), redis, rabbitmq):
+                engine = create_async_engine("script")
+                sessionmaker = create_async_sessionmaker(engine)
+                async with sessionmaker() as session:
+                    await create_seed_data(session, redis)
 
     asyncio.run(run())
 

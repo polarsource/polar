@@ -162,6 +162,12 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
 
+    # RabbitMQ
+    RABBITMQ_HOST: str = "127.0.0.1"
+    RABBITMQ_PORT: int = 5672
+    RABBITMQ_USER: str = "polar"
+    RABBITMQ_PWD: str = "polar"
+
     # Emails
     EMAIL_RENDERER_BINARY_PATH: Annotated[
         Path, AfterValidator(_validate_email_renderer_binary_path)

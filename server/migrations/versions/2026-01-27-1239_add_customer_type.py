@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.add_column(
         "customers",
         sa.Column(
-            "type", sa.String(), nullable=False, server_default=CustomerType.individual
+            "type", sa.String(), nullable=True, server_default=CustomerType.individual
         ),
     )
     # ### end Alembic commands ###

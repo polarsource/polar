@@ -402,8 +402,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.max_redemptions is not None:
             await session.refresh(discount, {"redemptions_count"})
-            if discount.redemptions_count >= discount.max_redemptions:
-                return False
+            return discount.redemptions_count < discount.max_redemptions
 
         if (
             discount.max_redemptions_per_customer is not None

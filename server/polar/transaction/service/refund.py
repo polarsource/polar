@@ -11,7 +11,7 @@ from polar.event.system import BalanceRefundMetadata, SystemEvent, build_system_
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import polar_round
 from polar.logging import Logger
-from polar.models import Refund, Transaction
+from polar.models import Customer, Refund, Transaction
 from polar.models.refund import RefundStatus
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
@@ -83,7 +83,9 @@ class RefundTransactionService(BaseTransactionService):
         payment_transaction = await payment_transaction_repository.get_by_payment_id(
             refund.payment_id,
             options=(
-                joinedload(Transaction.payment_customer),
+                joinedload(Transaction.payment_customer).joinedload(
+                    Customer.organization
+                ),
                 joinedload(Transaction.payment_organization),
                 joinedload(Transaction.order),
             ),

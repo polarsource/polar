@@ -124,7 +124,8 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
         fee: int,
     ) -> None:
         try:
-            await session.refresh(order, ["customer", "organization"])
+            await session.refresh(order, ["customer"])
+            await session.refresh(order.customer, ["organization"])
             assert payment_transaction.presentment_amount is not None
             assert payment_transaction.presentment_currency is not None
 

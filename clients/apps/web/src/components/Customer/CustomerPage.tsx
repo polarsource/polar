@@ -14,6 +14,7 @@ import {
   useWallets,
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
+import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
 import {
   formatCurrency,
   formatHumanFriendlyCurrency,
@@ -55,6 +56,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
   dateRange,
   interval,
 }) => {
+  const { isEnabled: isMemberModelEnabled } = useMemberModelEnabled(
+    organization.id,
+  )
+
+  const showMembersTab = isMemberModelEnabled && customer.type === 'team'
+
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
     {
@@ -215,6 +222,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
+        {showMembersTab && <TabsTrigger value="members">Members</TabsTrigger>}
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">
@@ -491,11 +499,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           />
         </div>
 
-        <MembersSection
-          customerId={customer.id}
-          organizationId={organization.id}
-        />
-
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <h2 className="text-lg">Customer Details</h2>
@@ -573,6 +576,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         organization={organization}
         dateRange={dateRange}
       />
+      {showMembersTab && (
+        <TabsContent value="members" className="flex flex-col gap-y-8">
+          <MembersSection
+            customerId={customer.id}
+            organizationId={organization.id}
+          />
+        </TabsContent>
+      )}
     </Tabs>
   )
 }

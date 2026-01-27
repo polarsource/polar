@@ -132,10 +132,12 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         ),
         examples=[True],
     )
-    type: CustomerType = Field(
+    type: CustomerType | None = Field(
+        default=None,
         description=(
             "The type of customer: 'individual' for single users, "
-            "'team' for customers with multiple members."
+            "'team' for customers with multiple members. "
+            "Legacy customers may have NULL type which is treated as 'individual'."
         ),
         examples=["individual"],
     )

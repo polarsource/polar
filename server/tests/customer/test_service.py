@@ -539,6 +539,87 @@ class TestUpdate:
         assert updated_customer.billing_address.postal_code == "94102"
         assert updated_customer.billing_address.country == "US"
 
+    async def test_upgrade_type_individual_to_team(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that customer type can be upgraded from individual to team."""
+        from polar.models.customer import CustomerType
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+        )
+        # Ensure customer starts as individual
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(type=CustomerType.team),
+        )
+        await session.flush()
+
+        assert updated_customer.type == CustomerType.team
+
+    async def test_cannot_downgrade_type_team_to_individual(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that customer type cannot be downgraded from team to individual."""
+        from polar.models.customer import CustomerType
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        # Set customer as team
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(type=CustomerType.individual),
+            )
+
+        assert "downgraded" in str(exc_info.value).lower()
+
+    async def test_same_type_update_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Test that updating to the same type is allowed."""
+        from polar.models.customer import CustomerType
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="same-type@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Should not raise when updating to same type
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(type=CustomerType.team),
+        )
+        await session.flush()
+
+        assert updated_customer.type == CustomerType.team
+
 
 @pytest.mark.asyncio
 class TestDelete:

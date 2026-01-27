@@ -124,17 +124,11 @@ class SeatAssignmentTarget:
 
 
 class SeatService:
-    def _get_customer_id(self, container: SeatContainer) -> uuid.UUID:
-        return container.customer_id
-
     def _get_product(self, container: SeatContainer) -> Product | None:
         return container.product
 
     def _get_organization_id(self, container: SeatContainer) -> uuid.UUID:
         return container.organization.id
-
-    def _get_seats_count(self, container: SeatContainer) -> int:
-        return container.seats or 0
 
     def _get_container_id(self, container: SeatContainer) -> uuid.UUID:
         return container.id
@@ -312,7 +306,9 @@ class SeatService:
             )
 
         # 3.5 Auto-upgrade billing customer to 'team' type when assigning seats
-        if billing_manager_customer.type == CustomerType.individual:
+        # NULL type is treated as 'individual' (legacy customers)
+        billing_customer_type = billing_manager_customer.type or CustomerType.individual
+        if billing_customer_type == CustomerType.individual:
             customer_repository = CustomerRepository.from_session(session)
             await customer_repository.update(
                 billing_manager_customer,

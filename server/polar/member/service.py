@@ -301,7 +301,9 @@ class MemberService:
         repository = MemberRepository.from_session(session)
 
         # Individual customers can only have 1 member (the owner)
-        if customer.type == CustomerType.individual:
+        # NULL type is treated as 'individual' (legacy customers)
+        customer_type = customer.type or CustomerType.individual
+        if customer_type == CustomerType.individual:
             existing_members = await repository.list_by_customer(session, customer_id)
             active_members = [m for m in existing_members if m.deleted_at is None]
             if len(active_members) >= 1:
@@ -375,15 +377,14 @@ class MemberService:
             members = await repository.list_by_customer(session, member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
 
-            demoting_owner = (
-                member.role == MemberRole.owner and role != MemberRole.owner
-            )
-            promoting_to_owner = (
-                role == MemberRole.owner and member.role != MemberRole.owner
-            )
+            is_current_owner = member.role == MemberRole.owner
+            is_becoming_owner = role == MemberRole.owner
+            is_losing_owner_role = is_current_owner and not is_becoming_owner
+            is_gaining_owner_role = is_becoming_owner and not is_current_owner
 
-            if (demoting_owner and owner_count <= 1) or (
-                promoting_to_owner and owner_count >= 1
+            # Prevent removing the last owner or adding a second owner
+            if (is_losing_owner_role and owner_count <= 1) or (
+                is_gaining_owner_role and owner_count >= 1
             ):
                 raise PolarRequestValidationError(
                     [

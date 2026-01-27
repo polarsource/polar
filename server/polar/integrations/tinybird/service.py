@@ -1,4 +1,5 @@
 import json
+from collections.abc import Sequence
 
 import structlog
 
@@ -98,7 +99,7 @@ def _event_to_tinybird(event: Event) -> TinybirdEvent:
     )
 
 
-async def ingest_events(events: list[Event]) -> None:
+async def ingest_events(events: Sequence[Event]) -> None:
     if not settings.TINYBIRD_EVENTS_WRITE:
         return
 

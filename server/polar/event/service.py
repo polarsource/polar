@@ -27,6 +27,7 @@ from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.integrations.tinybird.service import ingest_events
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -771,6 +772,8 @@ class EventService:
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
+
+        await ingest_events(events)
 
         if organization_ids_for_revops:
             organization_repository = OrganizationRepository.from_session(session)

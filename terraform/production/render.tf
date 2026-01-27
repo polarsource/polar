@@ -118,7 +118,7 @@ module "production" {
   api_service_config = {
     allowed_hosts  = "[\"polar.sh\", \"backoffice.polar.sh\"]"
     cors_origins   = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
-    custom_domains = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "backoffice.polar.sh" }]
+    custom_domains = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
   }
 
   postgres_config = {
@@ -180,6 +180,7 @@ module "production" {
   backend_config = {
     base_url                   = "https://api.polar.sh"
     backoffice_host            = "backoffice.polar.sh"
+    checkout_link_host         = "buy.polar.sh"
     user_session_cookie_domain = "polar.sh"
     debug                      = "0"
     email_sender               = "resend"
@@ -287,8 +288,8 @@ module "production" {
 # =============================================================================
 
 import {
-  to = cloudflare_dns_record.api_alt
-  id = "22bcd1b07ec25452aab472486bc8df94/1a6c7816eb431628b77b6df3fc2bde51"
+  to = cloudflare_dns_record.buy
+  id = "22bcd1b07ec25452aab472486bc8df94/119002474ca374ebb18bbe1c7a6a55b5"
 }
 
 resource "cloudflare_dns_record" "api" {
@@ -306,6 +307,15 @@ resource "cloudflare_dns_record" "api_alt" {
   type    = "CNAME"
   content = replace(module.production.api_service_url, "https://", "")
   proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "buy" {
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "buy.polar.sh"
+  type    = "CNAME"
+  content = replace(module.production.api_service_url, "https://", "")
+  proxied = true
   ttl     = 1
 }
 

@@ -30,7 +30,11 @@ from polar.models.discount import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_customer, create_discount
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_customer,
+    create_discount,
+)
 
 
 async def create_discount_redemption(

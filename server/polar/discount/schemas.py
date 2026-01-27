@@ -311,8 +311,7 @@ class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     )
     max_redemptions_per_customer: int | None = Field(
         description=(
-            "Maximum number of times the discount can be redeemed "
-            "by the same customer."
+            "Maximum number of times the discount can be redeemed by the same customer."
         )
     )
 

@@ -12,6 +12,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.discount.repository import DiscountRedemptionRepository
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     MINIMUM_PRICE_AMOUNT,
@@ -349,17 +350,6 @@ class CheckoutService:
         if checkout_create.amount is not None and is_custom_price(price):
             self._validate_custom_price_amount(price, checkout_create.amount)
 
-        discount: Discount | None = None
-        if checkout_create.discount_id is not None:
-            discount = await self._get_validated_discount(
-                session,
-                product.organization,
-                product,
-                price,
-                currency,
-                discount_id=checkout_create.discount_id,
-            )
-
         customer_tax_id: TaxID | None = None
         if checkout_create.customer_tax_id is not None:
             if checkout_create.customer_billing_address is None:
@@ -438,6 +428,18 @@ class CheckoutService:
             # It not, that's fine': we'll create a new customer on confirm.
             customer = await customer_repository.get_by_external_id_and_organization(
                 checkout_create.external_customer_id, product.organization_id
+            )
+
+        discount: Discount | None = None
+        if checkout_create.discount_id is not None:
+            discount = await self._get_validated_discount(
+                session,
+                product.organization,
+                product,
+                price,
+                currency,
+                discount_id=checkout_create.discount_id,
+                customer_id=customer.id if customer else None,
             )
 
         amount = checkout_create.amount
@@ -972,23 +974,23 @@ class CheckoutService:
             if checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
-                        session, checkout.discount, customer_id=checkout.customer_id
+                        session, checkout.discount, checkout.customer_id
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
-                            session, auth_subject, checkout, checkout_confirm
+                            session, auth_subject, checkout, checkout_confirm, discount_redemption
                         )
                 except DiscountPerCustomerLimitReachedError as e:
                     raise PolarRequestValidationError(
                         [
                             {
                                 "type": "value_error",
-                                "loc": ("body", "discount_id"),
+                                "loc": ("body", "discount_code"),
                                 "msg": (
                                     "You have reached the maximum number of "
                                     "redemptions for this discount."
                                 ),
-                                "input": checkout.discount.id,
+                                "input": checkout_confirm.discount_code,
                             }
                         ]
                     ) from e
@@ -1014,6 +1016,7 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
+        discount_redemption: DiscountRedemption | None = None,
     ) -> Checkout:
         errors: list[ValidationError] = []
         try:
@@ -1172,6 +1175,20 @@ class CheckoutService:
                             "intent_client_secret": intent.client_secret,
                             "intent_status": intent.status,
                         }
+
+                # Validate per-customer limit now that we have the customer_id
+                if (
+                    checkout.discount.max_redemptions_per_customer is not None
+                    and customer.id is not None
+                    and discount_redemption is not None
+                ):
+                    discount_redemption.customer_id = customer.id
+                    if not await discount_service.is_redeemable_discount(
+                        session, checkout.discount, customer.id
+                    ):
+                        raise DiscountPerCustomerLimitReachedError(
+                            checkout.discount, customer.id
+                        )
 
                 # Check for trial abuse
                 if (
@@ -1628,6 +1645,7 @@ class CheckoutService:
         currency: str,
         *,
         discount_id: uuid.UUID,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount: ...
 
     @typing.overload
@@ -1640,6 +1658,7 @@ class CheckoutService:
         currency: str,
         *,
         discount_code: str,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount: ...
 
     async def _get_validated_discount(
@@ -1652,6 +1671,7 @@ class CheckoutService:
         *,
         discount_id: uuid.UUID | None = None,
         discount_code: str | None = None,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount:
         loc_field = "discount_id" if discount_id is not None else "discount_code"
 
@@ -1675,10 +1695,16 @@ class CheckoutService:
                 organization,
                 currency=currency,
                 products=[product],
+                customer_id=customer_id,
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(
-                session, discount_code, organization, product, currency
+                session,
+                discount_code,
+                organization,
+                product,
+                currency,
+                customer_id=customer_id,
             )
 
         if discount is None:
@@ -1966,6 +1992,7 @@ class CheckoutService:
                     checkout.product_price,
                     checkout.currency,
                     discount_id=checkout_update.discount_id,
+                    customer_id=checkout.customer_id,
                 )
             # User explicitly removed the discount
             elif "discount_id" in checkout_update.model_fields_set:
@@ -1985,6 +2012,7 @@ class CheckoutService:
                     checkout.product_price,
                     checkout.currency,
                     discount_code=checkout_update.discount_code,
+                    customer_id=checkout.customer_id,
                 )
                 checkout.discount = discount
             # User explicitly removed the discount

@@ -304,6 +304,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         products: Sequence[Product] | None = None,
         currency: str | None = None,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
@@ -326,7 +327,9 @@ class DiscountService(ResourceServiceReader[Discount]):
                     if product not in discount.products:
                         return None
 
-        if redeemable and not await self.is_redeemable_discount(session, discount):
+        if redeemable and not await self.is_redeemable_discount(
+            session, discount, customer_id
+        ):
             return None
 
         return discount
@@ -338,6 +341,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization: Organization,
         *,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             func.upper(Discount.code) == code.upper(),
@@ -350,7 +354,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if redeemable and not await self.is_redeemable_discount(session, discount):
+        if redeemable and not await self.is_redeemable_discount(
+            session, discount, customer_id
+        ):
             return None
 
         return discount
@@ -364,9 +370,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         currency: str | None = None,
         *,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         discount = await self.get_by_code_and_organization(
-            session, code, organization, redeemable=redeemable
+            session, code, organization, redeemable=redeemable, customer_id=customer_id
         )
 
         if discount is None:
@@ -385,7 +392,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount: Discount,
-        *,
         customer_id: uuid.UUID | None = None,
     ) -> bool:
         if discount.starts_at is not None and discount.starts_at > utc_now():
@@ -399,10 +405,15 @@ class DiscountService(ResourceServiceReader[Discount]):
             if discount.redemptions_count >= discount.max_redemptions:
                 return False
 
-        if discount.max_redemptions_per_customer is not None and customer_id is not None:
+        if (
+            discount.max_redemptions_per_customer is not None
+            and customer_id is not None
+        ):
             redemption_repository = DiscountRedemptionRepository.from_session(session)
-            customer_redemptions = await redemption_repository.count_by_discount_and_customer(
-                discount.id, customer_id
+            customer_redemptions = (
+                await redemption_repository.count_by_discount_and_customer(
+                    discount.id, customer_id
+                )
             )
             if customer_redemptions >= discount.max_redemptions_per_customer:
                 return False
@@ -414,7 +425,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount: Discount,
-        *,
         customer_id: uuid.UUID | None = None,
     ) -> AsyncIterator[DiscountRedemption]:
         """
@@ -433,7 +443,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 raise DiscountNotRedeemableError(discount) from e
             raise
 
-        if not await self.is_redeemable_discount(session, discount, customer_id=customer_id):
+        if not await self.is_redeemable_discount(session, discount, customer_id):
             raise DiscountNotRedeemableError(discount)
 
         # Check per-customer limit and raise specific error
@@ -442,13 +452,17 @@ class DiscountService(ResourceServiceReader[Discount]):
             and customer_id is not None
         ):
             redemption_repository = DiscountRedemptionRepository.from_session(session)
-            customer_redemptions = await redemption_repository.count_by_discount_and_customer(
-                discount.id, customer_id
+            customer_redemptions = (
+                await redemption_repository.count_by_discount_and_customer(
+                    discount.id, customer_id
+                )
             )
             if customer_redemptions >= discount.max_redemptions_per_customer:
                 raise DiscountPerCustomerLimitReachedError(discount, customer_id)
 
-        discount_redemption = DiscountRedemption(discount=discount, customer_id=customer_id)
+        discount_redemption = DiscountRedemption(
+            discount=discount, customer_id=customer_id
+        )
 
         yield discount_redemption
 

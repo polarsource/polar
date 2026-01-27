@@ -22,6 +22,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.member import Member, OwnerCreate
+from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
 from polar.tax.tax_id import TaxID
 
@@ -124,6 +125,14 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
     deleted_at: datetime | None = Field(
         description="Timestamp for when the customer was soft deleted."
+    )
+
+    type: CustomerType | None = Field(
+        default=CustomerType.individual,
+        description=(
+            "The type of customer. `individual` for B2C customers, "
+            "`team` for B2B customers with seat-based subscriptions."
+        ),
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])

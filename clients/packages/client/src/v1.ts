@@ -12580,6 +12580,12 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * Type
+       * @description The type of customer. `individual` for B2C customers, `team` for B2B customers with seat-based subscriptions.
+       * @default individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -14307,6 +14313,12 @@ export interface components {
       | '-email'
       | 'name'
       | '-name'
+    /**
+     * CustomerType
+     * @description The type of customer.
+     * @enum {string}
+     */
+    CustomerType: 'individual' | 'team'
     /**
      * CustomerState
      * @description A customer along with additional state information:

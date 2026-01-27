@@ -60,6 +60,8 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     organization.id,
   )
 
+  const showMembersTab = isMemberModelEnabled && customer.type === 'team'
+
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
     {
@@ -220,7 +222,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
-        {isMemberModelEnabled && (
+        {showMembersTab && (
           <TabsTrigger value="members">Members</TabsTrigger>
         )}
       </TabsList>
@@ -576,7 +578,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         organization={organization}
         dateRange={dateRange}
       />
-      {isMemberModelEnabled && (
+      {showMembersTab && (
         <TabsContent value="members" className="flex flex-col gap-y-8">
           <MembersSection
             customerId={customer.id}

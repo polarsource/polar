@@ -597,7 +597,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           <MembersSection
             customerId={customer.id}
             organizationId={organization.id}
-            customerType={customer.type}
+            customerType={customer.type ?? undefined}
           />
         </TabsContent>
       )}

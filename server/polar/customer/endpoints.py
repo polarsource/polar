@@ -55,6 +55,7 @@ async def _to_customer_with_members(
         customer_dict["members"] = []
     return CustomerWithMembers(**customer_dict)
 
+
 router = APIRouter(
     prefix="/customers",
     tags=["customers", APITag.public, APITag.mcp],

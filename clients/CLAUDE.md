@@ -141,7 +141,6 @@ const Button = ({ className, variant, size, ...props }) => (
 
 ```tsx
 import { ShadowBox } from '@polar-sh/ui'
-
 ;<ShadowBox>{/* Content with consistent card styling */}</ShadowBox>
 ```
 

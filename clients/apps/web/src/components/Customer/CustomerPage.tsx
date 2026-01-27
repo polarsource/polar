@@ -222,9 +222,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
-        {showMembersTab && (
-          <TabsTrigger value="members">Members</TabsTrigger>
-        )}
+        {showMembersTab && <TabsTrigger value="members">Members</TabsTrigger>}
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-8">
         <div className="grid grid-cols-2 flex-row gap-4 md:gap-6 xl:flex">

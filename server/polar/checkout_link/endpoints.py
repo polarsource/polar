@@ -1,10 +1,13 @@
 from typing import Annotated
 
 from fastapi import Depends, Path, Query, Request
+from fastapi.datastructures import URL
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
 from polar.checkout import ip_geolocation
+from polar.checkout.service import checkout as checkout_service
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -174,17 +177,42 @@ async def redirect(
     utm_content: str | None = Query(None),
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
-    url = await checkout_link_service.create_checkout_redirect_url(
+    repository = CheckoutLinkRepository.from_session(session)
+    checkout_link = await repository.get_by_client_secret(
+        client_secret, options=repository.get_eager_options()
+    )
+
+    if checkout_link is None:
+        raise ResourceNotFound()
+
+    ip_address = request.client.host if request.client else None
+
+    # Build query_prefill dictionary from explicit parameters
+    query_prefill: dict[str, str | UUID4 | dict[str, str] | None] = {
+        "product_id": product_id,
+        "amount": amount,
+        "customer_email": customer_email,
+        "customer_name": customer_name,
+        "discount_code": discount_code,
+    }
+
+    # Extract custom_field_data.* parameters from query string
+    custom_field_data: dict[str, str] = {}
+    for key, value in request.query_params.items():
+        if key.startswith("custom_field_data."):
+            slug = key.replace("custom_field_data.", "")
+            custom_field_data[slug] = value
+
+    if custom_field_data:
+        query_prefill["custom_field_data"] = custom_field_data
+
+    checkout = await checkout_service.checkout_link_create(
         session,
-        client_secret,
-        request,
+        checkout_link,
+        embed_origin,
         ip_geolocation_client,
-        embed_origin=embed_origin,
-        product_id=product_id,
-        amount=amount,
-        customer_email=customer_email,
-        customer_name=customer_name,
-        discount_code=discount_code,
+        ip_address,
+        query_prefill=query_prefill,
         reference_id=reference_id,
         utm_source=utm_source,
         utm_medium=utm_medium,
@@ -192,4 +220,22 @@ async def redirect(
         utm_term=utm_term,
         utm_content=utm_content,
     )
-    return RedirectResponse(url)
+
+    validated_custom_field_keys = (
+        set(checkout.custom_field_data.keys()) if checkout.custom_field_data else set()
+    )
+
+    checkout_url = URL(checkout.url)
+    query_params = {
+        k: v
+        for k, v in request.query_params.items()
+        if k != "embed_origin"
+        and (k not in query_prefill or query_prefill[k] is None)
+        and not (
+            k.startswith("custom_field_data.")
+            and k.replace("custom_field_data.", "") in validated_custom_field_keys
+        )
+    }
+    checkout_url = checkout_url.include_query_params(**query_params)
+
+    return RedirectResponse(checkout_url)

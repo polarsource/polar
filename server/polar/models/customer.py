@@ -94,6 +94,11 @@ class CustomerOAuthAccount:
         return time.time() > self.expires_at
 
 
+class CustomerType(StrEnum):
+    individual = "individual"
+    team = "team"
+
+
 class Customer(MetadataMixin, RecordModel):
     __tablename__ = "customers"
     __table_args__ = (
@@ -184,6 +189,18 @@ class Customer(MetadataMixin, RecordModel):
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
         index=True,
+    )
+
+    """
+    This field is used to differentiate between individual and team customers. Individual
+    are those who have purchased only B2C products. Team are those who have purchased
+    a seat-based product. Individual customers can transition to a team customer by
+    purchasing a seat-based product. This transition is only one-way.
+    """
+    type: Mapped[CustomerType] = mapped_column(
+        String,
+        nullable=False,
+        default=CustomerType.individual,
     )
 
     @declared_attr

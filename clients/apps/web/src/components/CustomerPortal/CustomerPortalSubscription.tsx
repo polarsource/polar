@@ -6,7 +6,6 @@ import {
   useCustomerBenefitGrants,
   useCustomerCancelSubscription,
   useCustomerOrders,
-  useCustomerPaymentMethods,
   useCustomerSeats,
   usePortalAuthenticatedUser,
   useResendSeatInvitation,
@@ -15,17 +14,13 @@ import {
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
-import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useTheme } from 'next-themes'
 import { useState } from 'react'
-import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
@@ -33,9 +28,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
-import { AddPaymentMethodModal } from './AddPaymentMethodModal'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
-import PaymentMethod from './PaymentMethod'
 import { SeatManagementTable } from './SeatManagementTable'
 
 const CustomerPortalSubscription = ({
@@ -53,27 +46,9 @@ const CustomerPortalSubscription = ({
     isShown: cancelModalIsShown,
   } = useModal()
 
-  const {
-    isShown: isAddPaymentMethodModalOpen,
-    hide: hideAddPaymentMethodModal,
-    show: showAddPaymentMethodModal,
-  } = useModal()
-
-  // Theme for Stripe Elements
-  const theme = useTheme()
-  const organization = subscription.product.organization
-  const themePreset = getThemePreset(
-    organization.slug,
-    theme.resolvedTheme as 'light' | 'dark',
-  )
-
   // Get authenticated user to check billing permissions
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const canManageBilling = hasBillingPermission(authenticatedUser)
-
-  // Get customer data for payment methods
-  const { data: customer } = useCustomerPortalCustomer()
-  const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
@@ -410,59 +385,12 @@ const CustomerPortalSubscription = ({
         )}
       </div>
 
-      {/* Payment Methods - only shown for users with billing permissions */}
-      {canManageBilling && customer && (
-        <div className="flex w-full flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg">Payment Methods</h3>
-            <Button variant="secondary" onClick={showAddPaymentMethodModal}>
-              Add Payment Method
-            </Button>
-          </div>
-          {paymentMethods?.items && paymentMethods.items.length > 0 ? (
-            <div className="flex flex-col gap-4">
-              {paymentMethods.items.map((pm) => (
-                <PaymentMethod
-                  key={pm.id}
-                  customer={customer}
-                  paymentMethod={pm}
-                  api={api}
-                  deletable={true}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
-              <span className="dark:text-polar-500 text-gray-500">
-                No payment methods on file
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
       <CustomerCancellationModal
         subscription={subscription}
         isShown={cancelModalIsShown}
         hide={hideCancelModal}
         cancelSubscription={cancelSubscription}
       />
-
-      {customer && (
-        <Modal
-          title="Add Payment Method"
-          isShown={isAddPaymentMethodModalOpen}
-          hide={hideAddPaymentMethodModal}
-          modalContent={
-            <AddPaymentMethodModal
-              api={api}
-              onPaymentMethodAdded={hideAddPaymentMethodModal}
-              hide={hideAddPaymentMethodModal}
-              themePreset={themePreset}
-            />
-          }
-        />
-      )}
     </div>
   )
 }

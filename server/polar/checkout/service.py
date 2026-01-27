@@ -12,7 +12,6 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import Anonymous, AuthSubject
-from polar.discount.repository import DiscountRedemptionRepository
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     MINIMUM_PRICE_AMOUNT,
@@ -69,6 +68,7 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
+    DiscountRedemption,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     Organization,
@@ -978,7 +978,11 @@ class CheckoutService:
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
-                            session, auth_subject, checkout, checkout_confirm, discount_redemption
+                            session,
+                            auth_subject,
+                            checkout,
+                            checkout_confirm,
+                            discount_redemption,
                         )
                 except DiscountPerCustomerLimitReachedError as e:
                     raise PolarRequestValidationError(
@@ -1178,7 +1182,8 @@ class CheckoutService:
 
                 # Validate per-customer limit now that we have the customer_id
                 if (
-                    checkout.discount.max_redemptions_per_customer is not None
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
                     and customer.id is not None
                     and discount_redemption is not None
                 ):

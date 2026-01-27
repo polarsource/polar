@@ -570,7 +570,7 @@ class OrderService:
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
         else:
-            await self._emit_balance_credit_order_event(session, order)
+            await self._emit_balance_credit_order_event(session, order, organization)
 
         # Record tax transaction
         if checkout.tax_processor_id is not None:
@@ -752,7 +752,9 @@ class OrderService:
                 order = await repository.update(
                     order, update_dict={"status": OrderStatus.paid}
                 )
-                await self._emit_balance_credit_order_event(session, order)
+                await self._emit_balance_credit_order_event(
+                    session, order, subscription.organization
+                )
             elif subscription.payment_method_id is None:
                 order = await self.handle_payment_failure(session, order)
             else:
@@ -938,6 +940,9 @@ class OrderService:
                 order=order,
             )
 
+            await self._emit_balance_credit_order_event(
+                session, order, order.organization
+            )
             await self._on_order_updated(session, order, previous_status)
             return
 
@@ -1718,7 +1723,10 @@ class OrderService:
             )
 
     async def _emit_balance_credit_order_event(
-        self, session: AsyncSession, order: Order
+        self,
+        session: AsyncSession,
+        order: Order,
+        organization: Organization,
     ) -> None:
         try:
             credit_metadata: BalanceCreditOrderMetadata = {
@@ -1741,7 +1749,7 @@ class OrderService:
             credit_event = build_system_event(
                 SystemEvent.balance_credit_order,
                 customer=order.customer,
-                organization=order.organization,
+                organization=organization,
                 metadata=credit_metadata,
             )
             credit_event.timestamp = order.created_at

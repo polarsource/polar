@@ -1,3 +1,4 @@
+import secrets
 from typing import Any
 
 from fastapi import Depends, Form, Request
@@ -16,13 +17,14 @@ from polar.kit.http import ReturnTo
 from polar.kit.oauth import (
     OAuthCallbackError,
     clear_login_cookie,
-    generate_state,
     set_login_cookie,
+    store_oauth_state,
     validate_callback,
 )
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.user.schemas import UserSignupAttribution, UserSignupAttributionQuery
 
@@ -41,6 +43,7 @@ async def apple_authorize(
     auth_subject: WebUserOrAnonymous,
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
         raise NotPermitted()
@@ -49,12 +52,16 @@ async def apple_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    encoded_state, nonce = generate_state(state, type="apple_oauth")
+    # Create Apple-specific authorization response
+    nonce = secrets.token_urlsafe()
+    state_with_nonce = {**state, "nonce": nonce}
+    await store_oauth_state(redis, nonce, state_with_nonce, type="apple")
+
     redirect_uri = str(request.url_for("integrations.apple.callback"))
     apple_oauth_client = get_apple_oauth_client()
     authorization_url = await apple_oauth_client.get_authorization_url(
         redirect_uri=redirect_uri,
-        state=encoded_state,
+        state=nonce,  # Use nonce as state parameter
         extras_params={"response_mode": "form_post"},
     )
     response = RedirectResponse(authorization_url, 303)
@@ -71,6 +78,7 @@ async def apple_callback(
     state: str | None = Form(None),
     error: str | None = Form(None),
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
         raise NotPermitted()
@@ -94,7 +102,9 @@ async def apple_callback(
             response=e.response,
         ) from e
 
-    state_data = validate_callback(request, token_data, state, type="apple_oauth")
+    state_data = await validate_callback(
+        request, redis, token_data, state, type="apple"
+    )
 
     return_to = state_data.get("return_to", None)
 

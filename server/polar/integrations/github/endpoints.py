@@ -17,13 +17,13 @@ from polar.kit.http import ReturnTo, get_safe_return_url
 from polar.kit.oauth import (
     OAuthCallbackError,
     clear_login_cookie,
-    generate_state,
-    set_login_cookie,
+    create_authorization_response,
     validate_callback,
 )
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.user.schemas import UserSignupAttribution, UserSignupAttributionQuery
 
@@ -50,21 +50,21 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
         super().__init__(message)
 
 
-async def create_authorization_response(
+async def create_github_authorization_response(
     request: Request,
+    redis: Redis,
     state: dict[str, Any],
     callback_route: str,
 ) -> RedirectResponse:
-    encoded_state, nonce = generate_state(state, type="github_oauth")
-    redirect_uri = str(request.url_for(callback_route))
-    authorization_url = await github_oauth_client.get_authorization_url(
-        redirect_uri=redirect_uri,
-        state=encoded_state,
-        scope=GITHUB_OAUTH_SCOPES,
+    return await create_authorization_response(
+        request=request,
+        redis=redis,
+        state=state,
+        callback_route=callback_route,
+        oauth_client=github_oauth_client,
+        scopes=GITHUB_OAUTH_SCOPES,
+        type="github",
     )
-    response = RedirectResponse(authorization_url, 303)
-    set_login_cookie(request, response, nonce)
-    return response
 
 
 login_router = APIRouter(
@@ -80,6 +80,7 @@ async def login_authorize(
     return_to: ReturnTo,
     signup_attribution: UserSignupAttributionQuery,
     payment_intent_id: str | None = None,
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
         raise NotPermitted()
@@ -90,8 +91,8 @@ async def login_authorize(
     if signup_attribution:
         state["signup_attribution"] = signup_attribution.model_dump(exclude_unset=True)
 
-    return await create_authorization_response(
-        request, state, "integrations.github.login.callback"
+    return await create_github_authorization_response(
+        request, redis, state, "integrations.github.login.callback"
     )
 
 
@@ -103,12 +104,19 @@ async def login_callback(
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_login_authorize_callback
     ),
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     if is_user(auth_subject):
         raise NotPermitted()
 
     token_data, state = access_token_state
-    state_data = validate_callback(request, token_data, state, type="github_oauth")
+    state_data = await validate_callback(
+        request,
+        redis,
+        token_data,
+        state,
+        type="github",
+    )
 
     return_to = state_data.get("return_to", None)
 
@@ -149,15 +157,18 @@ link_router = APIRouter(
 
 @link_router.get("/authorize", name="integrations.github.link.authorize")
 async def link_authorize(
-    request: Request, auth_subject: WebUserWrite, return_to: ReturnTo
+    request: Request,
+    auth_subject: WebUserWrite,
+    return_to: ReturnTo,
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     state: dict[str, Any] = {
         "return_to": return_to,
         "user_id": str(auth_subject.subject.id),
     }
 
-    return await create_authorization_response(
-        request, state, "integrations.github.link.callback"
+    return await create_github_authorization_response(
+        request, redis, state, "integrations.github.link.callback"
     )
 
 
@@ -169,9 +180,12 @@ async def link_callback(
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
         oauth2_link_authorize_callback
     ),
+    redis: Redis = Depends(get_redis),
 ) -> RedirectResponse:
     token_data, state = access_token_state
-    state_data = validate_callback(request, token_data, state, type="github_oauth")
+    state_data = await validate_callback(
+        request, redis, token_data, state, type="github"
+    )
 
     return_to = state_data.get("return_to", None)
     state_user_id = state_data.get("user_id")

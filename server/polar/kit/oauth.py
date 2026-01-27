@@ -1,3 +1,4 @@
+import json
 import secrets
 from typing import Any, Literal
 
@@ -7,28 +8,45 @@ from httpx_oauth.oauth2 import OAuth2Token
 
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
-from polar.kit import jwt
+from polar.redis import Redis
 
 
 class OAuthCallbackError(PolarRedirectionError):
     pass
 
 
-OAuthStateType = Literal["github_oauth", "google_oauth", "apple_oauth"]
+OAuthStateType = Literal["github", "google", "apple"]
 
 
-def generate_state(state: dict[str, Any], *, type: OAuthStateType) -> tuple[str, str]:
-    nonce = secrets.token_urlsafe()
-    state_with_nonce = {**state, "nonce": nonce}
-    encoded = jwt.encode(data=state_with_nonce, secret=settings.SECRET, type=type)
-    return encoded, nonce
+def get_oauth_state_key(nonce: str, type: OAuthStateType) -> str:
+    return f"oauth_state:{type}:{nonce}"
 
 
-def parse_state(state: str, *, type: OAuthStateType) -> dict[str, Any]:
-    try:
-        return jwt.decode(token=state, secret=settings.SECRET, type=type)
-    except jwt.DecodeError as e:
-        raise OAuthCallbackError("Invalid state") from e
+async def store_oauth_state(
+    redis: Redis, nonce: str, state_data: dict[str, Any], type: OAuthStateType
+) -> None:
+    """Store OAuth state in Redis using nonce as key"""
+    key = get_oauth_state_key(nonce, type)
+    await redis.setex(
+        key, int(settings.OAUTH_STATE_TTL.total_seconds()), json.dumps(state_data)
+    )
+
+
+async def retrieve_oauth_state(
+    redis: Redis, nonce: str, type: OAuthStateType
+) -> dict[str, Any]:
+    """Retrieve OAuth state from Redis using nonce as key"""
+    key = get_oauth_state_key(nonce, type)
+    state_json = await redis.get(key)
+    if not state_json:
+        raise OAuthCallbackError("Invalid state")
+    return json.loads(state_json)
+
+
+async def delete_oauth_state(redis: Redis, nonce: str, type: OAuthStateType) -> None:
+    """Delete OAuth state from Redis"""
+    key = get_oauth_state_key(nonce, type)
+    await redis.delete(key)
 
 
 def set_login_cookie(
@@ -70,13 +88,42 @@ def clear_login_cookie(
     )
 
 
-def validate_callback(
+async def create_authorization_response(
     request: Request,
+    redis: Redis,
+    state: dict[str, Any],
+    callback_route: str,
+    oauth_client: Any,
+    scopes: list[str],
+    *,
+    type: OAuthStateType,
+) -> RedirectResponse:
+    """Create OAuth authorization response with Redis-backed state storage"""
+    # Generate nonce and store state in Redis
+    nonce = secrets.token_urlsafe()
+    state_with_nonce = {**state, "nonce": nonce}
+    await store_oauth_state(redis, nonce, state_with_nonce, type=type)
+
+    redirect_uri = str(request.url_for(callback_route))
+    authorization_url = await oauth_client.get_authorization_url(
+        redirect_uri=redirect_uri,
+        state=nonce,  # Use nonce as state parameter
+        scope=scopes,
+    )
+    response = RedirectResponse(authorization_url, 303)
+    set_login_cookie(request, response, nonce)
+    return response
+
+
+async def validate_callback(
+    request: Request,
+    redis: Redis,
     token_data: OAuth2Token,
     state: str | None,
     *,
     type: OAuthStateType,
 ) -> dict[str, Any]:
+    """Validate OAuth callback using Redis-backed state"""
     error_description = token_data.get("error_description")
     if error_description:
         raise OAuthCallbackError(error_description)
@@ -84,17 +131,15 @@ def validate_callback(
     if not state:
         raise OAuthCallbackError("No state")
 
-    state_data = parse_state(state, type=type)
-
-    state_nonce = state_data.get("nonce")
-    if not state_nonce or not isinstance(state_nonce, str):
-        raise OAuthCallbackError("Invalid state: missing nonce")
-
     cookie_nonce = request.cookies.get(settings.OAUTH_STATE_COOKIE_KEY)
     if cookie_nonce is None:
         raise OAuthCallbackError("Invalid session cookie")
 
-    if not secrets.compare_digest(state_nonce, cookie_nonce):
+    if not secrets.compare_digest(state, cookie_nonce):
         raise OAuthCallbackError("Invalid session cookie")
+
+    state_data = await retrieve_oauth_state(redis, state, type=type)
+
+    await delete_oauth_state(redis, state, type=type)
 
     return state_data

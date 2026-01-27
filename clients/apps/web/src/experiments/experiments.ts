@@ -18,9 +18,4 @@ export const experiments = {
     variants: ['control', 'treatment'] as const,
     defaultVariant: 'control',
   },
-  checkout_button_subscribe: {
-    description: 'Button copy: Subscribe vs Subscribe now',
-    variants: ['control', 'treatment'] as const,
-    defaultVariant: 'control',
-  },
 } as const

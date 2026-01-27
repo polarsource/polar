@@ -132,7 +132,27 @@ async def callback(
         redirect_url = add_query_parameters(
             redirect_url, error="Failed to get access token. Please try again later."
         )
-        log.error("Failed to get access token", error=str(e))
+        rate_limit_headers = {}
+        if e.response is not None and e.response.status_code == 429:
+            for header in (
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining",
+                "X-RateLimit-Reset",
+                "X-RateLimit-Reset-After",
+                "X-RateLimit-Bucket",
+                "X-RateLimit-Global",
+                "X-RateLimit-Scope",
+            ):
+                value = e.response.headers.get(header)
+                if value is not None:
+                    rate_limit_headers[header] = value
+        log.error(
+            "Failed to get access token",
+            error=str(e),
+            platform=platform,
+            customer_id=str(customer.id),
+            **rate_limit_headers,
+        )
         return RedirectResponse(redirect_url, 303)
 
     try:
@@ -142,7 +162,27 @@ async def callback(
             redirect_url,
             error="Failed to get profile information. Please try again later.",
         )
-        log.error("Failed to get account ID", error=str(e))
+        rate_limit_headers = {}
+        if e.response is not None and e.response.status_code == 429:
+            for header in (
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining",
+                "X-RateLimit-Reset",
+                "X-RateLimit-Reset-After",
+                "X-RateLimit-Bucket",
+                "X-RateLimit-Global",
+                "X-RateLimit-Scope",
+            ):
+                value = e.response.headers.get(header)
+                if value is not None:
+                    rate_limit_headers[header] = value
+        log.error(
+            "Failed to get account ID",
+            error=str(e),
+            platform=platform,
+            customer_id=str(customer.id),
+            **rate_limit_headers,
+        )
         return RedirectResponse(redirect_url, 303)
 
     oauth_account = CustomerOAuthAccount(

@@ -12,7 +12,7 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models.customer import Customer
+from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -299,6 +299,16 @@ class MemberService:
             raise NotPermitted("Member management is not enabled for this organization")
 
         repository = MemberRepository.from_session(session)
+
+        # Individual customers can only have 1 member (the owner)
+        if customer.type == CustomerType.individual:
+            existing_members = await repository.list_by_customer(session, customer_id)
+            active_members = [m for m in existing_members if m.deleted_at is None]
+            if len(active_members) >= 1:
+                raise NotPermitted(
+                    "Individual customers can only have one member (the owner). "
+                    "Upgrade to a team customer to add more members."
+                )
 
         existing_member = await repository.get_by_customer_and_email(
             session, customer, email=email

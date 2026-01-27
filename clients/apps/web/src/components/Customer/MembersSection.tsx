@@ -26,11 +26,13 @@ const roleDisplayConfig = {
 interface MembersSectionProps {
   customerId: string
   organizationId: string
+  customerType?: 'individual' | 'team'
 }
 
 export const MembersSection = ({
   customerId,
   organizationId,
+  customerType,
 }: MembersSectionProps) => {
   const { data: organization } = useOrganization(
     organizationId,
@@ -38,9 +40,11 @@ export const MembersSection = ({
   )
   const { data: membersData, isLoading } = useMembers(customerId)
 
+  // Only show Members section for team customers when member model is enabled
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
-    organization?.feature_settings?.seat_based_pricing_enabled
+    organization?.feature_settings?.seat_based_pricing_enabled &&
+    customerType === 'team'
 
   const members = useMemo(
     () => membersData?.pages.flatMap((page) => page.items) ?? [],

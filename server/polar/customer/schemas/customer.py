@@ -22,6 +22,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.member import Member, OwnerCreate
+from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
 from polar.tax.tax_id import TaxID
 
@@ -61,6 +62,15 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The type of customer. "
+            "Defaults to 'individual'. "
+            "Set to 'team' for customers that can have multiple members."
+        ),
+        examples=["individual"],
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -93,6 +103,14 @@ class CustomerUpdate(CustomerUpdateBase):
         description=_external_id_description,
         examples=[_external_id_example],
     )
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The customer type. "
+            "Can only be upgraded from 'individual' to 'team', never downgraded."
+        ),
+        examples=["team"],
+    )
 
 
 class CustomerUpdateExternalID(CustomerUpdateBase): ...
@@ -113,6 +131,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
             "the customer portal using their email address."
         ),
         examples=[True],
+    )
+    type: CustomerType = Field(
+        description=(
+            "The type of customer: 'individual' for single users, "
+            "'team' for customers with multiple members."
+        ),
+        examples=["individual"],
     )
     name: str | None = Field(description=_name_description, examples=[_name_example])
     billing_address: Address | None

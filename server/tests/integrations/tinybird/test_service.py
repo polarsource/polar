@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import UTC, datetime
 
@@ -38,9 +39,10 @@ class TestEventToTinybird:
         assert result["organization_id"] == str(event.organization_id)
         assert result["user_metadata"] == "{}"
 
-    def test_with_metadata_fields(self) -> None:
+    def test_system_event_denormalizes_metadata(self) -> None:
         event = create_test_event(
             name="order.paid",
+            source=EventSource.system,
             user_metadata={
                 "amount": 1000,
                 "currency": "usd",
@@ -52,8 +54,29 @@ class TestEventToTinybird:
         assert result["amount"] == 1000
         assert result["currency"] == "usd"
         assert result["order_id"] == "order_123"
+        assert result["user_metadata"] == "{}"
 
-    def test_with_cost_metadata(self) -> None:
+    def test_user_event_does_not_denormalize_metadata(self) -> None:
+        event = create_test_event(
+            name="custom.event",
+            source=EventSource.user,
+            user_metadata={
+                "meter_id": "meter_credits_usage",
+                "amount": 0.24,
+                "currency": "usd",
+            },
+        )
+        result = _event_to_tinybird(event)
+
+        assert result["meter_id"] is None
+        assert result["amount"] is None
+        assert result["currency"] is None
+        metadata = json.loads(result["user_metadata"])
+        assert metadata["meter_id"] == "meter_credits_usage"
+        assert metadata["amount"] == 0.24
+        assert metadata["currency"] == "usd"
+
+    def test_user_event_still_extracts_cost_and_llm(self) -> None:
         event = create_test_event(
             name="llm.request",
             source=EventSource.user,
@@ -76,6 +99,7 @@ class TestEventToTinybird:
         assert result["llm_model"] == "gpt-4"
         assert result["llm_input_tokens"] == 100
         assert result["llm_output_tokens"] == 50
+        assert result["user_metadata"] == "{}"
 
     def test_nullable_fields_are_none(self) -> None:
         event = create_test_event()

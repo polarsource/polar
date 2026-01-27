@@ -153,16 +153,6 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    type: CustomerType | None = Field(
-        default=CustomerType.individual,
-        description=(
-            """The type of customer. All customers are `individual` by default. Customers
-            are migrated to `team` when they purchase a seat-based product. This migration
-            is one-way and cannot be undone.
-            """
-        ),
-    )
-
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
         domain = self.email.split("@")[-1].lower()

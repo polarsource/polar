@@ -20,6 +20,7 @@ from polar.meter.aggregation import (
     AggregationFunction,
     CountAggregation,
     PropertyAggregation,
+    UniqueAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate, MeterUpdate
@@ -533,6 +534,75 @@ class TestGetQuantities:
         # This is the key assertion - total should use the meter's aggregation,
         # not always SUM
         assert result.total == expected_total
+
+    async def test_interval_unique_aggregation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """Test that unique aggregation works over multiple days.
+
+        Regression test: COUNT(DISTINCT) is not supported in PostgreSQL window
+        functions, so the running total must use SUM over daily unique counts.
+        """
+        past_timestamp = utc_now() - timedelta(days=1)
+        future_timestamp = utc_now() + timedelta(days=1)
+
+        # Day 1: project_id values "A", "B", "A" → 2 unique
+        for project_id in ("A", "B", "A"):
+            await create_event(
+                save_fixture,
+                timestamp=past_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"project_id": project_id, "model": "lite"},
+            )
+
+        # Day 2 (today): no events
+
+        # Day 3: project_id values "B", "C" → 2 unique
+        for project_id in ("B", "C"):
+            await create_event(
+                save_fixture,
+                timestamp=future_timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"project_id": project_id, "model": "lite"},
+            )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Unique Projects",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=UniqueAggregation(property="project_id"),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=past_timestamp,
+            end_timestamp=future_timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(result.quantities) == 3
+
+        [day1, day2, day3] = result.quantities
+        assert day1.quantity == 2
+        assert day2.quantity == 0
+        assert day3.quantity == 2
+
+        assert result.total == 4
 
     @pytest.mark.parametrize(
         "property",

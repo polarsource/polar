@@ -55,6 +55,7 @@ ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_NO_CACHE=1
 ENV UV_NO_SYNC=1
+ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /app/server
 
@@ -69,6 +70,7 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   # tzdata-legacy is needed to accept legacy timezone names in Python like "Asia/Calcutta"
   tzdata-legacy \
   && uv sync --no-group dev --frozen \
+  && uv tool install tinybird --python 3.13 \
   && apt-get autoremove -y build-essential
 
 ADD . /app/server/

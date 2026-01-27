@@ -22,6 +22,7 @@ from polar.kit.utils import utc_now
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
+from polar.models.customer import CustomerType
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -240,6 +241,22 @@ class CustomerService:
                         "input": customer_update.external_id,
                     }
                 )
+
+        # Prevent downgrade from team to individual
+        if (
+            isinstance(customer_update, CustomerUpdate)
+            and customer_update.type is not None
+            and customer.type == CustomerType.team
+            and customer_update.type == CustomerType.individual
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "type"),
+                    "msg": "Customer type cannot be downgraded from 'team' to 'individual'.",
+                    "input": customer_update.type,
+                }
+            )
 
         if errors:
             raise PolarRequestValidationError(errors)

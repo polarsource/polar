@@ -258,3 +258,15 @@ variable "tinybird_workspace" {
   description = "Tinybird Workspace name"
   type        = string
 }
+
+variable "tinybird_events_write" {
+  description = "Tinybird Events Write enabled"
+  type        = bool
+  default     = false
+}
+
+variable "tinybird_events_read" {
+  description = "Tinybird Events Read enabled"
+  type        = bool
+  default     = false
+}

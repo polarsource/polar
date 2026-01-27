@@ -266,3 +266,17 @@ resource "tfe_variable" "tinybird_workspace_test" {
   description     = "Tinybird Workspace for test"
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "tinybird_events_write_test" {
+  key             = "tinybird_events_write"
+  category        = "terraform"
+  description     = "Tinybird Events Write enabled for test"
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "tinybird_events_read_test" {
+  key             = "tinybird_events_read"
+  category        = "terraform"
+  description     = "Tinybird Events Read enabled for test"
+  variable_set_id = tfe_variable_set.test.id
+}

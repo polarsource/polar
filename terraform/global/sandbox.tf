@@ -250,3 +250,17 @@ resource "tfe_variable" "tinybird_workspace_sandbox" {
   description     = "Tinybird Workspace for sandbox"
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "tinybird_events_write_sandbox" {
+  key             = "tinybird_events_write"
+  category        = "terraform"
+  description     = "Tinybird Events Write enabled for sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "tinybird_events_read_sandbox" {
+  key             = "tinybird_events_read"
+  category        = "terraform"
+  description     = "Tinybird Events Read enabled for sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+}

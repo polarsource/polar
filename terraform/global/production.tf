@@ -330,3 +330,17 @@ resource "tfe_variable" "tinybird_workspace_production" {
   description     = "Tinybird Workspace for production"
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "tinybird_events_write_production" {
+  key             = "tinybird_events_write"
+  category        = "terraform"
+  description     = "Tinybird Events Write enabled for production"
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "tinybird_events_read_production" {
+  key             = "tinybird_events_read"
+  category        = "terraform"
+  description     = "Tinybird Events Read enabled for production"
+  variable_set_id = tfe_variable_set.production.id
+}

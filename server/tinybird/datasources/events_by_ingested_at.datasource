@@ -1,3 +1,5 @@
+TOKEN events_ingest APPEND
+
 SCHEMA >
     `id` UUID `json:$.id`,
     `ingested_at` DateTime64(3) `json:$.ingested_at`,

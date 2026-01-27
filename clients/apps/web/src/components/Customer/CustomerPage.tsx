@@ -35,8 +35,10 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { benefitsDisplayNames } from '../Benefit/utils'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
@@ -508,6 +510,20 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <DetailRow label="Email" value={customer.email} />
               <DetailRow label="Name" value={customer.name} />
               <DetailRow
+                label="Type"
+                value={
+                  <Status
+                    className={twMerge(
+                      customer.type === 'team'
+                        ? 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
+                        : 'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
+                      'w-fit text-xs',
+                    )}
+                    status={customer.type === 'team' ? 'Team' : 'Individual'}
+                  />
+                }
+              />
+              <DetailRow
                 label="Tax ID"
                 value={
                   customer.tax_id ? (
@@ -581,6 +597,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           <MembersSection
             customerId={customer.id}
             organizationId={organization.id}
+            customerType={customer.type}
           />
         </TabsContent>
       )}

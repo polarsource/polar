@@ -130,8 +130,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     type: CustomerType | None = Field(
         default=CustomerType.individual,
         description=(
-            "The type of customer. `individual` for B2C customers, "
-            "`team` for B2B customers with seat-based subscriptions."
+            """The type of customer. All customers are `individual` by default. Customers
+            are migrated to `team` when they purchase a seat-based product. This migration
+            is one-way and cannot be undone.
+            """
         ),
     )
 

@@ -2576,6 +2576,8 @@ export interface paths {
      *     Note: The customers information will nonetheless be retained for historic
      *     orders and subscriptions.
      *
+     *     Set `anonymize=true` to also anonymize PII for GDPR compliance.
+     *
      *     **Scopes**: `customers:write`
      */
     delete: operations['customers:delete']
@@ -2611,6 +2613,8 @@ export interface paths {
      * @description Delete a customer by external ID.
      *
      *     Immediately cancels any active subscriptions and revokes any active benefits.
+     *
+     *     Set `anonymize=true` to also anonymize PII for GDPR compliance.
      *
      *     **Scopes**: `customers:write`
      */
@@ -3456,8 +3460,6 @@ export interface paths {
     /**
      * Cancel Subscription
      * @description Cancel a subscription of the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:write`
      */
     delete: operations['customer_portal:subscriptions:cancel']
     options?: never
@@ -3465,8 +3467,6 @@ export interface paths {
     /**
      * Update Subscription
      * @description Update a subscription of the authenticated customer.
-     *
-     *     **Scopes**: `customer_portal:write`
      */
     patch: operations['customer_portal:subscriptions:update']
     trace?: never
@@ -12580,11 +12580,12 @@ export interface components {
        */
       deleted_at: string | null
       /**
-       * Type
-       * @description The type of customer. `individual` for B2C customers, `team` for B2B customers with seat-based subscriptions.
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
        * @default individual
        */
-      type?: components['schemas']['CustomerType'] | null
+      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -14314,12 +14315,6 @@ export interface components {
       | 'name'
       | '-name'
     /**
-     * CustomerType
-     * @description The type of customer.
-     * @enum {string}
-     */
-    CustomerType: 'individual' | 'team'
-    /**
      * CustomerState
      * @description A customer along with additional state information:
      *
@@ -14386,6 +14381,13 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
+       * @default individual
+       */
+      type: components['schemas']['CustomerType'] | null
       /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
@@ -15038,6 +15040,11 @@ export interface components {
         | components['schemas']['SubscriptionProrationBehavior']
         | null
     }
+    /**
+     * CustomerType
+     * @enum {string}
+     */
+    CustomerType: 'individual' | 'team'
     /** CustomerUpdate */
     CustomerUpdate: {
       /**
@@ -15313,6 +15320,13 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
+       * @default individual
+       */
+      type: components['schemas']['CustomerType'] | null
       /**
        * Members
        * @description List of members belonging to this customer.
@@ -17701,6 +17715,13 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
+       * @default individual
+       */
+      type: components['schemas']['CustomerType'] | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -19724,6 +19745,13 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
+       * @default individual
+       */
+      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -23717,6 +23745,13 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * @description The type of customer. All customers are `individual` by default. Customers
+       *                 are migrated to `team` when they purchase a seat-based product. This migration
+       *                 is one-way and cannot be undone.
+       * @default individual
+       */
+      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -28969,6 +29004,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | string[] | null
         /** @description Filter by granted status. If `true`, only granted benefits will be returned. If `false`, only revoked benefits will be returned. */
         is_granted?: boolean | null
         /** @description Page number, defaults to 1. */
@@ -29576,6 +29613,8 @@ export interface operations {
         discount_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | string[] | null
         /** @description Filter by checkout ID. */
         checkout_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
@@ -29821,6 +29860,8 @@ export interface operations {
         subscription_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | string[] | null
         /** @description Filter by `succeeded`. */
         succeeded?: boolean | null
         /** @description Page number, defaults to 1. */
@@ -30000,6 +30041,8 @@ export interface operations {
         product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | string[] | null
         /** @description Filter by checkout session status. */
         status?:
           | components['schemas']['CheckoutStatus']
@@ -31225,6 +31268,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -32630,7 +32674,10 @@ export interface operations {
   }
   'customers:delete': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data. */
+        anonymize?: boolean
+      }
       header?: never
       path: {
         /** @description The customer ID. */
@@ -32755,7 +32802,10 @@ export interface operations {
   }
   'customers:delete_external': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description If true, also anonymize the customer's personal data for GDPR compliance. */
+        anonymize?: boolean
+      }
       header?: never
       path: {
         /** @description The customer external ID. */
@@ -32924,6 +32974,8 @@ export interface operations {
       query?: {
         /** @description Filter by customer ID. */
         customer_id?: string | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -34784,7 +34836,7 @@ export interface operations {
           'application/json': components['schemas']['CustomerSubscription']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -34838,7 +34890,7 @@ export interface operations {
           'application/json': components['schemas']['CustomerSubscription']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -36119,6 +36171,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -37169,6 +37222,8 @@ export interface operations {
           | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
+        /** @description Filter by customer external ID. */
+        external_customer_id?: string | string[] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -38951,6 +39006,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39553,6 +39609,7 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']
@@ -40961,6 +41018,9 @@ export const customerSubscriptionSortPropertyValues: ReadonlyArray<
   'product',
   '-product',
 ]
+export const customerTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerType']
+> = ['individual', 'team']
 export const customerUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerUpdatedEvent']['name']
 > = ['customer.updated']

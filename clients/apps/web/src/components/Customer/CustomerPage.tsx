@@ -28,6 +28,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
@@ -35,7 +36,6 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -516,7 +516,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                     className={twMerge(
                       customer.type === 'team'
                         ? 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400'
-                        : 'bg-gray-100 text-gray-600 dark:bg-polar-700 dark:text-polar-400',
+                        : 'dark:bg-polar-700 dark:text-polar-400 bg-gray-100 text-gray-600',
                       'w-fit text-xs',
                     )}
                     status={customer.type === 'team' ? 'Team' : 'Individual'}

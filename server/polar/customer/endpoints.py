@@ -11,6 +11,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
+from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -36,12 +37,9 @@ from .schemas.customer import (
 from .schemas.state import CustomerState
 from .service import customer as customer_service
 
-from polar.models import Customer
-from polar.postgres import AsyncReadSession as ReadSession
-
 
 async def _to_customer_with_members(
-    session: ReadSession,
+    session: AsyncReadSession,
     customer: Customer,
     include_members: bool,
 ) -> CustomerWithMembers:

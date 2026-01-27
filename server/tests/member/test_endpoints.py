@@ -322,6 +322,8 @@ class TestCreateMember:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        from polar.models.customer import CustomerType
+
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -330,6 +332,9 @@ class TestCreateMember:
             organization=organization,
             email="customer@example.com",
         )
+        # Set customer type to team to allow multiple members
+        customer.type = CustomerType.team
+        await save_fixture(customer)
 
         member = Member(
             customer_id=customer.id,

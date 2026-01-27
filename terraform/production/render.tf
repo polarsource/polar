@@ -180,6 +180,7 @@ module "production" {
   backend_config = {
     base_url                   = "https://api.polar.sh"
     backoffice_host            = "backoffice.polar.sh"
+    checkout_link_host         = "buy.polar.sh"
     user_session_cookie_domain = "polar.sh"
     debug                      = "0"
     email_sender               = "resend"

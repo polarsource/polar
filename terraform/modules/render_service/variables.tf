@@ -107,6 +107,7 @@ variable "backend_config" {
     environment                = optional(string, null) # Default to the environment variable
     base_url                   = string                 # "https://api.polar.sh"
     backoffice_host            = optional(string, null) # "backoffice.polar.sh"
+    checkout_link_host         = optional(string, null) # "buy.polar.sh"
     user_session_cookie_domain = string                 # "polar.sh"
     user_session_cookie_key    = optional(string, "")
     debug                      = string               # "0"

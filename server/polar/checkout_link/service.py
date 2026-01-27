@@ -2,13 +2,22 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, cast
 
+from fastapi import Request
+from fastapi.datastructures import URL
+from pydantic import UUID4
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject
+from polar.checkout import ip_geolocation
+from polar.checkout.service import checkout as checkout_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.service import discount as discount_service
-from polar.exceptions import PolarRequestValidationError, ValidationError
+from polar.exceptions import (
+    PolarRequestValidationError,
+    ResourceNotFound,
+    ValidationError,
+)
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceServiceReader
@@ -216,6 +225,97 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     ) -> CheckoutLink:
         repository = CheckoutLinkRepository.from_session(session)
         return await repository.soft_delete(checkout_link)
+
+    async def create_checkout_redirect_url(
+        self,
+        session: AsyncSession,
+        client_secret: str,
+        request: Request,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
+        *,
+        embed_origin: str | None = None,
+        product_id: UUID4 | None = None,
+        amount: str | None = None,
+        customer_email: str | None = None,
+        customer_name: str | None = None,
+        discount_code: str | None = None,
+        reference_id: str | None = None,
+        utm_source: str | None = None,
+        utm_medium: str | None = None,
+        utm_campaign: str | None = None,
+        utm_term: str | None = None,
+        utm_content: str | None = None,
+    ) -> str:
+        """
+        Look up a checkout link by client secret, create a checkout session,
+        and return the redirect URL with passthrough query params.
+
+        Raises ResourceNotFound if checkout link doesn't exist.
+        """
+        repository = CheckoutLinkRepository.from_session(session)
+        checkout_link = await repository.get_by_client_secret(
+            client_secret, options=repository.get_eager_options()
+        )
+
+        if checkout_link is None:
+            raise ResourceNotFound()
+
+        ip_address = request.client.host if request.client else None
+
+        # Build query_prefill dictionary from explicit parameters
+        query_prefill: dict[str, str | UUID4 | dict[str, str] | None] = {
+            "product_id": product_id,
+            "amount": amount,
+            "customer_email": customer_email,
+            "customer_name": customer_name,
+            "discount_code": discount_code,
+        }
+
+        # Extract custom_field_data.* parameters from query string
+        custom_field_data: dict[str, str] = {}
+        for key, value in request.query_params.items():
+            if key.startswith("custom_field_data."):
+                slug = key.replace("custom_field_data.", "")
+                custom_field_data[slug] = value
+
+        if custom_field_data:
+            query_prefill["custom_field_data"] = custom_field_data
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            embed_origin,
+            ip_geolocation_client,
+            ip_address,
+            query_prefill=query_prefill,
+            reference_id=reference_id,
+            utm_source=utm_source,
+            utm_medium=utm_medium,
+            utm_campaign=utm_campaign,
+            utm_term=utm_term,
+            utm_content=utm_content,
+        )
+
+        validated_custom_field_keys = (
+            set(checkout.custom_field_data.keys())
+            if checkout.custom_field_data
+            else set()
+        )
+
+        checkout_url = URL(checkout.url)
+        passthrough_params = {
+            k: v
+            for k, v in request.query_params.items()
+            if k != "embed_origin"
+            and (k not in query_prefill or query_prefill[k] is None)
+            and not (
+                k.startswith("custom_field_data.")
+                and k.replace("custom_field_data.", "") in validated_custom_field_keys
+            )
+        }
+        checkout_url = checkout_url.include_query_params(**passthrough_params)
+
+        return str(checkout_url)
 
     async def _get_validated_products(
         self,

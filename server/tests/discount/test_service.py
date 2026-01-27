@@ -651,6 +651,120 @@ class TestIsRedeemableDiscount:
             )
         ) is True
 
+    async def test_max_redemptions_and_per_customer_combined(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Test that max_redemptions and max_redemptions_per_customer work together.
+
+        With max_redemptions=3 and max_redemptions_per_customer=1:
+        - The discount can be redeemed 3 times total
+        - Each customer can only redeem once
+        """
+        max_redemptions = 3
+        max_redemptions_per_customer = 1
+        customer1 = await create_customer(
+            save_fixture, organization=organization, email="customer1@example.com"
+        )
+        customer2 = await create_customer(
+            save_fixture, organization=organization, email="customer2@example.com"
+        )
+        customer3 = await create_customer(
+            save_fixture, organization=organization, email="customer3@example.com"
+        )
+        customer4 = await create_customer(
+            save_fixture, organization=organization, email="customer4@example.com"
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=1,
+            organization=organization,
+            max_redemptions=max_redemptions,
+            max_redemptions_per_customer=max_redemptions_per_customer,
+        )
+
+        # Initially, all customers can redeem
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer1.id
+            )
+        ) is True
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer2.id
+            )
+        ) is True
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer3.id
+            )
+        ) is True
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer4.id
+            )
+        ) is True
+
+        # Customer1 redeems
+        checkout1 = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture,
+            discount=discount,
+            checkout=checkout1,
+            customer_id=customer1.id,
+        )
+
+        # Customer1 can no longer redeem (per-customer limit reached)
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer1.id
+            )
+        ) is False
+        # Other customers can still redeem
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer2.id
+            )
+        ) is True
+
+        # Customer2 redeems
+        checkout2 = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture,
+            discount=discount,
+            checkout=checkout2,
+            customer_id=customer2.id,
+        )
+
+        # Customer3 redeems (last available redemption)
+        checkout3 = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture,
+            discount=discount,
+            checkout=checkout3,
+            customer_id=customer3.id,
+        )
+
+        # Total max_redemptions reached (3 redemptions)
+        # Customer4 cannot redeem anymore even though they haven't used theirs
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_id=customer4.id
+            )
+        ) is False
+
+        # Without customer_id, discount is not redeemable (total limit reached)
+        assert (
+            await discount_service.is_redeemable_discount(session, discount)
+        ) is False
+
 
 @pytest.mark.asyncio
 class TestCodeCaseInsensitivity:

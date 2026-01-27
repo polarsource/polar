@@ -45,15 +45,6 @@ class DiscountNotRedeemableError(DiscountError):
         super().__init__(f"Discount {discount.id} is not redeemable.")
 
 
-class DiscountPerCustomerLimitReachedError(DiscountError):
-    def __init__(self, discount: Discount, customer_id: uuid.UUID):
-        self.customer_id = customer_id
-        super().__init__(
-            f"Discount {discount.id} per-customer limit reached "
-            f"for customer {customer_id}."
-        )
-
-
 class DiscountService(ResourceServiceReader[Discount]):
     async def list(
         self,
@@ -444,20 +435,6 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if not await self.is_redeemable_discount(session, discount, customer_id):
             raise DiscountNotRedeemableError(discount)
-
-        # Check per-customer limit and raise specific error
-        if (
-            discount.max_redemptions_per_customer is not None
-            and customer_id is not None
-        ):
-            redemption_repository = DiscountRedemptionRepository.from_session(session)
-            customer_redemptions = (
-                await redemption_repository.count_by_discount_and_customer(
-                    discount.id, customer_id
-                )
-            )
-            if customer_redemptions >= discount.max_redemptions_per_customer:
-                raise DiscountPerCustomerLimitReachedError(discount, customer_id)
 
         discount_redemption = DiscountRedemption(
             discount=discount, customer_id=customer_id

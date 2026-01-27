@@ -29,10 +29,7 @@ from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.discount.service import (
-    DiscountNotRedeemableError,
-    DiscountPerCustomerLimitReachedError,
-)
+from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
@@ -984,26 +981,12 @@ class CheckoutService:
                             checkout_confirm,
                             discount_redemption,
                         )
-                except DiscountPerCustomerLimitReachedError as e:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "discount_code"),
-                                "msg": (
-                                    "You have reached the maximum number of "
-                                    "redemptions for this discount."
-                                ),
-                                "input": checkout_confirm.discount_code,
-                            }
-                        ]
-                    ) from e
                 except DiscountNotRedeemableError as e:
                     raise PolarRequestValidationError(
                         [
                             {
                                 "type": "value_error",
-                                "loc": ("body", "discount_id"),
+                                "loc": ("body", "discount_code"),
                                 "msg": "Discount is no longer redeemable.",
                                 "input": checkout.discount.id,
                             }
@@ -1191,9 +1174,7 @@ class CheckoutService:
                     if not await discount_service.is_redeemable_discount(
                         session, checkout.discount, customer.id
                     ):
-                        raise DiscountPerCustomerLimitReachedError(
-                            checkout.discount, customer.id
-                        )
+                        raise DiscountNotRedeemableError(checkout.discount)
 
                 # Check for trial abuse
                 if (

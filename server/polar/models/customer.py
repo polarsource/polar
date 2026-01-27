@@ -197,9 +197,9 @@ class Customer(MetadataMixin, RecordModel):
     a seat-based product. Individual customers can transition to a team customer by
     purchasing a seat-based product. This transition is only one-way.
     """
-    type: Mapped[CustomerType] = mapped_column(
+    type: Mapped[CustomerType | None] = mapped_column(
         String,
-        nullable=False,
+        nullable=True,
         default=CustomerType.individual,
     )
 

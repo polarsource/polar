@@ -1,10 +1,12 @@
 import contextlib
 import uuid
 from collections.abc import Generator
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
+from sqlalchemy import select
 from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
@@ -12,7 +14,7 @@ from polar.account.sorting import AccountSortProperty
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, Organization, User, UserOrganization
-from polar.models.user import IdentityVerificationStatus
+from polar.models.user import IdentityVerificationStatus, OAuthAccount
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
@@ -75,6 +77,24 @@ class IdentityVerificationStatusDescriptionListItem(
         else:
             text(status.get_display_name())
         return None
+
+
+class OAuthPlatformColumn(
+    datatable.DatatableAttrColumn[OAuthAccount, UserSortProperty]
+):
+    def get_value(self, item: OAuthAccount) -> str | None:
+        return item.platform.value
+
+
+class OAuthExpiresAtColumn(
+    datatable.DatatableAttrColumn[OAuthAccount, UserSortProperty]
+):
+    def get_value(self, item: OAuthAccount) -> str | None:
+        if item.expires_at is None:
+            return None
+        return datetime.fromtimestamp(item.expires_at, tz=UTC).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
 
 @router.get("/", name="users:list")
@@ -301,6 +321,55 @@ async def get(
                 ),
             ).render(request, accounts):
                 pass
+
+        ########################
+        ### OAuth Accounts  ###
+        ########################
+        active_oauth_result = await session.execute(
+            select(OAuthAccount).where(
+                OAuthAccount.user_id == user.id,
+                OAuthAccount.deleted_at.is_(None),
+            )
+        )
+        active_oauth_accounts = active_oauth_result.scalars().all()
+
+        deleted_oauth_result = await session.execute(
+            select(OAuthAccount).where(
+                OAuthAccount.user_id == user.id,
+                OAuthAccount.deleted_at.is_not(None),
+            )
+        )
+        deleted_oauth_accounts = deleted_oauth_result.scalars().all()
+
+        with tag.div(classes="flex flex-col gap-4 pt-16"):
+            with tag.h2(classes="text-2xl"):
+                text("OAuth Accounts")
+            with datatable.Datatable[OAuthAccount, UserSortProperty](
+                datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+                OAuthPlatformColumn("platform", "Platform"),
+                datatable.DatatableAttrColumn("account_id", "Account ID"),
+                datatable.DatatableAttrColumn("account_email", "Email"),
+                datatable.DatatableAttrColumn("account_username", "Username"),
+                datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                OAuthExpiresAtColumn("expires_at", "Expires At"),
+                empty_message="No active OAuth accounts",
+            ).render(request, active_oauth_accounts):
+                pass
+
+        if deleted_oauth_accounts:
+            with tag.div(classes="flex flex-col gap-4 pt-8"):
+                with tag.h2(classes="text-2xl text-base-content/60"):
+                    text("Deleted OAuth Accounts")
+                with datatable.Datatable[OAuthAccount, UserSortProperty](
+                    datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+                    OAuthPlatformColumn("platform", "Platform"),
+                    datatable.DatatableAttrColumn("account_id", "Account ID"),
+                    datatable.DatatableAttrColumn("account_email", "Email"),
+                    datatable.DatatableAttrColumn("account_username", "Username"),
+                    datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                    datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
+                ).render(request, deleted_oauth_accounts):
+                    pass
 
 
 @router.api_route(

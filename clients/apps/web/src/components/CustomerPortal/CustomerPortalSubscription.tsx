@@ -7,9 +7,11 @@ import {
   useCustomerCancelSubscription,
   useCustomerOrders,
   useCustomerSeats,
+  usePortalAuthenticatedUser,
   useResendSeatInvitation,
   useRevokeSeat,
 } from '@/hooks/queries'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -43,6 +45,10 @@ const CustomerPortalSubscription = ({
     hide: hideCancelModal,
     isShown: cancelModalIsShown,
   } = useModal()
+
+  // Get authenticated user to check billing permissions
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const canManageBilling = hasBillingPermission(authenticatedUser)
 
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
@@ -106,11 +112,11 @@ const CustomerPortalSubscription = ({
       })
 
       if (result.error) {
-        const errorMessage =
+        setError(
           typeof result.error.detail === 'string'
             ? result.error.detail
-            : 'Failed to assign seat'
-        setError(errorMessage)
+            : 'Failed to assign seat',
+        )
       } else {
         setEmail('')
       }
@@ -155,8 +161,6 @@ const CustomerPortalSubscription = ({
     }
   }
 
-  console.log(seatsData)
-
   const totalSeats = seatsData?.total_seats || 0
   const availableSeats = seatsData?.available_seats || 0
   const seats = seatsData?.seats || []
@@ -191,13 +195,11 @@ const CustomerPortalSubscription = ({
           <DetailRow
             label="Start Date"
             value={
-              <span>
-                {new Date(subscription.started_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.started_at}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
@@ -207,16 +209,11 @@ const CustomerPortalSubscription = ({
               subscription.cancel_at_period_end ? 'Expiry Date' : 'Renewal Date'
             }
             value={
-              <span>
-                {new Date(subscription.current_period_end).toLocaleDateString(
-                  'en-US',
-                  {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  },
-                )}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.current_period_end}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
@@ -224,19 +221,18 @@ const CustomerPortalSubscription = ({
           <DetailRow
             label="Expired"
             value={
-              <span>
-                {new Date(subscription.ended_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+              <FormattedDateTime
+                datetime={subscription.ended_at}
+                dateStyle="long"
+                resolution="day"
+              />
             }
           />
         )}
       </div>
 
-      {!isCancelled && (
+      {/* Cancel button - only shown for users with billing permissions */}
+      {!isCancelled && canManageBilling && (
         <Button
           variant="secondary"
           fullWidth
@@ -247,7 +243,8 @@ const CustomerPortalSubscription = ({
         </Button>
       )}
 
-      {hasSeatBasedPricing && showSeatManagement && (
+      {/* Seat management - only shown for users with billing permissions */}
+      {hasSeatBasedPricing && showSeatManagement && canManageBilling && (
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <h3 className="text-lg">Seat Management</h3>

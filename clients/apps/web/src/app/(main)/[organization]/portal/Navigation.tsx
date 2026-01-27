@@ -5,6 +5,7 @@ import {
   usePortalAuthenticatedUser,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { Client, schemas } from '@polar-sh/client'
 import {
@@ -17,24 +18,6 @@ import {
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
-
-const hasBillingPermission = (
-  authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
-) => {
-  // Unauthenticated users can't access billing
-  if (!authenticatedUser) {
-    return false
-  }
-  // Customers always have billing access (legacy behavior)
-  if (authenticatedUser.type === 'customer') {
-    return true
-  }
-  // Members need owner or billing_manager role
-  return (
-    authenticatedUser.role === 'owner' ||
-    authenticatedUser.role === 'billing_manager'
-  )
-}
 
 const links = (
   organization: schemas['CustomerOrganization'],
@@ -170,11 +153,10 @@ export const Navigation = ({
   const searchParams = useSearchParams()
 
   // Hide navigation on routes where portal access is being requested or authenticated
-  const hideNav =
+  if (
     currentPath.endsWith('/portal/request') ||
     currentPath.endsWith('/portal/authenticate')
-
-  if (hideNav) {
+  ) {
     return null
   }
 

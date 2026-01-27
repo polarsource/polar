@@ -1,6 +1,8 @@
 'use client'
 
+import { usePortalAuthenticatedUser } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
@@ -29,6 +31,10 @@ export const CustomerPortalOverview = ({
 }: CustomerPortalProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
+  // Check if the user has billing permissions
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const canManageBilling = hasBillingPermission(authenticatedUser)
+
   const activeOwnedSubscriptions = subscriptions.filter(
     (s) => s.status === 'active' || s.status === 'trialing',
   )
@@ -45,7 +51,8 @@ export const CustomerPortalOverview = ({
 
   return (
     <div className="flex flex-col gap-y-12">
-      {activeOwnedSubscriptions.length > 0 && (
+      {/* Billing sections - only visible to users with billing permissions */}
+      {canManageBilling && activeOwnedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-6">
           {activeClaimedSubscriptions.length > 0 && (
             <h3 className="text-xl">Your Subscriptions</h3>
@@ -65,6 +72,7 @@ export const CustomerPortalOverview = ({
         </div>
       )}
 
+      {/* Team Seat Access - visible to all users */}
       {activeClaimedSubscriptions.length > 0 && (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
@@ -89,23 +97,32 @@ export const CustomerPortalOverview = ({
         </div>
       )}
 
+      {/* Empty state - adjusted based on permissions */}
       {!hasAnyActiveSubscriptions && (
         <EmptyState
           icon={<AllInclusiveOutlined />}
-          title="No Active Subscriptions"
-          description="You don't have any active subscriptions at the moment."
+          title={
+            canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+          }
+          description={
+            canManageBilling
+              ? "You don't have any active subscriptions at the moment."
+              : "You don't have any team seat access at the moment."
+          }
         />
       )}
 
-      {benefitGrants.length > 0 ? (
+      {/* Benefit Grants - visible to all users */}
+      {benefitGrants.length > 0 && (
         <CustomerPortalGrants
           organization={organization}
           benefitGrants={benefitGrants}
           api={api}
         />
-      ) : null}
+      )}
 
-      {inactiveOwnedSubscriptions.length > 0 && (
+      {/* Inactive subscriptions - only visible to users with billing permissions */}
+      {canManageBilling && inactiveOwnedSubscriptions.length > 0 && (
         <InactiveSubscriptionsOverview
           organization={organization}
           subscriptions={inactiveOwnedSubscriptions}

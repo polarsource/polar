@@ -24,7 +24,7 @@ from ..service.subscription import CustomerSubscriptionSortProperty
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
 )
-from ..utils import get_customer_id
+from ..utils import get_audit_context
 
 log = structlog.get_logger()
 
@@ -142,7 +142,8 @@ async def get_charge_preview(
         403: {
             "description": (
                 "Customer subscription is already canceled "
-                "or will be at the end of the period."
+                "or will be at the end of the period, "
+                "or the user lacks billing permissions."
             ),
             "model": AlreadyCanceledSubscription.schema(),
         },
@@ -152,7 +153,7 @@ async def get_charge_preview(
 async def update(
     id: SubscriptionID,
     subscription_update: CustomerSubscriptionUpdate,
-    auth_subject: auth.CustomerPortalUnionWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
@@ -165,10 +166,10 @@ async def update(
         raise ResourceNotFound()
 
     log.info(
-        "customer_portal.subscription.cancel",
-        id=id,
-        customer_id=get_customer_id(auth_subject),
-        updates=subscription_update,
+        "customer_portal.subscription.update",
+        subscription_id=id,
+        updates=subscription_update.model_dump(exclude_unset=True),
+        **get_audit_context(auth_subject),
     )
     async with subscription_service.lock(locker, subscription):
         return await customer_subscription_service.update(
@@ -185,7 +186,8 @@ async def update(
         403: {
             "description": (
                 "Customer subscription is already canceled "
-                "or will be at the end of the period."
+                "or will be at the end of the period, "
+                "or the user lacks billing permissions."
             ),
             "model": AlreadyCanceledSubscription.schema(),
         },
@@ -194,7 +196,7 @@ async def update(
 )
 async def cancel(
     id: SubscriptionID,
-    auth_subject: auth.CustomerPortalUnionWrite,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
@@ -208,8 +210,8 @@ async def cancel(
 
     log.info(
         "customer_portal.subscription.cancel",
-        id=id,
-        customer_id=get_customer_id(auth_subject),
+        subscription_id=id,
+        **get_audit_context(auth_subject),
     )
     async with subscription_service.lock(locker, subscription):
         return await customer_subscription_service.cancel(session, subscription)

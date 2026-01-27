@@ -64,8 +64,8 @@ polar-950  /* Darkest */
 Always provide dark mode variants using the `dark:` prefix:
 
 ```tsx
-<div className="bg-white dark:bg-polar-800 text-gray-900 dark:text-gray-200">
-  <p className="text-gray-500 dark:text-polar-400">Muted text</p>
+<div className="dark:bg-polar-800 bg-white text-gray-900 dark:text-gray-200">
+  <p className="dark:text-polar-400 text-gray-500">Muted text</p>
 </div>
 ```
 
@@ -101,7 +101,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-blue-500 text-white hover:bg-blue-600',
-        secondary: 'bg-gray-100 dark:bg-polar-700 text-gray-900 dark:text-white',
+        secondary:
+          'bg-gray-100 dark:bg-polar-700 text-gray-900 dark:text-white',
         outline: 'border border-gray-200 dark:border-polar-700 bg-transparent',
         ghost: 'hover:bg-gray-100 dark:hover:bg-polar-700',
       },
@@ -116,20 +117,23 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  }
+  },
 )
 
 const Button = ({ className, variant, size, ...props }) => (
-  <button className={twMerge(buttonVariants({ variant, size }), className)} {...props} />
+  <button
+    className={twMerge(buttonVariants({ variant, size }), className)}
+    {...props}
+  />
 )
 ```
 
 ### Card Pattern
 
 ```tsx
-<div className="rounded-xl border border-gray-200 dark:border-polar-700 bg-white dark:bg-polar-800 p-4">
+<div className="dark:border-polar-700 dark:bg-polar-800 rounded-xl border border-gray-200 bg-white p-4">
   <h3 className="text-lg font-medium text-gray-900 dark:text-white">Title</h3>
-  <p className="text-gray-500 dark:text-polar-400">Description</p>
+  <p className="dark:text-polar-400 text-gray-500">Description</p>
 </div>
 ```
 
@@ -138,9 +142,7 @@ const Button = ({ className, variant, size, ...props }) => (
 ```tsx
 import { ShadowBox } from '@polar-sh/ui'
 
-<ShadowBox>
-  {/* Content with consistent card styling */}
-</ShadowBox>
+;<ShadowBox>{/* Content with consistent card styling */}</ShadowBox>
 ```
 
 ## Data Fetching with TanStack Query
@@ -218,7 +220,7 @@ const MyForm = () => {
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <Input {...form.register('name')} />
       {form.formState.errors.name && (
-        <span className="text-red-500 text-sm">
+        <span className="text-sm text-red-500">
           {form.formState.errors.name.message}
         </span>
       )}
@@ -233,16 +235,25 @@ const MyForm = () => {
 // Atoms
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Input } from '@polar-sh/ui/components/atoms/Input'
-import { Card, CardHeader, CardContent } from '@polar-sh/ui/components/atoms/Card'
+import {
+  Card,
+  CardHeader,
+  CardContent,
+} from '@polar-sh/ui/components/atoms/Card'
 import { ShadowBox } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Avatar } from '@polar-sh/ui/components/atoms/Avatar'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@polar-sh/ui/components/atoms/Tabs'
 
 // Molecules
 import { Banner } from '@polar-sh/ui/components/molecules/Banner'
 
 // Utils
-import { cn } from '@polar-sh/ui/lib/utils'  // className merger
+import { cn } from '@polar-sh/ui/lib/utils' // className merger
 ```
 
 ## Common Patterns
@@ -251,7 +262,9 @@ import { cn } from '@polar-sh/ui/lib/utils'  // className merger
 
 ```tsx
 if (isLoading) {
-  return <div className="animate-pulse bg-gray-100 dark:bg-polar-700 rounded-xl h-32" />
+  return (
+    <div className="dark:bg-polar-700 h-32 animate-pulse rounded-xl bg-gray-100" />
+  )
 }
 ```
 
@@ -261,8 +274,10 @@ if (isLoading) {
 if (!data?.length) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <p className="text-gray-500 dark:text-polar-400">No items found</p>
-      <Button variant="secondary" className="mt-4">Create First Item</Button>
+      <p className="dark:text-polar-400 text-gray-500">No items found</p>
+      <Button variant="secondary" className="mt-4">
+        Create First Item
+      </Button>
     </div>
   )
 }
@@ -273,7 +288,7 @@ if (!data?.length) {
 ```tsx
 if (error) {
   return (
-    <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-4 text-red-600 dark:text-red-400">
+    <div className="rounded-xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
       {error.message}
     </div>
   )

@@ -1,3 +1,4 @@
+import structlog
 from fastapi import Depends, Request
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
@@ -25,7 +26,9 @@ from ..schemas.customer import (
 )
 from ..service.customer import CustomerNotReady
 from ..service.customer import customer as customer_service
-from ..utils import get_customer, get_customer_id
+from ..utils import get_audit_context, get_customer, get_customer_id
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 
@@ -106,6 +109,10 @@ async def add_payment_method(
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerPaymentMethodCreateResponse:
     """Add a payment method to the authenticated customer."""
+    log.info(
+        "customer_portal.payment_method.add",
+        **get_audit_context(auth_subject),
+    )
     return await customer_service.add_payment_method(
         session, get_customer(auth_subject), payment_method_create
     )
@@ -162,4 +169,9 @@ async def delete_payment_method(
     )
     if payment_method is None:
         raise ResourceNotFound()
+    log.info(
+        "customer_portal.payment_method.delete",
+        payment_method_id=id,
+        **get_audit_context(auth_subject),
+    )
     await customer_service.delete_payment_method(session, payment_method)

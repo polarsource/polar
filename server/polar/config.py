@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     # generate URLs to the backend accessible from the outside.
     BASE_URL: str = "http://127.0.0.1:8000"
     BACKOFFICE_HOST: str | None = None
+    CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 
     # URL to frontend app.
     # Update to ngrok domain or similar in case you want

@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
+from unittest.mock import MagicMock
 
+import aio_pika.abc
 import dramatiq
 import httpx
 import pytest
@@ -14,6 +16,7 @@ from polar.redis import Redis
 from polar.worker import JobQueueManager, RedisMiddleware
 from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
+from polar.worker._rabbitmq import RabbitMQMiddleware
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 
@@ -39,6 +42,11 @@ def patch_middlewares(
     mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", return_value=session)
     mocker.patch.object(RedisMiddleware, "get", return_value=redis)
     mocker.patch.object(HTTPXMiddleware, "get", return_value=httpx_client)
+    mocker.patch.object(
+        RabbitMQMiddleware,
+        "get",
+        return_value=MagicMock(spec=aio_pika.abc.AbstractRobustChannel),
+    )
 
 
 @pytest.fixture(autouse=True)

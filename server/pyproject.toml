@@ -106,7 +106,7 @@ verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify 
 generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
 seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test data into the database" }
 loadtest_setup = { cmd = "python -m scripts.loadtest_setup", help = "setup load test data for event ingestion" }
-pre_deploy = { cmd = "task db_migrate && task tb_deploy", help = "Pre-deploy command run by Render" }
+pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
 markers = ["auth"]

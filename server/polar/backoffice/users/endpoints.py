@@ -83,7 +83,7 @@ class OAuthPlatformColumn(
     datatable.DatatableAttrColumn[OAuthAccount, UserSortProperty]
 ):
     def get_value(self, item: OAuthAccount) -> str | None:
-        return item.platform.value
+        return str(item.platform)
 
 
 class OAuthExpiresAtColumn(

@@ -61,6 +61,9 @@ class CountAggregation(BaseModel):
         """
         return True
 
+    def get_running_total_sql_function(self) -> AggregationFunction:
+        return AggregationFunction.sum
+
     def matches(self, event: Event) -> bool:
         return True
 
@@ -105,6 +108,11 @@ class PropertyAggregation(BaseModel):
         """
         return self.func == AggregationFunction.sum
 
+    def get_running_total_sql_function(self) -> AggregationFunction:
+        if self.is_summable():
+            return AggregationFunction.sum
+        return self.func
+
     def matches(self, event: Event) -> bool:
         if self.property in ("name", "source", "timestamp"):
             return True
@@ -130,6 +138,9 @@ class UniqueAggregation(BaseModel):
         could appear in multiple groups).
         """
         return False
+
+    def get_running_total_sql_function(self) -> AggregationFunction:
+        return AggregationFunction.sum
 
     def matches(self, event: Event) -> bool:
         return True

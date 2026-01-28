@@ -1,0 +1,11 @@
+SCHEMA >
+    `organization_id` UUID,
+    `external_customer_id` String,
+    `name` LowCardinality(String),
+    `source` LowCardinality(String),
+    `occurrences` AggregateFunction(count, UInt64),
+    `first_seen` AggregateFunction(min, DateTime64(3)),
+    `last_seen` AggregateFunction(max, DateTime64(3))
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, external_customer_id, name, source

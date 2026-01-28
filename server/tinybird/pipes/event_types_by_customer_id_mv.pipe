@@ -1,0 +1,16 @@
+NODE materialize
+SQL >
+    SELECT
+        organization_id,
+        customer_id,
+        name,
+        source,
+        countState() AS occurrences,
+        minState(timestamp) AS first_seen,
+        maxState(timestamp) AS last_seen
+    FROM events_by_ingested_at
+    WHERE customer_id IS NOT NULL
+    GROUP BY organization_id, customer_id, name, source
+
+TYPE MATERIALIZED
+DATASOURCE event_types_by_customer_id

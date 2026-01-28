@@ -69,5 +69,5 @@ SQL >
         user_metadata
     FROM events_by_ingested_at
 
-TYPE materialized
+TYPE MATERIALIZED
 DATASOURCE events_by_timestamp

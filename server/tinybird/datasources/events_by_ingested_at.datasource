@@ -1,4 +1,4 @@
-TOKEN events_ingest APPEND
+TOKEN "events_ingest" APPEND
 
 SCHEMA >
     `id` UUID `json:$.id`,
@@ -68,6 +68,6 @@ SCHEMA >
     `llm_output_tokens` Nullable(Int64) `json:$.llm_output_tokens`,
     `user_metadata` String `json:$.user_metadata`
 
-ENGINE "MergeTree"
-ENGINE_PARTITION_KEY "toYYYYMM(ingested_at)"
-ENGINE_SORTING_KEY "organization_id, ingested_at, id"
+ENGINE MergeTree
+ENGINE_PARTITION_KEY toYYYYMM(ingested_at)
+ENGINE_SORTING_KEY organization_id, ingested_at, id

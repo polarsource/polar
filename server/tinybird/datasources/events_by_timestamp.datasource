@@ -66,6 +66,6 @@ SCHEMA >
     `llm_output_tokens` Nullable(Int64) `json:$.llm_output_tokens`,
     `user_metadata` String `json:$.user_metadata`
 
-ENGINE "MergeTree"
-ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
-ENGINE_SORTING_KEY "organization_id, timestamp, id"
+ENGINE MergeTree
+ENGINE_PARTITION_KEY toYYYYMM(timestamp)
+ENGINE_SORTING_KEY organization_id, timestamp, id

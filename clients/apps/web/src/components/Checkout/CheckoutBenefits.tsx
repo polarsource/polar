@@ -58,9 +58,12 @@ const CheckoutBenefits = ({
   return (
     <>
       <div className="flex flex-col gap-4">
-        <List>
+        <List className="rounded-3xl">
           {benefitGrants?.items.map((benefitGrant) => (
-            <ListItem key={benefitGrant.id}>
+            <ListItem
+              key={benefitGrant.id}
+              className="dark:bg-polar-800 dark:hover:bg-polar-800 bg-white p-4 hover:bg-white"
+            >
               <BenefitGrant api={api} benefitGrant={benefitGrant} />
             </ListItem>
           ))}

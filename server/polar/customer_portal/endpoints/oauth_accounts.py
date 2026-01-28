@@ -144,7 +144,9 @@ async def callback(
 
     if code is None or error is not None:
         redirect_url = add_query_parameters(
-            redirect_url, error=error or "Failed to authorize."
+            redirect_url,
+            error=error or "Failed to authorize.",
+            error_platform=platform.value,
         )
         return RedirectResponse(redirect_url, 303)
 
@@ -154,9 +156,17 @@ async def callback(
             code, str(request.url_for("customer_portal.oauth_accounts.callback"))
         )
     except GetAccessTokenError as e:
-        redirect_url = add_query_parameters(
-            redirect_url, error="Failed to get access token. Please try again later."
-        )
+        error_message = "Failed to get access token. Please try again later."
+        error_params: dict[str, str] = {
+            "error": error_message,
+            "error_platform": platform.value,
+        }
+        if e.response is not None and e.response.status_code == 429:
+            error_params["error"] = f"Rate limited by {platform.value.capitalize()}."
+            retry_after = e.response.headers.get("X-RateLimit-Reset-After")
+            if retry_after:
+                error_params["error_retry_after"] = retry_after
+        redirect_url = add_query_parameters(redirect_url, **error_params)
         with logfire.span(
             "Failed to get access token",
             platform=platform,
@@ -169,10 +179,11 @@ async def callback(
     try:
         profile = await client.get_profile(oauth2_token_data["access_token"])
     except GetProfileError as e:
-        redirect_url = add_query_parameters(
-            redirect_url,
-            error="Failed to get profile information. Please try again later.",
-        )
+        error_params = {
+            "error": "Failed to get profile information. Please try again later.",
+            "error_platform": platform.value,
+        }
+        redirect_url = add_query_parameters(redirect_url, **error_params)
         with logfire.span(
             "Failed to get profile",
             platform=platform,

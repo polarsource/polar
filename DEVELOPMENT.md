@@ -363,5 +363,6 @@ To log in for the first time, follow these steps:
 1. Navigate to the login page.
 2. Enter your email address in the provided field.
 3. Click the "Login" button.
-4. Check the terminal where the API is running (`uv run task api`) to get the OTP code.
-5. Enter the OTP code in the login form.
+4. To use the seeded admin, use **admin@polar.sh** ([seeds_load.py](server/scripts/seeds_load.py)).
+5. Check the terminal where the API is running (`uv run task api`) to get the OTP code.
+6. Enter the OTP code in the login form.

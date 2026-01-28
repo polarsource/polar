@@ -19,7 +19,10 @@ DATASOURCE_EVENTS = "events_by_ingested_at"
 
 
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
-    return m.pop(key, None) if is_system else None
+    v = m.pop(key, None) if is_system else None
+    if isinstance(v, float) and v.is_integer():
+        return int(v)
+    return v
 
 
 def _event_to_tinybird(event: Event) -> TinybirdEvent:

@@ -1,7 +1,12 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useClaimPerk, usePerks } from '@/hooks/queries'
+import {
+  Perk,
+  PerkWithCode,
+  useClaimPerk,
+  usePerks,
+} from '@/hooks/queries/perks'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card, CardContent, CardHeader } from '@polar-sh/ui/components/atoms/Card'
@@ -46,24 +51,10 @@ const categoryNames: Record<string, string> = {
 }
 
 interface PerkCardProps {
-  perk: {
-    id: string
-    provider_name: string
-    logo_key: string
-    headline: string
-    description: string
-    category: string
-    redemption_type: string
-    redemption_url?: string | null
-    redemption_code?: string | null
-    featured: boolean
-  }
+  perk: Perk
   onClaim: (perkId: string) => void
   isClaiming: boolean
-  claimedPerk?: {
-    redemption_code?: string | null
-    redemption_url?: string | null
-  }
+  claimedPerk?: PerkWithCode
 }
 
 const PerkCard = ({ perk, onClaim, isClaiming, claimedPerk }: PerkCardProps) => {
@@ -239,12 +230,9 @@ export default function PerksPage({ organization }: PerksPageProps) {
   const { data: perksData, isLoading, error } = usePerks()
   const claimMutation = useClaimPerk()
 
-  const [claimedPerks, setClaimedPerks] = useState<
-    Record<
-      string,
-      { redemption_code?: string | null; redemption_url?: string | null }
-    >
-  >({})
+  const [claimedPerks, setClaimedPerks] = useState<Record<string, PerkWithCode>>(
+    {},
+  )
   const [claimingPerkId, setClaimingPerkId] = useState<string | null>(null)
 
   const handleClaim = useCallback(
@@ -254,10 +242,7 @@ export default function PerksPage({ organization }: PerksPageProps) {
         const result = await claimMutation.mutateAsync(perkId)
         setClaimedPerks((prev) => ({
           ...prev,
-          [perkId]: {
-            redemption_code: result.perk.redemption_code,
-            redemption_url: result.perk.redemption_url,
-          },
+          [perkId]: result.perk,
         }))
       } finally {
         setClaimingPerkId(null)

@@ -40,12 +40,12 @@
   "devDependencies": {
     "@polar-sh/eslint-config": "workspace:*",
     "@polar-sh/typescript-config": "workspace:*",
-    "@testing-library/react": "^16.0.0",
-    "@types/react": "^19.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.10",
     "eslint": "^9.39.2",
     "jsdom": "^25.0.0",
-    "msw": "^2.0.0",
-    "tsup": "^8.0.0",
+    "msw": "^2.12.7",
+    "tsup": "^8.5.1",
     "typescript": "latest",
     "vitest": "^2.0.0"
   },

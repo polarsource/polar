@@ -337,6 +337,10 @@ resource "tfe_variable" "tinybird_workspace_production" {
   category        = "terraform"
   description     = "Tinybird Workspace for production"
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_write_production" {
@@ -344,6 +348,10 @@ resource "tfe_variable" "tinybird_events_write_production" {
   category        = "terraform"
   description     = "Tinybird Events Write enabled for production"
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_read_production" {
@@ -351,4 +359,8 @@ resource "tfe_variable" "tinybird_events_read_production" {
   category        = "terraform"
   description     = "Tinybird Events Read enabled for production"
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

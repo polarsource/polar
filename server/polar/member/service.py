@@ -86,8 +86,28 @@ class MemberService:
 
         Returns:
             Deleted Member
+
+        Raises:
+            PolarRequestValidationError: If trying to delete the only owner
         """
         repository = MemberRepository.from_session(session)
+
+        # Prevent deleting the only owner
+        if member.role == MemberRole.owner:
+            members = await repository.list_by_customer(session, member.customer_id)
+            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
+            if owner_count <= 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body",),
+                            "msg": "Cannot delete the only owner. Transfer ownership first.",
+                            "input": str(member.id),
+                        }
+                    ]
+                )
+
         deleted_member = await repository.soft_delete(member)
         log.info(
             "member.delete.success",
@@ -243,6 +263,74 @@ class MemberService:
     ) -> Sequence[Member]:
         repository = MemberRepository.from_session(session)
         return await repository.list_by_customer(session, customer_id)
+
+    async def get_by_customer_and_id(
+        self,
+        session: AsyncReadSession,
+        customer_id: UUID,
+        member_id: UUID,
+    ) -> Member | None:
+        """Get a member by customer ID and member ID."""
+        repository = MemberRepository.from_session(session)
+        return await repository.get_by_id_and_customer_id(member_id, customer_id)
+
+    async def add_to_customer(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        *,
+        email: str,
+        name: str | None = None,
+        role: MemberRole = MemberRole.member,
+    ) -> Member:
+        """
+        Add a member to a customer.
+
+        Args:
+            session: Database session
+            customer: Customer to add member to
+            email: Email address of the member
+            name: Optional name of the member
+            role: Role of the member (defaults to member)
+
+        Returns:
+            Created or existing Member
+        """
+        repository = MemberRepository.from_session(session)
+
+        # Check if member already exists
+        existing_member = await repository.get_by_customer_id_and_email(
+            customer.id, email
+        )
+        if existing_member:
+            log.debug(
+                "member.add_to_customer.already_exists",
+                customer_id=customer.id,
+                email=email,
+                existing_member_id=existing_member.id,
+            )
+            return existing_member
+
+        # Create the new member
+        member = Member(
+            customer_id=customer.id,
+            organization_id=customer.organization_id,
+            email=email,
+            name=name,
+            role=role,
+        )
+
+        created_member = await repository.create(member, flush=True)
+
+        log.info(
+            "member.add_to_customer.success",
+            customer_id=customer.id,
+            member_id=created_member.id,
+            email=email,
+            role=role,
+        )
+
+        return created_member
 
     async def list_by_customers(
         self,

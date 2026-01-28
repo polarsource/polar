@@ -7,6 +7,7 @@ from .customer_seat import router as customer_seat_router
 from .customer_session import router as customer_session_router
 from .downloadables import router as downloadables_router
 from .license_keys import router as license_keys_router
+from .member import router as member_router
 from .oauth_accounts import router as oauth_accounts_router
 from .order import router as order_router
 from .organization import router as organization_router
@@ -22,6 +23,7 @@ router.include_router(customer_seat_router)
 router.include_router(customer_session_router)
 router.include_router(downloadables_router)
 router.include_router(license_keys_router)
+router.include_router(member_router)
 router.include_router(oauth_accounts_router)
 router.include_router(order_router)
 router.include_router(organization_router)

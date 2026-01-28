@@ -3251,6 +3251,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Members
+     * @description List all members of the customer's team.
+     *
+     *     Only available to owners and billing managers of team customers.
+     */
+    get: operations['customer_portal:members:list_members']
+    put?: never
+    /**
+     * Add Member
+     * @description Add a new member to the customer's team.
+     *
+     *     Only available to owners and billing managers of team customers.
+     *
+     *     Rules:
+     *     - Cannot add a member with the owner role (there must be exactly one owner)
+     *     - If a member with this email already exists, the existing member is returned
+     */
+    post: operations['customer_portal:members:add_member']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/members/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Remove Member
+     * @description Remove a member from the team.
+     *
+     *     Only available to owners and billing managers of team customers.
+     *
+     *     Rules:
+     *     - Cannot remove yourself
+     *     - Cannot remove the only owner
+     */
+    delete: operations['customer_portal:members:remove_member']
+    options?: never
+    head?: never
+    /**
+     * Update Member
+     * @description Update a member's role.
+     *
+     *     Only available to owners and billing managers of team customers.
+     *
+     *     Rules:
+     *     - Cannot modify your own role (to prevent self-demotion)
+     *     - Customer must have exactly one owner at all times
+     */
+    patch: operations['customer_portal:members:update_member']
+    trace?: never
+  }
   '/v1/customer-portal/oauth-accounts/authorize': {
     parameters: {
       query?: never
@@ -12559,6 +12627,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -12579,13 +12652,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -13011,6 +13077,11 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /**
+       * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
       /**
        * Organization Id
        * @description The ID of the organization owning the customer. **Required unless you use an organization token.**
@@ -13953,6 +14024,7 @@ export interface components {
       }
       /** Default Payment Method Id */
       default_payment_method_id?: string | null
+      type?: components['schemas']['CustomerType'] | null
     }
     /** CustomerPortalCustomerUpdate */
     CustomerPortalCustomerUpdate: {
@@ -13961,6 +14033,77 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: string | null
+    }
+    /**
+     * CustomerPortalMember
+     * @description A member of the customer's team as seen in the customer portal.
+     */
+    CustomerPortalMember: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Email
+       * @description The email address of the member.
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the member.
+       */
+      name: string | null
+      /** @description The role of the member within the team. */
+      role: components['schemas']['MemberRole']
+    }
+    /**
+     * CustomerPortalMemberCreate
+     * @description Schema for adding a new member to the customer's team.
+     */
+    CustomerPortalMemberCreate: {
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the new member.
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the new member (optional).
+       */
+      name?: string | null
+      /**
+       * @description The role for the new member. Defaults to 'member'.
+       * @default member
+       * @example billing_manager
+       * @example member
+       */
+      role: components['schemas']['MemberRole']
+    }
+    /**
+     * CustomerPortalMemberUpdate
+     * @description Schema for updating a member's role in the customer portal.
+     */
+    CustomerPortalMemberUpdate: {
+      /**
+       * @description The new role for the member.
+       * @example billing_manager
+       * @example member
+       */
+      role?: components['schemas']['MemberRole'] | null
     }
     /** CustomerPortalOAuthAccount */
     CustomerPortalOAuthAccount: {
@@ -14361,6 +14504,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -14381,13 +14529,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Active Subscriptions
        * @description The customer's active subscriptions.
@@ -15081,6 +15222,11 @@ export interface components {
        * @example usr_1337
        */
       external_id?: string | null
+      /**
+       * @description The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.
+       * @example team
+       */
+      type?: components['schemas']['CustomerType'] | null
     }
     /** CustomerUpdateExternalID */
     CustomerUpdateExternalID: {
@@ -15300,6 +15446,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -15320,13 +15471,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Members
        * @description List of members belonging to this customer.
@@ -17694,6 +17838,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -17714,13 +17863,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -19725,6 +19867,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -19745,13 +19892,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -21331,6 +21471,11 @@ export interface components {
        * @description Associated customer ID.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description Member ID. Only set for members.
+       */
+      member_id?: string | null
       /**
        * Role
        * @description Member role (owner, billing_manager, member). Only set for members.
@@ -23725,6 +23870,11 @@ export interface components {
        */
       email_verified: boolean
       /**
+       * @description The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.
+       * @example individual
+       */
+      type?: components['schemas']['CustomerType'] | null
+      /**
        * Name
        * @description The name of the customer.
        * @example John Doe
@@ -23745,13 +23895,6 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
-      /**
-       * @description The type of customer. All customers are `individual` by default. Customers
-       *                 are migrated to `team` when they purchase a seat-based product. This migration
-       *                 is one-way and cannot be undone.
-       * @default individual
-       */
-      type: components['schemas']['CustomerType'] | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -31268,7 +31411,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -34320,6 +34462,218 @@ export interface operations {
       }
     }
   }
+  'customer_portal:members:list_members': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerPortalMember'][]
+        }
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted - requires owner or billing manager role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
+  'customer_portal:members:add_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerPortalMemberCreate']
+      }
+    }
+    responses: {
+      /** @description Member added. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerPortalMember']
+        }
+      }
+      /** @description Invalid request or member already exists. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted - requires owner or billing manager role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:members:remove_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Member removed. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Cannot remove the only owner. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted - requires owner or billing manager role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:members:update_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerPortalMemberUpdate']
+      }
+    }
+    responses: {
+      /** @description Member updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerPortalMember']
+        }
+      }
+      /** @description Invalid role change. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted - requires owner or billing manager role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Member not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:oauth-accounts:customer_portal.oauth_accounts.authorize': {
     parameters: {
       query: {
@@ -36171,7 +36525,6 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
-          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -39006,7 +39359,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -39609,7 +39961,6 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
-  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']

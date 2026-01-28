@@ -13,6 +13,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.models.customer import CustomerType
 from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
 from polar.tax.tax_id import TaxID
 
@@ -31,6 +32,7 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     tax_id: TaxID | None
     oauth_accounts: dict[str, CustomerPortalOAuthAccount]
     default_payment_method_id: UUID4 | None = None
+    type: CustomerType | None = None
 
 
 class CustomerPortalCustomerUpdate(Schema):

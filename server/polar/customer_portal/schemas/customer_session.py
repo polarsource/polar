@@ -63,6 +63,10 @@ class PortalAuthenticatedUser(Schema):
     name: str | None = Field(description="User's name, if available.")
     email: str = Field(description="User's email address.")
     customer_id: UUID4 = Field(description="Associated customer ID.")
+    member_id: UUID4 | None = Field(
+        default=None,
+        description="Member ID. Only set for members.",
+    )
     role: str | None = Field(
         default=None,
         description="Member role (owner, billing_manager, member). Only set for members.",

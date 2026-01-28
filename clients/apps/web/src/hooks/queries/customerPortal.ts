@@ -543,3 +543,84 @@ export const useCustomerWallets = (api: Client) =>
     queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
     retry: defaultRetry,
   })
+
+// Member management hooks
+const extractApiErrorMessage = (
+  error: { detail?: string | { msg?: string }[] },
+  fallback: string,
+): string => {
+  if (typeof error?.detail === 'string') return error.detail
+  if (Array.isArray(error?.detail)) return error.detail[0]?.msg || fallback
+  return fallback
+}
+
+export const useCustomerPortalMembers = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_portal_members'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/members')),
+    retry: defaultRetry,
+  })
+
+export const useUpdateCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      id: string
+      body: schemas['CustomerPortalMemberUpdate']
+    }) => {
+      const result = await api.PATCH('/v1/customer-portal/members/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to update member'),
+        )
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })
+
+export const useAddCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: schemas['CustomerPortalMemberCreate']) => {
+      const result = await api.POST('/v1/customer-portal/members', {
+        body,
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to add member'),
+        )
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })
+
+export const useRemoveCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (id: string) => {
+      const result = await api.DELETE('/v1/customer-portal/members/{id}', {
+        params: { path: { id } },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to remove member'),
+        )
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })

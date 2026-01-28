@@ -55,7 +55,13 @@ class StripeService:
         Returns a tuple of (stripe_account, api_version) where api_version is
         STRIPE_API_VERSION_V1 or STRIPE_API_VERSION_V2.
         """
-        if settings.STRIPE_USE_V2_ACCOUNTS:
+        use_v2 = settings.STRIPE_USE_V2_ACCOUNTS
+        log.info(
+            "stripe.account.create.version_check",
+            use_v2=use_v2,
+            feature_flag_value=settings.STRIPE_USE_V2_ACCOUNTS,
+        )
+        if use_v2:
             return await self._create_account_v2(account, name)
         return await self._create_account_v1(account, name)
 
@@ -64,7 +70,7 @@ class StripeService:
     ) -> tuple[stripe_lib.Account, int]:
         """Create account using v1 API with capabilities.transfers."""
         log.info(
-            "stripe.account.create.v1",
+            "Using Stripe V1 API for account creation",
             country=account.country,
             name=name,
         )
@@ -91,17 +97,18 @@ class StripeService:
     ) -> tuple[stripe_lib.Account, int]:
         """Create account using v2 API with recipient configuration.
 
-        Uses the new Stripe v2 API which configures accounts as recipients
-        instead of requesting the transfers capability directly.
+        Uses the new Stripe v2 API which configures accounts as recipients.
+        Key difference from v1: Do NOT explicitly request transfers capability.
+        The recipient configuration grants transfer capabilities automatically.
         """
         log.info(
-            "stripe.account.create.v2",
+            "Using Stripe V2 API for account creation",
             country=account.country,
             name=name,
         )
 
-        # Build the v2 account creation params
-        # The v2 API uses a different structure with configuration.recipient
+        # V2 API: Use controller config, do NOT request capabilities explicitly
+        # Transfers capability is granted automatically for recipient accounts
         create_params: dict[str, Any] = {
             "country": account.country,
             "type": "express",
@@ -110,9 +117,7 @@ class StripeService:
                 "fees": {"payer": "application"},
                 "losses": {"payments": "application"},
             },
-            "capabilities": {
-                "transfers": {"requested": True},
-            },
+            # NO capabilities block - this is the key v2 difference!
             "settings": {
                 "payouts": {"schedule": {"interval": "manual"}},
             },
@@ -124,9 +129,13 @@ class StripeService:
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
 
-        # Create using standard API - v2 configuration is handled by Stripe
-        # based on the account structure and capabilities requested
+        log.info("stripe.account.create.v2.params", params=create_params)
         stripe_account = await stripe_lib.Account.create_async(**create_params)
+        log.info(
+            "stripe.account.create.v2.success",
+            account_id=stripe_account.id,
+            capabilities=stripe_account.capabilities,
+        )
         return stripe_account, STRIPE_API_VERSION_V2
 
     async def retrieve_account(

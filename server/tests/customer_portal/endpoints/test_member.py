@@ -173,7 +173,10 @@ class TestAddMember:
             json={"email": "new@example.com", "role": "owner"},
         )
         assert response.status_code == 422
-        assert "cannot add a member as owner" in response.json()["detail"][0]["msg"].lower()
+        assert (
+            "cannot add a member as owner"
+            in response.json()["detail"][0]["msg"].lower()
+        )
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
@@ -344,7 +347,9 @@ class TestUpdateMember:
             json={"role": "member"},
         )
         assert response.status_code == 422
-        assert "cannot modify your own role" in response.json()["detail"][0]["msg"].lower()
+        assert (
+            "cannot modify your own role" in response.json()["detail"][0]["msg"].lower()
+        )
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
@@ -419,17 +424,13 @@ class TestUpdateMember:
 @pytest.mark.asyncio
 class TestRemoveMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.delete(
-            f"/v1/customer-portal/members/{uuid.uuid4()}"
-        )
+        response = await client.delete(f"/v1/customer-portal/members/{uuid.uuid4()}")
         assert response.status_code == 401
 
     @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
     async def test_member_not_allowed(self, client: AsyncClient) -> None:
         """Regular members cannot remove members."""
-        response = await client.delete(
-            f"/v1/customer-portal/members/{uuid.uuid4()}"
-        )
+        response = await client.delete(f"/v1/customer-portal/members/{uuid.uuid4()}")
         assert response.status_code == 403
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
@@ -447,9 +448,7 @@ class TestRemoveMember:
         customer.type = CustomerType.team
         await save_fixture(customer)
 
-        response = await client.delete(
-            f"/v1/customer-portal/members/{member_owner.id}"
-        )
+        response = await client.delete(f"/v1/customer-portal/members/{member_owner.id}")
         assert response.status_code == 422
         assert "cannot remove yourself" in response.json()["detail"][0]["msg"].lower()
 
@@ -481,9 +480,7 @@ class TestRemoveMember:
         await save_fixture(member2)
 
         # Now try to remove member2 - this should work because there are 2 owners
-        response = await client.delete(
-            f"/v1/customer-portal/members/{member2.id}"
-        )
+        response = await client.delete(f"/v1/customer-portal/members/{member2.id}")
         assert response.status_code == 204
 
     @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
@@ -511,7 +508,5 @@ class TestRemoveMember:
         )
         await save_fixture(member2)
 
-        response = await client.delete(
-            f"/v1/customer-portal/members/{member2.id}"
-        )
+        response = await client.delete(f"/v1/customer-portal/members/{member2.id}")
         assert response.status_code == 204

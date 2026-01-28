@@ -45,6 +45,7 @@ from polar.kit.metadata import MetadataMixin, get_nested_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
 
 from .customer import Customer
+from .member import Member
 
 if TYPE_CHECKING:
     from .event_type import EventType
@@ -114,6 +115,64 @@ class CustomerComparator(Relationship.Comparator[Customer]):
         raise NotImplementedError()
 
 
+class MemberComparator(Relationship.Comparator[Member]):
+    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+        if isinstance(other, Member):
+            clause = Event.member_id == other.id
+            if other.external_id is not None:
+                clause = or_(
+                    clause,
+                    and_(
+                        Event.external_member_id.is_not(None),
+                        Event.external_member_id == other.external_id,
+                        Event.organization_id == other.organization_id,
+                    ),
+                )
+            return clause
+
+        raise NotImplementedError()
+
+    def is_(self, other: Any) -> BinaryExpression[bool]:
+        if other is None:
+            return cast(
+                BinaryExpression[bool],
+                and_(
+                    Event.member_id.is_(None),
+                    or_(
+                        Event.external_member_id.is_(None),
+                        ~exists(
+                            select(1).where(
+                                Member.external_id == Event.external_member_id,
+                                Member.organization_id == Event.organization_id,
+                            )
+                        ),
+                    ),
+                ),
+            )
+
+        raise NotImplementedError()
+
+    def is_not(self, other: Any) -> BinaryExpression[bool]:
+        if other is None:
+            return cast(
+                BinaryExpression[bool],
+                or_(
+                    Event.member_id.is_not(None),
+                    and_(
+                        Event.external_member_id.is_not(None),
+                        exists(
+                            select(1).where(
+                                Member.external_id == Event.external_member_id,
+                                Member.organization_id == Event.organization_id,
+                            )
+                        ),
+                    ),
+                ),
+            )
+
+        raise NotImplementedError()
+
+
 class Event(Model, MetadataMixin):
     __tablename__ = "events"
     __table_args__ = (
@@ -170,6 +229,18 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
             postgresql_where="customer_id IS NOT NULL",
         ),
+        Index(
+            "ix_events_organization_member_id_ingested_at_desc",
+            "organization_id",
+            "member_id",
+            literal_column("ingested_at DESC"),
+        ),
+        Index(
+            "ix_events_organization_external_member_id_ingested_at_desc",
+            "organization_id",
+            "external_member_id",
+            literal_column("ingested_at DESC"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -189,6 +260,17 @@ class Event(Model, MetadataMixin):
     )
 
     external_customer_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+
+    member_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("members.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    external_member_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
 
@@ -233,6 +315,31 @@ class Event(Model, MetadataMixin):
         case(
             (customer_id.is_not(None), sql_cast(customer_id, String)),
             else_=external_customer_id,
+        )
+    )
+
+    @declared_attr
+    def member(cls) -> Mapped[Member | None]:
+        return relationship(
+            Member,
+            primaryjoin=(
+                "or_("
+                "Event.member_id == Member.id,"
+                "and_("
+                "Event.external_member_id == Member.external_id,"
+                "Event.organization_id == Member.organization_id"
+                ")"
+                ")"
+            ),
+            comparator_factory=MemberComparator,
+            lazy="raise",
+            viewonly=True,
+        )
+
+    resolved_member_id: Mapped[UUID | str | None] = column_property(
+        case(
+            (member_id.is_not(None), sql_cast(member_id, String)),
+            else_=external_member_id,
         )
     )
 

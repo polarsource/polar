@@ -80,28 +80,21 @@ interface UseOnboardingTrackingReturn {
   startOnboarding: (
     signupMethod: SignupMethod,
   ) => Promise<OnboardingSessionState | null>
-
   trackStepStarted: (
     step: OnboardingStep,
     organizationId?: string,
   ) => Promise<void>
-
   trackStepCompleted: (
     step: OnboardingStep,
     organizationId?: string,
   ) => Promise<void>
-
   trackStepSkipped: (
     step: OnboardingStep,
     organizationId?: string,
   ) => Promise<void>
-
   trackCompleted: (organizationId: string) => Promise<void>
-
   getSession: () => OnboardingSessionState | null
-
   clearSession: () => void
-
   experimentVariant: string
 }
 

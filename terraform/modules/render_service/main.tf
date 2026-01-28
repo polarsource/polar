@@ -194,7 +194,7 @@ resource "render_env_group" "tinybird" {
 resource "render_web_service" "api" {
   environment_id     = var.render_environment_id
   name               = "api${local.env_suffix}"
-  plan               = "standard"
+  plan               = var.api_service_config.plan
   region             = "ohio"
   health_check_path  = "/healthz"
   pre_deploy_command = "uv run task pre_deploy"

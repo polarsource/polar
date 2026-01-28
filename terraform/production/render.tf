@@ -116,9 +116,11 @@ module "production" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   api_service_config = {
-    allowed_hosts  = "[\"polar.sh\", \"backoffice.polar.sh\"]"
-    cors_origins   = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
-    custom_domains = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    allowed_hosts   = "[\"polar.sh\", \"backoffice.polar.sh\"]"
+    cors_origins    = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    custom_domains  = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
+    plan            = "pro"
+    web_concurrency = "4"
   }
 
   postgres_config = {

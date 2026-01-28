@@ -33,6 +33,7 @@ variable "api_service_config" {
     postgres_database      = optional(string, "polar_cpit")
     postgres_read_database = optional(string, "polar_cpit")
     redis_db               = optional(string, "0")
+    plan                   = optional(string, "standard")
   })
 }
 

@@ -72,7 +72,12 @@ async def backfill(
     )
     sessionmaker = create_async_sessionmaker(engine)
 
-    tb_client = TinybirdClient(settings.TINYBIRD_API_URL, settings.TINYBIRD_API_TOKEN)
+    tb_client = TinybirdClient(
+        api_url=settings.TINYBIRD_API_URL,
+        clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+        api_token=settings.TINYBIRD_API_TOKEN,
+        clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
+    )
 
     try:
         async with sessionmaker() as session:

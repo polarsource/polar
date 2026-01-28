@@ -273,11 +273,13 @@ module "production" {
   }
 
   tinybird_config = {
-    api_url      = "https://api.us-east.aws.tinybird.co"
-    api_token    = var.tinybird_api_token
-    workspace    = var.tinybird_workspace
-    events_write = var.tinybird_events_write
-    events_read  = var.tinybird_events_read
+    api_url          = "https://api.us-east.aws.tinybird.co"
+    clickhouse_url   = "https://ch.us-east.aws.tinybird.co"
+    api_token        = var.tinybird_api_token
+    clickhouse_token = var.tinybird_clickhouse_token
+    workspace        = var.tinybird_workspace
+    events_write     = var.tinybird_events_write
+    events_read      = var.tinybird_events_read
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]

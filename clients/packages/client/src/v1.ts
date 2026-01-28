@@ -14103,7 +14103,7 @@ export interface components {
        * @example billing_manager
        * @example member
        */
-      role: components['schemas']['MemberRole']
+      role?: components['schemas']['MemberRole'] | null
     }
     /** CustomerPortalOAuthAccount */
     CustomerPortalOAuthAccount: {

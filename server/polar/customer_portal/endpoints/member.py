@@ -190,11 +190,14 @@ async def update_member(
     repository = MemberRepository.from_session(session)
 
     # Fetch the member to update
-    members = await repository.list_by_customer(session, customer.id)
-    member = next((m for m in members if m.id == id), None)
-
+    member = await repository.get_by_id_and_customer_id(id, customer.id)
     if member is None:
         raise ResourceNotFound("Member not found")
+
+    # If no role provided, return member unchanged
+    new_role = member_update.role
+    if new_role is None:
+        return member
 
     # Prevent self-modification
     if member.id == actor_member.id:
@@ -210,12 +213,11 @@ async def update_member(
         )
 
     # Check if role change is valid
-    new_role = member_update.role
     if member.role != new_role:
-        owner_count = sum(1 for m in members if m.role == MemberRole.owner)
-
-        # Demoting the only owner
-        if member.role == MemberRole.owner and new_role != MemberRole.owner:
+        # Demoting the only owner - need to check owner count
+        if member.role == MemberRole.owner:
+            members = await repository.list_by_customer(session, customer.id)
+            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
             if owner_count <= 1:
                 raise PolarRequestValidationError(
                     [
@@ -229,7 +231,9 @@ async def update_member(
                 )
 
         # Promoting to owner when there's already an owner
-        if new_role == MemberRole.owner and member.role != MemberRole.owner:
+        elif new_role == MemberRole.owner:
+            members = await repository.list_by_customer(session, customer.id)
+            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
             if owner_count >= 1:
                 raise PolarRequestValidationError(
                     [
@@ -289,10 +293,8 @@ async def remove_member(
 
     repository = MemberRepository.from_session(session)
 
-    # Fetch all members
-    members = await repository.list_by_customer(session, customer.id)
-    member = next((m for m in members if m.id == id), None)
-
+    # Fetch the member to remove
+    member = await repository.get_by_id_and_customer_id(id, customer.id)
     if member is None:
         raise ResourceNotFound("Member not found")
 
@@ -309,8 +311,9 @@ async def remove_member(
             ]
         )
 
-    # Prevent removing the only owner
+    # Prevent removing the only owner - need to check owner count
     if member.role == MemberRole.owner:
+        members = await repository.list_by_customer(session, customer.id)
         owner_count = sum(1 for m in members if m.role == MemberRole.owner)
         if owner_count <= 1:
             raise PolarRequestValidationError(

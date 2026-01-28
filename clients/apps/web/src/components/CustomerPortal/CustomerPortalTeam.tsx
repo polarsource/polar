@@ -46,6 +46,12 @@ const roleDisplayNames: Record<string, [string, string]> = {
   ],
 }
 
+const availableRoles = [
+  { value: 'owner', label: 'Make Owner' },
+  { value: 'billing_manager', label: 'Make Billing Manager' },
+  { value: 'member', label: 'Make Member' },
+] as const
+
 const roleToDisplayName = (role: string): string => {
   const display = roleDisplayNames[role]
   return display ? display[0] : role
@@ -309,40 +315,23 @@ export const CustomerPortalTeam = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {member.role !== 'owner' && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(member.id, member.name, 'owner')
-                            }
-                            disabled={isLoading}
-                          >
-                            Make Owner
-                          </DropdownMenuItem>
-                        )}
-                        {member.role !== 'billing_manager' && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(
-                                member.id,
-                                member.name,
-                                'billing_manager',
-                              )
-                            }
-                            disabled={isLoading}
-                          >
-                            Make Billing Manager
-                          </DropdownMenuItem>
-                        )}
-                        {member.role !== 'member' && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleRoleChange(member.id, member.name, 'member')
-                            }
-                            disabled={isLoading}
-                          >
-                            Make Member
-                          </DropdownMenuItem>
-                        )}
+                        {availableRoles
+                          .filter((role) => role.value !== member.role)
+                          .map((role) => (
+                            <DropdownMenuItem
+                              key={role.value}
+                              onClick={() =>
+                                handleRoleChange(
+                                  member.id,
+                                  member.name,
+                                  role.value,
+                                )
+                              }
+                              disabled={isLoading}
+                            >
+                              {role.label}
+                            </DropdownMenuItem>
+                          ))}
                         <DropdownMenuItem
                           onClick={() => setMemberToRemove(member.id)}
                           disabled={isLoading}

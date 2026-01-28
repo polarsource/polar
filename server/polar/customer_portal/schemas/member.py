@@ -31,7 +31,8 @@ class CustomerPortalMemberCreate(Schema):
 class CustomerPortalMemberUpdate(Schema):
     """Schema for updating a member's role in the customer portal."""
 
-    role: MemberRole = Field(
+    role: MemberRole | None = Field(
+        default=None,
         description="The new role for the member.",
         examples=[MemberRole.billing_manager, MemberRole.member],
     )

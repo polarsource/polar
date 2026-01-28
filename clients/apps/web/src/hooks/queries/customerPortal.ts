@@ -545,6 +545,15 @@ export const useCustomerWallets = (api: Client) =>
   })
 
 // Member management hooks
+const extractApiErrorMessage = (
+  error: { detail?: string | { msg?: string }[] },
+  fallback: string,
+): string => {
+  if (typeof error?.detail === 'string') return error.detail
+  if (Array.isArray(error?.detail)) return error.detail[0]?.msg || fallback
+  return fallback
+}
+
 export const useCustomerPortalMembers = (api: Client) =>
   useQuery({
     queryKey: ['customer_portal_members'],
@@ -557,15 +566,19 @@ export const useUpdateCustomerPortalMember = (api: Client) =>
     mutationFn: async (variables: {
       id: string
       body: schemas['CustomerPortalMemberUpdate']
-    }) =>
-      api.PATCH('/v1/customer-portal/members/{id}', {
+    }) => {
+      const result = await api.PATCH('/v1/customer-portal/members/{id}', {
         params: { path: { id: variables.id } },
         body: variables.body,
-      }),
-    onSuccess: async (result, _variables, _ctx) => {
+      })
       if (result.error) {
-        return
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to update member'),
+        )
       }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
       getQueryClient().invalidateQueries({
         queryKey: ['customer_portal_members'],
       })
@@ -579,13 +592,9 @@ export const useAddCustomerPortalMember = (api: Client) =>
         body,
       })
       if (result.error) {
-        const errorMessage =
-          typeof result.error.detail === 'string'
-            ? result.error.detail
-            : Array.isArray(result.error.detail)
-              ? result.error.detail[0]?.msg || 'Failed to add member'
-              : 'Failed to add member'
-        throw new Error(errorMessage)
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to add member'),
+        )
       }
       return result
     },
@@ -603,11 +612,9 @@ export const useRemoveCustomerPortalMember = (api: Client) =>
         params: { path: { id } },
       })
       if (result.error) {
-        const errorMessage =
-          typeof result.error.detail === 'string'
-            ? result.error.detail
-            : 'Failed to remove member'
-        throw new Error(errorMessage)
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to remove member'),
+        )
       }
       return result
     },

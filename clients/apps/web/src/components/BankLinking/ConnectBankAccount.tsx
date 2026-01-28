@@ -1,13 +1,63 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
-import { api } from '@/utils/client'
-import { unwrap } from '@polar-sh/client'
+import { getServerURL } from '@/utils/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { loadStripe, Stripe } from '@stripe/stripe-js'
+import { loadStripe } from '@stripe/stripe-js'
 import { useCallback, useEffect, useState } from 'react'
 import { BankAccountCard } from './BankAccountCard'
 import { RTPEligibilityBadge } from './RTPEligibilityBadge'
+
+// Temporary API helper until OpenAPI types are regenerated
+const bankLinkingApi = {
+  async getStatus(accountId: string): Promise<BankLinkingStatus> {
+    const res = await fetch(
+      `${getServerURL()}/v1/bank-linking/status/${accountId}`,
+      { credentials: 'include' },
+    )
+    if (!res.ok) throw new Error('Failed to fetch status')
+    return res.json()
+  },
+
+  async createSession(
+    accountId: string,
+    returnUrl: string,
+  ): Promise<{ client_secret: string }> {
+    const res = await fetch(`${getServerURL()}/v1/bank-linking/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ account_id: accountId, return_url: returnUrl }),
+    })
+    if (!res.ok) throw new Error('Failed to create session')
+    return res.json()
+  },
+
+  async complete(
+    accountId: string,
+    financialConnectionsAccountId: string,
+  ): Promise<BankAccountInfo> {
+    const res = await fetch(`${getServerURL()}/v1/bank-linking/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        account_id: accountId,
+        financial_connections_account_id: financialConnectionsAccountId,
+      }),
+    })
+    if (!res.ok) throw new Error('Failed to complete linking')
+    return res.json()
+  },
+
+  async disconnect(accountId: string): Promise<void> {
+    const res = await fetch(
+      `${getServerURL()}/v1/bank-linking/${accountId}`,
+      { method: 'DELETE', credentials: 'include' },
+    )
+    if (!res.ok) throw new Error('Failed to disconnect')
+  },
+}
 
 interface ConnectBankAccountProps {
   accountId: string
@@ -68,13 +118,9 @@ export const ConnectBankAccount = ({
   // Fetch current bank linking status
   const fetchStatus = useCallback(async () => {
     try {
-      const status = await unwrap(
-        api.GET('/v1/bank-linking/status/{account_id}', {
-          params: { path: { account_id: accountId } },
-        }),
-      )
-      setBankStatus(status as BankLinkingStatus)
-      return status as BankLinkingStatus
+      const status = await bankLinkingApi.getStatus(accountId)
+      setBankStatus(status)
+      return status
     } catch (err) {
       console.error('Failed to fetch bank linking status:', err)
       return null
@@ -93,14 +139,7 @@ export const ConnectBankAccount = ({
 
     try {
       // 1. Create Financial Connections session
-      const session = await unwrap(
-        api.POST('/v1/bank-linking/sessions', {
-          body: {
-            account_id: accountId,
-            return_url: returnUrl,
-          },
-        }),
-      )
+      const session = await bankLinkingApi.createSession(accountId, returnUrl)
 
       // 2. Load Stripe
       const stripe = await stripePromise
@@ -147,37 +186,30 @@ export const ConnectBankAccount = ({
       setState('completing')
 
       // 7. Complete the linking on our backend
-      const bankInfo = await unwrap(
-        api.POST('/v1/bank-linking/complete', {
-          body: {
-            account_id: accountId,
-            financial_connections_account_id: linkedAccount.id,
-          },
-        }),
-      )
+      const bankInfo = await bankLinkingApi.complete(accountId, linkedAccount.id)
 
       setState('success')
       setBankStatus({
         has_linked_bank: true,
-        bank_account: bankInfo as BankAccountInfo,
-        is_rtp_eligible: (bankInfo as BankAccountInfo).is_rtp_eligible,
-        is_mercury_ready: !!(bankInfo as BankAccountInfo).mercury_recipient_id,
+        bank_account: bankInfo,
+        is_rtp_eligible: bankInfo.is_rtp_eligible,
+        is_mercury_ready: !!bankInfo.mercury_recipient_id,
       })
 
       // Show success toast with RTP status
-      if ((bankInfo as BankAccountInfo).is_rtp_eligible) {
+      if (bankInfo.is_rtp_eligible) {
         toast({
-          title: '🚀 Instant Payouts Enabled!',
-          description: `Your ${(bankInfo as BankAccountInfo).bank_name || 'bank account'} supports Real-Time Payments. Payouts will arrive in seconds.`,
+          title: 'Instant Payouts Enabled!',
+          description: `Your ${bankInfo.bank_name || 'bank account'} supports Real-Time Payments. Payouts will arrive in seconds.`,
         })
       } else {
         toast({
           title: 'Bank account linked',
-          description: `Your ${(bankInfo as BankAccountInfo).bank_name || 'bank account'} has been linked. Payouts will arrive same-day via ACH.`,
+          description: `Your ${bankInfo.bank_name || 'bank account'} has been linked. Payouts will arrive same-day via ACH.`,
         })
       }
 
-      onSuccess?.(bankInfo as BankAccountInfo)
+      onSuccess?.(bankInfo)
     } catch (err) {
       setState('error')
       const errorMessage =
@@ -201,9 +233,7 @@ export const ConnectBankAccount = ({
     }
 
     try {
-      await api.DELETE('/v1/bank-linking/{account_id}', {
-        params: { path: { account_id: accountId } },
-      })
+      await bankLinkingApi.disconnect(accountId)
 
       setBankStatus(null)
       setState('idle')

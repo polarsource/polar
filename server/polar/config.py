@@ -199,6 +199,7 @@ class Settings(BaseSettings):
     DISCORD_BOT_PERMISSIONS: str = (
         "268435459"  # Manage Roles, Kick Members, Create Instant Invite
     )
+    DISCORD_PROXY_URL: str = ""
 
     # Google
     GOOGLE_CLIENT_ID: str = ""

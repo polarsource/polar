@@ -57,6 +57,12 @@ variable "backend_discord_client_secret_sandbox" {
   sensitive   = true
 }
 
+variable "backend_discord_proxy_url" {
+  description = "Discord Proxy URL"
+  type        = string
+  sensitive   = true
+}
+
 variable "backend_resend_api_key_sandbox" {
   description = "Resend API Key for sandbox"
   type        = string

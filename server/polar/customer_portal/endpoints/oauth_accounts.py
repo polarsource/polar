@@ -42,6 +42,7 @@ OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
 
 
 _RATE_LIMIT_HEADERS = (
+    "Retry-After",
     "X-RateLimit-Limit",
     "X-RateLimit-Remaining",
     "X-RateLimit-Reset",
@@ -164,6 +165,11 @@ async def callback(
         if e.response is not None and e.response.status_code == 429:
             error_params["error"] = f"Rate limited by {platform.value.capitalize()}."
             retry_after = e.response.headers.get("X-RateLimit-Reset-After")
+            # Discord's Retry-After is in milliseconds
+            if not retry_after and platform == CustomerOAuthPlatform.discord:
+                retry_after_ms = e.response.headers.get("Retry-After")
+                if retry_after_ms:
+                    retry_after = str(int(retry_after_ms) // 1000)
             if retry_after:
                 error_params["error_retry_after"] = retry_after
         redirect_url = add_query_parameters(redirect_url, **error_params)

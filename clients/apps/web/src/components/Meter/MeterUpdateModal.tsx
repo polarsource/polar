@@ -37,13 +37,8 @@ export const MeterUpdateModal = ({
 
   const onSubmit = useCallback(
     async (body: schemas['MeterUpdate']) => {
-      const allowedBody: schemas['MeterUpdate'] = hasProcessedEvents
-        ? {
-            name: body.name,
-          }
-        : body
-
-      const { data: meter, error } = await updateMeter.mutateAsync(allowedBody)
+      // Let the backend validate which fields can be updated
+      const { data: meter, error } = await updateMeter.mutateAsync(body)
 
       if (error) {
         if (isValidationError(error.detail)) {
@@ -62,7 +57,7 @@ export const MeterUpdateModal = ({
 
       hide()
     },
-    [router, hasProcessedEvents, updateMeter, hide, toast, setError],
+    [router, updateMeter, hide, toast, setError],
   )
 
   if (!meter) return null

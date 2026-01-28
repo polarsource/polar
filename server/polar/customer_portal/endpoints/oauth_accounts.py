@@ -1,7 +1,8 @@
 import uuid
 from typing import Any
 
-import structlog
+import httpx
+import logfire
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.discord import DiscordOAuth2
@@ -18,7 +19,6 @@ from polar.exceptions import PolarError
 from polar.integrations.github.client import Forbidden
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
-from polar.logging import Logger
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -28,9 +28,6 @@ from .. import auth
 from ..schemas.oauth_accounts import AuthorizeResponse
 
 router = APIRouter(prefix="/oauth-accounts", tags=["oauth-accounts", APITag.private])
-
-log: Logger = structlog.get_logger()
-
 
 OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
     CustomerOAuthPlatform.github: GitHubOAuth2(
@@ -42,6 +39,34 @@ OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
         scopes=["identify", "email", "guilds.join"],
     ),
 }
+
+
+_RATE_LIMIT_HEADERS = (
+    "X-RateLimit-Limit",
+    "X-RateLimit-Remaining",
+    "X-RateLimit-Reset",
+    "X-RateLimit-Reset-After",
+    "X-RateLimit-Bucket",
+    "X-RateLimit-Global",
+    "X-RateLimit-Scope",
+)
+
+
+def _get_response_attributes(
+    response: httpx.Response | None,
+) -> dict[str, str | int]:
+    if response is None:
+        return {}
+    attrs: dict[str, str | int] = {
+        "response_status": response.status_code,
+        "response_body": response.text,
+    }
+    if response.status_code == 429:
+        for header in _RATE_LIMIT_HEADERS:
+            value = response.headers.get(header)
+            if value is not None:
+                attrs[header] = value
+    return attrs
 
 
 class OAuthCallbackError(PolarError):
@@ -132,27 +157,13 @@ async def callback(
         redirect_url = add_query_parameters(
             redirect_url, error="Failed to get access token. Please try again later."
         )
-        rate_limit_headers = {}
-        if e.response is not None and e.response.status_code == 429:
-            for header in (
-                "X-RateLimit-Limit",
-                "X-RateLimit-Remaining",
-                "X-RateLimit-Reset",
-                "X-RateLimit-Reset-After",
-                "X-RateLimit-Bucket",
-                "X-RateLimit-Global",
-                "X-RateLimit-Scope",
-            ):
-                value = e.response.headers.get(header)
-                if value is not None:
-                    rate_limit_headers[header] = value
-        log.error(
+        with logfire.span(
             "Failed to get access token",
-            error=str(e),
             platform=platform,
             customer_id=str(customer.id),
-            **rate_limit_headers,
-        )
+        ) as span:
+            for k, v in _get_response_attributes(e.response).items():
+                span.set_attribute(k, v)
         return RedirectResponse(redirect_url, 303)
 
     try:
@@ -162,27 +173,13 @@ async def callback(
             redirect_url,
             error="Failed to get profile information. Please try again later.",
         )
-        rate_limit_headers = {}
-        if e.response is not None and e.response.status_code == 429:
-            for header in (
-                "X-RateLimit-Limit",
-                "X-RateLimit-Remaining",
-                "X-RateLimit-Reset",
-                "X-RateLimit-Reset-After",
-                "X-RateLimit-Bucket",
-                "X-RateLimit-Global",
-                "X-RateLimit-Scope",
-            ):
-                value = e.response.headers.get(header)
-                if value is not None:
-                    rate_limit_headers[header] = value
-        log.error(
-            "Failed to get account ID",
-            error=str(e),
+        with logfire.span(
+            "Failed to get profile",
             platform=platform,
             customer_id=str(customer.id),
-            **rate_limit_headers,
-        )
+        ) as span:
+            for k, v in _get_response_attributes(e.response).items():
+                span.set_attribute(k, v)
         return RedirectResponse(redirect_url, 303)
 
     oauth_account = CustomerOAuthAccount(

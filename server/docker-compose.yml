@@ -107,6 +107,7 @@ services:
     platform: linux/amd64
     ports:
       - "7181:7181"
+      - "7182:7182"
 
 volumes:
   postgres_data:

@@ -543,3 +543,53 @@ export const useCustomerWallets = (api: Client) =>
     queryFn: () => unwrap(api.GET('/v1/customer-portal/wallets/')),
     retry: defaultRetry,
   })
+
+// Member management hooks
+export const useCustomerPortalMembers = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_portal_members'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/members')),
+    retry: defaultRetry,
+  })
+
+export const useUpdateCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      id: string
+      body: schemas['CustomerPortalMemberUpdate']
+    }) =>
+      api.PATCH('/v1/customer-portal/members/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })
+
+export const useRemoveCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (id: string) => {
+      const result = await api.DELETE('/v1/customer-portal/members/{id}', {
+        params: { path: { id } },
+      })
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : 'Failed to remove member'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })

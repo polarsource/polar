@@ -61,10 +61,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return (
-    <CustomerPortalTeam
-      organization={organization}
-      customerSessionToken={token}
-    />
-  )
+  return <CustomerPortalTeam customerSessionToken={token} />
 }

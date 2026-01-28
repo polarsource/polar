@@ -7,32 +7,24 @@ import {
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ConfirmModal } from '../Modal/ConfirmModal'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
+import { toast } from '../Toast/use-toast'
+import { EmptyState } from './EmptyState'
 
 interface CustomerPortalTeamProps {
-  organization: schemas['CustomerOrganization']
   customerSessionToken?: string
 }
 
@@ -51,6 +43,11 @@ const roleDisplayNames: Record<string, [string, string]> = {
   ],
 }
 
+const roleToDisplayName = (role: string): string => {
+  const display = roleDisplayNames[role]
+  return display ? display[0] : role
+}
+
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -61,7 +58,6 @@ const formatDate = (dateString: string) => {
 
 export const CustomerPortalTeam = ({
   customerSessionToken,
-  organization,
 }: CustomerPortalTeamProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
@@ -72,23 +68,37 @@ export const CustomerPortalTeam = ({
   const removeMember = useRemoveCustomerPortalMember(api)
 
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
-  const [removingMembers, setRemovingMembers] = useState<Set<string>>(new Set())
-  const [updatingMembers, setUpdatingMembers] = useState<Set<string>>(new Set())
+  const [loadingMembers, setLoadingMembers] = useState<Set<string>>(new Set())
 
   const currentMemberId =
     authenticatedUser?.type === 'member'
       ? (authenticatedUser as any).member_id
       : null
 
-  const handleRoleChange = async (memberId: string, newRole: string) => {
-    setUpdatingMembers((prev) => new Set([...prev, memberId]))
+  const handleRoleChange = async (
+    memberId: string,
+    memberName: string | null,
+    newRole: string,
+  ) => {
+    setLoadingMembers((prev) => new Set([...prev, memberId]))
     try {
       await updateMember.mutateAsync({
         id: memberId,
         body: { role: newRole as any },
       })
+      toast({
+        title: 'Role updated',
+        description: `${memberName || 'Member'} is now a ${roleToDisplayName(newRole)}.`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to update role',
+        description:
+          error instanceof Error ? error.message : 'An error occurred.',
+        variant: 'error',
+      })
     } finally {
-      setUpdatingMembers((prev) => {
+      setLoadingMembers((prev) => {
         const next = new Set(prev)
         next.delete(memberId)
         return next
@@ -97,11 +107,23 @@ export const CustomerPortalTeam = ({
   }
 
   const handleRemoveMember = async (memberId: string) => {
-    setRemovingMembers((prev) => new Set([...prev, memberId]))
+    const memberData = membersList.find((m) => m.id === memberId)
+    setLoadingMembers((prev) => new Set([...prev, memberId]))
     try {
       await removeMember.mutateAsync(memberId)
+      toast({
+        title: 'Member removed',
+        description: `${memberData?.name || memberData?.email || 'Member'} has been removed from the team.`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Failed to remove member',
+        description:
+          error instanceof Error ? error.message : 'An error occurred.',
+        variant: 'error',
+      })
     } finally {
-      setRemovingMembers((prev) => {
+      setLoadingMembers((prev) => {
         const next = new Set(prev)
         next.delete(memberId)
         return next
@@ -112,153 +134,147 @@ export const CustomerPortalTeam = ({
 
   const membersList = members ?? []
   const memberToRemoveData = membersList.find((m) => m.id === memberToRemove)
+  const otherMembers = membersList.filter((m) => m.id !== currentMemberId)
 
   return (
-    <div className="flex flex-col gap-y-8">
-      <h3 className="text-2xl">Team Members</h3>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
+        <h3 className="text-lg">Team Members</h3>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          Manage your team members and their roles
+        </p>
+      </div>
 
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Members</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Manage team members and their roles
-            </p>
-          </div>
-        </WellHeader>
-        <WellContent>
-          <DataTable
-            data={membersList}
-            isLoading={isLoadingMembers}
-            columns={[
-              {
-                accessorKey: 'name',
-                header: 'Name',
-                cell: ({ row }) => (
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">
-                      {row.original.name || '—'}
-                    </span>
-                    <span className="dark:text-polar-500 text-xs text-gray-500">
-                      {row.original.email}
-                    </span>
-                  </div>
-                ),
-              },
-              {
-                accessorKey: 'role',
-                header: 'Role',
-                cell: ({ row }) => {
-                  const member = row.original
-                  const isCurrentUser = member.id === currentMemberId
-                  const isUpdating = updatingMembers.has(member.id)
-
-                  // Current user can't change their own role
-                  if (isCurrentUser) {
-                    const [label, className] =
-                      roleDisplayNames[member.role] || roleDisplayNames.member
-                    return (
-                      <div className="flex items-center gap-2">
-                        <Status
-                          className={twMerge(className, 'w-fit text-xs')}
-                          status={label}
-                        />
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
-                          (you)
-                        </span>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <Select
-                      value={member.role}
-                      onValueChange={(value) =>
-                        handleRoleChange(member.id, value)
-                      }
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="owner">Owner</SelectItem>
-                        <SelectItem value="billing_manager">
-                          Billing Manager
-                        </SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )
-                },
-              },
-              {
-                accessorKey: 'created_at',
-                header: 'Joined',
-                cell: ({ row }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {formatDate(row.original.created_at)}
+      {!isLoadingMembers && otherMembers.length === 0 ? (
+        <EmptyState
+          icon={<GroupOutlined fontSize="inherit" />}
+          title="No Team Members"
+          description="You are the only member of this team."
+        />
+      ) : (
+        <DataTable
+          data={membersList}
+          isLoading={isLoadingMembers}
+          columns={[
+            {
+              accessorKey: 'name',
+              header: 'Member',
+              cell: ({ row }) => (
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {row.original.name || '—'}
                   </span>
-                ),
+                  <span className="dark:text-polar-500 text-xs text-gray-500">
+                    {row.original.email}
+                  </span>
+                </div>
+              ),
+            },
+            {
+              accessorKey: 'role',
+              header: 'Role',
+              cell: ({ row }) => {
+                const member = row.original
+                const isCurrentUser = member.id === currentMemberId
+                const [label, className] =
+                  roleDisplayNames[member.role] || roleDisplayNames.member
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <Status
+                      className={twMerge(className, 'w-fit text-xs')}
+                      status={label}
+                    />
+                    {isCurrentUser && (
+                      <span className="dark:text-polar-500 text-xs text-gray-500">
+                        (you)
+                      </span>
+                    )}
+                  </div>
+                )
               },
-              {
-                id: 'actions',
-                header: '',
-                cell: ({ row }) => {
-                  const member = row.original
-                  const isCurrentUser = member.id === currentMemberId
-                  const isLoading =
-                    removingMembers.has(member.id) ||
-                    updatingMembers.has(member.id)
+            },
+            {
+              accessorKey: 'created_at',
+              header: 'Joined',
+              cell: ({ row }) => (
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {formatDate(row.original.created_at)}
+                </span>
+              ),
+            },
+            {
+              id: 'actions',
+              header: '',
+              cell: ({ row }) => {
+                const member = row.original
+                const isCurrentUser = member.id === currentMemberId
+                const isLoading = loadingMembers.has(member.id)
 
-                  // Current user can't remove themselves
-                  if (isCurrentUser) {
-                    return null
-                  }
+                // Current user can't modify themselves
+                if (isCurrentUser) {
+                  return null
+                }
 
-                  return (
-                    <div className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild disabled={isLoading}>
-                          <Button className="h-8 w-8" variant="secondary">
-                            <MoreVertOutlined fontSize="inherit" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                return (
+                  <div className="flex justify-end">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild disabled={isLoading}>
+                        <Button className="h-8 w-8" variant="secondary">
+                          <MoreVertOutlined fontSize="inherit" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {member.role !== 'owner' && (
                           <DropdownMenuItem
                             onClick={() =>
-                              handleRoleChange(member.id, 'billing_manager')
+                              handleRoleChange(member.id, member.name, 'owner')
                             }
-                            disabled={
-                              isLoading || member.role === 'billing_manager'
-                            }
-                          >
-                            Make Billing Manager
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleRoleChange(member.id, 'owner')}
-                            disabled={isLoading || member.role === 'owner'}
+                            disabled={isLoading}
                           >
                             Make Owner
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
+                        )}
+                        {member.role !== 'billing_manager' && (
                           <DropdownMenuItem
-                            onClick={() => setMemberToRemove(member.id)}
+                            onClick={() =>
+                              handleRoleChange(
+                                member.id,
+                                member.name,
+                                'billing_manager',
+                              )
+                            }
                             disabled={isLoading}
-                            className="text-red-500 focus:text-red-500"
                           >
-                            Remove from Team
+                            Make Billing Manager
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  )
-                },
+                        )}
+                        {member.role !== 'member' && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleRoleChange(member.id, member.name, 'member')
+                            }
+                            disabled={isLoading}
+                          >
+                            Make Member
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setMemberToRemove(member.id)}
+                          disabled={isLoading}
+                          className="text-red-500 focus:text-red-500"
+                        >
+                          Remove from Team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )
               },
-            ]}
-          />
-        </WellContent>
-      </Well>
+            },
+          ]}
+        />
+      )}
 
       <ConfirmModal
         isShown={memberToRemove !== null}

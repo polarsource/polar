@@ -11,8 +11,8 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Markdown from 'markdown-to-jsx'
-import { usePathname } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DownloadablesBenefitGrant from './Downloadables/DownloadablesBenefitGrant'
 import { LicenseKeyBenefitGrant } from './LicenseKeys/LicenseKeyBenefitGrant'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
@@ -64,12 +64,55 @@ const BenefitGrantOAuth = ({
   selectPlaceholder: string
 }) => {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const {
     customer,
     properties: { account_id },
     benefit: { type: benefitType },
   } = benefitGrant
   const [showAccountSelector, setShowAccountSelector] = useState(!account_id)
+  const [retryCountdown, setRetryCountdown] = useState<number>(0)
+  const countdownRef = useRef<NodeJS.Timeout | null>(null)
+
+  const errorPlatform = searchParams.get('error_platform')
+  const error = errorPlatform === platform ? searchParams.get('error') : null
+  const retryAfter =
+    errorPlatform === platform ? searchParams.get('error_retry_after') : null
+
+  // Start countdown timer for rate limit errors
+  useEffect(() => {
+    const bail = () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+      }
+    }
+
+    if (!retryAfter) {
+      bail()
+      return
+    }
+
+    const seconds = Math.round(parseFloat(retryAfter))
+
+    if (isNaN(seconds) || seconds <= 0) {
+      bail()
+      return
+    }
+
+    setRetryCountdown(seconds)
+
+    countdownRef.current = setInterval(() => {
+      setRetryCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return bail
+  }, [retryAfter])
 
   const accounts = useMemo(
     () =>
@@ -134,7 +177,7 @@ const BenefitGrantOAuth = ({
   }, [updateBenefitGrant, selectedAccountKey, benefitGrant.id, benefitType])
 
   return (
-    <ShadowBox className="dark:bg-polar-800 bg-white p-4 text-sm lg:rounded-3xl">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-2 lg:flex-row">
         {!showAccountSelector && (
           <>
@@ -160,8 +203,15 @@ const BenefitGrantOAuth = ({
         {showAccountSelector && (
           <>
             {accounts.length === 0 ? (
-              <Button type="button" onClick={authorize} fullWidth>
-                {connectButtonText}
+              <Button
+                type="button"
+                onClick={authorize}
+                fullWidth
+                disabled={retryCountdown > 0}
+              >
+                {retryCountdown > 0
+                  ? `Try again in ${retryCountdown} second${retryCountdown === 1 ? '' : 's'}`
+                  : connectButtonText}
               </Button>
             ) : (
               <>
@@ -197,7 +247,10 @@ const BenefitGrantOAuth = ({
           </>
         )}
       </div>
-    </ShadowBox>
+      {error && (
+        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+      )}
+    </div>
   )
 }
 
@@ -257,8 +310,8 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
   return (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-row items-center gap-x-4">
-        <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-white">
-          <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-blue-50 text-sm">
+        <div className="flex flex-row items-center gap-x-2 text-xs text-gray-500 dark:text-white">
+          <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-gray-50 text-sm">
             {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
           </span>
         </div>

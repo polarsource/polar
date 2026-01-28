@@ -4,12 +4,8 @@ import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  loadStripe,
-  Stripe,
-  StripeFinancialConnectionsAccountListResult,
-} from '@stripe/stripe-js'
-import { useCallback, useState } from 'react'
+import { loadStripe, Stripe } from '@stripe/stripe-js'
+import { useCallback, useEffect, useState } from 'react'
 import { BankAccountCard } from './BankAccountCard'
 import { RTPEligibilityBadge } from './RTPEligibilityBadge'
 
@@ -85,6 +81,11 @@ export const ConnectBankAccount = ({
     }
   }, [accountId])
 
+  // Fetch status on mount
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
   // Start the bank linking flow
   const startBankLinking = useCallback(async () => {
     setState('loading')
@@ -110,30 +111,42 @@ export const ConnectBankAccount = ({
       setState('connecting')
 
       // 3. Open Financial Connections modal
-      const result = await collectFinancialConnectionsAccounts(
-        stripe,
-        session.client_secret,
-      )
+      const result = await stripe.collectFinancialConnectionsAccounts({
+        clientSecret: session.client_secret,
+      })
 
-      // 4. Handle user abandonment
-      if (!result || result.financialConnectionsSession?.accounts?.length === 0) {
+      // 4. Handle errors from Stripe
+      if (result.error) {
+        // User closed modal or other error
+        if (result.error.type === 'validation_error') {
+          throw new Error(result.error.message || 'Invalid bank account details')
+        }
+        // User closed modal - not a real error
         setState('idle')
         toast({
           title: 'Bank linking cancelled',
-          description: 'You can try again whenever you\'re ready.',
+          description: "You can try again whenever you're ready.",
         })
         return
       }
 
-      // 5. Get the first linked account
-      const linkedAccount = result.financialConnectionsSession?.accounts?.[0]
-      if (!linkedAccount) {
-        throw new Error('No bank account was linked')
+      // 5. Handle user abandonment (no accounts selected)
+      const accounts = result.financialConnectionsSession?.accounts
+      if (!accounts || accounts.length === 0) {
+        setState('idle')
+        toast({
+          title: 'Bank linking cancelled',
+          description: "You can try again whenever you're ready.",
+        })
+        return
       }
+
+      // 6. Get the first linked account
+      const linkedAccount = accounts[0]
 
       setState('completing')
 
-      // 6. Complete the linking on our backend
+      // 7. Complete the linking on our backend
       const bankInfo = await unwrap(
         api.POST('/v1/bank-linking/complete', {
           body: {
@@ -208,11 +221,6 @@ export const ConnectBankAccount = ({
     }
   }, [accountId])
 
-  // Fetch status on mount
-  useState(() => {
-    fetchStatus()
-  })
-
   // Render connected state
   if (bankStatus?.has_linked_bank && bankStatus.bank_account) {
     return (
@@ -268,37 +276,6 @@ export const ConnectBankAccount = ({
       </p>
     </div>
   )
-}
-
-/**
- * Wrapper for Stripe's collectFinancialConnectionsAccounts with better typing.
- */
-async function collectFinancialConnectionsAccounts(
-  stripe: Stripe,
-  clientSecret: string,
-): Promise<StripeFinancialConnectionsAccountListResult | null> {
-  try {
-    const result = await stripe.collectFinancialConnectionsAccounts({
-      clientSecret,
-    })
-
-    if (result.error) {
-      // User closed modal or other error
-      if (result.error.type === 'api_connection_error') {
-        throw new Error('Network error. Please check your connection and try again.')
-      }
-      if (result.error.type === 'validation_error') {
-        throw new Error(result.error.message || 'Invalid bank account details')
-      }
-      // User closed modal - not an error
-      return null
-    }
-
-    return result
-  } catch (err) {
-    // Re-throw non-Stripe errors
-    throw err
-  }
 }
 
 export default ConnectBankAccount

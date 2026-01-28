@@ -9,7 +9,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.discount.repository import DiscountRepository
+from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.pagination import PaginationParams, paginate
@@ -295,6 +295,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         products: Sequence[Product] | None = None,
         currency: str | None = None,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
@@ -317,7 +318,9 @@ class DiscountService(ResourceServiceReader[Discount]):
                     if product not in discount.products:
                         return None
 
-        if redeemable and not await self.is_redeemable_discount(session, discount):
+        if redeemable and not await self.is_redeemable_discount(
+            session, discount, customer_id
+        ):
             return None
 
         return discount
@@ -329,6 +332,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         organization: Organization,
         *,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             func.upper(Discount.code) == code.upper(),
@@ -341,7 +345,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if redeemable and not await self.is_redeemable_discount(session, discount):
+        if redeemable and not await self.is_redeemable_discount(
+            session, discount, customer_id
+        ):
             return None
 
         return discount
@@ -355,9 +361,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         currency: str | None = None,
         *,
         redeemable: bool = True,
+        customer_id: uuid.UUID | None = None,
     ) -> Discount | None:
         discount = await self.get_by_code_and_organization(
-            session, code, organization, redeemable=redeemable
+            session, code, organization, redeemable=redeemable, customer_id=customer_id
         )
 
         if discount is None:
@@ -373,7 +380,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         return discount
 
     async def is_redeemable_discount(
-        self, session: AsyncSession, discount: Discount
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        customer_id: uuid.UUID | None = None,
     ) -> bool:
         if discount.starts_at is not None and discount.starts_at > utc_now():
             return False
@@ -385,11 +395,27 @@ class DiscountService(ResourceServiceReader[Discount]):
             await session.refresh(discount, {"redemptions_count"})
             return discount.redemptions_count < discount.max_redemptions
 
+        if (
+            discount.max_redemptions_per_customer is not None
+            and customer_id is not None
+        ):
+            redemption_repository = DiscountRedemptionRepository.from_session(session)
+            customer_redemptions = (
+                await redemption_repository.count_by_discount_and_customer(
+                    discount.id, customer_id
+                )
+            )
+            if customer_redemptions >= discount.max_redemptions_per_customer:
+                return False
+
         return True
 
     @contextlib.asynccontextmanager
     async def redeem_discount(
-        self, session: AsyncSession, discount: Discount
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        customer_id: uuid.UUID | None = None,
     ) -> AsyncIterator[DiscountRedemption]:
         """
         Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
@@ -407,10 +433,12 @@ class DiscountService(ResourceServiceReader[Discount]):
                 raise DiscountNotRedeemableError(discount) from e
             raise
 
-        if not await self.is_redeemable_discount(session, discount):
+        if not await self.is_redeemable_discount(session, discount, customer_id):
             raise DiscountNotRedeemableError(discount)
 
-        discount_redemption = DiscountRedemption(discount=discount)
+        discount_redemption = DiscountRedemption(
+            discount=discount, customer_id=customer_id
+        )
 
         yield discount_redemption
 

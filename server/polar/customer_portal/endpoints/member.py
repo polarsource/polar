@@ -4,10 +4,10 @@ import structlog
 from fastapi import Depends
 
 from polar.auth.models import is_member
-from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
-from polar.member.repository import MemberRepository
+from polar.exceptions import NotPermitted
+from polar.member.service import member_service
 from polar.models.customer import CustomerType
-from polar.models.member import Member, MemberRole
+from polar.models.member import Member
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -23,11 +23,6 @@ from ..utils import get_customer
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/members", tags=["members", APITag.public])
-
-MemberNotFound = {
-    "description": "Member not found.",
-    "model": ResourceNotFound.schema(),
-}
 
 
 def _require_team_customer(auth_subject: auth.CustomerPortalBillingManager) -> None:
@@ -61,8 +56,7 @@ async def list_members(
     _require_team_customer(auth_subject)
     customer = get_customer(auth_subject)
 
-    repository = MemberRepository.from_session(session)
-    members = await repository.list_by_customer(session, customer.id)
+    members = await member_service.list_by_customer(session, customer.id)
 
     log.info(
         "customer_portal.members.list",
@@ -104,56 +98,14 @@ async def add_member(
     customer = get_customer(auth_subject)
     actor_member = auth_subject.subject
 
-    repository = MemberRepository.from_session(session)
-
-    # Prevent adding a new owner - there must be exactly one
-    if member_create.role == MemberRole.owner:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "role"),
-                    "msg": "Cannot add a member as owner. There must be exactly one owner.",
-                    "input": member_create.role,
-                }
-            ]
-        )
-
-    # Check if member already exists
-    existing_member = await repository.get_by_customer_id_and_email(
-        customer.id, member_create.email
-    )
-    if existing_member:
-        log.info(
-            "customer_portal.members.add.already_exists",
-            customer_id=customer.id,
-            email=member_create.email,
-            existing_member_id=existing_member.id,
-            actor_member_id=actor_member.id,
-        )
-        return existing_member
-
-    # Create the new member
-    member = Member(
-        customer_id=customer.id,
-        organization_id=customer.organization_id,
+    return await member_service.customer_portal_add_member(
+        session,
+        customer,
+        actor_member,
         email=member_create.email,
         name=member_create.name,
         role=member_create.role,
     )
-
-    created_member = await repository.create(member, flush=True)
-
-    log.info(
-        "customer_portal.members.add",
-        customer_id=customer.id,
-        member_id=created_member.id,
-        email=member_create.email,
-        role=member_create.role,
-        actor_member_id=actor_member.id,
-    )
-
-    return created_member
 
 
 @router.patch(
@@ -165,7 +117,7 @@ async def add_member(
         400: {"description": "Invalid role change."},
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted - requires owner or billing manager role"},
-        404: MemberNotFound,
+        404: {"description": "Member not found."},
     },
 )
 async def update_member(
@@ -187,78 +139,13 @@ async def update_member(
     customer = get_customer(auth_subject)
     actor_member = auth_subject.subject
 
-    repository = MemberRepository.from_session(session)
-
-    # Fetch the member to update
-    member = await repository.get_by_id_and_customer_id(id, customer.id)
-    if member is None:
-        raise ResourceNotFound("Member not found")
-
-    # If no role provided, return member unchanged
-    new_role = member_update.role
-    if new_role is None:
-        return member
-
-    # Prevent self-modification
-    if member.id == actor_member.id:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("path", "id"),
-                    "msg": "You cannot modify your own role.",
-                    "input": str(id),
-                }
-            ]
-        )
-
-    # Check if role change is valid
-    if member.role != new_role:
-        # Demoting the only owner - need to check owner count
-        if member.role == MemberRole.owner:
-            members = await repository.list_by_customer(session, customer.id)
-            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
-            if owner_count <= 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "role"),
-                            "msg": "Cannot demote the only owner. The team must have at least one owner.",
-                            "input": new_role,
-                        }
-                    ]
-                )
-
-        # Promoting to owner when there's already an owner
-        elif new_role == MemberRole.owner:
-            members = await repository.list_by_customer(session, customer.id)
-            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
-            if owner_count >= 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "role"),
-                            "msg": "Cannot have multiple owners. Demote the current owner first.",
-                            "input": new_role,
-                        }
-                    ]
-                )
-
-    # Update the member
-    updated_member = await repository.update(member, update_dict={"role": new_role})
-
-    log.info(
-        "customer_portal.members.update",
-        customer_id=customer.id,
-        member_id=member.id,
-        actor_member_id=actor_member.id,
-        old_role=member.role,
-        new_role=new_role,
+    return await member_service.customer_portal_update_member(
+        session,
+        customer,
+        actor_member,
+        id,
+        role=member_update.role,
     )
-
-    return updated_member
 
 
 @router.delete(
@@ -270,7 +157,7 @@ async def update_member(
         400: {"description": "Cannot remove the only owner."},
         401: {"description": "Authentication required"},
         403: {"description": "Not permitted - requires owner or billing manager role"},
-        404: MemberNotFound,
+        404: {"description": "Member not found."},
     },
 )
 async def remove_member(
@@ -291,49 +178,9 @@ async def remove_member(
     customer = get_customer(auth_subject)
     actor_member = auth_subject.subject
 
-    repository = MemberRepository.from_session(session)
-
-    # Fetch the member to remove
-    member = await repository.get_by_id_and_customer_id(id, customer.id)
-    if member is None:
-        raise ResourceNotFound("Member not found")
-
-    # Prevent self-removal
-    if member.id == actor_member.id:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("path", "id"),
-                    "msg": "You cannot remove yourself from the team.",
-                    "input": str(id),
-                }
-            ]
-        )
-
-    # Prevent removing the only owner - need to check owner count
-    if member.role == MemberRole.owner:
-        members = await repository.list_by_customer(session, customer.id)
-        owner_count = sum(1 for m in members if m.role == MemberRole.owner)
-        if owner_count <= 1:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("path", "id"),
-                        "msg": "Cannot remove the only owner. Transfer ownership first.",
-                        "input": str(id),
-                    }
-                ]
-            )
-
-    # Soft delete the member
-    await repository.soft_delete(member)
-
-    log.info(
-        "customer_portal.members.remove",
-        customer_id=customer.id,
-        member_id=member.id,
-        member_role=member.role,
-        actor_member_id=actor_member.id,
+    await member_service.customer_portal_remove_member(
+        session,
+        customer,
+        actor_member,
+        id,
     )

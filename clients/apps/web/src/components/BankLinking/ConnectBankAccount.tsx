@@ -219,7 +219,7 @@ export const ConnectBankAccount = ({
       toast({
         title: 'Bank linking failed',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'error',
       })
 
       onError?.(err instanceof Error ? err : new Error(errorMessage))
@@ -246,7 +246,7 @@ export const ConnectBankAccount = ({
       toast({
         title: 'Failed to disconnect',
         description: 'Please try again later.',
-        variant: 'destructive',
+        variant: 'error',
       })
     }
   }, [accountId])

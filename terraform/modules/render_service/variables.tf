@@ -238,11 +238,13 @@ variable "prometheus_config" {
 variable "tinybird_config" {
   description = "Tinybird configuration (optional)"
   type = object({
-    api_url      = string
-    api_token    = string
-    workspace    = string
-    events_write = bool
-    events_read  = bool
+    api_url          = string
+    clickhouse_url   = string
+    api_token        = string
+    clickhouse_token = string
+    workspace        = string
+    events_write     = bool
+    events_read      = bool
   })
   default   = null
   sensitive = true

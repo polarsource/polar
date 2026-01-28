@@ -42,6 +42,7 @@ OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
 
 
 _RATE_LIMIT_HEADERS = (
+    "Retry-After",
     "X-RateLimit-Limit",
     "X-RateLimit-Remaining",
     "X-RateLimit-Reset",
@@ -59,7 +60,6 @@ def _get_response_attributes(
         return {}
     attrs: dict[str, str | int] = {
         "response_status": response.status_code,
-        "response_body": response.text,
     }
     if response.status_code == 429:
         for header in _RATE_LIMIT_HEADERS:

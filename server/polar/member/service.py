@@ -546,51 +546,8 @@ class MemberService:
                 ]
             )
 
-        # Check if role change is valid
-        if member.role != role:
-            members = await repository.list_by_customer(session, customer.id)
-            owner_count = sum(1 for m in members if m.role == MemberRole.owner)
-
-            # Demoting the only owner - need to check owner count
-            if member.role == MemberRole.owner and owner_count <= 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "role"),
-                            "msg": "Cannot demote the only owner. The team must have at least one owner.",
-                            "input": role,
-                        }
-                    ]
-                )
-
-            # Promoting to owner when there's already an owner
-            if role == MemberRole.owner and owner_count >= 1:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "role"),
-                            "msg": "Cannot have multiple owners. Demote the current owner first.",
-                            "input": role,
-                        }
-                    ]
-                )
-
-        # Update the member
-        old_role = member.role
-        updated_member = await repository.update(member, update_dict={"role": role})
-
-        log.info(
-            "customer_portal.members.update",
-            customer_id=customer.id,
-            member_id=member.id,
-            actor_member_id=actor_member.id,
-            old_role=old_role,
-            new_role=role,
-        )
-
-        return updated_member
+        # Delegate to the existing update method which handles owner count validation
+        return await self.update(session, member, role=role)
 
     async def customer_portal_remove_member(
         self,
@@ -648,16 +605,8 @@ class MemberService:
                     ]
                 )
 
-        # Soft delete the member
-        await repository.soft_delete(member)
-
-        log.info(
-            "customer_portal.members.remove",
-            customer_id=customer.id,
-            member_id=member.id,
-            member_role=member.role,
-            actor_member_id=actor_member.id,
-        )
+        # Delegate to the existing delete method
+        await self.delete(session, member)
 
 
 member_service = MemberService()

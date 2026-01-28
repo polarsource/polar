@@ -7,13 +7,16 @@ from collections import defaultdict
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from typing import Any, Self
 
+import aio_pika
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
 
+from polar.kit.rabbitmq import RabbitMQConnection
 from polar.logging import Logger
 from polar.redis import Redis
 
+from ._broker import BrokerType
 from ._debounce import set_debounce_key
 
 log: Logger = structlog.get_logger()
@@ -36,6 +39,59 @@ _job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
 )
 
 FLUSH_BATCH_SIZE = 50
+
+
+async def _flush_redis_messages(
+    messages: Iterable[dramatiq.Message[Any]],
+    redis: Redis,
+) -> None:
+    encoded_messages_by_queue: defaultdict[str, list[tuple[str, Any]]] = defaultdict(
+        list
+    )
+    for message in messages:
+        redis_message_id = str(uuid.uuid4())
+        encoded_message = message.copy(
+            options={**message.options, "redis_message_id": redis_message_id}
+        ).encode()
+        encoded_messages_by_queue[message.queue_name].append(
+            (redis_message_id, encoded_message)
+        )
+
+    for queue_name, queue_messages in encoded_messages_by_queue.items():
+        for batch in itertools.batched(queue_messages, FLUSH_BATCH_SIZE):
+            await redis.hset(
+                f"dramatiq:{queue_name}.msgs",
+                mapping={
+                    redis_message_id: encoded_message
+                    for redis_message_id, encoded_message in batch
+                },
+            )
+            await redis.rpush(
+                f"dramatiq:{queue_name}", *(message_id for message_id, _ in batch)
+            )
+
+
+async def _flush_rabbitmq_messages(
+    messages: Iterable[dramatiq.Message[Any]],
+    rabbitmq: RabbitMQConnection,
+) -> None:
+    encoded_messages_by_queue: defaultdict[str, list[dramatiq.Message[Any]]] = (
+        defaultdict(list)
+    )
+    for message in messages:
+        encoded_messages_by_queue[message.queue_name].append(message)
+
+    for queue_name, queue_messages in encoded_messages_by_queue.items():
+        channel = await rabbitmq.channel()
+        for queue_message in queue_messages:
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    queue_message.encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                    priority=queue_message.options.get("broker_priority"),
+                ),
+                queue_name,
+            )
 
 
 class JobQueueManager:
@@ -65,7 +121,9 @@ class JobQueueManager:
     def enqueue_events(self, *event_ids: uuid.UUID) -> None:
         self._ingested_events.extend(event_ids)
 
-    async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
+    async def flush(
+        self, broker: dramatiq.Broker, redis: Redis, rabbitmq: RabbitMQConnection
+    ) -> None:
         if len(self._ingested_events) > 0:
             self.enqueue_job("event.ingested", self._ingested_events)
 
@@ -73,19 +131,16 @@ class JobQueueManager:
             self.reset()
             return
 
-        queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
-        all_messages: list[tuple[str, Any]] = []
+        all_messages = defaultdict[BrokerType, list[tuple[str, dramatiq.Message[Any]]]](
+            list
+        )
 
         for actor_name, args, kwargs, delay in self._enqueued_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
-            redis_message_id = str(uuid.uuid4())
+            broker_type: BrokerType = fn.options.get("broker_type", BrokerType.REDIS)
 
             # Build base message without delay
-            message = fn.message_with_options(
-                args=args,
-                kwargs=kwargs,
-                redis_message_id=redis_message_id,
-            )
+            message = fn.message_with_options(args=args, kwargs=kwargs)
 
             # Set debounce key if any
             debounce = await set_debounce_key(
@@ -109,48 +164,29 @@ class JobQueueManager:
                     options={**message.options, "eta": eta},
                 )
 
-            encoded_message = message.encode()
-            queue_messages[message.queue_name].append(
-                (redis_message_id, encoded_message)
-            )
-            all_messages.append((fn.actor_name, message.encode()))
+            all_messages[broker_type].append((fn.actor_name, message))
 
-        for queue_name, messages in queue_messages.items():
-            for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
-                await self._batch_hset_messages(redis, queue_name, batch)
-                await self._batch_rpush_queue(
-                    redis, queue_name, (message_id for message_id, _ in batch)
+        for broker_type, messages in all_messages.items():
+            match broker_type:
+                case BrokerType.REDIS:
+                    await _flush_redis_messages(
+                        (message for _, message in messages), redis
+                    )
+                case BrokerType.RABBITMQ:
+                    await _flush_rabbitmq_messages(
+                        (message for _, message in messages), rabbitmq
+                    )
+
+        for broker_type, messages in all_messages.items():
+            for actor_name, message in messages:
+                log.debug(
+                    "polar.worker.job_flushed",
+                    broker_type=broker_type,
+                    actor=actor_name,
+                    message=message.encode(),
                 )
 
-        for actor_name, encoded_message in all_messages:
-            log.debug(
-                "polar.worker.job_flushed", actor=actor_name, message=encoded_message
-            )
-
         self.reset()
-
-    async def _batch_hset_messages(
-        self,
-        redis: Redis,
-        queue_name: str,
-        message_batch: Iterable[tuple[str, Any]],
-    ) -> None:
-        """Batch hset operations for message storage."""
-        hash_key = f"dramatiq:{queue_name}.msgs"
-        await redis.hset(
-            hash_key,
-            mapping={
-                message_id: encoded_message
-                for message_id, encoded_message in message_batch
-            },
-        )
-
-    async def _batch_rpush_queue(
-        self, redis: Redis, queue_name: str, message_ids: Iterable[str]
-    ) -> None:
-        """Batch rpush operations for queue entries."""
-        queue_key = f"dramatiq:{queue_name}"
-        await redis.rpush(queue_key, *message_ids)
 
     def reset(self) -> None:
         self._enqueued_jobs = []
@@ -170,11 +206,13 @@ class JobQueueManager:
 
     @classmethod
     @contextlib.asynccontextmanager
-    async def open(cls, broker: dramatiq.Broker, redis: Redis) -> AsyncIterator["Self"]:
+    async def open(
+        cls, broker: dramatiq.Broker, redis: Redis, rabbitmq: RabbitMQConnection
+    ) -> AsyncIterator["Self"]:
         job_queue_manager = cls.set()
         try:
             yield job_queue_manager
-            await job_queue_manager.flush(broker, redis)
+            await job_queue_manager.flush(broker, redis, rabbitmq)
         finally:
             cls.close()
 

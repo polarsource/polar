@@ -47,7 +47,7 @@ dependencies = [
   "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
-  "dramatiq[redis,watch]>=1.17.1",
+  "dramatiq[redis,rabbitmq,watch]>=1.17.1",
   "prometheus-client>=0.21.0",
   "python-snappy>=0.7.3",
   "fpdf2>=2.8.3",
@@ -56,6 +56,7 @@ dependencies = [
   "aiocsv>=1.4.0",
   "alembic-utils>=0.8.8",
   "countryinfo>=0.1.2",
+  "aio-pika>=9.5.8",
 ]
 
 [dependency-groups]
@@ -90,7 +91,8 @@ dev = [
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
 backoffice = { cmd = "pnpm -C polar/backoffice install && pnpm -C polar/backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
+worker = { cmd = "POLAR_DRAMATIQ_BROKER=redis dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
+worker_rabbitmq = { cmd = "POLAR_DRAMATIQ_BROKER=rabbitmq dramatiq -p 1 -t 1 --watch polar polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }

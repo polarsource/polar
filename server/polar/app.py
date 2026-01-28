@@ -24,6 +24,7 @@ from polar.kit.db.postgres import (
     create_async_sessionmaker,
     create_sync_sessionmaker,
 )
+from polar.kit.rabbitmq import RabbitMQConnection, get_rabbitmq
 from polar.logfire import (
     configure_logfire,
     instrument_fastapi,
@@ -107,7 +108,7 @@ class State(TypedDict):
     async_read_sessionmaker: AsyncSessionMaker
     sync_engine: Engine
     sync_sessionmaker: SyncSessionMaker
-
+    rabbitmq: RabbitMQConnection
     redis: Redis
     ip_geolocation_client: ip_geolocation.IPGeolocationClient | None
 
@@ -141,6 +142,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     instrument_engines.append(sync_engine)
     instrument_sqlalchemy(instrument_engines)
 
+    rabbitmq_stack = contextlib.AsyncExitStack()
+    rabbitmq = await rabbitmq_stack.enter_async_context(get_rabbitmq("app"))
+
     redis = create_redis("app")
 
     try:
@@ -161,6 +165,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         "async_read_sessionmaker": async_read_sessionmaker,
         "sync_engine": sync_engine,
         "sync_sessionmaker": sync_sessionmaker,
+        "rabbitmq": rabbitmq,
         "redis": redis,
         "ip_geolocation_client": ip_geolocation_client,
     }
@@ -170,6 +175,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     stop_remote_write_pusher()
 
     await redis.close(True)
+    await rabbitmq_stack.aclose()
     await async_engine.dispose()
     if async_read_engine is not async_engine:
         await async_read_engine.dispose()

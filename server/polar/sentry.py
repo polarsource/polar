@@ -2,8 +2,8 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
+import dramatiq
 import sentry_sdk
-from dramatiq import get_broker
 from sentry_sdk.integrations.argv import ArgvIntegration
 from sentry_sdk.integrations.atexit import AtexitIntegration
 from sentry_sdk.integrations.dedupe import DedupeIntegration
@@ -49,7 +49,7 @@ class DramatiqIntegration(_DramatiqIntegration):
 
     @staticmethod
     def setup_once() -> None:
-        broker = get_broker()
+        broker = dramatiq.get_broker()
         first_middleware = type(broker.middleware[0])
         broker.add_middleware(PatchedSentryMiddleware(), before=first_middleware)
 

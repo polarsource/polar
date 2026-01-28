@@ -1,15 +1,19 @@
 import contextlib
 import contextvars
 import gc
+import os
 from collections.abc import Callable
+from enum import StrEnum
 from typing import Any, ClassVar, Literal
 
 import dramatiq
 import logfire
+import pika.credentials
 import redis
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
+from dramatiq.brokers.rabbitmq import RabbitmqBroker
 from dramatiq.brokers.redis import RedisBroker
 
 from polar.config import settings
@@ -20,6 +24,7 @@ from ._debounce import DebounceMiddleware
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
 from ._metrics import PrometheusMiddleware
+from ._rabbitmq import RabbitMQMiddleware
 from ._redis import RedisMiddleware
 from ._sqlalchemy import SQLAlchemyMiddleware
 
@@ -150,7 +155,16 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
-def get_broker() -> dramatiq.Broker:
+class BrokerType(StrEnum):
+    REDIS = "redis"
+    RABBITMQ = "rabbitmq"
+
+    @classmethod
+    def from_env(cls) -> "BrokerType":
+        return cls(os.environ.get("POLAR_DRAMATIQ_BROKER", "redis"))
+
+
+def get_broker(type: BrokerType) -> dramatiq.Broker:
     redis_pool = redis.ConnectionPool.from_url(
         settings.redis_url,
         client_name=f"{settings.ENV.value}.worker.dramatiq",
@@ -163,6 +177,7 @@ def get_broker() -> dramatiq.Broker:
         # Resource lifecycle (worker boot/shutdown)
         SQLAlchemyMiddleware(),
         RedisMiddleware(),
+        RabbitMQMiddleware(),
         HTTPXMiddleware(),
         HealthMiddleware(),
         scheduler_middleware,
@@ -183,16 +198,26 @@ def get_broker() -> dramatiq.Broker:
         middleware.CurrentMessage(),
     ]
 
-    broker = RedisBroker(
-        connection_pool=redis_pool,
-        middleware=middleware_list,
-        dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
-    )
-
-    return broker
+    match type:
+        case BrokerType.REDIS:
+            return RedisBroker(
+                connection_pool=redis_pool,
+                middleware=middleware_list,
+                dead_message_ttl=3600 * 1000,  # 1 hour in milliseconds
+            )
+        case BrokerType.RABBITMQ:
+            return RabbitmqBroker(
+                host=settings.RABBITMQ_HOST,
+                port=settings.RABBITMQ_PORT,
+                credentials=pika.credentials.PlainCredentials(
+                    username=settings.RABBITMQ_USER, password=settings.RABBITMQ_PWD
+                ),
+                middleware=middleware_list,
+            )
 
 
 __all__ = [
+    "BrokerType",
     "get_broker",
     "scheduler_middleware",
 ]

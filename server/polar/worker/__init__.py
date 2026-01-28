@@ -11,8 +11,9 @@ from polar.config import settings
 
 # Import metrics FIRST to set PROMETHEUS_MULTIPROC_DIR before prometheus_client is imported
 from polar.observability import metrics as _prometheus_metrics
+from polar.worker._rabbitmq import RabbitMQMiddleware
 
-from ._broker import get_broker
+from ._broker import BrokerType, get_broker
 from ._encoder import JSONEncoder
 from ._enqueue import (
     BulkJobDelayCalculator,
@@ -54,7 +55,7 @@ def can_retry() -> bool:
     return get_retries() < message.options["max_retries"]
 
 
-broker = get_broker()
+broker = get_broker(BrokerType.from_env())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder(broker))
 
@@ -85,7 +86,7 @@ def actor[**P, R](
         @functools.wraps(fn)
         async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
             async with JobQueueManager.open(
-                dramatiq.get_broker(), RedisMiddleware.get()
+                dramatiq.get_broker(), RedisMiddleware.get(), RabbitMQMiddleware.get()
             ):
                 return await fn(*args, **kwargs)
 
@@ -106,6 +107,7 @@ def actor[**P, R](
 
 __all__ = [
     "AsyncSessionMaker",
+    "BrokerType",
     "BulkJobDelayCalculator",
     "CronTrigger",
     "HTTPXMiddleware",

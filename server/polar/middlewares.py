@@ -38,7 +38,9 @@ class FlushEnqueuedWorkerJobsMiddleware:
             await self.app(scope, receive, send)
             return
 
-        async with JobQueueManager.open(dramatiq.get_broker(), scope["state"]["redis"]):
+        async with JobQueueManager.open(
+            dramatiq.get_broker(), scope["state"]["redis"], scope["state"]["rabbitmq"]
+        ):
             await self.app(scope, receive, send)
 
 

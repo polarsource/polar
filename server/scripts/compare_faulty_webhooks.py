@@ -22,6 +22,7 @@ import polar.webhook.tasks  # noqa: F401 - register dramatiq actors
 from polar.config import settings
 from polar.integrations.aws.s3 import S3Service
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.rabbitmq import get_rabbitmq
 from polar.kit.utils import utc_now
 from polar.models import BenefitGrant, Customer, Order, Subscription
 from polar.models.webhook_endpoint import WebhookEventType
@@ -398,102 +399,105 @@ async def send_webhooks(
     redis = create_redis("script")
     broker = dramatiq.get_broker()
 
-    async with JobQueueManager.open(broker, redis) as manager:
-        if result.touched_subscription_ids:
-            sorted_sub_ids = sorted(result.touched_subscription_ids)
+    async with get_rabbitmq("script") as rabbitmq:
+        async with JobQueueManager.open(broker, redis, rabbitmq) as manager:
+            if result.touched_subscription_ids:
+                sorted_sub_ids = sorted(result.touched_subscription_ids)
+                start_idx = 0
+                if resume_subscription:
+                    try:
+                        start_idx = sorted_sub_ids.index(resume_subscription)
+                        console.print(
+                            f"[yellow]Resuming from subscription {resume_subscription} (index {start_idx})[/yellow]"
+                        )
+                    except ValueError:
+                        console.print(
+                            f"[red]Resume subscription {resume_subscription} not found, starting from beginning[/red]"
+                        )
+
+                console.print(
+                    f"\n[cyan]Sending subscription.updated for {len(sorted_sub_ids) - start_idx} subscriptions...[/cyan]"
+                )
+                async with sessionmaker() as session:
+                    sub_repo = SubscriptionRepository.from_session(session)
+
+                    for i, sub_id in enumerate(
+                        sorted_sub_ids[start_idx:], start=start_idx
+                    ):
+                        subscription = await sub_repo.get_by_id(
+                            sub_id, options=sub_repo.get_eager_options()
+                        )
+                        if subscription is None:
+                            continue
+
+                        try:
+                            await webhook_service.send(
+                                session,
+                                subscription.organization,
+                                WebhookEventType.subscription_updated,
+                                subscription,
+                            )
+                        except Exception as e:
+                            console.print(
+                                f"[red]Error sending webhook for subscription {sub_id}: {e}[/red]"
+                            )
+                            raise
+
+                        await session.commit()
+                        await manager.flush(broker, redis, rabbitmq)
+
+                        if (i + 1) % 100 == 0:
+                            console.print(
+                                f"  Sent {i + 1}/{len(sorted_sub_ids)} (current: {sub_id})..."
+                            )
+                console.print("[green]Sent subscription.updated webhooks[/green]")
+
+            all_customer_ids: set[UUID] = set()
+            for org_info in result.organizations.values():
+                all_customer_ids.update(org_info.customers.keys())
+
+            sorted_customer_ids = sorted(all_customer_ids)
             start_idx = 0
-            if resume_subscription:
+            if resume_customer:
                 try:
-                    start_idx = sorted_sub_ids.index(resume_subscription)
+                    start_idx = sorted_customer_ids.index(resume_customer)
                     console.print(
-                        f"[yellow]Resuming from subscription {resume_subscription} (index {start_idx})[/yellow]"
+                        f"[yellow]Resuming from customer {resume_customer} (index {start_idx})[/yellow]"
                     )
                 except ValueError:
                     console.print(
-                        f"[red]Resume subscription {resume_subscription} not found, starting from beginning[/red]"
+                        f"[red]Resume customer {resume_customer} not found, starting from beginning[/red]"
                     )
 
             console.print(
-                f"\n[cyan]Sending subscription.updated for {len(sorted_sub_ids) - start_idx} subscriptions...[/cyan]"
+                f"\n[cyan]Enqueueing customer_state_changed for {len(sorted_customer_ids) - start_idx} customers...[/cyan]"
             )
+
             async with sessionmaker() as session:
-                sub_repo = SubscriptionRepository.from_session(session)
-
-                for i, sub_id in enumerate(sorted_sub_ids[start_idx:], start=start_idx):
-                    subscription = await sub_repo.get_by_id(
-                        sub_id, options=sub_repo.get_eager_options()
-                    )
-                    if subscription is None:
-                        continue
-
+                for i, customer_id in enumerate(
+                    sorted_customer_ids[start_idx:], start=start_idx
+                ):
                     try:
-                        await webhook_service.send(
-                            session,
-                            subscription.organization,
-                            WebhookEventType.subscription_updated,
-                            subscription,
+                        enqueue_job(
+                            "customer.webhook",
+                            WebhookEventType.customer_state_changed,
+                            customer_id,
                         )
                     except Exception as e:
                         console.print(
-                            f"[red]Error sending webhook for subscription {sub_id}: {e}[/red]"
+                            f"[red]Error enqueueing webhook for customer {customer_id}: {e}[/red]"
                         )
                         raise
 
                     await session.commit()
-                    await manager.flush(broker, redis)
+                    await manager.flush(broker, redis, rabbitmq)
 
                     if (i + 1) % 100 == 0:
                         console.print(
-                            f"  Sent {i + 1}/{len(sorted_sub_ids)} (current: {sub_id})..."
+                            f"  Enqueued {i + 1}/{len(sorted_customer_ids)} (current: {customer_id})..."
                         )
-            console.print("[green]Sent subscription.updated webhooks[/green]")
 
-        all_customer_ids: set[UUID] = set()
-        for org_info in result.organizations.values():
-            all_customer_ids.update(org_info.customers.keys())
-
-        sorted_customer_ids = sorted(all_customer_ids)
-        start_idx = 0
-        if resume_customer:
-            try:
-                start_idx = sorted_customer_ids.index(resume_customer)
-                console.print(
-                    f"[yellow]Resuming from customer {resume_customer} (index {start_idx})[/yellow]"
-                )
-            except ValueError:
-                console.print(
-                    f"[red]Resume customer {resume_customer} not found, starting from beginning[/red]"
-                )
-
-        console.print(
-            f"\n[cyan]Enqueueing customer_state_changed for {len(sorted_customer_ids) - start_idx} customers...[/cyan]"
-        )
-
-        async with sessionmaker() as session:
-            for i, customer_id in enumerate(
-                sorted_customer_ids[start_idx:], start=start_idx
-            ):
-                try:
-                    enqueue_job(
-                        "customer.webhook",
-                        WebhookEventType.customer_state_changed,
-                        customer_id,
-                    )
-                except Exception as e:
-                    console.print(
-                        f"[red]Error enqueueing webhook for customer {customer_id}: {e}[/red]"
-                    )
-                    raise
-
-                await session.commit()
-                await manager.flush(broker, redis)
-
-                if (i + 1) % 100 == 0:
-                    console.print(
-                        f"  Enqueued {i + 1}/{len(sorted_customer_ids)} (current: {customer_id})..."
-                    )
-
-        console.print("[green]Enqueued customer_state_changed webhooks[/green]")
+            console.print("[green]Enqueued customer_state_changed webhooks[/green]")
 
     await engine.dispose()
 

@@ -3266,7 +3266,17 @@ export interface paths {
      */
     get: operations['customer_portal:members:list_members']
     put?: never
-    post?: never
+    /**
+     * Add Member
+     * @description Add a new member to the customer's team.
+     *
+     *     Only available to owners and billing managers of team customers.
+     *
+     *     Rules:
+     *     - Cannot add a member with the owner role (there must be exactly one owner)
+     *     - If a member with this email already exists, the existing member is returned
+     */
+    post: operations['customer_portal:members:add_member']
     delete?: never
     options?: never
     head?: never
@@ -14057,6 +14067,30 @@ export interface components {
        */
       name: string | null
       /** @description The role of the member within the team. */
+      role: components['schemas']['MemberRole']
+    }
+    /**
+     * CustomerPortalMemberCreate
+     * @description Schema for adding a new member to the customer's team.
+     */
+    CustomerPortalMemberCreate: {
+      /**
+       * Email
+       * Format: email
+       * @description The email address of the new member.
+       */
+      email: string
+      /**
+       * Name
+       * @description The name of the new member (optional).
+       */
+      name?: string | null
+      /**
+       * @description The role for the new member. Defaults to 'member'.
+       * @default member
+       * @example billing_manager
+       * @example member
+       */
       role: components['schemas']['MemberRole']
     }
     /**
@@ -34459,6 +34493,60 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+    }
+  }
+  'customer_portal:members:add_member': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerPortalMemberCreate']
+      }
+    }
+    responses: {
+      /** @description Member added. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerPortalMember']
+        }
+      }
+      /** @description Invalid request or member already exists. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Authentication required */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not permitted - requires owner or billing manager role */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
       }
     }
   }

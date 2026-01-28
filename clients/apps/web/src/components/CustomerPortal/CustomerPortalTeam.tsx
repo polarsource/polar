@@ -1,12 +1,14 @@
 'use client'
 
 import {
+  useAddCustomerPortalMember,
   useCustomerPortalMembers,
   usePortalAuthenticatedUser,
   useRemoveCustomerPortalMember,
   useUpdateCustomerPortalMember,
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
+import { validateEmail } from '@/utils/validation'
 import GroupOutlined from '@mui/icons-material/GroupOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -17,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -66,14 +69,57 @@ export const CustomerPortalTeam = ({
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const updateMember = useUpdateCustomerPortalMember(api)
   const removeMember = useRemoveCustomerPortalMember(api)
+  const addMember = useAddCustomerPortalMember(api)
 
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState<Set<string>>(new Set())
+
+  // Add member form state
+  const [newMemberEmail, setNewMemberEmail] = useState('')
+  const [addMemberError, setAddMemberError] = useState<string | undefined>()
+  const [isAddingMember, setIsAddingMember] = useState(false)
 
   const currentMemberId =
     authenticatedUser?.type === 'member'
       ? (authenticatedUser as any).member_id
       : null
+
+  const handleAddMember = async () => {
+    if (!newMemberEmail.trim()) {
+      setAddMemberError('Email is required')
+      return
+    }
+    if (!validateEmail(newMemberEmail)) {
+      setAddMemberError('Invalid email format')
+      return
+    }
+
+    setIsAddingMember(true)
+    setAddMemberError(undefined)
+
+    try {
+      await addMember.mutateAsync({
+        email: newMemberEmail,
+        role: 'member',
+      })
+      toast({
+        title: 'Member added',
+        description: `${newMemberEmail} has been added to the team.`,
+      })
+      setNewMemberEmail('')
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to add member'
+      setAddMemberError(errorMessage)
+      toast({
+        title: 'Failed to add member',
+        description: errorMessage,
+        variant: 'error',
+      })
+    } finally {
+      setIsAddingMember(false)
+    }
+  }
 
   const handleRoleChange = async (
     memberId: string,
@@ -143,6 +189,44 @@ export const CustomerPortalTeam = ({
         <p className="dark:text-polar-500 text-sm text-gray-500">
           Manage your team members and their roles
         </p>
+      </div>
+
+      <div className="flex flex-col gap-y-4">
+        <div className="flex flex-col gap-y-2">
+          <h4 className="text-md font-medium">Add Member</h4>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Invite someone to join your team
+          </p>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <Input
+              type="email"
+              placeholder="email@example.com"
+              value={newMemberEmail}
+              onChange={(e) => {
+                setNewMemberEmail(e.target.value)
+                setAddMemberError(undefined)
+              }}
+              disabled={isAddingMember}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddMember()
+                }
+              }}
+            />
+            {addMemberError && (
+              <p className="mt-1 text-xs text-red-500">{addMemberError}</p>
+            )}
+          </div>
+          <Button
+            onClick={handleAddMember}
+            disabled={!newMemberEmail.trim() || isAddingMember}
+            loading={isAddingMember}
+          >
+            Add
+          </Button>
+        </div>
       </div>
 
       {!isLoadingMembers && otherMembers.length === 0 ? (

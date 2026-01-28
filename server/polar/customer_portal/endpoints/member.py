@@ -13,7 +13,11 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.member import CustomerPortalMember, CustomerPortalMemberUpdate
+from ..schemas.member import (
+    CustomerPortalMember,
+    CustomerPortalMemberCreate,
+    CustomerPortalMemberUpdate,
+)
 from ..utils import get_customer
 
 log = structlog.get_logger()
@@ -68,6 +72,88 @@ async def list_members(
     )
 
     return list(members)
+
+
+@router.post(
+    "",
+    summary="Add Member",
+    response_model=CustomerPortalMember,
+    status_code=201,
+    responses={
+        201: {"description": "Member added."},
+        400: {"description": "Invalid request or member already exists."},
+        401: {"description": "Authentication required"},
+        403: {"description": "Not permitted - requires owner or billing manager role"},
+    },
+)
+async def add_member(
+    member_create: CustomerPortalMemberCreate,
+    auth_subject: auth.CustomerPortalBillingManager,
+    session: AsyncSession = Depends(get_db_session),
+) -> Member:
+    """
+    Add a new member to the customer's team.
+
+    Only available to owners and billing managers of team customers.
+
+    Rules:
+    - Cannot add a member with the owner role (there must be exactly one owner)
+    - If a member with this email already exists, the existing member is returned
+    """
+    _require_team_customer(auth_subject)
+    customer = get_customer(auth_subject)
+    actor_member = auth_subject.subject
+
+    repository = MemberRepository.from_session(session)
+
+    # Prevent adding a new owner - there must be exactly one
+    if member_create.role == MemberRole.owner:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "role"),
+                    "msg": "Cannot add a member as owner. There must be exactly one owner.",
+                    "input": member_create.role,
+                }
+            ]
+        )
+
+    # Check if member already exists
+    existing_member = await repository.get_by_customer_id_and_email(
+        customer.id, member_create.email
+    )
+    if existing_member:
+        log.info(
+            "customer_portal.members.add.already_exists",
+            customer_id=customer.id,
+            email=member_create.email,
+            existing_member_id=existing_member.id,
+            actor_member_id=actor_member.id,
+        )
+        return existing_member
+
+    # Create the new member
+    member = Member(
+        customer_id=customer.id,
+        organization_id=customer.organization_id,
+        email=member_create.email,
+        name=member_create.name,
+        role=member_create.role,
+    )
+
+    created_member = await repository.create(member, flush=True)
+
+    log.info(
+        "customer_portal.members.add",
+        customer_id=customer.id,
+        member_id=created_member.id,
+        email=member_create.email,
+        role=member_create.role,
+        actor_member_id=actor_member.id,
+    )
+
+    return created_member
 
 
 @router.patch(

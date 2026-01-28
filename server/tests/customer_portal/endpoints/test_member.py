@@ -114,6 +114,178 @@ class TestListMembers:
 
 
 @pytest.mark.asyncio
+class TestAddMember:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com"},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_member_not_allowed(self, client: AsyncClient) -> None:
+        """Regular members cannot add members."""
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com"},
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_individual_customer_not_allowed(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Individual customers cannot add members."""
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com"},
+        )
+        assert response.status_code == 403
+        assert "team customers" in response.json()["detail"].lower()
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_cannot_add_owner(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Cannot add a member with owner role."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com", "role": "owner"},
+        )
+        assert response.status_code == 422
+        assert "cannot add a member as owner" in response.json()["detail"][0]["msg"].lower()
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_existing_member_returns_existing(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Adding an existing member returns the existing member."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Create a member first
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="existing@example.com",
+            name="Existing Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        # Try to add the same email
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "existing@example.com"},
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["id"] == str(member2.id)
+        assert data["email"] == "existing@example.com"
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_valid_add_member(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Owner can add a new member."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com", "name": "New Member"},
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["email"] == "new@example.com"
+        assert data["name"] == "New Member"
+        assert data["role"] == "member"  # Default role
+
+    @pytest.mark.auth(MEMBER_OWNER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_valid_add_billing_manager(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        """Owner can add a member as billing manager."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={
+                "email": "billing@example.com",
+                "name": "Billing Manager",
+                "role": "billing_manager",
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["email"] == "billing@example.com"
+        assert data["role"] == "billing_manager"
+
+    @pytest.mark.auth(MEMBER_BILLING_MANAGER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_billing_manager_can_add(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_billing_manager: Member,
+    ) -> None:
+        """Billing manager can also add members."""
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        response = await client.post(
+            "/v1/customer-portal/members",
+            json={"email": "new@example.com"},
+        )
+        assert response.status_code == 201
+
+
+@pytest.mark.asyncio
 class TestUpdateMember:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(

@@ -572,6 +572,30 @@ export const useUpdateCustomerPortalMember = (api: Client) =>
     },
   })
 
+export const useAddCustomerPortalMember = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: schemas['CustomerPortalMemberCreate']) => {
+      const result = await api.POST('/v1/customer-portal/members', {
+        body,
+      })
+      if (result.error) {
+        const errorMessage =
+          typeof result.error.detail === 'string'
+            ? result.error.detail
+            : Array.isArray(result.error.detail)
+              ? result.error.detail[0]?.msg || 'Failed to add member'
+              : 'Failed to add member'
+        throw new Error(errorMessage)
+      }
+      return result
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer_portal_members'],
+      })
+    },
+  })
+
 export const useRemoveCustomerPortalMember = (api: Client) =>
   useMutation({
     mutationFn: async (id: string) => {

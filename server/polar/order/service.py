@@ -1733,6 +1733,7 @@ class OrderService:
                 await customer_repository.update(
                     customer,
                     update_dict={"type": CustomerType.team},
+                    flush=True,
                 )
                 log.info(
                     "Customer auto-upgraded to team type on seat-based product purchase",

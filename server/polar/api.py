@@ -39,6 +39,7 @@ from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.oauth2.endpoints.oauth2 import router as oauth2_router
+from polar.onboarding.endpoints import router as onboarding_router
 from polar.order.endpoints import router as order_router
 from polar.organization.endpoints import router as organization_router
 from polar.organization_access_token.endpoints import (
@@ -156,3 +157,5 @@ router.include_router(payout_router)
 router.include_router(wallet_router)
 # /integrations/chargeback-stop
 router.include_router(chargeback_stop_router)
+# /onboarding
+router.include_router(onboarding_router)

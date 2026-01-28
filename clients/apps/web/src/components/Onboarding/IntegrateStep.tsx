@@ -1,10 +1,12 @@
+import { useOnboardingTracking } from '@/hooks'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
-import { useContext, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
@@ -150,6 +152,25 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
   const [packageManager, setPackageManager] = useState<PackageManager>('pnpm')
 
   const { organization } = useContext(OrganizationContext)
+  const router = useRouter()
+  const { trackStepStarted, trackStepCompleted, trackCompleted, getSession } =
+    useOnboardingTracking()
+
+  useEffect(() => {
+    const session = getSession()
+    if (session) {
+      trackStepStarted('integrate', organization.id)
+    }
+  }, [organization.id, getSession, trackStepStarted])
+
+  const handleGoToDashboard = async () => {
+    const session = getSession()
+    if (session) {
+      await trackStepCompleted('integrate', organization.id)
+      await trackCompleted(organization.id)
+    }
+    router.push(`/dashboard/${organization.slug}`)
+  }
 
   const parsedFrameworks = useMemo(() => frameworks(products), [products])
 
@@ -209,11 +230,9 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
                 <ArrowOutwardOutlined className="ml-2" fontSize="small" />
               </Button>
             </Link>
-            <Link href={`/dashboard/${organization.slug}`} className="w-full">
-              <Button size="lg" fullWidth>
-                Go to Dashboard
-              </Button>
-            </Link>
+            <Button size="lg" fullWidth onClick={handleGoToDashboard}>
+              Go to Dashboard
+            </Button>
           </div>
         </div>
       </div>

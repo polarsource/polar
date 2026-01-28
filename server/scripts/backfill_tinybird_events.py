@@ -45,17 +45,22 @@ async def _ingest_batch(
 async def backfill(
     batch_size: int = typer.Option(5000, help="Events per batch"),
     delay_seconds: float = typer.Option(0.1, help="Seconds between batches"),
-    cutoff_date: datetime = typer.Option(
-        None, help="Only backfill events before this date. Defaults to now."
+    cutoff_date: str = typer.Option(
+        None,
+        help="Only backfill events before this date (ISO format). Defaults to now.",
     ),
-    start_date: datetime = typer.Option(
-        None, help="Resume from this date (cursor start)."
+    start_date: str = typer.Option(
+        None, help="Resume from this date (ISO format, cursor start)."
     ),
 ) -> None:
     configure_script_logging()
 
-    if cutoff_date is None:
-        cutoff_date = datetime.now(UTC)
+    parsed_cutoff: datetime = (
+        datetime.fromisoformat(cutoff_date) if cutoff_date else datetime.now(UTC)
+    )
+    parsed_start: datetime | None = (
+        datetime.fromisoformat(start_date) if start_date else None
+    )
 
     engine = _create_async_engine(
         dsn=str(settings.get_postgres_dsn("asyncpg")),
@@ -74,10 +79,10 @@ async def backfill(
             count_stmt = (
                 select(func.count())
                 .select_from(Event)
-                .where(Event.ingested_at < cutoff_date)
+                .where(Event.ingested_at < parsed_cutoff)
             )
-            if start_date is not None:
-                count_stmt = count_stmt.where(Event.ingested_at >= start_date)
+            if parsed_start is not None:
+                count_stmt = count_stmt.where(Event.ingested_at >= parsed_start)
 
             total = (await session.execute(count_stmt)).scalar_one()
 
@@ -87,7 +92,7 @@ async def backfill(
 
         typer.echo(f"Backfilling {total} events to Tinybird")
 
-        last_ingested_at = start_date
+        last_ingested_at = parsed_start
         last_id: UUID | None = None
         total_sent = 0
 
@@ -98,7 +103,7 @@ async def backfill(
                 async with sessionmaker() as session:
                     stmt = (
                         select(Event)
-                        .where(Event.ingested_at < cutoff_date)
+                        .where(Event.ingested_at < parsed_cutoff)
                         .order_by(Event.ingested_at, Event.id)
                         .limit(batch_size)
                     )

@@ -69,7 +69,7 @@ resource "tfe_variable" "backend_discord_client_secret_sandbox" {
 }
 
 resource "tfe_variable" "backend_discord_proxy_url_sandbox" {
-  key             = "backend_discord_proxy_url_sandbox"
+  key             = "backend_discord_proxy_url"
   category        = "terraform"
   description     = "Discord Proxy URL for sandbox"
   sensitive       = true

@@ -69,7 +69,7 @@ resource "tfe_variable" "backend_discord_client_secret_production" {
 }
 
 resource "tfe_variable" "backend_discord_proxy_url_production" {
-  key             = "backend_discord_proxy_url_production"
+  key             = "backend_discord_proxy_url"
   category        = "terraform"
   description     = "Discord Proxy URL for production"
   sensitive       = true

@@ -4,10 +4,10 @@ import structlog
 from fastapi import Depends
 
 from polar.auth.models import is_member
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.member.service import member_service
 from polar.models.customer import CustomerType
-from polar.models.member import Member
+from polar.models.member import Member, MemberRole
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -96,12 +96,23 @@ async def add_member(
     """
     _require_team_customer(auth_subject)
     customer = get_customer(auth_subject)
-    actor_member = auth_subject.subject
 
-    return await member_service.customer_portal_add_member(
+    # Prevent adding a new owner - there must be exactly one
+    if member_create.role == MemberRole.owner:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "role"),
+                    "msg": "Cannot add a member as owner. There must be exactly one owner.",
+                    "input": member_create.role,
+                }
+            ]
+        )
+
+    return await member_service.add_to_customer(
         session,
         customer,
-        actor_member,
         email=member_create.email,
         name=member_create.name,
         role=member_create.role,
@@ -139,13 +150,29 @@ async def update_member(
     customer = get_customer(auth_subject)
     actor_member = auth_subject.subject
 
-    return await member_service.customer_portal_update_member(
-        session,
-        customer,
-        actor_member,
-        id,
-        role=member_update.role,
-    )
+    # Fetch the member
+    member = await member_service.get_by_customer_and_id(session, customer.id, id)
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    # If no role provided, return member unchanged
+    if member_update.role is None:
+        return member
+
+    # Prevent self-modification
+    if member.id == actor_member.id:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("path", "id"),
+                    "msg": "You cannot modify your own role.",
+                    "input": str(id),
+                }
+            ]
+        )
+
+    return await member_service.update(session, member, role=member_update.role)
 
 
 @router.delete(
@@ -178,9 +205,23 @@ async def remove_member(
     customer = get_customer(auth_subject)
     actor_member = auth_subject.subject
 
-    await member_service.customer_portal_remove_member(
-        session,
-        customer,
-        actor_member,
-        id,
-    )
+    # Fetch the member
+    member = await member_service.get_by_customer_and_id(session, customer.id, id)
+    if member is None:
+        raise ResourceNotFound("Member not found")
+
+    # Prevent self-removal
+    if member.id == actor_member.id:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("path", "id"),
+                    "msg": "You cannot remove yourself from the team.",
+                    "input": str(id),
+                }
+            ]
+        )
+
+    # delete() handles the "cannot delete only owner" validation
+    await member_service.delete(session, member)

@@ -28,7 +28,6 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
 from polar.models.order import OrderStatus
@@ -303,22 +302,6 @@ class SeatService:
                 email,
                 customer_id,
                 external_customer_id,
-            )
-
-        # 3.5 Auto-upgrade billing customer to 'team' type when assigning seats
-        # NULL type is treated as 'individual' (legacy customers)
-        billing_customer_type = billing_manager_customer.type or CustomerType.individual
-        if billing_customer_type == CustomerType.individual:
-            customer_repository = CustomerRepository.from_session(session)
-            await customer_repository.update(
-                billing_manager_customer,
-                update_dict={"type": CustomerType.team},
-            )
-            log.info(
-                "Customer auto-upgraded to team type",
-                customer_id=billing_manager_customer.id,
-                subscription_id=container.id if is_subscription else None,
-                order_id=container.id if not is_subscription else None,
             )
 
         # 4. Generate invitation token (unified)

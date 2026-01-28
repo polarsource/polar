@@ -86,7 +86,9 @@ class OnboardingService:
             "signup_method": request.signup_method.value,
         }
         if request.experiment_name:
-            properties[f"$feature/{request.experiment_name}"] = request.experiment_variant
+            properties[f"$feature/{request.experiment_name}"] = (
+                request.experiment_variant
+            )
 
         self._capture_event(
             distinct_id=distinct_id,

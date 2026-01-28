@@ -88,7 +88,13 @@ export const OrganizationStep = ({
         trackStepStarted('org')
       })
     }
-  }, [hasExistingOrg, oauthAccounts, posthog, startOnboarding, trackStepStarted])
+  }, [
+    hasExistingOrg,
+    oauthAccounts,
+    posthog,
+    startOnboarding,
+    trackStepStarted,
+  ])
 
   useEffect(() => {
     if (validationErrors) {
@@ -323,9 +329,7 @@ export const OrganizationStep = ({
                   loading={createOrganization.isPending}
                   disabled={name.length === 0 || slug.length === 0 || !terms}
                 >
-                  {experimentVariant === 'treatment'
-                    ? 'Get Started'
-                    : 'Create'}
+                  {experimentVariant === 'treatment' ? 'Get Started' : 'Create'}
                 </Button>
                 {hasExistingOrg ? (
                   <Link href={`/dashboard`} className="w-full">

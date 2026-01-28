@@ -4,6 +4,7 @@ import sentry_sdk
 import stripe as stripe_lib
 import structlog
 
+from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
@@ -36,7 +37,15 @@ async def payout_created(payout_id: uuid.UUID) -> None:
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
 
-        if payout.processor == AccountType.stripe:
+        account = payout.account
+
+        # Route to Mercury if enabled and account is configured for Mercury
+        if (
+            settings.MERCURY_PAYOUTS_ENABLED
+            and getattr(account, "payout_provider", "stripe") == "mercury"
+        ):
+            await payout_service.transfer_mercury(session, payout)
+        elif payout.processor == AccountType.stripe:
             await payout_service.transfer_stripe(session, payout)
 
 

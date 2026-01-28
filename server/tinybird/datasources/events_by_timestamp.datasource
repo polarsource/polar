@@ -58,7 +58,7 @@ SCHEMA >
     `customer_name` Nullable(String) `json:$.customer_name`,
     `tax_state` LowCardinality(Nullable(String)) `json:$.tax_state`,
     `tax_country` LowCardinality(Nullable(String)) `json:$.tax_country`,
-    `cost_amount` Nullable(Int64) `json:$.cost_amount`,
+    `cost_amount` Nullable(Float64) `json:$.cost_amount`,
     `cost_currency` LowCardinality(Nullable(String)) `json:$.cost_currency`,
     `llm_vendor` LowCardinality(Nullable(String)) `json:$.llm_vendor`,
     `llm_model` LowCardinality(Nullable(String)) `json:$.llm_model`,

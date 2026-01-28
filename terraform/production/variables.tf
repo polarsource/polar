@@ -60,6 +60,12 @@ variable "backend_discord_client_secret_production" {
   sensitive   = true
 }
 
+variable "backend_discord_proxy_url" {
+  description = "Discord Proxy URL"
+  type        = string
+  sensitive   = true
+}
+
 variable "backend_discord_webhook_url_production" {
   description = "Discord Webhook URL for production"
   type        = string

@@ -15,6 +15,7 @@ class DiscordClient:
         self.client = httpx.AsyncClient(
             base_url=BASE_URL,
             headers={"Authorization": f"{scheme} {token}"},
+            proxy=settings.DISCORD_PROXY_URL or None,
         )
 
     async def get_me(self) -> dict[str, Any]:

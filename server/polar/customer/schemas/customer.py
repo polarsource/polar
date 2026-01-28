@@ -62,6 +62,15 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The type of customer. "
+            "Defaults to 'individual'. "
+            "Set to 'team' for customers that can have multiple members."
+        ),
+        examples=["individual"],
+    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -94,6 +103,14 @@ class CustomerUpdate(CustomerUpdateBase):
         description=_external_id_description,
         examples=[_external_id_example],
     )
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The customer type. "
+            "Can only be upgraded from 'individual' to 'team', never downgraded."
+        ),
+        examples=["team"],
+    )
 
 
 class CustomerUpdateExternalID(CustomerUpdateBase): ...
@@ -115,6 +132,15 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         ),
         examples=[True],
     )
+    type: CustomerType | None = Field(
+        default=None,
+        description=(
+            "The type of customer: 'individual' for single users, "
+            "'team' for customers with multiple members. "
+            "Legacy customers may have NULL type which is treated as 'individual'."
+        ),
+        examples=["individual"],
+    )
     name: str | None = Field(description=_name_description, examples=[_name_example])
     billing_address: Address | None
     tax_id: TaxID | None
@@ -125,16 +151,6 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
 
     deleted_at: datetime | None = Field(
         description="Timestamp for when the customer was soft deleted."
-    )
-
-    type: CustomerType | None = Field(
-        default=CustomerType.individual,
-        description=(
-            """The type of customer. All customers are `individual` by default. Customers
-            are migrated to `team` when they purchase a seat-based product. This migration
-            is one-way and cannot be undone.
-            """
-        ),
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])

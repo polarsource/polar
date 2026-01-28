@@ -3522,3 +3522,165 @@ class TestCustomerBasedInvoiceNumbering:
             order_2.invoice_number
             == f"{organization.customer_invoice_prefix}-{customer_2.short_id_str}-0001"
         )
+
+
+@pytest.mark.asyncio
+class TestOnOrderPaidCustomerTypeUpgrade:
+    """Tests for auto-upgrading customer type to 'team' on seat-based product purchase."""
+
+    async def test_seat_based_product_upgrades_individual_to_team(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that purchasing a seat-based product upgrades individual customer to team."""
+        from polar.models.customer import CustomerType
+
+        # Create a seat-based product
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            prices=[("seat", 1000, "usd")],
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        # Create an individual customer
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        # Create a paid order for the seat-based product
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Trigger _on_order_paid
+        await order_service._on_order_paid(session, order)
+
+        # Customer should be upgraded to team
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+    async def test_seat_based_product_keeps_team_customer_as_team(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that team customers remain team when purchasing seat-based products."""
+        from polar.models.customer import CustomerType
+
+        # Create a seat-based product
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            prices=[("seat", 1000, "usd")],
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        # Create a team customer
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Create a paid order for the seat-based product
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Trigger _on_order_paid
+        await order_service._on_order_paid(session, order)
+
+        # Customer should still be team
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team
+
+    async def test_non_seat_based_product_does_not_upgrade_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,  # This is a non-seat-based fixture product
+    ) -> None:
+        """Test that non-seat-based products don't change customer type."""
+        from polar.models.customer import CustomerType
+
+        # Create an individual customer
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        # Create a paid order for the non-seat-based product
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Trigger _on_order_paid
+        await order_service._on_order_paid(session, order)
+
+        # Customer should remain individual
+        await session.refresh(customer)
+        assert customer.type == CustomerType.individual
+
+    async def test_seat_based_product_upgrades_null_type_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Test that legacy customers with NULL type are upgraded to team."""
+        from polar.models.customer import CustomerType
+
+        # Create a seat-based product
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            prices=[("seat", 1000, "usd")],
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        # Create a customer with NULL type (legacy customer)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="legacy@example.com",
+        )
+        customer.type = None
+        await save_fixture(customer)
+
+        # Create a paid order for the seat-based product
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Trigger _on_order_paid
+        await order_service._on_order_paid(session, order)
+
+        # Customer should be upgraded to team
+        await session.refresh(customer)
+        assert customer.type == CustomerType.team

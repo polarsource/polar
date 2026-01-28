@@ -22,6 +22,7 @@ from polar.kit.utils import utc_now
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
+from polar.models.customer import CustomerType
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -209,29 +210,29 @@ class CustomerService:
             customer.email = customer_update.email
             customer.email_verified = False
 
+        # Validate external_id changes (only for CustomerUpdate schema)
         if (
             isinstance(customer_update, CustomerUpdate)
             and "external_id" in customer_update.model_fields_set
-            and customer.external_id is not None
             and customer.external_id != customer_update.external_id
         ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "external_id"),
-                    "msg": "Customer external ID cannot be updated.",
-                    "input": customer_update.external_id,
-                }
-            )
-
-        if (
-            isinstance(customer_update, CustomerUpdate)
-            and customer_update.external_id is not None
-            and customer.external_id != customer_update.external_id
-        ):
-            if await repository.get_by_external_id_and_organization(
-                customer_update.external_id, customer.organization_id
+            if customer.external_id is not None:
+                # external_id was already set - cannot be changed
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "Customer external ID cannot be updated.",
+                        "input": customer_update.external_id,
+                    }
+                )
+            elif (
+                customer_update.external_id is not None
+                and await repository.get_by_external_id_and_organization(
+                    customer_update.external_id, customer.organization_id
+                )
             ):
+                # Setting new external_id that already exists
                 errors.append(
                     {
                         "type": "value_error",
@@ -240,6 +241,24 @@ class CustomerService:
                         "input": customer_update.external_id,
                     }
                 )
+
+        # Prevent downgrade from team to individual
+        # NULL type is treated as 'individual' (legacy customers)
+        current_type = customer.type or CustomerType.individual
+        if (
+            isinstance(customer_update, CustomerUpdate)
+            and customer_update.type is not None
+            and current_type == CustomerType.team
+            and customer_update.type == CustomerType.individual
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "type"),
+                    "msg": "Customer type cannot be downgraded from 'team' to 'individual'.",
+                    "input": customer_update.type,
+                }
+            )
 
         if errors:
             raise PolarRequestValidationError(errors)

@@ -781,6 +781,56 @@ class TestAssignSeat:
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(session, subscription)
 
+    @pytest.mark.asyncio
+    async def test_assign_seat_does_not_change_customer_type(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that seat assignment does not change customer type.
+
+        Customer type upgrade to 'team' happens when purchasing a seat-based product,
+        not when assigning seats. This test verifies seat assignment preserves the
+        existing customer type.
+        """
+        from polar.models.customer import CustomerType
+
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        # Billing customer is team type (would be set on purchase in real flow)
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        billing_customer.type = CustomerType.team
+        await save_fixture(billing_customer)
+
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+
+        # Assign a seat (mock email sending)
+        with patch("polar.customer_seat.service.send_seat_invitation_email"):
+            await seat_service.assign_seat(
+                session, subscription, email="seat@example.com"
+            )
+
+        # Billing customer type should be unchanged
+        await session.refresh(billing_customer)
+        assert billing_customer.type == CustomerType.team
+
 
 class TestGetSeatByToken:
     @pytest.mark.asyncio

@@ -294,6 +294,108 @@ class TestCreateOwnerMember:
 
 
 @pytest.mark.asyncio
+class TestCreate:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_individual_customer_cannot_have_multiple_members(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that individual customers can only have 1 member (the owner)."""
+        from polar.exceptions import NotPermitted
+        from polar.models.customer import CustomerType
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+
+        # Create the first member (owner)
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        # Trying to add a second member should fail
+        with pytest.raises(NotPermitted) as exc_info:
+            await member_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                email="second@example.com",
+                name="Second Member",
+                role=MemberRole.member,
+            )
+
+        assert "individual" in str(exc_info.value).lower()
+        assert "one member" in str(exc_info.value).lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_team_customer_can_have_multiple_members(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that team customers can have multiple members."""
+        from polar.models.customer import CustomerType
+
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="team@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        # Create the first member (owner)
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+
+        # Adding a second member should succeed for team customers
+        second_member = await member_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            email="second@example.com",
+            name="Second Member",
+            role=MemberRole.member,
+        )
+
+        assert second_member is not None
+        assert second_member.email == "second@example.com"
+        assert second_member.role == MemberRole.member
+
+
+@pytest.mark.asyncio
 class TestUpdate:
     @pytest.mark.auth
     async def test_update_name(

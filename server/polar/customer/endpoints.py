@@ -11,6 +11,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.member import member_service
 from polar.member.schemas import Member as MemberSchema
+from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -35,6 +36,23 @@ from .schemas.customer import (
 )
 from .schemas.state import CustomerState
 from .service import customer as customer_service
+
+
+async def _to_customer_with_members(
+    session: AsyncReadSession,
+    customer: Customer,
+    include_members: bool,
+) -> CustomerWithMembers:
+    """Convert a Customer model to CustomerWithMembers schema."""
+    customer_dict = CustomerSchema.model_validate(customer).model_dump()
+    if include_members:
+        customer_dict["members"] = await customer_service.load_members(
+            session, customer.id
+        )
+    else:
+        customer_dict["members"] = []
+    return CustomerWithMembers(**customer_dict)
+
 
 router = APIRouter(
     prefix="/customers",
@@ -202,14 +220,7 @@ async def get(
     if customer is None:
         raise ResourceNotFound()
 
-    customer_dict = CustomerSchema.model_validate(customer).model_dump()
-    if include_members:
-        customer_dict["members"] = await customer_service.load_members(
-            session, customer.id
-        )
-    else:
-        customer_dict["members"] = []
-    return CustomerWithMembers(**customer_dict)
+    return await _to_customer_with_members(session, customer, include_members)
 
 
 @router.get(
@@ -234,14 +245,7 @@ async def get_external(
     if customer is None:
         raise ResourceNotFound()
 
-    customer_dict = CustomerSchema.model_validate(customer).model_dump()
-    if include_members:
-        customer_dict["members"] = await customer_service.load_members(
-            session, customer.id
-        )
-    else:
-        customer_dict["members"] = []
-    return CustomerWithMembers(**customer_dict)
+    return await _to_customer_with_members(session, customer, include_members)
 
 
 @router.get(
@@ -328,14 +332,7 @@ async def create(
     if customer is None:
         raise ResourceNotFound()
 
-    customer_dict = CustomerSchema.model_validate(customer).model_dump()
-    if include_members:
-        customer_dict["members"] = await customer_service.load_members(
-            session, customer.id
-        )
-    else:
-        customer_dict["members"] = []
-    return CustomerWithMembers(**customer_dict)
+    return await _to_customer_with_members(session, customer, include_members)
 
 
 @router.patch(
@@ -366,14 +363,7 @@ async def update(
 
     updated_customer = await customer_service.update(session, customer, customer_update)
 
-    customer_dict = CustomerSchema.model_validate(updated_customer).model_dump()
-    if include_members:
-        customer_dict["members"] = await customer_service.load_members(
-            session, updated_customer.id
-        )
-    else:
-        customer_dict["members"] = []
-    return CustomerWithMembers(**customer_dict)
+    return await _to_customer_with_members(session, updated_customer, include_members)
 
 
 @router.patch(
@@ -404,14 +394,7 @@ async def update_external(
 
     updated_customer = await customer_service.update(session, customer, customer_update)
 
-    customer_dict = CustomerSchema.model_validate(updated_customer).model_dump()
-    if include_members:
-        customer_dict["members"] = await customer_service.load_members(
-            session, updated_customer.id
-        )
-    else:
-        customer_dict["members"] = []
-    return CustomerWithMembers(**customer_dict)
+    return await _to_customer_with_members(session, updated_customer, include_members)
 
 
 @router.delete(

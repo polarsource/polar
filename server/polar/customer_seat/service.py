@@ -123,17 +123,11 @@ class SeatAssignmentTarget:
 
 
 class SeatService:
-    def _get_customer_id(self, container: SeatContainer) -> uuid.UUID:
-        return container.customer_id
-
     def _get_product(self, container: SeatContainer) -> Product | None:
         return container.product
 
     def _get_organization_id(self, container: SeatContainer) -> uuid.UUID:
         return container.organization.id
-
-    def _get_seats_count(self, container: SeatContainer) -> int:
-        return container.seats or 0
 
     def _get_container_id(self, container: SeatContainer) -> uuid.UUID:
         return container.id

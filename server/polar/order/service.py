@@ -59,6 +59,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
+from polar.models.customer import CustomerType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.product import ProductBillingType
@@ -1721,6 +1722,25 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+
+        # Auto-upgrade customer to 'team' type when purchasing a seat-based product
+        if order.product and order.product.has_seat_based_price:
+            customer = order.customer
+            # NULL type is treated as 'individual' (legacy customers)
+            customer_type = customer.type or CustomerType.individual
+            if customer_type == CustomerType.individual:
+                customer_repository = CustomerRepository.from_session(session)
+                await customer_repository.update(
+                    customer,
+                    update_dict={"type": CustomerType.team},
+                    flush=True,
+                )
+                log.info(
+                    "Customer auto-upgraded to team type on seat-based product purchase",
+                    customer_id=customer.id,
+                    order_id=order.id,
+                    product_id=order.product_id,
+                )
 
     async def _emit_balance_credit_order_event(
         self,

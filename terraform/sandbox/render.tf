@@ -85,6 +85,7 @@ module "sandbox" {
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"
     redis_db               = "1"
+    plan                   = "standard"
   }
 
   workers = {

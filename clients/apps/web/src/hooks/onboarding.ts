@@ -112,43 +112,53 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
     trackExposure: false,
   })
 
+  const trackEvent = useCallback(
+    async (
+      endpoint: string,
+      body: Record<string, unknown>,
+    ): Promise<Response | null> => {
+      const distinctId = posthog?.get_distinct_id() || undefined
+      const queryParams = distinctId ? `?distinct_id=${distinctId}` : ''
+
+      try {
+        return await fetch(`${API_BASE_URL}${endpoint}${queryParams}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body),
+        })
+      } catch {
+        return null
+      }
+    },
+    [posthog],
+  )
+
   const startOnboarding = useCallback(
     async (
       signupMethod: SignupMethod,
     ): Promise<OnboardingSessionState | null> => {
       const existingSession = getOnboardingSession()
-      const distinctId = posthog?.get_distinct_id() || undefined
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/v1/onboarding/started`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            signup_method: signupMethod,
-            distinct_id: distinctId,
-            session_id: existingSession?.session_id,
-            started_at: existingSession?.started_at,
-            experiment_name: 'onboarding_flow_v1',
-            experiment_variant: experimentVariant,
-          }),
-        })
+      const response = await trackEvent('/v1/onboarding/started', {
+        signup_method: signupMethod,
+        distinct_id: posthog?.get_distinct_id() || undefined,
+        session_id: existingSession?.session_id,
+        started_at: existingSession?.started_at,
+        experiment_name: 'onboarding_flow_v1',
+        experiment_variant: experimentVariant,
+      })
 
-        if (!response.ok) {
-          clearOnboardingSession()
-          return null
-        }
-
-        const session: OnboardingSessionState = await response.json()
-        setOnboardingSession(session)
-        return session
-      } catch {
+      if (!response?.ok) {
+        clearOnboardingSession()
         return null
       }
+
+      const session: OnboardingSessionState = await response.json()
+      setOnboardingSession(session)
+      return session
     },
-    [posthog, experimentVariant],
+    [posthog, experimentVariant, trackEvent],
   )
 
   const trackStepStarted = useCallback(
@@ -156,35 +166,17 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       const session = getOnboardingSession()
       if (!session) return
 
-      const distinctId = posthog?.get_distinct_id() || undefined
-      const queryParams = distinctId ? `?distinct_id=${distinctId}` : ''
+      const response = await trackEvent(`/v1/onboarding/step/${step}/started`, {
+        session_id: session.session_id,
+        organization_id: organizationId,
+        experiment_variant: session.experiment_variant,
+      })
 
-      try {
-        await fetch(
-          `${API_BASE_URL}/v1/onboarding/step/${step}/started${queryParams}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              session_id: session.session_id,
-              organization_id: organizationId,
-              experiment_variant: session.experiment_variant,
-            }),
-          },
-        )
-
-        setOnboardingSession({
-          ...session,
-          current_step: step,
-        })
-      } catch {
-        console.warn('Failed to track step started')
+      if (response) {
+        setOnboardingSession({ ...session, current_step: step })
       }
     },
-    [posthog],
+    [trackEvent],
   )
 
   const trackStepCompleted = useCallback(
@@ -192,35 +184,23 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       const session = getOnboardingSession()
       if (!session) return
 
-      const distinctId = posthog?.get_distinct_id() || undefined
-      const queryParams = distinctId ? `?distinct_id=${distinctId}` : ''
+      const response = await trackEvent(
+        `/v1/onboarding/step/${step}/completed`,
+        {
+          session_id: session.session_id,
+          organization_id: organizationId,
+          experiment_variant: session.experiment_variant,
+        },
+      )
 
-      try {
-        await fetch(
-          `${API_BASE_URL}/v1/onboarding/step/${step}/completed${queryParams}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              session_id: session.session_id,
-              organization_id: organizationId,
-              experiment_variant: session.experiment_variant,
-            }),
-          },
-        )
-
+      if (response) {
         setOnboardingSession({
           ...session,
           steps_completed: session.steps_completed + 1,
         })
-      } catch {
-        // Don't block user flow on tracking errors
       }
     },
-    [posthog],
+    [trackEvent],
   )
 
   const trackStepSkipped = useCallback(
@@ -228,30 +208,13 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       const session = getOnboardingSession()
       if (!session) return
 
-      const distinctId = posthog?.get_distinct_id() || undefined
-      const queryParams = distinctId ? `?distinct_id=${distinctId}` : ''
-
-      try {
-        await fetch(
-          `${API_BASE_URL}/v1/onboarding/step/${step}/skipped${queryParams}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              session_id: session.session_id,
-              organization_id: organizationId,
-              experiment_variant: session.experiment_variant,
-            }),
-          },
-        )
-      } catch {
-        // Don't block user flow on tracking errors
-      }
+      await trackEvent(`/v1/onboarding/step/${step}/skipped`, {
+        session_id: session.session_id,
+        organization_id: organizationId,
+        experiment_variant: session.experiment_variant,
+      })
     },
-    [posthog],
+    [trackEvent],
   )
 
   const trackCompleted = useCallback(
@@ -259,29 +222,17 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
       const session = getOnboardingSession()
       if (!session) return
 
-      const distinctId = posthog?.get_distinct_id() || undefined
-      const queryParams = distinctId ? `?distinct_id=${distinctId}` : ''
+      const response = await trackEvent('/v1/onboarding/completed', {
+        session_id: session.session_id,
+        organization_id: organizationId,
+        experiment_variant: session.experiment_variant,
+      })
 
-      try {
-        await fetch(`${API_BASE_URL}/v1/onboarding/completed${queryParams}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            session_id: session.session_id,
-            organization_id: organizationId,
-            experiment_variant: session.experiment_variant,
-          }),
-        })
-
+      if (response) {
         clearOnboardingSession()
-      } catch {
-        // Don't block user flow on tracking errors
       }
     },
-    [posthog],
+    [trackEvent],
   )
 
   const getSession = useCallback((): OnboardingSessionState | null => {

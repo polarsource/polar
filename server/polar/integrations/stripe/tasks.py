@@ -58,10 +58,54 @@ def stripe_api_connection_error_retry[**Params, ReturnValue](
 @actor(actor_name="stripe.webhook.account.updated", priority=TaskPriority.HIGH)
 @stripe_api_connection_error_retry
 async def account_updated(event_id: uuid.UUID) -> None:
+    """Handle v1 account.updated webhook events."""
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
             log.info(f"Processing Stripe Account {stripe_account.id}")
+            await account_service.update_account_from_stripe(
+                session, stripe_account=stripe_account
+            )
+
+
+@actor(
+    actor_name="stripe.webhook.v2.core.account.capability_status_updated",
+    priority=TaskPriority.HIGH,
+)
+@stripe_api_connection_error_retry
+async def v2_account_capability_status_updated(event_id: uuid.UUID) -> None:
+    """Handle v2 capability status updated webhook events.
+
+    This is triggered for accounts created with the v2 API when their
+    recipient configuration capabilities change status.
+    """
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            # V2 events have the account data in the same structure
+            stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
+            log.info(
+                f"Processing Stripe v2 Account capability update {stripe_account.id}"
+            )
+            await account_service.update_account_from_stripe(
+                session, stripe_account=stripe_account
+            )
+
+
+@actor(
+    actor_name="stripe.webhook.v2.core.account.updated",
+    priority=TaskPriority.HIGH,
+)
+@stripe_api_connection_error_retry
+async def v2_account_updated(event_id: uuid.UUID) -> None:
+    """Handle v2 account updated webhook events.
+
+    This is triggered for accounts created with the v2 API when account
+    details are updated.
+    """
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_account = cast(stripe_lib.Account, event.stripe_data.data.object)
+            log.info(f"Processing Stripe v2 Account update {stripe_account.id}")
             await account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )

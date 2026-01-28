@@ -66,6 +66,8 @@ async def test_create_personal_stripe(
     assert create_response.status_code == 200
     assert create_response.json()["account_type"] == "stripe"
     assert create_response.json()["stripe_id"] == "fake_stripe_id"
+    # Verify API version is set (v1 by default when feature flag is off)
+    assert create_response.json()["stripe_api_version"] == 1
 
 
 @pytest.mark.asyncio

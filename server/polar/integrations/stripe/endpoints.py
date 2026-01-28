@@ -37,7 +37,15 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "identity.verification_session.processing",
     "identity.verification_session.requires_input",
 }
+# V1 Connect webhooks
 CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated", "payout.updated", "payout.paid"}
+
+# V2 Connect webhooks (for recipient configuration)
+# These events are triggered for accounts created with the v2 API
+CONNECT_IMPLEMENTED_WEBHOOKS_V2 = {
+    "v2.core.account.capability_status_updated",
+    "v2.core.account.updated",
+}
 
 
 async def enqueue(session: AsyncSession, event: stripe.Event) -> None:
@@ -91,5 +99,9 @@ async def webhook_connect(
         WebhookEventGetter(settings.STRIPE_CONNECT_WEBHOOK_SECRET)
     ),
 ) -> None:
-    if event["type"] in CONNECT_IMPLEMENTED_WEBHOOKS:
+    event_type: str = event["type"]
+    if event_type in CONNECT_IMPLEMENTED_WEBHOOKS:
+        return await enqueue(session, event)
+    # Handle v2 webhook events
+    if event_type in CONNECT_IMPLEMENTED_WEBHOOKS_V2:
         return await enqueue(session, event)

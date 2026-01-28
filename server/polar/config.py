@@ -221,6 +221,8 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
+    # Feature flag for Stripe v2 API (recipient configuration)
+    STRIPE_USE_V2_ACCOUNTS: bool = False
 
     # Numeral
     NUMERAL_API_KEY: str | None = None

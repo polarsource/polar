@@ -265,6 +265,10 @@ resource "tfe_variable" "tinybird_workspace_test" {
   category        = "terraform"
   description     = "Tinybird Workspace for test"
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_write_test" {
@@ -272,6 +276,10 @@ resource "tfe_variable" "tinybird_events_write_test" {
   category        = "terraform"
   description     = "Tinybird Events Write enabled for test"
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_read_test" {
@@ -279,4 +287,8 @@ resource "tfe_variable" "tinybird_events_read_test" {
   category        = "terraform"
   description     = "Tinybird Events Read enabled for test"
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

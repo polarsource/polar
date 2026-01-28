@@ -257,6 +257,10 @@ resource "tfe_variable" "tinybird_workspace_sandbox" {
   category        = "terraform"
   description     = "Tinybird Workspace for sandbox"
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_write_sandbox" {
@@ -264,6 +268,10 @@ resource "tfe_variable" "tinybird_events_write_sandbox" {
   category        = "terraform"
   description     = "Tinybird Events Write enabled for sandbox"
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "tinybird_events_read_sandbox" {
@@ -271,4 +279,8 @@ resource "tfe_variable" "tinybird_events_read_sandbox" {
   category        = "terraform"
   description     = "Tinybird Events Read enabled for sandbox"
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

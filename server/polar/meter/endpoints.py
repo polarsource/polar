@@ -1,5 +1,8 @@
+from zoneinfo import ZoneInfo
+
 from fastapi import Depends, Query
 from pydantic import AwareDatetime
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
@@ -108,6 +111,10 @@ async def quantities(
     ),
     end_timestamp: AwareDatetime = Query(..., description="End timestamp."),
     interval: TimeInterval = Query(..., description="Interval between two timestamps."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the timestamps. Default is UTC.",
+    ),
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
@@ -153,6 +160,7 @@ async def quantities(
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         interval=interval,
+        timezone=ZoneInfo(timezone),
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         metadata=metadata,

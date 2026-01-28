@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+import logfire
 import structlog
 from githubkit.exception import GitHubException, RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
@@ -188,14 +189,16 @@ class GitHubRepositoryBenefitUserService:
             ):
                 installations.append(install)
         except RequestFailed as e:
-            if e.response.status_code == 401:
-                log.warning(
-                    "github.list_user_installations.unauthorized",
-                    oauth_account_id=oauth.id,
-                    user_id=oauth.user_id,
-                )
-                raise GitHubRepositoryRefreshTokenError() from e
-            raise
+            with logfire.span(
+                "github_repository_benefit.list_installations.unauthorized",
+                oauth_account_id=str(oauth.id),
+                user_id=str(oauth.user_id),
+                account_username=oauth.account_username,
+                token_expires_at=str(oauth.expires_at),
+            ) as span:
+                span.set_attribute("response_status", e.response.status_code)
+                span.set_attribute("response_body", e.response.text)
+                raise
 
         return installations
 
@@ -318,14 +321,18 @@ class GitHubRepositoryBenefitUserService:
                     )
             except RequestFailed as e:
                 if e.response.status_code == 401:
-                    log.warning(
-                        "github.list_installation_repos.unauthorized",
-                        oauth_account_id=oauth.id,
-                        user_id=oauth.user_id,
+                    with logfire.span(
+                        "github_repository_benefit.list_repos.unauthorized",
+                        oauth_account_id=str(oauth.id),
+                        user_id=str(oauth.user_id),
+                        account_username=oauth.account_username,
                         installation_id=install.id,
-                    )
-                    raise GitHubRepositoryRefreshTokenError() from e
-                raise
+                        installation_owner=install.account.login,
+                        token_expires_at=str(oauth.expires_at),
+                    ) as span:
+                        span.set_attribute("response_status", e.response.status_code)
+                        span.set_attribute("response_body", e.response.text)
+                        raise
 
         return res
 

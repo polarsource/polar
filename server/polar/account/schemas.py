@@ -148,6 +148,13 @@ class Account(Schema):
     account_type: AccountType
     status: AccountModel.Status
     stripe_id: str | None
+    stripe_api_version: int | None = Field(
+        default=None,
+        description=(
+            "Stripe API version used to create this account. "
+            "1 = v1 (capabilities.transfers), 2 = v2 (configuration.recipient)"
+        ),
+    )
     open_collective_slug: str | None
     is_details_submitted: bool
     is_charges_enabled: bool

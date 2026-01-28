@@ -52,6 +52,13 @@ class Account(RecordModel):
     stripe_id: Mapped[str | None] = mapped_column(
         String(100), nullable=True, default=None
     )
+    # Stripe API version used to create this account:
+    # 1 = v1 API (capabilities.transfers)
+    # 2 = v2 API (configuration.recipient)
+    # None = legacy/unknown (treat as v1)
+    stripe_api_version: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
     open_collective_slug: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )

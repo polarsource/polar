@@ -161,6 +161,7 @@ class AccountService:
             admin_id=account.admin_id,
             account_type=account.account_type,
             stripe_id=old_stripe_id,
+            stripe_api_version=account.stripe_api_version,
             email=account.email,
             country=account.country,
             currency=account.currency,
@@ -228,7 +229,7 @@ class AccountService:
             if account and not account.stripe_id:
                 assert account_create.account_type == AccountType.stripe
                 try:
-                    stripe_account = await stripe.create_account(
+                    stripe_account, api_version = await stripe.create_account(
                         account_create, name=None
                     )
                 except stripe_lib.StripeError as e:
@@ -241,6 +242,7 @@ class AccountService:
 
                 # Update account with new Stripe details
                 account.stripe_id = stripe_account.id
+                account.stripe_api_version = api_version
                 account.email = stripe_account.email
                 if stripe_account.country is not None:
                     account.country = stripe_account.country
@@ -301,7 +303,7 @@ class AccountService:
         account_create: AccountCreateForOrganization,
     ) -> Account:
         try:
-            stripe_account = await stripe.create_account(
+            stripe_account, api_version = await stripe.create_account(
                 account_create, name=None
             )  # TODO: name
         except stripe_lib.StripeError as e:
@@ -315,6 +317,7 @@ class AccountService:
             admin_id=admin.id,
             account_type=account_create.account_type,
             stripe_id=stripe_account.id,
+            stripe_api_version=api_version,
             email=stripe_account.email,
             country=stripe_account.country,
             currency=stripe_account.default_currency,

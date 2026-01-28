@@ -20,16 +20,13 @@ export const inferSignupMethod = (
     return 'email'
   }
 
-
   if (oauthAccounts.some((account) => account.platform === 'github')) {
     return 'github'
   }
 
-
   if (oauthAccounts.some((account) => account.platform === 'google')) {
     return 'google'
   }
-
 
   return 'email'
 }
@@ -111,7 +108,6 @@ interface UseOnboardingTrackingReturn {
 export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
   const posthog = usePostHog()
 
-
   const { variant: experimentVariant } = useExperiment('onboarding_flow_v1', {
     trackExposure: false,
   })
@@ -141,7 +137,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         })
 
         if (!response.ok) {
-
           clearOnboardingSession()
           return null
         }
@@ -150,7 +145,6 @@ export const useOnboardingTracking = (): UseOnboardingTrackingReturn => {
         setOnboardingSession(session)
         return session
       } catch {
-
         return null
       }
     },

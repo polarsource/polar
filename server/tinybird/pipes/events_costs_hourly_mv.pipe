@@ -1,0 +1,13 @@
+NODE aggregate_costs
+SQL >
+    SELECT
+        organization_id,
+        toStartOfHour(timestamp) AS hour,
+        sumState(coalesce(JSONExtractFloat(user_metadata, '_cost', 'amount'), 0)) AS total_cost,
+        uniqState(customer_id) AS unique_customers,
+        uniqState(external_customer_id) AS unique_external_customers
+    FROM events
+    GROUP BY organization_id, hour
+
+TYPE materialized
+DATASOURCE events_costs_hourly

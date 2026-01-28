@@ -1,0 +1,58 @@
+NODE date_series
+SQL >
+    %
+    SELECT DISTINCT
+        {% if String(interval, 'month') == 'hour' %}
+        toStartOfHour(toTimezone(toDateTime({{String(start_date, '2025-01-01')}}, 'UTC') + toIntervalHour(number), {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'day' %}
+        toStartOfDay(toTimezone(toDateTime({{String(start_date, '2025-01-01')}}, 'UTC') + toIntervalHour(number), {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'week' %}
+        toStartOfWeek(toTimezone(toDateTime({{String(start_date, '2025-01-01')}}, 'UTC') + toIntervalHour(number), {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'month' %}
+        toStartOfMonth(toTimezone(toDateTime({{String(start_date, '2025-01-01')}}, 'UTC') + toIntervalHour(number), {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'year' %}
+        toStartOfYear(toTimezone(toDateTime({{String(start_date, '2025-01-01')}}, 'UTC') + toIntervalHour(number), {{String(timezone, 'UTC')}}))
+        {% end %}
+        AS bucket
+    FROM numbers(
+        toUInt64(dateDiff('hour', toDateTime({{String(start_date, '2025-01-01')}}, 'UTC'), toDateTime({{String(end_date, '2026-01-01')}}, 'UTC')) + 1)
+    )
+
+NODE aggregated_costs
+SQL >
+    %
+    SELECT
+        {% if String(interval, 'month') == 'hour' %}
+        toStartOfHour(toTimezone(hour, {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'day' %}
+        toStartOfDay(toTimezone(hour, {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'week' %}
+        toStartOfWeek(toTimezone(hour, {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'month' %}
+        toStartOfMonth(toTimezone(hour, {{String(timezone, 'UTC')}}))
+        {% elif String(interval, 'month') == 'year' %}
+        toStartOfYear(toTimezone(hour, {{String(timezone, 'UTC')}}))
+        {% end %}
+        AS bucket,
+        sumMerge(total_cost) AS total_cost,
+        uniqMerge(unique_customers) + uniqMerge(unique_external_customers) AS total_users
+    FROM events_costs_hourly
+    WHERE
+        organization_id = {{String(organization_id, '00000000-0000-0000-0000-000000000000')}}
+        AND hour >= toDateTime({{String(start_date, '2025-01-01')}}, 'UTC')
+        AND hour < toDateTime({{String(end_date, '2026-01-01')}}, 'UTC')
+    GROUP BY bucket
+
+NODE result
+SQL >
+    SELECT
+        ds.bucket AS timestamp,
+        coalesce(
+            if(ac.total_users = 0, 0.0, ac.total_cost / ac.total_users),
+            0.0
+        ) AS cost_per_user
+    FROM date_series ds
+    LEFT JOIN aggregated_costs ac ON ac.bucket = ds.bucket
+    ORDER BY ds.bucket ASC
+
+TYPE endpoint

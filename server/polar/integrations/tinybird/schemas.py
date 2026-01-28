@@ -69,7 +69,7 @@ class TinybirdEvent(TypedDict):
     tax_state: str | None
     tax_country: str | None
     # User event fields (_cost, _llm)
-    cost_amount: int | None
+    cost_amount: float | None
     cost_currency: str | None
     llm_vendor: str | None
     llm_model: str | None

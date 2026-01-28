@@ -1,5 +1,8 @@
 import json
+from typing import Any
+from urllib.parse import urlparse
 
+import clickhouse_connect
 import httpx
 import structlog
 
@@ -21,7 +24,22 @@ class TinybirdPayloadTooLargeError(Exception):
 
 
 class TinybirdClient:
-    def __init__(self, api_url: str, api_token: str | None) -> None:
+    def __init__(
+        self,
+        *,
+        api_url: str,
+        clickhouse_url: str,
+        api_token: str | None,
+    ) -> None:
+        if api_token is None:
+            api_token = _fetch_local_token(api_url)
+
+        self._api_token = api_token
+        self._clickhouse_url = clickhouse_url
+        self._clickhouse_client: (
+            clickhouse_connect.driver.asyncclient.AsyncClient | None
+        ) = None
+
         self.client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {api_token}"} if api_token else {},
@@ -31,6 +49,20 @@ class TinybirdClient:
                 else None
             ),
         )
+
+    async def _get_clickhouse_client(
+        self,
+    ) -> clickhouse_connect.driver.asyncclient.AsyncClient:
+        if self._clickhouse_client is None:
+            parsed = urlparse(self._clickhouse_url)
+            self._clickhouse_client = await clickhouse_connect.get_async_client(
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 7182,
+                username="default",
+                password=self._api_token or "",
+                interface="https" if parsed.scheme == "https" else "http",
+            )
+        return self._clickhouse_client
 
     async def ingest(
         self, datasource: str, events: list[TinybirdEvent], *, wait: bool = False
@@ -59,7 +91,16 @@ class TinybirdClient:
         )
         response.raise_for_status()
 
+    async def query(self, sql: str) -> list[dict[str, Any]]:
+        ch = await self._get_clickhouse_client()
+        result = await ch.query(sql)
+        return [dict(zip(result.column_names, row)) for row in result.result_rows]
 
-client = TinybirdClient(settings.TINYBIRD_API_URL, settings.TINYBIRD_API_TOKEN)
+
+client = TinybirdClient(
+    api_url=settings.TINYBIRD_API_URL,
+    clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+    api_token=settings.TINYBIRD_API_TOKEN,
+)
 
 __all__ = ["TinybirdEvent", "TinybirdPayloadTooLargeError", "client"]

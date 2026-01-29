@@ -1,5 +1,4 @@
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
-import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -45,9 +44,9 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     ...getAPIParams(pagination, sorting),
   })
 
-  const { isEnabled: memberModelEnabled } = useMemberModelEnabled(
-    organization.id,
-  )
+  const memberColumnEnabled =
+    !!organization.feature_settings?.member_model_enabled &&
+    !!organization.feature_settings?.seat_based_pricing_enabled
 
   const setPagination = (
     updaterOrValue:
@@ -114,7 +113,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
       },
     ]
 
-    if (memberModelEnabled) {
+    if (memberColumnEnabled) {
       cols.push({
         accessorKey: 'member',
         header: 'Member',
@@ -177,7 +176,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
     )
 
     return cols
-  }, [memberModelEnabled, organization.slug])
+  }, [memberColumnEnabled, organization.slug])
 
   return (
     <div className="flex flex-col gap-6">

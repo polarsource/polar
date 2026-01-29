@@ -9,6 +9,8 @@ SQL >
         organization_id,
         customer_id,
         external_customer_id,
+        member_id,
+        external_member_id,
         external_id,
         parent_id,
         root_id,

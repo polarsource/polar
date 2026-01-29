@@ -29,6 +29,7 @@ from polar.models import (
     Discount,
     DiscountRedemption,
     Downloadable,
+    Event,
     LicenseKey,
     Order,
     Product,
@@ -91,6 +92,7 @@ class ProductTransferService:
         self.discounts_to_split: Sequence[Discount] = []
         self.checkout_links_to_update: Sequence[CheckoutLink] = []
         self.new_customers_map: dict[UUID, Customer] = {}
+        self.events_to_transfer: Sequence[Event] = []
         self.transfer_stats: dict[str, int] = defaultdict(int)
 
     async def validate_organizations_exist(self, session: AsyncSession) -> None:
@@ -406,6 +408,39 @@ class ProductTransferService:
             f"[bold green]✓ Found {len(self.checkout_links_to_update)} checkout links to update[/bold green]"
         )
 
+        # Analyze events
+        await self._analyze_events(session)
+
+    async def _analyze_events(self, session: AsyncSession) -> None:
+        """Analyze events that need to be transferred."""
+        if not self.customers_to_transfer:
+            return
+
+        # Get customer IDs and external IDs for directly transferred customers
+        customer_ids = [c.id for c in self.customers_to_transfer]
+        external_ids = [
+            c.external_id for c in self.customers_to_transfer if c.external_id
+        ]
+
+        # Find events for these customers
+        events_result = await session.execute(
+            select(Event).where(
+                or_(
+                    Event.customer_id.in_(customer_ids),
+                    and_(
+                        Event.external_customer_id.in_(external_ids),
+                        Event.organization_id == self.source_organization_id,
+                    ),
+                )
+            )
+        )
+        self.events_to_transfer = events_result.scalars().all()
+        self.transfer_stats["events_to_transfer"] = len(self.events_to_transfer)
+
+        print(
+            f"[bold green]✓ Found {len(self.events_to_transfer)} events to transfer[/bold green]"
+        )
+
     async def create_new_customer_for_split(
         self, session: AsyncSession, original_customer: Customer
     ) -> Customer:
@@ -642,6 +677,23 @@ class ProductTransferService:
                 session.add(downloadable)
                 self.transfer_stats["downloadables_updated"] += 1
 
+    async def transfer_events(self, session: AsyncSession) -> None:
+        """Transfer events for directly transferred customers."""
+        if not self.events_to_transfer:
+            print("[bold blue]ℹ️  No events to transfer[/bold blue]")
+            return
+
+        print(
+            f"[bold yellow]🔄 Transferring {len(self.events_to_transfer)} events...[/bold yellow]"
+        )
+
+        for event in self.events_to_transfer:
+            event.organization_id = self.target_organization_id
+            session.add(event)
+            self.transfer_stats["events_transferred"] += 1
+
+        await session.flush()
+
     async def transfer_benefits(self, session: AsyncSession) -> None:
         """Transfer benefits to the target organization."""
         if not self.benefits_to_transfer:
@@ -840,6 +892,24 @@ class ProductTransferService:
                 f"found {len(benefits_in_target)} in target organization"
             )
 
+        # Check that events for transferred customers are now in target org
+        if self.events_to_transfer:
+            result = await session.execute(
+                select(Event.id).where(
+                    and_(
+                        Event.id.in_([e.id for e in self.events_to_transfer]),
+                        Event.organization_id == self.target_organization_id,
+                    )
+                )
+            )
+            events_in_target = result.scalars().all()
+
+            if len(events_in_target) != len(self.events_to_transfer):
+                raise TransferValidationError(
+                    f"Not all events were transferred. Expected {len(self.events_to_transfer)}, "
+                    f"found {len(events_in_target)} in target organization"
+                )
+
         print("[bold green]✅ Transfer validation successful![/bold green]")
 
     async def execute_transfer(self, session: AsyncSession) -> None:
@@ -859,6 +929,9 @@ class ProductTransferService:
 
             # Customer splitting (those with mixed purchases)
             await self.split_customers(session)
+
+            # Transfer events (after customers are in their final state)
+            await self.transfer_events(session)
 
             # Transfer benefits
             await self.transfer_benefits(session)

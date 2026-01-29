@@ -7553,6 +7553,8 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
+      /** Member */
+      member?: components['schemas']['Member'] | null
       /** Benefit */
       benefit: components['schemas']['Benefit']
       /** Properties */

@@ -110,7 +110,7 @@ export const Pricing = () => {
           loading="lazy"
           alt=""
         />
-        <div className="dark:border-polar-700 dark:bg-polar-900 z-10 w-96 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="dark:border-polar-700 dark:bg-polar-900 z-10 w-96 scale-75 overflow-hidden rounded-xl border border-gray-200 bg-white xl:scale-100">
           <table className="w-full">
             <thead className="dark:bg-polar-800 bg-gray-50">
               <tr className="dark:border-polar-700 border-b border-gray-200">

@@ -1,8 +1,46 @@
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Image from 'next/image'
 import Link from 'next/link'
+import { JSX } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { StillaAI } from './Logos'
 
-export const testimonials = [
+export const companyTestimonials = [
+  {
+    link: 'https://stilla.ai',
+    name: 'Siavash Ghorbani',
+    company: 'Stilla AI',
+    verified: true,
+    logo: <StillaAI size={48} />,
+    text: (
+      <>
+        <p>
+          Polar&apos;s Python SDK and Webhook infrastructure made our billing
+          integration straightforward.
+        </p>
+        <p>It gave us production-ready billing in hours, not weeks.</p>
+        <p>It&apos;s rare to find a vendor that moves this fast.</p>
+      </>
+    ),
+  },
+  {
+    link: 'https://repoprompt.com',
+    name: 'Eric Provencher',
+    company: 'Repo Prompt',
+    verified: true,
+    avatar: '/assets/landing/testamonials/eric.jpg',
+    text: (
+      <>
+        <p>Polar was a turning point for Repo Prompt.</p>
+        <p>
+          I went from dreading payments to having everything live in a weekend.
+        </p>
+      </>
+    ),
+  },
+]
+
+export const userTestimonials = [
   {
     link: 'https://x.com/rauchg/status/1909810055622672851',
     name: 'Guillermo Rauch',
@@ -12,7 +50,7 @@ export const testimonials = [
     text: (
       <p>
         The speed at which Polar is executing on the financial infrastructure
-        primitives the new world needs is very impressive
+        primitives the new world needs is very impressive.
       </p>
     ),
   },
@@ -26,8 +64,8 @@ export const testimonials = [
       <>
         <p>Open source + great DX + responsive support always wins.</p>
         <p>
-          If you&apos;re selling stuff online and haven&apos;t tried @polar_sh
-          yet — 100% recommend doing so!
+          If you&apos;re selling stuff online and haven&apos;t tried Polar yet —
+          100% recommend doing so!
         </p>
       </>
     ),
@@ -51,42 +89,6 @@ export const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/samuel_colvin/status/1676167205715582978',
-    name: 'Samuel Colvin',
-    company: 'Pydantic',
-    verified: true,
-    avatar: '/assets/landing/testamonials/samuel.jpg',
-    text: (
-      <>
-        <p>Amazing! Really excited to seeing how this turns out.</p>
-        <p>
-          Polar is the cutting edge of how open source might be financed in the
-          future.
-        </p>
-      </>
-    ),
-  },
-  {
-    link: 'https://x.com/morganlinton/status/1935336619718148373',
-    name: 'Morgan Linton',
-    company: 'Bold Metrics',
-    verified: true,
-    avatar: '/assets/landing/testamonials/morgan.jpg',
-    text: (
-      <>
-        <p>
-          Huge congrats to Polar, love what this team is doing. Three person
-          team, executing like crazy.
-        </p>
-        <p>Building the perfect solution at the perfect time in history.</p>
-        <p>
-          There has never been a better time to build software, and now, there
-          has never been an easier way to charge for the software you build.
-        </p>
-      </>
-    ),
-  },
-  {
     link: 'https://x.com/mrblackstudio/status/1987257923291259224',
     name: 'Lee Black',
     company: '1042 Studio',
@@ -94,22 +96,8 @@ export const testimonials = [
     avatar: '/assets/landing/testamonials/lee.jpg',
     text: (
       <>
-        <p>I switched to @polar_sh a few weeks back. Best decision ever.</p>
+        <p>I switched to Polar a few weeks back. Best decision ever.</p>
       </>
-    ),
-  },
-  {
-    link: 'https://x.com/alexhbass/status/1895688367066747251',
-    name: 'Alex Bass',
-    company: 'Efficient',
-    verified: true,
-    avatar: '/assets/landing/testamonials/alex.jpg',
-    text: (
-      <p>
-        We switched to @polar_sh because of their killer API, UX, and product.
-        Also love that it&apos;s Open-Source. Their team cares A LOT as well.
-        Worth the minor fee difference.
-      </p>
     ),
   },
   {
@@ -118,23 +106,25 @@ export const testimonials = [
     company: 'Midday',
     verified: true,
     avatar: '/assets/landing/testamonials/pontus.jpg',
-    text: <p>You can tell @polar_sh is building DX first</p>,
+    text: <p>You can tell Polar is building DX first.</p>,
   },
   {
-    link: 'https://x.com/zuess05/status/1988311142515831017',
-    name: 'Suhas',
-    company: 'Cubix',
-    verified: true,
-    avatar: '/assets/landing/testamonials/suhas.jpg',
+    link: 'https://x.com/tonykelly/status/2016615925701570990',
+    name: 'Tony Kelly',
+    company: 'Spicebox',
+    verified: false,
+    avatar: '/assets/landing/testamonials/tony.jpg',
     text: (
       <>
         <p>
-          man, @polar_sh has one of the BEST onboardings I&apos;ve seen for a
-          payment provider.
+          Highly recommend using Polar for billing. Easiest and quickest payment
+          integration I’ve done in… ever actually!
         </p>
         <p>
-          Took me less than 20 minutes while some others took literally weeks
+          Within 50 minutes of signing up had onboarded, integrated, tested in
+          sandbox and was migrating to Production.
         </p>
+        <p>That’s hard to beat.</p>
       </>
     ),
   },
@@ -143,41 +133,56 @@ export const testimonials = [
 interface TestamonialProps {
   name: string
   company: string
-  avatar: string
+  avatar?: string
+  logo?: JSX.Element
   text: React.ReactNode
   link: string
-  verified?: boolean
+  className?: string
+  size?: 'sm' | 'lg'
 }
 
 export const Testamonial = ({
   name,
   company,
   avatar,
+  logo,
   text,
   link,
+  className,
+  size = 'sm',
 }: TestamonialProps) => {
   return (
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-white p-8 transition-colors hover:bg-white"
+      className={twMerge(
+        'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-white p-8 transition-colors hover:bg-white',
+        className,
+      )}
     >
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between gap-x-2">
-          <Avatar
-            name={name}
-            avatar_url={avatar}
-            className="h-12 w-12"
-            width={64}
-            height={64}
-            loading="lazy"
-            CustomImageComponent={Image}
-          />
+          {logo ? (
+            logo
+          ) : (
+            <Avatar
+              name={name}
+              avatar_url={avatar ?? ''}
+              className="h-12 w-12"
+              width={64}
+              height={64}
+              loading="lazy"
+              CustomImageComponent={Image}
+            />
+          )}
         </div>
-        <div className="flex flex-col gap-y-6">
-          <span className="dark:text-polar-50 flex flex-col gap-y-4 text-lg text-gray-950">
-            {text}
-          </span>
+        <div
+          className={twMerge(
+            'dark:text-polar-50 flex flex-col text-gray-950',
+            size === 'lg' ? 'gap-y-8 text-xl' : 'gap-y-4 text-lg',
+          )}
+        >
+          {text}
         </div>
       </div>
       <div className="flex flex-col">
@@ -203,7 +208,7 @@ export const Testimonials = () => {
         </h1>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {testimonials.map((testimonial, index) => (
+        {userTestimonials.map((testimonial, index) => (
           <Testamonial key={`testimonial-${index}`} {...testimonial} />
         ))}
       </div>

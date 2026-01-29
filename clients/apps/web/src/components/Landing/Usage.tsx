@@ -139,7 +139,7 @@ export const Usage = () => {
               Ingestion Based Billing
             </span>
             <h1 className="w-fit max-w-3xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
-              Usage Based Billing on Autopilot with Ingestion Strategies
+              Usage Based Billing on Autopilot
             </h1>
             <TabsList>
               {strategies.map((strategy) => (

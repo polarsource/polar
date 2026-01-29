@@ -6,9 +6,9 @@ import { twMerge } from 'tailwind-merge'
 import AnimatedBars from './animated/AnimatedBars'
 import AnimatedCircles from './animated/AnimatedCircles'
 import AnimatedLines from './animated/AnimatedLines'
-import AnimatedNodes from './animated/AnimatedNodes'
 import AnimatedSquares from './animated/AnimatedSquares'
 import AnimatedWaves from './animated/AnimatedWaves'
+import Vestaboard from './animated/Vestaboard'
 
 type FeatureCardProps = {
   title: string
@@ -32,7 +32,7 @@ const FeatureCard = ({
       <Link
         href={linkHref}
         target={linkHref.startsWith('http') ? '_blank' : undefined}
-        className="dark:bg-polar-950 bg-white flex h-full flex-col justify-between gap-y-6 hover:bg-gray-50 dark:hover:bg-polar-900 transition-colors overflow-hidden"
+        className="dark:bg-polar-950 bg-white flex h-full flex-col gap-y-4 hover:bg-gray-50 dark:hover:bg-polar-900 transition-colors overflow-hidden"
       >
         <div className="flex h-full flex-col gap-y-2 md:gap-y-6 p-6 md:p-10">
           <h3 className="text-xl text-pretty text-black md:text-3xl md:leading-tight! dark:text-white">
@@ -68,30 +68,30 @@ const Features = ({ className }: FeaturesProps) => {
         'Create digital products with flexible pricing models.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
-          <AnimatedBars />
+        <div className="relative h-[180px]">
+          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
         </div>
       ),
     },
     {
       title: 'Usage Billing for the AI era',
       description:
-        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+        'Charge your customers for AI usage with precision.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
-          <AnimatedCircles />
+        <div className="relative h-[180px]">
+         <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
         </div>
       ),
     },
     {
       title: 'Customer Management',
       description:
-        'Streamlined customer lifecycle management with detailed profiles and analytics.',
+        'Streamlined customer management & analytics.',
       linkHref: '/features/customers',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
-          <AnimatedNodes />
+        <div className="relative h-[180px]">
+          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
         </div>
       ),
     },
@@ -101,8 +101,8 @@ const Features = ({ className }: FeaturesProps) => {
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
       linkHref: '/features/customers',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
-          <AnimatedSquares />
+        <div className="relative h-[180px]">
+         <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
         </div>
       ),
     },
@@ -112,7 +112,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
       linkHref: '/features/customers',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
+        <div className="relative h-[180px]">
           <AnimatedWaves />
         </div>
       ),
@@ -123,7 +123,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Focus on your passion while we handle all headaches & tax compliance.',
       linkHref: '/resources/merchant-of-record',
       children: (
-        <div className="relative h-[180px] md:h-[240px]">
+        <div className="relative h-[180px]">
           <AnimatedLines />
         </div>
       ),

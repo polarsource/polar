@@ -73,6 +73,19 @@ class EventTypeRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def get_by_names_and_organization(
+        self, names: list[str], organization_id: UUID
+    ) -> dict[str, EventType]:
+        if not names:
+            return {}
+        statement = select(EventType).where(
+            EventType.name.in_(names),
+            EventType.organization_id == organization_id,
+            EventType.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {et.name: et for et in result.scalars().all()}
+
     async def get_or_create(self, name: str, organization_id: UUID) -> EventType:
         existing = await self.get_by_name_and_organization(name, organization_id)
         if existing:

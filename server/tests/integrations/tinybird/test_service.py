@@ -1,10 +1,35 @@
 import json
 import uuid
+from collections.abc import Generator
 from datetime import UTC, datetime
+from unittest.mock import patch
 
-from polar.integrations.tinybird.service import _event_to_tinybird
+import pytest
+
+from polar.config import settings
+from polar.integrations.tinybird import service as tinybird_service
+from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.service import (
+    TinybirdEventsQuery,
+    _event_to_tinybird,
+)
 from polar.models import Event
 from polar.models.event import EventSource
+from tests.fixtures.tinybird import tinybird_available
+
+
+@pytest.fixture
+def tinybird_client(
+    tinybird_workspace: str,
+) -> Generator[TinybirdClient, None, None]:
+    client = TinybirdClient(
+        api_url=settings.TINYBIRD_API_URL,
+        clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+        api_token=tinybird_workspace,
+        clickhouse_token=tinybird_workspace,
+    )
+    with patch.object(tinybird_service, "client", client):
+        yield client
 
 
 def create_test_event(
@@ -110,3 +135,142 @@ class TestEventToTinybird:
         assert result["parent_id"] is None
         assert result["meter_id"] is None
         assert result["amount"] is None
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+class TestTinybirdEventsQuery:
+    async def test_get_event_type_stats(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id,
+                name="order.created",
+                source=EventSource.system,
+            ),
+            create_test_event(
+                organization_id=org_id,
+                name="order.created",
+                source=EventSource.system,
+            ),
+            create_test_event(
+                organization_id=org_id,
+                name="order.created",
+                source=EventSource.system,
+            ),
+            create_test_event(
+                organization_id=org_id,
+                name="subscription.created",
+                source=EventSource.system,
+            ),
+            create_test_event(
+                organization_id=org_id,
+                name="custom.event",
+                source=EventSource.user,
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(
+            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
+        )
+
+        query = TinybirdEventsQuery(org_id)
+        stats = await query.get_event_type_stats()
+
+        stats_by_name = {(s.name, s.source): s for s in stats}
+
+        assert len(stats) == 3
+        assert stats_by_name[("order.created", EventSource.system)].occurrences == 3
+        assert (
+            stats_by_name[("subscription.created", EventSource.system)].occurrences == 1
+        )
+        assert stats_by_name[("custom.event", EventSource.user)].occurrences == 1
+
+    async def test_filter_by_source(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id, name="system.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="system.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="user.event", source=EventSource.user
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(
+            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
+        )
+
+        query = TinybirdEventsQuery(org_id).filter_source(EventSource.user)
+        stats = await query.get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == "user.event"
+        assert stats[0].occurrences == 1
+
+    async def test_filter_by_customer_id(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        customer_1 = uuid.uuid4()
+        customer_2 = uuid.uuid4()
+
+        events = [
+            create_test_event(
+                organization_id=org_id, name="event.a", source=EventSource.user
+            ),
+            create_test_event(
+                organization_id=org_id, name="event.a", source=EventSource.user
+            ),
+            create_test_event(
+                organization_id=org_id, name="event.b", source=EventSource.user
+            ),
+        ]
+        events[0].customer_id = customer_1
+        events[1].customer_id = customer_1
+        events[2].customer_id = customer_2
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(
+            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
+        )
+
+        query = TinybirdEventsQuery(org_id).filter_customer_id([customer_1])
+        stats = await query.get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == "event.a"
+        assert stats[0].occurrences == 2
+
+    async def test_organization_isolation(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_1 = uuid.uuid4()
+        org_2 = uuid.uuid4()
+
+        events = [
+            create_test_event(
+                organization_id=org_1, name="org1.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_1, name="org1.event", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_2, name="org2.event", source=EventSource.system
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(
+            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
+        )
+
+        query = TinybirdEventsQuery(org_1)
+        stats = await query.get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == "org1.event"
+        assert stats[0].occurrences == 2

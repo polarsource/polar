@@ -18,6 +18,7 @@ from tests.fixtures.random_objects import (
     create_checkout_link,
     create_customer,
     create_discount,
+    create_event,
     create_order,
     create_organization,
     create_product,
@@ -730,6 +731,130 @@ class TestProductTransferService:
 
         assert service.transfer_stats["checkout_links_soft_deleted"] == 1
 
+    async def test_analyze_events(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that events are properly analyzed for transfer."""
+        # Setup: Create source and target orgs, products, customers, and events
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+        product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+
+        # Customer with only transferring product (should have events transferred)
+        customer_direct = await create_customer(
+            save_fixture, organization=source_org, email="customer_direct@example.com"
+        )
+        await create_order(save_fixture, customer=customer_direct, product=product)
+
+        # Create events for the direct customer
+        event1 = await create_event(
+            save_fixture, customer=customer_direct, organization=source_org
+        )
+        event2 = await create_event(
+            save_fixture, customer=customer_direct, organization=source_org
+        )
+
+        # Customer with mixed purchases (should NOT have events transferred)
+        customer_split = await create_customer(
+            save_fixture, organization=source_org, email="customer_split@example.com"
+        )
+        other_product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+        await create_order(save_fixture, customer=customer_split, product=product)
+        await create_order(save_fixture, customer=customer_split, product=other_product)
+        await create_event(
+            save_fixture, customer=customer_split, organization=source_org
+        )
+
+        # Test
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_transfer = [customer_direct]
+        service.customers_to_split = [customer_split]
+
+        await service._analyze_events(session)
+
+        # Verify
+        assert len(service.events_to_transfer) == 2
+        assert {event1.id, event2.id} == {e.id for e in service.events_to_transfer}
+
+    async def test_transfer_events(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that events are properly transferred."""
+        # Setup
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+        product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+        customer = await create_customer(
+            save_fixture, organization=source_org, email="customer_test@example.com"
+        )
+        await create_order(save_fixture, customer=customer, product=product)
+
+        event1 = await create_event(
+            save_fixture, customer=customer, organization=source_org
+        )
+        event2 = await create_event(
+            save_fixture, customer=customer, organization=source_org
+        )
+
+        # Test
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_transfer = [customer]
+        service.events_to_transfer = [event1, event2]
+
+        await service.transfer_events(session)
+
+        # Verify events are updated
+        await session.refresh(event1)
+        await session.refresh(event2)
+
+        assert event1.organization_id == target_org.id
+        assert event2.organization_id == target_org.id
+        assert service.transfer_stats["events_transferred"] == 2
+
+    async def test_events_not_transferred_for_split_customers(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that events for split customers are NOT transferred."""
+        # Setup
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+        product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+        other_product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+
+        customer = await create_customer(
+            save_fixture,
+            organization=source_org,
+            email="customer_split_test@example.com",
+        )
+        await create_order(save_fixture, customer=customer, product=product)
+        await create_order(save_fixture, customer=customer, product=other_product)
+
+        event = await create_event(
+            save_fixture, customer=customer, organization=source_org
+        )
+
+        # Test
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_split = [customer]  # This is a split customer
+
+        await service._analyze_events(session)
+
+        # Verify no events are selected for transfer
+        assert len(service.events_to_transfer) == 0
+
 
 @pytest.mark.asyncio
 class TestProductTransferIntegration:
@@ -892,3 +1017,48 @@ class TestProductTransferIntegration:
 
         # Verify stats
         assert service.transfer_stats["checkout_links_updated"] == 1
+
+    async def test_complete_transfer_workflow_with_events(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test complete transfer workflow including event transfer."""
+        # Setup
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+        product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+
+        customer = await create_customer(
+            save_fixture, organization=source_org, email="customer_workflow@example.com"
+        )
+        await create_order(save_fixture, customer=customer, product=product)
+
+        # Create events for the customer
+        event1 = await create_event(
+            save_fixture, customer=customer, organization=source_org
+        )
+        event2 = await create_event(
+            save_fixture, customer=customer, organization=source_org
+        )
+
+        # Initialize service
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_transfer = [customer]
+        service.events_to_transfer = [event1, event2]
+
+        # Execute the transfer
+        await service.transfer_customers_directly(session)
+        await service.transfer_events(session)
+        await service.transfer_benefits(session)
+        await service.transfer_products(session)
+        await service.update_related_entities(session)
+        await service.validate_transfer(session)
+
+        # Verify events were transferred
+        await session.refresh(event1)
+        await session.refresh(event2)
+        assert event1.organization_id == target_org.id
+        assert event2.organization_id == target_org.id
+        assert service.transfer_stats["events_transferred"] == 2

@@ -200,6 +200,12 @@ any issues arise.
 - Try adding trailing `/` to the URL on Polar. Often `/foo` is resolved to
   `/foo/` by frameworks.
 
+`HTTP 3xx`
+
+Redirect responses (301, 302, 307, etc.) are treated as failures. Polar does not follow redirects for webhook deliveries. Update your webhook URL to the final destination URL to avoid redirects.
+
+A common cause is hosting providers like Vercel that redirect between `www` and non-`www` domains. Make sure your configured URL matches your actual domain.
+
 `HTTP 403`
 
 - Using middleware for authorization? Make sure to exclude the webhook route

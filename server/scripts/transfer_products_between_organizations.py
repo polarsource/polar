@@ -22,16 +22,19 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import (
     Benefit,
     BenefitGrant,
+    BillingEntry,
     Checkout,
     CheckoutLink,
     CheckoutLinkProduct,
     Customer,
+    CustomerSession,
     Discount,
     DiscountRedemption,
     Downloadable,
     Event,
     LicenseKey,
     Order,
+    PaymentMethod,
     Product,
     ProductBenefit,
     Subscription,
@@ -88,6 +91,9 @@ class ProductTransferService:
         self.benefits_to_transfer: Sequence[Benefit] = []
         self.customers_to_split: Sequence[Customer] = []
         self.customers_to_transfer: Sequence[Customer] = []
+        self.customers_to_merge: list[
+            Customer
+        ] = []  # Customers with existing email in target
         self.discounts_to_transfer: Sequence[Discount] = []
         self.discounts_to_split: Sequence[Discount] = []
         self.checkout_links_to_update: Sequence[CheckoutLink] = []
@@ -422,13 +428,22 @@ class ProductTransferService:
             c.external_id for c in self.customers_to_transfer if c.external_id
         ]
 
-        # Find events for these customers
+        # Include customers to merge in event analysis
+        merge_customer_ids = [c.id for c in self.customers_to_merge]
+        merge_external_ids = [
+            c.external_id for c in self.customers_to_merge if c.external_id
+        ]
+
+        all_customer_ids = customer_ids + merge_customer_ids
+        all_external_ids = external_ids + merge_external_ids
+
+        # Find events for all customers (both to transfer and to merge)
         events_result = await session.execute(
             select(Event).where(
                 or_(
-                    Event.customer_id.in_(customer_ids),
+                    Event.customer_id.in_(all_customer_ids),
                     and_(
-                        Event.external_customer_id.in_(external_ids),
+                        Event.external_customer_id.in_(all_external_ids),
                         Event.organization_id == self.source_organization_id,
                     ),
                 )
@@ -444,10 +459,32 @@ class ProductTransferService:
     async def create_new_customer_for_split(
         self, session: AsyncSession, original_customer: Customer
     ) -> Customer:
-        """Create a new customer record in the target organization."""
+        """Create a new customer record in the target organization or use existing one."""
         print(
             f"[bold blue]👤 Creating new customer for {original_customer.email}[/bold blue]"
         )
+
+        # Check if a customer with the same email already exists in target organization
+        existing_customer_result = await session.execute(
+            select(Customer).where(
+                and_(
+                    Customer.email == original_customer.email,
+                    Customer.organization_id == self.target_organization_id,
+                    Customer.deleted_at.is_(
+                        None
+                    ),  # Only consider non-deleted customers
+                )
+            )
+        )
+        existing_customer = existing_customer_result.scalar_one_or_none()
+
+        if existing_customer:
+            # Use existing customer instead of creating a new one
+            print(
+                f"[bold yellow]⚠️  Customer with email {original_customer.email} already exists in target organization, using existing customer[/bold yellow]"
+            )
+            self.transfer_stats["existing_customers_used"] += 1
+            return existing_customer
 
         # Generate a new short_id for the customer
         result = await session.execute(select(func.nextval("customer_short_id_seq")))
@@ -571,9 +608,139 @@ class ProductTransferService:
             print(
                 f"[bold blue]👤 Transferring customer {customer.email} directly[/bold blue]"
             )
-            customer.organization_id = self.target_organization_id
-            session.add(customer)
-            self.transfer_stats["customers_transferred_directly"] += 1
+
+            # Check if a customer with the same email already exists in target organization
+            existing_customer_result = await session.execute(
+                select(Customer).where(
+                    and_(
+                        Customer.email == customer.email,
+                        Customer.organization_id == self.target_organization_id,
+                        Customer.deleted_at.is_(
+                            None
+                        ),  # Only consider non-deleted customers
+                    )
+                )
+            )
+            existing_customer = existing_customer_result.scalar_one_or_none()
+
+            if existing_customer:
+                # Customer with same email exists in target org - this is a merge scenario
+                print(
+                    f"[bold yellow]⚠️  Customer with email {customer.email} already exists in target organization, merging into existing customer[/bold yellow]"
+                )
+
+                # Add to customers_to_merge list and remove from customers_to_transfer for proper tracking
+                self.customers_to_merge.append(customer)
+                self.customers_to_transfer = [
+                    c for c in self.customers_to_transfer if c.id != customer.id
+                ]
+
+                # Update all orders for this customer to use the existing customer
+                orders_result = await session.execute(
+                    select(Order).where(Order.customer_id == customer.id)
+                )
+                orders_to_update = orders_result.scalars().all()
+
+                for order in orders_to_update:
+                    order.customer_id = existing_customer.id
+                    session.add(order)
+                    self.transfer_stats["orders_updated"] += 1
+
+                # Update all subscriptions for this customer to use the existing customer
+                subscriptions_result = await session.execute(
+                    select(Subscription).where(Subscription.customer_id == customer.id)
+                )
+                subscriptions_to_update = subscriptions_result.scalars().all()
+
+                for subscription in subscriptions_to_update:
+                    subscription.customer_id = existing_customer.id
+                    session.add(subscription)
+                    self.transfer_stats["subscriptions_updated"] += 1
+
+                # Update benefit grants for this customer
+                benefit_grants_result = await session.execute(
+                    select(BenefitGrant).where(BenefitGrant.customer_id == customer.id)
+                )
+                benefit_grants_to_update = benefit_grants_result.scalars().all()
+
+                for grant in benefit_grants_to_update:
+                    grant.customer_id = existing_customer.id
+                    session.add(grant)
+                    self.transfer_stats["benefit_grants_updated"] += 1
+
+                # Update license keys for this customer
+                license_keys_result = await session.execute(
+                    select(LicenseKey).where(LicenseKey.customer_id == customer.id)
+                )
+                license_keys_to_update = license_keys_result.scalars().all()
+
+                for license_key in license_keys_to_update:
+                    license_key.customer_id = existing_customer.id
+                    license_key.organization_id = self.target_organization_id
+                    session.add(license_key)
+                    self.transfer_stats["license_keys_updated"] += 1
+
+                # Update downloadables for this customer
+                downloadables_result = await session.execute(
+                    select(Downloadable).where(Downloadable.customer_id == customer.id)
+                )
+                downloadables_to_update = downloadables_result.scalars().all()
+
+                for downloadable in downloadables_to_update:
+                    downloadable.customer_id = existing_customer.id
+                    session.add(downloadable)
+                    self.transfer_stats["downloadables_updated"] += 1
+
+                # Update billing entries for this customer
+                billing_entries_result = await session.execute(
+                    select(BillingEntry).where(BillingEntry.customer_id == customer.id)
+                )
+                billing_entries_to_update = billing_entries_result.scalars().all()
+
+                for billing_entry in billing_entries_to_update:
+                    billing_entry.customer_id = existing_customer.id
+                    session.add(billing_entry)
+                    self.transfer_stats["billing_entries_updated"] += 1
+
+                # Update customer sessions for this customer
+                customer_sessions_result = await session.execute(
+                    select(CustomerSession).where(
+                        CustomerSession.customer_id == customer.id
+                    )
+                )
+                customer_sessions_to_update = customer_sessions_result.scalars().all()
+
+                for customer_session in customer_sessions_to_update:
+                    customer_session.customer_id = existing_customer.id
+                    session.add(customer_session)
+                    self.transfer_stats["customer_sessions_updated"] += 1
+
+                # Update payment methods for this customer
+                payment_methods_result = await session.execute(
+                    select(PaymentMethod).where(
+                        PaymentMethod.customer_id == customer.id
+                    )
+                )
+                payment_methods_to_update = payment_methods_result.scalars().all()
+
+                for payment_method in payment_methods_to_update:
+                    payment_method.customer_id = existing_customer.id
+                    session.add(payment_method)
+                    self.transfer_stats["payment_methods_updated"] += 1
+
+                # Soft delete the source customer since they shouldn't exist in source org anymore
+                customer.deleted_at = func.now()
+                session.add(customer)
+                self.transfer_stats["customers_merged"] += 1
+
+                print(
+                    f"[bold green]✓ Merged {len(orders_to_update)} orders, {len(subscriptions_to_update)} subscriptions, and other related objects into existing customer[/bold green]"
+                )
+            else:
+                # No existing customer - transfer normally
+                customer.organization_id = self.target_organization_id
+                session.add(customer)
+                self.transfer_stats["customers_transferred_directly"] += 1
 
         await session.flush()
 
@@ -676,6 +843,48 @@ class ProductTransferService:
                 downloadable.customer_id = new_customer.id
                 session.add(downloadable)
                 self.transfer_stats["downloadables_updated"] += 1
+
+            # Update billing entries for transferring products
+            billing_entries_result = await session.execute(
+                select(BillingEntry).where(
+                    and_(
+                        BillingEntry.customer_id == customer.id,
+                        BillingEntry.subscription_id.in_(
+                            [s.id for s in subscriptions_to_update]
+                        ),
+                    )
+                )
+            )
+            billing_entries_to_update = billing_entries_result.scalars().all()
+
+            for billing_entry in billing_entries_to_update:
+                billing_entry.customer_id = new_customer.id
+                session.add(billing_entry)
+                self.transfer_stats["billing_entries_updated"] += 1
+
+            # Update customer sessions for this customer
+            customer_sessions_result = await session.execute(
+                select(CustomerSession).where(
+                    CustomerSession.customer_id == customer.id
+                )
+            )
+            customer_sessions_to_update = customer_sessions_result.scalars().all()
+
+            for customer_session in customer_sessions_to_update:
+                customer_session.customer_id = new_customer.id
+                session.add(customer_session)
+                self.transfer_stats["customer_sessions_updated"] += 1
+
+            # Update payment methods for this customer
+            payment_methods_result = await session.execute(
+                select(PaymentMethod).where(PaymentMethod.customer_id == customer.id)
+            )
+            payment_methods_to_update = payment_methods_result.scalars().all()
+
+            for payment_method in payment_methods_to_update:
+                payment_method.customer_id = new_customer.id
+                session.add(payment_method)
+                self.transfer_stats["payment_methods_updated"] += 1
 
     async def transfer_events(self, session: AsyncSession) -> None:
         """Transfer events for directly transferred customers."""
@@ -856,6 +1065,24 @@ class ProductTransferService:
                 raise TransferValidationError(
                     f"Not all customers were transferred directly. Expected {len(self.customers_to_transfer)}, "
                     f"found {len(customers_transferred)} in target organization"
+                )
+
+        # Check that all customers to merge were soft-deleted (merged into existing target customers)
+        if self.customers_to_merge:
+            result = await session.execute(
+                select(Customer.id).where(
+                    and_(
+                        Customer.id.in_([c.id for c in self.customers_to_merge]),
+                        Customer.deleted_at.isnot(None),
+                    )
+                )
+            )
+            customers_merged = result.scalars().all()
+
+            if len(customers_merged) != len(self.customers_to_merge):
+                raise TransferValidationError(
+                    f"Not all customers were merged correctly. Expected {len(self.customers_to_merge)}, "
+                    f"found {len(customers_merged)} soft-deleted (merged)"
                 )
 
         # Check that all products now belong to the target organization

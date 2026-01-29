@@ -1,10 +1,11 @@
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import httpx
 import logfire
 from fastapi import FastAPI
+from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
@@ -74,6 +75,40 @@ def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
     )
 
 
+class LevelSampler(Sampler):
+    def should_sample(
+        self,
+        parent_context: "Context | None",
+        trace_id: int,
+        name: str,
+        kind: "SpanKind | None" = None,
+        attributes: "Attributes | None" = None,
+        links: Sequence["Link"] | None = None,
+        trace_state: "TraceState | None" = None,
+    ) -> SamplingResult:
+        sampler = ALWAYS_ON
+
+        if attributes:
+            span_level = attributes.get("logfire.level_num")
+            if span_level and SpanLevel(cast(int, span_level)) < cast(
+                logfire.LevelName, settings.LOG_LEVEL.lower()
+            ):
+                sampler = ALWAYS_OFF
+
+        return sampler.should_sample(
+            parent_context,
+            trace_id,
+            name,
+            kind,
+            attributes,
+            links,
+            trace_state,
+        )
+
+    def get_description(self) -> str:
+        return "LevelSampler"
+
+
 def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
     # Don't scrub auth subject in log messages
     if match.path == ("attributes", "subject"):
@@ -90,8 +125,12 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         service_name=resolved_service_name,
         service_version=os.environ.get("RELEASE_VERSION", "development"),
         console=False,
-        sampling=logfire.SamplingOptions(
-            head=ParentBased(IgnoreSampler((_healthz_matcher, _worker_health_matcher))),
+        sampling=logfire.SamplingOptions.level_or_duration(
+            head=ParentBased(
+                IgnoreSampler((_healthz_matcher, _worker_health_matcher)),
+                local_parent_sampled=LevelSampler(),
+            ),
+            level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),
         scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
     )

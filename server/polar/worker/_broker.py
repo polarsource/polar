@@ -1,8 +1,7 @@
 import contextlib
 import contextvars
-import gc
 from collections.abc import Callable
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 import dramatiq
 import logfire
@@ -100,20 +99,6 @@ class LogfireMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
         instrument_httpx()
-
-        def _gc_callback(phase: Literal["start", "stop"], info: dict[str, Any]) -> None:
-            logfire_stack: contextlib.ExitStack | None = None
-            if phase == "start":
-                logfire_stack = contextlib.ExitStack()
-                logfire_stack.enter_context(logfire.span("Garbage collection", **info))
-                LogfireMiddleware.gc_span.set(logfire_stack)
-            elif phase == "stop":
-                logfire_stack = LogfireMiddleware.gc_span.get()
-                if logfire_stack is not None:
-                    logfire_stack.close()
-                    LogfireMiddleware.gc_span.set(None)
-
-        gc.callbacks.append(_gc_callback)
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.MessageProxy

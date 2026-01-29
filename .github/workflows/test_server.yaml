@@ -228,6 +228,7 @@ jobs:
         image: tinybirdco/tinybird-local:latest
         ports:
           - 7181:7181
+          - 7182:7182
         options: >-
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s

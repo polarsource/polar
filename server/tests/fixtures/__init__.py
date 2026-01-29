@@ -8,6 +8,7 @@ from tests.fixtures.locker import *  # noqa: F403
 from tests.fixtures.random_objects import *  # noqa: F403
 from tests.fixtures.redis import *  # noqa: F403
 from tests.fixtures.stripe import *  # noqa: F403
+from tests.fixtures.tinybird import *  # noqa: F403
 from tests.fixtures.worker import *  # noqa: F403
 
 # Quiet down external libraries during testing

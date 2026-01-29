@@ -11,7 +11,7 @@ from polar.api import router
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
-from polar.checkout_link.app import router as checkout_link_redirect_router
+from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
@@ -219,7 +219,7 @@ def create_app() -> FastAPI:
         app.host(settings.BACKOFFICE_HOST, backoffice_app)
 
     if settings.CHECKOUT_LINK_HOST is not None:
-        app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_router)
+        app.host(settings.CHECKOUT_LINK_HOST, checkout_link_redirect_app)
 
     app.include_router(router)
     document_webhooks(app)

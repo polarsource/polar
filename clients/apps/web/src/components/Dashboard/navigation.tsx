@@ -6,6 +6,7 @@ import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import LayersOutlined from '@mui/icons-material/LayersOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -14,7 +15,7 @@ import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { Gift, ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -272,7 +273,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'perks',
     title: 'Startup Stack',
-    icon: <Gift className="h-5 w-5" />,
+    icon: <LayersOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/perks`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/perks`)

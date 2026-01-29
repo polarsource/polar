@@ -102,6 +102,8 @@ export const useMeterQuantities = (
     ],
     queryFn: async () => {
       const { start_timestamp, end_timestamp, interval } = parameters || {}
+      const timezone = Intl.DateTimeFormat().resolvedOptions()
+        .timeZone as operations['meters:quantities']['parameters']['query']['timezone']
       const result = await unwrap(
         api.GET('/v1/meters/{id}/quantities', {
           params: {
@@ -110,6 +112,7 @@ export const useMeterQuantities = (
               start_timestamp: start_timestamp ?? '',
               end_timestamp: end_timestamp ?? '',
               interval: interval as schemas['TimeInterval'],
+              timezone,
               ...(parameters || {}),
             },
           },

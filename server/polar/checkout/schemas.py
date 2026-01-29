@@ -155,6 +155,12 @@ _require_billing_address_description = (
     "If you preset the billing address, this setting will be automatically set to "
     "`true`."
 )
+_lock_customer_email_description = (
+    "Whether to lock the customer email field. "
+    "If `true`, the customer will not be able to change their email address "
+    "during checkout. Use this when you preset the email address from the "
+    "checkout link or API and want to ensure it stays unchanged."
+)
 _allow_trial_description = (
     "Whether to enable the trial period for the checkout session. "
     "If `false`, the trial period will be disabled, even if the selected product "
@@ -205,6 +211,9 @@ class CheckoutCreateBase(
     )
     require_billing_address: bool = Field(
         default=False, description=_require_billing_address_description
+    )
+    lock_customer_email: bool = Field(
+        default=False, description=_lock_customer_email_description
     )
     amount: Amount | None = None
     seats: int | None = Field(
@@ -387,6 +396,9 @@ class CheckoutUpdate(
     require_billing_address: bool | None = Field(
         default=None, description=_require_billing_address_description
     )
+    lock_customer_email: bool | None = Field(
+        default=None, description=_lock_customer_email_description
+    )
     allow_trial: bool | None = Field(default=None, description=_allow_trial_description)
     customer_ip_address: CustomerIPAddress | None = None
     customer_metadata: MetadataField | None = Field(
@@ -540,6 +552,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     require_billing_address: bool = Field(
         description=_require_billing_address_description
     )
+    lock_customer_email: bool = Field(description=_lock_customer_email_description)
     is_discount_applicable: bool = Field(
         description=(
             "Whether the discount is applicable to the checkout. "

@@ -132,6 +132,9 @@ class Checkout(
     require_billing_address: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+    lock_customer_email: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)

@@ -7,6 +7,9 @@ from typing import Any, Self
 from uuid import UUID
 
 import structlog
+from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
+from sqlalchemy import Column, DateTime, MetaData, String, Table, func, select
+from sqlalchemy.sql import Select
 
 from polar.config import settings
 from polar.logging import Logger
@@ -17,6 +20,35 @@ from .client import client
 from .schemas import TinybirdEvent
 
 log: Logger = structlog.get_logger()
+
+clickhouse_dialect = ClickHouseDialect()
+metadata = MetaData()
+
+events_table = Table(
+    "events_by_ingested_at",
+    metadata,
+    Column("name", String),
+    Column("source", String),
+    Column("organization_id", String),
+    Column("customer_id", String),
+    Column("external_customer_id", String),
+    Column("parent_id", String),
+    Column("timestamp", DateTime),
+)
+
+event_types_mv = Table(
+    "event_types_by_customer_id",
+    metadata,
+    Column("name", String),
+    Column("source", String),
+    Column("organization_id", String),
+    Column("customer_id", String),
+    Column("external_customer_id", String),
+    Column("parent_id", String),
+    Column("occurrences", String),
+    Column("first_seen", DateTime),
+    Column("last_seen", DateTime),
+)
 
 
 @dataclass
@@ -135,68 +167,93 @@ async def ingest_events(events: Sequence[Event]) -> None:
 
 class TinybirdEventsQuery:
     """
-    Query builder for Tinybird events table.
+    Query builder for Tinybird events table using SQLAlchemy.
 
     Requires organization_id upfront to ensure row-level filtering
     is always applied (defense-in-depth pattern).
     """
 
     def __init__(self, organization_id: UUID) -> None:
-        self._organization_id = organization_id
-        self._where_clauses: list[str] = []
-        self._parameters: dict[str, Any] = {"org_id": str(organization_id)}
+        self._organization_id = str(organization_id)
+        self._filters: list[Any] = []
+        self._order_by_clauses: list[Any] = []
 
     def filter_customer_id(self, customer_ids: Sequence[UUID]) -> Self:
         if customer_ids:
-            self._where_clauses.append("customer_id IN {customer_ids: Array(UUID)}")
-            self._parameters["customer_ids"] = [str(c) for c in customer_ids]
+            self._filters.append(
+                events_table.c.customer_id.in_([str(c) for c in customer_ids])
+            )
         return self
 
     def filter_external_customer_id(self, external_ids: Sequence[str]) -> Self:
         if external_ids:
-            self._where_clauses.append(
-                "external_customer_id IN {external_customer_ids: Array(String)}"
+            self._filters.append(
+                events_table.c.external_customer_id.in_(list(external_ids))
             )
-            self._parameters["external_customer_ids"] = list(external_ids)
         return self
 
     def filter_root_events(self) -> Self:
-        self._where_clauses.append("parent_id IS NULL")
+        self._filters.append(events_table.c.parent_id.is_(None))
         return self
 
     def filter_parent_id(self, parent_id: UUID) -> Self:
-        self._where_clauses.append("parent_id = {parent_id: UUID}")
-        self._parameters["parent_id"] = str(parent_id)
+        self._filters.append(events_table.c.parent_id == str(parent_id))
         return self
 
     def filter_source(self, source: EventSource) -> Self:
-        self._where_clauses.append("source = {source: String}")
-        self._parameters["source"] = source.value
+        self._filters.append(events_table.c.source == source.value)
         return self
 
-    def _build_where_clause(self) -> str:
-        base_clause = "organization_id = {org_id: UUID}"
-        if self._where_clauses:
-            return f"{base_clause} AND " + " AND ".join(self._where_clauses)
-        return base_clause
+    _SORT_COLUMN_MAP = {
+        "name": events_table.c.name,
+        "first_seen": func.min(events_table.c.timestamp),
+        "last_seen": func.max(events_table.c.timestamp),
+        "occurrences": func.count(),
+    }
+
+    def order_by(self, column: str, descending: bool = False) -> Self:
+        col = self._SORT_COLUMN_MAP.get(column)
+        if col is None:
+            raise ValueError(f"Invalid sort column: {column}")
+        self._order_by_clauses.append(col.desc() if descending else col.asc())
+        return self
+
+    def _build_base_statement(self) -> Select[Any]:
+        statement = (
+            select(
+                events_table.c.name,
+                events_table.c.source,
+                func.count().label("occurrences"),
+                func.min(events_table.c.timestamp).label("first_seen"),
+                func.max(events_table.c.timestamp).label("last_seen"),
+            )
+            .where(events_table.c.organization_id == self._organization_id)
+            .group_by(events_table.c.name, events_table.c.source)
+        )
+
+        for f in self._filters:
+            statement = statement.where(f)
+
+        if self._order_by_clauses:
+            statement = statement.order_by(*self._order_by_clauses)
+        else:
+            statement = statement.order_by(func.max(events_table.c.timestamp).desc())
+
+        return statement
+
+    def _compile(self, statement: Select[Any]) -> str:
+        return str(
+            statement.compile(
+                dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
+            )
+        )
 
     async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
-        where_clause = self._build_where_clause()
-
-        sql = f"""
-            SELECT
-                name,
-                source,
-                count() as occurrences,
-                min(timestamp) as first_seen,
-                max(timestamp) as last_seen
-            FROM {DATASOURCE_EVENTS}
-            WHERE {where_clause}
-            GROUP BY name, source
-        """
+        statement = self._build_base_statement()
+        sql = self._compile(statement)
 
         try:
-            rows = await client.query(sql, parameters=self._parameters)
+            rows = await client.query(sql)
             return [
                 TinybirdEventTypeStats(
                     name=row["name"],
@@ -218,22 +275,32 @@ class TinybirdEventsQuery:
         Note: MV is pre-aggregated so may be faster for large datasets,
         but requires customer_id filter to be effective.
         """
-        where_clause = self._build_where_clause()
+        statement = (
+            select(
+                event_types_mv.c.name,
+                event_types_mv.c.source,
+                func.countMerge(event_types_mv.c.occurrences).label("occurrences"),
+                func.minMerge(event_types_mv.c.first_seen).label("first_seen"),
+                func.maxMerge(event_types_mv.c.last_seen).label("last_seen"),
+            )
+            .where(event_types_mv.c.organization_id == self._organization_id)
+            .group_by(event_types_mv.c.name, event_types_mv.c.source)
+        )
 
-        sql = f"""
-            SELECT
-                name,
-                source,
-                countMerge(occurrences) as occurrences,
-                minMerge(first_seen) as first_seen,
-                maxMerge(last_seen) as last_seen
-            FROM {MV_EVENT_TYPES_BY_CUSTOMER}
-            WHERE {where_clause}
-            GROUP BY name, source
-        """
+        for f in self._filters:
+            statement = statement.where(f)
+
+        if self._order_by_clauses:
+            statement = statement.order_by(*self._order_by_clauses)
+        else:
+            statement = statement.order_by(
+                func.maxMerge(event_types_mv.c.last_seen).desc()
+            )
+
+        sql = self._compile(statement)
 
         try:
-            rows = await client.query(sql, parameters=self._parameters)
+            rows = await client.query(sql)
             return [
                 TinybirdEventTypeStats(
                     name=row["name"],

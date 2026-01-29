@@ -46,6 +46,7 @@ from polar.organization_access_token.endpoints import (
 )
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
+from polar.perk.endpoints import router as perk_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
@@ -152,6 +153,8 @@ router.include_router(customer_meter_router)
 router.include_router(payment_router)
 # /payouts
 router.include_router(payout_router)
+# /perks
+router.include_router(perk_router)
 # /wallets
 router.include_router(wallet_router)
 # /integrations/chargeback-stop

@@ -14,7 +14,7 @@ import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { ShoppingCart } from 'lucide-react'
+import { Gift, ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -268,6 +268,16 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         icon: <ShoppingCart />,
       },
     ],
+  },
+  {
+    id: 'perks',
+    title: 'Startup Stack',
+    icon: <Gift className="h-5 w-5" />,
+    link: `/dashboard/${org?.slug}/perks`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/perks`)
+    },
+    if: true,
   },
 ]
 

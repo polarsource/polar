@@ -589,5 +589,100 @@ class StripeService:
     async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
         return await stripe_lib.TaxRate.retrieve_async(id)
 
+    # -------------------------------------------------------------------------
+    # Financial Connections (Bank Linking)
+    # -------------------------------------------------------------------------
+
+    async def create_financial_connections_session(
+        self,
+        *,
+        account_holder_type: str,
+        account_holder_customer_id: str | None = None,
+        return_url: str,
+        permissions: list[str] | None = None,
+    ) -> stripe_lib.financial_connections.Session:
+        """
+        Create a Financial Connections session for bank account linking.
+
+        Args:
+            account_holder_type: "customer" or "account"
+            account_holder_customer_id: Stripe customer ID (if type is "customer")
+            return_url: URL to redirect after completion
+            permissions: Requested permissions (default: payment_method, balances, ownership)
+
+        Returns:
+            Stripe Financial Connections Session
+        """
+        if permissions is None:
+            permissions = ["payment_method", "balances", "ownership"]
+
+        params: stripe_lib.financial_connections.Session.CreateParams = {
+            "account_holder": {"type": account_holder_type},
+            "permissions": permissions,
+            "return_url": return_url,
+        }
+
+        if account_holder_customer_id and account_holder_type == "customer":
+            params["account_holder"]["customer"] = account_holder_customer_id
+
+        log.info(
+            "stripe.financial_connections.session.create",
+            account_holder_type=account_holder_type,
+            permissions=permissions,
+        )
+
+        return await stripe_lib.financial_connections.Session.create_async(**params)
+
+    async def get_financial_connections_account(
+        self, account_id: str
+    ) -> stripe_lib.financial_connections.Account:
+        """Get a Financial Connections account by ID."""
+        return await stripe_lib.financial_connections.Account.retrieve_async(
+            account_id, expand=["ownership"]
+        )
+
+    async def get_financial_connections_account_owners(
+        self, account_id: str
+    ) -> list[stripe_lib.financial_connections.AccountOwner]:
+        """Get account owners for a Financial Connections account."""
+        result = await stripe_lib.financial_connections.Account.list_owners_async(
+            account_id, ownership=account_id
+        )
+        return list(result.data)
+
+    async def refresh_financial_connections_account(
+        self, account_id: str, features: list[str]
+    ) -> stripe_lib.financial_connections.Account:
+        """
+        Refresh Financial Connections account data.
+
+        Args:
+            account_id: The Financial Connections account ID
+            features: Features to refresh (e.g., ["balance", "ownership"])
+
+        Returns:
+            Updated account
+        """
+        log.info(
+            "stripe.financial_connections.account.refresh",
+            account_id=account_id,
+            features=features,
+        )
+        return await stripe_lib.financial_connections.Account.refresh_async(
+            account_id, features=features
+        )
+
+    async def disconnect_financial_connections_account(
+        self, account_id: str
+    ) -> stripe_lib.financial_connections.Account:
+        """Disconnect a Financial Connections account."""
+        log.info(
+            "stripe.financial_connections.account.disconnect",
+            account_id=account_id,
+        )
+        return await stripe_lib.financial_connections.Account.disconnect_async(
+            account_id
+        )
+
 
 stripe = StripeService()

@@ -77,6 +77,17 @@ class PayoutRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_mercury_transaction_id(
+        self, mercury_transaction_id: str, *, options: Options = ()
+    ) -> Payout | None:
+        """Get payout by Mercury transaction ID."""
+        statement = (
+            self.get_base_statement()
+            .where(Payout.mercury_transaction_id == mercury_transaction_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> Options:
         return (
             joinedload(Payout.account),

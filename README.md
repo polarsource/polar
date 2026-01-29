@@ -17,8 +17,6 @@
 
 <a href="https://polar.sh">Website</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://polar.sh/blog">Blog</a>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/docs/api-reference">API Reference</a>

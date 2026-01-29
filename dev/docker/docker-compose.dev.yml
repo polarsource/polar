@@ -195,8 +195,8 @@ services:
       dockerfile: dev/docker/Dockerfile.web.dev
     env_file: *common-env-file
     environment:
-      # Node memory limit to prevent OOM
-      NODE_OPTIONS: "--max-old-space-size=3072"
+      # Node memory limit to prevent OOM (keep well below container limit to leave room for native memory)
+      NODE_OPTIONS: "--max-old-space-size=2560"
       # NEXT_PUBLIC_* are for browser requests (via host machine)
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
       NEXT_PUBLIC_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
@@ -222,7 +222,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 6G
 
   # ============================================
   # Optional Services (use --profile flag)

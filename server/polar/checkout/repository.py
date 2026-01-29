@@ -74,7 +74,7 @@ class CheckoutRepository(
                 Checkout.expires_at <= utc_now(),
                 Checkout.status == CheckoutStatus.open,
             )
-            .options(self.get_eager_options())
+            .options(*self.get_eager_options())
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

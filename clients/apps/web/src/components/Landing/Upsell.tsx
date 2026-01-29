@@ -25,7 +25,7 @@ const UpsellCard = ({
   link,
 }: UpsellCardProps) => {
   return (
-    <motion.div className="dark:bg-polar-900 relative flex h-full flex-col gap-y-6 rounded-xl bg-white p-8">
+    <motion.div className="dark:bg-polar-900 relative flex h-full flex-col gap-y-6 bg-white p-8">
       <div className="flex flex-row items-center gap-3">
         <Icon className="dark:text-polar-300 h-5 w-5 text-gray-600" />
         <h3 className="text-xl">{title}</h3>

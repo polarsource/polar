@@ -90,20 +90,22 @@ export const useMeterQuantities = (
     NonNullable<operations['meters:quantities']['parameters']['query']>,
     'id'
   >,
-): UseQueryResult<ParsedMeterQuantities, Error> =>
-  useQuery({
+): UseQueryResult<ParsedMeterQuantities, Error> => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['meters:quantities']['parameters']['query']['timezone']
+
+  return useQuery({
     queryKey: [
       'meters',
       'quantities',
       {
         id,
+        timezone,
         ...(parameters || {}),
       },
     ],
     queryFn: async () => {
       const { start_timestamp, end_timestamp, interval } = parameters || {}
-      const timezone = Intl.DateTimeFormat().resolvedOptions()
-        .timeZone as operations['meters:quantities']['parameters']['query']['timezone']
       const result = await unwrap(
         api.GET('/v1/meters/{id}/quantities', {
           params: {
@@ -128,6 +130,7 @@ export const useMeterQuantities = (
     },
     retry: defaultRetry,
   })
+}
 
 export const useCreateMeter = (organizationId: string) =>
   useMutation({

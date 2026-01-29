@@ -284,3 +284,11 @@ resource "tfe_variable" "tinybird_events_read_sandbox" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "tinybird_clickhouse_token_sandbox" {
+  key             = "tinybird_clickhouse_token"
+  category        = "terraform"
+  description     = "Tinybird ClickHouse Token for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

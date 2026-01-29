@@ -364,3 +364,11 @@ resource "tfe_variable" "tinybird_events_read_production" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "tinybird_clickhouse_token_production" {
+  key             = "tinybird_clickhouse_token"
+  category        = "terraform"
+  description     = "Tinybird ClickHouse Token for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge, Le, MaxLen, MinLen
 from pydantic import (
@@ -12,8 +12,10 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
     computed_field,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
+from pydantic_core import PydanticCustomError
 
 from polar.custom_field.data import (
     CustomFieldDataInputMixin,
@@ -259,6 +261,15 @@ class CheckoutCreateBase(
     success_url: SuccessURL = None
     return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
+
+    @model_validator(mode="after")
+    def validate_lock_customer_email(self) -> Self:
+        if self.lock_customer_email and not self.customer_email:
+            raise PydanticCustomError(
+                "value_error",
+                "lock_customer_email requires customer_email to be set.",
+            )
+        return self
 
 
 class CheckoutPriceCreate(CheckoutCreateBase):

@@ -346,18 +346,6 @@ class CheckoutService:
         if checkout_create.amount is not None and is_custom_price(price):
             self._validate_custom_price_amount(price, checkout_create.amount)
 
-        if checkout_create.lock_customer_email and not checkout_create.customer_email:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "lock_customer_email"),
-                        "msg": "lock_customer_email requires customer_email to be set.",
-                        "input": checkout_create.lock_customer_email,
-                    }
-                ]
-            )
-
         discount: Discount | None = None
         if checkout_create.discount_id is not None:
             discount = await self._get_validated_discount(
@@ -883,20 +871,6 @@ class CheckoutService:
                     str(lock_customer_email).lower() == "true"
                 )
 
-        # Validate that lock_customer_email requires customer_email to be set
-        if checkout.lock_customer_email and not checkout.customer_email:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("query", "lock_customer_email"),
-                        "msg": "lock_customer_email requires customer_email to be set.",
-                        "input": True,
-                    }
-                ]
-            )
-
-        if query_prefill:
             discount_code = query_prefill.get("discount_code")
             if discount_code is not None and isinstance(discount_code, str):
                 try:
@@ -947,6 +921,19 @@ class CheckoutService:
                     **(checkout.user_metadata or {}),
                     key: value,
                 }
+
+        # Validate that lock_customer_email requires customer_email to be set
+        if checkout.lock_customer_email and not checkout.customer_email:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("query", "lock_customer_email"),
+                        "msg": "lock_customer_email requires customer_email to be set.",
+                        "input": True,
+                    }
+                ]
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {

@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, select, update
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -240,3 +240,17 @@ class CustomerRepository(
             )
 
         return statement
+
+    async def increment_invoice_next_number(self, customer_id: UUID) -> int:
+        """
+        Atomically increment invoice_next_number and return the value before increment.
+        """
+        stmt = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(invoice_next_number=Customer.invoice_next_number + 1)
+            .returning(Customer.invoice_next_number)
+        )
+        result = await self.session.execute(stmt)
+        next_number = result.scalar_one()
+        return next_number - 1

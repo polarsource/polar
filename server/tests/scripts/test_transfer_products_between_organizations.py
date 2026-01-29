@@ -1,7 +1,7 @@
 from uuid import UUID
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Discount, Organization, ProductBenefit
@@ -268,6 +268,51 @@ class TestProductTransferService:
         await session.refresh(order)
         assert order.customer_id == new_customer.id
 
+    async def test_customer_splitting_with_existing_email_in_target(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that when splitting customers, if target customer exists with same email, use that instead of creating new."""
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+
+        # Create products
+        product = await create_product(
+            save_fixture,
+            organization=source_org,
+            name="Test Product",
+            recurring_interval=None,
+        )
+
+        # Create customer in source org
+        source_customer = await create_customer(
+            save_fixture, organization=source_org, email="test@example.com"
+        )
+        order = await create_order(
+            save_fixture, customer=source_customer, product=product
+        )
+
+        # Create customer with same email in target org
+        target_customer = await create_customer(
+            save_fixture, organization=target_org, email="test@example.com"
+        )
+
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_split = [source_customer]
+
+        await service.split_customers(session)
+
+        # Check that no new customer was created (existing target customer was used)
+        assert len(service.new_customers_map) == 0
+
+        # Check that the order was updated to reference the existing target customer
+        await session.refresh(order)
+        assert order.customer_id == target_customer.id
+
+        # Check that source customer was NOT soft-deleted (since this is a split, not direct transfer)
+        await session.refresh(source_customer)
+        assert source_customer.deleted_at is None
+
     async def test_transfer_benefits_updates_organization(
         self, save_fixture: SaveFixture, session: AsyncSession
     ) -> None:
@@ -361,6 +406,52 @@ class TestProductTransferService:
         # Check that the order still belongs to the customer (should not be changed)
         await session.refresh(order)
         assert order.customer_id == customer.id
+
+    async def test_transfer_customers_directly_with_existing_email_in_target(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that when a customer with the same email exists in target org, related objects are wired to the existing customer."""
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+
+        # Create a product
+        product = await create_product(
+            save_fixture,
+            organization=source_org,
+            name="Test Product",
+            recurring_interval=None,
+        )
+
+        # Create customer in source org
+        source_customer = await create_customer(
+            save_fixture, organization=source_org, email="test@example.com"
+        )
+        order = await create_order(
+            save_fixture, customer=source_customer, product=product
+        )
+
+        # Create customer with same email in target org
+        target_customer = await create_customer(
+            save_fixture, organization=target_org, email="test@example.com"
+        )
+
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.customers_to_transfer = [source_customer]
+
+        await service.transfer_customers_directly(session)
+
+        # Check that source customer was soft-deleted (since target customer exists)
+        await session.refresh(source_customer)
+        assert source_customer.deleted_at is not None
+        assert source_customer.organization_id == source_org.id  # Still in source org
+
+        # Check that order was updated to reference the target customer
+        await session.refresh(order)
+        assert order.customer_id == target_customer.id
+
+        # Check stats
+        assert service.transfer_stats["customers_transferred_directly"] == 0
+        assert service.transfer_stats["customers_merged"] == 1
 
     async def test_transfer_discounts_directly(
         self, save_fixture: SaveFixture, session: AsyncSession
@@ -562,6 +653,7 @@ class TestProductTransferService:
         service = ProductTransferService(source_org.id, target_org.id)
         service.products = [product1, product2]
         service.benefits_to_transfer = []  # No benefits to transfer
+        service.customers_to_transfer = []  # No customers to transfer
 
         # Manually update the products to target org (simulating transfer)
         product1.organization_id = target_org.id
@@ -569,6 +661,49 @@ class TestProductTransferService:
         await session.flush()
 
         # Validation should pass
+        await service.validate_transfer(session)
+
+    async def test_validate_transfer_with_existing_customers(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test transfer validation when customers with existing emails are handled."""
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+
+        # Create products
+        product = await create_product(
+            save_fixture,
+            organization=source_org,
+            name="Test Product",
+            recurring_interval=None,
+        )
+
+        # Create customer in source org
+        source_customer = await create_customer(
+            save_fixture, organization=source_org, email="test@example.com"
+        )
+        order = await create_order(
+            save_fixture, customer=source_customer, product=product
+        )
+
+        # Create customer with same email in target org
+        target_customer = await create_customer(
+            save_fixture, organization=target_org, email="test@example.com"
+        )
+
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.benefits_to_transfer = []
+        service.customers_to_transfer = []  # No customers to transfer directly
+        service.customers_to_merge = [source_customer]  # This customer should be merged
+
+        # Simulate the transfer: source customer is soft-deleted, order wired to target customer
+        source_customer.deleted_at = func.now()
+        order.customer_id = target_customer.id
+        product.organization_id = target_org.id
+        await session.flush()
+
+        # Validation should pass - source customer was merged (soft-deleted)
         await service.validate_transfer(session)
 
     async def test_validate_transfer_failure(
@@ -854,6 +989,51 @@ class TestProductTransferService:
 
         # Verify no events are selected for transfer
         assert len(service.events_to_transfer) == 0
+
+    async def test_events_transferred_for_merged_customers(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        """Test that events for merged customers ARE transferred."""
+        # Setup
+        source_org = await create_organization(save_fixture)
+        target_org = await create_organization(save_fixture)
+        product = await create_product(
+            save_fixture, organization=source_org, recurring_interval=None
+        )
+
+        # Create customer in source org
+        source_customer = await create_customer(
+            save_fixture, organization=source_org, email="merge_test@example.com"
+        )
+        await create_order(save_fixture, customer=source_customer, product=product)
+
+        # Create customer with same email in target org
+        target_customer = await create_customer(
+            save_fixture, organization=target_org, email="merge_test@example.com"
+        )
+
+        # Create events for the source customer
+        event1 = await create_event(
+            save_fixture, customer=source_customer, organization=source_org
+        )
+        event2 = await create_event(
+            save_fixture, customer=source_customer, organization=source_org
+        )
+
+        # Test
+        service = ProductTransferService(source_org.id, target_org.id)
+        service.products = [product]
+        service.customers_to_transfer = [source_customer]
+        service.customers_to_merge = []  # Will be populated during transfer
+
+        # Simulate the transfer process
+        await service._analyze_events(session)  # Analyze events first
+        await service.transfer_customers_directly(session)
+
+        # Verify events were found for transfer (including merged customer)
+        assert len(service.events_to_transfer) == 2
+        assert event1.id in [e.id for e in service.events_to_transfer]
+        assert event2.id in [e.id for e in service.events_to_transfer]
 
 
 @pytest.mark.asyncio

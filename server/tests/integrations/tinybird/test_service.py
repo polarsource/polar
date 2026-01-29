@@ -26,6 +26,7 @@ def tinybird_client(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,
+        clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
         clickhouse_token=tinybird_workspace,
     )
     with patch.object(tinybird_service, "client", client):

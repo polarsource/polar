@@ -114,7 +114,7 @@ const referralId = window.affonso_referral;
 // Create checkout session with Polar
 const checkout = await polar.checkouts.create({
   products: ["your_product_id"],
-  success_url: "https://your-site.com/success",
+  success_url: "https://your-app.com/success",
   metadata: {
     affonso_referral: referralId, // Include referral ID from Affonso
   }

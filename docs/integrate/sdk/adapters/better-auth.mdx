@@ -94,7 +94,7 @@ Install the required Better Auth and Polar packages using the following command:
                                 slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro // [!code ++]
                             } // [!code ++]
                         ], // [!code ++]
-                        successUrl: "https://example.com/success?checkout_id={CHECKOUT_ID}", // [!code ++]
+                        successUrl: "https://your-app.com/success?checkout_id={CHECKOUT_ID}", // [!code ++]
                         authenticatedUsersOnly: true // [!code ++]
                     }), // [!code ++]
                     portal(), // [!code ++]
@@ -222,7 +222,7 @@ The checkout plugin accepts the following configuration options:
                         // Optional field - will make it possible to pass a slug to checkout instead of Product ID
                         products: [ { productId: "123-456-789", slug: "pro" } ], // [!code ++]
                         // Absolute URL to return to when checkout is successfully completed
-                        successUrl: "https://example.com/success?checkout_id={CHECKOUT_ID}", // [!code ++]
+                        successUrl: "https://your-app.com/success?checkout_id={CHECKOUT_ID}", // [!code ++]
                         // Whether you want to allow unauthenticated checkout sessions or not
                         authenticatedUsersOnly: true, // [!code ++]
                         // An optional URL which renders a back-button in the Checkout

@@ -615,27 +615,20 @@ class OrganizationService:
     ) -> str:
         match organization.invoice_numbering:
             case InvoiceNumbering.customer:
-                invoice_number = f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{customer.invoice_next_number:04d}"
                 customer_repository = CustomerRepository.from_session(session)
-                customer = await customer_repository.update(
-                    customer,
-                    update_dict={
-                        "invoice_next_number": customer.invoice_next_number + 1
-                    },
+                invoice_number = (
+                    await customer_repository.increment_invoice_next_number(customer.id)
                 )
-                return invoice_number
+                return f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{invoice_number:04d}"
 
             case InvoiceNumbering.organization:
-                invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
                 repository = OrganizationRepository.from_session(session)
-                organization = await repository.update(
-                    organization,
-                    update_dict={
-                        "customer_invoice_next_number": organization.customer_invoice_next_number
-                        + 1
-                    },
+                invoice_number = (
+                    await repository.increment_customer_invoice_next_number(
+                        organization.id
+                    )
                 )
-                return invoice_number
+                return f"{organization.customer_invoice_prefix}-{invoice_number:04d}"
 
     async def _after_update(
         self,

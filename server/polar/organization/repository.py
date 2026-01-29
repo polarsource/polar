@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, func, or_, select, update
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
@@ -191,6 +191,26 @@ class OrganizationRepository(
             org.feature_settings = {**org.feature_settings, "revops_enabled": True}
             self.session.add(org)
         await self.session.flush()
+
+    async def increment_customer_invoice_next_number(
+        self, organization_id: UUID
+    ) -> int:
+        """
+        Atomically increment customer_invoice_next_number and return the value
+        before increment.
+        """
+        stmt = (
+            update(Organization)
+            .where(Organization.id == organization_id)
+            .values(
+                customer_invoice_next_number=Organization.customer_invoice_next_number
+                + 1
+            )
+            .returning(Organization.customer_invoice_next_number)
+        )
+        result = await self.session.execute(stmt)
+        next_number = result.scalar_one()
+        return next_number - 1
 
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):

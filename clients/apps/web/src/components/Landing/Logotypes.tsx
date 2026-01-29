@@ -52,10 +52,10 @@ export const Logotypes = () => {
       initial="hidden"
     >
       <div className="flex flex-col items-center gap-y-12">
-        <h3 className="text-polar-500 text-2xl">
+        <h3 className="text-polar-500 text-center text-2xl">
           Powering billing for thousands of startups
         </h3>
-        <div className="grid grid-cols-2 flex-row items-center gap-x-16 gap-y-8 xl:flex xl:gap-x-20">
+        <div className="grid grid-cols-1 flex-row items-center gap-x-16 gap-y-8 xl:flex xl:gap-x-20">
           {items.map((item) => (
             <Logotype key={item.link} icon={item.icon} link={item.link} />
           ))}

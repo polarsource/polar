@@ -117,6 +117,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit),
+                joinedload(BenefitGrant.member),
             )
         )
 
@@ -156,6 +157,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             .options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+                joinedload(BenefitGrant.member),
             )
         )
 

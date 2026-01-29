@@ -156,7 +156,7 @@ export const Testamonial = ({
       href={link}
       target="_blank"
       className={twMerge(
-        'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 rounded-2xl border border-transparent bg-white p-8 transition-colors hover:bg-white',
+        'dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 border border-gray-300 p-8 transition-colors hover:bg-white',
         className,
       )}
     >

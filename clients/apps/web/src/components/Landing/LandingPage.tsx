@@ -52,7 +52,7 @@ export const PageContent = () => {
         <Features />
         <Logotypes />
         {isMobile ? null : (
-          <div className="dark:border-polar-700 relative aspect-video w-full overflow-hidden rounded-xl border border-gray-200 md:rounded-3xl">
+          <div className="dark:border-polar-800 relative aspect-video w-full overflow-hidden border border-gray-200">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
               letterboxColor="black"

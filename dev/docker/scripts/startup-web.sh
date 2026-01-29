@@ -43,8 +43,8 @@ case "${1:-dev}" in
         echo "Starting Next.js development server..."
         echo "Web will be available at http://localhost:3000"
         echo ""
-        echo "NOTE: Next.js with Turbopack requires significant memory (~4GB)."
-        echo "If the container crashes, increase Docker Desktop memory to 10GB+."
+        echo "NOTE: Next.js with Turbopack requires significant memory (~6GB)."
+        echo "If the container crashes, increase Docker Desktop memory to 12GB+."
         echo ""
         cd apps/web
         exec pnpm next dev --port 3000 --hostname 0.0.0.0

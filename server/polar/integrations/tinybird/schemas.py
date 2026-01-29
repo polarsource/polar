@@ -10,6 +10,8 @@ class TinybirdEvent(TypedDict):
     organization_id: str
     customer_id: str | None
     external_customer_id: str | None
+    member_id: str | None
+    external_member_id: str | None
     external_id: str | None
     parent_id: str | None
     root_id: str | None

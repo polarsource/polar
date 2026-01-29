@@ -36,8 +36,6 @@ class MeterEvent(Model):
         Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True
     )
     external_customer_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    member_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
-    external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )

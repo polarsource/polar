@@ -179,11 +179,25 @@ class EventCreateCustomer(EventCreateBase):
             "ID of the customer in your Polar organization associated with the event."
         )
     )
+    member_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of the member within the customer's organization "
+            "who performed the action. Used for member-level attribution in B2B."
+        ),
+    )
 
 
 class EventCreateExternalCustomer(EventCreateBase):
     external_customer_id: str = Field(
         description="ID of the customer in your system associated with the event."
+    )
+    external_member_id: str | None = Field(
+        default=None,
+        description=(
+            "ID of the member in your system within the customer's organization "
+            "who performed the action. Used for member-level attribution in B2B."
+        ),
     )
 
 
@@ -216,6 +230,20 @@ class BaseEvent(IDSchema):
     )
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."
+    )
+    member_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of the member within the customer's organization "
+            "who performed the action inside B2B."
+        ),
+    )
+    external_member_id: str | None = Field(
+        default=None,
+        description=(
+            "ID of the member in your system within the customer's organization "
+            "who performed the action inside B2B."
+        ),
     )
     child_count: int = Field(
         default=0, description="Number of direct child events linked to this event."

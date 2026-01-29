@@ -666,6 +666,83 @@ class TestIngest:
             completed_child.id,
         }
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_ingest_with_member_id(
+        self,
+        save_fixture: SaveFixture,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        customer: Customer,
+    ) -> None:
+        member_id = uuid.uuid4()
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="api.request",
+                    customer_id=customer.id,
+                    member_id=member_id,
+                ),
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
+        assert events[0].member_id == member_id
+        assert events[0].customer_id == customer.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_ingest_with_external_member_id(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="api.request",
+                    external_customer_id="test-customer",
+                    external_member_id="member-abc",
+                ),
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
+        assert events[0].external_member_id == "member-abc"
+        assert events[0].external_customer_id == "test-customer"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_ingest_without_member_fields(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="api.request",
+                    external_customer_id="test-customer",
+                ),
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_organization(auth_subject.subject.id)
+        assert len(events) == 1
+        assert events[0].member_id is None
+        assert events[0].external_member_id is None
+
 
 @pytest.mark.asyncio
 class TestListWithAggregateCosts:

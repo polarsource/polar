@@ -88,6 +88,8 @@ def _event_to_tinybird(event: Event) -> TinybirdEvent:
         organization_id=str(event.organization_id),
         customer_id=str(event.customer_id) if event.customer_id else None,
         external_customer_id=event.external_customer_id,
+        member_id=str(event.member_id) if event.member_id else None,
+        external_member_id=event.external_member_id,
         external_id=event.external_id,
         parent_id=str(event.parent_id) if event.parent_id else None,
         root_id=str(event.root_id) if event.root_id else None,

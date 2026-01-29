@@ -1,7 +1,10 @@
 import json
 from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import datetime
 from functools import partial
-from typing import Any
+from typing import Any, Self
+from uuid import UUID
 
 import structlog
 
@@ -15,7 +18,18 @@ from .schemas import TinybirdEvent
 
 log: Logger = structlog.get_logger()
 
+
+@dataclass
+class TinybirdEventTypeStats:
+    name: str
+    source: EventSource
+    occurrences: int
+    first_seen: datetime
+    last_seen: datetime
+
+
 DATASOURCE_EVENTS = "events_by_ingested_at"
+MV_EVENT_TYPES_BY_CUSTOMER = "event_types_by_customer_id"
 
 
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
@@ -117,3 +131,119 @@ async def ingest_events(events: Sequence[Event]) -> None:
         log.error(
             "tinybird.ingest_events.failed", error=str(e), event_count=len(events)
         )
+
+
+class TinybirdEventsQuery:
+    """
+    Query builder for Tinybird events table.
+
+    Requires organization_id upfront to ensure row-level filtering
+    is always applied (defense-in-depth pattern).
+    """
+
+    def __init__(self, organization_id: UUID) -> None:
+        self._organization_id = organization_id
+        self._where_clauses: list[str] = []
+        self._parameters: dict[str, Any] = {"org_id": str(organization_id)}
+
+    def filter_customer_id(self, customer_ids: Sequence[UUID]) -> Self:
+        if customer_ids:
+            self._where_clauses.append("customer_id IN {customer_ids: Array(UUID)}")
+            self._parameters["customer_ids"] = [str(c) for c in customer_ids]
+        return self
+
+    def filter_external_customer_id(self, external_ids: Sequence[str]) -> Self:
+        if external_ids:
+            self._where_clauses.append(
+                "external_customer_id IN {external_customer_ids: Array(String)}"
+            )
+            self._parameters["external_customer_ids"] = list(external_ids)
+        return self
+
+    def filter_root_events(self) -> Self:
+        self._where_clauses.append("parent_id IS NULL")
+        return self
+
+    def filter_parent_id(self, parent_id: UUID) -> Self:
+        self._where_clauses.append("parent_id = {parent_id: UUID}")
+        self._parameters["parent_id"] = str(parent_id)
+        return self
+
+    def filter_source(self, source: EventSource) -> Self:
+        self._where_clauses.append("source = {source: String}")
+        self._parameters["source"] = source.value
+        return self
+
+    def _build_where_clause(self) -> str:
+        base_clause = "organization_id = {org_id: UUID}"
+        if self._where_clauses:
+            return f"{base_clause} AND " + " AND ".join(self._where_clauses)
+        return base_clause
+
+    async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
+        where_clause = self._build_where_clause()
+
+        sql = f"""
+            SELECT
+                name,
+                source,
+                count() as occurrences,
+                min(timestamp) as first_seen,
+                max(timestamp) as last_seen
+            FROM {DATASOURCE_EVENTS}
+            WHERE {where_clause}
+            GROUP BY name, source
+        """
+
+        try:
+            rows = await client.query(sql, parameters=self._parameters)
+            return [
+                TinybirdEventTypeStats(
+                    name=row["name"],
+                    source=EventSource(row["source"]),
+                    occurrences=row["occurrences"],
+                    first_seen=row["first_seen"],
+                    last_seen=row["last_seen"],
+                )
+                for row in rows
+            ]
+        except Exception as e:
+            log.error("tinybird.get_event_type_stats.failed", error=str(e))
+            raise
+
+    async def get_event_type_stats_from_mv(self) -> list[TinybirdEventTypeStats]:
+        """
+        Query event type stats from the materialized view.
+
+        Note: MV is pre-aggregated so may be faster for large datasets,
+        but requires customer_id filter to be effective.
+        """
+        where_clause = self._build_where_clause()
+
+        sql = f"""
+            SELECT
+                name,
+                source,
+                countMerge(occurrences) as occurrences,
+                minMerge(first_seen) as first_seen,
+                maxMerge(last_seen) as last_seen
+            FROM {MV_EVENT_TYPES_BY_CUSTOMER}
+            WHERE {where_clause}
+            GROUP BY name, source
+        """
+
+        try:
+            rows = await client.query(sql, parameters=self._parameters)
+            return [
+                TinybirdEventTypeStats(
+                    name=row["name"],
+                    source=EventSource(row["source"]),
+                    occurrences=row["occurrences"],
+                    first_seen=row["first_seen"],
+                    last_seen=row["last_seen"],
+                )
+                for row in rows
+            ]
+        except Exception as e:
+            log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))
+            raise

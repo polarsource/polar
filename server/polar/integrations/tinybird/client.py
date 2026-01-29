@@ -93,9 +93,11 @@ class TinybirdClient:
         )
         response.raise_for_status()
 
-    async def query(self, sql: str) -> list[dict[str, Any]]:
+    async def query(
+        self, sql: str, parameters: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         ch = await self._get_clickhouse_client()
-        result = await ch.query(sql)
+        result = await ch.query(sql, parameters=parameters)
         return [dict(zip(result.column_names, row)) for row in result.result_rows]
 
 

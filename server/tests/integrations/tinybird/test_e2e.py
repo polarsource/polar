@@ -5,7 +5,10 @@ import pytest
 
 from polar.config import settings
 from polar.integrations.tinybird.client import TinybirdClient
-from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
+from polar.integrations.tinybird.service import (
+    DATASOURCE_EVENTS,
+    _event_to_tinybird,
+)
 from polar.models import Event
 from polar.models.event import EventSource
 from tests.fixtures.tinybird import tinybird_available

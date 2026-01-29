@@ -2940,6 +2940,32 @@
             "description": "Filter by customer ID."
           },
           {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The customer external ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "The customer external ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalCustomerID Filter",
+              "description": "Filter by customer external ID."
+            },
+            "description": "Filter by customer external ID."
+          },
+          {
             "name": "is_granted",
             "in": "query",
             "required": false,
@@ -3735,6 +3761,90 @@
             "description": "Filter deliveries before this timestamp."
           },
           {
+            "name": "succeeded",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by delivery success status.",
+              "title": "Succeeded"
+            },
+            "description": "Filter by delivery success status."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Query to filter webhook deliveries.",
+              "title": "Query"
+            },
+            "description": "Query to filter webhook deliveries."
+          },
+          {
+            "name": "http_code_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "2xx",
+                    "3xx",
+                    "4xx",
+                    "5xx"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).",
+              "title": "Http Code Class"
+            },
+            "description": "Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx)."
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WebhookEventType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookEventType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by webhook event type.",
+              "title": "Event Type"
+            },
+            "description": "Filter by webhook event type."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -4312,7 +4422,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        amountType: \"custom\",\n        priceCurrency: \"usd\",\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        amountType: \"custom\",\n        priceCurrency: \"usd\",\n        minimumAmount: 50,\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -4823,6 +4933,32 @@
             "description": "Filter by customer ID."
           },
           {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The customer external ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "The customer external ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalCustomerID Filter",
+              "description": "Filter by customer external ID."
+            },
+            "description": "Filter by customer external ID."
+          },
+          {
             "name": "checkout_id",
             "in": "query",
             "required": false,
@@ -5322,7 +5458,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.update({\n    id: \"<value>\",\n    orderUpdate: {\n      billingName: \"<value>\",\n      billingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.update({\n    id: \"<value>\",\n    orderUpdate: {\n      billingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -5677,6 +5813,32 @@
               "description": "Filter by customer ID."
             },
             "description": "Filter by customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The customer external ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "The customer external ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalCustomerID Filter",
+              "description": "Filter by customer external ID."
+            },
+            "description": "Filter by customer external ID."
           },
           {
             "name": "succeeded",
@@ -6334,6 +6496,32 @@
               "description": "Filter by customer ID."
             },
             "description": "Filter by customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The customer external ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "The customer external ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalCustomerID Filter",
+              "description": "Filter by customer external ID."
+            },
+            "description": "Filter by customer external ID."
           },
           {
             "name": "status",
@@ -10749,7 +10937,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    taxId: [\n      \"911144442\",\n      \"us_ein\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"US\",\n    },\n    taxId: [\n      \"911144442\",\n      \"us_ein\",\n    ],\n    type: \"individual\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    owner: {\n      email: \"member@example.com\",\n      name: \"Jane Doe\",\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11056,7 +11244,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      externalId: \"usr_1337\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      externalId: \"usr_1337\",\n      type: \"individual\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11072,7 +11260,7 @@
           "mcp"
         ],
         "summary": "Delete Customer",
-        "description": "Delete a customer.\n\nThis action cannot be undone and will immediately:\n- Cancel any active subscriptions for the customer\n- Revoke all their benefits\n- Clear any `external_id`\n\nUse it only in the context of deleting a user within your\nown service. Otherwise, use more granular API endpoints to cancel\na specific subscription or revoke certain benefits.\n\nNote: The customers information will nonetheless be retained for historic\norders and subscriptions.\n\n**Scopes**: `customers:write`",
+        "description": "Delete a customer.\n\nThis action cannot be undone and will immediately:\n- Cancel any active subscriptions for the customer\n- Revoke all their benefits\n- Clear any `external_id`\n\nUse it only in the context of deleting a user within your\nown service. Otherwise, use more granular API endpoints to cancel\na specific subscription or revoke certain benefits.\n\nNote: The customers information will nonetheless be retained for historic\norders and subscriptions.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.\n\n**Scopes**: `customers:write`",
         "operationId": "customers:delete",
         "parameters": [
           {
@@ -11086,6 +11274,18 @@
               "title": "Id"
             },
             "description": "The customer ID."
+          },
+          {
+            "name": "anonymize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.",
+              "default": false,
+              "title": "Anonymize"
+            },
+            "description": "If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data."
           }
         ],
         "responses": {
@@ -11135,7 +11335,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.customers.delete(id=\"<value>\")\n\n    # Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.customers.delete(id=\"<value>\", anonymize=False)\n\n    # Use the SDK ..."
           },
           {
             "lang": "typescript",
@@ -11348,7 +11548,7 @@
           "mcp"
         ],
         "summary": "Delete Customer by External ID",
-        "description": "Delete a customer by external ID.\n\nImmediately cancels any active subscriptions and revokes any active benefits.\n\n**Scopes**: `customers:write`",
+        "description": "Delete a customer by external ID.\n\nImmediately cancels any active subscriptions and revokes any active benefits.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.\n\n**Scopes**: `customers:write`",
         "operationId": "customers:delete_external",
         "parameters": [
           {
@@ -11361,6 +11561,18 @@
               "title": "External Id"
             },
             "description": "The customer external ID."
+          },
+          {
+            "name": "anonymize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "If true, also anonymize the customer's personal data for GDPR compliance.",
+              "default": false,
+              "title": "Anonymize"
+            },
+            "description": "If true, also anonymize the customer's personal data for GDPR compliance."
           }
         ],
         "responses": {
@@ -11410,7 +11622,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.customers.delete_external(external_id=\"<id>\")\n\n    # Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.customers.delete_external(external_id=\"<id>\", anonymize=False)\n\n    # Use the SDK ..."
           },
           {
             "lang": "typescript",
@@ -11638,6 +11850,25 @@
               "title": "Customer Id"
             },
             "description": "Filter by customer ID."
+          },
+          {
+            "name": "external_customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The customer external ID."
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer external ID.",
+              "title": "External Customer Id"
+            },
+            "description": "Filter by customer external ID."
           },
           {
             "name": "page",
@@ -11920,6 +12151,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.get_member(id=\"572bebad-ee17-4d04-a50f-6596a7d92cf3\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.members.getMember({\n    id: \"572bebad-ee17-4d04-a50f-6596a7d92cf3\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       },
@@ -12004,6 +12240,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.members.update_member(id=\"ab9b628a-6dbd-4f07-bcd6-163a8b5b7de4\", member_update={\n        \"name\": \"Jane Doe\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.members.updateMember({\n    id: \"ab9b628a-6dbd-4f07-bcd6-163a8b5b7de4\",\n    memberUpdate: {\n      name: \"Jane Doe\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       },
@@ -12097,10 +12338,16 @@
         "operationId": "customer_portal:benefit-grants:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -12401,10 +12648,16 @@
         "operationId": "customer_portal:benefit-grants:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -12497,10 +12750,14 @@
         "operationId": "customer_portal:benefit-grants:update",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -12628,10 +12885,16 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "x-polar-allowed-subjects": [
@@ -12709,10 +12972,14 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "x-speakeasy-mcp": {
@@ -12756,10 +13023,16 @@
         "operationId": "customer_portal:customers:list_payment_methods",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -12870,10 +13143,14 @@
         "operationId": "customer_portal:customers:add_payment_method",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "requestBody": {
@@ -12993,10 +13270,14 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "x-speakeasy-mcp": {
@@ -13040,10 +13321,14 @@
         "operationId": "customer_portal:customers:delete_payment_method",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13134,10 +13419,16 @@
         "operationId": "customer_portal:customer_meters:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13324,10 +13615,16 @@
         "operationId": "customer_portal:customer_meters:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13421,10 +13718,16 @@
         "operationId": "customer_portal:seats:list_seats",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13540,10 +13843,14 @@
         "operationId": "customer_portal:seats:assign_seat",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "requestBody": {
@@ -13630,10 +13937,14 @@
         "operationId": "customer_portal:seats:revoke_seat",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13719,10 +14030,14 @@
         "operationId": "customer_portal:seats:resend_invitation",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -13831,10 +14146,16 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "x-polar-allowed-subjects": [
@@ -13894,10 +14215,16 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "x-polar-allowed-subjects": [
@@ -13957,10 +14284,16 @@
         },
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "x-polar-allowed-subjects": [
@@ -13977,6 +14310,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.customer_session.get_authenticated_user(security=polar_sdk.CustomerPortalCustomerSessionGetAuthenticatedUserSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ))\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customerSession.getAuthenticatedUser({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -13993,10 +14331,16 @@
         "operationId": "customer_portal:downloadables:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -14151,10 +14495,16 @@
         "operationId": "customer_portal:license_keys:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -14316,10 +14666,16 @@
         "operationId": "customer_portal:license_keys:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -14666,10 +15022,16 @@
         "operationId": "customer_portal:orders:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -14914,10 +15276,16 @@
         "operationId": "customer_portal:orders:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15005,10 +15373,14 @@
         "operationId": "customer_portal:orders:update",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15086,7 +15458,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n    customerOrderUpdate: {\n      billingName: \"<value>\",\n      billingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n    customerOrderUpdate: {\n      billingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -15108,10 +15480,16 @@
         "operationId": "customer_portal:orders:generate_invoice",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15195,10 +15573,16 @@
         "operationId": "customer_portal:orders:invoice",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15288,10 +15672,16 @@
         "operationId": "customer_portal:orders:get_payment_status",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15381,10 +15771,14 @@
         "operationId": "customer_portal:orders:confirm_retry_payment",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15581,10 +15975,16 @@
         "operationId": "customer_portal:subscriptions:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15799,10 +16199,16 @@
         "operationId": "customer_portal:subscriptions:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15890,14 +16296,18 @@
           "public"
         ],
         "summary": "Update Subscription",
-        "description": "Update a subscription of the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
+        "description": "Update a subscription of the authenticated customer.",
         "operationId": "customer_portal:subscriptions:update",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -15936,7 +16346,7 @@
             }
           },
           "403": {
-            "description": "Customer subscription is already canceled or will be at the end of the period.",
+            "description": "Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -15966,10 +16376,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Customer",
-          "Member"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -16005,14 +16411,18 @@
           "public"
         ],
         "summary": "Cancel Subscription",
-        "description": "Cancel a subscription of the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
+        "description": "Cancel a subscription of the authenticated customer.",
         "operationId": "customer_portal:subscriptions:cancel",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -16041,7 +16451,7 @@
             }
           },
           "403": {
-            "description": "Customer subscription is already canceled or will be at the end of the period.",
+            "description": "Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.",
             "content": {
               "application/json": {
                 "schema": {
@@ -16071,10 +16481,6 @@
             }
           }
         },
-        "x-polar-allowed-subjects": [
-          "Customer",
-          "Member"
-        ],
         "x-speakeasy-mcp": {
           "disabled": true
         },
@@ -16116,10 +16522,16 @@
         "operationId": "customer_portal:wallets:list",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -16256,10 +16668,16 @@
         "operationId": "customer_portal:wallets:get",
         "security": [
           {
-            "customer_session": []
+            "customer_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           },
           {
-            "member_session": []
+            "member_session": [
+              "customer_portal:read",
+              "customer_portal:write"
+            ]
           }
         ],
         "parameters": [
@@ -17004,6 +17422,11 @@
             "lang": "python",
             "label": "Python (SDK)",
             "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.member_sessions.create(request={\n        \"member_id\": \"<value>\",\n        \"return_url\": \"https://example.com/account\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.memberSessions.create({\n    memberId: \"<value>\",\n    returnUrl: \"https://example.com/account\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -18913,6 +19336,390 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\nuse Polar\\Utils;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetersQuantitiesRequest(\n    id: '<value>',\n    startTimestamp: Utils\\Utils::parseDateTime('2026-11-25T04:37:16.823Z'),\n    endTimestamp: Utils\\Utils::parseDateTime('2026-11-26T17:06:00.727Z'),\n    interval: Components\\TimeInterval::Day,\n);\n\n$response = $sdk->meters->quantities(\n    request: $request\n);\n\nif ($response->meterQuantities !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/organization-access-tokens/": {
+      "get": {
+        "tags": [
+          "organization_access_tokens",
+          "public",
+          "mcp"
+        ],
+        "summary": "List",
+        "description": "List organization access tokens.\n\n**Scopes**: `organization_access_tokens:read` `organization_access_tokens:write`",
+        "operationId": "organization_access_tokens:list",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizationAccessTokenSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_OrganizationAccessToken_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "organization_access_tokens"
+          ]
+        },
+        "x-speakeasy-group": "organization_access_tokens",
+        "x-speakeasy-name-override": "list",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.organization_access_tokens.list(organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\", page=1, limit=10)\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizationAccessTokens.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "organization_access_tokens",
+          "public",
+          "mcp"
+        ],
+        "summary": "Create",
+        "description": "**Scopes**: `organization_access_tokens:write`",
+        "operationId": "organization_access_tokens:create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationAccessTokenCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationAccessTokenCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "organization_access_tokens"
+          ]
+        },
+        "x-speakeasy-group": "organization_access_tokens",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.organization_access_tokens.create(request={\n        \"comment\": \"The Football Is Good For Training And Recreational Purposes\",\n        \"scopes\": [],\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizationAccessTokens.create({\n    comment: \"The Football Is Good For Training And Recreational Purposes\",\n    scopes: [],\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      }
+    },
+    "/v1/organization-access-tokens/{id}": {
+      "patch": {
+        "tags": [
+          "organization_access_tokens",
+          "public",
+          "mcp"
+        ],
+        "summary": "Update",
+        "description": "**Scopes**: `organization_access_tokens:write`",
+        "operationId": "organization_access_tokens:update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrganizationAccessTokenUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationAccessToken"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "organization_access_tokens"
+          ]
+        },
+        "x-speakeasy-group": "organization_access_tokens",
+        "x-speakeasy-name-override": "update",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.organization_access_tokens.update(id=\"<value>\", organization_access_token_update={})\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizationAccessTokens.update({\n    id: \"<value>\",\n    organizationAccessTokenUpdate: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "organization_access_tokens",
+          "public",
+          "mcp"
+        ],
+        "summary": "Delete",
+        "description": "**Scopes**: `organization_access_tokens:write`",
+        "operationId": "organization_access_tokens:delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "write",
+            "organization_access_tokens"
+          ]
+        },
+        "x-speakeasy-group": "organization_access_tokens",
+        "x-speakeasy-name-override": "delete",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.organization_access_tokens.delete(id=\"<value>\")\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.organizationAccessTokens.delete({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           }
         ]
       }
@@ -22237,7 +23044,9 @@
               "notifications:read": "Read notifications",
               "notifications:write": "Mark notifications as read",
               "notification_recipients:read": "Read notification recipients",
-              "notification_recipients:write": "Create or modify notification recipients"
+              "notification_recipients:write": "Create or modify notification recipients",
+              "organization_access_tokens:read": "Read organization access tokens",
+              "organization_access_tokens:write": "Create or modify organization access tokens"
             }
           },
           "organizations": {
@@ -22353,7 +23162,9 @@
               "notifications:read": "Read notifications",
               "notifications:write": "Mark notifications as read",
               "notification_recipients:read": "Read notification recipients",
-              "notification_recipients:write": "Create or modify notification recipients"
+              "notification_recipients:write": "Create or modify notification recipients",
+              "organization_access_tokens:read": "Read organization access tokens",
+              "organization_access_tokens:write": "Create or modify organization access tokens"
             }
           }
         },
@@ -22397,6 +23208,261 @@
           "avatar_url"
         ],
         "title": "AuthorizeUser"
+      },
+      "AvailableScope": {
+        "type": "string",
+        "enum": [
+          "openid",
+          "profile",
+          "email",
+          "user:read",
+          "user:write",
+          "organizations:read",
+          "organizations:write",
+          "custom_fields:read",
+          "custom_fields:write",
+          "discounts:read",
+          "discounts:write",
+          "checkout_links:read",
+          "checkout_links:write",
+          "checkouts:read",
+          "checkouts:write",
+          "transactions:read",
+          "transactions:write",
+          "payouts:read",
+          "payouts:write",
+          "products:read",
+          "products:write",
+          "benefits:read",
+          "benefits:write",
+          "events:read",
+          "events:write",
+          "meters:read",
+          "meters:write",
+          "files:read",
+          "files:write",
+          "subscriptions:read",
+          "subscriptions:write",
+          "customers:read",
+          "customers:write",
+          "members:read",
+          "members:write",
+          "wallets:read",
+          "wallets:write",
+          "disputes:read",
+          "customer_meters:read",
+          "customer_sessions:write",
+          "member_sessions:write",
+          "customer_seats:read",
+          "customer_seats:write",
+          "orders:read",
+          "orders:write",
+          "refunds:read",
+          "refunds:write",
+          "payments:read",
+          "metrics:read",
+          "webhooks:read",
+          "webhooks:write",
+          "external_organizations:read",
+          "license_keys:read",
+          "license_keys:write",
+          "repositories:read",
+          "repositories:write",
+          "issues:read",
+          "issues:write",
+          "customer_portal:read",
+          "customer_portal:write",
+          "notifications:read",
+          "notifications:write",
+          "notification_recipients:read",
+          "notification_recipients:write",
+          "organization_access_tokens:read",
+          "organization_access_tokens:write"
+        ],
+        "title": "AvailableScope"
+      },
+      "BalanceCreditOrderEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "balance.credit_order",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/BalanceCreditOrderMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "BalanceCreditOrderEvent",
+        "description": "An event created by Polar when an order is paid via customer balance."
+      },
+      "BalanceCreditOrderMetadata": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "tax_amount": {
+            "type": "integer",
+            "title": "Tax Amount"
+          },
+          "tax_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax State"
+          },
+          "tax_country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Country"
+          },
+          "fee": {
+            "type": "integer",
+            "title": "Fee"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "amount",
+          "currency",
+          "tax_amount",
+          "fee"
+        ],
+        "title": "BalanceCreditOrderMetadata"
       },
       "BalanceDisputeEvent": {
         "properties": {
@@ -22531,6 +23597,10 @@
           "order_id": {
             "type": "string",
             "title": "Order Id"
+          },
+          "order_created_at": {
+            "type": "string",
+            "title": "Order Created At"
           },
           "product_id": {
             "type": "string",
@@ -23051,6 +24121,10 @@
           "order_id": {
             "type": "string",
             "title": "Order Id"
+          },
+          "order_created_at": {
+            "type": "string",
+            "title": "Order Created At"
           },
           "product_id": {
             "type": "string",
@@ -28698,8 +29772,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -30341,8 +31415,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -30841,8 +31915,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -31194,8 +32268,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -32692,8 +33766,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -33056,8 +34130,8 @@
               {
                 "type": "integer",
                 "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
+                "minimum": 0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
               },
               {
                 "type": "null"
@@ -35325,6 +36399,20 @@
               true
             ]
           },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
+            ]
+          },
           "name": {
             "anyOf": [
               {
@@ -36559,6 +37647,20 @@
               }
             ],
             "title": "Tax Id"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.",
+            "examples": [
+              "individual"
+            ]
           },
           "organization_id": {
             "anyOf": [
@@ -39136,6 +40238,20 @@
               true
             ]
           },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
+            ]
+          },
           "name": {
             "anyOf": [
               {
@@ -40461,6 +41577,14 @@
         ],
         "title": "CustomerSubscriptionUpdateSeats"
       },
+      "CustomerType": {
+        "type": "string",
+        "enum": [
+          "individual",
+          "team"
+        ],
+        "title": "CustomerType"
+      },
       "CustomerUpdate": {
         "properties": {
           "metadata": {
@@ -40577,6 +41701,20 @@
             "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
             "examples": [
               "usr_1337"
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.",
+            "examples": [
+              "team"
             ]
           }
         },
@@ -41066,6 +42204,20 @@
             "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
             "examples": [
               true
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
             ]
           },
           "name": {
@@ -45157,7 +46309,7 @@
           "minimum_amount": {
             "type": "integer",
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay."
+            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents."
           },
           "maximum_amount": {
             "anyOf": [
@@ -45655,6 +46807,20 @@
             "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
             "examples": [
               true
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
             ]
           },
           "name": {
@@ -46795,6 +47961,26 @@
           "pagination"
         ],
         "title": "ListResource[Order]"
+      },
+      "ListResource_OrganizationAccessToken_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrganizationAccessToken"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[OrganizationAccessToken]"
       },
       "ListResource_Organization_": {
         "properties": {
@@ -49859,7 +51045,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -49980,7 +51166,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write"
           },
           "client_name": {
             "type": "string",
@@ -50616,6 +51802,20 @@
             "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
             "examples": [
               true
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
             ]
           },
           "name": {
@@ -51837,6 +53037,202 @@
           "customer_portal_settings"
         ],
         "title": "Organization"
+      },
+      "OrganizationAccessToken": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/Scope"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The organization ID.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ],
+            "x-polar-selector-widget": {
+              "displayProperty": "name",
+              "resourceName": "Organization",
+              "resourceRoot": "/v1/organizations"
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "scopes",
+          "expires_at",
+          "comment",
+          "last_used_at",
+          "organization_id"
+        ],
+        "title": "OrganizationAccessToken"
+      },
+      "OrganizationAccessTokenCreate": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "comment": {
+            "type": "string",
+            "title": "Comment"
+          },
+          "expires_in": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "duration"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In"
+          },
+          "scopes": {
+            "items": {
+              "$ref": "#/components/schemas/AvailableScope"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "comment",
+          "scopes"
+        ],
+        "title": "OrganizationAccessTokenCreate"
+      },
+      "OrganizationAccessTokenCreateResponse": {
+        "properties": {
+          "organization_access_token": {
+            "$ref": "#/components/schemas/OrganizationAccessToken"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "organization_access_token",
+          "token"
+        ],
+        "title": "OrganizationAccessTokenCreateResponse"
+      },
+      "OrganizationAccessTokenSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at",
+          "comment",
+          "-comment",
+          "last_used_at",
+          "-last_used_at",
+          "organization_id",
+          "-organization_id"
+        ],
+        "title": "OrganizationAccessTokenSortProperty"
+      },
+      "OrganizationAccessTokenUpdate": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AvailableScope"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopes"
+          }
+        },
+        "type": "object",
+        "title": "OrganizationAccessTokenUpdate"
       },
       "OrganizationAvatarFileCreate": {
         "properties": {
@@ -53688,7 +55084,7 @@
           },
           "recurring_interval": {
             "$ref": "#/components/schemas/SubscriptionRecurringInterval",
-            "description": "The recurring interval of the product. Note that the `day` and `week` values are for internal Polar staff use only."
+            "description": "The recurring interval of the product."
           },
           "recurring_interval_count": {
             "type": "integer",
@@ -54029,7 +55425,7 @@
           "minimum_amount": {
             "type": "integer",
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay."
+            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents."
           },
           "maximum_amount": {
             "anyOf": [
@@ -54091,9 +55487,9 @@
           },
           "minimum_amount": {
             "type": "integer",
-            "minimum": 50,
+            "minimum": 0,
             "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay.",
+            "description": "The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.",
             "default": 50
           },
           "maximum_amount": {
@@ -54116,7 +55512,7 @@
               {
                 "type": "integer",
                 "maximum": 1000000,
-                "minimum": 50,
+                "minimum": 0,
                 "description": "The price in cents."
               },
               {
@@ -54124,7 +55520,7 @@
               }
             ],
             "title": "Preset Amount",
-            "description": "The initial amount shown to the customer."
+            "description": "The initial amount shown to the customer. If 0, the customer will see $0 as the default. Values between 1-49 are rejected."
           }
         },
         "type": "object",
@@ -55636,7 +57032,9 @@
           "notifications:read",
           "notifications:write",
           "notification_recipients:read",
-          "notification_recipients:write"
+          "notification_recipients:write",
+          "organization_access_tokens:read",
+          "organization_access_tokens:write"
         ],
         "title": "Scope",
         "enumNames": {
@@ -55680,6 +57078,8 @@
           "openid": "OpenID",
           "orders:read": "Read orders made on your organizations",
           "orders:write": "Modify orders made on your organizations",
+          "organization_access_tokens:read": "Read organization access tokens",
+          "organization_access_tokens:write": "Create or modify organization access tokens",
           "organizations:read": "Read your organizations",
           "organizations:write": "Create or modify organizations",
           "payments:read": "Read payments made on your organizations",
@@ -56956,6 +58356,20 @@
             "description": "Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.",
             "examples": [
               true
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of customer: 'individual' for single users, 'team' for customers with multiple members. Legacy customers may have NULL type which is treated as 'individual'.",
+            "examples": [
+              "individual"
             ]
           },
           "name": {
@@ -58263,6 +59677,9 @@
             "$ref": "#/components/schemas/BalanceOrderEvent"
           },
           {
+            "$ref": "#/components/schemas/BalanceCreditOrderEvent"
+          },
+          {
             "$ref": "#/components/schemas/BalanceRefundEvent"
           },
           {
@@ -58278,6 +59695,7 @@
         "discriminator": {
           "propertyName": "name",
           "mapping": {
+            "balance.credit_order": "#/components/schemas/BalanceCreditOrderEvent",
             "balance.dispute": "#/components/schemas/BalanceDisputeEvent",
             "balance.dispute_reversal": "#/components/schemas/BalanceDisputeReversalEvent",
             "balance.order": "#/components/schemas/BalanceOrderEvent",

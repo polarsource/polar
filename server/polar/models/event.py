@@ -257,9 +257,7 @@ class Event(Model, MetadataMixin):
         index=True,
     )
 
-    external_member_id: Mapped[str | None] = mapped_column(
-        String, nullable=True
-    )
+    external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True)
 

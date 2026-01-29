@@ -5244,3 +5244,29 @@ class TestHandleSuccessPostHogTracking:
 
         assert checkout.status == CheckoutStatus.succeeded
         log_mock.error.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_expire_checkout_sends_webhook(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    product: Product,
+    mocker: MockerFixture,
+) -> None:
+    from polar.models.webhook_endpoint import WebhookEventType
+    
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        status=CheckoutStatus.open,
+        expires_at=utc_now() - timedelta(days=1),
+    )
+    
+    mock_send = mocker.patch("polar.checkout.service.webhook_service.send")
+    
+    await checkout_service.expire_checkout(session, checkout)
+    
+    mock_send.assert_called_once()
+    args = mock_send.call_args
+    assert args[0][2] == WebhookEventType.checkout_expired
+    assert args[0][3].id == checkout.id

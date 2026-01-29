@@ -1237,6 +1237,7 @@ class WebhookBenefitGrantRevokedPayload(BaseWebhookPayload):
 WebhookPayload = Annotated[
     WebhookCheckoutCreatedPayload
     | WebhookCheckoutUpdatedPayload
+    | WebhookCheckoutExpiredPayload
     | WebhookCustomerCreatedPayload
     | WebhookCustomerUpdatedPayload
     | WebhookCustomerDeletedPayload

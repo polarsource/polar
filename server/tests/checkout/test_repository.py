@@ -36,15 +36,20 @@ class TestExpireOpenCheckouts:
         )
 
         repository = CheckoutRepository.from_session(session)
-        await repository.expire_open_checkouts()
+        expired_checkouts = await repository.expire_open_checkouts()
 
+        # Verify only the expired open checkout is returned
+        assert len(expired_checkouts) == 1
+        assert expired_checkouts[0].id == expired_checkout.id
+
+        # Verify statuses are not modified by the repository method
         updated_open_checkout = await repository.get_by_id(open_checkout.id)
         assert updated_open_checkout is not None
         assert updated_open_checkout.status == CheckoutStatus.open
 
         updated_expired_checkout = await repository.get_by_id(expired_checkout.id)
         assert updated_expired_checkout is not None
-        assert updated_expired_checkout.status == CheckoutStatus.expired
+        assert updated_expired_checkout.status == CheckoutStatus.open  # Still open, not expired
 
         updated_successful_checkout = await repository.get_by_id(successful_checkout.id)
         assert updated_successful_checkout is not None

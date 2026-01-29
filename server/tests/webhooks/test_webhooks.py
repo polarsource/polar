@@ -255,3 +255,47 @@ async def test_webhook_standard_webhooks_compatible(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
+
+
+@pytest.mark.asyncio
+async def test_checkout_expired_webhook(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    product: Product,
+) -> None:
+    from datetime import timedelta
+    from polar.checkout.service import checkout as checkout_service
+    from polar.kit.utils import utc_now
+    from polar.models.checkout import CheckoutStatus
+    from polar.webhook.repository import WebhookEventRepository
+    from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
+    
+    # Create webhook endpoint
+    endpoint = await create_webhook_endpoint(
+        save_fixture,
+        organization=organization,
+        events=[WebhookEventType.checkout_expired],
+    )
+    
+    # Create expired checkout
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        status=CheckoutStatus.open,
+        expires_at=utc_now() - timedelta(days=1),
+    )
+    
+    # Expire checkout
+    await checkout_service.expire_checkout(session, checkout)
+    await session.commit()
+    
+    # Verify webhook event was created
+    event_repository = WebhookEventRepository.from_session(session)
+    statement = event_repository.get_base_statement().where(
+        WebhookEvent.webhook_endpoint_id == endpoint.id,
+        WebhookEvent.type == WebhookEventType.checkout_expired,
+    )
+    events = await event_repository.get_all(statement)
+    assert len(events) == 1
+    assert events[0].type == WebhookEventType.checkout_expired

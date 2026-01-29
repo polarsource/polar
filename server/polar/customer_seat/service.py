@@ -14,11 +14,11 @@ from polar.customer_session.service import (
     customer_session as customer_session_service,
 )
 from polar.eventstream.service import publish as eventstream_publish
-from polar.member_session.service import member_session as member_session_service
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
+from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     Customer,
     CustomerSeat,

@@ -1,10 +1,6 @@
-import subprocess
 import uuid
-from collections.abc import Generator
 from datetime import UTC, datetime
-from pathlib import Path
 
-import httpx
 import pytest
 
 from polar.config import settings
@@ -12,8 +8,7 @@ from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.models import Event
 from polar.models.event import EventSource
-
-TINYBIRD_DIR = Path(__file__).parent.parent.parent.parent / "tinybird"
+from tests.fixtures.tinybird import tinybird_available
 
 
 def create_test_event(
@@ -35,93 +30,112 @@ def create_test_event(
     )
 
 
-def get_tokens() -> dict[str, str] | None:
-    """Fetch tokens from local Tinybird instance."""
-    try:
-        response = httpx.get(f"{settings.TINYBIRD_API_URL}/tokens", timeout=2)
-        if response.status_code == 200:
-            return response.json()
-    except httpx.RequestError:
-        pass
-    return None
-
-
-def tinybird_available() -> bool:
-    """Check if local Tinybird is running and accessible."""
-    return get_tokens() is not None
-
-
-@pytest.fixture
-def tinybird_workspace() -> Generator[str, None, None]:
-    """Create an isolated workspace, deploy schema, and yield token."""
-    tokens = get_tokens()
-    if not tokens:
-        pytest.skip("Tinybird not running")
-
-    user_token = tokens["user_token"]
-    admin_token = tokens["admin_token"]
-    host = settings.TINYBIRD_API_URL
-    workspace_name = f"test_{uuid.uuid4().hex[:8]}"
-
-    ws_response = httpx.post(
-        f"{host}/v0/workspaces",
-        params={"name": workspace_name},
-        headers={"Authorization": f"Bearer {user_token}"},
-    )
-    ws_response.raise_for_status()
-    workspace_id = ws_response.json()["id"]
-
-    token_name = f"admin_{workspace_name}"
-    token_response = httpx.post(
-        f"{host}/v0/tokens",
-        params={"name": token_name, "scope": "ADMIN"},
-        headers={
-            "Authorization": f"Bearer {admin_token}",
-            "X-Workspace-ID": workspace_id,
-        },
-    )
-    token_response.raise_for_status()
-    workspace_token = token_response.json()["token"]
-
-    subprocess.run(
-        ["tb", "--host", host, "--token", workspace_token, "deploy"],
-        check=True,
-        capture_output=True,
-        cwd=TINYBIRD_DIR,
-    )
-
-    yield workspace_token
-
-    httpx.delete(
-        f"{host}/v0/workspaces/{workspace_id}",
-        headers={"Authorization": f"Bearer {user_token}"},
-    )
-
-
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.asyncio
 class TestTinybirdE2E:
     async def test_ingest_and_query(self, tinybird_workspace: str) -> None:
         """Verify events can be ingested and queried back."""
         token = tinybird_workspace
-        client = TinybirdClient(settings.TINYBIRD_API_URL, api_token=token)
+        client = TinybirdClient(
+            api_url=settings.TINYBIRD_API_URL,
+            clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+            api_token=token,
+            clickhouse_token=token,
+        )
 
         event = create_test_event(name="test.e2e.event")
         tinybird_event = _event_to_tinybird(event)
 
         await client.ingest(DATASOURCE_EVENTS, [tinybird_event], wait=True)
 
-        async with httpx.AsyncClient(
-            base_url=settings.TINYBIRD_API_URL,
-            headers={"Authorization": f"Bearer {token}"},
-        ) as http:
-            response = await http.get(
-                "/v0/sql",
-                params={
-                    "q": f"SELECT * FROM {DATASOURCE_EVENTS} WHERE id = '{event.id}' FORMAT JSON"
-                },
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert len(data.get("data", [])) == 1
-            assert data["data"][0]["name"] == "test.e2e.event"
+        rows = await client.query(
+            f"SELECT * FROM {DATASOURCE_EVENTS} WHERE id = '{event.id}'"
+        )
+        assert len(rows) == 1
+        assert rows[0]["name"] == "test.e2e.event"
+
+    async def test_ingest_multiple_and_aggregate(self, tinybird_workspace: str) -> None:
+        """Verify multiple events can be ingested and aggregated."""
+        token = tinybird_workspace
+        client = TinybirdClient(
+            api_url=settings.TINYBIRD_API_URL,
+            clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+            api_token=token,
+            clickhouse_token=token,
+        )
+
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(organization_id=org_id, name="order.created"),
+            create_test_event(organization_id=org_id, name="order.created"),
+            create_test_event(organization_id=org_id, name="order.created"),
+            create_test_event(organization_id=org_id, name="subscription.created"),
+            create_test_event(organization_id=org_id, name="subscription.created"),
+            create_test_event(organization_id=org_id, name="subscription.canceled"),
+        ]
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+
+        await client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        rows = await client.query(f"""
+            SELECT name, count() as count
+            FROM {DATASOURCE_EVENTS}
+            WHERE organization_id = '{org_id}'
+            GROUP BY name
+            ORDER BY count DESC
+        """)
+
+        assert len(rows) == 3
+        assert rows[0]["name"] == "order.created"
+        assert rows[0]["count"] == 3
+        assert rows[1]["name"] == "subscription.created"
+        assert rows[1]["count"] == 2
+        assert rows[2]["name"] == "subscription.canceled"
+        assert rows[2]["count"] == 1
+
+    async def test_event_types_materialized_view(self, tinybird_workspace: str) -> None:
+        """Verify the event_types_by_customer_id materialized view aggregates correctly."""
+        token = tinybird_workspace
+        client = TinybirdClient(
+            api_url=settings.TINYBIRD_API_URL,
+            clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+            api_token=token,
+            clickhouse_token=token,
+        )
+
+        org_id = uuid.uuid4()
+        customer_id = uuid.uuid4()
+        events = [
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="button.clicked"),
+            create_test_event(organization_id=org_id, name="button.clicked"),
+            create_test_event(organization_id=org_id, name="form.submitted"),
+        ]
+
+        for e in events:
+            e.customer_id = customer_id
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+
+        await client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        rows = await client.query(f"""
+            SELECT
+                name,
+                countMerge(occurrences) as occurrences
+            FROM event_types_by_customer_id
+            WHERE organization_id = '{org_id}' AND customer_id = '{customer_id}'
+            GROUP BY name
+            ORDER BY occurrences DESC
+        """)
+
+        assert len(rows) == 3
+        assert rows[0]["name"] == "page.viewed"
+        assert rows[0]["occurrences"] == 4
+        assert rows[1]["name"] == "button.clicked"
+        assert rows[1]["occurrences"] == 2
+        assert rows[2]["name"] == "form.submitted"
+        assert rows[2]["occurrences"] == 1

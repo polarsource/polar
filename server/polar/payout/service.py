@@ -15,7 +15,6 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
-from polar.kit.currency import adjust_payout_amount_for_zero_decimal_currency
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -44,6 +43,40 @@ from .schemas import PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
 from .sorting import PayoutSortProperty
 
 log: Logger = structlog.get_logger()
+
+# Currencies that Stripe treats as zero-decimal for payouts, even though they
+# technically have smaller units. For these currencies, payout amounts must be
+# in whole units (amounts in our internal representation must end with "00").
+# See: https://docs.stripe.com/currencies#special-cases
+_STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES: frozenset[str] = frozenset(
+    {"isk", "huf", "twd", "ugx"}
+)
+
+
+def _adjust_payout_amount_for_zero_decimal_currency(
+    amount: int, currency: str
+) -> tuple[int, int]:
+    """Adjust a payout amount for zero-decimal currencies.
+
+    For currencies like ISK, HUF, TWD, and UGX, Stripe requires payout amounts
+    to be in whole units. This function rounds down the amount to the nearest
+    valid value (multiple of 100 in our internal cents representation).
+
+    Args:
+        amount: The amount in smallest currency units (cents).
+        currency: The currency code (e.g., "isk", "huf").
+
+    Returns:
+        A tuple of (adjusted_amount, remainder) where:
+        - adjusted_amount: The amount rounded down to be valid for Stripe payouts
+        - remainder: The amount that could not be paid out (0-99)
+    """
+    if currency.lower() not in _STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES:
+        return amount, 0
+
+    remainder = amount % 100
+    adjusted_amount = amount - remainder
+    return adjusted_amount, remainder
 
 
 class PayoutError(PolarError): ...
@@ -198,7 +231,7 @@ class PayoutService:
 
         # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), adjust the
         # net amount to be payable (rounded down to nearest 100)
-        net_amount, _ = adjust_payout_amount_for_zero_decimal_currency(
+        net_amount, _ = _adjust_payout_amount_for_zero_decimal_currency(
             net_amount, account.currency
         )
 
@@ -394,7 +427,7 @@ class PayoutService:
         # For certain currencies (ISK, HUF, TWD, UGX), Stripe treats them as
         # zero-decimal currencies for payouts. We need to round down to the
         # nearest whole unit (multiple of 100 in our internal representation).
-        payout_amount, remainder = adjust_payout_amount_for_zero_decimal_currency(
+        payout_amount, remainder = _adjust_payout_amount_for_zero_decimal_currency(
             payout.account_amount, payout.account_currency
         )
 

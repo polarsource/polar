@@ -7,7 +7,7 @@ import { StillaAI } from './Logos'
 
 export const companyTestimonials = [
   {
-    link: 'https://stilla.ai',
+    link: '/customers/stilla-ai',
     name: 'Siavash Ghorbani',
     company: 'Stilla AI',
     verified: true,
@@ -24,7 +24,7 @@ export const companyTestimonials = [
     ),
   },
   {
-    link: 'https://repoprompt.com',
+    link: '/customers/repo-prompt',
     name: 'Eric Provencher',
     company: 'Repo Prompt',
     verified: true,

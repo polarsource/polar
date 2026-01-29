@@ -229,18 +229,6 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
             postgresql_where="customer_id IS NOT NULL",
         ),
-        Index(
-            "ix_events_organization_member_id_ingested_at_desc",
-            "organization_id",
-            "member_id",
-            literal_column("ingested_at DESC"),
-        ),
-        Index(
-            "ix_events_organization_external_member_id_ingested_at_desc",
-            "organization_id",
-            "external_member_id",
-            literal_column("ingested_at DESC"),
-        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
@@ -265,13 +253,12 @@ class Event(Model, MetadataMixin):
 
     member_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("members.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
     external_member_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True
+        String, nullable=True
     )
 
     external_id: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -324,9 +311,9 @@ class Event(Model, MetadataMixin):
             Member,
             primaryjoin=(
                 "or_("
-                "Event.member_id == Member.id,"
+                "foreign(Event.member_id) == Member.id,"
                 "and_("
-                "Event.external_member_id == Member.external_id,"
+                "foreign(Event.external_member_id) == Member.external_id,"
                 "Event.organization_id == Member.organization_id"
                 ")"
                 ")"

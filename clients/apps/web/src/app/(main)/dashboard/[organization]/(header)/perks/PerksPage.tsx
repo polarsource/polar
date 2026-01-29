@@ -9,55 +9,65 @@ import {
 } from '@/hooks/queries/perks'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Card, CardContent, CardHeader } from '@polar-sh/ui/components/atoms/Card'
-import { motion } from 'framer-motion'
-import {
-  CheckCircle2,
-  Copy,
-  ExternalLink,
-  Gift,
-  Rocket,
-  Sparkles,
-  Zap,
-} from 'lucide-react'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { CheckCircle2, Copy, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 
 interface PerksPageProps {
   organization: schemas['Organization']
 }
 
-// Category icons mapping
-const categoryIcons: Record<string, React.ReactNode> = {
-  cloud: <Zap className="h-4 w-4" />,
-  finance: <Sparkles className="h-4 w-4" />,
-  marketing: <Rocket className="h-4 w-4" />,
-  ai: <Sparkles className="h-4 w-4" />,
-  developer_tools: <Zap className="h-4 w-4" />,
-  analytics: <Rocket className="h-4 w-4" />,
-  other: <Gift className="h-4 w-4" />,
+// Partner value propositions - explaining why each is vital for startups
+const partnerDescriptions: Record<
+  string,
+  { tagline: string; spaireBenefit: string }
+> = {
+  AWS: {
+    tagline:
+      'The backbone of modern startups. AWS powers 80% of YC companies and provides the infrastructure you need to scale from zero to millions of users.',
+    spaireBenefit:
+      'Spaire founders receive up to $5,000 in AWS Activate credits, giving you runway to build and iterate without infrastructure costs eating into your capital.',
+  },
+  OpenAI: {
+    tagline:
+      'AI is no longer optional. OpenAI provides the models that power the next generation of products, from GPT-4 for intelligent features to DALL-E for creative applications.',
+    spaireBenefit:
+      'Get $2,500 in API credits to integrate AI into your product from day one. Build smarter features without the R&D overhead.',
+  },
+  Mercury: {
+    tagline:
+      'Banking built for startups. Mercury offers fee-free accounts, powerful treasury management, and integrations with the tools founders actually use.',
+    spaireBenefit:
+      'Spaire integrates directly with Mercury for instant payouts via RTP. Open an account through us and receive a $500 bonus to start your banking relationship.',
+  },
+  'Stripe Atlas': {
+    tagline:
+      'The fastest path to a US Delaware C-Corp. Stripe Atlas handles incorporation, tax ID, and bank account setup so you can focus on building.',
+    spaireBenefit:
+      'Save $500 on incorporation fees. Combined with Spaire as your Merchant of Record, you get a complete financial stack from day one.',
+  },
+  HubSpot: {
+    tagline:
+      'The CRM that grows with you. HubSpot provides marketing, sales, and service tools that scale from founder-led sales to enterprise teams.',
+    spaireBenefit:
+      'Get 90% off your first year of HubSpot. Start with professional-grade tools without the enterprise price tag.',
+  },
 }
 
-// Category display names
-const categoryNames: Record<string, string> = {
-  cloud: 'Cloud',
-  finance: 'Finance',
-  marketing: 'Marketing',
-  ai: 'AI',
-  developer_tools: 'Developer Tools',
-  analytics: 'Analytics',
-  other: 'Other',
-}
-
-interface PerkCardProps {
+interface PartnerSectionProps {
   perk: Perk
   onClaim: (perkId: string) => void
   isClaiming: boolean
   claimedPerk?: PerkWithCode
 }
 
-const PerkCard = ({ perk, onClaim, isClaiming, claimedPerk }: PerkCardProps) => {
+const PartnerSection = ({
+  perk,
+  onClaim,
+  isClaiming,
+  claimedPerk,
+}: PartnerSectionProps) => {
   const [copied, setCopied] = useState(false)
 
   const handleCopyCode = useCallback(async (code: string) => {
@@ -72,155 +82,135 @@ const PerkCard = ({ perk, onClaim, isClaiming, claimedPerk }: PerkCardProps) => 
 
   const isLinkType = perk.redemption_type === 'link'
   const isCodeType = perk.redemption_type === 'code'
+  const descriptions = partnerDescriptions[perk.provider_name]
 
   return (
-    <Card
-      className={twMerge(
-        'group relative flex h-full flex-col overflow-hidden transition-all hover:shadow-lg',
-        perk.featured &&
-          'ring-2 ring-blue-500/20 dark:ring-blue-400/30',
-      )}
-    >
-      {/* Featured Badge */}
-      {perk.featured && (
-        <div className="absolute top-3 right-3 z-10">
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">
-            <Sparkles className="h-3 w-3" />
-            Featured
-          </span>
-        </div>
-      )}
-
-      <CardHeader className="pb-2">
-        {/* Provider Logo */}
-        <div className="mb-3 flex items-center gap-3">
-          <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-gray-100 dark:bg-polar-700">
+    <ShadowBox className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="dark:bg-polar-700 relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100">
             <Image
               src={`/assets/images/perks/${perk.logo_key}.png`}
               alt={perk.provider_name}
               fill
               className="object-contain p-2"
               onError={(e) => {
-                // Fallback to first letter if image fails
                 const target = e.target as HTMLImageElement
                 target.style.display = 'none'
               }}
             />
-            <div className="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-400 dark:text-polar-500">
+            <div className="dark:text-polar-500 absolute inset-0 flex items-center justify-center text-lg font-semibold text-gray-400">
               {perk.provider_name.charAt(0)}
             </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 dark:text-white">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               {perk.provider_name}
             </h3>
-            <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-polar-400">
-              {categoryIcons[perk.category] || categoryIcons.other}
-              {categoryNames[perk.category] || 'Other'}
-            </span>
+            <p className="dark:text-polar-400 text-sm text-gray-500">
+              {perk.headline}
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Headline */}
-        <h4 className="text-xl font-bold text-gray-900 dark:text-white">
-          {perk.headline}
-        </h4>
-      </CardHeader>
+      {/* Content */}
+      <div className="flex flex-col gap-4">
+        {descriptions ? (
+          <>
+            <p className="dark:text-polar-300 text-sm leading-relaxed text-gray-600">
+              {descriptions.tagline}
+            </p>
+            <div className="dark:border-polar-700 dark:bg-polar-800/50 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+              <p className="dark:text-polar-200 text-sm leading-relaxed text-gray-700">
+                <span className="font-medium">Spaire Advantage:</span>{' '}
+                {descriptions.spaireBenefit}
+              </p>
+            </div>
+          </>
+        ) : (
+          <p className="dark:text-polar-300 text-sm leading-relaxed text-gray-600">
+            {perk.description}
+          </p>
+        )}
+      </div>
 
-      <CardContent className="flex flex-1 flex-col">
-        {/* Description */}
-        <p className="mb-4 flex-1 text-sm text-gray-600 dark:text-polar-400">
-          {perk.description}
-        </p>
-
-        {/* Action Area */}
-        <div className="mt-auto space-y-2">
-          {claimedPerk ? (
-            // Show redemption details after claim
-            <>
-              {isCodeType && claimedPerk.redemption_code && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 rounded-lg bg-gray-100 p-3 dark:bg-polar-700">
-                    <code className="flex-1 font-mono text-sm font-medium text-gray-900 dark:text-white">
-                      {claimedPerk.redemption_code}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        handleCopyCode(claimedPerk.redemption_code!)
-                      }
-                      className="shrink-0"
-                    >
-                      {copied ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-center text-xs text-gray-500 dark:text-polar-500">
-                    Use this code at checkout
-                  </p>
-                </div>
-              )}
-              {isLinkType && claimedPerk.redemption_url && (
-                <Button
-                  asChild
-                  className="w-full"
-                  variant="default"
-                >
-                  <a
-                    href={claimedPerk.redemption_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+      {/* Action */}
+      <div className="flex items-center gap-4 pt-2">
+        {claimedPerk ? (
+          <>
+            {isCodeType && claimedPerk.redemption_code && (
+              <div className="flex flex-1 items-center gap-3">
+                <div className="dark:bg-polar-700 flex flex-1 items-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5">
+                  <code className="flex-1 font-mono text-sm font-medium text-gray-900 dark:text-white">
+                    {claimedPerk.redemption_code}
+                  </code>
+                  <button
+                    onClick={() => handleCopyCode(claimedPerk.redemption_code!)}
+                    className="dark:text-polar-400 dark:hover:text-polar-200 shrink-0 text-gray-500 hover:text-gray-700"
                   >
-                    Redeem Now
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-            </>
-          ) : (
-            // Show claim button before claim
-            <Button
-              className="w-full"
-              onClick={handleClaim}
-              loading={isClaiming}
-              variant={perk.featured ? 'default' : 'secondary'}
-            >
-              {isCodeType ? 'Reveal Code' : 'Claim Offer'}
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+                    {copied ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <span className="dark:text-polar-500 text-xs text-gray-500">
+                  Use at checkout
+                </span>
+              </div>
+            )}
+            {isLinkType && claimedPerk.redemption_url && (
+              <Button asChild variant="default" size="sm">
+                <a
+                  href={claimedPerk.redemption_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  Redeem Offer
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            )}
+          </>
+        ) : (
+          <Button
+            onClick={handleClaim}
+            loading={isClaiming}
+            variant="secondary"
+            size="sm"
+          >
+            {isCodeType ? 'Reveal Code' : 'Claim Offer'}
+          </Button>
+        )}
+      </div>
+    </ShadowBox>
   )
 }
 
-// Empty State Component
+// Empty State
 const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="mb-4 rounded-full bg-gray-100 p-4 dark:bg-polar-800">
-      <Gift className="h-8 w-8 text-gray-400 dark:text-polar-500" />
-    </div>
-    <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-      No Perks Available
+  <ShadowBox className="flex flex-col items-center justify-center py-12 text-center">
+    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
+      No Partners Available
     </h3>
-    <p className="max-w-sm text-sm text-gray-500 dark:text-polar-400">
-      We&apos;re working on curating exclusive perks for our startups. Check
-      back soon for amazing deals from our partners.
+    <p className="dark:text-polar-400 max-w-md text-sm text-gray-500">
+      We are currently curating partnerships with leading infrastructure
+      providers. Check back soon for exclusive offers.
     </p>
-  </div>
+  </ShadowBox>
 )
 
-// Loading Skeleton
+// Loading State
 const LoadingSkeleton = () => (
-  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-    {[...Array(6)].map((_, i) => (
+  <div className="flex flex-col gap-6">
+    {[...Array(3)].map((_, i) => (
       <div
         key={i}
-        className="h-72 animate-pulse rounded-xl bg-gray-100 dark:bg-polar-800"
+        className="dark:bg-polar-800 h-48 animate-pulse rounded-xl bg-gray-100"
       />
     ))}
   </div>
@@ -252,108 +242,37 @@ export default function PerksPage({ organization }: PerksPageProps) {
   )
 
   const perks = perksData?.items || []
-  const featuredPerks = perks.filter((p) => p.featured)
-  const regularPerks = perks.filter((p) => !p.featured)
 
   return (
-    <DashboardBody
-      title={
-        <div className="flex items-center gap-3">
-          <Gift className="h-6 w-6 text-blue-500" />
-          <span>Startup Stack</span>
-        </div>
-      }
-    >
-      {/* Hero Section */}
+    <DashboardBody title="Startup Stack">
+      {/* Header */}
       <div className="mb-8">
-        <p className="text-gray-600 dark:text-polar-400">
-          Exclusive perks and discounts curated for Spaire startups. Claim your
-          offers and save thousands on the tools you need to grow.
+        <p className="dark:text-polar-400 max-w-2xl text-gray-600">
+          Infrastructure partnerships curated for Spaire founders. Each partner
+          is selected to complement our Merchant of Record platform, giving you
+          a complete financial and operational stack from day one.
         </p>
       </div>
 
       {isLoading ? (
         <LoadingSkeleton />
       ) : error ? (
-        <div className="rounded-xl bg-red-50 p-4 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          Failed to load perks. Please try again later.
-        </div>
+        <ShadowBox className="p-4 text-red-600 dark:text-red-400">
+          Failed to load partners. Please try again later.
+        </ShadowBox>
       ) : perks.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="space-y-10">
-          {/* Featured Perks */}
-          {featuredPerks.length > 0 && (
-            <section>
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                Featured Partners
-              </h2>
-              <motion.div
-                className="grid grid-cols-1 gap-6 md:grid-cols-2"
-                initial="initial"
-                animate="animate"
-                variants={{
-                  animate: {
-                    transition: { staggerChildren: 0.1 },
-                  },
-                }}
-              >
-                {featuredPerks.map((perk) => (
-                  <motion.div
-                    key={perk.id}
-                    variants={{
-                      initial: { opacity: 0, y: 20 },
-                      animate: { opacity: 1, y: 0 },
-                    }}
-                  >
-                    <PerkCard
-                      perk={perk}
-                      onClaim={handleClaim}
-                      isClaiming={claimingPerkId === perk.id}
-                      claimedPerk={claimedPerks[perk.id]}
-                    />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </section>
-          )}
-
-          {/* All Perks */}
-          {regularPerks.length > 0 && (
-            <section>
-              <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                All Perks
-              </h2>
-              <motion.div
-                className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-                initial="initial"
-                animate="animate"
-                variants={{
-                  animate: {
-                    transition: { staggerChildren: 0.05 },
-                  },
-                }}
-              >
-                {regularPerks.map((perk) => (
-                  <motion.div
-                    key={perk.id}
-                    variants={{
-                      initial: { opacity: 0, y: 20 },
-                      animate: { opacity: 1, y: 0 },
-                    }}
-                  >
-                    <PerkCard
-                      perk={perk}
-                      onClaim={handleClaim}
-                      isClaiming={claimingPerkId === perk.id}
-                      claimedPerk={claimedPerks[perk.id]}
-                    />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </section>
-          )}
+        <div className="flex flex-col gap-6">
+          {perks.map((perk) => (
+            <PartnerSection
+              key={perk.id}
+              perk={perk}
+              onClaim={handleClaim}
+              isClaiming={claimingPerkId === perk.id}
+              claimedPerk={claimedPerks[perk.id]}
+            />
+          ))}
         </div>
       )}
     </DashboardBody>

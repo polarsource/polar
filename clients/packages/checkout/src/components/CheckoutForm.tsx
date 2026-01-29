@@ -2,7 +2,7 @@
 
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublic as CheckoutPublicBase } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -48,6 +48,11 @@ import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import MeteredPriceLabel from './MeteredPriceLabel'
 import PolarLogo from './PolarLogo'
+
+// TODO: Remove once SDK is updated with lockCustomerEmail field
+type CheckoutPublic = CheckoutPublicBase & {
+  lockCustomerEmail?: boolean
+}
 
 const DetailRow = ({
   title,
@@ -364,6 +369,12 @@ const BaseCheckoutForm = ({
                         {...field}
                         value={field.value || ''}
                         disabled={checkout.customerId !== null}
+                        readOnly={checkout.lockCustomerEmail}
+                        className={
+                          checkout.lockCustomerEmail
+                            ? 'dark:bg-polar-700 cursor-not-allowed bg-gray-100'
+                            : ''
+                        }
                       />
                     </FormControl>
                     <FormMessage />

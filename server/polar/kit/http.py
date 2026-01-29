@@ -2,7 +2,7 @@ from typing import Annotated
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from fastapi import Depends, Query
-from pydantic import AfterValidator, HttpUrl
+from pydantic import AfterValidator, HttpUrl, PlainSerializer
 from safe_redirect_url import url_has_allowed_host_and_scheme
 
 from polar.config import settings
@@ -15,6 +15,7 @@ def _unescape_checkout_id_placeholder(url: HttpUrl) -> str:
 SuccessUrl = Annotated[
     HttpUrl,
     AfterValidator(_unescape_checkout_id_placeholder),
+    PlainSerializer(lambda x: x, return_type=str),
 ]
 """
 A URL type that preserves the `{CHECKOUT_ID}` placeholder without encoding it.
@@ -22,6 +23,8 @@ A URL type that preserves the `{CHECKOUT_ID}` placeholder without encoding it.
 HttpUrl encodes `{CHECKOUT_ID}` to `%7BCHECKOUT_ID%7D`, so we unescape it after
 validation. This placeholder is replaced with the actual checkout ID at runtime
 (see `polar.models.checkout.Checkout.success_url`).
+
+The PlainSerializer ensures model_dump() returns the unescaped string value.
 """
 
 

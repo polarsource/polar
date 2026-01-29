@@ -234,7 +234,7 @@ module "test" {
 
   tinybird_config = {
     api_url          = "https://api.us-east.aws.tinybird.co"
-    clickhouse_url   = "https://ch.us-east.aws.tinybird.co"
+    clickhouse_url   = "https://clickhouse.us-east.aws.tinybird.co"
     api_token        = var.tinybird_api_token
     clickhouse_token = var.tinybird_clickhouse_token
     workspace        = var.tinybird_workspace

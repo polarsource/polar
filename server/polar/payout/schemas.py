@@ -17,6 +17,12 @@ class PayoutEstimate(Schema):
     gross_amount: int
     fees_amount: int
     net_amount: int
+    # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), the actual
+    # payout amount may be less than net_amount due to rounding requirements.
+    # The difference stays in the account balance for the next payout.
+    is_zero_decimal_payout_currency: bool = False
+    adjusted_net_amount: int | None = None
+    unpayable_remainder: int | None = None
 
 
 class Payout(IDSchema, TimestampedSchema):

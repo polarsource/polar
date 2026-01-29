@@ -208,6 +208,106 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestEstimate:
+    async def test_regular_currency(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that regular currencies don't have zero-decimal adjustments."""
+        mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
+            return_value=[],
+        )
+
+        account = await create_account(
+            save_fixture, organization, user, currency="usd"
+        )
+        await create_balance_transaction(save_fixture, account=account, amount=12345)
+
+        estimate = await payout_service.estimate(session, account=account)
+
+        assert estimate.gross_amount == 12345
+        assert estimate.net_amount == 12345
+        assert estimate.is_zero_decimal_payout_currency is False
+        assert estimate.adjusted_net_amount is None
+        assert estimate.unpayable_remainder is None
+
+    @pytest.mark.parametrize(
+        "currency",
+        [
+            pytest.param("isk", id="ISK"),
+            pytest.param("huf", id="HUF"),
+            pytest.param("twd", id="TWD"),
+            pytest.param("ugx", id="UGX"),
+        ],
+    )
+    async def test_zero_decimal_currency_with_remainder(
+        self,
+        currency: str,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that zero-decimal currencies show adjustment info when there's a remainder."""
+        mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
+            return_value=[],
+        )
+
+        country_map = {"isk": "IS", "huf": "HU", "twd": "TW", "ugx": "UG"}
+        country = country_map[currency]
+
+        account = await create_account(
+            save_fixture, organization, user, country=country, currency=currency
+        )
+        # Amount that will have a remainder (12345 -> 12300, remainder 45)
+        await create_balance_transaction(save_fixture, account=account, amount=12345)
+
+        estimate = await payout_service.estimate(session, account=account)
+
+        assert estimate.gross_amount == 12345
+        assert estimate.net_amount == 12345
+        assert estimate.is_zero_decimal_payout_currency is True
+        assert estimate.adjusted_net_amount == 12300
+        assert estimate.unpayable_remainder == 45
+
+    async def test_zero_decimal_currency_no_remainder(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that zero-decimal currencies don't show adjustment when amount is exact."""
+        mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
+            return_value=[],
+        )
+
+        account = await create_account(
+            save_fixture, organization, user, country="IS", currency="isk"
+        )
+        # Amount that's already a multiple of 100 (no remainder)
+        await create_balance_transaction(save_fixture, account=account, amount=12300)
+
+        estimate = await payout_service.estimate(session, account=account)
+
+        assert estimate.gross_amount == 12300
+        assert estimate.net_amount == 12300
+        assert estimate.is_zero_decimal_payout_currency is True
+        # No adjustment needed, so these should be None
+        assert estimate.adjusted_net_amount is None
+        assert estimate.unpayable_remainder is None
+
+
+@pytest.mark.asyncio
 class TestTriggerStripePayouts:
     async def test_valid(
         self,

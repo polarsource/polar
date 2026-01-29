@@ -15,7 +15,10 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
-from polar.kit.currency import adjust_payout_amount_for_zero_decimal_currency
+from polar.kit.currency import (
+    adjust_payout_amount_for_zero_decimal_currency,
+    is_payout_zero_decimal_currency,
+)
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -193,11 +196,33 @@ class PayoutService:
         except PayoutAmountTooLow as e:
             raise InsufficientBalance(account, balance_amount) from e
 
+        fees_amount = sum(fee for _, fee in payout_fees)
+        net_amount = balance_amount - fees_amount
+
+        # Check if this is a zero-decimal payout currency
+        is_zero_decimal = is_payout_zero_decimal_currency(account.currency)
+        adjusted_net_amount: int | None = None
+        unpayable_remainder: int | None = None
+
+        if is_zero_decimal:
+            adjusted_net_amount, unpayable_remainder = (
+                adjust_payout_amount_for_zero_decimal_currency(
+                    net_amount, account.currency
+                )
+            )
+            # Only include these values if there's actually a remainder
+            if unpayable_remainder == 0:
+                adjusted_net_amount = None
+                unpayable_remainder = None
+
         return PayoutEstimate(
             account_id=account.id,
             gross_amount=balance_amount,
-            fees_amount=sum(fee for _, fee in payout_fees),
-            net_amount=balance_amount - sum(fee for _, fee in payout_fees),
+            fees_amount=fees_amount,
+            net_amount=net_amount,
+            is_zero_decimal_payout_currency=is_zero_decimal,
+            adjusted_net_amount=adjusted_net_amount,
+            unpayable_remainder=unpayable_remainder,
         )
 
     async def create(

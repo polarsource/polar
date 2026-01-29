@@ -85,6 +85,13 @@ class OrganizationFeatureSettings(Schema):
     member_model_enabled: bool = Field(
         False, description="If this organization has the Member model enabled"
     )
+    tinybird_read: bool = Field(
+        False, description="If this organization reads from Tinybird"
+    )
+    tinybird_compare: bool = Field(
+        False,
+        description="If this organization compares Tinybird results with database",
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

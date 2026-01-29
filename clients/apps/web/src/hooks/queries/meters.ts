@@ -64,13 +64,17 @@ export const useMeters = (
     retry: defaultRetry,
   })
 
-export const useMeter = (id: string, initialData?: schemas['Meter']) =>
+export const useMeter = (
+  id: string,
+  options?: { initialData?: schemas['Meter']; enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['meters', { id }],
     queryFn: () =>
       unwrap(api.GET('/v1/meters/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
-    initialData,
+    initialData: options?.initialData,
+    enabled: options?.enabled ?? true,
   })
 
 export type ParsedMeterQuantities = schemas['MeterQuantities'] & {

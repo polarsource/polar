@@ -103,8 +103,8 @@ export function Combobox<T>({
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-        <Command shouldFilter={false}>
+      <PopoverContent className="w-(--radix-popover-trigger-width) rounded-xl p-0">
+        <Command shouldFilter={false} className="rounded-xl">
           <CommandInput
             placeholder={searchPlaceholder}
             className="h-9 border-0 focus:ring-0 focus:outline-0"
@@ -130,6 +130,7 @@ export function Combobox<T>({
                       key={itemValue}
                       value={itemValue}
                       onSelect={handleSelect}
+                      className="rounded-md"
                     >
                       {renderItem ? renderItem(item) : itemLabel}
                       <Check

@@ -9,8 +9,6 @@ SCHEMA >
     `organization_id` UUID `json:$.organization_id`,
     `customer_id` Nullable(UUID) `json:$.customer_id`,
     `external_customer_id` Nullable(String) `json:$.external_customer_id`,
-    `member_id` Nullable(UUID) `json:$.member_id`,
-    `external_member_id` Nullable(String) `json:$.external_member_id`,
     `external_id` Nullable(String) `json:$.external_id`,
     `parent_id` Nullable(UUID) `json:$.parent_id`,
     `root_id` Nullable(UUID) `json:$.root_id`,

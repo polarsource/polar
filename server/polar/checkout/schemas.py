@@ -8,7 +8,6 @@ from pydantic import (
     AliasChoices,
     Discriminator,
     Field,
-    HttpUrl,
     IPvAnyAddress,
     Tag,
     computed_field,
@@ -31,6 +30,7 @@ from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
+from polar.kit.http import SuccessUrl
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
     MetadataField,
@@ -107,7 +107,7 @@ CustomerBillingAddress = Annotated[
     Address, Field(description="Billing address of the customer.")
 ]
 SuccessURL = Annotated[
-    HttpUrl | None,
+    SuccessUrl | None,
     Field(
         description=(
             "URL where the customer will be redirected after a successful payment."

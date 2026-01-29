@@ -1,11 +1,12 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasPath, Field, HttpUrl, computed_field
+from pydantic import UUID4, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.config import settings
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import PaymentProcessor
+from polar.kit.http import SuccessUrl
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -28,7 +29,7 @@ from polar.product.schemas import (
 )
 
 SuccessURL = Annotated[
-    HttpUrl | None,
+    SuccessUrl | None,
     Field(
         description=(
             "URL where the customer will be redirected after a successful payment."

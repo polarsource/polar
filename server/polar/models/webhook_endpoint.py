@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class WebhookEventType(StrEnum):
     checkout_created = "checkout.created"
     checkout_updated = "checkout.updated"
+    checkout_expired = "checkout.expired"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"

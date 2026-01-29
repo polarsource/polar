@@ -35,7 +35,7 @@ const AnimatedInfinity = ({ className }: { className?: string }) => {
       ctx.clearRect(0, 0, width, height)
 
       const isDark = document.documentElement.classList.contains('dark')
-      const dashColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'
+      const dashColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.3)'
 
       const centerX = width / 2
       const centerY = height / 2
@@ -63,7 +63,7 @@ const AnimatedInfinity = ({ className }: { className?: string }) => {
       }
 
       // Draw dashed infinity path as continuous line
-      ctx.setLineDash([12, 8])
+      ctx.setLineDash([24, 24])
       ctx.strokeStyle = dashColor
       ctx.lineWidth = 2
       ctx.lineCap = 'round'
@@ -100,10 +100,13 @@ const AnimatedInfinity = ({ className }: { className?: string }) => {
         const pos = getPosition(pathT)
         const nextPos = getPosition(pathT - segmentLength / steps)
 
-        // Gradient from green (head) to gray (tail)
-        const alpha = 1 - progress * 0.8
+        // Fade from full opacity to faint tail
+        const alpha = Math.pow(1 - progress, 2) // Quadratic falloff for more fade
+        const color = isDark ? 255 : 0
+        // Fade color toward gray
+        const tailColor = Math.round(color * alpha + 100 * (1 - alpha))
 
-        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`
+        ctx.strokeStyle = `rgba(${tailColor}, ${tailColor}, ${tailColor}, ${0.15 + alpha * 0.85})`
         ctx.beginPath()
         ctx.moveTo(pos.x, pos.y)
         ctx.lineTo(nextPos.x, nextPos.y)

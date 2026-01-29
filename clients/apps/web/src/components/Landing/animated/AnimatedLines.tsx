@@ -29,47 +29,67 @@ const AnimatedLines = ({ className }: { className?: string }) => {
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
 
-    const cols = 32
-    const rows = 12
-    const lineWidth = 2
-    const gapX = 8
-    const gapY = 6
+    const barHeight = 10
+    const gapX = 12
+    const gapY = 12
+    const maxWidth = 8
+    const cellWidth = maxWidth + gapX
+    const cellHeight = barHeight + gapY
 
-    // Initialize random phases and speeds for each line
-    const lines: { phase: number; speed: number; baseHeight: number }[] = []
-    for (let i = 0; i < cols * rows; i++) {
-      lines.push({
-        phase: Math.random() * Math.PI * 2,
-        speed: 0.3 + Math.random() * 0.4,
-        baseHeight: 12 + Math.random() * 8,
-      })
-    }
-
+    // Will be populated on first frame
+    let bars: { phase: number; speed: number; baseWidth: number }[] = []
+    let cols = 0
+    let rows = 0
     let time = 0
+
+    const initBars = (newCols: number, newRows: number) => {
+      if (newCols === cols && newRows === rows) return
+      cols = newCols
+      rows = newRows
+      bars = []
+      for (let i = 0; i < cols * rows; i++) {
+        bars.push({
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.3 + Math.random() * 0.4,
+          baseWidth: 1 + Math.random() * 4,
+        })
+      }
+    }
 
     const animate = () => {
       const rect = canvas.getBoundingClientRect()
       ctx.clearRect(0, 0, rect.width, rect.height)
 
-      const startX = (rect.width - (cols * (lineWidth + gapX) - gapX)) / 2
-      const startY = (rect.height - (rows * (24 + gapY) - gapY)) / 2
+      // Calculate grid to fill canvas
+      const newCols = Math.floor(rect.width / cellWidth)
+      const newRows = Math.floor(rect.height / cellHeight)
+      initBars(newCols, newRows)
+
+      if (cols === 0 || rows === 0) {
+        animationRef.current = requestAnimationFrame(animate)
+        return
+      }
+
+      // Calculate actual cell size to fill canvas evenly
+      const actualCellWidth = rect.width / cols
+      const actualCellHeight = rect.height / rows
 
       const fillColor = getFillColor()
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const index = row * cols + col
-          const line = lines[index]
+          const bar = bars[index]
 
-          // Calculate animated height with slow, irregular motion
-          const heightOffset = Math.sin(time * line.speed + line.phase) * 6
-          const height = line.baseHeight + heightOffset
+          // Calculate animated width with slow, irregular motion
+          const widthOffset = Math.sin(time * bar.speed + bar.phase) * 3
+          const width = Math.max(1, bar.baseWidth + widthOffset)
 
-          const x = startX + col * (lineWidth + gapX)
-          const y = startY + row * (24 + gapY) + (24 - height) / 2
+          const x = col * actualCellWidth + (actualCellWidth - width) / 2
+          const y = row * actualCellHeight + (actualCellHeight - barHeight) / 2
 
           ctx.fillStyle = fillColor
-          ctx.fillRect(x, y, lineWidth, height)
+          ctx.fillRect(x, y, width, barHeight)
         }
       }
 

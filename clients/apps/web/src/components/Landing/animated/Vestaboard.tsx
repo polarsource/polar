@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback } from 'react'
 import { cx } from 'class-variance-authority'
-import { GeistMono } from 'geist/font/mono'
 
 export interface VestaboardProps {
   className?: string
@@ -25,47 +24,114 @@ export const Vestaboard = ({
   waveSpeed = 0.8,
 }: VestaboardProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [asciiGrid, setAsciiGrid] = useState<string[][]>([])
-  const [dimensions, setDimensions] = useState({ cols: 0, rows: 0 })
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const startTimeRef = useRef<number>(0)
   const lastFrameRef = useRef<number>(0)
+  const dimensionsRef = useRef({
+    cols: 0,
+    rows: 0,
+    width: 0,
+    height: 0,
+    cellWidth: 0,
+    cellHeight: 0,
+  })
+  const flashTimesRef = useRef<Map<string, number>>(new Map())
+
+  const cellSize = propCellSize ?? 10
+  const fontSize = propFontSize ?? cellSize
+
+  const updateDimensions = useCallback(() => {
+    if (!containerRef.current || !canvasRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    const cols = Math.floor(rect.width / cellSize) & ~1
+    const rows = Math.floor(rect.height / cellSize)
+
+    const canvas = canvasRef.current
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    canvas.style.width = `${rect.width}px`
+    canvas.style.height = `${rect.height}px`
+
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.scale(dpr, dpr)
+    }
+
+    dimensionsRef.current = {
+      cols,
+      rows,
+      width: rect.width,
+      height: rect.height,
+      cellWidth: rect.width / cols,
+      cellHeight: rect.height / rows,
+    }
+  }, [cellSize])
 
   useEffect(() => {
     startTimeRef.current = performance.now()
   }, [])
 
   useEffect(() => {
-    const updateDimensions = () => {
-      if (!containerRef.current) return
+    const container = containerRef.current
+    if (!container) return
 
-      const rect = containerRef.current.getBoundingClientRect()
-      const cellSize = propCellSize ?? 10
-      const cols = Math.floor(rect.width / cellSize) & ~1
-      const rows = Math.floor(rect.height / cellSize)
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions()
+    })
 
-      setDimensions({ cols, rows })
-    }
-
+    resizeObserver.observe(container)
     updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    return () => window.removeEventListener('resize', updateDimensions)
-  }, [propCellSize, height])
 
-  const updateGrid = useCallback(() => {
-    if (dimensions.cols === 0 || dimensions.rows === 0) return
+    return () => resizeObserver.disconnect()
+  }, [updateDimensions])
 
-    const time = (performance.now() - startTimeRef.current) / 1000
+  const render = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const { cols, rows, width, height, cellWidth, cellHeight } =
+      dimensionsRef.current
+    if (cols === 0 || rows === 0) return
+
+    const now = performance.now()
+    const time = (now - startTimeRef.current) / 1000
     const charList = characters.split('')
     const maxIdx = charList.length - 1
 
-    const grid: string[][] = []
+    ctx.clearRect(0, 0, width, height)
+    ctx.font = `${fontSize}px ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
 
-    for (let y = 0; y < dimensions.rows; y++) {
-      const row: string[] = []
-      for (let x = 0; x < dimensions.cols; x++) {
-        const uvX = x / dimensions.cols
-        const uvY = y / dimensions.rows
+    const isDark = document.documentElement.classList.contains('dark')
+
+    const flashColor = isDark ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 }
+    const baseRgb = isDark
+      ? { r: 111, g: 113, b: 123 }
+      : { r: 106, g: 114, b: 130 }
+    const baseColor = `rgb(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b})`
+    const decayDuration = 1000 // 1 second decay
+
+    // Randomly trigger new flashes
+    const flashChance = 0.02
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        if (Math.random() < flashChance) {
+          flashTimesRef.current.set(`${x},${y}`, now)
+        }
+      }
+    }
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const uvX = x / cols
+        const uvY = y / rows
 
         const t = time * waveSpeed
 
@@ -75,20 +141,42 @@ export const Vestaboard = ({
 
         let intensity = (wave1 + wave2 + wave3) / 1.8
         intensity = (intensity + 1) / 2
-
         intensity = intensity * intensity * (3 - 2 * intensity)
 
         const charIdx = Math.min(
           maxIdx,
           Math.max(0, Math.round(intensity * maxIdx)),
         )
-        row.push(charList[charIdx] || ' ')
-      }
-      grid.push(row)
-    }
+        const char = charList[charIdx] || ' '
 
-    setAsciiGrid(grid)
-  }, [dimensions, characters, waveScale, waveSpeed])
+        // Calculate color based on flash state
+        const key = `${x},${y}`
+        const flashTime = flashTimesRef.current.get(key)
+        let color = baseColor
+
+        if (flashTime !== undefined) {
+          const elapsed = now - flashTime
+          if (elapsed < decayDuration) {
+            const progress = elapsed / decayDuration
+            // Ease out decay
+            const eased = 1 - Math.pow(1 - progress, 2)
+            const r = Math.round(flashColor.r + (baseRgb.r - flashColor.r) * eased)
+            const g = Math.round(flashColor.g + (baseRgb.g - flashColor.g) * eased)
+            const b = Math.round(flashColor.b + (baseRgb.b - flashColor.b) * eased)
+            color = `rgb(${r}, ${g}, ${b})`
+          } else {
+            flashTimesRef.current.delete(key)
+          }
+        }
+
+        const drawX = x * cellWidth + cellWidth / 2
+        const drawY = y * cellHeight + cellHeight / 2
+
+        ctx.fillStyle = color
+        ctx.fillText(char, drawX, drawY)
+      }
+    }
+  }, [characters, fontSize, waveScale, waveSpeed])
 
   useEffect(() => {
     let running = true
@@ -100,7 +188,7 @@ export const Vestaboard = ({
       const elapsed = timestamp - lastFrameRef.current
       if (elapsed >= frameInterval) {
         lastFrameRef.current = timestamp - (elapsed % frameInterval)
-        updateGrid()
+        render()
       }
 
       animationRef.current = requestAnimationFrame(animate)
@@ -114,43 +202,19 @@ export const Vestaboard = ({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [updateGrid])
-
-  const cellSize = propCellSize ?? 10
-  const fontSize = propFontSize ?? cellSize
+  }, [render])
 
   return (
     <div
-      className={cx(
-        'relative flex w-full flex-col items-center justify-center overflow-hidden text-center',
-        className,
-      )}
+      ref={containerRef}
+      className={cx('relative w-full overflow-hidden', className)}
       style={{ height }}
     >
-      <div
-        ref={containerRef}
-        className="absolute inset-0 m-0 overflow-hidden font-mono"
-        style={{
-          fontSize: `${fontSize}px`,
-          display: 'grid',
-          gridTemplateColumns: `repeat(${dimensions.cols}, 1fr)`,
-          gridTemplateRows: `repeat(${dimensions.rows}, ${cellSize}px)`,
-        }}
-      >
-        {asciiGrid.flat().map((char, i) => (
-          <div
-            key={i}
-            style={{
-              height: cellSize,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {char}
-          </div>
-        ))}
-      </div>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 h-full w-full"
+        style={{ color: 'inherit' }}
+      />
     </div>
   )
 }

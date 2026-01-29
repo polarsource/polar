@@ -3,10 +3,9 @@
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import AnimatedBars from './animated/AnimatedBars'
-import AnimatedCircles from './animated/AnimatedCircles'
+import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
 import AnimatedLines from './animated/AnimatedLines'
-import AnimatedSquares from './animated/AnimatedSquares'
+import AnimatedInfinity from './animated/AnimatedInfinity'
 import AnimatedWaves from './animated/AnimatedWaves'
 import Vestaboard from './animated/Vestaboard'
 
@@ -27,12 +26,12 @@ const FeatureCard = ({
 }: FeatureCardProps) => {
   return (
     <div
-      className={twMerge('flex flex-col', className)}
+      className={twMerge('flex group flex-col', className)}
     >
       <Link
         href={linkHref}
         target={linkHref.startsWith('http') ? '_blank' : undefined}
-        className="dark:bg-polar-950 bg-white flex h-full flex-col gap-y-4 hover:bg-gray-50 dark:hover:bg-polar-900 transition-colors overflow-hidden"
+        className="dark:bg-polar-950 bg-white flex h-full flex-col hover:bg-gray-50 dark:hover:bg-[#0a0a0c] overflow-hidden"
       >
         <div className="flex h-full flex-col gap-y-2 md:gap-y-6 p-6 md:p-10">
           <h3 className="text-xl text-pretty text-black md:text-3xl md:leading-tight! dark:text-white">
@@ -45,6 +44,10 @@ const FeatureCard = ({
           ) : (
             description
           )}
+          <div className='flex flex-row items-center gap-x-2 text-gray-500 dark:text-polar-500 dark:group-hover:text-white group-hover:text-black transition-colors'>
+            <span>Learn more</span>
+            <KeyboardArrowRightOutlined fontSize='small' className='opacity-0 group-hover:opacity-100 transition-opacity' />
+          </div>
         </div>
         <div className="w-full">
           {children}
@@ -68,8 +71,8 @@ const Features = ({ className }: FeaturesProps) => {
         'Create digital products with flexible pricing models.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="relative h-[180px]">
-          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
+        <div className="relative h-[180px] mx-2 mb-2">
+          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='-0123456789' />
         </div>
       ),
     },
@@ -79,7 +82,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Charge your customers for AI usage with precision.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="relative h-[180px]">
+        <div className="relative h-[180px] mx-2 mb-2">
          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
         </div>
       ),
@@ -90,26 +93,26 @@ const Features = ({ className }: FeaturesProps) => {
         'Streamlined customer management & analytics.',
       linkHref: '/features/customers',
       children: (
-        <div className="relative h-[180px]">
-          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
+        <div className="relative h-[180px] mx-2 mb-2">
+          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='-ABCDEF' />
         </div>
       ),
     },
     {
       title: 'Self-serving Customer Portal',
       description:
-        'Streamlined customer lifecycle management with detailed profiles and analytics.',
+        'Redirect customers to our extensive Customer Portal.',
       linkHref: '/features/customers',
       children: (
-        <div className="relative h-[180px]">
-         <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
+        <div className="relative h-[180px] mx-2 mb-2">
+         <AnimatedInfinity />
         </div>
       ),
     },
     {
       title: 'Robust, secure & optimized checkouts',
       description:
-        'Streamlined customer lifecycle management with detailed profiles and analytics.',
+        'Convert your customers at checkout with high accuracy.',
       linkHref: '/features/customers',
       children: (
         <div className="relative h-[180px]">
@@ -120,10 +123,10 @@ const Features = ({ className }: FeaturesProps) => {
     {
       title: 'Global Merchant of Record',
       description:
-        'Focus on your passion while we handle all headaches & tax compliance.',
+        'Focus on your passion while we pay your VAT & sales tax.',
       linkHref: '/resources/merchant-of-record',
       children: (
-        <div className="relative h-[180px]">
+        <div className="relative h-[180px] mx-2 mb-2">
           <AnimatedLines />
         </div>
       ),

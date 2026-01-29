@@ -39,7 +39,10 @@ export default function ClientPage({
         </Section>
 
         <Section id="customer_emails">
-          <SectionDescription title="Customer Emails" />
+          <SectionDescription
+            title="Emails to Customers"
+            description="Transactional emails sent to customers after purchases and subscription events"
+          />
           <OrganizationCustomerEmailSettings organization={org} />
         </Section>
 

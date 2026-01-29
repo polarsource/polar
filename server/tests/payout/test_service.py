@@ -461,3 +461,105 @@ class TestTriggerInvoiceGeneration:
 
         # Verify job was enqueued
         enqueue_job_mock.assert_called_once_with("payout.invoice", payout_id=payout.id)
+
+
+@pytest.mark.asyncio
+class TestTriggerStripePayout:
+    @pytest.mark.parametrize(
+        ("account_currency", "account_amount", "expected_payout_amount"),
+        [
+            # Zero-decimal currencies should be rounded down to nearest 100
+            pytest.param("isk", 12345, 12300, id="ISK with remainder"),
+            pytest.param("isk", 12300, 12300, id="ISK no remainder"),
+            pytest.param("huf", 50099, 50000, id="HUF with remainder"),
+            pytest.param("twd", 99999, 99900, id="TWD with remainder"),
+            pytest.param("ugx", 10050, 10000, id="UGX with remainder"),
+            # Non-zero-decimal currencies should not be adjusted
+            pytest.param("usd", 12345, 12345, id="USD unchanged"),
+            pytest.param("eur", 12345, 12345, id="EUR unchanged"),
+        ],
+    )
+    async def test_zero_decimal_currency_adjustment(
+        self,
+        account_currency: str,
+        account_amount: int,
+        expected_payout_amount: int,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        stripe_service_mock.retrieve_balance.return_value = (
+            account_currency,
+            account_amount + 1000,  # Sufficient balance
+        )
+        stripe_service_mock.create_payout.return_value = SimpleNamespace(
+            id="STRIPE_PAYOUT_ID"
+        )
+
+        # Use a country that matches the currency for realistic test
+        country_map = {"isk": "IS", "huf": "HU", "twd": "TW", "ugx": "UG"}
+        country = country_map.get(account_currency, "US")
+
+        account = await create_account(
+            save_fixture,
+            organization,
+            user,
+            country=country,
+            currency=account_currency,
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            account_currency=account_currency,
+            account_amount=account_amount,
+        )
+
+        result = await payout_service.trigger_stripe_payout(session, payout)
+
+        # Verify Stripe was called with the adjusted amount
+        stripe_service_mock.create_payout.assert_called_once_with(
+            stripe_account=account.stripe_id,
+            amount=expected_payout_amount,
+            currency=account_currency,
+            metadata={"payout_id": str(payout.id)},
+        )
+
+        # Verify the payout's account_amount was updated if adjusted
+        assert result.account_amount == expected_payout_amount
+        assert result.processor_id == "STRIPE_PAYOUT_ID"
+
+    async def test_zero_decimal_currency_zero_amount_skipped(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that a payout with amount < 100 in zero-decimal currency is skipped."""
+        stripe_service_mock.retrieve_balance.return_value = ("isk", 1000)
+
+        account = await create_account(
+            save_fixture,
+            organization,
+            user,
+            country="IS",
+            currency="isk",
+        )
+        # Account amount of 99 will round to 0 for ISK
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            account_currency="isk",
+            account_amount=99,
+        )
+
+        result = await payout_service.trigger_stripe_payout(session, payout)
+
+        # Stripe should not be called since amount rounds to 0
+        stripe_service_mock.create_payout.assert_not_called()
+
+        # Payout should be returned unchanged (no processor_id set)
+        assert result.processor_id is None

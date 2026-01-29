@@ -15,6 +15,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
+from polar.kit.currency import adjust_payout_amount_for_zero_decimal_currency
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -381,10 +382,36 @@ class PayoutService:
             )
             return payout
 
+        # For certain currencies (ISK, HUF, TWD, UGX), Stripe treats them as
+        # zero-decimal currencies for payouts. We need to round down to the
+        # nearest whole unit (multiple of 100 in our internal representation).
+        payout_amount, remainder = adjust_payout_amount_for_zero_decimal_currency(
+            payout.account_amount, payout.account_currency
+        )
+
+        if remainder > 0:
+            log.info(
+                "Adjusted payout amount for zero-decimal currency",
+                payout_id=str(payout.id),
+                original_amount=payout.account_amount,
+                adjusted_amount=payout_amount,
+                remainder=remainder,
+                currency=payout.account_currency,
+            )
+
+        if payout_amount == 0:
+            log.warning(
+                "Payout amount is zero after adjustment for zero-decimal currency",
+                payout_id=str(payout.id),
+                original_amount=payout.account_amount,
+                currency=payout.account_currency,
+            )
+            return payout
+
         # Trigger a payout on the Stripe Connect account
         stripe_payout = await stripe_service.create_payout(
             stripe_account=account.stripe_id,
-            amount=payout.account_amount,
+            amount=payout_amount,
             currency=payout.account_currency,
             metadata={
                 "payout_id": str(payout.id),
@@ -392,10 +419,13 @@ class PayoutService:
         )
 
         repository = PayoutRepository.from_session(session)
-        return await repository.update(
-            payout,
-            update_dict={"processor_id": stripe_payout.id},
-        )
+        update_dict: dict[str, Any] = {"processor_id": stripe_payout.id}
+
+        # Update the account_amount if it was adjusted for zero-decimal currency
+        if payout_amount != payout.account_amount:
+            update_dict["account_amount"] = payout_amount
+
+        return await repository.update(payout, update_dict=update_dict)
 
     async def trigger_invoice_generation(
         self,

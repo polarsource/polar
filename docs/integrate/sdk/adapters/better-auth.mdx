@@ -197,7 +197,7 @@ To support [checkouts](/features/checkout/links) in your app, you would pass the
 The checkout plugin accepts the following configuration options:
 
 - **`products`** (optional): An array of product mappings or a function that returns them asynchronously. Each mapping contains a `productId` and a `slug` that allows you to reference products by a friendly slug instead of their full ID.
-- **`successUrl`** (optional): The relative URL where customers will be redirected after a successful checkout completion. You can use the `{CHECKOUT_ID}` placeholder in the URL to include the checkout session ID in the redirect.
+- **`successUrl`** (optional): The relative path or absolute URL where customers will be redirected after a successful checkout completion. You can use the `{CHECKOUT_ID}` placeholder in the URL to include the checkout session ID in the redirect.
 - **`returnUrl`** (optional): An optional URL which renders a back-button in the Checkout.
 - **`authenticatedUsersOnly`** (optional): A boolean flag that controls whether checkout sessions require user authentication. When set to `true`, only authenticated users can initiate checkouts and the customer information will be automatically associated with the authenticated user. When `false`, anonymous checkouts are allowed.
 - **`theme`** (optional): A string that can be used to enforce the theme of the checkout page. Can be either `light` or `dark`.
@@ -221,7 +221,7 @@ The checkout plugin accepts the following configuration options:
                     checkout({ // [!code ++]
                         // Optional field - will make it possible to pass a slug to checkout instead of Product ID
                         products: [ { productId: "123-456-789", slug: "pro" } ], // [!code ++]
-                        // Relative URL to return to when checkout is successfully completed
+                        // Relative path or absolute URL to redirect to when checkout is successfully completed
                         successUrl: "/success?checkout_id={CHECKOUT_ID}", // [!code ++]
                         // Whether you want to allow unauthenticated checkout sessions or not
                         authenticatedUsersOnly: true, // [!code ++]

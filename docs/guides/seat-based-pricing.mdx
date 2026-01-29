@@ -126,7 +126,7 @@ Create a checkout session that allows customers to select seat quantity:
 const checkout = await polar.checkouts.create({
   product_price_id: "price_123",
   seats: 5, // Customer selects quantity
-  success_url: "https://yourapp.com/success",
+  success_url: "https://your-app.com/success",
   customer_email: "billing@company.com"
 });
 
@@ -512,7 +512,7 @@ async function purchaseMoreSeats(productId: string, additionalSeats: number) {
   const checkout = await polar.checkouts.create({
     product_id: productId,
     seats: additionalSeats,
-    success_url: "https://yourapp.com/success"
+    success_url: "https://your-app.com/success"
   });
 
   // Each order is independent with its own seat pool

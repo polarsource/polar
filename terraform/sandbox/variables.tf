@@ -261,6 +261,12 @@ variable "tinybird_api_token" {
   sensitive   = true
 }
 
+variable "tinybird_clickhouse_username" {
+  description = "Tinybird ClickHouse Username"
+  type        = string
+  sensitive   = true
+}
+
 variable "tinybird_clickhouse_token" {
   description = "Tinybird ClickHouse Token"
   type        = string

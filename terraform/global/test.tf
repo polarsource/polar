@@ -293,6 +293,14 @@ resource "tfe_variable" "tinybird_events_read_test" {
   }
 }
 
+resource "tfe_variable" "tinybird_clickhouse_username_test" {
+  key             = "tinybird_clickhouse_username"
+  category        = "terraform"
+  description     = "Tinybird ClickHouse Username for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "tinybird_clickhouse_token_test" {
   key             = "tinybird_clickhouse_token"
   category        = "terraform"

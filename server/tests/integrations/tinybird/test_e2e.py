@@ -40,6 +40,7 @@ class TestTinybirdE2E:
             api_url=settings.TINYBIRD_API_URL,
             clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
             api_token=token,
+            clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
             clickhouse_token=token,
         )
 
@@ -61,6 +62,7 @@ class TestTinybirdE2E:
             api_url=settings.TINYBIRD_API_URL,
             clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
             api_token=token,
+            clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
             clickhouse_token=token,
         )
 
@@ -100,6 +102,7 @@ class TestTinybirdE2E:
             api_url=settings.TINYBIRD_API_URL,
             clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
             api_token=token,
+            clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
             clickhouse_token=token,
         )
 

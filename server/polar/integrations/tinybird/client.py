@@ -30,11 +30,13 @@ class TinybirdClient:
         api_url: str,
         clickhouse_url: str,
         api_token: str | None,
+        clickhouse_username: str,
         clickhouse_token: str | None,
     ) -> None:
         self._api_url = api_url
         self._api_token = api_token
         self._clickhouse_url = clickhouse_url
+        self._clickhouse_username = clickhouse_username
         self._clickhouse_token = clickhouse_token
         self._clickhouse_client: (
             clickhouse_connect.driver.asyncclient.AsyncClient | None
@@ -58,7 +60,7 @@ class TinybirdClient:
             self._clickhouse_client = await clickhouse_connect.get_async_client(
                 host=parsed.hostname or "localhost",
                 port=parsed.port or 7182,
-                username="default",
+                username=self._clickhouse_username,
                 password=self._clickhouse_token or "",
                 interface="https" if parsed.scheme == "https" else "http",
             )
@@ -101,6 +103,7 @@ client = TinybirdClient(
     api_url=settings.TINYBIRD_API_URL,
     clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
     api_token=settings.TINYBIRD_API_TOKEN,
+    clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
     clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
 )
 

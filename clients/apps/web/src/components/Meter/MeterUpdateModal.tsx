@@ -23,7 +23,7 @@ export const MeterUpdateModal = ({
   hasProcessedEvents,
   organizationId,
 }: MeterUpdateModalProps) => {
-  const { data: meter } = useMeter(_meter.id, _meter)
+  const { data: meter } = useMeter(_meter.id, { initialData: _meter })
   const form = useForm<schemas['MeterUpdate']>({
     defaultValues: {
       ...meter,

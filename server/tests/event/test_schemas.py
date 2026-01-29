@@ -1,9 +1,10 @@
+import uuid
 from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
-from polar.event.schemas import EventCreateExternalCustomer
+from polar.event.schemas import EventCreateCustomer, EventCreateExternalCustomer
 
 
 @pytest.mark.parametrize(
@@ -90,3 +91,46 @@ def test_invalid_llm_metadata() -> None:
     assert len(errors) == 1
     assert errors[0]["loc"] == ("metadata", "_llm", "total_tokens")
     assert errors[0]["type"] == "missing"
+
+
+class TestMemberFields:
+    def test_external_customer_with_external_member_id(self) -> None:
+        event = EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "external_member_id": "MEMBER_123",
+            }
+        )
+        assert event.external_member_id == "MEMBER_123"
+
+    def test_external_customer_without_external_member_id(self) -> None:
+        event = EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+            }
+        )
+        assert event.external_member_id is None
+
+    def test_customer_with_member_id(self) -> None:
+        member_id = uuid.uuid4()
+        customer_id = uuid.uuid4()
+        event = EventCreateCustomer.model_validate(
+            {
+                "customer_id": str(customer_id),
+                "name": "EVENT",
+                "member_id": str(member_id),
+            }
+        )
+        assert event.member_id == member_id
+
+    def test_customer_without_member_id(self) -> None:
+        customer_id = uuid.uuid4()
+        event = EventCreateCustomer.model_validate(
+            {
+                "customer_id": str(customer_id),
+                "name": "EVENT",
+            }
+        )
+        assert event.member_id is None

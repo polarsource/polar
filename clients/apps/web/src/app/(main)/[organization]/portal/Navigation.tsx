@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  useAuthenticatedCustomer,
   useCustomerPortalSession,
   usePortalAuthenticatedUser,
 } from '@/hooks/queries'
@@ -22,9 +23,11 @@ import { twMerge } from 'tailwind-merge'
 const links = (
   organization: schemas['CustomerOrganization'],
   authenticatedUser: schemas['PortalAuthenticatedUser'] | undefined,
+  customer: schemas['CustomerPortalCustomer'] | undefined,
 ) => {
   const portalSettings = organization.customer_portal_settings
   const canAccessBilling = hasBillingPermission(authenticatedUser)
+  const isTeamCustomer = customer?.type === 'team'
 
   return [
     {
@@ -47,6 +50,15 @@ const links = (
             href: `/${organization.slug}/portal/usage`,
             label: 'Usage',
             isActive: (path: string) => path.includes('/usage'),
+          },
+        ]
+      : []),
+    ...(isTeamCustomer && canAccessBilling
+      ? [
+          {
+            href: `/${organization.slug}/portal/team`,
+            label: 'Team',
+            isActive: (path: string) => path.includes('/team'),
           },
         ]
       : []),
@@ -77,12 +89,13 @@ const NavigationContent = ({
   const router = useRouter()
   const { data: customerPortalSession } = useCustomerPortalSession(api)
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const { data: customer } = useAuthenticatedCustomer(api)
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization, authenticatedUser)
+  const filteredLinks = links(organization, authenticatedUser, customer)
 
   return (
     <>

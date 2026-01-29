@@ -124,6 +124,7 @@ async def get_authenticated_user(
             name=member.name,
             email=member.email,
             customer_id=member.customer_id,
+            member_id=member.id,
             role=member.role,
         )
     elif is_customer(auth_subject):

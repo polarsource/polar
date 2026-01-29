@@ -64,7 +64,9 @@ SCHEMA >
     `llm_model` LowCardinality(Nullable(String)) `json:$.llm_model`,
     `llm_input_tokens` Nullable(Int64) `json:$.llm_input_tokens`,
     `llm_output_tokens` Nullable(Int64) `json:$.llm_output_tokens`,
-    `user_metadata` String `json:$.user_metadata`
+    `user_metadata` String `json:$.user_metadata`,
+    `member_id` Nullable(UUID) `json:$.member_id`,
+    `external_member_id` Nullable(String) `json:$.external_member_id`
 
 ENGINE MergeTree
 ENGINE_PARTITION_KEY toYYYYMM(timestamp)

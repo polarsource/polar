@@ -66,7 +66,9 @@ SQL >
         llm_model,
         llm_input_tokens,
         llm_output_tokens,
-        user_metadata
+        user_metadata,
+        member_id,
+        external_member_id
     FROM events_by_ingested_at
 
 TYPE MATERIALIZED

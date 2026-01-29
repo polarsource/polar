@@ -37,4 +37,9 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
 async def expire_open_checkouts() -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)
-        await repository.expire_open_checkouts()
+        checkouts_to_expire = await repository.expire_open_checkouts()
+        
+        for checkout in checkouts_to_expire:
+            await checkout_service.expire_checkout(session, checkout)
+        
+        await session.commit()

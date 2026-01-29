@@ -442,6 +442,15 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
+        event: Literal[WebhookEventType.checkout_expired],
+        data: Checkout,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
         event: Literal[WebhookEventType.customer_created],
         data: Customer,
     ) -> list[WebhookEvent]: ...

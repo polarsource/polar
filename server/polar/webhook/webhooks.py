@@ -57,6 +57,7 @@ from .slack import SlackPayload, SlackText, get_branded_slack_payload
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
     | tuple[Literal[WebhookEventType.checkout_updated], Checkout]
+    | tuple[Literal[WebhookEventType.checkout_expired], Checkout]
     | tuple[Literal[WebhookEventType.customer_created], Customer]
     | tuple[Literal[WebhookEventType.customer_updated], Customer]
     | tuple[Literal[WebhookEventType.customer_deleted], Customer]
@@ -217,6 +218,20 @@ class WebhookCheckoutUpdatedPayload(BaseWebhookPayload):
     """
 
     type: Literal[WebhookEventType.checkout_updated]
+    data: CheckoutSchema
+
+
+class WebhookCheckoutExpiredPayload(BaseWebhookPayload):
+    """
+    Sent when a checkout expires.
+
+    This event fires when a checkout reaches its expiration time without being completed.
+    Developers can use this to send reminder emails or track checkout abandonment.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.checkout_expired]
     data: CheckoutSchema
 
 

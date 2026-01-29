@@ -2,42 +2,26 @@ from typing import Annotated
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from fastapi import Depends, Query
-from pydantic import AfterValidator, BeforeValidator, HttpUrl
+from pydantic import AfterValidator, HttpUrl
 from safe_redirect_url import url_has_allowed_host_and_scheme
 
 from polar.config import settings
 
-# Placeholder token for {CHECKOUT_ID} - this is used during URL validation
-# to prevent Pydantic's HttpUrl from encoding the curly braces.
-# We use a simple alphanumeric string that won't be URL-encoded.
-_CHECKOUT_ID_PLACEHOLDER = "{CHECKOUT_ID}"
-_CHECKOUT_ID_SAFE_MARKER = "POLARPLACEHOLDERCOID"
-
-
-def _replace_checkout_id_for_validation(value: str | None) -> str | None:
-    """Replace {CHECKOUT_ID} with a safe marker before URL validation."""
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value.replace(_CHECKOUT_ID_PLACEHOLDER, _CHECKOUT_ID_SAFE_MARKER)
-    return value
-
-
-def _restore_checkout_id_after_validation(url: HttpUrl) -> str:
-    """Restore {CHECKOUT_ID} after URL validation and return as string."""
-    return str(url).replace(_CHECKOUT_ID_SAFE_MARKER, _CHECKOUT_ID_PLACEHOLDER)
+def _unescape_checkout_id_placeholder(url: HttpUrl) -> str:
+    """Unescape %7BCHECKOUT_ID%7D back to {CHECKOUT_ID} after URL validation."""
+    return str(url).replace("%7BCHECKOUT_ID%7D", "{CHECKOUT_ID}")
 
 
 SuccessUrl = Annotated[
     HttpUrl,
-    BeforeValidator(_replace_checkout_id_for_validation),
-    AfterValidator(_restore_checkout_id_after_validation),
+    AfterValidator(_unescape_checkout_id_placeholder),
 ]
 """
 A URL type that preserves the `{CHECKOUT_ID}` placeholder without encoding it.
 
-This is used for success URLs where `{CHECKOUT_ID}` will be replaced with the
-actual checkout ID at runtime (see `polar.models.checkout.Checkout.success_url`).
+HttpUrl encodes `{CHECKOUT_ID}` to `%7BCHECKOUT_ID%7D`, so we unescape it after
+validation. This placeholder is replaced with the actual checkout ID at runtime
+(see `polar.models.checkout.Checkout.success_url`).
 """
 
 

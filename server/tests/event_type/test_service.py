@@ -183,7 +183,7 @@ class TestListWithStatsDualRead:
         logfire_mock = mocker.patch("polar.event_type.service.logfire")
 
         mocker.patch(
-            "polar.integrations.tinybird.service.TinybirdEventsQuery.get_event_type_stats",
+            "polar.integrations.tinybird.service.TinybirdEventTypesQuery.get_event_type_stats",
             new_callable=AsyncMock,
             return_value=tinybird_stats,
         )

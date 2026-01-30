@@ -25,6 +25,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.member.repository import MemberRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import ingest_events
@@ -532,6 +533,14 @@ class EventService:
         validate_customer_id = await self._get_customer_validation_function(
             session, auth_subject, customer_ids_in_batch
         )
+        member_ids_in_batch = {
+            e.member_id
+            for e in ingest.events
+            if isinstance(e, EventCreateCustomer) and e.member_id is not None
+        }
+        validate_member_id = await self._get_member_validation_function(
+            session, member_ids_in_batch
+        )
 
         event_type_repository = EventTypeRepository.from_session(session)
         event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
@@ -572,6 +581,8 @@ class EventService:
                     )
                     if isinstance(event_create, EventCreateCustomer):
                         validate_customer_id(index, event_create.customer_id)
+                        if event_create.member_id is not None:
+                            validate_member_id(index, event_create.member_id)
 
                     parent_event: Event | None = None
                     parent_id_in_batch: uuid.UUID | None = None
@@ -998,6 +1009,31 @@ class EventService:
             return customer_id
 
         return _validate_customer_id
+
+    async def _get_member_validation_function(
+        self,
+        session: AsyncSession,
+        member_ids: set[uuid.UUID],
+    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+        member_repository = MemberRepository.from_session(session)
+        allowed_members = await member_repository.get_existing_ids(member_ids)
+
+        def _validate_member_id(index: int, member_id: uuid.UUID) -> uuid.UUID:
+            if member_id not in allowed_members:
+                raise EventIngestValidationError(
+                    [
+                        {
+                            "type": "member_id",
+                            "msg": "Member not found.",
+                            "loc": ("body", "events", index, "member_id"),
+                            "input": member_id,
+                        }
+                    ]
+                )
+
+            return member_id
+
+        return _validate_member_id
 
     async def _resolve_parent(
         self,

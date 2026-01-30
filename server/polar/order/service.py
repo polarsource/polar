@@ -77,7 +77,12 @@ from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
-from polar.product.guard import is_custom_price, is_seat_price, is_static_price
+from polar.product.guard import (
+    is_custom_price,
+    is_free_price,
+    is_seat_price,
+    is_static_price,
+)
 from polar.product.price_set import PriceSet
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
@@ -1384,6 +1389,20 @@ class OrderService:
 
         if not organization.customer_email_settings[template_name]:
             return
+
+        # Skip subscription cycle emails for completely free subscriptions
+        if order.billing_reason in (
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ):
+            subscription = order.subscription
+            if subscription is not None:
+                is_free_product_price = all(
+                    is_free_price(spp.product_price)
+                    for spp in subscription.subscription_product_prices
+                )
+                if is_free_product_price:
+                    return
 
         product = order.product
         customer = order.customer

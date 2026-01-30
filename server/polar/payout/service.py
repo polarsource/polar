@@ -44,6 +44,40 @@ from .sorting import PayoutSortProperty
 
 log: Logger = structlog.get_logger()
 
+# Currencies that Stripe treats as zero-decimal for payouts, even though they
+# technically have smaller units. For these currencies, payout amounts must be
+# in whole units (amounts in our internal representation must end with "00").
+# See: https://docs.stripe.com/currencies#special-cases
+_STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES: frozenset[str] = frozenset(
+    {"isk", "huf", "twd", "ugx"}
+)
+
+
+def _adjust_payout_amount_for_zero_decimal_currency(
+    amount: int, currency: str
+) -> tuple[int, int]:
+    """Adjust a payout amount for zero-decimal currencies.
+
+    For currencies like ISK, HUF, TWD, and UGX, Stripe requires payout amounts
+    to be in whole units. This function rounds down the amount to the nearest
+    valid value (multiple of 100 in our internal cents representation).
+
+    Args:
+        amount: The amount in smallest currency units (cents).
+        currency: The currency code (e.g., "isk", "huf").
+
+    Returns:
+        A tuple of (adjusted_amount, remainder) where:
+        - adjusted_amount: The amount rounded down to be valid for Stripe payouts
+        - remainder: The amount that could not be paid out (0-99)
+    """
+    if currency.lower() not in _STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES:
+        return amount, 0
+
+    remainder = amount % 100
+    adjusted_amount = amount - remainder
+    return adjusted_amount, remainder
+
 
 class PayoutError(PolarError): ...
 
@@ -192,11 +226,20 @@ class PayoutService:
         except PayoutAmountTooLow as e:
             raise InsufficientBalance(account, balance_amount) from e
 
+        fees_amount = sum(fee for _, fee in payout_fees)
+        net_amount = balance_amount - fees_amount
+
+        # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), adjust the
+        # net amount to be payable (rounded down to nearest 100)
+        net_amount, _ = _adjust_payout_amount_for_zero_decimal_currency(
+            net_amount, account.currency
+        )
+
         return PayoutEstimate(
             account_id=account.id,
             gross_amount=balance_amount,
-            fees_amount=sum(fee for _, fee in payout_fees),
-            net_amount=balance_amount - sum(fee for _, fee in payout_fees),
+            fees_amount=fees_amount,
+            net_amount=net_amount,
         )
 
     async def create(
@@ -381,10 +424,36 @@ class PayoutService:
             )
             return payout
 
+        # For certain currencies (ISK, HUF, TWD, UGX), Stripe treats them as
+        # zero-decimal currencies for payouts. We need to round down to the
+        # nearest whole unit (multiple of 100 in our internal representation).
+        payout_amount, remainder = _adjust_payout_amount_for_zero_decimal_currency(
+            payout.account_amount, payout.account_currency
+        )
+
+        if remainder > 0:
+            log.info(
+                "Adjusted payout amount for zero-decimal currency",
+                payout_id=str(payout.id),
+                original_amount=payout.account_amount,
+                adjusted_amount=payout_amount,
+                remainder=remainder,
+                currency=payout.account_currency,
+            )
+
+        if payout_amount == 0:
+            log.warning(
+                "Payout amount is zero after adjustment for zero-decimal currency",
+                payout_id=str(payout.id),
+                original_amount=payout.account_amount,
+                currency=payout.account_currency,
+            )
+            return payout
+
         # Trigger a payout on the Stripe Connect account
         stripe_payout = await stripe_service.create_payout(
             stripe_account=account.stripe_id,
-            amount=payout.account_amount,
+            amount=payout_amount,
             currency=payout.account_currency,
             metadata={
                 "payout_id": str(payout.id),
@@ -392,10 +461,13 @@ class PayoutService:
         )
 
         repository = PayoutRepository.from_session(session)
-        return await repository.update(
-            payout,
-            update_dict={"processor_id": stripe_payout.id},
-        )
+        update_dict: dict[str, Any] = {"processor_id": stripe_payout.id}
+
+        # Update the account_amount if it was adjusted for zero-decimal currency
+        if payout_amount != payout.account_amount:
+            update_dict["account_amount"] = payout_amount
+
+        return await repository.update(payout, update_dict=update_dict)
 
     async def trigger_invoice_generation(
         self,

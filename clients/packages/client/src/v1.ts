@@ -13939,7 +13939,7 @@ export interface components {
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /** @description Feature flags for the customer portal. */
-      organization_features: components['schemas']['CustomerOrganizationFeatureSettings']
+      organization_features?: components['schemas']['CustomerOrganizationFeatureSettings']
     }
     /**
      * CustomerOrganizationFeatureSettings

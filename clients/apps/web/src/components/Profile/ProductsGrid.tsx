@@ -12,7 +12,7 @@ import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/Subscripti
 export interface ProductsGridProps extends React.PropsWithChildren {
   className?: string
   title?: string
-  organization: schemas['Organization']
+  organization: schemas['CustomerOrganization']
   recurringInterval?: schemas['SubscriptionRecurringInterval']
   hasBothIntervals?: boolean
   setRecurringInterval?: (

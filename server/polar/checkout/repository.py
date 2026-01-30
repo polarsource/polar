@@ -63,11 +63,7 @@ class CheckoutRepository(
         return await self.get_one_or_none(statement)
 
     async def expire_open_checkouts(self) -> list[UUID]:
-        """
-        Expire all open checkouts that have passed their expiration time.
-
-        Returns a list of IDs of the checkouts that were expired.
-        """
+        
         statement = (
             update(Checkout)
             .where(

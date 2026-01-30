@@ -97,11 +97,6 @@ export default async function Page(props: {
     }),
 
     api.GET('/v1/customer-portal/benefit-grants/', {
-      params: {
-        query: {
-          limit: 100,
-        },
-      },
       ...cacheConfig,
     }),
 

@@ -1387,6 +1387,7 @@ async def create_checkout(
     external_customer_id: str | None = None,
     customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
+    analytics_metadata: dict[str, Any] = {},
     amount: int | None = None,
     tax_amount: int | None = None,
     currency: str | None = None,
@@ -1398,6 +1399,7 @@ async def create_checkout(
     seats: int | None = None,
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
+    created_at: datetime | None = None,
 ) -> Checkout:
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
@@ -1433,6 +1435,7 @@ async def create_checkout(
         external_customer_id=external_customer_id,
         customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
+        analytics_metadata=analytics_metadata,
         amount=amount,
         tax_amount=tax_amount,
         currency=currency,
@@ -1454,6 +1457,8 @@ async def create_checkout(
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
     )
+    if created_at is not None:
+        checkout.created_at = created_at
     await save_fixture(checkout)
     return checkout
 

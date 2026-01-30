@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Generator, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -16,6 +16,7 @@ from sqlalchemy import (
     or_,
     select,
 )
+from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.time_queries import TimeInterval
@@ -371,6 +372,13 @@ def _get_readable_subscriptions_statement(
     return statement
 
 
+# Cutoff date when opened_at tracking was shipped
+# Before this date: use created_at for all checkouts (preserve historical data)
+# After this date: only count checkouts that have opened_at set
+# See: https://github.com/polarsource/polar/pull/9071
+CHECKOUT_OPENED_AT_CUTOFF = datetime(2026, 1, 22, 12, 13, 0, tzinfo=UTC)
+
+
 def get_checkouts_cte(
     timestamp_series: CTE,
     interval: TimeInterval,
@@ -386,6 +394,15 @@ def get_checkouts_cte(
 ) -> CTE:
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    # Extract opened_at from analytics_metadata JSONB and cast to timestamp
+    # This tracks when the checkout page was first viewed by a user
+    opened_at_column = func.cast(
+        Checkout.analytics_metadata["opened_at"].astext, TIMESTAMP(timezone=True)
+    )
+
+    # Use opened_at if available, otherwise fall back to created_at for historical data
+    effective_timestamp = func.coalesce(opened_at_column, Checkout.created_at)
 
     readable_checkouts_statement = (
         select(Checkout.id)
@@ -439,11 +456,18 @@ def get_checkouts_cte(
                 Checkout,
                 isouter=True,
                 onclause=and_(
-                    interval.sql_date_trunc(Checkout.created_at)
+                    # Include checkout if:
+                    # - Created before cutoff (historical data, always include)
+                    # - OR has opened_at set (new behavior, only count if opened)
+                    or_(
+                        Checkout.created_at < CHECKOUT_OPENED_AT_CUTOFF,
+                        Checkout.analytics_metadata["opened_at"].isnot(None),
+                    ),
+                    interval.sql_date_trunc(effective_timestamp)
                     == interval.sql_date_trunc(timestamp_column),
                     Checkout.id.in_(readable_checkouts_statement),
-                    Checkout.created_at >= start_timestamp,
-                    Checkout.created_at <= end_timestamp,
+                    effective_timestamp >= start_timestamp,
+                    effective_timestamp <= end_timestamp,
                 ),
             )
         )

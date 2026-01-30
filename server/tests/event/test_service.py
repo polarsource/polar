@@ -51,6 +51,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_discount,
     create_event,
+    create_member,
     create_order,
     create_payment,
 )
@@ -673,15 +674,20 @@ class TestIngest:
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
+        organization: Organization,
         customer: Customer,
     ) -> None:
-        member_id = uuid.uuid4()
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+        )
         ingest = EventsIngest(
             events=[
                 EventCreateCustomer(
                     name="api.request",
                     customer_id=customer.id,
-                    member_id=member_id,
+                    member_id=member.id,
                 ),
             ]
         )
@@ -691,8 +697,30 @@ class TestIngest:
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
         assert len(events) == 1
-        assert events[0].member_id == member_id
+        assert events[0].member_id == member.id
         assert events[0].customer_id == customer.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_ingest_with_invalid_member_id(
+        self,
+        enqueue_events_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        customer: Customer,
+    ) -> None:
+        fake_member_id = uuid.uuid4()
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="api.request",
+                    customer_id=customer.id,
+                    member_id=fake_member_id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await event_service.ingest(session, auth_subject, ingest)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_ingest_with_external_member_id(

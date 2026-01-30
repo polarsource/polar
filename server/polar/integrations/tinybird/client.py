@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 
 import clickhouse_connect
 import httpx
+import logfire
 import structlog
 
 from polar.config import settings
@@ -89,20 +90,35 @@ class TinybirdClient:
             payload_bytes=payload_size,
         )
 
-        response = await self.client.post(
-            "/v0/events",
-            params={"name": datasource, "wait": str(wait).lower()},
-            content=ndjson,
-            headers={"Content-Type": "application/x-ndjson"},
-        )
-        response.raise_for_status()
+        with logfire.span(
+            "INSERT tinybird {datasource}",
+            datasource=datasource,
+            event_count=len(events),
+            payload_bytes=payload_size,
+            db_system="tinybird",
+            db_operation="INSERT",
+        ):
+            response = await self.client.post(
+                "/v0/events",
+                params={"name": datasource, "wait": str(wait).lower()},
+                content=ndjson,
+                headers={"Content-Type": "application/x-ndjson"},
+            )
+            response.raise_for_status()
 
     async def query(
         self, sql: str, parameters: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        ch = await self._get_clickhouse_client()
-        result = await ch.query(sql, parameters=parameters)
-        return [dict(zip(result.column_names, row)) for row in result.result_rows]
+        operation = sql.strip().split(None, 1)[0].upper() if sql.strip() else "QUERY"
+        with logfire.span(
+            "{operation} tinybird",
+            operation=operation,
+            db_system="clickhouse",
+            db_statement=sql,
+        ):
+            ch = await self._get_clickhouse_client()
+            result = await ch.query(sql, parameters=parameters)
+            return [dict(zip(result.column_names, row)) for row in result.result_rows]
 
 
 client = TinybirdClient(

@@ -74,13 +74,22 @@ class BenefitDiscordService(
             await discord_bot_service.add_member(
                 guild_id, role_id, oauth_account.account_id, oauth_account.access_token
             )
+        except httpx.HTTPStatusError as e:
+            bound_logger.warning(
+                "HTTP error while adding member",
+                error=str(e),
+                status_code=e.response.status_code,
+                body=e.response.text,
+            )
+            if e.response.status_code == 429:
+                raise BenefitRetriableError() from e
+            if e.response.is_client_error:
+                raise BenefitActionRequiredError(
+                    f"Discord error: {e.response.text}"
+                ) from e
+            raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            error_bound_logger = bound_logger.bind(error=str(e))
-            if isinstance(e, httpx.HTTPStatusError):
-                error_bound_logger = error_bound_logger.bind(
-                    status_code=e.response.status_code, body=e.response.text
-                )
-            error_bound_logger.warning("HTTP error while adding member")
+            bound_logger.warning("HTTP error while adding member", error=str(e))
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit granted")
@@ -132,13 +141,22 @@ class BenefitDiscordService(
                 await discord_bot_service.remove_member_role(
                     guild_id, role_id, account_id
                 )
+        except httpx.HTTPStatusError as e:
+            bound_logger.warning(
+                "HTTP error while removing member",
+                error=str(e),
+                status_code=e.response.status_code,
+                body=e.response.text,
+            )
+            if e.response.status_code == 429:
+                raise BenefitRetriableError() from e
+            if e.response.is_client_error:
+                raise BenefitActionRequiredError(
+                    f"Discord error: {e.response.text}"
+                ) from e
+            raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            error_bound_logger = bound_logger.bind(error=str(e))
-            if isinstance(e, httpx.HTTPStatusError):
-                error_bound_logger = error_bound_logger.bind(
-                    status_code=e.response.status_code, body=e.response.text
-                )
-            error_bound_logger.warning("HTTP error while removing member")
+            bound_logger.warning("HTTP error while removing member", error=str(e))
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit revoked")

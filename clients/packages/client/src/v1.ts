@@ -33638,6 +33638,8 @@ export interface operations {
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
+        /** @description Filter by benefit description. */
+        query?: string | null
         /** @description Filter by benefit type. */
         type?:
           | components['schemas']['BenefitType']

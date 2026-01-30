@@ -115,10 +115,8 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
           <Button
             className={twMerge(
               'w-full rounded-full',
-              tier.highlighted
-                ? 'bg-blue-500 text-white'
-                : 'dark:bg-polar-800 bg-gray-100'
             )}
+            variant={tier.highlighted ? 'default' : 'secondary'}
           >
             {tier.cta}
           </Button>
@@ -130,11 +128,11 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
 
 const EnterpriseCard = () => {
   return (
-    <div className="relative col-span-1 flex min-h-[280px] items-center justify-center overflow-hidden bg-gray-100 p-6 dark:bg-polar-950 md:col-span-3 md:p-12">
+    <div className="relative col-span-1 flex min-h-[280px] items-center justify-center overflow-hidden bg-gray-50 p-6 dark:bg-polar-950 md:col-span-3 md:p-12">
       <div className="absolute inset-2">
-        <Vestaboard characters='.:+/\=#' cellSize={24} fontSize={8} />
+        <Vestaboard characters='.:+/\=#' cellSize={24} fontSize={10} />
       </div>
-      <div className="relative z-10 flex flex-row gap-x-16 w-full bg-white p-6 dark:bg-polar-950 md:p-12 justify-between">
+      <div className="relative z-10 flex flex-row gap-x-16 w-full bg-gray-50 p-6 dark:bg-polar-950 md:p-12 justify-between">
           <div className='flex flex-col gap-y-2'>
             <h3 className="text-2xl font-medium text-black dark:text-white">
               Enterprise
@@ -144,7 +142,7 @@ const EnterpriseCard = () => {
             </p>
           </div>
         <Link href="/contact">
-            <Button className="rounded-full bg-blue-500 text-white hover:bg-blue-600">
+            <Button className="rounded-full">
               Contact Sales
             </Button>
           </Link>

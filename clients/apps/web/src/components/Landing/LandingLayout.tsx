@@ -285,13 +285,11 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-6xl">
-        <Link href="/">
-          <PolarLogotype logoVariant="icon" size={48} />
-        </Link>
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:px-8 md:flex">
+      <div className="relative flex w-full flex-row items-center justify-between">
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
+
+        <ul className="flex flex-row gap-x-8 font-medium">
           <li>
             <NavPopover
               trigger="Features"
@@ -307,9 +305,20 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Button onClick={onLoginClick} variant="ghost" className="rounded-full">
+        <Link className='absolute left-1/2 mx-auto flex -translate-x-1/2 ' href="/">
+          <PolarLogotype logoVariant="icon" size={64} />
+        </Link>
+
+        <div className='flex flex-row items-center gap-x-4'>
+        <Button onClick={onLoginClick} variant="ghost" className="rounded-full" size="lg">
           Log In
         </Button>
+
+        <Button onClick={onLoginClick}
+        className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black" size="lg">
+          Get Started
+        </Button>
+        </div>
       </div>
       <Modal
         title="Login"

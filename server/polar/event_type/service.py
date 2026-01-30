@@ -4,9 +4,9 @@ from uuid import UUID
 
 import logfire
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, text
+from sqlalchemy import UnaryExpression, asc, desc, select, text
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.event.system import SYSTEM_EVENT_LABELS
@@ -20,7 +20,7 @@ from polar.integrations.tinybird.service import (
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
-from polar.models import Event, EventType, Organization, User
+from polar.models import Event, EventType, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 
@@ -71,7 +71,9 @@ class EventTypeService:
             sorting=sorting,
         )
 
-        org = self._get_tinybird_enabled_org(auth_subject, organization_id)
+        org = await self._get_tinybird_enabled_org(
+            session, auth_subject, organization_id
+        )
         if org is None:
             return db_results, db_count
 
@@ -113,20 +115,41 @@ class EventTypeService:
 
         return db_results, db_count
 
-    def _get_tinybird_enabled_org(
+    async def _get_tinybird_enabled_org(
         self,
+        session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         organization_id: Sequence[UUID] | None,
     ) -> Organization | None:
         if not settings.TINYBIRD_EVENTS_READ:
             return None
 
+        org: Organization | None
         if is_organization(auth_subject):
             org = auth_subject.subject
-            if org.feature_settings.get(
-                "tinybird_read", False
-            ) or org.feature_settings.get("tinybird_compare", False):
-                return org
+        elif is_user(auth_subject):
+            if not organization_id:
+                return None
+            statement = select(Organization).where(
+                Organization.id == organization_id[0],
+                Organization.id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                ),
+            )
+            result = await session.execute(statement)
+            org = result.scalar_one_or_none()
+            if org is None:
+                return None
+        else:
+            return None
+
+        if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
+            "tinybird_compare", False
+        ):
+            return org
 
         return None
 

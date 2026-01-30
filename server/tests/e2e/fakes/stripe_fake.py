@@ -242,7 +242,7 @@ class StripeStatefulFake:
                 bt = stripe_lib.BalanceTransaction.construct_from(bt_data, None)
                 self.balance_transactions[bt_id] = bt
 
-                # Create charge
+                # Create charge with metadata from payment intent
                 charge = build_stripe_charge(
                     id=charge_id,
                     status="succeeded",
@@ -251,6 +251,7 @@ class StripeStatefulFake:
                     customer=params.get("customer"),
                     payment_intent=pi_id,
                     balance_transaction=bt_id,
+                    metadata=params.get("metadata"),
                 )
                 self.charges[charge_id] = charge
 
@@ -328,6 +329,66 @@ class StripeStatefulFake:
     # -------------------------------------------------------------------------
     # Charge operations
     # -------------------------------------------------------------------------
+
+    def create_charge_for_payment_intent(
+        self,
+        payment_intent_id: str,
+        *,
+        status: str = "succeeded",
+    ) -> stripe_lib.Charge:
+        """
+        Create a charge for an existing payment intent.
+
+        This is useful for simulating webhook flows where a charge
+        is created after the payment intent is confirmed.
+
+        Args:
+            payment_intent_id: The ID of the payment intent
+            status: The status of the charge (default: "succeeded")
+
+        Returns:
+            The created charge
+        """
+        if payment_intent_id not in self.payment_intents:
+            raise ValueError(f"PaymentIntent {payment_intent_id} not found")
+
+        pi = self.payment_intents[payment_intent_id]
+        charge_id = self._next_id("ch")
+        bt_id = self._next_id("txn")
+
+        # Create balance transaction
+        bt = build_stripe_balance_transaction(
+            amount=pi.amount,
+            currency=pi.currency,
+            fee=int(pi.amount * 0.029) + 30,
+        )
+        bt_data = dict(bt)
+        bt_data["id"] = bt_id
+        bt = stripe_lib.BalanceTransaction.construct_from(bt_data, None)
+        self.balance_transactions[bt_id] = bt
+
+        # Create charge with metadata from payment intent
+        charge = build_stripe_charge(
+            id=charge_id,
+            status=status,
+            amount=pi.amount,
+            currency=pi.currency,
+            customer=pi.customer,
+            payment_intent=payment_intent_id,
+            balance_transaction=bt_id,
+            metadata=dict(pi.metadata) if pi.metadata else None,
+        )
+        self.charges[charge_id] = charge
+
+        # Update payment intent with latest charge
+        pi_data = dict(pi)
+        pi_data["latest_charge"] = charge_id
+        if status == "succeeded":
+            pi_data["status"] = "succeeded"
+        updated_pi = stripe_lib.PaymentIntent.construct_from(pi_data, None)
+        self.payment_intents[payment_intent_id] = updated_pi
+
+        return charge
 
     async def get_charge(
         self,

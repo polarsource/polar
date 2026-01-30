@@ -70,7 +70,7 @@ SCHEMA >
     `member_id` Nullable(UUID) `json:$.member_id`,
     `external_member_id` Nullable(String) `json:$.external_member_id`
 
-ENGINE MergeTree
+ENGINE ReplacingMergeTree
 ENGINE_PARTITION_KEY toYYYYMM(ingested_at)
 ENGINE_SORTING_KEY organization_id, ingested_at, id
 

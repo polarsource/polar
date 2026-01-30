@@ -45,7 +45,7 @@ class TestCheckoutFlow:
             organization=billing_organization,
             name="Free Product",
             recurring_interval=None,  # One-time product
-            prices=[(0, "usd")],  # $0 (free)
+            prices=[(0, "usd")],
         )
 
         # 1. Create checkout via API

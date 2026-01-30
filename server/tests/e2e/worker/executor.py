@@ -1,5 +1,5 @@
 """
-Task executor for billing E2E tests.
+Task executor for E2E tests.
 
 Provides utilities to execute tasks directly for E2E testing.
 
@@ -85,8 +85,8 @@ class TestJobQueueManager(JobQueueManager):
         _job_queue_manager.set(manager)
         try:
             yield manager
-            await manager.flush(broker, redis)
         finally:
+            await manager.flush(broker, redis)
             _job_queue_manager.set(None)
 
 
@@ -197,7 +197,9 @@ class TaskExecutor:
                     await self._process_message(message)
                     processed_any = True
             except Exception as e:
-                log.warning("Error consuming from queue", queue=queue_name, error=str(e))
+                log.warning(
+                    "Error consuming from queue", queue=queue_name, error=str(e)
+                )
 
         return processed_any
 
@@ -268,10 +270,9 @@ class TaskExecutor:
                 else:
                     # Sync function (shouldn't happen for our tasks but handle it)
                     original_fn(*processed_args, **kwargs)
-        except Exception as e:
-            log.error(
+        except Exception:
+            log.exception(
                 "Task execution failed",
                 actor_name=actor_name,
-                error=str(e),
-                exc_info=True,
             )
+            raise

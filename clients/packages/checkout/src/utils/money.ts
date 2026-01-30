@@ -7,6 +7,7 @@ export const formatCurrencyNumber = (
   const currencyNumberFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
+    currencyDisplay: 'code',
     minimumFractionDigits,
     maximumFractionDigits,
   })

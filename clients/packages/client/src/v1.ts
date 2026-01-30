@@ -14077,17 +14077,6 @@ export interface components {
       organization_features?: components['schemas']['CustomerOrganizationFeatureSettings']
     }
     /**
-     * CustomerOrganizationFeatureSettings
-     * @description Feature flags exposed to the customer portal.
-     */
-    CustomerOrganizationFeatureSettings: {
-      /**
-       * Member Model Enabled
-       * @description Whether the member model is enabled for this organization.
-       */
-      member_model_enabled: boolean
-    }
-    /**
      * CustomerOrganizationData
      * @description Schema of an organization and related data for customer portal.
      */
@@ -14095,6 +14084,18 @@ export interface components {
       organization: components['schemas']['CustomerOrganization']
       /** Products */
       products: components['schemas']['CustomerProduct'][]
+    }
+    /**
+     * CustomerOrganizationFeatureSettings
+     * @description Feature flags exposed to the customer portal.
+     */
+    CustomerOrganizationFeatureSettings: {
+      /**
+       * Member Model Enabled
+       * @description Whether the member model is enabled for this organization.
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']

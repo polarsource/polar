@@ -29,6 +29,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_checkout,
     create_discount,
     create_event,
     create_order,
@@ -2163,3 +2164,334 @@ class TestMetricsFiltering:
         )
 
         assert metrics.totals.checkouts_conversion is not None
+
+
+@pytest.mark.asyncio
+class TestCheckoutMetrics:
+    """Tests for checkout metrics using opened_at tracking.
+
+    The cutoff date for opened_at tracking is 2026-01-22T12:13:00Z.
+    - Before cutoff: all checkouts counted using created_at (historical behavior)
+    - After cutoff: only checkouts with opened_at are counted
+
+    See: https://github.com/polarsource/polar/pull/9071
+    """
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_historical_checkouts_without_opened_at_counted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that historical checkouts (before cutoff) are counted even without opened_at.
+
+        This preserves historical data for checkouts created before the
+        opened_at tracking feature was shipped (2026-01-22T12:13:00Z).
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkouts without opened_at but with created_at before the cutoff
+        # These should be counted using created_at (historical behavior)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            analytics_metadata={},  # No opened_at
+            created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC),
+        )
+
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            analytics_metadata={},  # No opened_at
+            created_at=datetime(2024, 1, 20, 14, 0, tzinfo=UTC),
+        )
+
+        # Query for historical date range (2024, before cutoff)
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.year,
+            metrics=["checkouts"],
+        )
+
+        # Both checkouts should be counted (historical behavior)
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 2
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_only_opened_checkouts_counted_after_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that only checkouts with opened_at are counted after the cutoff.
+
+        API-created checkouts without opened_at should NOT appear in metrics
+        for dates after 2026-01-22T12:13:00Z.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkout that was opened (has opened_at) - after cutoff
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Create checkout that was NOT opened (API-created, no opened_at) - after cutoff
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 0, tzinfo=UTC),
+            analytics_metadata={},
+        )
+
+        # Create another checkout that was NOT opened - after cutoff
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 8, 0, tzinfo=UTC),
+            # Default empty analytics_metadata
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Only the 1 opened checkout should be counted
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 1
+
+        # Verify it appears on the correct day (Feb 15)
+        feb_15 = metrics.periods[14]  # 0-indexed, day 15 is index 14
+        assert feb_15.checkouts == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_time_bucketing_uses_opened_at(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that checkout metrics use opened_at for time bucketing.
+
+        A checkout with opened_at on Feb 20 should appear in Feb 20 metrics.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkout with opened_at on a specific date (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 20, 14, 0, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 20, 14, 30, tzinfo=UTC).isoformat()
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Checkout should appear on Feb 20 (opened_at date)
+        feb_20 = metrics.periods[19]  # 0-indexed, day 20 is index 19
+        assert feb_20.checkouts == 1
+
+        # All other days should have 0 checkouts
+        for i, period in enumerate(metrics.periods):
+            if i != 19:
+                assert period.checkouts == 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_checkouts_conversion_uses_opened_checkouts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """
+        Test that conversion rate uses opened checkouts as denominator.
+
+        If 2 checkouts are opened and 1 succeeds, conversion should be 50%,
+        NOT based on total created checkouts.
+        """
+        from polar.models.checkout import CheckoutStatus
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create 2 opened checkouts (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.succeeded,
+            created_at=datetime(2026, 2, 15, 10, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 11, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Create 3 API-created checkouts that were never opened (after cutoff)
+        # These should NOT affect conversion rate
+        for i in range(3):
+            await create_checkout(
+                save_fixture,
+                products=[product],
+                created_at=datetime(2026, 2, 15, 12 + i, 0, tzinfo=UTC),
+                analytics_metadata={},
+            )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts", "succeeded_checkouts", "checkouts_conversion"],
+        )
+
+        # Should count 2 opened checkouts
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 2
+
+        # Should count 1 succeeded checkout
+        total_succeeded = sum(p.succeeded_checkouts or 0 for p in metrics.periods)
+        assert total_succeeded == 1
+
+        # Conversion should be 50% (1/2), not ~20% (1/5)
+        assert metrics.totals.checkouts_conversion == 0.5
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_checkouts_outside_date_range_excluded(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that checkouts opened outside the date range are excluded.
+
+        Uses opened_at for filtering, not created_at.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Checkout opened within range (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Checkout opened BEFORE range (Jan 2026, but still after cutoff)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 1, 25, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 1, 25, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Checkout opened AFTER range (Mar 2026)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 3, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 3, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Only the checkout opened within range should be counted
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 1

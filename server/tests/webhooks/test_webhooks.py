@@ -24,6 +24,13 @@ from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
+from datetime import timedelta
+from polar.checkout.repository import CheckoutRepository
+from polar.checkout.tasks import checkout_expired
+from polar.kit.utils import utc_now
+from polar.models.checkout import CheckoutStatus
+from polar.webhook.repository import WebhookEventRepository
+from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
 
 
 @pytest.fixture
@@ -265,15 +272,6 @@ async def test_checkout_expired_webhook(
     organization: Organization,
     product: Product,
 ) -> None:
-    from datetime import timedelta
-
-    from polar.checkout.repository import CheckoutRepository
-    from polar.checkout.tasks import checkout_expired
-    from polar.kit.utils import utc_now
-    from polar.models.checkout import CheckoutStatus
-    from polar.webhook.repository import WebhookEventRepository
-    from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
-
     # Create webhook endpoint
     endpoint = await create_webhook_endpoint(
         save_fixture,

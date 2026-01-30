@@ -85,16 +85,8 @@ class Scope(StrEnum):
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
 
-    external_organizations_read = "external_organizations:read"
-
     license_keys_read = "license_keys:read"
     license_keys_write = "license_keys:write"
-
-    repositories_read = "repositories:read"
-    repositories_write = "repositories:write"
-
-    issues_read = "issues:read"
-    issues_write = "issues:write"
 
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
@@ -176,7 +168,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",
     Scope.webhooks_write: "Create or modify webhooks",
-    Scope.external_organizations_read: "Read external organizations",
     Scope.license_keys_read: "Read license keys",
     Scope.license_keys_write: "Modify license keys",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",

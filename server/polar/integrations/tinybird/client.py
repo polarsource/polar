@@ -45,6 +45,7 @@ class TinybirdClient:
         self.client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {api_token}"} if api_token else {},
+            timeout=httpx.Timeout(5.0, connect=3.0),
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200))
                 if api_token is None
@@ -59,10 +60,13 @@ class TinybirdClient:
             parsed = urlparse(self._clickhouse_url)
             self._clickhouse_client = await clickhouse_connect.get_async_client(
                 host=parsed.hostname or "localhost",
-                port=parsed.port or 7182,
+                port=parsed.port or (443 if parsed.scheme == "https" else 7182),
                 username=self._clickhouse_username,
                 password=self._clickhouse_token or "",
                 interface="https" if parsed.scheme == "https" else "http",
+                connect_timeout=3,
+                send_receive_timeout=30,
+                query_retries=1,
             )
         return self._clickhouse_client
 

@@ -25,7 +25,6 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.member.repository import MemberRepository
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import ingest_events
@@ -35,6 +34,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import (

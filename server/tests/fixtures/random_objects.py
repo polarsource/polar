@@ -76,7 +76,11 @@ from polar.models.benefit_grant import (
     BenefitGrantScope,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.checkout import CheckoutStatus, get_expires_at
+from polar.models.checkout import (
+    CheckoutAnalyticsMetadata,
+    CheckoutStatus,
+    get_expires_at,
+)
 from polar.models.custom_field import (
     CustomFieldCheckbox,
     CustomFieldCheckboxProperties,
@@ -1387,7 +1391,7 @@ async def create_checkout(
     external_customer_id: str | None = None,
     customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
-    analytics_metadata: dict[str, Any] = {},
+    analytics_metadata: CheckoutAnalyticsMetadata | None = None,
     amount: int | None = None,
     tax_amount: int | None = None,
     currency: str | None = None,
@@ -1435,7 +1439,6 @@ async def create_checkout(
         external_customer_id=external_customer_id,
         customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
-        analytics_metadata=analytics_metadata,
         amount=amount,
         tax_amount=tax_amount,
         currency=currency,
@@ -1457,6 +1460,8 @@ async def create_checkout(
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
     )
+    if analytics_metadata is not None:
+        checkout.analytics_metadata = analytics_metadata
     if created_at is not None:
         checkout.created_at = created_at
     await save_fixture(checkout)

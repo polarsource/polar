@@ -63,7 +63,7 @@ const AnimatedInfinity = ({ className }: { className?: string }) => {
       }
 
       // Draw dashed infinity path as continuous line
-      ctx.setLineDash([24, 24])
+      ctx.setLineDash([4, 8])
       ctx.strokeStyle = dashColor
       ctx.lineWidth = 2
       ctx.lineCap = 'round'

@@ -61,7 +61,7 @@ export const Logotypes = () => {
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+      <div className="grid grid-cols-1 xl:grid-cols-3 dark:bg-polar-800 bg-gray-200 p-px gap-px">
         {companyTestimonials.map((testimonial, index) => (
           <Testamonial
             key={`testimonial-${index}`}

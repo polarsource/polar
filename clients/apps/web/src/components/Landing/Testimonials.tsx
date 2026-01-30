@@ -156,7 +156,7 @@ export const Testamonial = ({
       href={link}
       target="_blank"
       className={twMerge(
-        'dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-col justify-between gap-x-4 gap-y-12 border border-gray-300 p-8 transition-colors hover:bg-white',
+        'dark:hover:bg-polar-800 dark:bg-polar-950 bg-white flex h-full flex-col justify-between gap-x-4 gap-y-12 p-8 transition-colors hover:bg-gray-50',
         className,
       )}
     >
@@ -207,7 +207,7 @@ export const Testimonials = () => {
           Why people love Polar
         </h1>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 dark:bg-polar-800 bg-gray-200 p-px gap-px md:grid-cols-3">
         {userTestimonials.map((testimonial, index) => (
           <Testamonial key={`testimonial-${index}`} {...testimonial} />
         ))}

@@ -22,6 +22,10 @@ const AnimatedBars = ({ className }: { className?: string }) => {
       return isDark ? 'rgba(255, 255, 255, .7)' : 'rgba(0, 0, 0, .7)'
     }
 
+    const getSecondaryStrokeColor = () => {
+      const isDark = document.documentElement.classList.contains('dark')
+      return isDark ? 'rgba(255, 255, 255, .2)' : 'rgba(0, 0, 0, .3)'
+    }
 
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect()
@@ -47,8 +51,9 @@ const AnimatedBars = ({ className }: { className?: string }) => {
       const totalBars = numBars * 2 - 1
       const totalWidth = totalBars * (lineWidth + gap) - gap
       const startX = (width - totalWidth) / 2
-      const baselineY = height * 0.85
-      const maxBarHeight = height * 0.7
+      const padding = 4
+      const baselineY = height - padding
+      const maxBarHeight = height - padding * 2
 
       for (let i = 0; i < totalBars; i++) {
         const x = startX + i * (lineWidth + gap)
@@ -61,7 +66,7 @@ const AnimatedBars = ({ className }: { className?: string }) => {
           barHeight = maxBarHeight
           const y = baselineY - barHeight
 
-          ctx.strokeStyle = getStrokeColor()
+          ctx.strokeStyle = getSecondaryStrokeColor()
           ctx.lineWidth = lineWidth
           ctx.lineCap = 'butt'
           ctx.beginPath()
@@ -89,7 +94,7 @@ const AnimatedBars = ({ className }: { className?: string }) => {
           const tertiaryWave = Math.sin(position * Math.PI * 8 + time * 0.5) * 0.15
 
           // Combine waves with envelope
-          const heightMultiplier = Math.max(0.1, envelope * 0.8 + secondaryWave + tertiaryWave + 0.15)
+          const heightMultiplier = Math.max(0.01, envelope * 0.5 + secondaryWave + tertiaryWave + 0.15)
           barHeight = heightMultiplier * maxBarHeight
 
           // Mostly anchored from bottom - top moves more, bottom moves a little

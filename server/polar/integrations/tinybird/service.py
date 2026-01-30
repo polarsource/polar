@@ -37,14 +37,11 @@ events_table = Table(
 )
 
 event_types_mv = Table(
-    "event_types_by_customer_id",
+    "event_types",
     metadata,
     Column("name", String),
     Column("source", String),
     Column("organization_id", String),
-    Column("customer_id", String),
-    Column("external_customer_id", String),
-    Column("parent_id", String),
     Column("occurrences", String),
     Column("first_seen", DateTime),
     Column("last_seen", DateTime),
@@ -61,7 +58,6 @@ class TinybirdEventTypeStats:
 
 
 DATASOURCE_EVENTS = "events_by_ingested_at"
-MV_EVENT_TYPES_BY_CUSTOMER = "event_types_by_customer_id"
 
 
 def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
@@ -167,12 +163,36 @@ async def ingest_events(events: Sequence[Event]) -> None:
         )
 
 
+def _compile(statement: Select[Any]) -> tuple[str, str]:
+    compiled = statement.compile(dialect=clickhouse_dialect)
+    template = str(compiled)
+    literal = str(
+        statement.compile(
+            dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
+        )
+    )
+    return literal, template
+
+
+def _parse_event_type_stats(rows: list[dict[str, Any]]) -> list[TinybirdEventTypeStats]:
+    return [
+        TinybirdEventTypeStats(
+            name=row["name"],
+            source=EventSource(row["source"]),
+            occurrences=row["occurrences"],
+            first_seen=row["first_seen"],
+            last_seen=row["last_seen"],
+        )
+        for row in rows
+    ]
+
+
 class TinybirdEventsQuery:
     """
-    Query builder for Tinybird events table using SQLAlchemy.
+    Query builder for the raw events table.
 
-    Requires organization_id upfront to ensure row-level filtering
-    is always applied (defense-in-depth pattern).
+    Supports all filters including customer_id, external_customer_id,
+    parent_id, root_events, and source.
     """
 
     def __init__(self, organization_id: UUID) -> None:
@@ -220,7 +240,7 @@ class TinybirdEventsQuery:
         self._order_by_clauses.append(col.desc() if descending else col.asc())
         return self
 
-    def _build_base_statement(self) -> Select[Any]:
+    async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
         statement = (
             select(
                 events_table.c.name,
@@ -241,42 +261,48 @@ class TinybirdEventsQuery:
         else:
             statement = statement.order_by(func.max(events_table.c.timestamp).desc())
 
-        return statement
-
-    def _compile(self, statement: Select[Any]) -> str:
-        return str(
-            statement.compile(
-                dialect=clickhouse_dialect, compile_kwargs={"literal_binds": True}
-            )
-        )
-
-    async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
-        statement = self._build_base_statement()
-        sql = self._compile(statement)
+        sql, template = _compile(statement)
 
         try:
-            rows = await client.query(sql)
-            return [
-                TinybirdEventTypeStats(
-                    name=row["name"],
-                    source=EventSource(row["source"]),
-                    occurrences=row["occurrences"],
-                    first_seen=row["first_seen"],
-                    last_seen=row["last_seen"],
-                )
-                for row in rows
-            ]
+            rows = await client.query(sql, db_statement=template)
+            return _parse_event_type_stats(rows)
         except Exception as e:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
             raise
 
-    async def get_event_type_stats_from_mv(self) -> list[TinybirdEventTypeStats]:
-        """
-        Query event type stats from the materialized view.
 
-        Note: MV is pre-aggregated so may be faster for large datasets,
-        but requires customer_id filter to be effective.
-        """
+class TinybirdEventTypesQuery:
+    """
+    Query builder for the event_types materialized view.
+
+    Supports source filter only. For customer/parent filtering,
+    use TinybirdEventsQuery against the raw table.
+    """
+
+    def __init__(self, organization_id: UUID) -> None:
+        self._organization_id = str(organization_id)
+        self._filters: list[Any] = []
+        self._order_by_clauses: list[Any] = []
+
+    def filter_source(self, source: EventSource) -> Self:
+        self._filters.append(event_types_mv.c.source == source.value)
+        return self
+
+    _SORT_COLUMN_MAP = {
+        "name": event_types_mv.c.name,
+        "first_seen": func.minMerge(event_types_mv.c.first_seen),
+        "last_seen": func.maxMerge(event_types_mv.c.last_seen),
+        "occurrences": func.countMerge(event_types_mv.c.occurrences),
+    }
+
+    def order_by(self, column: str, descending: bool = False) -> Self:
+        col = self._SORT_COLUMN_MAP.get(column)
+        if col is None:
+            raise ValueError(f"Invalid sort column: {column}")
+        self._order_by_clauses.append(col.desc() if descending else col.asc())
+        return self
+
+    async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
         statement = (
             select(
                 event_types_mv.c.name,
@@ -299,20 +325,11 @@ class TinybirdEventsQuery:
                 func.maxMerge(event_types_mv.c.last_seen).desc()
             )
 
-        sql = self._compile(statement)
+        sql, template = _compile(statement)
 
         try:
-            rows = await client.query(sql)
-            return [
-                TinybirdEventTypeStats(
-                    name=row["name"],
-                    source=EventSource(row["source"]),
-                    occurrences=row["occurrences"],
-                    first_seen=row["first_seen"],
-                    last_seen=row["last_seen"],
-                )
-                for row in rows
-            ]
+            rows = await client.query(sql, db_statement=template)
+            return _parse_event_type_stats(rows)
         except Exception as e:
             log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))
             raise

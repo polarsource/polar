@@ -15,6 +15,7 @@ from polar.event_type.schemas import EventTypeWithStats
 from polar.event_type.sorting import EventTypesSortProperty
 from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
+    TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
 )
 from polar.kit.pagination import PaginationParams, paginate
@@ -236,18 +237,30 @@ class EventTypeService:
         pagination: PaginationParams,
         sorting: Sequence[Sorting[EventTypesSortProperty]],
     ) -> tuple[Sequence[EventTypeWithStats], int]:
-        tinybird_query = TinybirdEventsQuery(organization.id)
+        requires_raw_table = (
+            customer_id is not None
+            or external_customer_id is not None
+            or root_events
+            or parent_id is not None
+        )
 
-        if customer_id is not None:
-            tinybird_query.filter_customer_id(customer_id)
-        if external_customer_id is not None:
-            tinybird_query.filter_external_customer_id(external_customer_id)
-        if root_events:
-            tinybird_query.filter_root_events()
-        if parent_id is not None:
-            tinybird_query.filter_parent_id(parent_id)
-        if source is not None:
-            tinybird_query.filter_source(source)
+        tinybird_query: TinybirdEventsQuery | TinybirdEventTypesQuery
+        if requires_raw_table:
+            tinybird_query = TinybirdEventsQuery(organization.id)
+            if customer_id is not None:
+                tinybird_query.filter_customer_id(customer_id)
+            if external_customer_id is not None:
+                tinybird_query.filter_external_customer_id(external_customer_id)
+            if root_events:
+                tinybird_query.filter_root_events()
+            if parent_id is not None:
+                tinybird_query.filter_parent_id(parent_id)
+            if source is not None:
+                tinybird_query.filter_source(source)
+        else:
+            tinybird_query = TinybirdEventTypesQuery(organization.id)
+            if source is not None:
+                tinybird_query.filter_source(source)
 
         for criterion, is_desc in sorting:
             if criterion == EventTypesSortProperty.event_type_name:

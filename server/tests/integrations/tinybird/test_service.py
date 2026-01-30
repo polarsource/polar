@@ -11,6 +11,7 @@ from polar.integrations.tinybird import service as tinybird_service
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import (
     TinybirdEventsQuery,
+    TinybirdEventTypesQuery,
     _event_to_tinybird,
 )
 from polar.models import Event
@@ -245,6 +246,37 @@ class TestTinybirdEventsQuery:
         assert len(stats) == 1
         assert stats[0].name == "event.a"
         assert stats[0].occurrences == 2
+
+    async def test_get_event_type_stats_from_mv(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        org_id = uuid.uuid4()
+        customer_id = uuid.uuid4()
+        events = [
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="page.viewed"),
+            create_test_event(organization_id=org_id, name="button.clicked"),
+            create_test_event(organization_id=org_id, name="button.clicked"),
+            create_test_event(organization_id=org_id, name="form.submitted"),
+        ]
+        for e in events:
+            e.customer_id = customer_id
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(
+            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
+        )
+
+        query = TinybirdEventTypesQuery(org_id)
+        stats = await query.get_event_type_stats()
+
+        stats_by_name = {s.name: s for s in stats}
+        assert len(stats) == 3
+        assert stats_by_name["page.viewed"].occurrences == 4
+        assert stats_by_name["button.clicked"].occurrences == 2
+        assert stats_by_name["form.submitted"].occurrences == 1
 
     async def test_organization_isolation(
         self, tinybird_client: TinybirdClient

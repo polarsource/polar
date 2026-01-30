@@ -1,8 +1,8 @@
 [
   {
     "label": "pytest $ZED_CUSTOM_PYTHON_TEST_TARGET",
-    "command": "uv run pytest $(echo $ZED_CUSTOM_PYTHON_TEST_TARGET | sed 's|^server/||')",
+    "command": "uv run pytest $(echo $ZED_CUSTOM_PYTHON_TEST_TARGET | sed 's|^server/||') -xvs",
     "cwd": "$ZED_WORKTREE_ROOT/server",
-    "tags": ["python-pytest-class", "python-pytest-method"]
-  }
+    "tags": ["python-pytest-class", "python-pytest-method"],
+  },
 ]

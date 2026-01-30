@@ -2,7 +2,6 @@
 Fixtures for E2E tests.
 
 These fixtures provide:
-- Stateful fakes for Stripe and Tax services
 - Test data factories for billing scenarios
 - Task execution via StubBroker
 - HTTP client for API testing
@@ -35,11 +34,6 @@ from polar.redis import Redis, get_redis
 from polar.worker import JobQueueManager, RedisMiddleware
 from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
-from tests.e2e.fakes.stripe_fake import (
-    StripeStatefulFake,
-    create_stripe_mock_from_fake,
-)
-from tests.e2e.fakes.tax_fake import TaxStatefulFake
 from tests.e2e.worker.broker import create_test_broker, register_actors_to_broker
 from tests.e2e.worker.executor import TaskExecutor
 from tests.fixtures.database import SaveFixture
@@ -97,62 +91,6 @@ async def client(billing_app: FastAPI) -> AsyncGenerator[httpx.AsyncClient, None
         base_url="http://test",
     ) as test_client:
         yield test_client
-
-
-# =============================================================================
-# Stateful Fakes
-# =============================================================================
-
-
-@pytest.fixture
-def stripe_fake() -> StripeStatefulFake:
-    """Stateful Stripe fake for tracking all Stripe operations."""
-    return StripeStatefulFake()
-
-
-@pytest.fixture
-def tax_fake() -> TaxStatefulFake:
-    """Stateful Tax fake for deterministic tax calculations."""
-    return TaxStatefulFake(tax_rate=0.10)
-
-
-# =============================================================================
-# Service Mocking
-# =============================================================================
-
-
-@pytest.fixture(autouse=True)
-def mock_stripe_service(
-    mocker: MockerFixture, stripe_fake: StripeStatefulFake
-) -> MagicMock:
-    """Mock stripe_service in all modules that use it."""
-    mock = create_stripe_mock_from_fake(stripe_fake)
-
-    modules_to_patch = [
-        "polar.checkout.service",
-        "polar.order.service",
-        "polar.payment_method.service",
-        "polar.refund.service",
-        "polar.customer_portal.service.customer",
-        "polar.transaction.service.payment",
-        "polar.transaction.service.refund",
-        "polar.transaction.service.balance",
-        "polar.transaction.service.dispute",
-    ]
-
-    for module in modules_to_patch:
-        mocker.patch(f"{module}.stripe_service", new=mock)
-
-    return mock
-
-
-@pytest.fixture(autouse=True)
-def mock_tax_service(mocker: MockerFixture, tax_fake: TaxStatefulFake) -> TaxStatefulFake:
-    """Mock the tax service to use our stateful fake."""
-    mocker.patch("polar.order.service.get_tax_service", return_value=tax_fake)
-    mocker.patch("polar.checkout.service.get_tax_service", return_value=tax_fake)
-
-    return tax_fake
 
 
 @pytest.fixture(autouse=True)

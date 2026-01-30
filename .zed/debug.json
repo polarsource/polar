@@ -5,7 +5,7 @@
     "request": "launch",
     "module": "pytest",
     "args": ["$ZED_FILE", "-v"],
-    "cwd": "$ZED_WORKTREE_ROOT/server"
+    "cwd": "$ZED_WORKTREE_ROOT/server",
   },
   {
     "label": "pytest: Current Test (with target)",
@@ -13,7 +13,7 @@
     "request": "launch",
     "module": "pytest",
     "args": ["$ZED_CUSTOM_PYTHON_TEST_TARGET", "-v"],
-    "cwd": "$ZED_WORKTREE_ROOT/server"
+    "cwd": "$ZED_WORKTREE_ROOT/server",
   },
   {
     "label": "pytest: All Tests",
@@ -21,6 +21,6 @@
     "request": "launch",
     "module": "pytest",
     "args": ["-v"],
-    "cwd": "$ZED_WORKTREE_ROOT/server"
-  }
+    "cwd": "$ZED_WORKTREE_ROOT/server",
+  },
 ]

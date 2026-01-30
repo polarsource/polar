@@ -42,7 +42,7 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
 }) => {
   return (
     <motion.div
-      className={`flex w-full flex-col overflow-hidden rounded-2xl md:flex-row md:rounded-4xl ${reverse ? 'md:flex-row-reverse' : ''} dark:bg-polar-900 bg-white md:items-stretch`}
+      className={`flex w-full flex-col overflow-hidden md:flex-row ${reverse ? 'md:flex-row-reverse' : ''} dark:bg-polar-900 bg-white md:items-stretch`}
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"

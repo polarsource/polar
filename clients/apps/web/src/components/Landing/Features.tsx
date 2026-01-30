@@ -83,39 +83,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Charge your customers for AI usage with precision.',
       linkHref: 'https://polar.sh/docs/features/products',
       children: (
-        <div className="relative h-[180px] mx-2 mb-2">
-         <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='.:-+/\#' />
-        </div>
-      ),
-    },
-    {
-      title: 'Customer Management',
-      description:
-        'Streamlined customer management & analytics.',
-      linkHref: '/features/customers',
-      children: (
-        <div className="relative h-[180px] mx-2 mb-2">
-          <AnimatedBars />
-        </div>
-      ),
-    },
-    {
-      title: 'Self-serving Customer Portal',
-      description:
-        'Redirect customers to our extensive Customer Portal.',
-      linkHref: '/features/customers',
-      children: (
-        <div className="relative h-[180px] mx-2 mb-2">
-         <AnimatedInfinity />
-        </div>
-      ),
-    },
-    {
-      title: 'Robust, secure & optimized checkouts',
-      description:
-        'Convert your customers at checkout with high accuracy.',
-      linkHref: '/features/customers',
-      children: (
+
         <div className="relative h-[180px]">
           <AnimatedWaves />
         </div>
@@ -128,7 +96,7 @@ const Features = ({ className }: FeaturesProps) => {
       linkHref: '/resources/merchant-of-record',
       children: (
         <div className="relative h-[180px] mx-2 mb-2">
-          <AnimatedLines />
+          <AnimatedBars />
         </div>
       ),
     },

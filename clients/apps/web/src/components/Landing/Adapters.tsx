@@ -17,6 +17,7 @@ import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import Vestaboard from './animated/Vestaboard'
 
 const adapters = [
   {
@@ -126,13 +127,13 @@ export const Adapters = () => {
           {adapters.map((adapter) => (
             <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row md:rounded-4xl`}
+                className={`flex w-full flex-col overflow-hidden md:flex-row`}
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
+                <div className="flex flex-col justify-center gap-y-8 md:w-1/2">
                   <div className="flex flex-col gap-y-8">
                     <motion.h2
                       className="text-2xl leading-normal! md:text-4xl"
@@ -203,16 +204,13 @@ export const Adapters = () => {
                   </div>
                 </div>
 
-                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
-                  <Image
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src="/assets/landing/abstract.jpg"
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
-                    loading="lazy"
-                    alt=""
-                  />
-                  <div className="dark:bg-polar-900 z-1 rounded-lg bg-white p-4">
+                <div className="relative flex flex-col justify-center p-8 text-sm md:w-1/2 md:p-16">
+                  <div
+                    className="absolute inset-0 h-full w-full"
+                  >
+                    <Vestaboard characters='.:+/\=#' fontSize={10} cellSize={24} />
+                    </div>
+                  <div className="dark:bg-polar-950 z-1 bg-white p-12">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

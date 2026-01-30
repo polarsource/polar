@@ -9,11 +9,12 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
-import { Checkout } from './Checkout'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
 import { Pricing } from './Pricing'
+import { Purpose } from './Purpose'
 import { Section } from './Section'
+import { Usecases } from './Usecases'
 import { Usage } from './Usage'
 
 export default function Page() {
@@ -31,6 +32,7 @@ export const PageContent = () => {
     <>
       <Section className="flex flex-col gap-y-32 py-0 md:py-0">
         <Hero
+        className='xl:py-16'
           title="Monetize your software"
           titleClassName='xl:text-9xl!'
           description="Turn your software into a business with 6 lines of code"
@@ -52,8 +54,12 @@ export const PageContent = () => {
         </Hero>
         <Features />
         <Logotypes />
-        {isMobile ? null : (
-          <div className="dark:border-polar-800 relative aspect-video w-full overflow-hidden border border-gray-200">
+
+      </Section>
+
+      <Section className="flex flex-col xl:max-w-[1620px] md:py-32">
+      {isMobile ? null : (
+          <div className="relative aspect-video w-full">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
               letterboxColor="black"
@@ -63,11 +69,13 @@ export const PageContent = () => {
             />
           </div>
         )}
-        <Adapters />
-        <Usage />
       </Section>
+      <Section className="flex flex-col gap-y-24 pb-24! border-b dark:border-polar-700 border-gray-300">
+        <Adapters />
+      </Section>
+      <Usecases className="py-16 md:py-24" />
+      <Purpose className="py-16 md:py-24" />
       <Section className="flex flex-col gap-y-24">
-        <Checkout />
         <MerchantOfRecord />
         <Testimonials />
       </Section>

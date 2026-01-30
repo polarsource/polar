@@ -16,7 +16,6 @@ export interface VestaboardProps {
 
 export const Vestaboard = ({
   className = '',
-  height = 200,
   characters = ' .:-+*=%@#',
   cellSize: propCellSize,
   fontSize: propFontSize,
@@ -207,8 +206,7 @@ export const Vestaboard = ({
   return (
     <div
       ref={containerRef}
-      className={cx('relative w-full overflow-hidden', className)}
-      style={{ height }}
+      className={cx('relative w-full overflow-hidden h-full', className)}
     >
       <canvas
         ref={canvasRef}

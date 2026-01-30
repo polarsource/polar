@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Vestaboard from '../animated/Vestaboard'
 
 const containerVariants = {
   hidden: { opacity: 0 },

@@ -150,6 +150,20 @@ class MemberRepository(
         result = await session.execute(statement)
         return result.scalars().all()
 
+    async def get_existing_ids(
+        self,
+        member_ids: set[UUID],
+    ) -> set[UUID]:
+        """Return the subset of member_ids that exist and are not deleted."""
+        if not member_ids:
+            return set()
+        statement = select(Member.id).where(
+            Member.deleted_at.is_(None),
+            Member.id.in_(member_ids),
+        )
+        result = await self.session.execute(statement)
+        return set(result.scalars().all())
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Member]]:

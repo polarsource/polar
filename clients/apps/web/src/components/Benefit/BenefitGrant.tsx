@@ -190,7 +190,7 @@ const BenefitGrantOAuth = ({
               rel="noopener noreferrer"
               className="grow"
             >
-              <Button asChild fullWidth>
+              <Button asChild fullWidth variant="secondary">
                 {openButtonText}
               </Button>
             </a>
@@ -210,6 +210,7 @@ const BenefitGrantOAuth = ({
                 type="button"
                 onClick={authorize}
                 fullWidth
+                variant="secondary"
                 disabled={retryCountdown > 0}
               >
                 {retryCountdown > 0
@@ -242,7 +243,12 @@ const BenefitGrantOAuth = ({
                     <SelectItem value="add">Connect new account</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={onAccountSubmit} fullWidth>
+                <Button
+                  type="button"
+                  onClick={onAccountSubmit}
+                  fullWidth
+                  variant="secondary"
+                >
                   Request my invite
                 </Button>
               </>

@@ -53,7 +53,7 @@ const links = (
           },
         ]
       : []),
-    ...(isTeamCustomer && canAccessBilling
+    ...(isTeamCustomer && canAccessBilling && organization.organization_features.member_model_enabled
       ? [
           {
             href: `/${organization.slug}/portal/team`,

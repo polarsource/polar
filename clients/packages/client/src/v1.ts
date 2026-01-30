@@ -13938,6 +13938,19 @@ export interface components {
       allow_customer_updates: boolean
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Feature flags for the customer portal. */
+      organization_features: components['schemas']['CustomerOrganizationFeatureSettings']
+    }
+    /**
+     * CustomerOrganizationFeatureSettings
+     * @description Feature flags exposed to the customer portal.
+     */
+    CustomerOrganizationFeatureSettings: {
+      /**
+       * Member Model Enabled
+       * @description Whether the member model is enabled for this organization.
+       */
+      member_model_enabled: boolean
     }
     /**
      * CustomerOrganizationData

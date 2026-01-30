@@ -18,6 +18,7 @@ from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
+from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     Customer,
     CustomerSeat,
@@ -488,9 +489,15 @@ class SeatService:
         await self._publish_seat_claimed_event(seat, product_id)
         await self._enqueue_benefit_grant(seat, product_id)
 
-        session_token, _ = await customer_session_service.create_customer_session(
-            session, session_customer
-        )
+        if member_model_enabled:
+            assert seat.member is not None
+            session_token, _ = await member_session_service.create_member_session(
+                session, seat.member
+            )
+        else:
+            session_token, _ = await customer_session_service.create_customer_session(
+                session, session_customer
+            )
 
         log.info(
             "Seat claimed",

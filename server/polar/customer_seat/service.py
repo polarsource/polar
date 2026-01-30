@@ -348,6 +348,13 @@ class SeatService:
 
         await session.flush()
 
+        # Reload seat with eager-loaded relationships (member, customer, etc.)
+        reloaded_seat = await repository.get_by_id(
+            seat.id, options=repository.get_eager_options()
+        )
+        assert reloaded_seat is not None
+        seat = reloaded_seat
+
         # 6. Post-creation actions (unified)
         if immediate_claim:
             log.info(

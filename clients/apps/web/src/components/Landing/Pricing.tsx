@@ -1,210 +1,177 @@
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import Check from '@mui/icons-material/Check'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { motion } from 'framer-motion'
-import Image from 'next/image'
-import Link from 'next/link'
+'use client'
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 1,
-      staggerChildren: 0.05,
-    },
-  },
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import Link from 'next/link'
+import { twMerge } from 'tailwind-merge'
+import AnimatedGradient from './animated/AnimatedGradient'
+import Vestaboard from './animated/Vestaboard'
+
+type PricingTier = {
+  name: string
+  price: string
+  period: string
+  description: string
+  features: string[]
+  cta: string
+  ctaHref: string
+  highlighted?: boolean
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 1 } },
+const tiers: PricingTier[] = [
+  {
+    name: 'Indie',
+    price: 'Free',
+    period: '',
+    description: 'Perfect for side projects and experimentation.',
+    features: [
+      '4% + 40¢ per transaction',
+      'Merchant of Record',
+      'Unlimited Products',
+      'Basic Analytics',
+      'Community Support',
+    ],
+    cta: 'Get Started',
+    ctaHref: '/signup',
+  },
+  {
+    name: 'Pro',
+    price: '$29',
+    period: '/month',
+    description: 'For growing projects & businesses ready to scale.',
+    features: [
+      '3.5% + 35¢ per transaction',
+      'Merchant of Record',
+      'Members & Role-based Access',
+      'Advanced Analytics',
+      'Priority Support',
+    ],
+    cta: 'Upgrade Now',
+    ctaHref: '/signup',
+    highlighted: true,
+  },
+  {
+    name: 'Startup',
+    price: '$299',
+    period: '/month',
+    description: 'For teams that need collaboration features.',
+    features: [
+      '3.2% + 30¢ per transaction',
+      'Everything in Pro',
+      'Elevated Rate Limiting',
+      'Dedicated Slack Channel',
+      'Unlimited Events'
+    ],
+    cta: 'Upgrade Now',
+    ctaHref: '/contact',
+  },
+]
+
+type PricingCardProps = {
+  tier: PricingTier
+  className?: string
+}
+
+const PricingCard = ({ tier, className }: PricingCardProps) => {
+  return (
+    <div
+      className={twMerge(
+        'relative flex flex-col gap-y-6 p-6 md:p-10 overflow-hidden',
+        'dark:bg-polar-950 bg-white',
+        className
+      )}
+    >
+      <div className="relative z-10 flex flex-col gap-y-2">
+        <div className="flex items-center gap-x-2">
+          <h3 className="text-xl font-medium text-black dark:text-white">
+            {tier.name}
+          </h3>
+          {tier.highlighted && (
+            <span className="rounded-full bg-blue-500 px-2 py-0.5 text-xs text-white">
+              Popular
+            </span>
+          )}
+        </div>
+        <p className="text-gray-500 dark:text-polar-500">{tier.description}</p>
+      </div>
+      <div className="relative z-10 flex items-baseline gap-x-1">
+        <span className="text-4xl font-medium text-black dark:text-white">
+          {tier.price}
+        </span>
+        {tier.period && (
+          <span className="text-gray-500 dark:text-polar-500">{tier.period}</span>
+        )}
+      </div>
+      <ul className="relative z-10 flex flex-col gap-y-3">
+        {tier.features.map((feature, index) => (
+          <li key={index} className="flex items-center gap-x-2">
+            <CheckOutlined className="text-blue-500" fontSize="small" />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="relative z-10 mt-auto pt-4">
+        <Link href={tier.ctaHref}>
+          <Button
+            className={twMerge(
+              'w-full rounded-full',
+              tier.highlighted
+                ? 'bg-blue-500 text-white'
+                : 'dark:bg-polar-800 bg-gray-100'
+            )}
+          >
+            {tier.cta}
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+const EnterpriseCard = () => {
+  return (
+    <div className="relative col-span-1 flex min-h-[280px] items-center justify-center overflow-hidden bg-gray-100 p-6 dark:bg-polar-950 md:col-span-3 md:p-12">
+      <div className="absolute inset-2">
+        <Vestaboard characters='.:+/\=#' cellSize={24} fontSize={8} />
+      </div>
+      <div className="relative z-10 flex flex-row gap-x-16 w-full bg-white p-6 dark:bg-polar-950 md:p-12 justify-between">
+          <div className='flex flex-col gap-y-2'>
+            <h3 className="text-2xl font-medium text-black dark:text-white">
+              Enterprise
+            </h3>
+            <p className="text-gray-500 dark:text-polar-500 text-xl">
+              Custom solutions for large organizations.
+            </p>
+          </div>
+        <Link href="/contact">
+            <Button className="rounded-full bg-blue-500 text-white hover:bg-blue-600">
+              Contact Sales
+            </Button>
+          </Link>
+      </div>
+    </div>
+  )
 }
 
 export const Pricing = () => {
   return (
-    <motion.div
-      className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row md:rounded-4xl`}
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
-    >
-      <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
-        <div className="flex flex-col gap-y-8">
-          <motion.h2
-            className="text-2xl leading-normal! md:text-4xl"
-            variants={itemVariants}
-          >
-            Competitive Pricing
-          </motion.h2>
-          <motion.p
-            className="text-lg leading-relaxed text-pretty"
-            variants={itemVariants}
-          >
-            Polar is proud to be the cheapest Merchant of Record on the market.
-          </motion.p>
-          <ul className="flex flex-col gap-y-1">
-            <motion.li
-              className="flex flex-row items-center gap-x-2"
-              variants={itemVariants}
-            >
-              <Check className="text-emerald-500" fontSize="small" />
-              <p className="leading-relaxed text-pretty">
-                4% + 40¢ per transaction
-              </p>
-            </motion.li>
-            <motion.li
-              className="flex flex-row items-center gap-x-2"
-              variants={itemVariants}
-            >
-              <Check className="text-emerald-500" fontSize="small" />
-              <p className="leading-relaxed text-pretty">No hidden fees</p>
-            </motion.li>
-            <motion.li
-              className="flex flex-row items-center gap-x-2"
-              variants={itemVariants}
-            >
-              <Check className="text-emerald-500" fontSize="small" />
-              <p className="leading-relaxed text-pretty">
-                Global Merchant of Record
-              </p>
-            </motion.li>
-            <motion.li
-              className="flex flex-row items-center gap-x-2"
-              variants={itemVariants}
-            >
-              <Check className="text-emerald-500" fontSize="small" />
-              <p className="leading-relaxed text-pretty">
-                Negotiated Volume Discounts
-              </p>
-            </motion.li>
-          </ul>
-          <motion.span
-            className="flex flex-row gap-x-4 text-sm text-gray-400"
-            variants={itemVariants}
-          >
-            <Link href="/resources/pricing" target="_blank">
-              <Button className="dark:hover:bg-polar-50 rounded-full border-none bg-black hover:bg-neutral-900 dark:bg-white dark:text-black">
-                Pricing Guide
-              </Button>
-            </Link>
-            <Link href="/resources/comparison/stripe" target="_blank">
-              <Button variant="secondary" className="rounded-full">
-                Polar vs. Stripe
-                <ArrowOutwardOutlined fontSize="inherit" className="ml-2" />
-              </Button>
-            </Link>
-          </motion.span>
-        </div>
+    <div className="flex flex-col gap-y-12">
+      <div className="flex flex-col gap-y-4">
+        <h2 className="text-2xl text-black dark:text-white md:text-4xl">
+          Simple, transparent pricing.
+        </h2>
+        <p className="text-2xl md:text-4xl text-gray-500 dark:text-polar-500">
+          Start free, scale as you grow. No hidden fees.
+        </p>
       </div>
-
-      <div className="dark:bg-polar-800 relative flex flex-col items-center justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
-        <Image
-          className="absolute inset-0 h-full w-full object-cover"
-          src="/assets/landing/abstract_07.jpg"
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
-          loading="lazy"
-          alt=""
-        />
-        <div className="dark:border-polar-700 dark:bg-polar-900 z-10 w-96 scale-75 overflow-hidden rounded-xl border border-gray-200 bg-white xl:scale-100">
-          <table className="w-full">
-            <thead className="dark:bg-polar-800 bg-gray-50">
-              <tr className="dark:border-polar-700 border-b border-gray-200">
-                <th className="dark:border-polar-700 border-r border-gray-200 p-4 text-left font-medium">
-                  Feature
-                </th>
-                <th className="dark:border-polar-700 border-r border-gray-200 p-4 text-center font-medium">
-                  Polar
-                </th>
-                <th className="p-4 text-center font-medium">Stripe</th>
-              </tr>
-            </thead>
-            <tbody className="dark:divide-polar-700 divide-y divide-gray-200">
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Payment Processing
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Subscription Management
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Merchant of Record
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CloseOutlined className="text-red-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Global Tax Compliance
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CloseOutlined className="text-red-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Framework Adapters
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CloseOutlined className="text-red-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Payments in 6 lines of code
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CloseOutlined className="text-red-600" fontSize="small" />
-                </td>
-              </tr>
-              <tr>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4">
-                  Flexible Usage Billing
-                </td>
-                <td className="dark:border-polar-700 border-r border-gray-200 p-4 text-center">
-                  <CheckOutlined className="text-green-600" fontSize="small" />
-                </td>
-                <td className="p-4 text-center">
-                  <CloseOutlined className="text-red-600" fontSize="small" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 gap-px bg-gray-200 p-px dark:bg-polar-800 md:grid-cols-3">
+        {tiers.map((tier) => (
+          <PricingCard key={tier.name} tier={tier} />
+        ))}
+        <EnterpriseCard />
       </div>
-    </motion.div>
+    </div>
   )
 }
+
+export default Pricing

@@ -1,9 +1,7 @@
 'use client'
 
-import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useAssignSeat,
-  useCustomerBenefitGrants,
   useCustomerSeats,
   useResendSeatInvitation,
   useRevokeSeat,
@@ -13,7 +11,6 @@ import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -22,6 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
+import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { SeatManagementTable } from './SeatManagementTable'
 
@@ -47,13 +45,6 @@ const CustomerPortalOrder = ({
   themingPreset: ThemingPresetProps
 }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
-
-  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    ...(order.subscription_id
-      ? { subscription_id: order.subscription_id }
-      : { order_id: order.id }),
-    limit: 100,
-  })
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
@@ -370,29 +361,11 @@ const CustomerPortalOrder = ({
           </div>
         )}
 
-        <div className="flex w-full flex-col gap-4">
-          <h3 className="text-lg">Benefit Grants</h3>
-          {(benefitGrants?.items.length ?? 0) > 0 ? (
-            <div className="flex flex-col gap-4">
-              <List>
-                {benefitGrants?.items.map((benefitGrant) => (
-                  <ListItem
-                    key={benefitGrant.id}
-                    className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                  >
-                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                  </ListItem>
-                ))}
-              </List>
-            </div>
-          ) : (
-            <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
-              <span className="dark:text-polar-500 text-gray-500">
-                This product has no benefit grants
-              </span>
-            </div>
-          )}
-        </div>
+        <CustomerPortalGrants
+          api={api}
+          subscriptionId={order.subscription_id ?? undefined}
+          orderId={order.id}
+        />
       </div>
 
       {/* Payment Retry Modal */}

@@ -11,10 +11,14 @@ import { Pagination } from './Pagination'
 
 export interface CustomerPortalGrantsComplexProps {
   api: Client
+  subscriptionId?: string
+  orderId?: string
 }
 
 export const CustomerPortalGrantsComplex = ({
   api,
+  subscriptionId,
+  orderId,
 }: CustomerPortalGrantsComplexProps) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -28,7 +32,14 @@ export const CustomerPortalGrantsComplex = ({
     [],
   )
 
-  // Fetch benefit grants with pagination
+  // Build filter parameters based on what's provided
+  const filterParams = {
+    ...(subscriptionId ? { subscription_id: subscriptionId } : {}),
+    ...(orderId ? { order_id: orderId } : {}),
+    query: searchQuery || undefined,
+  }
+
+  // Fetch benefit grants with pagination and filtering
   const {
     data: benefitGrants,
     isLoading,
@@ -36,7 +47,7 @@ export const CustomerPortalGrantsComplex = ({
   } = useCustomerBenefitGrants(api, {
     limit: pageSize,
     page: currentPage,
-    query: searchQuery || undefined,
+    ...filterParams,
   })
 
   const grants = benefitGrants?.items ?? []

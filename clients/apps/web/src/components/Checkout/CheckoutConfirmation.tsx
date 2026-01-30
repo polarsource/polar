@@ -165,7 +165,7 @@ export const CheckoutConfirmation = ({
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
-      <div className="flex w-full max-w-md flex-col gap-y-8">
+      <div className="flex w-full max-w-md flex-col items-center gap-y-8 text-center">
         <Avatar
           className="h-16 w-16"
           avatar_url={organization.avatarUrl}
@@ -179,7 +179,7 @@ export const CheckoutConfirmation = ({
         </h1>
         <p className="dark:text-polar-500 text-gray-500">
           {status === 'confirmed' &&
-            'Please wait while we are listening for those webhooks.'}
+            'Please wait while we confirm your payment.'}
           {status === 'succeeded' && (
             <>
               {hasProductCheckout(checkout) &&

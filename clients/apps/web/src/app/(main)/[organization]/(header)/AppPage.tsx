@@ -7,7 +7,7 @@ const ClientPage = ({
   organization,
   products,
 }: {
-  organization: schemas['CustomerOrganization']
+  organization: schemas['Organization']
   products: schemas['ProductStorefront'][]
 }) => {
   return <Storefront organization={organization} products={products} />

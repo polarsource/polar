@@ -16,7 +16,7 @@ export const Storefront = ({
   organization,
   products,
 }: {
-  organization: schemas['CustomerOrganization']
+  organization: schemas['Organization']
   products: schemas['ProductStorefront'][]
 }) => {
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =

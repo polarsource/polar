@@ -6,6 +6,7 @@ import clickhouse_connect
 import httpx
 import logfire
 import structlog
+from opentelemetry import trace
 
 from polar.config import settings
 from polar.logging import Logger
@@ -13,6 +14,7 @@ from polar.logging import Logger
 from .schemas import TinybirdEvent
 
 log: Logger = structlog.get_logger()
+tracer = trace.get_tracer("polar.integrations.tinybird")
 
 MAX_PAYLOAD_BYTES = 10 * 1024 * 1024  # 10MB
 
@@ -95,9 +97,9 @@ class TinybirdClient:
             datasource=datasource,
             event_count=len(events),
             payload_bytes=payload_size,
-            db_system="tinybird",
-            db_operation="INSERT",
-        ):
+        ) as span:
+            span.set_attribute("db.system", "tinybird")
+            span.set_attribute("db.operation", "INSERT")
             response = await self.client.post(
                 "/v0/events",
                 params={"name": datasource, "wait": str(wait).lower()},
@@ -107,15 +109,16 @@ class TinybirdClient:
             response.raise_for_status()
 
     async def query(
-        self, sql: str, parameters: dict[str, Any] | None = None
+        self,
+        sql: str,
+        parameters: dict[str, Any] | None = None,
+        *,
+        db_statement: str,
     ) -> list[dict[str, Any]]:
         operation = sql.strip().split(None, 1)[0].upper() if sql.strip() else "QUERY"
-        with logfire.span(
-            "{operation} tinybird",
-            operation=operation,
-            db_system="clickhouse",
-            db_statement=sql,
-        ):
+        with tracer.start_as_current_span(f"{operation} tinybird") as span:
+            span.set_attribute("db.system", "clickhouse")
+            span.set_attribute("db.statement", db_statement)
             ch = await self._get_clickhouse_client()
             result = await ch.query(sql, parameters=parameters)
             return [dict(zip(result.column_names, row)) for row in result.result_rows]

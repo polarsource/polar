@@ -10,6 +10,7 @@ from sqlalchemy import (
     Select,
     SQLColumnExpression,
     and_,
+    case,
     cte,
     func,
     literal,
@@ -396,18 +397,22 @@ def get_checkouts_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-    # Extract opened_at from analytics_metadata JSONB and cast to timestamp
-    # This tracks when the checkout page was first viewed by a user
+    # `opened_at` tracks when the checkout page was first viewed by a customer
+    # which excludes premature API checkout sessions that were never visited
     opened_at_column = func.cast(
         Checkout.analytics_metadata["opened_at"].astext, TIMESTAMP(timezone=True)
     )
 
-    # Use opened_at if available, otherwise fall back to created_at for historical data
-    effective_timestamp = func.coalesce(opened_at_column, Checkout.created_at)
-
-    # Checkouts expire after CHECKOUT_TTL_SECONDS (default 1 hour), so a checkout
-    # opened at time T was created at most CHECKOUT_TTL_SECONDS before T.
-    checkout_ttl = timedelta(seconds=settings.CHECKOUT_TTL_SECONDS)
+    # Conditional effective_timestamp based on cutoff date:
+    # - Before cutoff: Use COALESCE(opened_at, created_at) for historical data
+    # - After cutoff: Use opened_at directly (NULL means not opened, should be excluded)
+    effective_timestamp = case(
+        (
+            Checkout.created_at < CHECKOUT_OPENED_AT_CUTOFF,
+            func.coalesce(opened_at_column, Checkout.created_at),
+        ),
+        else_=opened_at_column,
+    )
 
     readable_checkouts_statement = (
         select(Checkout.id)
@@ -418,9 +423,13 @@ def get_checkouts_cte(
         # - created_at <= end_timestamp: checkout can't be opened after end if created after end
         # - created_at >= start_timestamp - TTL: checkout can't be opened in range if created
         #   more than TTL before the start (it would have expired)
+        # Filtering on `created_at` twice should allow the planner to scan an index
+        # versus filering on `expires_at` too (though that would be more correct)
+        # (especially if CHECKOUT_TTL_SECONDS were to change)
         .where(
             Checkout.created_at <= end_timestamp,
-            Checkout.created_at >= start_timestamp - checkout_ttl,
+            Checkout.created_at
+            >= start_timestamp - timedelta(seconds=settings.CHECKOUT_TTL_SECONDS),
         )
     )
 
@@ -470,9 +479,6 @@ def get_checkouts_cte(
                 Checkout,
                 isouter=True,
                 onclause=and_(
-                    # Include checkout if:
-                    # - Created before cutoff (historical data, always include)
-                    # - OR has opened_at set (new behavior, only count if opened)
                     or_(
                         Checkout.created_at < CHECKOUT_OPENED_AT_CUTOFF,
                         Checkout.analytics_metadata["opened_at"].isnot(None),

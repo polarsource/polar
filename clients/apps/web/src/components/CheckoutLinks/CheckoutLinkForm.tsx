@@ -5,7 +5,10 @@ import {
   useSelectedProducts,
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import {
+  normalizeValidationErrors,
+  setValidationErrors,
+} from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -128,16 +131,21 @@ export const CheckoutLinkForm = ({
 
   const handleValidationError = useCallback(
     (data: CheckoutLinkCreateForm, errors: schemas['ValidationError'][]) => {
-      const discriminators = ['CheckoutLinkCreateProducts']
+      const discriminators = [
+        'CheckoutLinkCreateProducts',
+        'RequestValidationError',
+      ]
+
+      const normalizedErrors = normalizeValidationErrors(errors)
       const filteredErrors = checkoutLink
-        ? errors
-        : errors.filter((error) =>
+        ? normalizedErrors
+        : normalizedErrors.filter((error) =>
             discriminators.includes(error.loc[1] as string),
           )
       setValidationErrors(filteredErrors, setError, 1, discriminators)
       filteredErrors.forEach((error) => {
         let loc = error.loc.slice(1)
-        if (discriminators.includes(loc[0] as string)) {
+        if (loc.length > 0 && discriminators.includes(loc[0] as string)) {
           loc = loc.slice(1)
         }
         if (loc[0] === 'metadata') {
@@ -429,7 +437,7 @@ export const CheckoutLinkForm = ({
                     control={control}
                     name={`metadata.${index}.key`}
                     render={({ field }) => (
-                      <>
+                      <div className="flex flex-1 flex-col gap-y-1">
                         <FormControl>
                           <Input
                             {...field}
@@ -438,14 +446,14 @@ export const CheckoutLinkForm = ({
                           />
                         </FormControl>
                         <FormMessage />
-                      </>
+                      </div>
                     )}
                   />
                   <FormField
                     control={control}
                     name={`metadata.${index}.value`}
                     render={({ field }) => (
-                      <>
+                      <div className="flex flex-1 flex-col gap-y-1">
                         <FormControl>
                           <Input
                             {...field}
@@ -454,7 +462,7 @@ export const CheckoutLinkForm = ({
                           />
                         </FormControl>
                         <FormMessage />
-                      </>
+                      </div>
                     )}
                   />
                   <Button

@@ -151,3 +151,20 @@ export const apiErrorToast = (
     return
   }
 }
+
+export const normalizeValidationErrors = (
+  errors: schemas['ValidationError'][],
+): schemas['ValidationError'][] =>
+  errors.map((error) => ({
+    ...error,
+    loc: error.loc.map((segment) => {
+      const s = String(segment)
+      if (s.startsWith('function-after[') || s.startsWith('function-before[')) {
+        const lastComma = s.lastIndexOf(',')
+        if (lastComma !== -1) {
+          return s.slice(lastComma + 1, -1).trim()
+        }
+      }
+      return segment
+    }),
+  }))

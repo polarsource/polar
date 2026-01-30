@@ -12,6 +12,7 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
+from polar.models.product import Product
 from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
@@ -265,19 +266,21 @@ async def test_checkout_expired_webhook(
     product: Product,
 ) -> None:
     from datetime import timedelta
-    from polar.checkout.service import checkout as checkout_service
+
+    from polar.checkout.repository import CheckoutRepository
+    from polar.checkout.tasks import checkout_expired
     from polar.kit.utils import utc_now
     from polar.models.checkout import CheckoutStatus
     from polar.webhook.repository import WebhookEventRepository
     from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
-    
+
     # Create webhook endpoint
     endpoint = await create_webhook_endpoint(
         save_fixture,
         organization=organization,
         events=[WebhookEventType.checkout_expired],
     )
-    
+
     # Create expired checkout
     checkout = await create_checkout(
         save_fixture,
@@ -285,11 +288,19 @@ async def test_checkout_expired_webhook(
         status=CheckoutStatus.open,
         expires_at=utc_now() - timedelta(days=1),
     )
-    
+
     # Expire checkout
-    await checkout_service.expire_checkout(session, checkout)
+    checkout_repository = CheckoutRepository.from_session(session)
+    expired_ids = await checkout_repository.expire_open_checkouts()
     await session.commit()
-    
+
+    assert len(expired_ids) == 1
+    assert expired_ids[0] == checkout.id
+
+    # Process the expiration task
+    await checkout_expired(checkout.id)
+    await session.commit()
+
     # Verify webhook event was created
     event_repository = WebhookEventRepository.from_session(session)
     statement = event_repository.get_base_statement().where(

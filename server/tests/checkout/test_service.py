@@ -5247,27 +5247,25 @@ class TestHandleSuccessPostHogTracking:
 
 
 @pytest.mark.asyncio
-async def test_expire_checkout_sends_webhook(
+async def test_send_expiration_events(
     session: AsyncSession,
     save_fixture: SaveFixture,
     product: Product,
     mocker: MockerFixture,
 ) -> None:
     from polar.models.webhook_endpoint import WebhookEventType
-    
+
     checkout = await create_checkout(
         save_fixture,
         products=[product],
-        status=CheckoutStatus.open,
+        status=CheckoutStatus.expired,
         expires_at=utc_now() - timedelta(days=1),
     )
-    
+
     mock_send = mocker.patch("polar.checkout.service.webhook_service.send")
-    
-    await checkout_service.expire_checkout(session, checkout)
-    
-    assert checkout.status == CheckoutStatus.expired
-    
+
+    await checkout_service.send_expiration_events(session, checkout)
+
     mock_send.assert_called_once()
     args = mock_send.call_args
     assert args[0][2] == WebhookEventType.checkout_expired

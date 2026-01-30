@@ -40,16 +40,16 @@ class TestExpireOpenCheckouts:
 
         # Verify only the expired open checkout is returned
         assert len(expired_checkouts) == 1
-        assert expired_checkouts[0].id == expired_checkout.id
+        assert expired_checkouts[0] == expired_checkout.id
 
-        # Verify statuses are not modified by the repository method
+        # Verify statuses are properly updated
         updated_open_checkout = await repository.get_by_id(open_checkout.id)
         assert updated_open_checkout is not None
         assert updated_open_checkout.status == CheckoutStatus.open
 
         updated_expired_checkout = await repository.get_by_id(expired_checkout.id)
         assert updated_expired_checkout is not None
-        assert updated_expired_checkout.status == CheckoutStatus.open  # Still open, not expired
+        assert updated_expired_checkout.status == CheckoutStatus.expired
 
         updated_successful_checkout = await repository.get_by_id(successful_checkout.id)
         assert updated_successful_checkout is not None

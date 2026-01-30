@@ -2505,7 +2505,7 @@ class CheckoutService:
                 {"status": checkout.status},
             )
 
-    async def _after_checkout_expired(
+    async def send_expiration_events(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
         await publish_checkout_event(
@@ -2514,18 +2514,6 @@ class CheckoutService:
         await webhook_service.send(
             session, checkout.organization, WebhookEventType.checkout_expired, checkout
         )
-
-    async def expire_checkout(
-        self, session: AsyncSession, checkout: Checkout
-    ) -> Checkout:
-        """
-        Expire a single checkout and trigger webhooks.
-        """
-        checkout.status = CheckoutStatus.expired
-        session.add(checkout)
-        await self._after_checkout_expired(session, checkout)
-        return checkout
-
 
     async def _eager_load_product(
         self, session: AsyncSession, product: Product

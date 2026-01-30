@@ -39,7 +39,6 @@ from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInte
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
@@ -4046,7 +4045,7 @@ class TestConfirm:
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             **expected_tax_metadata,
         }
@@ -4112,7 +4111,7 @@ class TestConfirm:
         stripe_service_mock.create_setup_intent.assert_called_once()
         assert stripe_service_mock.create_setup_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             **expected_tax_metadata,
         }
@@ -4168,7 +4167,7 @@ class TestConfirm:
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             "tax_country": "FR",
         }

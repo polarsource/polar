@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Customer, Transaction
 from polar.models.transaction import Processor, TransactionType
@@ -123,7 +122,6 @@ class TestCreatePayment:
             customer="GUEST_CUSTOMER_ID",
             payment_intent="STRIPE_PAYMENT_ID",
             balance_transaction=stripe_balance_transaction.id,
-            type=ProductType.product,
             metadata={"tax_country": "US", "tax_state": "NY", "tax_amount": "100"},
         )
         stripe_service_mock.get_balance_transaction.return_value = (
@@ -158,7 +156,6 @@ class TestCreatePayment:
             customer="GUEST_CUSTOMER_ID",
             payment_intent="STRIPE_PAYMENT_ID",
             balance_transaction=stripe_balance_transaction.id,
-            type=ProductType.product,
             metadata={"tax_country": "FR", "tax_amount": "200"},
         )
         stripe_service_mock.get_balance_transaction.return_value = (

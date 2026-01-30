@@ -43,6 +43,7 @@ class DisputeStatus(StrEnum):
         status: Literal[
             "lost",
             "needs_response",
+            "prevented",
             "under_review",
             "warning_closed",
             "warning_needs_response",
@@ -59,7 +60,7 @@ class DisputeStatus(StrEnum):
                 return DisputeStatus.under_review
             case "won":
                 return DisputeStatus.won
-            case "warning_closed":
+            case "warning_closed" | "prevented":
                 return DisputeStatus.prevented
 
 

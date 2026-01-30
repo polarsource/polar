@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -25,6 +25,10 @@ from ..schemas.customer import (
     CustomerPaymentMethodCreateSucceededResponse,
     CustomerPortalCustomerUpdate,
 )
+
+if TYPE_CHECKING:
+    from stripe.params._customer_create_params import CustomerCreateParams
+    from stripe.params._modify_customer_params import ModifyCustomerParams
 
 
 class CustomerError(PolarError): ...
@@ -91,11 +95,11 @@ class CustomerService:
         )
 
         if customer.stripe_customer_id is not None:
-            params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
+            params: ModifyCustomerParams = {"email": customer.email}
             if customer.billing_name is not None and customer.name is None:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
-                params["address"] = customer.billing_address.to_dict()  # type: ignore
+                params["address"] = customer.billing_address.to_dict()
             await stripe_service.update_customer(
                 customer.stripe_customer_id,
                 tax_id=to_stripe_tax_id(customer.tax_id)
@@ -140,7 +144,7 @@ class CustomerService:
         payment_method_create: CustomerPaymentMethodCreate,
     ) -> CustomerPaymentMethodCreateResponse:
         if customer.stripe_customer_id is None:
-            params: stripe_lib.Customer.CreateParams = {
+            params: CustomerCreateParams = {
                 "email": customer.email,
             }
             if customer.name is not None:
@@ -166,7 +170,7 @@ class CustomerService:
             },
             return_url=payment_method_create.return_url,
             expand=["payment_method"],
-            payment_method_options={  # type: ignore
+            payment_method_options={
                 "klarna": {"currency": "usd"},
             },
         )

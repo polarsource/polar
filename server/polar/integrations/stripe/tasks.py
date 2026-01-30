@@ -11,13 +11,11 @@ from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
 from polar.external_event.service import external_event as external_event_service
-from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
-from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import MissingRelatedDispute, RefundPendingCreation
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import subscription as subscription_service
@@ -29,7 +27,6 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
-from .service import stripe as stripe_service
 
 log: Logger = structlog.get_logger()
 
@@ -75,21 +72,6 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
             payment_intent = cast(
                 stripe_lib.PaymentIntent, event.stripe_data.data.object
             )
-            payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
-
-            # payment for pay_on_completion
-            # metadata is on the invoice, not the payment_intent
-            if payload.invoice:
-                invoice = await stripe_service.get_invoice(payload.invoice)
-                if (
-                    invoice.metadata
-                    and invoice.metadata.get("type") == ProductType.pledge
-                ):
-                    await pledge_service.handle_payment_intent_success(
-                        session=session,
-                        payload=payload,
-                    )
-                return
 
             # Handle retry payments - save credit card and update subscription payment method
             if payment_intent.metadata and payment_intent.metadata.get("order_id"):

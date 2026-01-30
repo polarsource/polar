@@ -1,8 +1,6 @@
 from datetime import datetime
 from uuid import uuid4
 
-import pytest
-
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole

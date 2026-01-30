@@ -365,8 +365,14 @@ class EventTypeService:
         tinybird_results: Sequence[EventTypeWithStats],
         tinybird_count: int,
     ) -> None:
-        db_by_key = {(r.name, r.source): r for r in db_results}
-        tinybird_by_key = {(r.name, r.source): r for r in tinybird_results}
+        db_by_key = {
+            (r.name, r.source): r for r in db_results if r.source != EventSource.system
+        }
+        tinybird_by_key = {
+            (r.name, r.source): r
+            for r in tinybird_results
+            if r.source != EventSource.system
+        }
 
         missing_in_tinybird: list[str] = []
         missing_in_db: list[str] = []
@@ -391,7 +397,7 @@ class EventTypeService:
                 missing_in_db.append(f"{key[0]}:{key[1]}")
 
         has_diff = (
-            db_count != tinybird_count
+            len(db_by_key) != len(tinybird_by_key)
             or missing_in_tinybird
             or missing_in_db
             or occurrences_mismatch
@@ -400,8 +406,8 @@ class EventTypeService:
         with logfire.span(
             "tinybird.shadow.comparison",
             organization_id=str(organization_id),
-            db_count=db_count,
-            tinybird_count=tinybird_count,
+            db_count=len(db_by_key),
+            tinybird_count=len(tinybird_by_key),
             has_diff=has_diff,
             missing_in_tinybird=missing_in_tinybird,
             missing_in_db=missing_in_db,

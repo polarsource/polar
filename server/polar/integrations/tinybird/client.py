@@ -70,6 +70,8 @@ class TinybirdClient:
                 connect_timeout=3,
                 send_receive_timeout=30,
                 query_retries=1,
+                keep_alive=True,
+                compress="lz4",
             )
         return self._clickhouse_client
 

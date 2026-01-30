@@ -57,6 +57,7 @@ async def list(
     auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
+    query: str | None = Query(None, description="Search term."),
     type: MultipleQueryFilter[BenefitType] | None = Query(
         None, title="BenefitType Filter", description="Filter by benefit type."
     ),
@@ -81,6 +82,7 @@ async def list(
     results, count = await customer_benefit_grant_service.list(
         session,
         auth_subject,
+        query=query,
         type=type,
         benefit_id=benefit_id,
         checkout_id=checkout_id,

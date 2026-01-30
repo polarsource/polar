@@ -26,7 +26,7 @@ const ClientPage = ({
         products={products}
         subscriptions={subscriptions.items ?? []}
         claimedSubscriptions={claimedSubscriptions}
-        benefitGrants={benefitGrants.items ?? []}
+        benefitGrants={benefitGrants}
         customerSessionToken={customerSessionToken}
       />
     </NuqsAdapter>

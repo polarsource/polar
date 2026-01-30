@@ -85,6 +85,55 @@ class TestList:
         assert count == 2
         assert len(grants) == 2
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    async def test_search(
+        self,
+        auth_subject: AuthSubject[Customer],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.description = "Premium Support"
+        await save_fixture(benefit_organization)
+        
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_organization_second.description = "Basic Access"
+        await save_fixture(benefit_organization_second)
+        
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            subscription=subscription,
+        )
+
+        # Search for "Premium"
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10), query="Premium"
+        )
+        assert count == 1
+        assert len(grants) == 1
+        assert grants[0].benefit.description == "Premium Support"
+
+        # Search for "Basic"
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10), query="Basic"
+        )
+        assert count == 1
+        assert len(grants) == 1
+        assert grants[0].benefit.description == "Basic Access"
+
     @pytest.mark.parametrize(
         "sorting",
         [

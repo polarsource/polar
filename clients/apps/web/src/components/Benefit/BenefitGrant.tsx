@@ -22,6 +22,10 @@ interface BenefitGrantProps {
   benefitGrant: schemas['CustomerBenefitGrant']
 }
 
+type OAuthBenefitGrant =
+  | schemas['CustomerBenefitGrantGitHubRepository']
+  | schemas['CustomerBenefitGrantDiscord']
+
 const BenefitGrantCustom = ({
   benefitGrant,
 }: {
@@ -54,9 +58,7 @@ const BenefitGrantOAuth = ({
   selectPlaceholder,
 }: {
   api: Client
-  benefitGrant:
-    | schemas['CustomerBenefitGrantGitHubRepository']
-    | schemas['CustomerBenefitGrantDiscord']
+  benefitGrant: OAuthBenefitGrant
   platform: 'github' | 'discord'
   openButtonText: string
   openButtonUrl: string
@@ -65,14 +67,11 @@ const BenefitGrantOAuth = ({
 }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const {
-    customer,
-    properties: { account_id },
-    benefit: { type: benefitType },
-    error: grantError,
-  } = benefitGrant
+  const { customer, properties, benefit, error: grantError } = benefitGrant
+  const accountId = properties.account_id
+  const benefitType = benefit.type
   const [showAccountSelector, setShowAccountSelector] = useState(
-    !account_id || !!grantError,
+    !accountId || !!grantError,
   )
   const [retryCountdown, setRetryCountdown] = useState<number>(0)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)

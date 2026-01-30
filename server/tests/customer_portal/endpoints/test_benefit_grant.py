@@ -137,3 +137,57 @@ class TestListBenefitGrants:
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(grant_with_member.id)
         assert json["items"][0]["member_id"] == str(member.id)
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_search(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        customer: Customer,
+    ) -> None:
+        benefit_organization.description = "Premium Support"
+        await save_fixture(benefit_organization)
+        
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_organization_second.description = "Basic Access"
+        await save_fixture(benefit_organization_second)
+
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization_second,
+            granted=True,
+            subscription=subscription,
+        )
+
+        # Search for "Premium"
+        response = await client.get(
+            "/v1/customer-portal/benefit-grants/",
+            params={"query": "Premium"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["benefit"]["description"] == "Premium Support"
+
+        # Search for "Basic"
+        response = await client.get(
+            "/v1/customer-portal/benefit-grants/",
+            params={"query": "Basic"},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["benefit"]["description"] == "Basic Access"
+

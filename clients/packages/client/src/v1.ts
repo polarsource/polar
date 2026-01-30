@@ -31724,6 +31724,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter by organization ID. */
@@ -33638,6 +33639,8 @@ export interface operations {
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
+        /** @description Search term. */
+        query?: string | null
         /** @description Filter by benefit type. */
         type?:
           | components['schemas']['BenefitType']
@@ -36834,6 +36837,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Interval between two dates. */
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
@@ -37878,6 +37882,7 @@ export interface operations {
           | 'W-SU'
           | 'WET'
           | 'Zulu'
+          | 'localtime'
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -40268,6 +40273,7 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/timeseries']['get']['parameters']['query']['timezone']
@@ -40870,6 +40876,7 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/meters/{id}/quantities']['get']['parameters']['query']['timezone']
@@ -41472,6 +41479,7 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'W-SU',
   'WET',
   'Zulu',
+  'localtime',
 ]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']

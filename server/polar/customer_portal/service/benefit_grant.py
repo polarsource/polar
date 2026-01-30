@@ -51,6 +51,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         order_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         member_id: Sequence[uuid.UUID] | None = None,
+        query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CustomerBenefitGrantSortProperty]] = [
             (CustomerBenefitGrantSortProperty.product_benefit, False),
@@ -114,6 +115,15 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         if member_id is not None:
             statement = statement.where(BenefitGrant.member_id.in_(member_id))
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    Benefit.description.ilike(f"%{query}%"),
+                    Organization.name.ilike(f"%{query}%"),
+                    Product.name.ilike(f"%{query}%"),
+                )
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

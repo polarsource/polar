@@ -17,7 +17,7 @@ export interface CustomerPortalProps {
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   claimedSubscriptions: schemas['CustomerSubscription'][]
-  benefitGrants: schemas['CustomerBenefitGrant'][]
+  benefitGrants: schemas['ListResource_CustomerBenefitGrant_']
   customerSessionToken: string
 }
 
@@ -113,12 +113,8 @@ export const CustomerPortalOverview = ({
       )}
 
       {/* Benefit Grants - visible to all users */}
-      {benefitGrants.length > 0 && (
-        <CustomerPortalGrants
-          organization={organization}
-          benefitGrants={benefitGrants}
-          api={api}
-        />
+      {(benefitGrants.pagination?.total_count ?? 0) > 0 && (
+        <CustomerPortalGrants benefitGrants={benefitGrants} api={api} />
       )}
 
       {/* Inactive subscriptions - only visible to users with billing permissions */}

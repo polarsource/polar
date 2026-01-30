@@ -69,8 +69,11 @@ const BenefitGrantOAuth = ({
     customer,
     properties: { account_id },
     benefit: { type: benefitType },
+    error: grantError,
   } = benefitGrant
-  const [showAccountSelector, setShowAccountSelector] = useState(!account_id)
+  const [showAccountSelector, setShowAccountSelector] = useState(
+    !account_id || !!grantError,
+  )
   const [retryCountdown, setRetryCountdown] = useState<number>(0)
   const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -247,8 +250,10 @@ const BenefitGrantOAuth = ({
           </>
         )}
       </div>
-      {error && (
-        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+      {(error || grantError) && (
+        <p className="text-sm text-red-500 dark:text-red-400">
+          {error || grantError?.message}
+        </p>
       )}
     </div>
   )

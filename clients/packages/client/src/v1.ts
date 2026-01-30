@@ -12710,6 +12710,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitCustomSubscriber']
       properties: components['schemas']['BenefitGrantCustomProperties']
@@ -12765,6 +12766,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitDiscordSubscriber']
       properties: components['schemas']['BenefitGrantDiscordProperties']
@@ -12826,6 +12828,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitDownloadablesSubscriber']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
@@ -12881,6 +12884,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitGitHubRepositorySubscriber']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
@@ -12942,6 +12946,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitLicenseKeysSubscriber']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
@@ -12997,6 +13002,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitMeterCreditSubscriber']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']

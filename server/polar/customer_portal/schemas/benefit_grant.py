@@ -36,6 +36,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.benefit import BenefitType
+from polar.models.benefit_grant import BenefitGrantError
 from polar.models.customer import CustomerOAuthPlatform
 
 from .customer import CustomerPortalCustomer
@@ -51,6 +52,7 @@ class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None
     is_granted: bool
     is_revoked: bool
+    error: BenefitGrantError | None = None
 
 
 class CustomerBenefitGrantDiscord(CustomerBenefitGrantBase):

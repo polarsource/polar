@@ -346,16 +346,9 @@ class MeterService:
         day_column = interval.sql_date_trunc(Event.timestamp)
         truncated_timestamp = interval.sql_date_trunc(timestamp_column)
 
-        # Determine the appropriate SQL function for the running total calculation.
-        # For summable aggregations (count, sum), we can sum the daily values.
-        # For non-summable aggregations (max, min), we must use the same aggregation
-        # function to get the correct total (e.g., max of daily maxes = overall max).
-        # Note: avg and unique require special handling that's not implemented here -
-        # avg would need weighted averages, unique would need to avoid double counting.
-        if meter.aggregation.is_summable():
-            total_agg_func = AggregationFunction.sum.get_sql_function
-        else:
-            total_agg_func = meter.aggregation.func.get_sql_function
+        total_agg_func = (
+            meter.aggregation.get_running_total_sql_function().get_sql_function
+        )
 
         if customer_aggregation_function is not None:
             daily_metrics = cte(

@@ -12,6 +12,8 @@ from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
 from pydantic import UUID4
 
 from polar.auth.models import Customer, is_anonymous, is_customer
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.base.service import BenefitActionRequiredError
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
@@ -19,10 +21,12 @@ from polar.exceptions import PolarError
 from polar.integrations.github.client import Forbidden
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.models.benefit import BenefitType
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
+from polar.worker import enqueue_job
 
 from .. import auth
 from ..schemas.oauth_accounts import AuthorizeResponse
@@ -208,5 +212,26 @@ async def callback(
 
     customer.set_oauth_account(oauth_account, platform)
     await customer_repository.update(customer)
+
+    platform_benefit_type = {
+        CustomerOAuthPlatform.discord: BenefitType.discord,
+        CustomerOAuthPlatform.github: BenefitType.github_repository,
+    }.get(platform)
+    if platform_benefit_type is not None:
+        grant_repository = BenefitGrantRepository.from_session(session)
+        errored_grants = (
+            await grant_repository.list_errored_by_customer_and_benefit_type(
+                customer,
+                platform_benefit_type,
+                BenefitActionRequiredError.__name__,
+            )
+        )
+        for grant in errored_grants:
+            grant.properties = {
+                **grant.properties,
+                "account_id": oauth_account.account_id,
+            }
+            session.add(grant)
+            enqueue_job("benefit.update", grant.id)
 
     return RedirectResponse(redirect_url)

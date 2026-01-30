@@ -130,6 +130,27 @@ class BenefitGrantRepository(
         ).options(*options)
         return await self.get_all(statement)
 
+    async def list_errored_by_customer_and_benefit_type(
+        self,
+        customer: Customer,
+        benefit_type: BenefitType,
+        error_type: str,
+    ) -> Sequence[BenefitGrant]:
+        statement = (
+            self.get_base_statement()
+            .join(Benefit)
+            .where(
+                BenefitGrant.customer_id == customer.id,
+                Benefit.type == benefit_type,
+                BenefitGrant.is_granted.is_(False),
+                BenefitGrant.is_revoked.is_(False),
+                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.error.is_not(None),
+                BenefitGrant.error["type"].as_string() == error_type,
+            )
+        )
+        return await self.get_all(statement)
+
     async def list_by_customer_and_scope(
         self,
         customer: Customer,

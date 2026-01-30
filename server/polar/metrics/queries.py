@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Generator, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -19,6 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.config import settings
 from polar.kit.time_queries import TimeInterval
 from polar.models import (
     Checkout,
@@ -404,10 +405,23 @@ def get_checkouts_cte(
     # Use opened_at if available, otherwise fall back to created_at for historical data
     effective_timestamp = func.coalesce(opened_at_column, Checkout.created_at)
 
+    # Checkouts expire after CHECKOUT_TTL_SECONDS (default 1 hour), so a checkout
+    # opened at time T was created at most CHECKOUT_TTL_SECONDS before T.
+    checkout_ttl = timedelta(seconds=settings.CHECKOUT_TTL_SECONDS)
+
     readable_checkouts_statement = (
         select(Checkout.id)
         .join(CheckoutProduct, CheckoutProduct.checkout_id == Checkout.id)
         .join(Product, onclause=CheckoutProduct.product_id == Product.id)
+        # Performance optimization: filter by created_at (indexed) before JSONB access.
+        # Since opened_at >= created_at and opened_at <= expires_at = created_at + TTL:
+        # - created_at <= end_timestamp: checkout can't be opened after end if created after end
+        # - created_at >= start_timestamp - TTL: checkout can't be opened in range if created
+        #   more than TTL before the start (it would have expired)
+        .where(
+            Checkout.created_at <= end_timestamp,
+            Checkout.created_at >= start_timestamp - checkout_ttl,
+        )
     )
 
     if is_user(auth_subject):

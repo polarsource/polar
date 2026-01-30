@@ -2255,9 +2255,11 @@ class TestCheckoutMetrics:
         )
 
         # Create checkout that was opened (has opened_at) - after cutoff
+        # Note: created_at must be close to opened_at (within TTL window)
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
             },
@@ -2267,6 +2269,7 @@ class TestCheckoutMetrics:
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 15, 9, 0, tzinfo=UTC),
             analytics_metadata={},
         )
 
@@ -2274,6 +2277,7 @@ class TestCheckoutMetrics:
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 15, 8, 0, tzinfo=UTC),
             # Default empty analytics_metadata
         )
 
@@ -2318,9 +2322,11 @@ class TestCheckoutMetrics:
         )
 
         # Create checkout with opened_at on a specific date (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 20, 14, 0, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 2, 20, 14, 30, tzinfo=UTC).isoformat()
             },
@@ -2372,9 +2378,11 @@ class TestCheckoutMetrics:
         )
 
         # Create 2 opened checkouts (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
             },
@@ -2384,6 +2392,7 @@ class TestCheckoutMetrics:
             save_fixture,
             products=[product],
             status=CheckoutStatus.succeeded,
+            created_at=datetime(2026, 2, 15, 10, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 2, 15, 11, 0, tzinfo=UTC).isoformat()
             },
@@ -2391,10 +2400,11 @@ class TestCheckoutMetrics:
 
         # Create 3 API-created checkouts that were never opened (after cutoff)
         # These should NOT affect conversion rate
-        for _ in range(3):
+        for i in range(3):
             await create_checkout(
                 save_fixture,
                 products=[product],
+                created_at=datetime(2026, 2, 15, 12 + i, 0, tzinfo=UTC),
                 analytics_metadata={},
             )
 
@@ -2442,9 +2452,11 @@ class TestCheckoutMetrics:
         )
 
         # Checkout opened within range (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
             },
@@ -2454,6 +2466,7 @@ class TestCheckoutMetrics:
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 1, 25, 9, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 1, 25, 10, 0, tzinfo=UTC).isoformat()
             },
@@ -2463,6 +2476,7 @@ class TestCheckoutMetrics:
         await create_checkout(
             save_fixture,
             products=[product],
+            created_at=datetime(2026, 3, 15, 9, 30, tzinfo=UTC),
             analytics_metadata={
                 "opened_at": datetime(2026, 3, 15, 10, 0, tzinfo=UTC).isoformat()
             },

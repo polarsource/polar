@@ -186,4 +186,5 @@ class AuthSubjectMiddleware:
         with logfire.set_baggage(**auth_subject.log_context):
             log.info("Authenticated subject", **auth_subject.log_context)
             set_sentry_user(auth_subject)
+            # Other scope types (lifespan, etc.)
             await self.app(scope, receive, send)

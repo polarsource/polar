@@ -94,7 +94,9 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
         await session.commit()
 
 
-async def get_db_read_session(request: Request) -> AsyncGenerator[AsyncReadSession]:
+async def get_db_read_session(
+    request: Request,
+) -> AsyncGenerator[AsyncReadSession]:
     sessionmaker: AsyncReadSessionMaker = request.state.async_read_sessionmaker
     async with sessionmaker() as session:
         yield session

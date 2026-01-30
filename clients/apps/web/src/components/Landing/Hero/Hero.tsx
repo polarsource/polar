@@ -21,6 +21,7 @@ const itemVariants = {
 
 export type HeroProps = PropsWithChildren<{
   className?: string
+  titleClassName?: string
   title: string
   description: string
 }>
@@ -28,6 +29,7 @@ export type HeroProps = PropsWithChildren<{
 export const Hero = ({
   className,
   title,
+  titleClassName,
   description,
   children,
 }: HeroProps) => {
@@ -43,7 +45,7 @@ export const Hero = ({
       viewport={{ once: true }}
     >
       <motion.h1
-        className="text-7xl leading-tightest! tracking-tight text-balance md:px-0 xl:text-8xl"
+        className={twMerge("text-7xl leading-tightest! tracking-tight text-balance md:px-0 xl:text-8xl", titleClassName)}
         variants={itemVariants}
       >
         {title}

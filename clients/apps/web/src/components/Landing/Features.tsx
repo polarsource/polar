@@ -7,6 +7,7 @@ import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOu
 import AnimatedLines from './animated/AnimatedLines'
 import AnimatedInfinity from './animated/AnimatedInfinity'
 import AnimatedWaves from './animated/AnimatedWaves'
+import AnimatedBars from './animated/AnimatedBars'
 import Vestaboard from './animated/Vestaboard'
 
 type FeatureCardProps = {
@@ -94,7 +95,7 @@ const Features = ({ className }: FeaturesProps) => {
       linkHref: '/features/customers',
       children: (
         <div className="relative h-[180px] mx-2 mb-2">
-          <Vestaboard height={180} cellSize={24} fontSize={10} waveScale={3} waveSpeed={0.6} characters='-ABCDEF' />
+          <AnimatedBars />
         </div>
       ),
     },

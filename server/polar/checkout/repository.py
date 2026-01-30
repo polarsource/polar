@@ -62,19 +62,21 @@ class CheckoutRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def expire_open_checkouts(self) -> list[Checkout]:
+    async def expire_open_checkouts(self) -> list[UUID]:
         """
-        Fetch and return all checkouts that need to be expired.
-        The actual status update and webhook sending will be done by the service layer.
+        Expire all open checkouts that have passed their expiration time.
+
+        Returns a list of IDs of the checkouts that were expired.
         """
         statement = (
-            select(Checkout)
+            update(Checkout)
             .where(
                 Checkout.deleted_at.is_(None),
                 Checkout.expires_at <= utc_now(),
                 Checkout.status == CheckoutStatus.open,
             )
-            .options(*self.get_eager_options())
+            .values(status=CheckoutStatus.expired)
+            .returning(Checkout.id)
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

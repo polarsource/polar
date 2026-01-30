@@ -138,7 +138,6 @@ class Settings(BaseSettings):
     CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
     IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
-    USE_TEST_CLOCK: bool = False
 
     # Database
     POSTGRES_USER: str = "polar"

@@ -6,7 +6,6 @@ import structlog
 
 from polar.config import settings
 from polar.exceptions import PolarError
-from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
@@ -333,12 +332,6 @@ class StripeService:
             email=params.get("email"),
             name=params.get("name"),
         )
-        if settings.USE_TEST_CLOCK:
-            test_clock = await stripe_lib.test_helpers.TestClock.create_async(
-                frozen_time=int(utc_now().timestamp())
-            )
-            params["test_clock"] = test_clock.id
-
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(

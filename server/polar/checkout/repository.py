@@ -63,7 +63,6 @@ class CheckoutRepository(
         return await self.get_one_or_none(statement)
 
     async def expire_open_checkouts(self) -> list[UUID]:
-        
         statement = (
             update(Checkout)
             .where(

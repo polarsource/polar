@@ -73,6 +73,7 @@ from polar.models.product_price import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -102,8 +103,6 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_trial_redemption,
 )
-from polar.models.webhook_endpoint import WebhookEventType
-
 
 MINIMUM_AMOUNT = 2500
 PRESET_AMOUNT = 5000
@@ -5256,7 +5255,6 @@ async def test_send_expiration_events(
     product: Product,
     mocker: MockerFixture,
 ) -> None:
-
     checkout = await create_checkout(
         save_fixture,
         products=[product],

@@ -5267,6 +5267,8 @@ async def test_expire_checkout_sends_webhook(
     
     await checkout_service.expire_checkout(session, checkout)
     
+    assert checkout.status == CheckoutStatus.expired
+    
     mock_send.assert_called_once()
     args = mock_send.call_args
     assert args[0][2] == WebhookEventType.checkout_expired

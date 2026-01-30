@@ -17,7 +17,8 @@ export interface CustomerPortalProps {
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   claimedSubscriptions: schemas['CustomerSubscription'][]
-  benefitGrants: schemas['CustomerBenefitGrant'][]
+  totalBenefitGrantCount: number
+  initialBenefitGrants?: schemas['CustomerBenefitGrant'][]
   customerSessionToken: string
 }
 
@@ -26,7 +27,8 @@ export const CustomerPortalOverview = ({
   products,
   subscriptions,
   claimedSubscriptions,
-  benefitGrants,
+  totalBenefitGrantCount,
+  initialBenefitGrants,
   customerSessionToken,
 }: CustomerPortalProps) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -113,10 +115,11 @@ export const CustomerPortalOverview = ({
       )}
 
       {/* Benefit Grants - visible to all users */}
-      {benefitGrants.length > 0 && (
+      {totalBenefitGrantCount > 0 && (
         <CustomerPortalGrants
           organization={organization}
-          benefitGrants={benefitGrants}
+          totalBenefitGrantCount={totalBenefitGrantCount}
+          initialBenefitGrants={initialBenefitGrants}
           api={api}
         />
       )}

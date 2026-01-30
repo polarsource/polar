@@ -1,7 +1,7 @@
 import json
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Annotated, Any, Protocol
+from typing import TYPE_CHECKING, Annotated, Any, Protocol
 
 import stdnum.ca.bn
 import stdnum.cl.rut
@@ -11,7 +11,6 @@ import stdnum.il.idnr
 import stdnum.in_.gstin
 import stdnum.tr.vkn
 import stdnum.vn.mst
-import stripe as stripe_lib
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
@@ -19,6 +18,11 @@ from sqlalchemy.types import TypeDecorator
 from stdnum import get_cc_module
 
 from polar.exceptions import PolarError
+
+if TYPE_CHECKING:
+    from stripe.params._customer_create_params import (
+        CustomerCreateParamsTaxIdDatum,
+    )
 
 
 class TaxIDFormat(StrEnum):
@@ -357,7 +361,7 @@ def validate_tax_id(number: str, country: str) -> TaxID:
     raise InvalidTaxID(number, country)
 
 
-def to_stripe_tax_id(value: TaxID) -> stripe_lib.Customer.CreateParamsTaxIdDatum:
+def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
     """
     Convert a tax ID to the format expected by Stripe.
 

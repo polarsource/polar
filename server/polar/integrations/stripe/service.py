@@ -11,10 +11,30 @@ from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
 if TYPE_CHECKING:
+    from stripe.params._account_create_params import AccountCreateParams
+    from stripe.params._balance_transaction_list_params import (
+        BalanceTransactionListParams,
+    )
+    from stripe.params._customer_create_params import (
+        CustomerCreateParams,
+        CustomerCreateParamsTaxIdDatum,
+    )
+    from stripe.params._customer_modify_params import CustomerModifyParams
+    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._setup_intent_create_params import SetupIntentCreateParams
+    from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
+    from stripe.params._transfer_create_params import TransferCreateParams
+    from stripe.params._transfer_modify_params import TransferModifyParams
+    from stripe.params.tax._calculation_create_params import CalculationCreateParams
+    from stripe.params.tax._transaction_create_reversal_params import (
+        TransactionCreateReversalParams,
+    )
+
     from polar.account.schemas import AccountCreateForOrganization
     from polar.models import User
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
+stripe_lib.api_version = "2026-01-28.clover"
 
 stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
@@ -50,7 +70,7 @@ class StripeService:
             country=account.country,
             name=name,
         )
-        create_params: stripe_lib.Account.CreateParams = {
+        create_params: AccountCreateParams = {
             "country": account.country,
             "type": "express",
             "capabilities": {"transfers": {"requested": True}},
@@ -139,7 +159,7 @@ class StripeService:
             transfer_group=transfer_group,
             idempotency_key=idempotency_key,
         )
-        create_params: stripe_lib.Transfer.CreateParams = {
+        create_params: TransferCreateParams = {
             "amount": amount,
             "currency": "usd",
             "destination": destination_stripe_id,
@@ -159,7 +179,7 @@ class StripeService:
     async def update_transfer(
         self, id: str, metadata: dict[str, str]
     ) -> stripe_lib.Transfer:
-        update_params: stripe_lib.Transfer.ModifyParams = {
+        update_params: TransferModifyParams = {
             "metadata": metadata,
         }
         return await stripe_lib.Transfer.modify_async(id, **update_params)
@@ -183,7 +203,7 @@ class StripeService:
         type: str | None = None,
         expand: list[str] | None = None,
     ) -> AsyncIterator[stripe_lib.BalanceTransaction]:
-        params: stripe_lib.BalanceTransaction.ListParams = {
+        params: BalanceTransactionListParams = {
             "limit": 100,
             "stripe_account": account_id,
         }
@@ -277,7 +297,7 @@ class StripeService:
         )
 
     async def create_payment_intent(
-        self, **params: Unpack[stripe_lib.PaymentIntent.CreateParams]
+        self, **params: Unpack[PaymentIntentCreateParams]
     ) -> stripe_lib.PaymentIntent:
         log.info(
             "stripe.payment_intent.create",
@@ -291,7 +311,7 @@ class StripeService:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_setup_intent(
-        self, **params: Unpack[stripe_lib.SetupIntent.CreateParams]
+        self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
         log.info(
             "stripe.setup_intent.create",
@@ -301,12 +321,12 @@ class StripeService:
         return await stripe_lib.SetupIntent.create_async(**params)
 
     async def get_setup_intent(
-        self, id: str, **params: Unpack[stripe_lib.SetupIntent.RetrieveParams]
+        self, id: str, **params: Unpack[SetupIntentRetrieveParams]
     ) -> stripe_lib.SetupIntent:
         return await stripe_lib.SetupIntent.retrieve_async(id, **params)
 
     async def create_customer(
-        self, **params: Unpack[stripe_lib.Customer.CreateParams]
+        self, **params: Unpack[CustomerCreateParams]
     ) -> stripe_lib.Customer:
         log.info(
             "stripe.customer.create",
@@ -324,8 +344,8 @@ class StripeService:
     async def update_customer(
         self,
         id: str,
-        tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
-        **params: Unpack[stripe_lib.Customer.ModifyParams],
+        tax_id: CustomerCreateParamsTaxIdDatum | None = None,
+        **params: Unpack[CustomerModifyParams],
     ) -> stripe_lib.Customer:
         log.info(
             "stripe.customer.update",
@@ -379,7 +399,7 @@ class StripeService:
 
     async def create_tax_calculation(
         self,
-        **params: Unpack[stripe_lib.tax.Calculation.CreateParams],
+        **params: Unpack[CalculationCreateParams],
     ) -> stripe_lib.tax.Calculation:
         return await stripe_lib.tax.Calculation.create_async(**params)
 
@@ -421,7 +441,7 @@ class StripeService:
         reference: str,
         amount: int | None = None,
     ) -> stripe_lib.tax.Transaction:
-        params: stripe_lib.tax.Transaction.CreateReversalParams = {
+        params: TransactionCreateReversalParams = {
             "mode": mode,
             "original_transaction": original_transaction_id,
             "reference": reference,

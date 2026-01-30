@@ -16,7 +16,6 @@ from polar.exceptions import (
     NotPermitted,
     ResourceNotFound,
 )
-from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.issue_reward import IssueReward
@@ -154,41 +153,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         pledge.by_user_id = backer.id
         session.add(pledge)
-
-    async def handle_payment_intent_success(
-        self,
-        session: AsyncSession,
-        payload: PaymentIntentSuccessWebhook,
-    ) -> None:
-        pledge = await self.get_by_payment_id(session, payload.id)
-        if not pledge:
-            raise ResourceNotFound(f"Pledge not found with payment_id: {payload.id}")
-
-        log.info(
-            "handle_payment_intent_success",
-            payment_id=payload.id,
-        )
-
-        # Log Transaction
-        session.add(
-            PledgeTransaction(
-                pledge_id=pledge.id,
-                type=PledgeTransactionType.pledge,
-                amount=payload.amount_received,
-                transaction_id=payload.latest_charge,
-            )
-        )
-        await session.commit()
-
-        if pledge.type == PledgeType.pay_on_completion:
-            return await self.handle_paid_invoice(
-                session,
-                payment_id=payload.id,
-                amount_received=payload.amount_received,
-                transaction_id=payload.latest_charge,
-            )
-
-        raise Exception(f"unhandeled pledge type type: {pledge.type}")
 
     async def handle_paid_invoice(
         self,

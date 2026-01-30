@@ -46,7 +46,6 @@ from polar.exceptions import (
     ResourceNotFound,
     ValidationError,
 )
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
@@ -112,6 +111,15 @@ from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
+
+if typing.TYPE_CHECKING:
+    from stripe.params._customer_create_params import (
+        CustomerCreateParams,
+    )
+    from stripe.params._customer_modify_params import CustomerModifyParams
+    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._setup_intent_create_params import SetupIntentCreateParams
+
 
 log: Logger = structlog.get_logger()
 
@@ -1094,7 +1102,7 @@ class CheckoutService:
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
                         "checkout_id": str(checkout.id),
-                        "type": ProductType.product,
+                        "type": "product",
                         "tax_amount": str(checkout.tax_amount),
                         "tax_country": checkout.customer_billing_address.country,
                     }
@@ -1106,7 +1114,7 @@ class CheckoutService:
 
                     try:
                         if checkout.is_payment_required:
-                            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                            payment_intent_params: PaymentIntentCreateParams = {
                                 "amount": checkout.total_amount,
                                 "currency": checkout.currency,
                                 "automatic_payment_methods": {"enabled": True},
@@ -1129,7 +1137,7 @@ class CheckoutService:
                                 **payment_intent_params
                             )
                         else:
-                            setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
+                            setup_intent_params: SetupIntentCreateParams = {
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
@@ -2402,7 +2410,7 @@ class CheckoutService:
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
-            create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
+            create_params: CustomerCreateParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2416,7 +2424,7 @@ class CheckoutService:
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            update_params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
+            update_params: CustomerModifyParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:

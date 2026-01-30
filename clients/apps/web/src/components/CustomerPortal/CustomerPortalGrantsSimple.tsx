@@ -5,7 +5,7 @@ import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 
 export interface CustomerPortalGrantsSimpleProps {
-  organization: schemas['CustomerOrganization']
+  organization?: schemas['CustomerOrganization']
   benefitGrants: schemas['CustomerBenefitGrant'][]
   api: Client
 }

@@ -77,11 +77,6 @@ export default async function Page(props: {
       response: subscriptionsResponse,
     },
     {
-      data: benefitGrants,
-      error: benefitGrantsError,
-      response: benefitGrantsResponse,
-    },
-    {
       data: claimedSubscriptions,
       error: claimedSubscriptionsError,
       response: claimedSubscriptionsResponse,
@@ -96,10 +91,6 @@ export default async function Page(props: {
       ...cacheConfig,
     }),
 
-    api.GET('/v1/customer-portal/benefit-grants/', {
-      ...cacheConfig,
-    }),
-
     api.GET('/v1/customer-portal/seats/subscriptions', {
       ...cacheConfig,
     }),
@@ -107,7 +98,6 @@ export default async function Page(props: {
 
   if (
     subscriptionsResponse.status === 401 ||
-    benefitGrantsResponse.status === 401 ||
     claimedSubscriptionsResponse.status === 401
   ) {
     redirect(
@@ -117,10 +107,6 @@ export default async function Page(props: {
 
   if (subscriptionsError) {
     throw subscriptionsError
-  }
-
-  if (benefitGrantsError) {
-    throw benefitGrantsError
   }
 
   if (claimedSubscriptionsError) {
@@ -133,7 +119,6 @@ export default async function Page(props: {
       products={products}
       subscriptions={subscriptions}
       claimedSubscriptions={claimedSubscriptions ?? []}
-      benefitGrants={benefitGrants}
       customerSessionToken={token as string}
     />
   )

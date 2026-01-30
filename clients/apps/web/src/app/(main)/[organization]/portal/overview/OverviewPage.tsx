@@ -9,14 +9,12 @@ const ClientPage = ({
   products,
   subscriptions,
   claimedSubscriptions,
-  benefitGrants,
   customerSessionToken,
 }: {
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['ListResource_CustomerSubscription_']
   claimedSubscriptions: schemas['CustomerSubscription'][]
-  benefitGrants: schemas['ListResource_CustomerBenefitGrant_']
   customerSessionToken: string
 }) => {
   return (
@@ -26,12 +24,6 @@ const ClientPage = ({
         products={products}
         subscriptions={subscriptions.items ?? []}
         claimedSubscriptions={claimedSubscriptions}
-        totalBenefitGrantCount={
-          benefitGrants.pagination?.total_count ??
-          benefitGrants.items?.length ??
-          0
-        }
-        initialBenefitGrants={benefitGrants.items}
         customerSessionToken={customerSessionToken}
       />
     </NuqsAdapter>

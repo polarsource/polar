@@ -29,18 +29,18 @@ export default function GlassCard({
       onClick={onClick}
       className={twMerge(
         'relative overflow-hidden rounded-2xl',
-        // Light mode: crystal clear water glass
-        'bg-white/20 border border-white/30',
-        // Dark mode: ultra-translucent water glass
-        'dark:bg-white/[0.02] dark:border-white/[0.04]',
-        // Subtle backdrop blur for refraction effect
-        'backdrop-blur-sm',
+        // Light mode: subtle frosted glass with visible tint
+        'bg-gray-100/80 border border-gray-200/50',
+        // Dark mode: subtle dark glass
+        'dark:bg-polar-800/60 dark:border-polar-700/40',
+        // Backdrop blur for glass effect
+        'backdrop-blur-md',
         // Hover
         hover && [
           'transition-all duration-200',
           'hover:-translate-y-0.5',
-          'hover:bg-white/25 dark:hover:bg-white/[0.04]',
-          'hover:border-white/40 dark:hover:border-white/[0.06]',
+          'hover:bg-gray-100/90 dark:hover:bg-polar-800/70',
+          'hover:border-gray-200/70 dark:hover:border-polar-700/60',
         ],
         paddingClasses[padding],
         className,

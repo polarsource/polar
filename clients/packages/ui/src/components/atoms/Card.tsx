@@ -26,8 +26,8 @@ const Card = ({
       'rounded-4xl text-gray-950 shadow-none dark:text-white',
       variant === 'default' && 'dark:bg-polar-800 border-transparent bg-gray-100 dark:border-transparent',
       variant === 'glass' && [
-        'border border-white/30 bg-white/20 backdrop-blur-sm',
-        'dark:border-white/[0.04] dark:bg-white/[0.02]',
+        'bg-gray-100/80 border border-gray-200/50 backdrop-blur-md',
+        'dark:bg-polar-800/60 dark:border-polar-700/40',
       ],
       className,
     )}

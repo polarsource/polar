@@ -1,4 +1,4 @@
-import { getServerSideAPI } from '@/utils/server-api'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 

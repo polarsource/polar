@@ -59,11 +59,9 @@ export default function BalanceHeader({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="font-display text-6xl font-semibold tracking-tight text-white md:text-7xl"
+          className="text-6xl font-light tracking-tight text-white md:text-7xl"
         >
-          <span className="font-mono tabular-nums">
-            {formatCurrency(totalBalance, currency)}
-          </span>
+          {formatCurrency(totalBalance, currency)}
         </motion.h1>
 
         {/* Trend indicator */}
@@ -84,7 +82,7 @@ export default function BalanceHeader({
             <TrendingUp
               className={twMerge('h-4 w-4', !isPositive && 'rotate-180')}
             />
-            <span className="font-mono text-sm tabular-nums">
+            <span className="text-sm">
               {isPositive ? '+' : ''}
               {percentChange.toFixed(1)}%
             </span>
@@ -106,7 +104,7 @@ export default function BalanceHeader({
           </div>
           <div>
             <p className="text-xs text-white/40">Inflow</p>
-            <p className="font-mono text-lg tabular-nums text-white">
+            <p className="text-lg text-white">
               {formatCompact(inflow, currency)}
             </p>
           </div>
@@ -118,7 +116,7 @@ export default function BalanceHeader({
           </div>
           <div>
             <p className="text-xs text-white/40">Outflow</p>
-            <p className="font-mono text-lg tabular-nums text-white/80">
+            <p className="text-lg text-white/80">
               {formatCompact(outflow, currency)}
             </p>
           </div>

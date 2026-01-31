@@ -81,7 +81,9 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 relative h-full min-h-80 rounded-4xl bg-gray-50 md:min-h-fit',
+        'relative h-full min-h-80 rounded-4xl md:min-h-fit',
+        'border border-white/30 bg-white/20 backdrop-blur-sm',
+        'dark:border-white/[0.04] dark:bg-white/[0.02]',
         className,
       )}
     >
@@ -111,7 +113,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           </div>
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 bg-gray-50 p-6 text-gray-400">
+        <Card variant="glass" className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-400">
           <ShoppingCartOutlined
             className="dark:text-polar-600 text-gray-300"
             fontSize="large"

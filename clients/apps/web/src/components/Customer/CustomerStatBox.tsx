@@ -6,6 +6,7 @@ export interface CustomerStatBoxProps {
   className?: string
   valueClassName?: string
   size?: 'sm' | 'lg'
+  variant?: 'default' | 'glass'
 }
 
 export const CustomerStatBox = ({
@@ -14,11 +15,17 @@ export const CustomerStatBox = ({
   className,
   valueClassName,
   size = 'sm',
+  variant = 'glass',
 }: PropsWithChildren<CustomerStatBoxProps>) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex flex-1 flex-col gap-2 bg-gray-50',
+        'flex flex-1 flex-col gap-2',
+        variant === 'default' && 'dark:bg-polar-800 dark:border-polar-700 bg-gray-50',
+        variant === 'glass' && [
+          'border border-white/30 bg-white/20 backdrop-blur-sm',
+          'dark:border-white/[0.04] dark:bg-white/[0.02]',
+        ],
         className,
         size === 'lg'
           ? 'rounded-2xl px-5 py-4'

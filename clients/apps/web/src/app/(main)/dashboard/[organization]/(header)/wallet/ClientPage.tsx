@@ -56,7 +56,7 @@ export default function ClientPage({ organizationSlug }: ClientPageProps) {
           Total Balance
         </p>
         <div className="flex items-baseline gap-4">
-          <h1 className="font-mono text-4xl tabular-nums tracking-tight">
+          <h1 className="text-5xl font-light">
             {formatCurrencyAndAmount(totalBalance, 'usd', 0)}
           </h1>
           <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -195,7 +195,7 @@ export default function ClientPage({ organizationSlug }: ClientPageProps) {
                 </div>
                 <span
                   className={twMerge(
-                    'font-mono text-sm tabular-nums',
+                    'text-sm',
                     tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : '',
                   )}
                 >
@@ -212,19 +212,19 @@ export default function ClientPage({ organizationSlug }: ClientPageProps) {
       <div className="grid gap-4 sm:grid-cols-3">
         <GlassCard>
           <p className="dark:text-polar-500 text-xs text-gray-500">Available</p>
-          <p className="font-mono text-xl tabular-nums">
+          <p className="text-xl font-light">
             {formatCurrencyAndAmount(account.balance.available, 'usd', 0)}
           </p>
         </GlassCard>
         <GlassCard>
           <p className="dark:text-polar-500 text-xs text-gray-500">Pending In</p>
-          <p className="font-mono text-xl tabular-nums text-emerald-600 dark:text-emerald-400">
+          <p className="text-xl font-light text-emerald-600 dark:text-emerald-400">
             +{formatCurrencyAndAmount(account.balance.inbound_pending, 'usd', 0)}
           </p>
         </GlassCard>
         <GlassCard>
           <p className="dark:text-polar-500 text-xs text-gray-500">Pending Out</p>
-          <p className="dark:text-polar-400 font-mono text-xl tabular-nums text-gray-500">
+          <p className="text-xl font-light text-gray-500 dark:text-polar-400">
             -{formatCurrencyAndAmount(account.balance.outbound_pending, 'usd', 0)}
           </p>
         </GlassCard>

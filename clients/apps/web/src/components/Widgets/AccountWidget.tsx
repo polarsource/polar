@@ -31,7 +31,9 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex h-80 flex-col justify-between rounded-4xl bg-gray-50',
+        'flex h-80 flex-col justify-between rounded-4xl',
+        'border border-white/30 bg-white/20 backdrop-blur-sm',
+        'dark:border-white/[0.04] dark:bg-white/[0.02]',
         className,
       )}
     >

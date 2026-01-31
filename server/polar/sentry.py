@@ -1,7 +1,8 @@
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+import logfire
 import sentry_sdk
 from dramatiq import get_broker
 from sentry_sdk.integrations.argv import ArgvIntegration
@@ -21,8 +22,74 @@ from polar.config import settings
 
 if TYPE_CHECKING:
     import dramatiq
+    from sentry_sdk._types import Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
+
+# Tasks that use FOR UPDATE NOWAIT and expect lock failures to trigger retries
+_LOCK_EXPECTED_ACTORS: frozenset[str] = frozenset(
+    {
+        "customer_meter.update_customer",
+    }
+)
+
+
+def _is_lock_not_available_error(exc_value: Any) -> bool:
+    """Check if the exception is a PostgreSQL lock_not_available error (55P03)."""
+    # Check asyncpg LockNotAvailableError directly
+    exc_type_name = type(exc_value).__name__
+    if exc_type_name == "LockNotAvailableError":
+        return True
+
+    # Check SQLAlchemy DBAPIError wrapping asyncpg error
+    if exc_type_name == "DBAPIError":
+        orig = getattr(exc_value, "orig", None)
+        if orig is not None:
+            cause = getattr(orig, "__cause__", None)
+            if cause is not None and hasattr(cause, "sqlstate"):
+                return cause.sqlstate == "55P03"
+
+    return False
+
+
+def _get_dramatiq_actor_name(event: "Event") -> str | None:
+    """Extract actor name from Sentry event's dramatiq context."""
+    contexts = event.get("contexts")
+    if contexts is None:
+        return None
+    dramatiq_ctx = contexts.get("dramatiq")
+    if dramatiq_ctx is None or not isinstance(dramatiq_ctx, dict):
+        return None
+    data = dramatiq_ctx.get("data")
+    if data is None or not isinstance(data, dict):
+        return None
+    return data.get("actor_name")
+
+
+def before_send(event: "Event", hint: "Hint") -> "Event | None":
+    """
+    Filter out expected exceptions before sending to Sentry.
+
+    Returns None to drop the event, or the event to send it.
+    """
+    exc_info = hint.get("exc_info")
+    if exc_info is not None:
+        _, exc_value, _ = exc_info
+        # Drop LockNotAvailableError for tasks that expect it (using FOR UPDATE NOWAIT)
+        if _is_lock_not_available_error(exc_value):
+            actor_name = _get_dramatiq_actor_name(event)
+            if actor_name in _LOCK_EXPECTED_ACTORS:
+                return None
+            # Log if we couldn't extract actor name - helps detect if Sentry SDK
+            # changes the event structure for dramatiq context
+            if actor_name is None:
+                logfire.warn(
+                    "LockNotAvailableError detected but could not extract dramatiq "
+                    "actor_name from Sentry event - check if SDK structure changed",
+                    event_contexts=event.get("contexts"),
+                )
+
+    return event
 
 
 class PatchedSentryMiddleware(SentryMiddleware):
@@ -64,6 +131,7 @@ def configure_sentry() -> None:
         environment=settings.ENV,
         default_integrations=False,
         auto_enabling_integrations=False,
+        before_send=before_send,
         integrations=[
             AtexitIntegration(),
             ExcepthookIntegration(),

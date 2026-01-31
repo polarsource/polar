@@ -62,7 +62,7 @@ class CheckoutRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def expire_open_checkouts(self) -> None:
+    async def expire_open_checkouts(self) -> list[UUID]:
         statement = (
             update(Checkout)
             .where(
@@ -71,8 +71,10 @@ class CheckoutRepository(
                 Checkout.status == CheckoutStatus.open,
             )
             .values(status=CheckoutStatus.expired)
+            .returning(Checkout.id)
         )
-        await self.session.execute(statement)
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

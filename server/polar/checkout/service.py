@@ -2505,6 +2505,16 @@ class CheckoutService:
                 {"status": checkout.status},
             )
 
+    async def send_expiration_events(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.updated, {"status": checkout.status}
+        )
+        await webhook_service.send(
+            session, checkout.organization, WebhookEventType.checkout_expired, checkout
+        )
+
     async def _eager_load_product(
         self, session: AsyncSession, product: Product
     ) -> Product:

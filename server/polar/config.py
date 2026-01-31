@@ -221,26 +221,6 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
-    # Feature flag for Stripe v2 API (recipient configuration)
-    STRIPE_USE_V2_ACCOUNTS: bool = False
-
-    # Mercury (Payout Provider)
-    MERCURY_API_KEY: str = ""
-    MERCURY_ACCOUNT_ID: str = ""  # Your Mercury business checking account ID
-    MERCURY_WEBHOOK_SECRET: str = ""
-    MERCURY_BASE_URL: str = "https://api.mercury.com/api/v1"
-    # Feature flags for Mercury payouts
-    MERCURY_PAYOUTS_ENABLED: bool = False
-    MERCURY_RTP_ENABLED: bool = False  # Real-Time Payments (instant)
-    MERCURY_SAME_DAY_ACH_ENABLED: bool = True  # Same-Day ACH fallback
-    # Mercury-native routing numbers for RTP detection
-    MERCURY_NATIVE_ROUTING_NUMBERS: set[str] = {
-        "121145433",  # Column N.A. (Mercury's primary bank)
-        "091302966",  # Choice Financial Group (Mercury's partner bank)
-    }
-
-    # Encryption (for bank details)
-    ENCRYPTION_KEY: str = ""  # Fernet key for encrypting sensitive data
 
     # Numeral
     NUMERAL_API_KEY: str | None = None

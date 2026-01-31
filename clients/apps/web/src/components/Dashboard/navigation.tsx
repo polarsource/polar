@@ -7,6 +7,7 @@ import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LayersOutlined from '@mui/icons-material/LayersOutlined'
+import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
@@ -277,6 +278,16 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     link: `/dashboard/${org?.slug}/perks`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/perks`)
+    },
+    if: true,
+  },
+  {
+    id: 'wallet',
+    title: 'Wallet',
+    icon: <AccountBalanceWalletOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/wallet`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/wallet`)
     },
     if: true,
   },

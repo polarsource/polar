@@ -109,9 +109,9 @@ class StripeService:
 
         # V2 API: Use controller config, do NOT request capabilities explicitly
         # Transfers capability is granted automatically for recipient accounts
+        # IMPORTANT: Do not pass "type" when using "controller" - they are mutually exclusive
         create_params: dict[str, Any] = {
             "country": account.country,
-            "type": "express",
             "controller": {
                 "stripe_dashboard": {"type": "express"},
                 "fees": {"payer": "application"},

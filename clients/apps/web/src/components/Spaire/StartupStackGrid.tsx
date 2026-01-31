@@ -1,10 +1,9 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { type Perk, perksData } from '@/app/(main)/dashboard/[organization]/(header)/perks/perksData'
 import { ArrowUpRight } from 'lucide-react'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
-import { type Perk, perksData } from '@/app/(main)/dashboard/[organization]/(header)/perks/perksData'
 import GlassCard from './GlassCard'
 
 interface StartupStackGridProps {
@@ -12,72 +11,50 @@ interface StartupStackGridProps {
   maxItems?: number
 }
 
-const categoryGlows: Record<string, 'emerald' | 'blue' | 'purple' | 'amber'> = {
-  banking: 'emerald',
-  cloud: 'blue',
-  productivity: 'purple',
-  analytics: 'amber',
-  ai: 'blue',
-  growth: 'emerald',
-}
-
-const DealCard = ({ perk, index }: { perk: Perk; index: number }) => {
+const DealCard = ({ perk }: { perk: Perk }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
+    <a
+      href={perk.applyUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block h-full"
     >
-      <a
-        href={perk.applyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block h-full"
-      >
-        <GlassCard
-          glow={categoryGlows[perk.category] || 'blue'}
-          padding="md"
-          className="group flex h-full flex-col"
-        >
-          {/* Header */}
-          <div className="mb-4 flex items-start justify-between">
-            <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white/10">
-              <Image
-                src={perk.logoUrl}
-                alt={perk.provider}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </div>
-            <ArrowUpRight className="h-4 w-4 text-white/30 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-white/60" />
+      <GlassCard padding="md" className="group flex h-full flex-col">
+        <div className="mb-3 flex items-start justify-between">
+          <div className="relative h-8 w-8 overflow-hidden rounded-lg bg-gray-100 dark:bg-white/10">
+            <Image
+              src={perk.logoUrl}
+              alt={perk.provider}
+              fill
+              className="object-cover"
+              unoptimized
+            />
           </div>
+          <ArrowUpRight className="dark:text-polar-500 h-4 w-4 text-gray-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+        </div>
 
-          {/* Content */}
-          <div className="flex flex-1 flex-col">
-            <p className="mb-1 text-xs font-medium tracking-wide text-white/40">
-              {perk.provider}
-            </p>
-            <h3 className="mb-2 text-lg font-semibold tracking-tight text-emerald-400">
-              {perk.headline}
-            </h3>
-            <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-white/50">
-              {perk.description}
-            </p>
-          </div>
+        <div className="flex flex-1 flex-col">
+          <p className="dark:text-polar-500 mb-1 text-xs text-gray-500">
+            {perk.provider}
+          </p>
+          <h3 className="mb-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            {perk.headline}
+          </h3>
+          <p className="dark:text-polar-400 line-clamp-2 flex-1 text-xs text-gray-500">
+            {perk.description}
+          </p>
+        </div>
 
-          {/* Footer */}
-          <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
-            <span className="text-xs text-white/30">
-              {perk.category.charAt(0).toUpperCase() + perk.category.slice(1)}
-            </span>
-            <span className="text-xs font-medium text-white/50 transition-colors group-hover:text-emerald-400">
-              Claim Deal
-            </span>
-          </div>
-        </GlassCard>
-      </a>
-    </motion.div>
+        <div className="dark:border-polar-700 mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+          <span className="dark:text-polar-500 text-xs text-gray-400">
+            {perk.category.charAt(0).toUpperCase() + perk.category.slice(1)}
+          </span>
+          <span className="text-xs text-gray-500 transition-colors group-hover:text-emerald-600 dark:text-polar-400 dark:group-hover:text-emerald-400">
+            Claim
+          </span>
+        </div>
+      </GlassCard>
+    </a>
   )
 }
 
@@ -88,34 +65,25 @@ export default function StartupStackGrid({
   const deals = maxItems ? perksData.slice(0, maxItems) : perksData
 
   return (
-    <div className={twMerge('flex flex-col gap-6', className)}>
-      {/* Section Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex items-end justify-between"
-      >
+    <div className={twMerge('flex flex-col gap-4', className)}>
+      <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">
-            Startup Stack
-          </h2>
-          <p className="mt-1 text-sm text-white/40">
-            Exclusive deals for Spaire founders
+          <h2 className="text-lg font-medium">Startup Stack</h2>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Exclusive deals for founders
           </p>
         </div>
         <a
           href="#"
-          className="text-sm text-white/40 transition-colors hover:text-white/60"
+          className="dark:text-polar-400 text-sm text-gray-500 transition-colors hover:text-gray-700 dark:hover:text-gray-300"
         >
-          View all deals
+          View all
         </a>
-      </motion.div>
+      </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {deals.map((perk, index) => (
-          <DealCard key={perk.id} perk={perk} index={index} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {deals.map((perk) => (
+          <DealCard key={perk.id} perk={perk} />
         ))}
       </div>
     </div>

@@ -742,7 +742,8 @@ class CheckoutService:
         embed_origin: str | None = None,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
-        query_prefill: dict[str, str | UUID4 | dict[str, str] | None] | None = None,
+        query_prefill: dict[str, str | UUID4 | dict[str, str] | bool | None]
+        | None = None,
         **query_metadata: str | None,
     ) -> Checkout:
         products: list[Product] = []
@@ -871,6 +872,13 @@ class CheckoutService:
             if customer_name is not None and isinstance(customer_name, str):
                 checkout.customer_name = customer_name
 
+            lock_customer_email = query_prefill.get("lock_customer_email")
+            if lock_customer_email is not None:
+                # Accept "true" string from query params
+                checkout.lock_customer_email = (
+                    str(lock_customer_email).lower() == "true"
+                )
+
             discount_code = query_prefill.get("discount_code")
             if discount_code is not None and isinstance(discount_code, str):
                 try:
@@ -921,6 +929,19 @@ class CheckoutService:
                     **(checkout.user_metadata or {}),
                     key: value,
                 }
+
+        # Validate that lock_customer_email requires customer_email to be set
+        if checkout.lock_customer_email and not checkout.customer_email:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("query", "lock_customer_email"),
+                        "msg": "lock_customer_email requires customer_email to be set.",
+                        "input": True,
+                    }
+                ]
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {
@@ -2052,7 +2073,7 @@ class CheckoutService:
             "custom_field_data",
         }
 
-        if checkout.customer_id is not None:
+        if checkout.customer_id is not None or checkout.lock_customer_email:
             exclude.add("customer_email")
 
         for attr, value in checkout_update.model_dump(

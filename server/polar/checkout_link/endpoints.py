@@ -168,6 +168,7 @@ async def redirect(
     customer_email: str | None = Query(None),
     customer_name: str | None = Query(None),
     discount_code: str | None = Query(None),
+    lock_customer_email: bool = Query(False),
     # Metadata that can be set from query parameters
     reference_id: str | None = Query(None),
     utm_source: str | None = Query(None),
@@ -188,12 +189,13 @@ async def redirect(
     ip_address = request.client.host if request.client else None
 
     # Build query_prefill dictionary from explicit parameters
-    query_prefill: dict[str, str | UUID4 | dict[str, str] | None] = {
+    query_prefill: dict[str, str | UUID4 | dict[str, str] | bool | None] = {
         "product_id": product_id,
         "amount": amount,
         "customer_email": customer_email,
         "customer_name": customer_name,
         "discount_code": discount_code,
+        "lock_customer_email": lock_customer_email,
     }
 
     # Extract custom_field_data.* parameters from query string

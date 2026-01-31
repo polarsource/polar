@@ -9281,6 +9281,11 @@ export interface components {
        */
       require_billing_address: boolean
       /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       */
+      lock_customer_email: boolean
+      /**
        * Is Discount Applicable
        * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
        */
@@ -10258,6 +10263,12 @@ export interface components {
        * @default false
        */
       require_billing_address: boolean
+      /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       * @default false
+       */
+      lock_customer_email: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -10483,6 +10494,12 @@ export interface components {
        * @default false
        */
       require_billing_address: boolean
+      /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       * @default false
+       */
+      lock_customer_email: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -10625,6 +10642,12 @@ export interface components {
        * @default false
        */
       require_billing_address: boolean
+      /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       * @default false
+       */
+      lock_customer_email: boolean
       /** Amount */
       amount?: number | null
       /**
@@ -10884,6 +10907,11 @@ export interface components {
        */
       require_billing_address: boolean
       /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       */
+      lock_customer_email: boolean
+      /**
        * Is Discount Applicable
        * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
        */
@@ -11141,6 +11169,11 @@ export interface components {
        */
       require_billing_address: boolean
       /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       */
+      lock_customer_email: boolean
+      /**
        * Is Discount Applicable
        * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
        */
@@ -11337,6 +11370,11 @@ export interface components {
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        */
       require_billing_address?: boolean | null
+      /**
+       * Lock Customer Email
+       * @description Whether to lock the customer email field. If `true`, the customer will not be able to change their email address during checkout. Use this when you preset the email address from the checkout link or API and want to ensure it stays unchanged.
+       */
+      lock_customer_email?: boolean | null
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.

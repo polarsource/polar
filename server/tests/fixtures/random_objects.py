@@ -2188,6 +2188,8 @@ async def create_customer_seat(
     metadata: dict[str, Any] | None = None,
     claimed_at: datetime | None = None,
     revoked_at: datetime | None = None,
+    member_id: uuid.UUID | None = None,
+    email: str | None = None,
 ) -> CustomerSeat:
     if subscription is None and order is None:
         raise ValueError("Either subscription or order must be provided")
@@ -2197,13 +2199,15 @@ async def create_customer_seat(
     if invitation_token is None and status == SeatStatus.pending:
         invitation_token = secrets.token_urlsafe(32)
 
-    seat_data = {
+    seat_data: dict[str, Any] = {
         "status": status,
         "customer_id": customer.id if customer else None,
         "invitation_token": invitation_token,
         "claimed_at": claimed_at,
         "revoked_at": revoked_at,
         "seat_metadata": metadata or {},
+        "member_id": member_id,
+        "email": email,
     }
 
     if subscription is not None:

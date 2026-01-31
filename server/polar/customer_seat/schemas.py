@@ -7,6 +7,7 @@ from sqlalchemy import inspect
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.member.schemas import Member
 from polar.models.customer_seat import SeatStatus
 
 
@@ -105,6 +106,9 @@ class CustomerSeat(TimestampedSchema):
     member_id: UUID | None = Field(
         None, description="The member ID of the seat occupant"
     )
+    member: Member | None = Field(
+        None, description="The member associated with this seat"
+    )
     email: str | None = Field(
         None,
         description="Email of the seat member (set when member_model_enabled is true)",
@@ -132,12 +136,17 @@ class CustomerSeat(TimestampedSchema):
                 data["customer_email"] = data.get("customer", {}).get("email")
             return data
         elif hasattr(data, "__dict__"):
+            state = inspect(data)
+
+            # Safely extract member: set to None if not loaded to avoid lazy='raise'
+            if "member" in state.unloaded:
+                object.__setattr__(data, "member", None)
+
             # For SQLAlchemy models - check if email is set on the seat first
             # Priority: seat.email > seat.member.email > seat.customer.email
             if hasattr(data, "email") and data.email:
                 object.__setattr__(data, "customer_email", data.email)
             else:
-                state = inspect(data)
                 # Try member first
                 if "member" not in state.unloaded:
                     if hasattr(data, "member") and data.member:

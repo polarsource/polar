@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   return Response.json({ text });
 }`,
-    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
+    link: 'https://spairehq.com/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
   },
   {
     name: 'Delta Time',
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
   return Response.json({ delta });
 }`,
-    link: 'https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
+    link: 'https://spairehq.com/docs/features/usage-based-billing/ingestion-strategies/delta-time-strategy',
   },
   {
     name: 'Custom Ingestion',
@@ -152,7 +152,7 @@ export const Usage = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://polar.sh/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+                href="https://spairehq.com/docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">

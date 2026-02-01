@@ -4,15 +4,15 @@ import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 
-const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+const SPAIRE_AUTH_COOKIE_KEY =
+  process.env.SPAIRE_AUTH_COOKIE_KEY || 'spaire_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 const CODESPACES = process.env.CODESPACES === 'true'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
-  : 'polar.sh'
+  : 'app.spairehq.com'
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -47,7 +47,7 @@ const oauth2CSP = `
   frame-ancestors 'none';
 `
 
-// We rewrite Mintlify docs to polar.sh/docs, so we need a specific CSP for them
+// We rewrite Mintlify docs to spairehq.com/docs, so we need a specific CSP for them
 // Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
 const docsCSP = `
   default-src 'self';
@@ -148,53 +148,53 @@ const nextConfig = {
 
   async redirects() {
     return [
-      // dashboard.polar.sh redirections
+      // dashboard.spairehq.com redirections
       {
         source: '/',
         destination: '/login',
         has: [
           {
             type: 'host',
-            value: 'dashboard.polar.sh',
+            value: 'dashboard.spairehq.com',
           },
         ],
         permanent: false,
       },
       {
         source: '/:path*',
-        destination: 'https://polar.sh/:path*',
+        destination: 'https://app.spairehq.com/:path*',
         has: [
           {
             type: 'host',
-            value: 'dashboard.polar.sh',
+            value: 'dashboard.spairehq.com',
           },
         ],
         permanent: false,
       },
       {
         source: '/careers',
-        destination: 'https://polar.sh/company',
+        destination: 'https://spairehq.com/company',
         permanent: false,
       },
       {
         source: '/llms.txt',
-        destination: 'https://polar.sh/docs/llms.txt',
+        destination: 'https://spairehq.com/docs/llms.txt',
         permanent: true,
         has: [
           {
             type: 'host',
-            value: 'polar.sh',
+            value: 'spairehq.com',
           },
         ],
       },
       {
         source: '/llms-full.txt',
-        destination: 'https://polar.sh/docs/llms-full.txt',
+        destination: 'https://spairehq.com/docs/llms-full.txt',
         permanent: true,
         has: [
           {
             type: 'host',
-            value: 'polar.sh',
+            value: 'spairehq.com',
           },
         ],
       },
@@ -206,7 +206,7 @@ const nextConfig = {
         has: [
           {
             type: 'cookie',
-            key: POLAR_AUTH_COOKIE_KEY,
+            key: SPAIRE_AUTH_COOKIE_KEY,
           },
           {
             type: 'host',
@@ -216,7 +216,7 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /maintainer to polar.sh if on a different domain name
+      // Redirect /maintainer to spairehq.com if on a different domain name
       {
         source: '/dashboard/:path*',
         destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
@@ -334,11 +334,11 @@ const nextConfig = {
       // Fallback blog redirect
       {
         source: '/:path*',
-        destination: 'https://polar.sh/polarsource',
+        destination: 'https://spairehq.com/blog',
         has: [
           {
             type: 'host',
-            value: 'blog.polar.sh',
+            value: 'blog.spairehq.com',
           },
         ],
         permanent: false,
@@ -480,7 +480,7 @@ const createConfig = async () => {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
 
-    org: 'polar-sh',
+    org: 'spaire',
     project: 'dashboard',
 
     // Pass the auth token

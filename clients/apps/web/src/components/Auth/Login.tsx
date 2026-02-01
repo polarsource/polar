@@ -101,14 +101,14 @@ const Login = ({
         By using Spaire you agree to our{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
-          href="https://polar.sh/legal/terms"
+          href="https://spairehq.com/legal/terms"
         >
           Terms of Service
         </a>{' '}
         and{' '}
         <a
           className="dark:text-polar-300 text-gray-600"
-          href="https://polar.sh/legal/privacy"
+          href="https://spairehq.com/legal/privacy"
         >
           Privacy Policy
         </a>

@@ -23,7 +23,7 @@ export async function generateMetadata(props: {
       type: 'website',
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.slug}`,
+          url: `https://spairehq.com/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -32,7 +32,7 @@ export async function generateMetadata(props: {
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.slug}`,
+          url: `https://spairehq.com/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
           alt: `Donate to ${organization.name}`,

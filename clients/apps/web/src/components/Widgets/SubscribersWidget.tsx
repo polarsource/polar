@@ -43,8 +43,9 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
 
   return (
     <Card
+      variant="glass"
       className={twMerge(
-        'flex h-80 flex-col justify-between bg-gray-50',
+        'flex h-80 flex-col justify-between',
         className,
       )}
     >

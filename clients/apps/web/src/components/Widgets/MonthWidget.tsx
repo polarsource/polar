@@ -62,7 +62,9 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-col rounded-4xl bg-gray-50 p-2 text-black dark:text-white',
+        'flex w-full flex-col rounded-4xl p-2 text-black dark:text-white',
+        'bg-gray-100/80 border border-gray-200/50 backdrop-blur-md',
+        'dark:bg-polar-800/60 dark:border-polar-700/40',
         className,
       )}
     >

@@ -6,7 +6,7 @@ const PolarClientContext = createContext<{
   polar: Client
 }>({
   polar: createClient(
-    process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh',
+    process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.spairehq.com',
   ),
 })
 
@@ -26,7 +26,7 @@ export function PolarClientProvider({ children }: PropsWithChildren) {
   const { session } = useSession()
 
   const polar = createClient(
-    process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.polar.sh',
+    process.env.EXPO_PUBLIC_POLAR_SERVER_URL ?? 'https://api.spairehq.com',
     session ?? '',
   )
 

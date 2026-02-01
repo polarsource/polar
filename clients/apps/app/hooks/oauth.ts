@@ -13,10 +13,10 @@ export const useOAuthConfig = () => {
   const production = {
     CLIENT_ID: 'polar_ci_yZLBGwoWZVsOdfN5CODRwVSTlJfwJhXqwg65e2CuNMZ',
     discovery: {
-      authorizationEndpoint: 'https://polar.sh/oauth2/authorize',
-      tokenEndpoint: 'https://api.polar.sh/v1/oauth2/token',
-      registrationEndpoint: 'https://api.polar.sh/v1/oauth2/register',
-      revocationEndpoint: 'https://api.polar.sh/v1/oauth2/revoke',
+      authorizationEndpoint: 'https://spairehq.com/oauth2/authorize',
+      tokenEndpoint: 'https://api.spairehq.com/v1/oauth2/token',
+      registrationEndpoint: 'https://api.spairehq.com/v1/oauth2/register',
+      revocationEndpoint: 'https://api.spairehq.com/v1/oauth2/revoke',
     },
   }
 

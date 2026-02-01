@@ -6,13 +6,11 @@ from typing import Any, cast
 import stripe as stripe_lib
 import structlog
 
-from polar.account_bank_details.service import account_bank_details
 from polar.auth.models import AuthSubject, User
 from polar.config import settings
 from polar.enums import AccountType
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError
-from polar.integrations.mercury.service import mercury as mercury_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.invoice.service import invoice as invoice_service
@@ -127,24 +125,6 @@ class PayoutAlreadyTriggered(PayoutError):
         self.payout = payout
         message = f"Payout {payout.id} has already been triggered."
         super().__init__(message)
-
-
-class NoBankDetailsForAccount(PayoutError):
-    def __init__(self, account: Account) -> None:
-        self.account = account
-        message = (
-            "No bank details found for this account. "
-            "Please link a bank account via Stripe Financial Connections."
-        )
-        super().__init__(message, 400)
-
-
-class MercuryPayoutFailed(PayoutError):
-    def __init__(self, payout: Payout, reason: str) -> None:
-        self.payout = payout
-        self.reason = reason
-        message = f"Mercury payout failed: {reason}"
-        super().__init__(message, 500)
 
 
 class PayoutService:
@@ -344,109 +324,6 @@ class PayoutService:
         )
 
         return payout
-
-    async def transfer_mercury(self, session: AsyncSession, payout: Payout) -> Payout:
-        """
-        Execute a Mercury payout (instant via RTP or Same-Day ACH).
-
-        Unlike Stripe's two-step process (transfer → payout), Mercury is a single step:
-        we directly send money from our Mercury business account to the recipient's bank.
-
-        This method:
-        1. Gets bank details for the account
-        2. Ensures Mercury recipient exists (creates if needed)
-        3. Detects optimal payout method (RTP for Mercury banks, ACH for others)
-        4. Creates the Mercury transaction
-        5. Updates the payout record
-
-        Args:
-            session: Database session
-            payout: The payout to execute
-
-        Returns:
-            Updated Payout with Mercury transaction details
-        """
-        account = payout.account
-
-        # Step 1: Get bank details
-        bank_details = await account_bank_details.get_by_account(session, account.id)
-        if bank_details is None:
-            raise NoBankDetailsForAccount(account)
-
-        # Step 2: Ensure Mercury recipient exists
-        account_name = account.billing_name or "Unknown"
-        recipient_id = await mercury_service.ensure_recipient_exists(
-            session, bank_details, account_name
-        )
-
-        # Step 3: Detect optimal payout method (RTP vs ACH)
-        payout_method = mercury_service.detect_optimal_payout_method(bank_details)
-
-        # Step 4: Create Mercury transaction
-        result = await mercury_service.create_payout(
-            recipient_id=recipient_id,
-            amount_cents=payout.account_amount,
-            payout_id=str(payout.id),
-            payout_method=payout_method,
-            note=f"Spaire payout for account {account.id}",
-        )
-
-        # Step 5: Update payout record
-        payout_repository = PayoutRepository.from_session(session)
-        update_dict: dict[str, Any] = {
-            "mercury_transaction_id": result.transaction_id,
-            "payout_method": payout_method.value,
-            "status": result.status,
-        }
-
-        if result.estimated_arrival:
-            update_dict["estimated_arrival_at"] = result.estimated_arrival
-
-        if result.failure_reason:
-            update_dict["failure_reason"] = result.failure_reason
-
-        payout = await payout_repository.update(payout, update_dict=update_dict)
-
-        log.info(
-            "payout.mercury.completed",
-            payout_id=str(payout.id),
-            mercury_transaction_id=result.transaction_id,
-            payout_method=payout_method.value,
-            status=result.status.value,
-            amount_cents=payout.account_amount,
-        )
-
-        return payout
-
-    async def update_from_mercury(
-        self, session: AsyncSession, mercury_transaction_id: str, status: PayoutStatus, failure_reason: str | None = None
-    ) -> Payout:
-        """
-        Update payout status from Mercury webhook.
-
-        Args:
-            session: Database session
-            mercury_transaction_id: Mercury transaction ID
-            status: New payout status
-            failure_reason: Optional failure reason for failed/returned payouts
-
-        Returns:
-            Updated Payout
-        """
-        repository = PayoutRepository.from_session(session)
-        payout = await repository.get_by_mercury_transaction_id(mercury_transaction_id)
-        if payout is None:
-            raise PayoutDoesNotExist(mercury_transaction_id)
-
-        update_dict: dict[str, Any] = {"status": status}
-
-        if status == PayoutStatus.succeeded:
-            update_dict["paid_at"] = datetime.datetime.now(datetime.UTC)
-
-        if failure_reason:
-            update_dict["failure_reason"] = failure_reason
-
-        return await repository.update(payout, update_dict=update_dict)
 
     async def update_from_stripe(
         self, session: AsyncSession, stripe_payout: stripe_lib.Payout

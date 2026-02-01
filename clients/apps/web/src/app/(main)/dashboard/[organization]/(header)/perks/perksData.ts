@@ -6,6 +6,9 @@
  * No third-party API calls. Claim buttons open partner application pages.
  */
 
+// S3 bucket base URL (using non-regional endpoint to match CSP)
+const S3_BASE = 'https://spaire-production-files-public.s3.amazonaws.com'
+
 export interface Perk {
   id: string
   provider: string

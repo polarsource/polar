@@ -287,7 +287,7 @@ export const OrganizationStep = ({
                               <ul className="dark:text-polar-500 flex flex-col gap-y-1 text-sm text-gray-500">
                                 <li>
                                   <a
-                                    href="https://polar.sh/docs/merchant-of-record/account-reviews"
+                                    href="https://spairehq.com/docs/merchant-of-record/account-reviews"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                     rel="noreferrer"
@@ -300,7 +300,7 @@ export const OrganizationStep = ({
                                 </li>
                                 <li>
                                   <a
-                                    href="https://polar.sh/legal/terms"
+                                    href="https://spairehq.com/legal/terms"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                     rel="noreferrer"
@@ -310,7 +310,7 @@ export const OrganizationStep = ({
                                 </li>
                                 <li>
                                   <a
-                                    href="https://polar.sh/legal/privacy"
+                                    href="https://spairehq.com/legal/privacy"
                                     className="text-blue-600 hover:underline dark:text-blue-400"
                                     target="_blank"
                                     rel="noreferrer"

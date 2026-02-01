@@ -24,7 +24,7 @@ export interface PortalClient {
 }
 
 export function createPortalClient(config: PortalClientConfig): PortalClient {
-  const baseUrl = config.baseUrl || 'https://api.polar.sh'
+  const baseUrl = config.baseUrl || 'https://api.spairehq.com'
   const client = createClient(baseUrl, config.token)
 
   const request = async <T>(

@@ -209,7 +209,7 @@ export const PricingPage = () => {
             better fit your needs.
           </p>
           <Link
-            href="mailto:support@polar.sh"
+            href="mailto:support@spairehq.com"
             className="w-fit border-b border-black pb-0.5 dark:border-white"
           >
             Reach out to us

@@ -78,7 +78,7 @@ export const Upsell = () => {
           icon={Box}
           title="Digital Products"
           description="Manage and distribute your digital products with our robust platform."
-          link="https://polar.sh/docs/documentation/features/products"
+          link="https://spairehq.com/docs/documentation/features/products"
         >
           <ul className="dark:text-polar-300 flex flex-col gap-y-1 text-gray-600">
             <li className="flex flex-row items-center gap-x-2">
@@ -102,7 +102,7 @@ export const Upsell = () => {
           icon={ShoppingBagOutlined}
           title="Simple Checkouts"
           description="Streamlined checkouts for a seamless user experience."
-          link="https://polar.sh/docs/documentation/features/checkouts/checkout-links"
+          link="https://spairehq.com/docs/documentation/features/checkouts/checkout-links"
         >
           <ul className="dark:text-polar-300 flex flex-col gap-y-1 text-gray-600">
             <li className="flex flex-row items-center gap-x-2">

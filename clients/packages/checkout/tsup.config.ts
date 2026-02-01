@@ -8,7 +8,7 @@ export const options: Options[] = [
     minify: 'terser',
     define: {
       // @ts-ignore
-      __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__: `'${process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS ? process.env.POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS : 'http://127.0.0.1:3000'}'`,
+      __SPAIRE_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__: `'${process.env.SPAIRE_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS ? process.env.SPAIRE_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS : 'http://127.0.0.1:3000'}'`,
     },
   },
   {

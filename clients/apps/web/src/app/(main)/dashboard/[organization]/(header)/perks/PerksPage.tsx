@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { ArrowUpRight } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { type Perk, perksData } from './perksData'
@@ -43,7 +44,7 @@ const PerkCard = ({ perk }: PerkCardProps) => {
           <h3 className="truncate text-sm font-medium text-gray-900 dark:text-white">
             {perk.provider}
           </h3>
-          <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+          <p className="truncate text-sm font-semibold text-emerald-600 dark:text-emerald-400">
             {perk.headline}
           </p>
         </div>
@@ -68,13 +69,15 @@ const PerkCard = ({ perk }: PerkCardProps) => {
 
       {/* Footer */}
       <div className="border-t border-gray-100 p-4 dark:border-polar-800">
-        <button
+        <Button
           onClick={handleApply}
-          className="dark:border-polar-600 dark:bg-polar-800 dark:hover:bg-polar-700 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 dark:text-white"
+          variant="secondary"
+          size="sm"
+          className="w-full"
         >
           Apply Now
-          <ArrowUpRight className="h-4 w-4" />
-        </button>
+          <ArrowUpRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

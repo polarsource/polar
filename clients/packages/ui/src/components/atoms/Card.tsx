@@ -10,15 +10,25 @@ import {
 } from '@/components/ui/card'
 import { twMerge } from 'tailwind-merge'
 
+interface CardProps extends React.ComponentProps<typeof CardPrimitive> {
+  variant?: 'default' | 'glass'
+}
+
 const Card = ({
   ref,
   className,
+  variant = 'default',
   ...props
-}: React.ComponentProps<typeof CardPrimitive>) => (
+}: CardProps) => (
   <CardPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-800 rounded-4xl border-transparent bg-gray-100 text-gray-950 shadow-none dark:border-transparent dark:text-white',
+      'rounded-4xl text-gray-950 shadow-none dark:text-white',
+      variant === 'default' && 'dark:bg-polar-800 border-transparent bg-gray-100 dark:border-transparent',
+      variant === 'glass' && [
+        'bg-gray-100/80 border border-gray-200/50 backdrop-blur-md',
+        'dark:bg-polar-800/60 dark:border-polar-700/40',
+      ],
       className,
     )}
     {...props}

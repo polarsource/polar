@@ -48,7 +48,7 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
               Add Endpoint
             </Button>
             <Link
-              href="https://polar.sh/docs/integrate/webhooks/endpoints"
+              href="https://spairehq.com/docs/integrate/webhooks/endpoints"
               className="shrink-0"
             >
               <Button className="gap-x-1" asChild variant="ghost">

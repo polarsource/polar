@@ -42,7 +42,7 @@ const frameworks = (products: schemas['Product'][]) =>
     {
       slug: 'nextjs',
       name: 'Next.js',
-      link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
+      link: 'https://spairehq.com/docs/integrate/sdk/adapters/nextjs',
       icon: <NextJsIcon size={24} />,
       packages: '@polar-sh/nextjs',
       code: `import { Checkout } from "@polar-sh/nextjs";
@@ -55,7 +55,7 @@ export const GET = Checkout({
     {
       slug: 'better-auth',
       name: 'BetterAuth',
-      link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
+      link: 'https://spairehq.com/docs/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
       packages: 'better-auth @polar-sh/better-auth @polar-sh/sdk',
       code: `import { betterAuth } from "better-auth";
@@ -95,7 +95,7 @@ ${products
     {
       slug: 'nodejs',
       name: 'Node.js',
-      link: 'https://polar.sh/docs/integrate/sdk/typescript',
+      link: 'https://spairehq.com/docs/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
       packages: '@polar-sh/sdk',
       code: `import { Polar } from "@polar-sh/sdk";
@@ -116,7 +116,7 @@ redirect(checkout.url)`,
     {
       slug: 'python',
       name: 'Python',
-      link: 'https://polar.sh/docs/integrate/sdk/python',
+      link: 'https://spairehq.com/docs/integrate/sdk/python',
       icon: <PythonIcon size={24} />,
       pythonInstall: 'pip install polar-sdk',
       code: `import os
@@ -200,7 +200,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
           </div>
           <div className="flex flex-col gap-y-4">
             <Link
-              href={`https://polar.sh/docs/integrate/sdk/adapters/nextjs`}
+              href={`https://spairehq.com/docs/integrate/sdk/adapters/nextjs`}
               target="_blank"
               className="w-full"
             >

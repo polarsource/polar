@@ -15,7 +15,7 @@ export const metadata: Metadata = {
       'Sell SaaS globally with Spaire. We handle tax, compliance, billing, and payments so you can focus on shipping code.',
     images: [
       {
-        url: 'https://spairehq.com/og.png', // update if different
+        url: 'https://app.spairehq.com/og.png', // update if different
         width: 1200,
         height: 630,
         alt: 'Spaire',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
       'Sell SaaS globally with Spaire. Merchant of Record infrastructure for modern B2B software companies.',
     images: [
       {
-        url: 'https://spairehq.com/og.png',
+        url: 'https://app.spairehq.com/og.png',
         width: 1200,
         height: 630,
         alt: 'Spaire',

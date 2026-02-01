@@ -51,7 +51,7 @@ export const Checkout = () => {
         <h1 className="w-fit max-w-2xl text-center text-2xl text-pretty md:text-4xl md:leading-normal">
           Powerful Checkouts made simple
         </h1>
-        <Link href="https://polar.sh/docs/documentation/features/checkouts/checkout-links">
+        <Link href="https://spairehq.com/docs/documentation/features/checkouts/checkout-links">
           <Button
             fullWidth
             wrapperClassNames="flex flex-row items-center gap-x-2"

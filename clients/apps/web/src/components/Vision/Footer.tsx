@@ -77,7 +77,7 @@ const ContactUsLegend = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'm') {
-        window.open('mailto:birk@polar.sh', '_blank')
+        window.open('mailto:birk@spairehq.com', '_blank')
       }
     }
 

@@ -38,8 +38,9 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
 
   return (
     <Card
+      variant="glass"
       className={twMerge(
-        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-8 bg-gray-50 p-6',
+        'flex h-full w-full flex-col gap-y-8 p-6',
         className,
       )}
     >

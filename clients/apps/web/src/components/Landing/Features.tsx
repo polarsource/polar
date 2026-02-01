@@ -95,7 +95,7 @@ const Features = ({ className }: FeaturesProps) => {
       title: 'Payments, Usage & Billing',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
-      linkHref: 'https://polar.sh/docs/features/products',
+      linkHref: 'https://spairehq.com/docs/features/products',
       children: (
         <div className="grid grid-cols-2 gap-2">
           {[

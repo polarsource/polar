@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/mdx",
+  "name": "@spaire/mdx",
   "version": "0.0.0",
   "license": "MIT",
   "main": "mdx-metadata.js",

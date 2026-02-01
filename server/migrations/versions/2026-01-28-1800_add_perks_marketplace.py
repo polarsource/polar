@@ -1,7 +1,7 @@
 """Add perks marketplace tables.
 
 Revision ID: 2026012818001
-Revises: 2026012814001
+Revises: 5c9d3e4f6a7b
 Create Date: 2026-01-28 18:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "2026012818001"
-down_revision = "2026012814001"
+down_revision = "5c9d3e4f6a7b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

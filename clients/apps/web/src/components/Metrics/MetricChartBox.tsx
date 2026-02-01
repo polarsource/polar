@@ -148,8 +148,9 @@ const MetricChartBox = ({
   return (
     <ShadowBox
       ref={ref}
+      variant="glass"
       className={twMerge(
-        'dark:bg-polar-800 group flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
+        'group flex w-full flex-col justify-between p-2 shadow-xs',
         className,
       )}
     >

@@ -13,7 +13,7 @@ from typing_extensions import AsyncGenerator
 from polar.event.repository import EventRepository
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, OrderItem, Subscription
+from polar.models import BillingEntry, Event, OrderItem, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -49,6 +49,16 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
+
+
+@dataclasses.dataclass
+class BillingSegment:
+    """A time segment within a billing period for proration calculations."""
+
+    start: datetime
+    end: datetime
+    product_id: uuid.UUID
+    price: MeteredPrice | None  # None if product has no meter for this meter_id
 
 
 class BillingEntryService:
@@ -116,56 +126,53 @@ class BillingEntryService:
 
             # Check if this meter uses a non-summable aggregation
             # Non-summable aggregations (max, min, avg, unique) must be computed across
-            # ALL events in the period, not per-price. For example:
-            # - MAX(3 servers on priceA, 2 servers on priceB) = 3 servers (not 3+2=5)
-            # - We bill this at the currently active price from subscription
+            # ALL events in the period, not per-price, AND prorated by time on each plan.
             if not metered_price.meter.aggregation.is_summable():
                 if meter_id in processed_meters:
                     continue
                 processed_meters.add(meter_id)
 
-                # Find the currently active price for this meter from the subscription
-                # This is the source of truth - even if all billing entries used priceA,
-                # if the customer changed to priceB, we bill at priceB
-                active_price = None
-                for spp in subscription.subscription_product_prices:
-                    if (
-                        is_metered_price(spp.product_price)
-                        and spp.product_price.meter_id == meter_id
-                    ):
-                        active_price = spp.product_price
-                        break
-
-                if active_price is None:
-                    log.info(
-                        f"No active price found for meter {meter_id} in subscription {subscription.id}"
-                    )
-                    continue
-
-                metered_line_item = await self._get_metered_line_item_by_meter(
-                    session, active_price, subscription, start_timestamp, end_timestamp
-                )
+                # Get all pending entry IDs for this meter (we'll link them all at once)
                 pending_entries_ids = (
                     await repository.get_pending_ids_by_subscription_and_meter(
                         subscription.id, meter_id
                     )
                 )
-            else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    spp.product_price_id == product_price_id
-                    for spp in subscription.subscription_product_prices
-                )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
-                    )
-                    continue
 
+                # Build billing segments based on product changes within the period
+                period_start = subscription.current_period_start
+                period_end = subscription.current_period_end
+                assert period_start is not None
+                assert period_end is not None
+                total_period_seconds = (period_end - period_start).total_seconds()
+
+                segments = await self._build_billing_segments(
+                    session,
+                    subscription,
+                    meter_id,
+                    period_start,
+                    period_end,
+                    fallback_price=metered_price,  # From the billing entry
+                )
+
+                # Compute a line item for each segment that has a valid price
+                # Link all billing entries to the first line item only (to avoid duplicates)
+                entries_linked = False
+                for segment in segments:
+                    line_item = await self._compute_segment_line_item(
+                        session, segment, subscription, meter_id, total_period_seconds
+                    )
+                    if line_item is not None:
+                        if not entries_linked:
+                            yield line_item, pending_entries_ids
+                            entries_linked = True
+                        else:
+                            # Subsequent segments don't link entries (already done)
+                            yield line_item, []
+
+                # Skip the common yield at the end - we've already yielded per segment
+                continue
+            else:
                 metered_line_item = await self._get_metered_line_item(
                     session, metered_price, subscription, start_timestamp, end_timestamp
                 )
@@ -301,6 +308,194 @@ class BillingEntryService:
             credited_units=credited_units,
             amount=amount,
             currency=price.price_currency,
+            label=label,
+        )
+
+    async def _build_billing_segments(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_id: uuid.UUID,
+        period_start: datetime,
+        period_end: datetime,
+        fallback_price: MeteredPrice | None = None,
+    ) -> list[BillingSegment]:
+        """
+        Build time segments based on product changes within the billing period.
+
+        Each segment represents a contiguous time period where a specific product
+        (and thus price) was active. Used for prorating non-summable aggregations.
+
+        Args:
+            fallback_price: Price to use if no active price can be determined
+                            (e.g., when current product doesn't have this meter)
+        """
+        event_repository = EventRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
+
+        # Get all product change events within the billing period
+        change_events_statement = (
+            event_repository.get_subscription_product_changes_statement(
+                subscription.id, period_start, period_end
+            )
+        )
+        change_events = await event_repository.get_all(change_events_statement)
+
+        segments: list[BillingSegment] = []
+
+        if not change_events:
+            # No changes in period - single segment with current product
+            # Look up the active price from subscription_product_prices (source of truth)
+            price: MeteredPrice | None = None
+            for spp in subscription.subscription_product_prices:
+                if (
+                    is_metered_price(spp.product_price)
+                    and spp.product_price.meter_id == meter_id
+                ):
+                    price = spp.product_price
+                    break
+
+            # If no active price found (current product doesn't have this meter),
+            # fall back to the price from the billing entry
+            if price is None:
+                price = fallback_price
+
+            return [
+                BillingSegment(
+                    start=period_start,
+                    end=period_end,
+                    product_id=subscription.product_id,
+                    price=price,
+                )
+            ]
+
+        # Build segments from change events
+        # First segment: from period_start to first change
+        first_change = change_events[0]
+        old_product_id = uuid.UUID(first_change.user_metadata["old_product_id"])
+        old_product = await product_repository.get_by_id(old_product_id)
+
+        if old_product:
+            price = self._find_metered_price_for_meter(
+                old_product, meter_id, subscription.currency
+            )
+            segments.append(
+                BillingSegment(
+                    start=period_start,
+                    end=first_change.timestamp,
+                    product_id=old_product_id,
+                    price=price,
+                )
+            )
+
+        # Middle segments: between consecutive changes
+        for i, change_event in enumerate(change_events):
+            new_product_id = uuid.UUID(change_event.user_metadata["new_product_id"])
+            new_product = await product_repository.get_by_id(new_product_id)
+
+            if new_product:
+                # Segment end is either the next change or period end
+                if i + 1 < len(change_events):
+                    segment_end = change_events[i + 1].timestamp
+                else:
+                    segment_end = period_end
+
+                price = self._find_metered_price_for_meter(
+                    new_product, meter_id, subscription.currency
+                )
+                segments.append(
+                    BillingSegment(
+                        start=change_event.timestamp,
+                        end=segment_end,
+                        product_id=new_product_id,
+                        price=price,
+                    )
+                )
+
+        return segments
+
+    def _find_metered_price_for_meter(
+        self, product: Product, meter_id: uuid.UUID, currency: str
+    ) -> MeteredPrice | None:
+        """Find the metered price for a specific meter on a product."""
+        for price in product.prices:
+            if (
+                is_metered_price(price)
+                and price.meter_id == meter_id
+                and price.price_currency == currency
+            ):
+                return price
+        return None
+
+    async def _compute_segment_line_item(
+        self,
+        session: AsyncSession,
+        segment: BillingSegment,
+        subscription: Subscription,
+        meter_id: uuid.UUID,
+        total_period_seconds: float,
+    ) -> MeteredLineItem | None:
+        """
+        Compute a metered line item for a specific billing segment.
+
+        Returns None if the segment has no metered price (product doesn't have this meter)
+        or if there are no events in the segment.
+        """
+        if segment.price is None:
+            return None
+
+        event_repository = EventRepository.from_session(session)
+        meter = segment.price.meter
+
+        # Get events for this meter within the segment's time bounds
+        events_statement = event_repository.get_by_pending_entries_for_meter_statement(
+            subscription.id, meter_id
+        ).where(
+            Event.timestamp >= segment.start,
+            Event.timestamp < segment.end,
+        )
+
+        units = await meter_service.get_quantity(
+            session,
+            meter,
+            events_statement.where(
+                Event.organization_id == meter.organization_id,
+                Event.source == EventSource.user,
+            ),
+        )
+
+        if units == 0:
+            return None
+
+        credit_events_statement = events_statement.where(
+            Event.is_meter_credit.is_(True)
+        )
+        credit_events = await event_repository.get_all(credit_events_statement)
+        credited_units = non_negative_running_sum(
+            event.user_metadata["units"] for event in credit_events
+        )
+
+        # Calculate prorated amount
+        segment_seconds = (segment.end - segment.start).total_seconds()
+        proration_factor = (
+            segment_seconds / total_period_seconds if total_period_seconds > 0 else 1.0
+        )
+
+        full_amount, amount_label = segment.price.get_amount_and_label(
+            units - credited_units
+        )
+        prorated_amount = round(full_amount * proration_factor)
+
+        label = f"{meter.name} — {amount_label}"
+
+        return MeteredLineItem(
+            price=segment.price,
+            start_timestamp=segment.start,
+            end_timestamp=segment.end,
+            consumed_units=units,
+            credited_units=credited_units,
+            amount=prorated_amount,
+            currency=segment.price.price_currency,
             label=label,
         )
 

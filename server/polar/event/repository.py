@@ -238,6 +238,29 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .order_by(Event.ingested_at.asc())
         )
 
+    def get_subscription_product_changes_statement(
+        self,
+        subscription_id: UUID,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+    ) -> Select[tuple[Event]]:
+        """
+        Get subscription_product_updated events for a subscription within a time range.
+        Used to determine when product/price changes occurred for proration calculations.
+        """
+        return (
+            self.get_base_statement()
+            .where(
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.subscription_product_updated,
+                Event.user_metadata["subscription_id"].as_string()
+                == str(subscription_id),
+                Event.timestamp >= start_timestamp,
+                Event.timestamp <= end_timestamp,
+            )
+            .order_by(Event.timestamp.asc())
+        )
+
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
 

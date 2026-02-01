@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { parseAsBoolean, useQueryState } from 'nuqs'
+import { useEffect, useState } from 'react'
 import CreateBenefitModalContent from '../../Benefit/CreateBenefitModalContent'
 import { Section } from '../../Layout/Section'
 import { InlineModal } from '../../Modal/InlineModal'
@@ -49,6 +50,19 @@ export const Benefits = ({
     CreatableBenefit | undefined
   >()
   const [isReorderMode, setIsReorderMode] = useState(false)
+
+  const [createBenefitQuerystring, setCreateBenefitQuerystring] = useQueryState(
+    'create_benefit',
+    parseAsBoolean.withDefault(false),
+  )
+
+  useEffect(() => {
+    if (createBenefitQuerystring) {
+      setCreateBenefitType(undefined)
+      setCreateModalOpen(true)
+      setCreateBenefitQuerystring(null)
+    }
+  }, [createBenefitQuerystring, setCreateBenefitQuerystring])
 
   const hasSelectedBenefits = selectedBenefits.length > 0
   const isSimplifiedView = totalBenefitCount <= SIMPLIFIED_VIEW_THRESHOLD

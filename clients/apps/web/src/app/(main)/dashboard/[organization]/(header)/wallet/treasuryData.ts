@@ -186,9 +186,9 @@ export const mockFinancialAccount: FinancialAccount = {
     'outbound_payments.us_domestic_wire',
   ],
   balance: {
-    available: 4750000, // $47,500.00
-    outbound_pending: 250000, // $2,500.00
-    inbound_pending: 125000, // $1,250.00
+    available: 0, // $0.00
+    outbound_pending: 0, // $0.00
+    inbound_pending: 0, // $0.00
     currency: 'usd',
   },
   country: 'US',
@@ -251,103 +251,8 @@ export const mockIssuingCard: IssuingCard = {
   cvc: '123',
 }
 
-export const mockTransactions: Transaction[] = [
-  {
-    id: 'trxn_001',
-    object: 'treasury.transaction',
-    amount: -45000, // -$450.00
-    currency: 'usd',
-    description: 'AWS',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'issuing_authorization',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 2, // 2 hours ago
-    flow_details: {
-      type: 'issuing_authorization',
-      issuing_authorization: {
-        id: 'iauth_001',
-        merchant_name: 'Amazon Web Services',
-      },
-    },
-  },
-  {
-    id: 'trxn_002',
-    object: 'treasury.transaction',
-    amount: 2500000, // +$25,000.00
-    currency: 'usd',
-    description: 'Revenue deposit',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'received_credit',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 24, // 1 day ago
-  },
-  {
-    id: 'trxn_003',
-    object: 'treasury.transaction',
-    amount: -12500, // -$125.00
-    currency: 'usd',
-    description: 'Vercel',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'issuing_authorization',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 48, // 2 days ago
-    flow_details: {
-      type: 'issuing_authorization',
-      issuing_authorization: {
-        id: 'iauth_002',
-        merchant_name: 'Vercel Inc',
-      },
-    },
-  },
-  {
-    id: 'trxn_004',
-    object: 'treasury.transaction',
-    amount: -250000, // -$2,500.00
-    currency: 'usd',
-    description: 'Payroll transfer',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'outbound_transfer',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 72, // 3 days ago
-    flow_details: {
-      type: 'outbound_transfer',
-      outbound_transfer: { id: 'obt_001' },
-    },
-  },
-  {
-    id: 'trxn_005',
-    object: 'treasury.transaction',
-    amount: 1875000, // +$18,750.00
-    currency: 'usd',
-    description: 'Stripe payout',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'inbound_transfer',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 96, // 4 days ago
-    flow_details: {
-      type: 'inbound_transfer',
-      inbound_transfer: { id: 'ibt_001' },
-    },
-  },
-  {
-    id: 'trxn_006',
-    object: 'treasury.transaction',
-    amount: -8900, // -$89.00
-    currency: 'usd',
-    description: 'Linear',
-    financial_account: 'fa_1234567890abcdef',
-    flow_type: 'issuing_authorization',
-    status: 'posted',
-    created: Date.now() / 1000 - 3600 * 120, // 5 days ago
-    flow_details: {
-      type: 'issuing_authorization',
-      issuing_authorization: {
-        id: 'iauth_003',
-        merchant_name: 'Linear Orbit Inc',
-      },
-    },
-  },
-]
+// Empty transactions - no mock data
+export const mockTransactions: Transaction[] = []
 
 // ============================================================================
 // UTILITY FUNCTIONS

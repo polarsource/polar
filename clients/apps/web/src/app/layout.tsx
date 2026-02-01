@@ -28,7 +28,7 @@ const poppins = Poppins({
 })
 
 const SITE_NAME = 'Spaire'
-const SITE_URL = 'https://spairehq.com' // <-- change if your domain differs
+const SITE_URL = 'https://app.spairehq.com' // <-- change if your domain differs
 const OG_IMAGE = `${SITE_URL}/og.png` // <-- make sure this exists (or change path)
 
 const DEFAULT_TITLE = `${SITE_NAME} | The Global Revenue Layer for SaaS Startups`

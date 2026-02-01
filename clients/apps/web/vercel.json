@@ -8,60 +8,60 @@
   },
   "redirects": [
     {
-      "source": "/:client_secret(polar_cl_.*)",
-      "destination": "https://api.polar.sh/v1/checkout-links/:client_secret/redirect",
-      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "source": "/:client_secret(spaire_cl_.*)",
+      "destination": "https://api.spairehq.com/v1/checkout-links/:client_secret/redirect",
+      "has": [{ "type": "host", "value": "buy.spairehq.com" }],
       "permanent": false
     },
     {
       "source": "/:path*",
-      "destination": "https://polar.sh/:path*",
-      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "destination": "https://spairehq.com/:path*",
+      "has": [{ "type": "host", "value": "buy.spairehq.com" }],
       "permanent": false
     },
     {
       "source": "/",
-      "destination": "https://polar.sh/",
-      "has": [{ "type": "host", "value": "buy.polar.sh" }],
+      "destination": "https://spairehq.com/",
+      "has": [{ "type": "host", "value": "buy.spairehq.com" }],
       "permanent": false
     }
   ],
   "rewrites": [
     {
       "source": "/_mintlify/api/:path+",
-      "destination": "https://polar.mintlify.app/_mintlify/api/:path+"
+      "destination": "https://spaire.mintlify.app/_mintlify/api/:path+"
     },
     {
       "source": "/api/request",
-      "destination": "https://polar.mintlify.app/_mintlify/api/request"
+      "destination": "https://spaire.mintlify.app/_mintlify/api/request"
     },
     {
       "source": "/docs",
-      "destination": "https://polar.mintlify.dev/docs"
+      "destination": "https://spaire.mintlify.dev/docs"
     },
     {
       "source": "/docs/llms.txt",
-      "destination": "https://polar.mintlify.app/llms.txt"
+      "destination": "https://spaire.mintlify.app/llms.txt"
     },
     {
       "source": "/docs/llms-full.txt",
-      "destination": "https://polar.mintlify.app/llms-full.txt"
+      "destination": "https://spaire.mintlify.app/llms-full.txt"
     },
     {
       "source": "/docs/sitemap.xml",
-      "destination": "https://polar.mintlify.app/sitemap.xml"
+      "destination": "https://spaire.mintlify.app/sitemap.xml"
     },
     {
       "source": "/docs/robots.txt",
-      "destination": "https://polar.mintlify.app/robots.txt"
+      "destination": "https://spaire.mintlify.app/robots.txt"
     },
     {
       "source": "/docs/:path*",
-      "destination": "https://polar.mintlify.dev/docs/:path*"
+      "destination": "https://spaire.mintlify.dev/docs/:path*"
     },
     {
       "source": "/mintlify-assets/:path+",
-      "destination": "https://polar.mintlify.app/mintlify-assets/:path+"
+      "destination": "https://spaire.mintlify.app/mintlify-assets/:path+"
     },
     {
       "source": "/ingest/static/(.*)",

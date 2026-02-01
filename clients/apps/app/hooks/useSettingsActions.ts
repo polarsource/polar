@@ -5,7 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { useCallback, useState } from 'react'
 import { Alert, Linking } from 'react-native'
 
-const SUPPORT_URL = 'https://polar.sh/docs/support'
+const SUPPORT_URL = 'https://spairehq.com/docs/support'
 
 interface UseSettingsActionsOptions {
   selectedOrganization: schemas['Organization'] | undefined

@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/app",
+  "name": "@spaire/app",
   "main": "expo-router/entry",
   "version": "1.2.0",
   "scripts": {
@@ -18,7 +18,7 @@
     "lint": "pnpm format:check && expo lint",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
-    "postinstall": "pnpm --filter @polar-sh/client build && patch-package",
+    "postinstall": "pnpm --filter @spaire/client build && patch-package",
     "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 npx expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean"
   },
   "jest": {
@@ -33,7 +33,7 @@
     "@expo/ui": "0.2.0-beta.7",
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.8",
-    "@polar-sh/client": "workspace:*",
+    "@spaire/client": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "latest",
     "@react-native-community/netinfo": "^11.4.1",

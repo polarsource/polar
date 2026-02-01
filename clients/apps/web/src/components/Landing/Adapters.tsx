@@ -26,7 +26,7 @@ const adapters = [
 export const GET = Checkout({
   accessToken: 'xxx'
 });`,
-    link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
+    link: 'https://spairehq.com/docs/integrate/sdk/adapters/nextjs',
   },
   {
     name: 'BetterAuth',
@@ -51,7 +51,7 @@ const auth = betterAuth({
         })
     ]
 });`,
-    link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
+    link: 'https://spairehq.com/docs/integrate/sdk/adapters/better-auth',
   },
   {
     name: 'TypeScript',
@@ -66,7 +66,7 @@ const checkout = await polar.checkouts.create({
 });
 
 redirect(checkout.url)`,
-    link: 'https://polar.sh/docs/api-reference/checkouts/create-session',
+    link: 'https://spairehq.com/docs/api-reference/checkouts/create-session',
   },
 ]
 
@@ -113,7 +113,7 @@ export const Adapters = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://polar.sh/docs/integrate/sdk/adapters/nextjs"
+                href="https://spairehq.com/docs/integrate/sdk/adapters/nextjs"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">

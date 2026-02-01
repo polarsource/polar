@@ -189,7 +189,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
             </WellContent>
             <WellFooter>
               <a
-                href="https://polar.sh/docs/documentation/features/refunds"
+                href="https://spairehq.com/docs/documentation/features/refunds"
                 className="text-blue-500 dark:text-blue-400"
                 target="_blank"
                 rel="noreferrer"

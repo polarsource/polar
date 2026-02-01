@@ -38,7 +38,7 @@ export async function generateMetadata(props: {
         {
           url:
             product.medias[0]?.public_url ??
-            `https://polar.sh/og?org=${organization.slug}`,
+            `https://spairehq.com/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -49,7 +49,7 @@ export async function generateMetadata(props: {
         {
           url:
             product.medias[0]?.public_url ??
-            `https://polar.sh/og?org=${organization.slug}`,
+            `https://spairehq.com/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
           alt: `${product.name}`,

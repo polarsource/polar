@@ -89,7 +89,7 @@ const mobileNavigationItems: NavigationItem[] = [
   },
   {
     title: 'Documentation',
-    href: 'https://polar.sh/docs',
+    href: 'https://spairehq.com/docs',
     target: '_blank',
   },
   {

@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/customer-portal",
+  "name": "@spaire/customer-portal",
   "description": "Polar Customer Portal SDK",
   "version": "0.0.1",
   "type": "module",
@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@polar-sh/client": "workspace:*"
+    "@spaire/client": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
@@ -38,8 +38,8 @@
     }
   },
   "devDependencies": {
-    "@polar-sh/eslint-config": "workspace:*",
-    "@polar-sh/typescript-config": "workspace:*",
+    "@spaire/eslint-config": "workspace:*",
+    "@spaire/typescript-config": "workspace:*",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^19.0.0",
     "eslint": "^9.39.2",

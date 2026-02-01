@@ -99,17 +99,17 @@ export default function Index() {
           <SettingsItem
             title="Support"
             variant="link"
-            onPress={() => Linking.openURL('https://polar.sh/docs/support')}
+            onPress={() => Linking.openURL('https://spairehq.com/docs/support')}
           />
           <SettingsItem
             title="Privacy Policy"
             variant="link"
-            onPress={() => Linking.openURL('https://polar.sh/legal/privacy')}
+            onPress={() => Linking.openURL('https://spairehq.com/legal/privacy')}
           />
           <SettingsItem
             title="Terms of Service"
             variant="link"
-            onPress={() => Linking.openURL('https://polar.sh/legal/terms')}
+            onPress={() => Linking.openURL('https://spairehq.com/legal/terms')}
           />
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem

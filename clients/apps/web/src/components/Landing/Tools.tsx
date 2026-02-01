@@ -15,7 +15,7 @@ export const Tools = () => {
         <h1 className="w-fit max-w-2xl text-center text-2xl text-pretty md:text-4xl md:leading-normal">
           The fastest way to add SaaS & digital products to your stack
         </h1>
-        <Link href="https://polar.sh/docs/documentation/tools/polar-init">
+        <Link href="https://spairehq.com/docs/documentation/tools/polar-init">
           <Button className="rounded-full" variant="secondary">
             <span>Explore our tools</span>
             <ArrowOutwardOutlined className="ml-2" />

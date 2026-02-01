@@ -9,7 +9,7 @@ const generatePostOGFallbackPath = (slug: string, maxInt: number) => {
   return `${sum % maxInt}.jpg`
 }
 
-const imageBaseURL = 'https://polar.sh/assets/posts/og'
+const imageBaseURL = 'https://spairehq.com/assets/posts/og'
 
 const OpenGraphImageCreator = ({
   organization,

@@ -85,7 +85,7 @@ export const FieldClientType = () => {
             <em>Confidential Client</em>.{' '}
             <Link
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
+              href="https://spairehq.com/docs/documentation/integration-guides/authenticating-with-polar"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -132,7 +132,7 @@ export const FieldClientSecret = ({
         SPA or mobile app.{' '}
         <Link
           className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-          href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
+          href="https://spairehq.com/docs/documentation/integration-guides/authenticating-with-polar"
           target="_blank"
           rel="noopener noreferrer"
         >

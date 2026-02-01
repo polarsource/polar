@@ -63,13 +63,13 @@ const Footer = () => {
               <FooterLink href="https://discord.gg/Pnhfz3UThd">
                 Discord
               </FooterLink>
-              <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
+              <FooterLink href="https://spairehq.com/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>
-              <FooterLink href="https://polar.sh/legal/terms">
+              <FooterLink href="https://spairehq.com/legal/terms">
                 Terms of Service
               </FooterLink>
-              <FooterLink href="https://polar.sh/legal/privacy">
+              <FooterLink href="https://spairehq.com/legal/privacy">
                 Privacy Policy
               </FooterLink>
             </div>
@@ -77,9 +77,9 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4 text-sm">
             <h3 className="dark:text-polar-500 text-gray-500">Support</h3>
             <div className="flex flex-col gap-y-3">
-              <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
-              <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
-              <FooterLink href="https://status.polar.sh">
+              <FooterLink href="https://spairehq.com/docs">Docs</FooterLink>
+              <FooterLink href="mailto:support@spairehq.com">Contact</FooterLink>
+              <FooterLink href="https://status.spairehq.com">
                 Service Status
               </FooterLink>
             </div>

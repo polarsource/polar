@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/ui",
+  "name": "@spaire/ui",
   "version": "0.1.2",
   "description": "Polar UI Components — This is a private library for the Polar project. You probably shouldn't use it directly in your own projects.",
   "author": "Polar",
@@ -63,7 +63,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
-    "@polar-sh/typescript-config": "workspace:*",
+    "@spaire/typescript-config": "workspace:*",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "prettier": "^3.7.4",

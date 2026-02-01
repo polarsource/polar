@@ -8,7 +8,7 @@
     "lint": "prettier -c ."
   },
   "dependencies": {
-    "@polar-sh/checkout": "workspace:*",
+    "@spaire/checkout": "workspace:*",
     "http-server": "^14.1.1"
   }
 }

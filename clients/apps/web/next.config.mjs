@@ -47,7 +47,7 @@ const oauth2CSP = `
   frame-ancestors 'none';
 `
 
-// We rewrite Mintlify docs to polar.sh/docs, so we need a specific CSP for them
+// We rewrite Mintlify docs to spairehq.com/docs, so we need a specific CSP for them
 // Ref: https://www.mintlify.com/docs/guides/csp-configuration#content-security-policy-csp-configuration
 const docsCSP = `
   default-src 'self';
@@ -216,7 +216,7 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /maintainer to polar.sh if on a different domain name
+      // Redirect /maintainer to spairehq.com if on a different domain name
       {
         source: '/dashboard/:path*',
         destination: `https://${defaultFrontendHostname}/dashboard/:path*`,

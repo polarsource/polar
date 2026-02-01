@@ -48,7 +48,7 @@ export async function GET() {
 
                     https://github.com/polarsource/polar
 
-                Wanna work with us? https://polar.sh/company#open-roles
+                Wanna work with us? https://spairehq.com/company#open-roles
 
     `,
     {

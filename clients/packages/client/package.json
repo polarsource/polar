@@ -1,5 +1,5 @@
 {
-  "name": "@polar-sh/client",
+  "name": "@spaire/client",
   "description": "Polar Internal API Client",
   "author": "Polar",
   "license": "Apache-2.0",
@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "openapi-typescript": "^7.10.1",
-    "@polar-sh/typescript-config": "workspace:*",
+    "@spaire/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "latest"
   },

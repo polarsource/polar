@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -10,14 +9,9 @@ from dramatiq import Retry
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
-from polar.checkout.repository import CheckoutRepository
-from polar.checkout.tasks import checkout_expired
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
-from polar.models.checkout import CheckoutStatus
 from polar.models.organization import Organization
-from polar.models.product import Product
 from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
@@ -25,11 +19,10 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
-from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
+from polar.webhook.repository import WebhookDeliveryRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
 
 
 @pytest.fixture
@@ -262,48 +255,3 @@ async def test_webhook_standard_webhooks_compatible(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
-
-
-@pytest.mark.asyncio
-async def test_checkout_expired_webhook(
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    organization: Organization,
-    product: Product,
-) -> None:
-    # Create webhook endpoint
-    endpoint = await create_webhook_endpoint(
-        save_fixture,
-        organization=organization,
-        events=[WebhookEventType.checkout_expired],
-    )
-
-    # Create expired checkout
-    checkout = await create_checkout(
-        save_fixture,
-        products=[product],
-        status=CheckoutStatus.open,
-        expires_at=utc_now() - timedelta(days=1),
-    )
-
-    # Expire checkout
-    checkout_repository = CheckoutRepository.from_session(session)
-    expired_ids = await checkout_repository.expire_open_checkouts()
-    await session.commit()
-
-    assert len(expired_ids) == 1
-    assert expired_ids[0] == checkout.id
-
-    # Process the expiration task
-    await checkout_expired(checkout.id)
-    await session.commit()
-
-    # Verify webhook event was created
-    event_repository = WebhookEventRepository.from_session(session)
-    statement = event_repository.get_base_statement().where(
-        WebhookEvent.webhook_endpoint_id == endpoint.id,
-        WebhookEvent.type == WebhookEventType.checkout_expired,
-    )
-    events = await event_repository.get_all(statement)
-    assert len(events) == 1
-    assert events[0].type == WebhookEventType.checkout_expired

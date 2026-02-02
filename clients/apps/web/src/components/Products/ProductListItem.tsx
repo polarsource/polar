@@ -94,8 +94,13 @@ export const ProductListItem = ({
         <ListItem className="flex flex-row items-center justify-between gap-x-6">
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
             <ProductThumbnail product={product} />
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>
+              {product.visibility === 'private' && (
+                <Pill color="gray" className="shrink-0 px-2 py-0.5 text-xs">
+                  Private
+                </Pill>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 flex-row items-center gap-x-4 md:gap-x-6">

@@ -1152,19 +1152,82 @@ class TestGetMetrics:
         jan = metrics.periods[0]
         assert jan.active_subscriptions == 2
         assert jan.monthly_recurring_revenue == 183_33
-        assert jan.average_revenue_per_user == 91_66
+        assert jan.average_revenue_per_user == 91_67
 
         feb = metrics.periods[1]
         assert feb.active_subscriptions == 2
         assert feb.monthly_recurring_revenue == 183_33
-        assert feb.average_revenue_per_user == 91_66
+        assert feb.average_revenue_per_user == 91_67
 
         mar = metrics.periods[2]
         assert mar.active_subscriptions == 2
         assert mar.monthly_recurring_revenue == 183_33
-        assert mar.average_revenue_per_user == 91_66
+        assert mar.average_revenue_per_user == 91_67
 
-        assert metrics.totals.average_revenue_per_user == 91_66
+        assert metrics.totals.average_revenue_per_user == 91_67
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("recurring_interval", "recurring_interval_count", "amount", "expected_mrr"),
+        [
+            # $300 every 3 months = $100/month MRR
+            (SubscriptionRecurringInterval.month, 3, 300_00, 100_00),
+            # $2400 every 2 years = $100/month MRR
+            (SubscriptionRecurringInterval.year, 2, 2400_00, 100_00),
+            # $50 every 2 weeks = $50 * 52 / (12 * 2) = $108.33/month MRR
+            (SubscriptionRecurringInterval.week, 2, 50_00, 108_33),
+        ],
+    )
+    async def test_mrr_with_recurring_interval_count(
+        self,
+        recurring_interval: SubscriptionRecurringInterval,
+        recurring_interval_count: int,
+        amount: int,
+        expected_mrr: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that MRR is correctly calculated when recurring_interval_count > 1.
+
+        A subscription billed every 3 months at $300 should contribute $100 MRR,
+        not $300 MRR.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=recurring_interval,
+            recurring_interval_count=recurring_interval_count,
+            prices=[(amount, "usd")],
+        )
+
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan = metrics.periods[0]
+        assert jan.active_subscriptions == 1
+        assert jan.monthly_recurring_revenue == expected_mrr
+        assert jan.average_revenue_per_user == expected_mrr
 
     @pytest.mark.auth
     async def test_average_revenue_per_user_no_customers(

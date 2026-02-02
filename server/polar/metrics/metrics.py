@@ -435,22 +435,35 @@ class MonthlyRecurringRevenueMetric(SQLMetric):
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.year,
-                        func.round(Subscription.amount / 12),
+                        func.round(
+                            Subscription.amount
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.month,
-                        Subscription.amount,
+                        func.round(
+                            Subscription.amount / Subscription.recurring_interval_count
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.week,
-                        func.round(Subscription.amount * 4),
+                        func.round(
+                            Subscription.amount
+                            * 52
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.day,
-                        func.round(Subscription.amount * 30),
+                        func.round(
+                            Subscription.amount
+                            * 365
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                 )
             ),
@@ -478,22 +491,35 @@ class CommittedMonthlyRecurringRevenueMetric(SQLMetric):
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.year,
-                        func.round(Subscription.amount / 12),
+                        func.round(
+                            Subscription.amount
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.month,
-                        Subscription.amount,
+                        func.round(
+                            Subscription.amount / Subscription.recurring_interval_count
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.week,
-                        func.round(Subscription.amount * 4),
+                        func.round(
+                            Subscription.amount
+                            * 52
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                     (
                         Subscription.recurring_interval
                         == SubscriptionRecurringInterval.day,
-                        func.round(Subscription.amount * 30),
+                        func.round(
+                            Subscription.amount
+                            * 365
+                            / (12 * Subscription.recurring_interval_count)
+                        ),
                     ),
                 )
             ).filter(
@@ -836,22 +862,36 @@ class AverageRevenuePerUserMetric(SQLMetric):
                             (
                                 Subscription.recurring_interval
                                 == SubscriptionRecurringInterval.year,
-                                func.round(Subscription.amount / 12),
+                                func.round(
+                                    Subscription.amount
+                                    / (12 * Subscription.recurring_interval_count)
+                                ),
                             ),
                             (
                                 Subscription.recurring_interval
                                 == SubscriptionRecurringInterval.month,
-                                Subscription.amount,
+                                func.round(
+                                    Subscription.amount
+                                    / Subscription.recurring_interval_count
+                                ),
                             ),
                             (
                                 Subscription.recurring_interval
                                 == SubscriptionRecurringInterval.week,
-                                func.round(Subscription.amount * 4),
+                                func.round(
+                                    Subscription.amount
+                                    * 52
+                                    / (12 * Subscription.recurring_interval_count)
+                                ),
                             ),
                             (
                                 Subscription.recurring_interval
                                 == SubscriptionRecurringInterval.day,
-                                func.round(Subscription.amount * 30),
+                                func.round(
+                                    Subscription.amount
+                                    * 365
+                                    / (12 * Subscription.recurring_interval_count)
+                                ),
                             ),
                         )
                     ),

@@ -17,7 +17,14 @@ from polar.customer_seat.service import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Customer, Organization, Product, Subscription, User
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
@@ -1230,7 +1237,11 @@ class TestGetSeat:
 
     @pytest.mark.asyncio
     async def test_get_seat_as_user(
-        self, session: AsyncSession, customer_seat_claimed: CustomerSeat, user: User
+        self,
+        session: AsyncSession,
+        customer_seat_claimed: CustomerSeat,
+        user: User,
+        user_organization_seat_enabled: UserOrganization,
     ) -> None:
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
 
@@ -1240,6 +1251,18 @@ class TestGetSeat:
 
         assert seat is not None
         assert seat.id == customer_seat_claimed.id
+
+    @pytest.mark.asyncio
+    async def test_get_seat_as_user_not_member(
+        self, session: AsyncSession, customer_seat_claimed: CustomerSeat, user: User
+    ) -> None:
+        auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
+
+        seat = await seat_service.get_seat(
+            session, auth_subject, customer_seat_claimed.id
+        )
+
+        assert seat is None
 
     @pytest.mark.asyncio
     async def test_get_seat_wrong_organization(

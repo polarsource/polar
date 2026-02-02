@@ -596,7 +596,8 @@ class SeatService:
     ) -> CustomerSeat | None:
         repository = CustomerSeatRepository.from_session(session)
 
-        seat = await repository.get_by_id(
+        seat = await repository.get_by_id_and_auth_subject(
+            auth_subject,
             seat_id,
             options=repository.get_eager_options(),
         )
@@ -611,12 +612,6 @@ class SeatService:
             organization_id = seat.order.organization.id
         else:
             return None
-
-        if isinstance(auth_subject.subject, Organization):
-            if organization_id != auth_subject.subject.id:
-                return None
-        elif isinstance(auth_subject.subject, User):
-            pass
 
         await self.check_seat_feature_enabled(session, organization_id)
         return seat

@@ -2045,13 +2045,17 @@ async def add_payment_method_domain(
                 organization_id=id,
                 domain=data.get("domain_name"),
                 error=str(e),
+                error_code=e.code if hasattr(e, "code") else None,
             )
-            error_message = (
-                "Invalid domain format or domain already exists in allowlist"
-            )
-            if "already exists" in str(e).lower():
+            # Check if domain already exists by examining error code
+            if e.error and e.error.code == "resource_already_exists":
                 error_message = (
                     f"Domain {data.get('domain_name')} is already in the allowlist"
+                )
+            else:
+                error_message = (
+                    "Unable to add domain to allowlist. "
+                    "Please verify the domain and try again."
                 )
             add_toast(request, error_message, type="error")
         except stripe_lib.error.AuthenticationError as e:

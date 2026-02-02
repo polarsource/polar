@@ -83,14 +83,10 @@ class SeatAssign(Schema):
 
         # Count identifier groups
         legacy_count = sum(
-            1
-            for x in [self.external_customer_id, self.customer_id]
-            if x is not None
+            1 for x in [self.external_customer_id, self.customer_id] if x is not None
         )
         member_count = sum(
-            1
-            for x in [self.external_member_id, self.member_id]
-            if x is not None
+            1 for x in [self.external_member_id, self.member_id] if x is not None
         )
         has_email = self.email is not None
         total = legacy_count + member_count + (1 if has_email else 0)
@@ -111,9 +107,7 @@ class SeatAssign(Schema):
 
         # Cannot provide both external_member_id and member_id
         if member_count > 1:
-            raise ValueError(
-                "Cannot provide both external_member_id and member_id"
-            )
+            raise ValueError("Cannot provide both external_member_id and member_id")
 
         # Legacy path: exactly one of email, external_customer_id, customer_id
         if legacy_count > 0 and legacy_count + (1 if has_email else 0) != 1:

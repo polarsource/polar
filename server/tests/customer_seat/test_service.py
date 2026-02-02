@@ -1178,9 +1178,7 @@ class TestAssignSeat:
         )
 
         with pytest.raises(MemberNotFound):
-            await seat_service.assign_seat(
-                session, subscription, member_id=member.id
-            )
+            await seat_service.assign_seat(session, subscription, member_id=member.id)
 
     @pytest.mark.asyncio
     async def test_assign_seat_with_external_member_id_duplicate_seat(

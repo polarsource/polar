@@ -13,6 +13,7 @@ from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
+from .navigation import NAVIGATION
 from .orders.endpoints import router as orders_router
 from .organizations.endpoints import router as organizations_router
 from .organizations_v2.endpoints import router as organizations_v2_router
@@ -21,6 +22,7 @@ from .products.endpoints import router as products_router
 from .responses import TagResponse
 from .subscriptions.endpoints import router as subscriptions_router
 from .tasks.endpoints import router as tasks_router
+from .templates import render_page
 from .users.endpoints import router as users_router
 from .versioned_static import VersionedStaticFiles
 from .webhooks.endpoints import router as webhooks_router
@@ -65,18 +67,11 @@ app.include_router(webhooks_router, prefix="/webhooks")
 @app.get("/", name="index")
 async def index(request: Request):
     """Backoffice index/dashboard page."""
-    from .navigation import NAVIGATION
-    from .templates import templates
-
-    return templates.TemplateResponse(
-        request=request,
-        name="pages/index.html",
-        context={
-            "breadcrumbs": [],
-            "title_parts": [],
-            "navigation": NAVIGATION,
-            "active_route_name": "index",
-        },
+    return render_page(
+        request,
+        "pages/index.html",
+        navigation=NAVIGATION,
+        active_route_name="index",
     )
 
 

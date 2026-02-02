@@ -1,8 +1,4 @@
-{% if is_htmx_boosted(request) and get_htmx_target(request) == "content" %}
-    {% extends "layouts/partial.html" %}
-{% else %}
-    {% extends "layouts/main.html" %}
-{% endif %}
+{% extends "layouts/page.html" %}
 
 {% block content %}
 <h1>Dashboard</h1>

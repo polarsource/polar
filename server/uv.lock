@@ -1909,6 +1909,7 @@ dependencies = [
     { name = "httpx-oauth" },
     { name = "ipinfo-db" },
     { name = "itsdangerous" },
+    { name = "jinja2" },
     { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "makefun" },
     { name = "plain-client" },
@@ -1943,6 +1944,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "beautifulsoup4" },
     { name = "boto3-stubs", extra = ["s3"] },
     { name = "coverage" },
     { name = "debugpy" },
@@ -1994,6 +1996,7 @@ requires-dist = [
     { name = "httpx-oauth", specifier = ">=0.16.0" },
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=2.6.0" },
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "plain-client", specifier = ">=0.0.3" },
@@ -2028,6 +2031,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "boto3-stubs", extras = ["s3"], specifier = ">=1.38.30" },
     { name = "coverage", specifier = ">=7.6.0" },
     { name = "debugpy", specifier = ">=1.8.19" },

@@ -5,7 +5,6 @@ import httpx
 import logfire
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
-from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
@@ -18,6 +17,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarError
+from polar.integrations.discord.oauth import user_client as discord_user_client
 from polar.integrations.github.client import Forbidden
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
@@ -37,11 +37,7 @@ OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
     CustomerOAuthPlatform.github: GitHubOAuth2(
         settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
     ),
-    CustomerOAuthPlatform.discord: DiscordOAuth2(
-        settings.DISCORD_CLIENT_ID,
-        settings.DISCORD_CLIENT_SECRET,
-        scopes=["identify", "email", "guilds.join"],
-    ),
+    CustomerOAuthPlatform.discord: discord_user_client,
 }
 
 

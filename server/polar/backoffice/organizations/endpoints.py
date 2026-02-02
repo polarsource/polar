@@ -1435,7 +1435,8 @@ async def get(
                         classes="btn",
                         hx_get=str(
                             request.url_for(
-                                "organizations:add_payment_method_domain", id=organization.id
+                                "organizations:add_payment_method_domain",
+                                id=organization.id,
                             )
                         ),
                         hx_target="#modal",
@@ -2022,10 +2023,10 @@ async def add_payment_method_domain(
         data = await request.form()
         try:
             form = AddPaymentMethodDomainForm.model_validate_form(data)
-            
+
             # Create the payment method domain in Stripe
             await stripe_service.create_payment_method_domain(form.domain_name)
-            
+
             add_toast(
                 request,
                 f"Successfully added {form.domain_name} to Apple Pay / Google Pay allowlist",

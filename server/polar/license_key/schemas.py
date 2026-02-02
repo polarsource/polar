@@ -1,3 +1,4 @@
+import typing
 from datetime import datetime
 from typing import Annotated, Literal, Self
 
@@ -215,13 +216,45 @@ class LicenseKeyCreate(LicenseKeyUpdate):
             case _:
                 return now + relativedelta(days=ttl)
 
+    @typing.overload
     @classmethod
     def build(
         cls,
+        *,
         organization_id: UUID4,
         customer_id: UUID4,
         benefit_id: UUID4,
         prefix: str | None = None,
+        status: LicenseKeyStatus = LicenseKeyStatus.granted,
+        limit_usage: int | None = None,
+        activations: BenefitLicenseKeyActivationProperties | None = None,
+        expires: BenefitLicenseKeyExpirationProperties | None = None,
+    ) -> Self: ...
+
+    @typing.overload
+    @classmethod
+    def build(
+        cls,
+        *,
+        organization_id: UUID4,
+        customer_id: UUID4,
+        benefit_id: UUID4,
+        key: str | None = None,
+        status: LicenseKeyStatus = LicenseKeyStatus.granted,
+        limit_usage: int | None = None,
+        activations: BenefitLicenseKeyActivationProperties | None = None,
+        expires: BenefitLicenseKeyExpirationProperties | None = None,
+    ) -> Self: ...
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        organization_id: UUID4,
+        customer_id: UUID4,
+        benefit_id: UUID4,
+        prefix: str | None = None,
+        key: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
         limit_usage: int | None = None,
         activations: BenefitLicenseKeyActivationProperties | None = None,
@@ -238,7 +271,9 @@ class LicenseKeyCreate(LicenseKeyUpdate):
         if activations:
             limit_activations = activations.get("limit", None)
 
-        key = cls.generate_key(prefix=prefix)
+        if key is None:
+            key = cls.generate_key(prefix=prefix)
+
         return cls(
             organization_id=organization_id,
             customer_id=customer_id,

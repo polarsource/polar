@@ -305,17 +305,30 @@ class LicenseKeyService:
         customer: Customer,
         benefit: Benefit,
         license_key_id: UUID | None = None,
+        key: str | None = None,
     ) -> LicenseKey:
         props = cast(BenefitLicenseKeysProperties, benefit.properties)
-        create_schema = LicenseKeyCreate.build(
-            organization_id=benefit.organization_id,
-            customer_id=customer.id,
-            benefit_id=benefit.id,
-            prefix=props.get("prefix", None),
-            limit_usage=props.get("limit_usage", None),
-            activations=props.get("activations", None),
-            expires=props.get("expires", None),
-        )
+        if key is not None:
+            create_schema = LicenseKeyCreate.build(
+                organization_id=benefit.organization_id,
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                key=key,
+                limit_usage=props.get("limit_usage", None),
+                activations=props.get("activations", None),
+                expires=props.get("expires", None),
+            )
+        else:
+            create_schema = LicenseKeyCreate.build(
+                organization_id=benefit.organization_id,
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                prefix=props.get("prefix", None),
+                limit_usage=props.get("limit_usage", None),
+                activations=props.get("activations", None),
+                expires=props.get("expires", None),
+            )
+
         log.info(
             "license_key.grant.request",
             organization_id=benefit.organization_id,

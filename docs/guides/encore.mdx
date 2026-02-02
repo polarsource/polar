@@ -1,0 +1,167 @@
+---
+title: "Integrate Polar with Encore"
+sidebarTitle: "Encore"
+description: "In this guide, we'll show you how to integrate Polar with Encore."
+---
+
+[Encore](https://encore.dev) is an open source backend framework for TypeScript with built-in infrastructure automation and observability. When you define services, databases, and APIs in code, Encore automatically provisions and manages the underlying infrastructure, both locally and in the cloud.
+
+Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data.
+
+## Install the Polar Encore Adapter
+
+To get started, install the Polar Encore adapter:
+
+```bash Terminal
+npm install @polar-sh/encore
+```
+
+## Setting up Secrets
+
+Encore has built-in secrets management that works consistently across local development and cloud environments.
+
+### Polar Access Token
+
+To authenticate with Polar, you need to create an access token. You can create an organization access token from your organization settings.
+
+Add it to Encore using the secrets manager:
+
+```bash Terminal
+encore secret set --type local PolarAccessToken
+```
+
+When deploying to Encore Cloud, you'll set production secrets through the dashboard or CI/CD pipeline.
+
+## Generating Polar Checkout Sessions
+
+Create a checkout endpoint to handle the creation of checkout sessions.
+
+```typescript
+// payments/payments.ts
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { Checkout } from "@polar-sh/encore";
+
+const polarAccessToken = secret("PolarAccessToken");
+
+export const checkout = api.raw(
+  { expose: true, path: "/checkout", method: "GET" },
+  Checkout({
+    accessToken: polarAccessToken(),
+    successUrl: "http://localhost:4000/confirmation?checkout_id={CHECKOUT_ID}",
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  })
+);
+```
+
+You can now create a checkout session by visiting `/checkout?products=YOUR_PRODUCT_ID`.
+
+## Handling Polar Webhooks
+
+Polar can send you events about various things happening in your organization. This is useful for keeping your database in sync with Polar checkouts, orders, subscriptions, etc.
+
+Configuring a webhook is simple. Head over to your organization's settings page and click on the "Add Endpoint" button to create a new webhook.
+
+### Tunneling webhook events to your local development environment
+
+Encore runs your app locally with full infrastructure support. To receive webhooks during local development, you can use a tool like [ngrok](https://ngrok.com/) to tunnel webhook events to your local environment.
+
+Run the following command to start an ngrok tunnel:
+
+```bash Terminal
+ngrok http 4000
+```
+
+### Add Webhook Endpoint
+
+1. Point the Webhook to `your-app.com/webhooks/polar`. This must be an absolute URL which Polar can reach. If you use ngrok, the URL will look something like this: `https://<your-ngrok-id>.ngrok-free.app/webhooks/polar`.
+2. Select which events you want to be notified about. You can read more about the available events in the [Events section](/api-reference#webhooks).
+3. Generate a secret key to sign the requests. This will allow you to verify that the requests are truly coming from Polar.
+4. Add the secret key to Encore:
+
+```bash Terminal
+encore secret set --type local PolarWebhookSecret
+```
+
+### Setting up the Webhook handler
+
+```typescript
+// payments/payments.ts
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { Webhooks } from "@polar-sh/encore";
+
+const polarWebhookSecret = secret("PolarWebhookSecret");
+
+export const webhooks = api.raw(
+  { expose: true, path: "/webhooks/polar", method: "POST" },
+  Webhooks({
+    webhookSecret: polarWebhookSecret(),
+    onPayload: async (payload) => {
+      // Handle payload
+    },
+  })
+);
+```
+
+The webhook event is now verified and you can proceed to handle the payload data.
+
+### Handling Webhook Events
+
+Depending on which events you've subscribed to, you'll receive different payloads. This is where you can update your database, send notifications, etc.
+
+```typescript
+// payments/payments.ts
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { Webhooks } from "@polar-sh/encore";
+
+const polarWebhookSecret = secret("PolarWebhookSecret");
+
+export const webhooks = api.raw(
+  { expose: true, path: "/webhooks/polar", method: "POST" },
+  Webhooks({
+    webhookSecret: polarWebhookSecret(),
+    onPayload: async (payload) => ...,
+    onOrderCreated: async (order) => ...,
+    onCustomerStateChanged: async (customerState) => ...,
+    ...
+  })
+);
+```
+
+## Local Development
+
+Start your Encore app:
+
+```bash Terminal
+encore run
+```
+
+Encore provides a local development dashboard at `localhost:9400` where you can:
+
+- View distributed traces for all requests, including checkout redirects and webhook deliveries
+- Inspect API calls between services
+- Query local databases
+- View logs and errors in real-time
+
+This makes debugging payment flows straightforward since you can trace exactly what happens when a checkout completes or a webhook arrives.
+
+## Deploying to Production
+
+When you're ready to go live, deploy to Encore Cloud or your own cloud account:
+
+```bash Terminal
+git push encore
+```
+
+Encore automatically provisions all the infrastructure your app needs. Remember to:
+
+1. Set production secrets in the Encore Cloud dashboard
+2. Update the `server` parameter from `"sandbox"` to `"production"` in your Polar handlers
+3. Update your webhook URL in Polar to point to your production domain
+4. Update `successUrl` to your production URL
+
+## Conclusion
+
+If you have issues or need support, feel free to join [our Discord](https://discord.gg/Pnhfz3UThd).

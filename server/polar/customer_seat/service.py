@@ -93,6 +93,24 @@ class CustomerNotFound(SeatError):
         super().__init__(message, 404)
 
 
+class MemberNotFound(SeatError):
+    def __init__(self, member_identifier: str) -> None:
+        self.member_identifier = member_identifier
+        message = f"Member not found: {member_identifier}"
+        super().__init__(message, 404)
+
+
+class MemberEmailMismatch(SeatError):
+    def __init__(self, external_member_id: str, expected_email: str) -> None:
+        self.external_member_id = external_member_id
+        self.expected_email = expected_email
+        message = (
+            f"Member with external_member_id '{external_member_id}' exists but "
+            f"has a different email than '{expected_email}'"
+        )
+        super().__init__(message, 400)
+
+
 SeatContainer = Subscription | Order
 
 
@@ -243,6 +261,8 @@ class SeatService:
         email: str | None = None,
         external_customer_id: str | None = None,
         customer_id: uuid.UUID | None = None,
+        external_member_id: str | None = None,
+        member_id: uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
         immediate_claim: bool = False,
     ) -> CustomerSeat:
@@ -292,8 +312,16 @@ class SeatService:
                 email,
                 customer_id,
                 external_customer_id,
+                external_member_id,
+                member_id,
             )
         else:
+            # Legacy path: reject member-model identifiers
+            if external_member_id or member_id:
+                raise InvalidSeatAssignmentRequest(
+                    "external_member_id and member_id are only supported when "
+                    "member_model_enabled is true."
+                )
             target = await self._resolve_legacy_target(
                 session,
                 repository,
@@ -845,37 +873,97 @@ class SeatService:
         email: str | None,
         customer_id: uuid.UUID | None,
         external_customer_id: str | None,
+        external_member_id: str | None,
+        member_id: uuid.UUID | None,
     ) -> SeatAssignmentTarget:
         """Resolve seat assignment target when member_model_enabled=True.
 
         In the member model:
-        - Only email is accepted (customer_id/external_customer_id rejected)
+        - email, external_member_id, or member_id are accepted
+        - customer_id and external_customer_id are rejected
+        - external_member_id can be combined with email
         - No Customer is created for the seat member
-        - A Member is created under the billing customer
+        - A Member is created/looked up under the billing customer
         - seat.customer_id = billing customer (purchaser)
         - seat.email = seat member's email
         """
-        if not email or customer_id or external_customer_id:
+        # Reject legacy customer identifiers
+        if customer_id or external_customer_id:
             raise InvalidSeatAssignmentRequest(
-                "Only email is supported when member_model_enabled is true. "
-                "customer_id and external_customer_id are not allowed."
+                "customer_id and external_customer_id are not allowed when "
+                "member_model_enabled is true. Use email, external_member_id, "
+                "or member_id instead."
             )
 
-        # Check if seat already assigned to this email
-        existing_seat = await repository.get_by_container_and_email(container, email)
-        if existing_seat and not existing_seat.is_revoked():
-            raise SeatAlreadyAssigned(email)
+        member_repository = MemberRepository.from_session(session)
+        member: Member | None = None
 
-        # Create Member under billing customer
-        member = await self._get_or_create_member_for_seat(
-            session, billing_customer_id, organization_id, email
+        # Step 1: Resolve member based on provided identifier
+        if member_id is not None:
+            member = await member_repository.get_by_id_and_customer_id(
+                member_id, billing_customer_id
+            )
+            if not member:
+                raise MemberNotFound(str(member_id))
+
+        elif external_member_id is not None:
+            member = await member_repository.get_by_customer_id_and_external_id(
+                billing_customer_id, external_member_id
+            )
+
+            if member:
+                # Validate email matches if provided
+                if email and member.email.lower() != email.lower():
+                    raise MemberEmailMismatch(external_member_id, email)
+            else:
+                # Member not found — need email to create
+                if not email:
+                    raise MemberNotFound(external_member_id)
+
+                # Create member with both email and external_id
+                member = Member(
+                    customer_id=billing_customer_id,
+                    organization_id=organization_id,
+                    email=email,
+                    external_id=external_member_id,
+                    role=MemberRole.member,
+                )
+                session.add(member)
+                await session.flush()
+
+                log.info(
+                    "Created member for seat assignment with external_id",
+                    member_id=member.id,
+                    customer_id=billing_customer_id,
+                    organization_id=organization_id,
+                    email=email,
+                    external_id=external_member_id,
+                )
+
+        elif email:
+            # Email only (existing behavior)
+            member = await self._get_or_create_member_for_seat(
+                session, billing_customer_id, organization_id, email
+            )
+
+        else:
+            raise InvalidSeatAssignmentRequest(
+                "At least one of email, external_member_id, or member_id must be "
+                "provided when member_model_enabled is true."
+            )
+
+        # Step 2: Check for duplicate seat (single check for all paths)
+        existing_seat = await repository.get_by_container_and_email(
+            container, member.email
         )
+        if existing_seat and not existing_seat.is_revoked():
+            raise SeatAlreadyAssigned(member.email)
 
         return SeatAssignmentTarget(
             customer_id=billing_customer_id,
             member_id=member.id,
-            email=email,
-            seat_member_email=email,
+            email=member.email,
+            seat_member_email=member.email,
         )
 
     async def _resolve_legacy_target(

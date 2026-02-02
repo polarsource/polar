@@ -145,6 +145,8 @@ async def assign_seat(
         email=seat_assign.email,
         external_customer_id=seat_assign.external_customer_id,
         customer_id=seat_assign.customer_id,
+        external_member_id=seat_assign.external_member_id,
+        member_id=seat_assign.member_id,
         metadata=seat_assign.metadata,
         immediate_claim=seat_assign.immediate_claim,
     )

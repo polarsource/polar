@@ -5,6 +5,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, override
 
+import stripe as stripe_lib
 import structlog
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -2038,16 +2039,54 @@ async def add_payment_method_domain(
 
         except ValidationError as e:
             validation_error = e
-        except Exception as e:
+        except stripe_lib.error.InvalidRequestError as e:
             logger.error(
-                "Failed to add payment method domain",
+                "Invalid request to Stripe API",
+                organization_id=id,
+                domain=data.get("domain_name"),
+                error=str(e),
+            )
+            error_message = (
+                "Invalid domain format or domain already exists in allowlist"
+            )
+            if "already exists" in str(e).lower():
+                error_message = (
+                    f"Domain {data.get('domain_name')} is already in the allowlist"
+                )
+            add_toast(request, error_message, type="error")
+        except stripe_lib.error.AuthenticationError as e:
+            logger.error(
+                "Stripe authentication error",
+                organization_id=id,
+                error=str(e),
+            )
+            add_toast(
+                request,
+                "Authentication error with Stripe. Please contact an administrator.",
+                type="error",
+            )
+        except stripe_lib.error.StripeError as e:
+            logger.error(
+                "Stripe API error",
                 organization_id=id,
                 domain=data.get("domain_name"),
                 error=str(e),
             )
             add_toast(
                 request,
-                f"Failed to add domain to allowlist: {str(e)}",
+                "Failed to add domain to allowlist. Please try again or contact support.",
+                type="error",
+            )
+        except Exception as e:
+            logger.error(
+                "Unexpected error while adding payment method domain",
+                organization_id=id,
+                domain=data.get("domain_name"),
+                error=str(e),
+            )
+            add_toast(
+                request,
+                "An unexpected error occurred. Please try again or contact support.",
                 type="error",
             )
 

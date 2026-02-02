@@ -297,10 +297,14 @@ class DeleteStripeAccountForm(forms.BaseForm):
 class AddPaymentMethodDomainForm(forms.BaseForm):
     domain_name: Annotated[
         str,
-        StringConstraints(min_length=1),
+        StringConstraints(
+            min_length=1,
+            max_length=253,
+            pattern=r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$",
+        ),
         forms.InputField(type="text", placeholder="example.com"),
         Field(
             title="Domain Name",
-            description="Domain to add to Apple Pay / Google Pay allowlist",
+            description="Domain to add to Apple Pay / Google Pay allowlist (e.g., example.com)",
         ),
     ]

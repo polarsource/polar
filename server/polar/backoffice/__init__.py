@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from tagflow import tag, text
 
 from polar.observability.http_metrics import exclude_app_from_metrics
 
@@ -11,7 +10,6 @@ from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
 from .external_events.endpoints import router as external_events_router
 from .impersonation.endpoints import router as impersonation_router
-from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .navigation import NAVIGATION
 from .orders.endpoints import router as orders_router

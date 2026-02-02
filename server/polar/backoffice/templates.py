@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 
 if TYPE_CHECKING:
-    from .components._navigation import NavigationItem
+    pass
 
 # Get the templates directory path
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -93,4 +93,4 @@ def render_page(
     )
 
 
-__all__ = ["templates", "render_page"]
+__all__ = ["render_page", "templates"]

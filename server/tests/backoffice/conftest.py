@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 import pytest_asyncio
-from fastapi import FastAPI
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin

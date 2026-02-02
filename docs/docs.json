@@ -138,6 +138,7 @@
                   "integrate/sdk/adapters/better-auth",
                   "integrate/sdk/adapters/deno",
                   "integrate/sdk/adapters/elysia",
+                  "integrate/sdk/adapters/encore",
                   "integrate/sdk/adapters/express",
                   "integrate/sdk/adapters/fastify",
                   "integrate/sdk/adapters/hono",

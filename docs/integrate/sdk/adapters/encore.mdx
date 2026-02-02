@@ -1,0 +1,151 @@
+---
+title: "Encore"
+description: "Payments and Checkouts made dead simple with Encore"
+---
+
+## Installation
+
+Install the required Polar packages using the following command:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash Terminal
+    npm install zod @polar-sh/encore
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash Terminal
+    yarn add zod @polar-sh/encore
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash Terminal
+    pnpm add zod @polar-sh/encore
+    ```
+  </Tab>
+</Tabs>
+
+## Setup
+
+Set your Polar credentials using Encore's secrets management:
+
+```bash Terminal
+encore secret set --type local PolarAccessToken
+encore secret set --type local PolarWebhookSecret
+```
+
+Get your credentials from [Polar Settings → API](https://polar.sh/settings/api).
+
+## Checkout
+
+Create a Checkout handler which takes care of redirections.
+
+```typescript
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { Checkout } from "@polar-sh/encore";
+
+const polarAccessToken = secret("PolarAccessToken");
+
+export const checkout = api.raw(
+  { expose: true, path: "/checkout", method: "GET" },
+  Checkout({
+    accessToken: polarAccessToken(),
+    successUrl: "https://myapp.com/success",
+    returnUrl: "https://myapp.com", // An optional URL which renders a back-button in the Checkout
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
+  })
+);
+```
+
+### Query Params
+
+Pass query params to this route.
+
+- products `?products=123`
+- customerId (optional) `?products=123&customerId=xxx`
+- customerExternalId (optional) `?products=123&customerExternalId=xxx`
+- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
+- customerName (optional) `?products=123&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
+
+## Customer Portal
+
+Create a customer portal where your customer can view orders and subscriptions.
+
+```typescript
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { CustomerPortal } from "@polar-sh/encore";
+import { getAuthData } from "~encore/auth";
+
+const polarAccessToken = secret("PolarAccessToken");
+
+export const portal = api.raw(
+  { expose: true, path: "/portal", method: "GET", auth: true },
+  CustomerPortal({
+    accessToken: polarAccessToken(),
+    getCustomerId: async (req) => {
+      const auth = getAuthData();
+      return auth!.polarCustomerId; // Function to resolve a Polar Customer ID
+    },
+    returnUrl: "https://myapp.com/dashboard", // An optional URL which renders a back-button in the Customer Portal
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  })
+);
+```
+
+## Webhooks
+
+A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
+
+```typescript
+import { api } from "encore.dev/api";
+import { secret } from "encore.dev/config";
+import { Webhooks } from "@polar-sh/encore";
+
+const polarWebhookSecret = secret("PolarWebhookSecret");
+
+export const webhooks = api.raw(
+  { expose: true, path: "/webhooks/polar", method: "POST" },
+  Webhooks({
+    webhookSecret: polarWebhookSecret(),
+    onPayload: async (payload) => {
+      // Handle the payload
+      // No need to return an acknowledge response
+    },
+  })
+);
+```
+
+### Payload Handlers
+
+The Webhook handler also supports granular handlers for easy integration.
+
+- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutUpdated` - Triggered when a checkout is updated
+- `onOrderCreated` - Triggered when an order is created
+- `onOrderPaid` - Triggered when an order is paid
+- `onOrderRefunded` - Triggered when an order is refunded
+- `onRefundCreated` - Triggered when a refund is created
+- `onRefundUpdated` - Triggered when a refund is updated
+- `onSubscriptionCreated` - Triggered when a subscription is created
+- `onSubscriptionUpdated` - Triggered when a subscription is updated
+- `onSubscriptionActive` - Triggered when a subscription becomes active
+- `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionRevoked` - Triggered when a subscription is revoked
+- `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
+- `onProductCreated` - Triggered when a product is created
+- `onProductUpdated` - Triggered when a product is updated
+- `onOrganizationUpdated` - Triggered when an organization is updated
+- `onBenefitCreated` - Triggered when a benefit is created
+- `onBenefitUpdated` - Triggered when a benefit is updated
+- `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
+- `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+- `onCustomerCreated` - Triggered when a customer is created
+- `onCustomerUpdated` - Triggered when a customer is updated
+- `onCustomerDeleted` - Triggered when a customer is deleted
+- `onCustomerStateChanged` - Triggered when a customer state changes

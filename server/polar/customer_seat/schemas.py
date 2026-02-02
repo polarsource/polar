@@ -33,6 +33,21 @@ class SeatAssign(Schema):
     customer_id: UUID | None = Field(
         None, description="Customer ID for the seat assignment"
     )
+    external_member_id: str | None = Field(
+        None,
+        description=(
+            "External member ID for the seat assignment. "
+            "Only supported when member_model_enabled is true. "
+            "Can be used alone (lookup existing member) or with email (create/validate member)."
+        ),
+    )
+    member_id: UUID | None = Field(
+        None,
+        description=(
+            "Member ID for the seat assignment. "
+            "Only supported when member_model_enabled is true."
+        ),
+    )
     metadata: dict[str, Any] | None = Field(
         None, description="Additional metadata for the seat (max 10 keys, 1KB total)"
     )
@@ -56,29 +71,55 @@ class SeatAssign(Schema):
 
     @model_validator(mode="after")
     def validate_identifiers(self) -> "SeatAssign":
-        seat_source_identifiers = [
-            self.subscription_id,
-            self.checkout_id,
-            self.order_id,
-        ]
+        # Validate exactly one seat source
         seat_source_count = sum(
-            1 for identifier in seat_source_identifiers if identifier is not None
+            1
+            for x in [self.subscription_id, self.checkout_id, self.order_id]
+            if x is not None
         )
-
         if seat_source_count != 1:
             raise ValueError(
                 "Exactly one of subscription_id, checkout_id, or order_id must be provided"
             )
 
-        customer_identifiers = [self.email, self.external_customer_id, self.customer_id]
-        customer_count = sum(
-            1 for identifier in customer_identifiers if identifier is not None
+        # Count identifier groups
+        legacy_count = sum(
+            1 for x in [self.external_customer_id, self.customer_id] if x is not None
         )
+        member_count = sum(
+            1 for x in [self.external_member_id, self.member_id] if x is not None
+        )
+        has_email = self.email is not None
+        total = legacy_count + member_count + (1 if has_email else 0)
 
-        if customer_count != 1:
+        # At least one identifier required
+        if total == 0:
             raise ValueError(
-                "Exactly one of email, external_customer_id, or customer_id must be provided"
+                "At least one of email, external_customer_id, customer_id, "
+                "external_member_id, or member_id must be provided"
             )
+
+        # Cannot mix legacy and member identifiers
+        if legacy_count > 0 and member_count > 0:
+            raise ValueError(
+                "Cannot combine external_customer_id/customer_id with "
+                "external_member_id/member_id"
+            )
+
+        # Cannot provide both external_member_id and member_id
+        if member_count > 1:
+            raise ValueError("Cannot provide both external_member_id and member_id")
+
+        # Legacy path: exactly one of email, external_customer_id, customer_id
+        if legacy_count > 0 and legacy_count + (1 if has_email else 0) != 1:
+            raise ValueError(
+                "Exactly one of email, external_customer_id, or "
+                "customer_id must be provided"
+            )
+
+        # member_id cannot be combined with email
+        if self.member_id is not None and has_email:
+            raise ValueError("Cannot combine member_id with email")
 
         return self
 

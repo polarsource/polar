@@ -62,6 +62,24 @@ class MemberRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_customer_id_and_external_id(
+        self,
+        customer_id: UUID,
+        external_id: str,
+    ) -> Member | None:
+        """
+        Get a member by customer ID and external ID.
+
+        Returns:
+            Member if found, None otherwise
+        """
+        statement = select(Member).where(
+            Member.customer_id == customer_id,
+            Member.external_id == external_id,
+            Member.deleted_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_id_and_customer_id(
         self,
         member_id: UUID,

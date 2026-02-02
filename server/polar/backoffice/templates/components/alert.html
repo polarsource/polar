@@ -1,0 +1,30 @@
+{# Alert component macros #}
+
+{% macro alert(variant=none, dash=false, soft=false, class="", **attrs) -%}
+    {%- set classes = ["alert"] -%}
+    
+    {%- if variant == "info" -%}
+        {%- set _ = classes.append("alert-info") -%}
+    {%- elif variant == "success" -%}
+        {%- set _ = classes.append("alert-success") -%}
+    {%- elif variant == "warning" -%}
+        {%- set _ = classes.append("alert-warning") -%}
+    {%- elif variant == "error" -%}
+        {%- set _ = classes.append("alert-error") -%}
+    {%- endif -%}
+    
+    {%- if dash -%}
+        {%- set _ = classes.append("alert-dash") -%}
+    {%- endif -%}
+    {%- if soft -%}
+        {%- set _ = classes.append("alert-soft") -%}
+    {%- endif -%}
+    
+    {%- if class -%}
+        {%- set _ = classes.append(class) -%}
+    {%- endif -%}
+    
+    <div role="alert" class="{{ classes | join(' ') }}"{% for key, value in attrs.items() %} {{ key }}="{{ value }}"{% endfor %}>
+        {{ caller() }}
+    </div>
+{%- endmacro %}

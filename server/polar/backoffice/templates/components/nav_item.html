@@ -1,0 +1,33 @@
+{# Navigation item macro for rendering menu items #}
+{% macro is_active(item, active_route_name) -%}
+    {%- if item.active_route_name_prefix -%}
+        {{- active_route_name.startswith(item.active_route_name_prefix) -}}
+    {%- elif item.route_name -%}
+        {{- item.route_name == active_route_name -}}
+    {%- elif item.children -%}
+        {%- for child in item.children -%}
+            {%- if is_active(child, active_route_name) -%}
+                {{- True -}}
+            {%- endif -%}
+        {%- endfor -%}
+    {%- endif -%}
+{%- endmacro %}
+
+<li>
+    {% if item.route_name %}
+        <a href="{{ url_for(item.route_name) }}"{% if is_active(item, active_route_name) %} class="menu-active"{% endif %}>
+            {{ item.label }}
+        </a>
+    {% elif item.children %}
+        <details{% if is_active(item, active_route_name) %} open{% endif %}>
+            <summary>{{ item.label }}</summary>
+            <ul>
+                {% for child in item.children %}
+                    {% with item=child %}
+                        {% include 'components/nav_item.html' %}
+                    {% endwith %}
+                {% endfor %}
+            </ul>
+        </details>
+    {% endif %}
+</li>

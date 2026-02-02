@@ -67,4 +67,22 @@ async def index(request: Request) -> None:
             text("Dashboard")
 
 
+@app.get("/jinja", name="index_jinja")
+async def index_jinja(request: Request):
+    """Jinja2 version of the index page for testing."""
+    from .navigation import NAVIGATION
+    from .templates import templates
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/index.html",
+        context={
+            "breadcrumbs": [],
+            "title_parts": [],
+            "navigation": NAVIGATION,
+            "active_route_name": "index",
+        },
+    )
+
+
 __all__ = ["app"]

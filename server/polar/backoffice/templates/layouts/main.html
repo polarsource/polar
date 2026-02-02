@@ -1,0 +1,59 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+{%- if title_parts -%}
+{{ title_parts | join(' · ') }} · Polar Backoffice
+{%- else -%}
+Polar Backoffice
+{%- endif -%}
+{% endblock %}
+
+{% block body %}
+<div class="drawer lg:drawer-open">
+    <input id="menu-toggle" type="checkbox" class="drawer-toggle">
+    
+    <main class="drawer-content">
+        <div class="flex flex-row items-center">
+            <label for="menu-toggle" class="btn btn-ghost drawer-button lg:hidden">
+                <div class="icon-menu"></div>
+            </label>
+        </div>
+        
+        <div class="flex flex-col gap-4 p-4">
+            <div id="content" class="h-full w-full" hx-boost="true" hx-target="#content">
+                {% block breadcrumbs %}
+                <div class="breadcrumbs text-sm">
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Polar Backoffice</a></li>
+                        {% for title, href in breadcrumbs %}
+                        <li><a href="{{ href }}">{{ title }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endblock %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </main>
+    
+    <aside class="drawer-side">
+        <label for="menu-toggle" class="drawer-overlay"></label>
+        
+        <div class="bg-base-200 text-base-content min-h-full w-60 p-4 flex flex-col gap-4">
+            <a href="{{ url_for('index') }}" class="flex justify-center">
+                <img src="{{ url_for('static', path='logo.light.svg') }}" class="h-8 dark:hidden" alt="Polar">
+                <img src="{{ url_for('static', path='logo.dark.svg') }}" class="h-8 dark:block hidden" alt="Polar">
+            </a>
+            
+            {% block menu %}
+            <ul class="menu w-full" id="menu" hx-swap-oob="true">
+                {% for item in navigation %}
+                    {% include 'components/nav_item.html' %}
+                {% endfor %}
+            </ul>
+            {% endblock %}
+        </div>
+    </aside>
+</div>
+{% endblock %}

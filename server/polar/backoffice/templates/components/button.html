@@ -1,0 +1,56 @@
+{# Button component macros #}
+
+{% macro button(variant=none, size=none, ghost=false, link=false, soft=false, outline=false, type="button", class="", **attrs) -%}
+    {%- set classes = ["btn"] -%}
+    
+    {%- if variant == "neutral" -%}
+        {%- set _ = classes.append("btn-neutral") -%}
+    {%- elif variant == "primary" -%}
+        {%- set _ = classes.append("btn-primary") -%}
+    {%- elif variant == "secondary" -%}
+        {%- set _ = classes.append("btn-secondary") -%}
+    {%- elif variant == "accent" -%}
+        {%- set _ = classes.append("btn-accent") -%}
+    {%- elif variant == "info" -%}
+        {%- set _ = classes.append("btn-info") -%}
+    {%- elif variant == "success" -%}
+        {%- set _ = classes.append("btn-success") -%}
+    {%- elif variant == "warning" -%}
+        {%- set _ = classes.append("btn-warning") -%}
+    {%- elif variant == "error" -%}
+        {%- set _ = classes.append("btn-error") -%}
+    {%- endif -%}
+    
+    {%- if size == "xs" -%}
+        {%- set _ = classes.append("btn-xs") -%}
+    {%- elif size == "sm" -%}
+        {%- set _ = classes.append("btn-sm") -%}
+    {%- elif size == "md" -%}
+        {%- set _ = classes.append("btn-md") -%}
+    {%- elif size == "lg" -%}
+        {%- set _ = classes.append("btn-lg") -%}
+    {%- elif size == "xl" -%}
+        {%- set _ = classes.append("btn-xl") -%}
+    {%- endif -%}
+    
+    {%- if ghost -%}
+        {%- set _ = classes.append("btn-ghost") -%}
+    {%- endif -%}
+    {%- if link -%}
+        {%- set _ = classes.append("btn-link") -%}
+    {%- endif -%}
+    {%- if soft -%}
+        {%- set _ = classes.append("btn-soft") -%}
+    {%- endif -%}
+    {%- if outline -%}
+        {%- set _ = classes.append("btn-outline") -%}
+    {%- endif -%}
+    
+    {%- if class -%}
+        {%- set _ = classes.append(class) -%}
+    {%- endif -%}
+    
+    <button type="{{ type }}" class="{{ classes | join(' ') }}"{% for key, value in attrs.items() %} {{ key }}="{{ value }}"{% endfor %}>
+        {{ caller() }}
+    </button>
+{%- endmacro %}

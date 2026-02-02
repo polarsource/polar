@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', path='styles.css') }}" rel="stylesheet" type="text/css">
+    <script src="{{ url_for('static', path='scripts.js') }}"></script>
+    <title id="page_title" hx-swap-oob="true">{% block title %}Polar Backoffice{% endblock %}</title>
+    
+    <script type="text/hyperscript">
+        on every htmx:beforeSend from <form />
+            for submitButton in <button[type='submit'] /> in it
+            toggle @disabled on submitButton until htmx:afterOnLoad
+            end
+        end
+
+        behavior CopyToClipboard(text)
+            on click call navigator.clipboard.writeText(text)
+            then add @disabled to me
+            then toggle .hidden on <div /> in me
+            then wait 5s
+            then toggle .hidden on <div /> in me
+            then remove @disabled from me
+        end
+    </script>
+</head>
+<body>
+    {% block body %}{% endblock %}
+    
+    <div id="modal"></div>
+    
+    <div class="absolute z-40 bottom-1 right-1 hidden" _="
+        on htmx:beforeSend from document
+          remove .hidden
+        end
+        on htmx:historyRestore from document
+          add .hidden
+        end
+        on htmx:afterOnLoad from document
+          add .hidden
+        end
+      ">
+        <span class="loading loading-spinner loading-sm"></span>
+    </div>
+    
+    {% block toasts %}{% endblock %}
+</body>
+</html>

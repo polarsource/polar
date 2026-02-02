@@ -16,3 +16,40 @@ class TestBackofficeIndex:
         # Check for expected content in the Tagflow-rendered page
         assert "Dashboard" in content
         assert "Polar Backoffice" in content
+
+
+@pytest.mark.asyncio
+class TestBackofficeJinja2:
+    """Test the Jinja2 implementation."""
+
+    async def test_jinja_index_renders(self, backoffice_client: AsyncClient) -> None:
+        """Test that the Jinja2 index page renders successfully."""
+        response = await backoffice_client.get("/jinja")
+        assert response.status_code == 200
+        content = response.content.decode()
+        # Check for expected content in the Jinja2-rendered page
+        assert "Dashboard" in content
+        assert "Polar Backoffice" in content
+        # Check for structural elements
+        assert "drawer" in content  # Main layout structure
+        assert "menu" in content  # Navigation menu
+
+    async def test_jinja_htmx_partial(self, backoffice_client: AsyncClient) -> None:
+        """Test that HTMX boosted requests return partial content."""
+        response = await backoffice_client.get(
+            "/jinja",
+            headers={
+                "HX-Request": "true",
+                "HX-Boosted": "true",
+                "HX-Target": "content",
+            },
+        )
+        assert response.status_code == 200
+        content = response.content.decode()
+        # Check for content
+        assert "Dashboard" in content
+        # Check for out-of-band swaps
+        assert 'hx-swap-oob="true"' in content
+        # Should NOT have full HTML structure (no html/body tags)
+        assert "<html" not in content
+        assert "<body" not in content

@@ -229,12 +229,6 @@ class PayoutService:
         fees_amount = sum(fee for _, fee in payout_fees)
         net_amount = balance_amount - fees_amount
 
-        # For zero-decimal payout currencies (ISK, HUF, TWD, UGX), adjust the
-        # net amount to be payable (rounded down to nearest 100)
-        net_amount, _ = _adjust_payout_amount_for_zero_decimal_currency(
-            net_amount, account.currency
-        )
-
         return PayoutEstimate(
             account_id=account.id,
             gross_amount=balance_amount,

@@ -233,45 +233,6 @@ class TestEstimate:
         assert estimate.gross_amount == 12345
         assert estimate.net_amount == 12345
 
-    @pytest.mark.parametrize(
-        "currency",
-        [
-            pytest.param("isk", id="ISK"),
-            pytest.param("huf", id="HUF"),
-            pytest.param("twd", id="TWD"),
-            pytest.param("ugx", id="UGX"),
-        ],
-    )
-    async def test_zero_decimal_currency_net_amount_adjusted(
-        self,
-        currency: str,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        """Test that zero-decimal currencies have net_amount rounded down."""
-        mocker.patch(
-            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
-            return_value=[],
-        )
-
-        country_map = {"isk": "IS", "huf": "HU", "twd": "TW", "ugx": "UG"}
-        country = country_map[currency]
-
-        account = await create_account(
-            save_fixture, organization, user, country=country, currency=currency
-        )
-        # Amount 12345 should be rounded down to 12300
-        await create_balance_transaction(save_fixture, account=account, amount=12345)
-
-        estimate = await payout_service.estimate(session, account=account)
-
-        assert estimate.gross_amount == 12345
-        assert estimate.net_amount == 12300  # Adjusted for zero-decimal currency
-
-
 @pytest.mark.asyncio
 class TestTriggerStripePayouts:
     async def test_valid(

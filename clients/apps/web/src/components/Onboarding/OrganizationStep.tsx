@@ -1,7 +1,8 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { useAuth } from '@/hooks'
+import { useAuth, useOAuthAccounts, useOnboardingTracking } from '@/hooks'
+import { inferSignupMethod } from '@/hooks/onboarding'
 import { usePostHog } from '@/hooks/posthog'
 import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -44,6 +45,13 @@ export const OrganizationStep = ({
 }: OrganizationStepProps) => {
   const posthog = usePostHog()
   const { currentUser, setUserOrganizations } = useAuth()
+  const oauthAccounts = useOAuthAccounts()
+  const {
+    startOnboarding,
+    trackStepStarted,
+    trackStepCompleted,
+    experimentVariant,
+  } = useOnboardingTracking()
 
   const form = useForm<{
     name: string
@@ -73,7 +81,19 @@ export const OrganizationStep = ({
 
   useEffect(() => {
     posthog.capture('dashboard:organizations:create:view')
-  }, [])
+
+    if (!hasExistingOrg) {
+      const signupMethod = inferSignupMethod(oauthAccounts)
+      startOnboarding(signupMethod)
+      trackStepStarted('org')
+    }
+  }, [
+    hasExistingOrg,
+    oauthAccounts,
+    posthog,
+    startOnboarding,
+    trackStepStarted,
+  ])
 
   useEffect(() => {
     if (validationErrors) {
@@ -127,6 +147,10 @@ export const OrganizationStep = ({
       expire: 0,
     })
     setUserOrganizations((orgs) => [...orgs, organization])
+
+    if (!hasExistingOrg) {
+      await trackStepCompleted('org', organization.id)
+    }
 
     let queryParams = ''
     if (hasExistingOrg) {
@@ -304,7 +328,7 @@ export const OrganizationStep = ({
                   loading={createOrganization.isPending}
                   disabled={name.length === 0 || slug.length === 0 || !terms}
                 >
-                  Create
+                  {experimentVariant === 'treatment' ? 'Continue' : 'Create'}
                 </Button>
                 {hasExistingOrg ? (
                   <Link href={`/dashboard`} className="w-full">

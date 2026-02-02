@@ -77,8 +77,8 @@ async def list(
         description="Filter products granting specific benefit.",
     ),
     visibility: builtins.list[ProductVisibility] | None = Query(
-        default=[ProductVisibility.public, ProductVisibility.private],
-        description="Filter by visibility. Defaults to `public` and `private`.",
+        default=None,
+        description="Filter by visibility.",
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ProductSchema]:

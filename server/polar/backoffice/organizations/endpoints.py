@@ -2028,18 +2028,16 @@ async def add_payment_method_domain(
             # Create the payment method domain in Stripe
             await stripe_service.create_payment_method_domain(form.domain_name)
 
-            add_toast(
+            await add_toast(
                 request,
-                f"Successfully added {form.domain_name} to Apple Pay / Google Pay allowlist",
-                type="success",
+                f"Successfully added {form.domain_name} to allowlist",
+                variant="success",
             )
-            return HXRedirectResponse(
-                request, str(request.url_for("organizations:get", id=id)), 303
-            )
+            return
 
         except ValidationError as e:
             validation_error = e
-        except stripe_lib.error.InvalidRequestError as e:
+        except stripe_lib.InvalidRequestError as e:
             logger.error(
                 "Invalid request to Stripe API",
                 organization_id=id,
@@ -2047,52 +2045,11 @@ async def add_payment_method_domain(
                 error=str(e),
                 error_code=e.code if hasattr(e, "code") else None,
             )
-            # Check if domain already exists by examining error code
-            if e.error and e.error.code == "resource_already_exists":
-                error_message = (
-                    f"Domain {data.get('domain_name')} is already in the allowlist"
-                )
-            else:
-                error_message = (
-                    "Unable to add domain to allowlist. "
-                    "Please verify the domain and try again."
-                )
-            add_toast(request, error_message, type="error")
-        except stripe_lib.error.AuthenticationError as e:
-            logger.error(
-                "Stripe authentication error",
-                organization_id=id,
-                error=str(e),
+            error_message = (
+                "Unable to add domain to allowlist. "
+                "Please verify the domain and try again."
             )
-            add_toast(
-                request,
-                "Authentication error with Stripe. Please contact an administrator.",
-                type="error",
-            )
-        except stripe_lib.error.StripeError as e:
-            logger.error(
-                "Stripe API error",
-                organization_id=id,
-                domain=data.get("domain_name"),
-                error=str(e),
-            )
-            add_toast(
-                request,
-                "Failed to add domain to allowlist. Please try again or contact support.",
-                type="error",
-            )
-        except Exception as e:
-            logger.error(
-                "Unexpected error while adding payment method domain",
-                organization_id=id,
-                domain=data.get("domain_name"),
-                error=str(e),
-            )
-            add_toast(
-                request,
-                "An unexpected error occurred. Please try again or contact support.",
-                type="error",
-            )
+            await add_toast(request, error_message, variant="error")
 
     with modal("Add Domain to Allowlist", open=True):
         with tag.p(classes="text-sm text-base-content-secondary mb-4"):

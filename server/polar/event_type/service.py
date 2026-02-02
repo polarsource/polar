@@ -78,7 +78,7 @@ class EventTypeService:
         if org is None:
             return db_results, db_count
 
-        tinybird_shadow = org.feature_settings.get("tinybird_compare", False)
+        tinybird_shadow = org.feature_settings.get("tinybird_compare", True)
         tinybird_read = org.feature_settings.get("tinybird_read", False)
 
         try:
@@ -148,7 +148,7 @@ class EventTypeService:
             return None
 
         if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", False
+            "tinybird_compare", True
         ):
             return org
 

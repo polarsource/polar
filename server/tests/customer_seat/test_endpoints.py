@@ -21,6 +21,7 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_customer,
     create_customer_seat,
+    create_member,
     create_subscription_with_seats,
 )
 
@@ -967,3 +968,184 @@ class TestOrderBasedSeats:
         assert data["product_id"] == str(order_with_seats.product.id)
         assert data["organization_name"] == order_with_seats.product.organization.name
         assert data["can_claim"] is True
+
+
+@pytest.mark.asyncio
+class TestMemberEntityInResponse:
+    """Tests for member entity nested in seat API responses."""
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_list_seats_includes_member(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        user_organization_seat_enabled: UserOrganization,
+        session: AsyncSession,
+    ) -> None:
+        """GET /customer-seats returns member entity when member is associated."""
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=subscription_with_seats.product.organization,
+            email="seat-member@example.com",
+            name="Seat Member",
+        )
+
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            member_id=member.id,
+            email="seat-member@example.com",
+        )
+
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["seats"]) == 1
+
+        seat_data = data["seats"][0]
+        assert seat_data["member_id"] == str(member.id)
+        assert seat_data["member"] is not None
+        assert seat_data["member"]["id"] == str(member.id)
+        assert seat_data["member"]["email"] == "seat-member@example.com"
+        assert seat_data["member"]["name"] == "Seat Member"
+        assert seat_data["member"]["role"] == "member"
+        assert seat_data["member"]["customer_id"] == str(customer.id)
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_list_seats_member_null_when_not_set(
+        self,
+        client: AsyncClient,
+        subscription_with_seats: Subscription,
+        customer_seat_pending: CustomerSeat,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        """GET /customer-seats returns member=null when no member is associated."""
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["seats"]) == 1
+
+        seat_data = data["seats"][0]
+        assert seat_data["member_id"] is None
+        assert seat_data["member"] is None
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_list_seats_member_with_external_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        user_organization_seat_enabled: UserOrganization,
+        session: AsyncSession,
+    ) -> None:
+        """Member external_id is included in the response."""
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=subscription_with_seats.product.organization,
+            email="ext-member@example.com",
+            name="External Member",
+        )
+        member.external_id = "ext_usr_123"
+        await save_fixture(member)
+
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            member_id=member.id,
+            email="ext-member@example.com",
+        )
+
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        seat_data = data["seats"][0]
+        assert seat_data["member"]["external_id"] == "ext_usr_123"
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_assign_seat_response_includes_member(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        user_organization_seat_enabled: UserOrganization,
+    ) -> None:
+        """POST /customer-seats response includes member when member_model_enabled."""
+        # Enable member model
+        subscription_with_seats.product.organization.feature_settings = {
+            **subscription_with_seats.product.organization.feature_settings,
+            "member_model_enabled": True,
+        }
+        await save_fixture(subscription_with_seats.product.organization)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "new-member@example.com",
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email"] == "new-member@example.com"
+        assert data["member_id"] is not None
+        assert data["member"] is not None
+        assert data["member"]["email"] == "new-member@example.com"
+
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_customer_id_still_present_for_backward_compat(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        user_organization_seat_enabled: UserOrganization,
+        session: AsyncSession,
+    ) -> None:
+        """customer_id is still present when member is included."""
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=subscription_with_seats.product.organization,
+            email="compat-member@example.com",
+        )
+
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            member_id=member.id,
+            email="compat-member@example.com",
+        )
+
+        response = await client.get(
+            "/v1/customer-seats",
+            params={"subscription_id": str(subscription_with_seats.id)},
+        )
+
+        assert response.status_code == 200
+        seat_data = response.json()["seats"][0]
+        # Both customer_id and member should be present
+        assert seat_data["customer_id"] == str(customer.id)
+        assert seat_data["member"] is not None
+        assert seat_data["member"]["id"] == str(member.id)

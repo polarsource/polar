@@ -348,6 +348,9 @@ class SeatService:
 
         await session.flush()
 
+        # Refresh to load relationships needed for webhook serialization
+        await session.refresh(seat, ["member", "customer"])
+
         # 6. Post-creation actions (unified)
         if immediate_claim:
             log.info(

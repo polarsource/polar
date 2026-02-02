@@ -673,6 +673,15 @@ def build_system_event(
 ) -> Event: ...
 
 
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_refund_reversal],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceRefundMetadata,
+) -> Event: ...
+
+
 def build_system_event(
     name: SystemEvent,
     customer: Customer,

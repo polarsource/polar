@@ -23,6 +23,7 @@ from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Customer, Dispute, Event, Order, Refund, Transaction
 from polar.models.event import EventSource
+from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderStatus
 from polar.models.refund import RefundStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
@@ -419,6 +420,12 @@ async def create_missing_balance_order_events(
             .where(
                 Transaction.type == TransactionType.payment,
                 Transaction.order_id.is_not(None),
+                Transaction.order_id.not_in(
+                    select(HeldBalance.order_id).where(
+                        HeldBalance.deleted_at.is_(None),
+                        HeldBalance.order_id.is_not(None),
+                    )
+                ),
             )
             .order_by(Transaction.created_at, Transaction.id)
             .limit(batch_size)

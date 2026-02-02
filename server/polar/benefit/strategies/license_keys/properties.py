@@ -21,5 +21,6 @@ class BenefitLicenseKeysProperties(BenefitProperties):
 
 
 class BenefitGrantLicenseKeysProperties(BenefitGrantProperties, total=False):
+    user_provided_key: str
     license_key_id: str
     display_key: str

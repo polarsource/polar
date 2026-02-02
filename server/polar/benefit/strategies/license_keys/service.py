@@ -36,15 +36,20 @@ class BenefitLicenseKeysService(
         if update and "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
-        key = await license_key_service.customer_grant(
+        user_provided_key: str | None = None
+        if not update and "user_provided_key" in grant_properties:
+            user_provided_key = grant_properties["user_provided_key"]
+
+        license_key = await license_key_service.customer_grant(
             self.session,
             customer=customer,
             benefit=benefit,
             license_key_id=current_lk_id,
+            key=user_provided_key,
         )
         return {
-            "license_key_id": str(key.id),
-            "display_key": key.display_key,
+            "license_key_id": str(license_key.id),
+            "display_key": license_key.display_key,
         }
 
     async def cycle(

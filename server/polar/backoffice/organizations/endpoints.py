@@ -26,6 +26,7 @@ from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.kit.sorting import Sorting
@@ -73,6 +74,7 @@ from .analytics import (
     PaymentAnalyticsService,
 )
 from .forms import (
+    AddPaymentMethodDomainForm,
     OrganizationOrdersImportForm,
     OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
@@ -1429,6 +1431,19 @@ async def get(
                         with tag.div(classes="icon-upload"):
                             pass
                         text("Import Orders")
+                    with tag.button(
+                        classes="btn",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:add_payment_method_domain", id=organization.id
+                            )
+                        ),
+                        hx_target="#modal",
+                        title="Add Domain to Apple Pay / Google Pay Allowlist",
+                    ):
+                        with tag.div(classes="icon-globe"):
+                            pass
+                        text("Add Domain to Allowlist")
                     with button(
                         variant="primary",
                         hx_get=str(
@@ -1984,3 +1999,77 @@ async def import_orders(
                     variant="primary",
                 ):
                     text("Import")
+
+
+@router.api_route(
+    "/{id}/add-payment-method-domain",
+    name="organizations:add_payment_method_domain",
+    methods=["GET", "POST"],
+)
+async def add_payment_method_domain(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = AddPaymentMethodDomainForm.model_validate_form(data)
+            
+            # Create the payment method domain in Stripe
+            await stripe_service.create_payment_method_domain(form.domain_name)
+            
+            add_toast(
+                request,
+                f"Successfully added {form.domain_name} to Apple Pay / Google Pay allowlist",
+                type="success",
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+        except Exception as e:
+            logger.error(
+                "Failed to add payment method domain",
+                organization_id=id,
+                domain=data.get("domain_name"),
+                error=str(e),
+            )
+            add_toast(
+                request,
+                f"Failed to add domain to allowlist: {str(e)}",
+                type="error",
+            )
+
+    with modal("Add Domain to Allowlist", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary mb-4"):
+            text(
+                "Add a custom domain to the Apple Pay / Google Pay allowlist. "
+                "This allows these payment methods to appear in embeds on the specified domain."
+            )
+
+        with AddPaymentMethodDomainForm.render(
+            {},
+            hx_post=str(request.url),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Add Domain")

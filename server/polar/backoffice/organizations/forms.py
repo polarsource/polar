@@ -292,3 +292,15 @@ class DeleteStripeAccountForm(forms.BaseForm):
             description="Explain why this Stripe account is being deleted",
         ),
     ]
+
+
+class AddPaymentMethodDomainForm(forms.BaseForm):
+    domain_name: Annotated[
+        str,
+        StringConstraints(min_length=1),
+        forms.InputField(type="text", placeholder="example.com"),
+        Field(
+            title="Domain Name",
+            description="Domain to add to Apple Pay / Google Pay allowlist",
+        ),
+    ]

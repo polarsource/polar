@@ -348,16 +348,8 @@ class SeatService:
 
         await session.flush()
 
-        # Reload seat with eager-loaded relationships (member, customer, etc.)
-        # Required because: (1) newly created seats don't have relationships loaded,
-        # (2) webhooks serialize the seat using CustomerSeatSchema which includes member,
-        # (3) some code paths (e.g. _resolve_member_model_target) create the member
-        #     after the seat object is constructed, so the in-memory seat is stale.
-        reloaded_seat = await repository.get_by_id(
-            seat.id, options=repository.get_eager_options()
-        )
-        assert reloaded_seat is not None
-        seat = reloaded_seat
+        # Refresh to load relationships needed for webhook serialization
+        await session.refresh(seat, ["member", "customer"])
 
         # 6. Post-creation actions (unified)
         if immediate_claim:

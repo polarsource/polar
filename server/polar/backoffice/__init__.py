@@ -26,6 +26,8 @@ from .versioned_static import VersionedStaticFiles
 from .webhooks.endpoints import router as webhooks_router
 
 app = FastAPI(
+    # Keep TagResponse as default for Tagflow endpoints during transition
+    # Jinja2 endpoints will explicitly return TemplateResponse
     default_response_class=TagResponse,
     dependencies=[Depends(get_admin)],
     docs_url=None,
@@ -61,15 +63,8 @@ app.include_router(webhooks_router, prefix="/webhooks")
 
 
 @app.get("/", name="index")
-async def index(request: Request) -> None:
-    with layout(request, [], "index"):
-        with tag.h1():
-            text("Dashboard")
-
-
-@app.get("/jinja", name="index_jinja")
-async def index_jinja(request: Request):
-    """Jinja2 version of the index page for testing."""
+async def index(request: Request):
+    """Backoffice index/dashboard page."""
     from .navigation import NAVIGATION
     from .templates import templates
 

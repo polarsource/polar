@@ -883,8 +883,12 @@ class SeatService:
             )
 
         member = await self._resolve_member(
-            session, billing_customer_id, organization_id,
-            email, external_member_id, member_id,
+            session,
+            billing_customer_id,
+            organization_id,
+            email,
+            external_member_id,
+            member_id,
         )
 
         existing_seat = await repository.get_by_container_and_email(
@@ -921,8 +925,12 @@ class SeatService:
 
         if external_member_id is not None:
             return await self._resolve_member_by_external_id(
-                session, member_repository, billing_customer_id, organization_id,
-                email, external_member_id,
+                session,
+                member_repository,
+                billing_customer_id,
+                organization_id,
+                email,
+                external_member_id,
             )
 
         if email:

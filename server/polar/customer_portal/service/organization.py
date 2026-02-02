@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from polar.kit.services import ResourceServiceReader
-from polar.models import Organization, Product
+from polar.models import Organization, Product, ProductVisibility
 from polar.postgres import AsyncSession
 
 
@@ -18,7 +18,13 @@ class CustomerOrganizationService(ResourceServiceReader[Organization]):
                 Organization.slug == slug,
             )
             .options(
-                selectinload(Organization.products).options(
+                selectinload(
+                    Organization.products.and_(
+                        Product.deleted_at.is_(None),
+                        Product.is_archived.is_(False),
+                        Product.visibility == ProductVisibility.public,
+                    )
+                ).options(
                     selectinload(Product.product_medias),
                 )
             )

@@ -20,6 +20,7 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
+    ProductVisibility,
     User,
 )
 from polar.postgres import AsyncSession
@@ -251,6 +252,17 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 )
                 continue
 
+            if product.visibility == ProductVisibility.draft:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is a draft.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
             products.append(product)
 
         organization_ids = {product.organization_id for product in products}
@@ -312,6 +324,18 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Product is archived.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        if product.visibility == ProductVisibility.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is a draft.",
                         "input": price_id,
                     }
                 ]

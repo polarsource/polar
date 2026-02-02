@@ -29,6 +29,7 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
+    ProductVisibility,
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
@@ -62,6 +63,7 @@ class ProductService:
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
+        visibility: Sequence[ProductVisibility] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -104,6 +106,9 @@ class ProductService:
         if is_recurring is not None:
             statement = statement.where(Product.is_recurring.is_(is_recurring))
 
+        if visibility is not None:
+            statement = statement.where(Product.visibility.in_(visibility))
+
         if benefit_id is not None:
             statement = (
                 statement.join(Product.product_benefits)
@@ -145,7 +150,11 @@ class ProductService:
         repository = ProductRepository.from_session(session)
         statement = (
             repository.get_base_statement()
-            .where(Product.id == id, Product.is_archived.is_(False))
+            .where(
+                Product.id == id,
+                Product.is_archived.is_(False),
+                Product.visibility != ProductVisibility.draft,
+            )
             .options(selectinload(Product.product_medias))
         )
         return await repository.get_one_or_none(statement)

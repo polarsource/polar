@@ -465,6 +465,14 @@ class StripeService:
         )
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
+    async def create_payment_method_domain(
+        self, domain_name: str
+    ) -> stripe_lib.PaymentMethodDomain:
+        log.info("stripe.payment_method_domain.create", domain_name=domain_name)
+        return await stripe_lib.PaymentMethodDomain.create_async(
+            domain_name=domain_name, enabled=True
+        )
+
     async def get_verification_session(
         self, id: str
     ) -> stripe_lib.identity.VerificationSession:

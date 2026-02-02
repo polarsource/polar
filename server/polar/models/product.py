@@ -48,6 +48,12 @@ class ProductBillingType(StrEnum):
     recurring = "recurring"
 
 
+class ProductVisibility(StrEnum):
+    draft = "draft"
+    private = "private"
+    public = "public"
+
+
 class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     __tablename__ = "products"
     __table_args__ = (
@@ -63,6 +69,11 @@ class Product(TrialConfigurationMixin, MetadataMixin, RecordModel):
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    visibility: Mapped[ProductVisibility | None] = mapped_column(
+        StringEnum(ProductVisibility),
+        nullable=True,
+        default=ProductVisibility.public,
+    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,

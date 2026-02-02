@@ -382,3 +382,18 @@ async def identity_verification_session_requires_input(event_id: uuid.UUID) -> N
             await user_service.identity_verification_failed(
                 session, verification_session
             )
+
+
+@actor(
+    actor_name="stripe.webhook.identity.verification_session.canceled",
+    priority=TaskPriority.HIGH,
+)
+async def identity_verification_session_canceled(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            verification_session = cast(
+                stripe_lib.identity.VerificationSession, event.stripe_data.data.object
+            )
+            await user_service.identity_verification_failed(
+                session, verification_session
+            )

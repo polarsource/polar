@@ -30,6 +30,7 @@ from plain_client import (
     EmailAddressInput,
     Plain,
     ThreadsFilter,
+    ThreadStatus,
     UpsertCustomerIdentifierInput,
     UpsertCustomerInput,
     UpsertCustomerOnCreateInput,
@@ -1414,7 +1415,10 @@ class PlainService:
             if not user:
                 log.warning("User not found", email=customer_email)
                 return False
-            filters = ThreadsFilter(customer_ids=[user.id])
+            filters = ThreadsFilter(
+                customer_ids=[user.id],
+                statuses=[ThreadStatus.TODO, ThreadStatus.SNOOZED],
+            )
             threads = await plain.threads(filters=filters)
             nr_threads = 0
             for edge in threads.edges:

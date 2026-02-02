@@ -315,6 +315,8 @@ async def get_organization_detail(
     request: Request,
     organization_id: UUID4,
     section: str = Query("overview"),
+    files_page: int = Query(1, ge=1),
+    files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """
@@ -498,17 +500,25 @@ async def get_organization_detail(
                 with account_section.render(request):
                     pass
             elif section == "files":
-                # Fetch downloadable files from repository
+                # Fetch downloadable files from repository with pagination
                 file_sorting: list[Sorting[FileSortProperty]] = [
                     (FileSortProperty.created_at, True)
                 ]
                 file_repository = FileRepository(session)
-                files = await file_repository.get_all_by_organization(
+                files, files_count = await file_repository.paginate_by_organization(
                     organization.id,
                     service=FileServiceTypes.downloadable,
                     sorting=file_sorting,
+                    limit=files_limit,
+                    page=files_page,
                 )
-                files_section = FilesSection(organization, files=list(files))
+                files_section = FilesSection(
+                    organization,
+                    files=files,
+                    page=files_page,
+                    limit=files_limit,
+                    total_count=files_count,
+                )
                 with files_section.render(request):
                     pass
             elif section == "history":

@@ -1323,6 +1323,8 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
 async def get(
     request: Request,
     id: UUID4,
+    files_page: int = Query(1, ge=1),
+    files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
@@ -1829,7 +1831,7 @@ async def get(
                             pass
 
             # Organization Files Section
-            with tag.div(classes="mt-8"):
+            with tag.div(classes="mt-8 flex flex-col gap-4", id="files"):
                 with tag.div(classes="flex items-center gap-4 mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text("Downloadable Files")
@@ -1838,10 +1840,12 @@ async def get(
                     (FileSortProperty.created_at, True)
                 ]
                 file_repository = FileRepository.from_session(session)
-                files = await file_repository.get_all_by_organization(
+                files, files_count = await file_repository.paginate_by_organization(
                     organization.id,
                     service=FileServiceTypes.downloadable,
                     sorting=sorting,
+                    limit=files_limit,
+                    page=files_page,
                 )
 
                 with datatable.Datatable[File, FileSortProperty](
@@ -1852,6 +1856,11 @@ async def get(
                     FileDownloadLinkColumn(),
                     empty_message="No downloadable files found",
                 ).render(request, files, sorting=sorting):
+                    pass
+
+                with datatable.pagination(
+                    request, PaginationParams(files_page, files_limit), files_count
+                ):
                     pass
 
 

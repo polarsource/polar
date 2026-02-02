@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from typing import Any
 
@@ -156,9 +157,25 @@ async def callback(
 
     try:
         client = OAUTH_CLIENTS[platform]
-        oauth2_token_data = await client.get_access_token(
-            code, str(request.url_for("customer_portal.oauth_accounts.callback"))
-        )
+        redirect_uri = str(request.url_for("customer_portal.oauth_accounts.callback"))
+        try:
+            oauth2_token_data = await client.get_access_token(code, redirect_uri)
+        except GetAccessTokenError as e:
+            if (
+                platform == CustomerOAuthPlatform.discord
+                and e.response is not None
+                and e.response.status_code == 429
+            ):
+                retry_after_ms = e.response.headers.get("Retry-After")
+                if retry_after_ms is not None and int(retry_after_ms) < 5000:
+                    await asyncio.sleep(int(retry_after_ms) / 1000)
+                    oauth2_token_data = await client.get_access_token(
+                        code, redirect_uri
+                    )
+                else:
+                    raise
+            else:
+                raise
     except GetAccessTokenError as e:
         error_message = "Failed to get access token. Please try again later."
         error_params: dict[str, str] = {

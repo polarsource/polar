@@ -1,5 +1,6 @@
 from datetime import UTC, date, datetime
 from typing import NotRequired, TypedDict
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
@@ -7,8 +8,10 @@ from apscheduler.util import ZoneInfo
 from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
+from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
@@ -2558,3 +2561,135 @@ class TestCheckoutMetrics:
         # Only the checkout opened within range should be counted
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestTinybirdDualRead:
+    async def test_uses_pg_when_tinybird_globally_disabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        tb_mock = AsyncMock()
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", False),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+        tb_mock.assert_not_called()
+        assert result.periods is not None
+
+    async def test_uses_pg_when_org_tinybird_disabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": False,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        tb_mock = AsyncMock()
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+        tb_mock.assert_not_called()
+        assert result.periods is not None
+
+    async def test_shadow_mode_returns_pg_and_logs(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_compare": True,
+        }
+        await save_fixture(organization)
+
+        mock_tb_response = MetricsResponse.model_validate(
+            {"periods": [], "totals": {}, "metrics": {}}
+        )
+        tb_mock = AsyncMock(return_value=mock_tb_response)
+        log_mock = MagicMock()
+
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+            patch.object(metrics_service, "_log_tinybird_comparison", log_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+
+        tb_mock.assert_called_once()
+        log_mock.assert_called_once()
+        assert result.periods is not None
+
+    async def test_fallback_on_tinybird_error(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_compare": True,
+        }
+        await save_fixture(organization)
+
+        tb_mock = AsyncMock(side_effect=Exception("Tinybird error"))
+
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+
+        tb_mock.assert_called_once()
+        assert result.periods is not None

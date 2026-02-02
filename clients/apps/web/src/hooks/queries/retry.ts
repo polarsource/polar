@@ -2,7 +2,7 @@ import {
   ClientResponseError,
   NotFoundResponseError,
   UnauthorizedResponseError,
-} from '@polar-sh/client'
+} from '@spaire/client'
 
 export const authenticatingRetry = (
   failureCount: number,

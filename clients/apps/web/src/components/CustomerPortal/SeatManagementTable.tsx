@@ -1,15 +1,15 @@
 'use client'
 
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import Button from '@spaire/ui/components/atoms/Button'
+import { DataTable } from '@spaire/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/atoms/DropdownMenu'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+} from '@spaire/ui/components/atoms/DropdownMenu'
+import { Status } from '@spaire/ui/components/atoms/Status'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

@@ -2,9 +2,9 @@
 
 import { useMembers } from '@/hooks/queries/members'
 import { useOrganization } from '@/hooks/queries/org'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { DataTable } from '@spaire/ui/components/atoms/DataTable'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import { Status } from '@spaire/ui/components/atoms/Status'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

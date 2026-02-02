@@ -2,7 +2,7 @@
 
 import { Section } from '@/components/Layout/Section'
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useFormContext } from 'react-hook-form'
 
 interface ProductTrialSectionProps {

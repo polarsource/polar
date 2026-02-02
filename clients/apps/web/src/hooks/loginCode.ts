@@ -1,7 +1,7 @@
 'use client'
 
 import { api } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 

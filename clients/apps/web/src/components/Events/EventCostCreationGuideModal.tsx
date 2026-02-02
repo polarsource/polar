@@ -1,5 +1,5 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import Link from 'next/link'
 import { Well } from '../Shared/Well'
 import {
@@ -22,7 +22,7 @@ export const EventCostCreationGuideModal = () => {
         <Well className="dark:bg-polar-800 rounded-lg bg-gray-100 p-4 text-sm">
           <SyntaxHighlighterClient
             lang="typescript"
-            code={`import { Polar } from "@polar-sh/sdk";
+            code={`import { Polar } from "@spaire/sdk";
 
 const polar = new Polar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",

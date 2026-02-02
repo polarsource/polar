@@ -8,7 +8,7 @@ import {
   useUpdateOrganization,
 } from '@/hooks/polar/organizations'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Stack } from 'expo-router'
 import { useCallback, useContext, useState } from 'react'
 import { RefreshControl, ScrollView, Switch } from 'react-native'

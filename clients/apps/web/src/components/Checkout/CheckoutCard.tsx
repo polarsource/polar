@@ -4,10 +4,10 @@ import { BenefitList } from '@/components/Products/BenefitList'
 import {
   CheckoutPricing,
   CheckoutSeatSelector,
-} from '@polar-sh/checkout/components'
-import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+} from '@spaire/checkout/components'
+import type { ProductCheckoutPublic } from '@spaire/checkout/guards'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
 export interface CheckoutCardProps {
   checkout: ProductCheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>

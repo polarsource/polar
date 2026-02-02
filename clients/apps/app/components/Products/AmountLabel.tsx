@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useMemo } from 'react'
 import { Text } from '../Shared/Text'
 

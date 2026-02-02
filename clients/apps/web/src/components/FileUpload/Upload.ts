@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { createSHA256 } from 'hash-wasm'
 
 const CHUNK_SIZE = 10000000 // 10MB

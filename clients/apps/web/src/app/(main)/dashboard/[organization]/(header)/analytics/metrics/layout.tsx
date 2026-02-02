@@ -1,7 +1,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { unwrap } from '@polar-sh/client'
+import { unwrap } from '@spaire/client'
 import { MetricsHeader } from './components/MetricsHeader'
 import { MetricsSubNav } from './components/MetricsSubNav'
 

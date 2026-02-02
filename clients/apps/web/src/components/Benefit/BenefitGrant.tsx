@@ -1,15 +1,15 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
-import { Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Client, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+} from '@spaire/ui/components/atoms/Select'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
 import Markdown from 'markdown-to-jsx'
 import { usePathname } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'

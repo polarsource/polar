@@ -2,13 +2,13 @@
 
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ import {
 const adapters = [
   {
     name: 'Next.js',
-    code: `import { Checkout } from "@polar-sh/nextjs";
+    code: `import { Checkout } from "@spaire/nextjs";
 
 export const GET = Checkout({
   accessToken: 'xxx'
@@ -31,8 +31,8 @@ export const GET = Checkout({
   {
     name: 'BetterAuth',
     code: `import { betterAuth } from "better-auth";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { polar, checkout, portal, usage, webhooks } from "@spaire/better-auth";
+import { Polar } from "@spaire/sdk";
 
 const client = new Polar({ accessToken: 'xxx' });
 
@@ -55,7 +55,7 @@ const auth = betterAuth({
   },
   {
     name: 'TypeScript',
-    code: `import { Polar } from "@polar-sh/sdk";
+    code: `import { Polar } from "@spaire/sdk";
 
 const polar = new Polar({
   accessToken: 'xxx',

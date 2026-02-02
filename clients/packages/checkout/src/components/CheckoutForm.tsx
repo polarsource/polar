@@ -1,16 +1,16 @@
 'use client'
 
-import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+import { CountryAlpha2Input } from '@spaire/sdk/models/components/addressinput'
+import type { CheckoutConfirmStripe } from '@spaire/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import type { CheckoutPublicConfirmed } from '@spaire/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import Button from '@spaire/ui/components/atoms/Button'
+import CountryPicker from '@spaire/ui/components/atoms/CountryPicker'
+import CountryStatePicker from '@spaire/ui/components/atoms/CountryStatePicker'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import Input from '@spaire/ui/components/atoms/Input'
+import { Checkbox } from '@spaire/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -18,9 +18,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { cn } from '@polar-sh/ui/lib/utils'
+} from '@spaire/ui/components/ui/form'
+import { ThemingPresetProps } from '@spaire/ui/hooks/theming'
+import { cn } from '@spaire/ui/lib/utils'
 import {
   Elements,
   ElementsConsumer,

@@ -3,7 +3,7 @@
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { fromISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { endOfDay, subMonths } from 'date-fns'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'

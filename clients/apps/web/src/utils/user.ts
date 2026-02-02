@@ -1,4 +1,4 @@
-import { Client, schemas } from '@polar-sh/client'
+import { Client, schemas } from '@spaire/client'
 import * as Sentry from '@sentry/nextjs'
 import { headers } from 'next/headers'
 import { cache } from 'react'

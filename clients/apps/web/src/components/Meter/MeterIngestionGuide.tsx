@@ -6,7 +6,7 @@ import {
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import Link from 'next/link'
 import { useContext } from 'react'
 

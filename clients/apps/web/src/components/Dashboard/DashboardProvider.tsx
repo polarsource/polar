@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { PropsWithChildren, createContext, useContext } from 'react'
 
 export interface DashboardContextValue {}

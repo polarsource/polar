@@ -1,8 +1,8 @@
 'use client'
 
-import { enums, schemas } from '@polar-sh/client'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { enums, schemas } from '@spaire/client'
+import Input from '@spaire/ui/components/atoms/Input'
+import Switch from '@spaire/ui/components/atoms/Switch'
 
 import {
   Select,
@@ -10,7 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 import {
   FormControl,
   FormDescription,
@@ -18,7 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 

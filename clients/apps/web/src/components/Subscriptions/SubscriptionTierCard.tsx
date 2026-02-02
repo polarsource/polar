@@ -6,14 +6,14 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+} from '@spaire/ui/components/atoms/Card'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'
 

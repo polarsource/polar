@@ -10,7 +10,7 @@ import OrganizationNotificationSettings from '@/components/Settings/Organization
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 export default function ClientPage({
   organization: org,

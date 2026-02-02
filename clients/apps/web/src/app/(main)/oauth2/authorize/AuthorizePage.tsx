@@ -1,10 +1,10 @@
 import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
+import { List, ListItem } from '@spaire/ui/components/atoms/List'
 
 const isSubTypeOrganization = (
   sub_type: string,

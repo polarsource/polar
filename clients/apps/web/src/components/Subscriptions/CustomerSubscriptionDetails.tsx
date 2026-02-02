@@ -7,12 +7,12 @@ import {
   useCustomerCancelSubscription,
   useCustomerUncancelSubscription,
 } from '@/hooks/queries'
-import { Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { Client, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
+import { getThemePreset } from '@spaire/ui/hooks/theming'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

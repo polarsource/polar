@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 
 const EventSelect: React.FC<
   React.ComponentProps<typeof Select> & {

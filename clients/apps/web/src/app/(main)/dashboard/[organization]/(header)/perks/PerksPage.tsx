@@ -1,8 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import { ArrowUpRight } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { type Perk, perksData } from './perksData'

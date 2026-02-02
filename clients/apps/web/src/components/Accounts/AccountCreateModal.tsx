@@ -1,8 +1,8 @@
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import { enums, isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
+import { enums, isValidationError, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import CountryPicker from '@spaire/ui/components/atoms/CountryPicker'
 import {
   Form,
   FormControl,
@@ -11,7 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 

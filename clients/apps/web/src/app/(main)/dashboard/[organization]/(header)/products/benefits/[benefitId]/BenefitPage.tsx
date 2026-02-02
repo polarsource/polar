@@ -15,15 +15,15 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { usePushRouteWithoutCache } from '@/utils/router'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useCallback } from 'react'
 
 interface ClientPageProps {

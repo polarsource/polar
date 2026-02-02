@@ -1,14 +1,14 @@
 import { AnonymousCustomerAvatar } from '@/components/Customer/AnonymousCustomerAvatar'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@polar-sh/ui/components/ui/popover'
+} from '@spaire/ui/components/ui/popover'
 import Link from 'next/link'
 import { useContext } from 'react'
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { schemas } from '@spaire/client'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
 import CopyToClipboardButton from '../CopyToClipboardButton/CopyToClipboardButton'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'

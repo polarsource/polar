@@ -1,5 +1,5 @@
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import React, {
   FunctionComponent,

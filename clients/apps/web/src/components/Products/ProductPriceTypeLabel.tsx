@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import React from 'react'
 
 interface ProductPriceTypeLabelProps {

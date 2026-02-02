@@ -1,7 +1,7 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { schemas } from '@spaire/client'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
 
 const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> = {
   eq: 'equals',

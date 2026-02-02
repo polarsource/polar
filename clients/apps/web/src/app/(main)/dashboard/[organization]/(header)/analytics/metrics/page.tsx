@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { unwrap } from '@polar-sh/client'
+import { unwrap } from '@spaire/client'
 import { RedirectType, redirect } from 'next/navigation'
 
 export default async function Page(props: {

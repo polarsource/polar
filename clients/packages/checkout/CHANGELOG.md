@@ -1,4 +1,4 @@
-# @polar-sh/checkout
+# @spaire/checkout
 
 ## 0.1.14
 
@@ -7,7 +7,7 @@
 - d9a45ea: Bump dependencies and setup trusted publishing
 - 258bdb1: Dependency upgrades, including React 19 peer dependency support
 - Updated dependencies [258bdb1]
-  - @polar-sh/ui@0.1.2
+  - @spaire/ui@0.1.2
 
 ## 0.1.13
 
@@ -101,4 +101,4 @@
 
 ### Minor Changes
 
-- Initial release of @polar-sh/checkout
+- Initial release of @spaire/checkout

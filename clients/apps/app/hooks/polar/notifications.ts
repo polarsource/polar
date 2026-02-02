@@ -1,7 +1,7 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
-import { unwrap } from '@polar-sh/client'
+import { unwrap } from '@spaire/client'
 import { useMutation, useQuery, UseQueryResult } from '@tanstack/react-query'
 import { Platform } from 'react-native'
 

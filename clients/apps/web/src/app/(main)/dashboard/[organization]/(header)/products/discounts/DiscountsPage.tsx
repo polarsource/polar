@@ -20,22 +20,22 @@ import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Search from '@mui/icons-material/Search'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Input from '@polar-sh/ui/components/atoms/Input'
+} from '@spaire/ui/components/atoms/DataTable'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 

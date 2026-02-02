@@ -1,7 +1,7 @@
 'use client'
 
 import { hasLegacyRecurringPrices } from '@/utils/product'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import LogoIcon from '../Brand/LogoIcon'
 import LegacyRecurringProductPrices from './LegacyRecurringProductPrices'
 import ProductPriceLabel from './ProductPriceLabel'

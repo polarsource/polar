@@ -1,5 +1,5 @@
 {
-  "extends": "@polar-sh/typescript-config/react-library.json",
+  "extends": "@spaire/typescript-config/react-library.json",
   "compilerOptions": {
     "baseUrl": "src/",
     "allowSyntheticDefaultImports": true,

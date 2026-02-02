@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@spaire/client'
 import { defaultRetry } from './retry'
 
 export const useLicenseKeyUpdate = (organizationId: string) =>

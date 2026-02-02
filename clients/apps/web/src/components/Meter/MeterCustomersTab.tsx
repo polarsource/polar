@@ -2,17 +2,17 @@
 
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { getAPIParams } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
 import {
   DataTable,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@spaire/ui/components/atoms/DataTable'
 import {
   DataTablePaginationState,
   DataTableSortingState,
-} from '@polar-sh/ui/components/atoms/datatable/DataTable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+} from '@spaire/ui/components/atoms/datatable/DataTable'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import { useState } from 'react'
 import FormattedUnits from './FormattedUnits'

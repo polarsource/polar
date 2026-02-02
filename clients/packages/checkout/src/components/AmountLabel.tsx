@@ -1,4 +1,4 @@
-import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
+import type { SubscriptionRecurringInterval } from '@spaire/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
 
 import { formatCurrencyNumber } from '../utils/money'

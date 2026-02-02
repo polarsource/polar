@@ -136,7 +136,7 @@ const Button = ({ className, variant, size, ...props }) => (
 ### ShadowBox Pattern
 
 ```tsx
-import { ShadowBox } from '@polar-sh/ui'
+import { ShadowBox } from '@spaire/ui'
 
 <ShadowBox>
   {/* Content with consistent card styling */}
@@ -227,22 +227,22 @@ const MyForm = () => {
 }
 ```
 
-## Imports from @polar-sh/ui
+## Imports from @spaire/ui
 
 ```tsx
 // Atoms
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Input } from '@polar-sh/ui/components/atoms/Input'
-import { Card, CardHeader, CardContent } from '@polar-sh/ui/components/atoms/Card'
-import { ShadowBox } from '@polar-sh/ui/components/atoms/ShadowBox'
-import { Avatar } from '@polar-sh/ui/components/atoms/Avatar'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import Button from '@spaire/ui/components/atoms/Button'
+import { Input } from '@spaire/ui/components/atoms/Input'
+import { Card, CardHeader, CardContent } from '@spaire/ui/components/atoms/Card'
+import { ShadowBox } from '@spaire/ui/components/atoms/ShadowBox'
+import { Avatar } from '@spaire/ui/components/atoms/Avatar'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@spaire/ui/components/atoms/Tabs'
 
 // Molecules
-import { Banner } from '@polar-sh/ui/components/molecules/Banner'
+import { Banner } from '@spaire/ui/components/molecules/Banner'
 
 // Utils
-import { cn } from '@polar-sh/ui/lib/utils'  // className merger
+import { cn } from '@spaire/ui/lib/utils'  // className merger
 ```
 
 ## Common Patterns

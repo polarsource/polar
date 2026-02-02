@@ -1,4 +1,4 @@
-import { Client, schemas } from '@polar-sh/client'
+import { Client, schemas } from '@spaire/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 

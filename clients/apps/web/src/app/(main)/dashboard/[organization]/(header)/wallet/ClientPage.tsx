@@ -2,7 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { ArrowUpRight, CreditCard, Plus, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { twMerge } from 'tailwind-merge'

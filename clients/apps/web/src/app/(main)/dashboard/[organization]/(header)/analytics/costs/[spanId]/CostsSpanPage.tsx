@@ -10,8 +10,8 @@ import {
 } from '@/hooks/queries/events'
 import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import { endOfDay, format, subMonths } from 'date-fns'
 import {
   parseAsArrayOf,

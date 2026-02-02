@@ -1,7 +1,7 @@
 'use client'
 
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { SquareTerminalIcon } from 'lucide-react'
 import Link from 'next/link'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { Storefront } from '@/components/Profile/Storefront'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 const ClientPage = ({
   organization,

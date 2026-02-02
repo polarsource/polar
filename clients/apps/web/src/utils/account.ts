@@ -1,7 +1,7 @@
 import ManualPayout from '@/components/Icons/ManualPayout'
 import OpenCollective from '@/components/Icons/OpenCollective'
 import Stripe from '@/components/Icons/Stripe'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 export const ALL_ACCOUNT_TYPES: schemas['AccountType'][] = [
   'stripe',

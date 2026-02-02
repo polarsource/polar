@@ -1,8 +1,8 @@
 import { useInViewport } from '@/hooks/utils'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import Search from '@mui/icons-material/Search'
-import Button, { ButtonProps } from '@polar-sh/ui/components/atoms/Button'
-import Input, { InputProps } from '@polar-sh/ui/components/atoms/Input'
+import Button, { ButtonProps } from '@spaire/ui/components/atoms/Button'
+import Input, { InputProps } from '@spaire/ui/components/atoms/Input'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
 

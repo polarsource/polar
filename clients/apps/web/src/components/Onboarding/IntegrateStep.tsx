@@ -1,8 +1,8 @@
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { Tabs, TabsList, TabsTrigger } from '@spaire/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { useContext, useMemo, useState } from 'react'
 import slugify from 'slugify'
@@ -44,8 +44,8 @@ const frameworks = (products: schemas['Product'][]) =>
       name: 'Next.js',
       link: 'https://spairehq.com/docs/integrate/sdk/adapters/nextjs',
       icon: <NextJsIcon size={24} />,
-      packages: '@polar-sh/nextjs',
-      code: `import { Checkout } from "@polar-sh/nextjs";
+      packages: '@spaire/nextjs',
+      code: `import { Checkout } from "@spaire/nextjs";
 
 export const GET = Checkout({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -57,10 +57,10 @@ export const GET = Checkout({
       name: 'BetterAuth',
       link: 'https://spairehq.com/docs/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
-      packages: 'better-auth @polar-sh/better-auth @polar-sh/sdk',
+      packages: 'better-auth @spaire/better-auth @spaire/sdk',
       code: `import { betterAuth } from "better-auth";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { polar, checkout, portal, usage, webhooks } from "@spaire/better-auth";
+import { Polar } from "@spaire/sdk";
 
 const polarClient = new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN
@@ -97,8 +97,8 @@ ${products
       name: 'Node.js',
       link: 'https://spairehq.com/docs/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
-      packages: '@polar-sh/sdk',
-      code: `import { Polar } from "@polar-sh/sdk";
+      packages: '@spaire/sdk',
+      code: `import { Polar } from "@spaire/sdk";
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,

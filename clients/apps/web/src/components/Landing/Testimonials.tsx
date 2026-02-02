@@ -1,4 +1,4 @@
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
 import Image from 'next/image'
 import Link from 'next/link'
 

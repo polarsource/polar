@@ -15,16 +15,16 @@ import {
   parseSearchParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
+import CopyToClipboardInput from '@spaire/ui/components/atoms/CopyToClipboardInput'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Tabs'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'

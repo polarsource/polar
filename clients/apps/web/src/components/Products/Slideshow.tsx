@@ -2,7 +2,7 @@
 
 import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCallback, useState } from 'react'
 

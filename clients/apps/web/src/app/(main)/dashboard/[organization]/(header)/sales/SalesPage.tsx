@@ -15,17 +15,17 @@ import {
 } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+} from '@spaire/ui/components/atoms/DataTable'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import { Status } from '@spaire/ui/components/atoms/Status'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'

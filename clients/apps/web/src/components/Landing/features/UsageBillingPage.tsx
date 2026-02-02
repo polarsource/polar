@@ -10,15 +10,15 @@ import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import ElectricMeterOutlined from '@mui/icons-material/ElectricMeterOutlined'
 import KeyboardDoubleArrowRightOutlined from '@mui/icons-material/KeyboardDoubleArrowRightOutlined'
 import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Hero } from '../Hero/Hero'
 import { Section } from '../Section'
 
-const llmCode = `import { Ingestion } from "@polar-sh/ingestion";
-import { LLMStrategy } from "@polar-sh/ingestion/strategies/LLM";
+const llmCode = `import { Ingestion } from "@spaire/ingestion";
+import { LLMStrategy } from "@spaire/ingestion/strategies/LLM";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 

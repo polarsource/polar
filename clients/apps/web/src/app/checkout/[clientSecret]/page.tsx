@@ -2,11 +2,11 @@ import { getPublicServerURL, getServerURL } from '@/utils/api'
 import {
   CheckoutFormProvider,
   CheckoutProvider,
-} from '@polar-sh/checkout/providers'
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
+} from '@spaire/checkout/providers'
+import { PolarCore } from '@spaire/sdk/core'
+import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
+import { ExpiredCheckoutError } from '@spaire/sdk/models/errors/expiredcheckouterror'
+import { ResourceNotFound } from '@spaire/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 import CheckoutPage from './CheckoutPage'
 

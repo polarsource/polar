@@ -1,14 +1,14 @@
 'use client'
 
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import { LegacyRecurringProductPrice } from '@spaire/sdk/models/components/legacyrecurringproductprice.js'
+import type { ProductPrice } from '@spaire/sdk/models/components/productprice.js'
 import {
   RadioGroup,
   RadioGroupItem,
-} from '@polar-sh/ui/components/ui/radio-group'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { cn } from '@polar-sh/ui/lib/utils'
+} from '@spaire/ui/components/ui/radio-group'
+import { ThemingPresetProps } from '@spaire/ui/hooks/theming'
+import { cn } from '@spaire/ui/lib/utils'
 import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import {

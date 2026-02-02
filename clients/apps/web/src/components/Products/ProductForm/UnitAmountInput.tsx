@@ -1,4 +1,4 @@
-import Input from '@polar-sh/ui/components/atoms/Input'
+import Input from '@spaire/ui/components/atoms/Input'
 import Big from 'big.js'
 import { DollarSign } from 'lucide-react'
 import React, { ComponentProps, useCallback, useMemo } from 'react'

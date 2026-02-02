@@ -2,12 +2,12 @@ import {
   formatHumanFriendlyCurrency,
   formatHumanFriendlyScalar,
 } from '@/utils/formatters'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Card,
   CardContent,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
+} from '@spaire/ui/components/atoms/Card'
 
 export interface MiniMetricBoxProps {
   title?: string

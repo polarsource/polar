@@ -3,16 +3,16 @@
 import { LoginCodeError, useSendLoginCode } from '@/hooks/loginCode'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 

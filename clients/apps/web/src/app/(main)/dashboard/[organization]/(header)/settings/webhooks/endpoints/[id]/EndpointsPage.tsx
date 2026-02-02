@@ -19,10 +19,10 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import CopyToClipboardInput from '@spaire/ui/components/atoms/CopyToClipboardInput'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 

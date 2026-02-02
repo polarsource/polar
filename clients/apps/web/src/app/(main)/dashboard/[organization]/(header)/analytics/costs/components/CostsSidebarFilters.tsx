@@ -1,7 +1,7 @@
 'use client'
 
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { endOfDay, subMonths } from 'date-fns'
 import {
   parseAsArrayOf,

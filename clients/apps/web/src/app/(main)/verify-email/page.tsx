@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { CONFIG } from '@/utils/config'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

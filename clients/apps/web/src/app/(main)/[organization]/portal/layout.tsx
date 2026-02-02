@@ -1,7 +1,7 @@
 import { Toaster } from '@/components/Toast/Toaster'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
 import { CustomerPortalLayoutWrapper } from './CustomerPortalLayoutWrapper'
 import { Navigation } from './Navigation'
 

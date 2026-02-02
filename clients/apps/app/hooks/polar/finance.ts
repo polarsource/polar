@@ -1,6 +1,6 @@
 import { useSession } from '@/providers/SessionProvider'
 import { queryClient } from '@/utils/query'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   useMutation,
   UseMutationResult,

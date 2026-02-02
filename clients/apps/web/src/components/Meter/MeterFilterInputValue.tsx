@@ -1,8 +1,8 @@
 'use client'
 
 import { useEventNames } from '@/hooks/queries/events'
-import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { Combobox } from '@spaire/ui/components/atoms/Combobox'
+import Input from '@spaire/ui/components/atoms/Input'
 import { useMemo, useState } from 'react'
 import { ControllerRenderProps } from 'react-hook-form'
 

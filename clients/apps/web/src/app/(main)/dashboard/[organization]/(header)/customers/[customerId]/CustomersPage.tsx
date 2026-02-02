@@ -19,16 +19,16 @@ import { useDateRange } from '@/utils/date'
 import { usePushRouteWithoutCache } from '@/utils/router'
 
 import MoreVert from '@mui/icons-material/MoreVert'
-import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect } from 'react'

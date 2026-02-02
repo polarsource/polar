@@ -14,7 +14,7 @@ import {
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { hasLegacyRecurringPrices } from '@/utils/price'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback, useContext, useEffect, useMemo } from 'react'
 import { useForm, UseFormReturn } from 'react-hook-form'

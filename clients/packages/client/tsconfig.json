@@ -1,5 +1,5 @@
 {
-  "extends": "@polar-sh/typescript-config/bundled.json",
+  "extends": "@spaire/typescript-config/bundled.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"

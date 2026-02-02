@@ -1,4 +1,4 @@
-import type { schemas } from '@polar-sh/client'
+import type { schemas } from '@spaire/client'
 
 export type CustomerPortalCustomer = schemas['CustomerPortalCustomer']
 export type CustomerPortalCustomerUpdate =

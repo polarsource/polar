@@ -1,4 +1,4 @@
-import { Client, createClient } from '@polar-sh/client'
+import { Client, createClient } from '@spaire/client'
 import { createContext, useContext, type PropsWithChildren } from 'react'
 import { useSession } from './SessionProvider'
 

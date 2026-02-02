@@ -6,21 +6,21 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
-import { isValidationError, schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { isValidationError, schemas } from '@spaire/client'
+import Avatar from '@spaire/ui/components/atoms/Avatar'
+import Button from '@spaire/ui/components/atoms/Button'
+import CopyToClipboardInput from '@spaire/ui/components/atoms/CopyToClipboardInput'
+import Input from '@spaire/ui/components/atoms/Input'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
-import { Label } from '@polar-sh/ui/components/ui/label'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
+} from '@spaire/ui/components/ui/form'
+import { Label } from '@spaire/ui/components/ui/label'
+import { Separator } from '@spaire/ui/components/ui/separator'
 import Link from 'next/link'
 import { PropsWithChildren, useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'

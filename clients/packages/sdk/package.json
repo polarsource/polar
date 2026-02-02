@@ -1,0 +1,78 @@
+{
+  "name": "@spaire/sdk",
+  "version": "0.42.1",
+  "author": "Speakeasy",
+  "type": "module",
+  "tshy": {
+    "sourceDialects": [
+      "@polar-sh/sdk/source"
+    ],
+    "exports": {
+      ".": "./src/index.ts",
+      "./package.json": "./package.json",
+      "./*.js": "./src/*.ts",
+      "./*": "./src/*.ts"
+    }
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar-js.git"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/jest": "*",
+    "@types/node": "*",
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0",
+    "jest": "*",
+    "ts-jest": "*",
+    "tshy": "^2.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.26.0"
+  },
+  "dependencies": {
+    "standardwebhooks": "^1.0.0",
+    "zod": "^3.25.65 || ^4.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "@spaire/sdk/source": "./src/index.ts",
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/index.d.ts",
+        "default": "./dist/commonjs/index.js"
+      }
+    },
+    "./package.json": "./package.json",
+    "./*.js": {
+      "import": {
+        "@spaire/sdk/source": "./src/*.ts",
+        "types": "./dist/esm/*.d.ts",
+        "default": "./dist/esm/*.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/*.d.ts",
+        "default": "./dist/commonjs/*.js"
+      }
+    },
+    "./*": {
+      "import": {
+        "@spaire/sdk/source": "./src/*.ts",
+        "types": "./dist/esm/*.d.ts",
+        "default": "./dist/esm/*.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/*.d.ts",
+        "default": "./dist/commonjs/*.js"
+      }
+    }
+  },
+  "main": "./dist/commonjs/index.js",
+  "types": "./dist/commonjs/index.d.ts",
+  "module": "./dist/esm/index.js"
+}

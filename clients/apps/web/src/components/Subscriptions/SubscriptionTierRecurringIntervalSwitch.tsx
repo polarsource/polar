@@ -1,5 +1,5 @@
-import { schemas } from '@polar-sh/client'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { schemas } from '@spaire/client'
+import { Tabs, TabsList, TabsTrigger } from '@spaire/ui/components/atoms/Tabs'
 import React, { useCallback } from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {

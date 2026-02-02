@@ -1,5 +1,5 @@
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   differenceInDays,
   differenceInMonths,

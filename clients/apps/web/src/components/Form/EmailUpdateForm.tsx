@@ -3,9 +3,9 @@
 import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import { Form, FormField, FormItem } from '@polar-sh/ui/components/ui/form'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
+import { Form, FormField, FormItem } from '@spaire/ui/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { CustomerPortalOverview } from '@/components/CustomerPortal/CustomerPortalOverview'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 
 const ClientPage = ({

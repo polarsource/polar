@@ -5,7 +5,7 @@ import PolarLogo from '@/components/Shared/PolarLogo'
 import { useTheme } from '@/design-system/useTheme'
 import { useLogout } from '@/hooks/auth'
 import { useOAuth } from '@/hooks/oauth'
-import { isValidationError, UnauthorizedResponseError } from '@polar-sh/client'
+import { isValidationError, UnauthorizedResponseError } from '@spaire/client'
 import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 export interface ErrorFallbackProps {

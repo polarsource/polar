@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { toISODate } from '@/utils/metrics'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@spaire/client'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

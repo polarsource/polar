@@ -4,12 +4,12 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   SidebarTrigger,
   useSidebar,
-} from '@polar-sh/ui/components/atoms/Sidebar'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Sidebar'
+import { Tabs, TabsList, TabsTrigger } from '@spaire/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'

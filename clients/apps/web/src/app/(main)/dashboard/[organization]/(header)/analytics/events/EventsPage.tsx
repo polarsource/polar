@@ -13,22 +13,22 @@ import useDebounce from '@/utils/useDebounce'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
 import Search from '@mui/icons-material/Search'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
+import { List, ListItem } from '@spaire/ui/components/atoms/List'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+} from '@spaire/ui/components/ui/tooltip'
 import { endOfToday } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import {

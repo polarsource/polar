@@ -6,7 +6,7 @@ import IntervalPicker, {
 } from '@/components/Metrics/IntervalPicker'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { subMonths } from 'date-fns/subMonths'
 import {
   createParser,

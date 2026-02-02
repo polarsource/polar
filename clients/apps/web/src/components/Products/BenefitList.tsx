@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'

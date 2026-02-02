@@ -5,22 +5,22 @@ import { useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
 import MoreVert from '@mui/icons-material/MoreVert'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { Status } from '@spaire/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'

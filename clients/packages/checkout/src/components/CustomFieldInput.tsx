@@ -1,27 +1,27 @@
-import type { CustomField } from '@polar-sh/sdk/models/components/customfield'
-import type { CustomFieldCheckbox } from '@polar-sh/sdk/models/components/customfieldcheckbox'
-import type { CustomFieldDate } from '@polar-sh/sdk/models/components/customfielddate'
-import type { CustomFieldNumber } from '@polar-sh/sdk/models/components/customfieldnumber'
-import type { CustomFieldSelect } from '@polar-sh/sdk/models/components/customfieldselect'
-import type { CustomFieldText } from '@polar-sh/sdk/models/components/customfieldtext'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import type { CustomField } from '@spaire/sdk/models/components/customfield'
+import type { CustomFieldCheckbox } from '@spaire/sdk/models/components/customfieldcheckbox'
+import type { CustomFieldDate } from '@spaire/sdk/models/components/customfielddate'
+import type { CustomFieldNumber } from '@spaire/sdk/models/components/customfieldnumber'
+import type { CustomFieldSelect } from '@spaire/sdk/models/components/customfieldselect'
+import type { CustomFieldText } from '@spaire/sdk/models/components/customfieldtext'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from '@spaire/ui/components/atoms/Select'
+import TextArea from '@spaire/ui/components/atoms/TextArea'
+import { Checkbox } from '@spaire/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+} from '@spaire/ui/components/ui/form'
+import { ThemingPresetProps } from '@spaire/ui/hooks/theming'
 import type { MarkdownToJSX } from 'markdown-to-jsx'
 import Markdown from 'markdown-to-jsx'
 import type { ControllerRenderProps } from 'react-hook-form'

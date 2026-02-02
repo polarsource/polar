@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { ArrowDown, Clipboard } from 'lucide-react'
 import Link from 'next/link'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'

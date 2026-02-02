@@ -3,7 +3,7 @@ import CheckBox from '@mui/icons-material/CheckBox'
 import List from '@mui/icons-material/List'
 import Numbers from '@mui/icons-material/Numbers'
 import TextSnippet from '@mui/icons-material/TextSnippet'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 const getIcon = (type: schemas['CustomFieldType']) => {
   switch (type) {

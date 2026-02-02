@@ -8,7 +8,7 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import VideoFileOutlined from '@mui/icons-material/VideoFileOutlined'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import {
   FocusEvent,
   FormEventHandler,
@@ -24,13 +24,13 @@ import { FileObject } from '@/components/FileUpload'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useMemo } from 'react'
 
 export const FilePreview = ({ mimeType }: { mimeType: string }) => {

@@ -1,5 +1,5 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
-import { operations, unwrap } from '@polar-sh/client'
+import { operations, unwrap } from '@spaire/client'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export const useOrder = (id: string) => {

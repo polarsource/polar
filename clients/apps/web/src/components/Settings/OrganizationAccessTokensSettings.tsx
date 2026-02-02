@@ -8,21 +8,21 @@ import {
   useOrganizationAccessTokens,
   useUpdateOrganizationAccessToken,
 } from '@/hooks/queries'
-import { enums, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { enums, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import CopyToClipboardInput from '@spaire/ui/components/atoms/CopyToClipboardInput'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
-import Banner from '@polar-sh/ui/components/molecules/Banner'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from '@spaire/ui/components/atoms/Select'
+import ShadowListGroup from '@spaire/ui/components/atoms/ShadowListGroup'
+import Banner from '@spaire/ui/components/molecules/Banner'
+import { Checkbox } from '@spaire/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -30,7 +30,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'

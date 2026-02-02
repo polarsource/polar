@@ -1,4 +1,4 @@
-import { Client } from '@polar-sh/client'
+import { Client } from '@spaire/client'
 import { cookies, headers } from 'next/headers'
 import { cache } from 'react'
 import { createServerSideAPI } from '.'

@@ -1,16 +1,16 @@
 'use client'
 
-import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import type { AddressInput } from '@spaire/sdk/models/components/addressinput'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import type { CheckoutPublicConfirmed } from '@spaire/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 
 import {
   CheckoutContext,
   CheckoutFormContext,
-} from '@polar-sh/checkout/providers'
+} from '@spaire/checkout/providers'
 import { useTheme } from 'next-themes'
 
 const DummyCheckoutContextProvider = ({

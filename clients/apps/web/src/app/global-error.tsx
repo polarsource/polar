@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/nextjs'
 import Error from 'next/error'
 import { useEffect } from 'react'
 
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 
 export default function GlobalError({ error }: { error: Error }) {
   useEffect(() => {

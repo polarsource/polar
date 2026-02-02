@@ -50,7 +50,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@spaire/sdk": "^0.42.1",
+    "@spaire/sdk": "workspace:*",
     "@spaire/ui": "workspace:^",
     "event-source-plus": "^0.1.15",
     "eventemitter3": "^5.0.1",

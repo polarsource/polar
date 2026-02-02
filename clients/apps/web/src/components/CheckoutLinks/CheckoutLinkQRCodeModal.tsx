@@ -1,6 +1,6 @@
 import Close from '@mui/icons-material/Close'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import QRCode from 'qrcode'
 import { useEffect, useRef } from 'react'
 import { toast } from '../Toast/use-toast'

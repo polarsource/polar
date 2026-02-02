@@ -1,5 +1,5 @@
-import { schemas } from '@polar-sh/client'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { schemas } from '@spaire/client'
+import Pill from '@spaire/ui/components/atoms/Pill'
 import { CircleX, Clock } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'

@@ -1,13 +1,13 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 import ProductMediasField from '../ProductMediasField'
 import { ProductFormType } from './ProductForm'

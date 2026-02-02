@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Check, Download, Gauge, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'

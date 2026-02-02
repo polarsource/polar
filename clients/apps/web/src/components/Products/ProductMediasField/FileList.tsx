@@ -2,7 +2,7 @@ import { FileObject } from '@/components/FileUpload'
 import { useDraggable } from '@/hooks/draggable'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
 
 type ProductMediaFileObject = FileObject<schemas['ProductMediaFileRead']>

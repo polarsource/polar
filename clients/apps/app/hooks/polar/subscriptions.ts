@@ -1,6 +1,6 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { queryClient } from '@/utils/query'
-import { operations, schemas, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@spaire/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 
 export const useSubscription = (id: string) => {

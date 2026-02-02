@@ -1,5 +1,5 @@
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { operations } from '@polar-sh/client'
+import { operations } from '@spaire/client'
 import { useContext, useMemo } from 'react'
 import { useMetrics } from './polar/metrics'
 

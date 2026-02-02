@@ -4,21 +4,21 @@ import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@/components/Modal'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { isValidationError, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import TextArea from '@spaire/ui/components/atoms/TextArea'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
-import { Label } from '@polar-sh/ui/components/ui/label'
+} from '@spaire/ui/components/ui/form'
+import { Label } from '@spaire/ui/components/ui/label'
 import {
   RadioGroup,
   RadioGroupItem,
-} from '@polar-sh/ui/components/ui/radio-group'
+} from '@spaire/ui/components/ui/radio-group'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'

@@ -1,5 +1,5 @@
 import LogoType70 from '@/components/Brand/LogoType70'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import Link from 'next/link'
 
 export default async function Page(props: {

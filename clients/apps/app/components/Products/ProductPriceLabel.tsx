@@ -1,5 +1,5 @@
 import { isLegacyRecurringPrice } from '@/utils/price'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Text } from '../Shared/Text'
 import AmountLabel from './AmountLabel'
 

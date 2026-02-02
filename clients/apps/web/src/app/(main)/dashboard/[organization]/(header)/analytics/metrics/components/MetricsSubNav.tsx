@@ -1,14 +1,14 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Select'
+import { Tabs, TabsList, TabsTrigger } from '@spaire/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'

@@ -1,14 +1,14 @@
 'use client'
 
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
+import Button from '@spaire/ui/components/atoms/Button'
+import ShadowListGroup from '@spaire/ui/components/atoms/ShadowListGroup'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Spinner from '../Shared/Spinner'
 export type Theme = 'system' | 'light' | 'dark'

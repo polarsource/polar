@@ -9,7 +9,7 @@ import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetFlatList,
 } from '@gorhom/bottom-sheet'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, ListRenderItem, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

@@ -1,5 +1,5 @@
-import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { schemas } from '@spaire/client'
+import { Status } from '@spaire/ui/components/atoms/Status'
 import { twMerge } from 'tailwind-merge'
 
 const OrderStatusColors = {

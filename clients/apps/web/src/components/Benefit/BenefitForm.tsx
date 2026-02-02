@@ -1,8 +1,8 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
-import { enums, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { enums, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
@@ -12,9 +12,9 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
+} from '@spaire/ui/components/atoms/Select'
+import TextArea from '@spaire/ui/components/atoms/TextArea'
+import { Checkbox } from '@spaire/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -22,7 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'

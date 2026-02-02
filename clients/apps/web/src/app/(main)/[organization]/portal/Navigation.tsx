@@ -6,14 +6,14 @@ import {
 } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'

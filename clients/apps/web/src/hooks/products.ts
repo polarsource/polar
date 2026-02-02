@@ -2,7 +2,7 @@ import {
   getRecurringBillingLabel,
   getRecurringProductPrice,
 } from '@/components/Subscriptions/utils'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { useProducts } from './queries'
 

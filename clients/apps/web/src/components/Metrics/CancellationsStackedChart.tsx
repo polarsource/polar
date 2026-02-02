@@ -2,7 +2,7 @@
 
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getTimestampFormatter } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Bar,
   BarChart,
@@ -14,7 +14,7 @@ import {
   TooltipContentProps,
   XAxis,
   YAxis,
-} from '@polar-sh/ui/components/ui/chart'
+} from '@spaire/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import {

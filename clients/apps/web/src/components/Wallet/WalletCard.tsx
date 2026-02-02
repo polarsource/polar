@@ -1,5 +1,5 @@
-import { schemas } from '@polar-sh/client'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { schemas } from '@spaire/client'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 
 interface WalletCardProps {
   organization: schemas['CustomerOrganization']

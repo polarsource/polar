@@ -5,7 +5,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 
 const BENEFIT_REVOCATION_GRACE_PERIOD_LABELS: Record<number, string> = {
   0: 'Immediately',

@@ -1,21 +1,21 @@
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import { enums, schemas } from '@polar-sh/client'
+import { enums, schemas } from '@spaire/client'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@polar-sh/ui/components/atoms/Accordion'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+} from '@spaire/ui/components/atoms/Accordion'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+} from '@spaire/ui/components/atoms/Select'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import {
   FormControl,
   FormDescription,
@@ -23,7 +23,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import React from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import CustomFieldTypeLabel from './CustomFieldTypeLabel'

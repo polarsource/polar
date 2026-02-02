@@ -11,8 +11,8 @@ import { twMerge } from 'tailwind-merge'
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 
-import Button from '@polar-sh/ui/components/atoms/Button'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import Button from '@spaire/ui/components/atoms/Button'
+import TextArea from '@spaire/ui/components/atoms/TextArea'
 
 import { FadeUp } from '../Animated/FadeUp'
 import { ToolCallGroup } from './ToolCallGroup'

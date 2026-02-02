@@ -4,8 +4,8 @@ import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown
 import { useLoginLink } from '@/hooks/login'
 import { usePostHog } from '@/hooks/posthog'
 import { CONFIG } from '@/utils/config'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 

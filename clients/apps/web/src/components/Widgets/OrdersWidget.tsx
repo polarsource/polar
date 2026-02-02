@@ -1,15 +1,15 @@
 import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Card,
   CardContent,
   CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+} from '@spaire/ui/components/atoms/Card'
+import { Status } from '@spaire/ui/components/atoms/Status'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'

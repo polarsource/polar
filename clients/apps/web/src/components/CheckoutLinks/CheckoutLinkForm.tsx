@@ -8,11 +8,11 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
-import Input from '@polar-sh/ui/components/atoms/Input'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { isValidationError, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { Combobox } from '@spaire/ui/components/atoms/Combobox'
+import Input from '@spaire/ui/components/atoms/Input'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import {
   Form,
   FormControl,
@@ -21,7 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { XIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'

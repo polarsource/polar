@@ -4,22 +4,22 @@ import CustomFieldTypeIcon from '@/components/CustomFields/CustomFieldTypeIcon'
 import { Section } from '@/components/Layout/Section'
 import { useCustomFields } from '@/hooks/queries'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { List, ListItem } from '@spaire/ui/components/atoms/List'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+} from '@spaire/ui/components/atoms/Select'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import {
   FormControl,
   FormField,
   FormLabel,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'

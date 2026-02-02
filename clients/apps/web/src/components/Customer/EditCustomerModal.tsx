@@ -1,9 +1,9 @@
 import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { isValidationError, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
@@ -12,7 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'

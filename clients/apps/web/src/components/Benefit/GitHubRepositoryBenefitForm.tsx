@@ -4,15 +4,15 @@ import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
-import { enums, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { enums, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 import {
   FormControl,
   FormDescription,
@@ -20,7 +20,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'

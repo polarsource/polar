@@ -1,7 +1,7 @@
 'use client'
 
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
+import Button from '@spaire/ui/components/atoms/Button'
 import { ArrowDownLeft, ArrowUpRight, CreditCard, Receipt } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'

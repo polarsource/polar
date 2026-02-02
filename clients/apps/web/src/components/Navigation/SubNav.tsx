@@ -1,6 +1,6 @@
 'use client'
 
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsList, TabsTrigger } from '@spaire/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 

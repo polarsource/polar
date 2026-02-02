@@ -1,12 +1,12 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 
 const PRORATION_BEHAVIOR_LABELS: Record<
   schemas['SubscriptionProrationBehavior'],

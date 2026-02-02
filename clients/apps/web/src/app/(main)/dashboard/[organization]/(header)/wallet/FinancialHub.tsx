@@ -1,6 +1,6 @@
 'use client'
 
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { type FinancialAccount, mockFinancialAccount } from './treasuryData'

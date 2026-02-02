@@ -9,7 +9,7 @@ import {
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useCallback } from 'react'
 import { useForm } from 'react-hook-form'

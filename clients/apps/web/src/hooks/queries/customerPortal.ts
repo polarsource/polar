@@ -1,5 +1,5 @@
 import { getQueryClient } from '@/utils/api/query'
-import { Client, operations, schemas, unwrap } from '@polar-sh/client'
+import { Client, operations, schemas, unwrap } from '@spaire/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 

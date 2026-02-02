@@ -1,6 +1,6 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
 import { formatCurrency } from '@/utils/formatters'
-import { Client, schemas } from '@polar-sh/client'
+import { Client, schemas } from '@spaire/client'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 interface CurrentPeriodOverviewProps {

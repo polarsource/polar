@@ -2,7 +2,7 @@
 
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 interface SpansHeaderProps {
   dateRange: { from: Date; to: Date }

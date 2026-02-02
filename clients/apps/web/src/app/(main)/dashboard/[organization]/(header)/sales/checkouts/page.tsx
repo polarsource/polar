@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Metadata } from 'next'
 import CheckoutsPage from './CheckoutsPage'
 

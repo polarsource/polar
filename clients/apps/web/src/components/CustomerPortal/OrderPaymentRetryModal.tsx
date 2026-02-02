@@ -2,9 +2,9 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPaymentMethods } from '@/hooks/queries'
-import { type Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { type Client, schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { ThemingPresetProps } from '@spaire/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { useMemo, useState } from 'react'

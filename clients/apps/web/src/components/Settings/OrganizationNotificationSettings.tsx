@@ -1,15 +1,15 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
-import Switch from '@polar-sh/ui/components/atoms/Switch'
+import { isValidationError, schemas } from '@spaire/client'
+import Switch from '@spaire/ui/components/atoms/Switch'
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'

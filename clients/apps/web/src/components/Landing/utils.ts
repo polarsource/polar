@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
   schemas['ProductStorefront']

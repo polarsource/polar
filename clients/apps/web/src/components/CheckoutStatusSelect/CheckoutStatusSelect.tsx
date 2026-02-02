@@ -1,5 +1,5 @@
 import { CheckoutStatusDisplayTitle } from '@/utils/checkout'
-import { enums } from '@polar-sh/client'
+import { enums } from '@spaire/client'
 import {
   Select,
   SelectContent,
@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
+} from '@spaire/ui/components/atoms/Select'
 import React from 'react'
 
 interface CheckoutStatusSelectProps {

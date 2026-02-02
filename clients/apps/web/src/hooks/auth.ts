@@ -1,7 +1,7 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@spaire/client'
 import * as Sentry from '@sentry/nextjs'
 import { useContext, useEffect } from 'react'
 

@@ -4,12 +4,12 @@ import {
   formatPercentage,
   formatSubCentCurrency,
 } from '@/utils/formatters'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@polar-sh/ui/components/ui/tooltip'
+} from '@spaire/ui/components/ui/tooltip'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { PropsWithChildren, useMemo } from 'react'
 import { CustomerStatBox, CustomerStatBoxProps } from './CustomerStatBox'

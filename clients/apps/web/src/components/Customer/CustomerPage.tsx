@@ -22,18 +22,18 @@ import {
   formatSubCentCurrency,
 } from '@/utils/formatters'
 import { getPreviousDateRange } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { DataTable } from '@spaire/ui/components/atoms/DataTable'
+import FormattedDateTime from '@spaire/ui/components/atoms/FormattedDateTime'
+import ShadowBox from '@spaire/ui/components/atoms/ShadowBox'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+} from '@spaire/ui/components/atoms/Tabs'
+import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { benefitsDisplayNames } from '../Benefit/utils'

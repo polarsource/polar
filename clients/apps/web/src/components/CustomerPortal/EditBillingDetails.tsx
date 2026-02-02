@@ -1,11 +1,11 @@
 import { setValidationErrors } from '@/utils/api/errors'
-import { enums, type schemas } from '@polar-sh/client'
-import { isValidationError } from '@polar-sh/customer-portal/core'
-import { useCustomerPortalCustomer } from '@polar-sh/customer-portal/react'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import { enums, type schemas } from '@spaire/client'
+import { isValidationError } from '@spaire/customer-portal/core'
+import { useCustomerPortalCustomer } from '@spaire/customer-portal/react'
+import Button from '@spaire/ui/components/atoms/Button'
+import CountryPicker from '@spaire/ui/components/atoms/CountryPicker'
+import CountryStatePicker from '@spaire/ui/components/atoms/CountryStatePicker'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   Form,
   FormControl,
@@ -13,7 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 

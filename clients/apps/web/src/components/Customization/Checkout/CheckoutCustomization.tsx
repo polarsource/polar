@@ -1,6 +1,6 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { CheckoutPreview } from './CheckoutPreview'
 
 export interface CheckoutCustomizationProps {

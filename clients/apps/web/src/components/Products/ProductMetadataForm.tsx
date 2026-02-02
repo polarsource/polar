@@ -1,13 +1,13 @@
-import { FormField } from '@polar-sh/ui/components/ui/form'
+import { FormField } from '@spaire/ui/components/ui/form'
 
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import {
   FormControl,
   FormItem,
   FormMessage,
-} from '@polar-sh/ui/components/ui/form'
+} from '@spaire/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { ProductFormType } from './ProductForm/ProductForm'

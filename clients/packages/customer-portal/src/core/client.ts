@@ -1,4 +1,4 @@
-import { createClient, type Client } from '@polar-sh/client'
+import { createClient, type Client } from '@spaire/client'
 import {
   PolarCustomerPortalError,
   RateLimitError,

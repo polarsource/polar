@@ -1,12 +1,12 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { unwrap } from '@polar-sh/client'
+import { unwrap } from '@spaire/client'
 import { notFound } from 'next/navigation'
 import { isValidMetricType, MetricType } from '../components/metrics-config'
 import ClientPage from './ClientPage'
 
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { endOfDay, max, subMonths } from 'date-fns'
 import { redirect, RedirectType } from 'next/navigation'
 

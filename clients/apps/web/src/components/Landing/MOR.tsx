@@ -1,5 +1,5 @@
 import ArrowOutward from '@mui/icons-material/ArrowOutward'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import Link from 'next/link'
 import { SplitPromo } from './molecules/SplitPromo'
 

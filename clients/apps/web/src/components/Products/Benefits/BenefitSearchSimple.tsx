@@ -3,7 +3,7 @@
 import { useDraggable } from '@/hooks/draggable'
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useCallback, useMemo } from 'react'
 import { BenefitRow } from './components/BenefitRow'
 import { SortableBenefitRow } from './components/SortableBenefitRow'

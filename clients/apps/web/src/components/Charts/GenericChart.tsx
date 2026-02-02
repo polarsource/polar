@@ -13,7 +13,7 @@ import {
   LineChart,
   XAxis,
   YAxis,
-} from '@polar-sh/ui/components/ui/chart'
+} from '@spaire/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useCallback, useId, useMemo, useState } from 'react'
 import type { ExternalMouseEvents } from 'recharts/types/chart/types'

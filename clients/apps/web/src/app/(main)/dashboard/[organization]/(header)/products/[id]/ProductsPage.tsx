@@ -1,7 +1,7 @@
 'use client'
 
 import { ProductPage } from '@/components/Products/ProductPage/ProductPage'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 export default function Page({
   organization,

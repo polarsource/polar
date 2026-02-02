@@ -5,14 +5,14 @@ import {
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
 import { getServerURL } from '@/utils/api'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import {
   Command,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-} from '@polar-sh/ui/components/ui/command'
+} from '@spaire/ui/components/ui/command'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'

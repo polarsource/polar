@@ -2,7 +2,7 @@
 
 import { createClientSideAPI } from '@/utils/client'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import {

@@ -1,7 +1,7 @@
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import Input from '@polar-sh/ui/components/atoms/Input'
+import Button from '@spaire/ui/components/atoms/Button'
+import Input from '@spaire/ui/components/atoms/Input'
 import { useCallback } from 'react'
 
 interface EventMetadataFilterForm {

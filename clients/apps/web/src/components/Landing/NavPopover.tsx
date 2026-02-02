@@ -4,7 +4,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@polar-sh/ui/components/ui/popover'
+} from '@spaire/ui/components/ui/popover'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

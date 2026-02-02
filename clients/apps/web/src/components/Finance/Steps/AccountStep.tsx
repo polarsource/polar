@@ -1,8 +1,8 @@
 'use client'
 
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Card } from '@polar-sh/ui/components/ui/card'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
+import { Card } from '@spaire/ui/components/ui/card'
 import { ArrowRight, UserCheck } from 'lucide-react'
 import React from 'react'
 

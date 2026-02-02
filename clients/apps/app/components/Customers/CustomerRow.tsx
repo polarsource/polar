@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { Link } from 'expo-router'
 import React from 'react'
 import { Avatar } from '../Shared/Avatar'

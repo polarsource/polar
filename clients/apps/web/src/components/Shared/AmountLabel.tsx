@@ -1,5 +1,5 @@
 import { formatCurrency } from '@/utils/formatters'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {

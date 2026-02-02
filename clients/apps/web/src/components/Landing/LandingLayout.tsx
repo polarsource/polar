@@ -3,7 +3,7 @@
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-} from '@polar-sh/ui/components/atoms/Sidebar'
+} from '@spaire/ui/components/atoms/Sidebar'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'

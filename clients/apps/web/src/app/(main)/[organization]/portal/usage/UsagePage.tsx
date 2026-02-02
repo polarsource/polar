@@ -2,7 +2,7 @@
 
 import { CustomerUsage } from '@/components/CustomerPortal/CustomerUsage'
 import { createClientSideAPI } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 
 const ClientPage = ({
   customerSessionToken,

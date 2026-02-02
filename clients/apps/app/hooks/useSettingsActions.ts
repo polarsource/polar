@@ -1,7 +1,7 @@
 import { useLogout } from '@/hooks/auth'
 import { useDeleteOrganization } from '@/hooks/polar/organizations'
 import { useDeleteUser } from '@/hooks/polar/users'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useCallback, useState } from 'react'
 import { Alert, Linking } from 'react-native'
 

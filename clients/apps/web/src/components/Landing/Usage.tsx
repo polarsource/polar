@@ -2,13 +2,13 @@
 
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import Check from '@mui/icons-material/Check'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+} from '@spaire/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -27,8 +27,8 @@ const strategies = [
       'Prompt & Completion Tokens',
       'Vercel AI SDK Support',
     ],
-    code: `import { Ingestion } from "@polar-sh/ingestion";
-import { LLMStrategy } from "@polar-sh/ingestion/strategies/LLM";
+    code: `import { Ingestion } from "@spaire/ingestion";
+import { LLMStrategy } from "@spaire/ingestion/strategies/LLM";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
@@ -61,8 +61,8 @@ export async function POST(req: Request) {
       'Precise measurements of execution time',
       'Bring your own time-resolver',
     ],
-    code: `import { Ingestion } from "@polar-sh/ingestion";
-import { DeltaTimeStrategy } from "@polar-sh/ingestion/strategies/DeltaTime";
+    code: `import { Ingestion } from "@spaire/ingestion";
+import { DeltaTimeStrategy } from "@spaire/ingestion/strategies/DeltaTime";
 
 const nowResolver = () => performance.now();
 
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
       'Use any custom metadata',
       'Support for batch ingestion',
     ],
-    code: `import { Ingestion } from "@polar-sh/ingestion";
+    code: `import { Ingestion } from "@spaire/ingestion";
 
 await Ingestion({ accessToken: 'xxx' }).ingest([
   {

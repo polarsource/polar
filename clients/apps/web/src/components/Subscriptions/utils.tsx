@@ -2,7 +2,7 @@ import {
   hasLegacyRecurringPrices,
   isLegacyRecurringPrice,
 } from '@/utils/product'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

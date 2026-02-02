@@ -15,7 +15,7 @@ import {
   getChartRangeParams,
   getPreviousParams,
 } from '@/utils/metrics'
-import { schemas } from '@polar-sh/client'
+import { schemas } from '@spaire/client'
 import { motion } from 'framer-motion'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'

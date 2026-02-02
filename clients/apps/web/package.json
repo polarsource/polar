@@ -42,7 +42,7 @@
     "@spaire/client": "workspace:*",
     "@spaire/customer-portal": "workspace:*",
     "@spaire/mdx": "workspace:*",
-    "@spaire/sdk": "^0.42.1",
+    "@spaire/sdk": "workspace:*",
     "@spaire/ui": "workspace:*",
     "@posthog/ai": "^7.3.0",
     "@posthog/core": "^1.9.0",

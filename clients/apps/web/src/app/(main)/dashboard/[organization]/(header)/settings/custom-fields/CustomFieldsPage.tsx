@@ -15,19 +15,19 @@ import {
 } from '@/utils/datatable'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@spaire/client'
+import Button from '@spaire/ui/components/atoms/Button'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
-} from '@polar-sh/ui/components/atoms/DataTable'
+} from '@spaire/ui/components/atoms/DataTable'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
+} from '@spaire/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 

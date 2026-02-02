@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions
+# Development Instructions for LLM agents
 
 This document provides essential guidance for AI agents contributing to the Polar codebase. Imagine this file as a new joiner to the team who needs to understand the coding standards, practices, and conventions used in this repository.
 
@@ -66,6 +66,27 @@ Backend tests are located in the `tests/` directory. It uses `pytest` for testin
 ```bash
 uv run task test
 ```
+
+To run a specific test file:
+
+```bash
+uv run pytest tests/path/to/test_file.py
+```
+
+To run a specific test class or method, use the `::` syntax:
+
+```bash
+uv run pytest tests/path/to/test_file.py::TestClassName::test_method_name
+```
+
+### Use `uv run` for Python Commands
+
+**CRITICAL:** Always prefix Python commands with `uv run` when working in the Polar environment. This ensures:
+
+- The correct Python version (3.14) is used
+- All project dependencies are available
+- Environment variables are properly loaded
+- Commands run in the correct virtual environment context
 
 ## Backend Conventions
 
@@ -136,6 +157,7 @@ If you need to ensure that data is flushed to the database, to run constraints o
 
 ### Testing Standards
 
+- **Test file structure**: Test files mirror the source code structure. If you have `server/polar/foo/endpoints.py`, the corresponding tests will be in `tests/foo/test_endpoints.py`.
 - **Avoid redundant fixture setup**: Don't manually set data that fixtures already provide (e.g., `customer.stripe_customer_id` when the `customer` fixture includes it).
 - **Descriptive test names**: Use method names that clearly describe the behavior being tested.
 - **Encapsulate test logic**: Use class based tests. Usually we have one class per method that we want to test, and each test case is a different scenario for that method.

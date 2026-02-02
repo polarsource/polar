@@ -62,7 +62,10 @@ class TestListWithStatsDualRead:
         save_fixture: SaveFixture,
     ) -> None:
         mocker.patch("polar.event_type.service.settings.TINYBIRD_EVENTS_READ", True)
-        organization.feature_settings = {"tinybird_read": False}
+        organization.feature_settings = {
+            "tinybird_read": False,
+            "tinybird_compare": False,
+        }
         await save_fixture(organization)
 
         event_type = await create_event_type(

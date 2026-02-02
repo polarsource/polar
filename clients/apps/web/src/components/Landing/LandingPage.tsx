@@ -11,11 +11,10 @@ import GetStartedButton from '../Auth/GetStartedButton'
 import { Adapters } from './Adapters'
 import Features from './Features'
 import { Logotypes } from './Logotypes'
+import Offering from './Offering'
 import { Pricing } from './Pricing'
 import { Purpose } from './Purpose'
 import { Section } from './Section'
-import { Usecases } from './Usecases'
-import { Usage } from './Usage'
 
 export default function Page() {
   return (
@@ -32,10 +31,10 @@ export const PageContent = () => {
     <>
       <Section className="flex flex-col gap-y-32 py-0 md:py-0">
         <Hero
-        className='xl:py-16'
+          className="xl:pt-16"
           title="Monetize your software"
-          titleClassName='xl:text-9xl!'
-          description="Turn your software into a business with 6 lines of code"
+          titleClassName="xl:text-9xl!"
+          description="Polar runs your business on Autopilot."
         >
           <GetStartedButton size="lg" text="Get Started" />
           <Link
@@ -54,11 +53,10 @@ export const PageContent = () => {
         </Hero>
         <Features />
         <Logotypes />
-
       </Section>
 
-      <Section className="flex flex-col xl:max-w-[1620px] md:py-32">
-      {isMobile ? null : (
+      <Section className="flex flex-col md:py-32 xl:max-w-[1620px]">
+        {isMobile ? null : (
           <div className="relative aspect-video w-full">
             <Stream
               src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
@@ -70,10 +68,10 @@ export const PageContent = () => {
           </div>
         )}
       </Section>
-      <Section className="flex flex-col gap-y-24 pb-24! border-b dark:border-polar-700 border-gray-300">
+      <Section className="dark:border-polar-700 flex flex-col gap-y-24 border-b border-gray-300 pb-24!">
         <Adapters />
       </Section>
-      <Usecases className="py-16 md:py-24" />
+      <Offering className="py-16 md:py-24" />
       <Purpose className="py-16 md:py-24" />
       <Section className="flex flex-col gap-y-24">
         <MerchantOfRecord />

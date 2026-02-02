@@ -2,7 +2,6 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { JSX } from 'react'
 import { MiddayWordmark, Speakeasy, StillaAIWordmark, Tailwind } from './Logos'
-import { companyTestimonials, Testamonial } from './Testimonials'
 
 const items = [
   {
@@ -60,16 +59,6 @@ export const Logotypes = () => {
             <Logotype key={item.link} icon={item.icon} link={item.link} />
           ))}
         </div>
-      </div>
-      <div className="grid grid-cols-1 xl:grid-cols-3 dark:bg-polar-800 bg-gray-200 p-px gap-px">
-        {companyTestimonials.map((testimonial, index) => (
-          <Testamonial
-            key={`testimonial-${index}`}
-            size="lg"
-            className={index === 0 ? 'xl:col-span-2' : ''}
-            {...testimonial}
-          />
-        ))}
       </div>
     </motion.div>
   )

@@ -10,7 +10,6 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import {
@@ -205,12 +204,14 @@ export const Adapters = () => {
                 </div>
 
                 <div className="relative flex flex-col justify-center p-8 text-sm md:w-1/2 md:p-16">
-                  <div
-                    className="absolute inset-0 h-full w-full"
-                  >
-                    <Vestaboard characters='.:+/\=#' fontSize={10} cellSize={24} />
-                    </div>
-                  <div className="dark:bg-polar-950 z-1 bg-gray-50 p-12">
+                  <div className="absolute inset-0 h-full w-full">
+                    <Vestaboard
+                      characters=".:+/\=#"
+                      fontSize={10}
+                      cellSize={24}
+                    />
+                  </div>
+                  <div className="dark:bg-polar-950 z-1 bg-gray-50 p-8">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

@@ -156,7 +156,7 @@ export const Testamonial = ({
       href={link}
       target="_blank"
       className={twMerge(
-        'dark:hover:bg-polar-800 dark:bg-polar-950 bg-white flex h-full flex-col justify-between gap-x-4 gap-y-12 p-8 transition-colors hover:bg-gray-50',
+        'dark:hover:bg-polar-800 dark:bg-polar-950 flex h-full flex-col justify-between gap-x-4 gap-y-12 bg-white p-8 transition-colors hover:bg-gray-50',
         className,
       )}
     >
@@ -198,19 +198,31 @@ export const Testamonial = ({
 
 export const Testimonials = () => {
   return (
-    <div className="flex flex-col items-center gap-y-12 md:gap-y-24 md:py-12">
-      <div className="flex flex-col items-center gap-y-8">
-        <span className="dark:text-polar-500 text-lg text-gray-400">
+    <div className="flex flex-col items-center gap-y-12 md:gap-y-16 md:py-12">
+      <div className="flex flex-col items-center gap-y-4">
+        <span className="dark:text-polar-500 text-2xl text-gray-400">
           Testimonials
         </span>
         <h1 className="w-fit max-w-2xl text-center text-3xl text-pretty md:text-5xl md:leading-normal">
           Why people love Polar
         </h1>
       </div>
-      <div className="grid grid-cols-1 dark:bg-polar-800 bg-gray-200 p-px gap-px md:grid-cols-3">
-        {userTestimonials.map((testimonial, index) => (
-          <Testamonial key={`testimonial-${index}`} {...testimonial} />
-        ))}
+      <div className="flex flex-col gap-y-8">
+        <div className="dark:bg-polar-800 grid grid-cols-1 gap-px bg-gray-200 p-px xl:grid-cols-3">
+          {companyTestimonials.map((testimonial, index) => (
+            <Testamonial
+              key={`testimonial-${index}`}
+              size="lg"
+              className={index === 0 ? 'xl:col-span-2' : ''}
+              {...testimonial}
+            />
+          ))}
+        </div>
+        <div className="dark:bg-polar-800 grid grid-cols-1 gap-px bg-gray-200 p-px md:grid-cols-3">
+          {userTestimonials.map((testimonial, index) => (
+            <Testamonial key={`testimonial-${index}`} {...testimonial} />
+          ))}
+        </div>
       </div>
     </div>
   )

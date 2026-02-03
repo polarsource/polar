@@ -1082,8 +1082,6 @@ class TestCycle:
         # ended_at should be set to the current time when the cycle ran, not to ends_at
         assert updated_subscription.status == SubscriptionStatus.canceled
         assert updated_subscription.ended_at == cycle_time
-        # ended_at should match when the subscription actually ended, not the scheduled end time
-        assert updated_subscription.ended_at <= cycle_time
 
     async def test_trial_end(
         self,

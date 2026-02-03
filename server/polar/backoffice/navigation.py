@@ -21,6 +21,9 @@ NAVIGATION = [
         "Orders", "orders:list", active_route_name_prefix="orders:"
     ),
     navigation.NavigationItem(
+        "Payouts", "payouts:list", active_route_name_prefix="payouts:"
+    ),
+    navigation.NavigationItem(
         "External Events",
         "external_events:list",
         active_route_name_prefix="external_events:",

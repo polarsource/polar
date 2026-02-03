@@ -4363,6 +4363,31 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'checkout.expired': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * checkout.expired
+     * @description Sent when a checkout expires.
+     *
+     *     This event fires when a checkout reaches its expiration time without being completed.
+     *     Developers can use this to send reminder emails or track checkout abandonment.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointcheckout_expired_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'customer.created': {
     parameters: {
       query?: never
@@ -7983,6 +8008,8 @@ export interface components {
     }
     /** BenefitGrantLicenseKeysProperties */
     BenefitGrantLicenseKeysProperties: {
+      /** User Provided Key */
+      user_provided_key?: string
       /** License Key Id */
       license_key_id?: string
       /** Display Key */
@@ -14399,6 +14426,8 @@ export interface components {
        * @description The member ID of the seat occupant
        */
       member_id?: string | null
+      /** @description The member associated with this seat */
+      member?: components['schemas']['Member'] | null
       /**
        * Email
        * @description Email of the seat member (set when member_model_enabled is true)
@@ -17704,6 +17733,11 @@ export interface components {
        */
       amount_type: 'custom'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -17722,11 +17756,6 @@ export interface components {
       type: 'recurring'
       /** @description The recurring interval of the price. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
@@ -17780,6 +17809,11 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -17798,11 +17832,6 @@ export interface components {
       type: 'recurring'
       /** @description The recurring interval of the price. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Price Amount
        * @description The price in cents.
@@ -17845,6 +17874,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
+      /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22088,6 +22122,11 @@ export interface components {
        */
       amount_type: 'custom'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -22104,11 +22143,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
@@ -22188,6 +22222,11 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -22205,11 +22244,6 @@ export interface components {
         | components['schemas']['SubscriptionRecurringInterval']
         | null
       /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
-      /**
        * Price Amount
        * @description The price in cents.
        */
@@ -22226,16 +22260,16 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
-       * Price Amount
-       * @description The price in cents.
-       */
-      price_amount: number
-      /**
        * Price Currency
        * @description The currency. Currently, only `usd` is supported.
        * @default usd
        */
       price_currency: string
+      /**
+       * Price Amount
+       * @description The price in cents.
+       */
+      price_amount: number
     }
     /**
      * ProductPriceFree
@@ -22267,6 +22301,11 @@ export interface components {
        */
       amount_type: 'free'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -22294,6 +22333,12 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
+      /**
+       * Price Currency
+       * @description The currency. Currently, only `usd` is supported.
+       * @default usd
+       */
+      price_currency: string
     }
     /**
      * ProductPriceMeter
@@ -22342,6 +22387,11 @@ export interface components {
        */
       amount_type: 'metered_unit'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -22358,11 +22408,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Unit Amount
        * @description The price per unit in cents.
@@ -22393,17 +22438,17 @@ export interface components {
        */
       amount_type: 'metered_unit'
       /**
-       * Meter Id
-       * Format: uuid4
-       * @description The ID of the meter associated to the price.
-       */
-      meter_id: string
-      /**
        * Price Currency
        * @description The currency. Currently, only `usd` is supported.
        * @default usd
        */
       price_currency: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The ID of the meter associated to the price.
+       */
+      meter_id: string
       /**
        * Unit Amount
        * @description The price per unit in cents. Supports up to 12 decimal places.
@@ -22445,6 +22490,11 @@ export interface components {
        */
       amount_type: 'seat_based'
       /**
+       * Price Currency
+       * @description The currency.
+       */
+      price_currency: string
+      /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
        */
@@ -22461,11 +22511,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
     }
@@ -23226,6 +23271,16 @@ export interface components {
        * @description Customer ID for the seat assignment
        */
       customer_id?: string | null
+      /**
+       * External Member Id
+       * @description External member ID for the seat assignment. Only supported when member_model_enabled is true. Can be used alone (lookup existing member) or with email (create/validate member).
+       */
+      external_member_id?: string | null
+      /**
+       * Member Id
+       * @description Member ID for the seat assignment. Only supported when member_model_enabled is true.
+       */
+      member_id?: string | null
       /**
        * Metadata
        * @description Additional metadata for the seat (max 10 keys, 1KB total)
@@ -25805,6 +25860,29 @@ export interface components {
       data: components['schemas']['Checkout']
     }
     /**
+     * WebhookCheckoutExpiredPayload
+     * @description Sent when a checkout expires.
+     *
+     *     This event fires when a checkout reaches its expiration time without being completed.
+     *     Developers can use this to send reminder emails or track checkout abandonment.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookCheckoutExpiredPayload: {
+      /**
+       * Type
+       * @example checkout.expired
+       * @constant
+       */
+      type: 'checkout.expired'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Checkout']
+    }
+    /**
      * WebhookCheckoutUpdatedPayload
      * @description Sent when a checkout is updated.
      *
@@ -26188,6 +26266,7 @@ export interface components {
     WebhookEventType:
       | 'checkout.created'
       | 'checkout.updated'
+      | 'checkout.expired'
       | 'customer.created'
       | 'customer.updated'
       | 'customer.deleted'
@@ -38698,6 +38777,39 @@ export interface operations {
       }
     }
   }
+  _endpointcheckout_expired_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCheckoutExpiredPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointcustomer_created_post: {
     parameters: {
       query?: never
@@ -43717,6 +43829,7 @@ export const webhookEventTypeValues: ReadonlyArray<
 > = [
   'checkout.created',
   'checkout.updated',
+  'checkout.expired',
   'customer.created',
   'customer.updated',
   'customer.deleted',

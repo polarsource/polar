@@ -188,13 +188,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     from polar.member.repository import MemberRepository
 
                     member_repository = MemberRepository.from_session(session)
-                    member = await member_repository.get_by_id(
-                        benefit_grant.member_id
-                    )
+                    member = await member_repository.get_by_id(benefit_grant.member_id)
                     if member is not None:
-                        oauth_account = member.get_oauth_account(
-                            account_id, platform
-                        )
+                        oauth_account = member.get_oauth_account(account_id, platform)
 
                 # Fall back to customer
                 if oauth_account is None:

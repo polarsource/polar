@@ -70,7 +70,9 @@ class BenefitDiscordService(
                 "The customer needs to connect their Discord account"
             )
 
-        oauth_account = await self._get_oauth_account(customer, account_id, member=member)
+        oauth_account = await self._get_oauth_account(
+            customer, account_id, member=member
+        )
 
         try:
             await discord_bot_service.add_member(

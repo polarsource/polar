@@ -161,12 +161,16 @@ async def callback(
             token, _ = await member_session_service.create_member_session(
                 session, member
             )
-            redirect_url = add_query_parameters(redirect_url, member_session_token=token)
+            redirect_url = add_query_parameters(
+                redirect_url, member_session_token=token
+            )
         else:
             token, _ = await customer_session_service.create_customer_session(
                 session, customer
             )
-            redirect_url = add_query_parameters(redirect_url, customer_session_token=token)
+            redirect_url = add_query_parameters(
+                redirect_url, customer_session_token=token
+            )
 
     if code is None or error is not None:
         redirect_url = add_query_parameters(

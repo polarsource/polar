@@ -40,7 +40,7 @@ from tests.fixtures.random_objects import (
 
 class ProductFixture(TypedDict):
     recurring_interval: SubscriptionRecurringInterval | None
-    prices: list[tuple[int, str] | tuple[None]]
+    prices: list[tuple[int, str] | tuple[None, str]]
 
 
 class DiscountFixture(TypedDict):
@@ -84,7 +84,7 @@ PRODUCTS: dict[str, ProductFixture] = {
     },
     "free_subscription": {
         "recurring_interval": SubscriptionRecurringInterval.month,
-        "prices": [(None,)],
+        "prices": [(None, "usd")],
     },
 }
 

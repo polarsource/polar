@@ -71,12 +71,6 @@ class SeatTiersData(TypedDict):
     tiers: list[SeatTier]
 
 
-class HasPriceCurrency:
-    price_currency: Mapped[str] = mapped_column(
-        String(3), nullable=True, use_existing_column=True
-    )
-
-
 LEGACY_IDENTITY_PREFIX = "legacy_"
 
 
@@ -100,6 +94,9 @@ class ProductPrice(RecordModel):
     )
     amount_type: Mapped[ProductPriceAmountType] = mapped_column(
         String, nullable=False, index=True
+    )
+    price_currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, use_existing_column=True
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -219,7 +216,7 @@ class NewProductPrice:
     }
 
 
-class _ProductPriceFixed(HasPriceCurrency, ProductPrice):
+class _ProductPriceFixed(ProductPrice):
     price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -245,7 +242,7 @@ class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPric
     }
 
 
-class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
+class _ProductPriceCustom(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -304,7 +301,7 @@ class LegacyRecurringProductPriceFree(LegacyRecurringProductPrice, _ProductPrice
     }
 
 
-class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
+class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.metered_unit
     )
@@ -348,7 +345,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
     }
 
 
-class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
+class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )

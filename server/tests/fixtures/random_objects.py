@@ -115,7 +115,6 @@ from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
-from polar.product.guard import is_currency_price
 from polar.product.price_set import PriceSet
 from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID
@@ -365,7 +364,7 @@ async def create_custom_field(
 type PriceFixtureType = (
     tuple[int, str]
     | tuple[int, int | None, int | None, str]
-    | tuple[None]
+    | tuple[None, str]
     | tuple[Meter, Decimal, int | None, str]
     | tuple[Literal["seat"], int, str]
 )
@@ -429,15 +428,16 @@ async def create_product(
             | ProductPriceMeteredUnit
             | ProductPriceSeatUnit
         )
-        if len(price) == 1:
-            product_price = await create_product_price_free(
-                save_fixture, product=product
-            )
-        elif len(price) == 2:
+        if len(price) == 2:
             amount, currency = price
-            product_price = await create_product_price_fixed(
-                save_fixture, product=product, amount=amount, currency=currency
-            )
+            if amount is None:
+                product_price = await create_product_price_free(
+                    save_fixture, product=product
+                )
+            else:
+                product_price = await create_product_price_fixed(
+                    save_fixture, product=product, amount=amount, currency=currency
+                )
         elif _is_metered_price_fixture_type(price):
             meter, unit_amount, cap_amount, currency = price
             product_price = await create_product_price_metered_unit(
@@ -520,9 +520,11 @@ async def create_product_price_free(
     save_fixture: SaveFixture,
     *,
     product: Product,
+    currency: str = "usd",
 ) -> ProductPriceFree:
     price = ProductPriceFree(
         product=product,
+        price_currency=currency,
     )
     await save_fixture(price)
     return price
@@ -1211,7 +1213,7 @@ async def product_one_time_free_price(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(None,)],
+        prices=[(None, "usd")],
     )
 
 
@@ -1280,7 +1282,7 @@ async def product_recurring_free_price(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(None,)],
+        prices=[(None, "usd")],
     )
 
 
@@ -1410,7 +1412,7 @@ async def create_checkout(
     currency_prices = PriceSet.from_product(product, currency)
 
     price = price or currency_prices.get_default_price()
-    if is_currency_price(price) and price.price_currency != currency:
+    if price.price_currency != currency:
         raise ValueError("Price currency does not match checkout currency")
 
     if isinstance(price, ProductPriceFixed):

@@ -4,7 +4,7 @@ from typing import Self
 from polar.exceptions import PolarError
 from polar.models import Product, ProductPrice
 
-from .guard import is_currency_price, is_free_price, is_static_price
+from .guard import is_static_price
 
 
 class PriceSetError(PolarError): ...
@@ -57,15 +57,14 @@ class PriceSet:
 
         Iterates through the provided currencies in order of preference and
         returns a PriceSet with prices matching the first currency that has
-        available prices. Free prices are included regardless of currency.
+        available prices.
 
         Args:
             prices: A sequence of ProductPrice objects to filter.
             *currencies: Currency codes in order of preference to filter prices by.
 
         Returns:
-            A PriceSet containing prices matching the first available currency,
-            including any free prices.
+            A PriceSet containing prices matching the first available currency.
 
         Raises:
             NoPricesForCurrencies: If no prices are found for any of the
@@ -73,11 +72,7 @@ class PriceSet:
         """
         for currency in currencies:
             currency_prices = [
-                price
-                for price in prices
-                if is_currency_price(price)
-                and price.price_currency == currency
-                or is_free_price(price)
+                price for price in prices if price.price_currency == currency
             ]
 
             if currency_prices:

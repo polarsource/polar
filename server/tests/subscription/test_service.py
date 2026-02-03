@@ -58,7 +58,6 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
-    is_currency_price,
     is_fixed_price,
     is_free_price,
     is_metered_price,
@@ -2050,7 +2049,6 @@ class TestUpdateProduct:
         assert updated_subscription.product == product
         assert len(updated_subscription.prices) == 1
         price = updated_subscription.prices[0]
-        assert is_currency_price(price)
         assert price.price_currency == "usd"
 
 

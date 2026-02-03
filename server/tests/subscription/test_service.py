@@ -993,7 +993,12 @@ class TestCycle:
         updated_subscription = await subscription_service.cycle(session, subscription)
 
         assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.ended_at == updated_subscription.ends_at
+        # ended_at should be set to the current time, not to ends_at
+        assert updated_subscription.ended_at is not None
+        assert updated_subscription.ended_at <= utc_now()
+        # ends_at is the scheduled end time (future), ended_at is when it actually ended (now)
+        assert updated_subscription.ends_at is not None
+        assert updated_subscription.ended_at < updated_subscription.ends_at
         assert (
             updated_subscription.current_period_start == previous_current_period_start
         )
@@ -1043,6 +1048,41 @@ class TestCycle:
         enqueue_email_mock.assert_called_once()
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
+
+    @freeze_time("2024-01-15 10:00:00")
+    async def test_cancel_at_period_end_sets_ended_at_to_current_time(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that ended_at is set to the current time when subscription ends, not to ends_at."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+            scheduler_locked_at=utc_now(),
+        )
+
+        # Record when the cycle runs - this should be the ended_at timestamp
+        cycle_time = utc_now()
+
+        # ends_at is set to current_period_end (in the future)
+        assert subscription.ends_at is not None
+        assert subscription.ends_at == subscription.current_period_end
+        assert subscription.ends_at > cycle_time
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # ended_at should be set to the current time when the cycle ran, not to ends_at
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == cycle_time
+        # ended_at should match when the subscription actually ended, not the scheduled end time
+        assert updated_subscription.ended_at <= cycle_time
 
     async def test_trial_end(
         self,

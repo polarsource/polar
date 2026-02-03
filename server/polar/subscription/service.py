@@ -655,7 +655,7 @@ class SubscriptionService:
 
         # Subscription is due to cancel, revoke it
         if revoke:
-            subscription.ended_at = subscription.ends_at
+            subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle

@@ -18,6 +18,7 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import Aggregation, CountAggregation
@@ -644,13 +645,13 @@ async def create_legacy_recurring_product_price(
     if amount_type == ProductPriceAmountType.fixed:
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             product=product,
             is_archived=False,
         )
     elif amount_type == ProductPriceAmountType.custom:
         product_price = LegacyRecurringProductPriceCustom(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,

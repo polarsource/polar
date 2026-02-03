@@ -305,7 +305,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <h3 className="text-lg">Metadata</h3>
             <div className="flex flex-col gap-2">
               {Object.entries(order.metadata).map(([key, value]) => (
-                <DetailRow key={key} label={key} value={value} />
+                <DetailRow
+                  key={key}
+                  label={key}
+                  value={
+                    typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value
+                  }
+                />
               ))}
             </div>
           </div>

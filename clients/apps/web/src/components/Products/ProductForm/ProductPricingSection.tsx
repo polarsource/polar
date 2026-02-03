@@ -678,6 +678,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       } else if (amountType === 'free') {
         replace({
           amount_type: 'free',
+          price_currency: 'usd',
         })
       } else if (amountType === 'seat_based') {
         replace({

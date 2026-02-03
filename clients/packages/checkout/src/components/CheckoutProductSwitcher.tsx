@@ -1,8 +1,8 @@
 'use client'
 
-import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
-import { LegacyRecurringProductPrice } from '@spaire/sdk/models/components/legacyrecurringproductprice.js'
-import type { ProductPrice } from '@spaire/sdk/models/components/productprice.js'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
+import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
 import {
   RadioGroup,
   RadioGroupItem,

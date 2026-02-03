@@ -1,7 +1,7 @@
-import type { LegacyRecurringProductPrice } from '@spaire/sdk/models/components/legacyrecurringproductprice'
-import type { ProductPrice } from '@spaire/sdk/models/components/productprice'
-import type { ProductPriceMeteredUnit } from '@spaire/sdk/models/components/productpricemeteredunit'
-import type { SubscriptionRecurringInterval } from '@spaire/sdk/models/components/subscriptionrecurringinterval'
+import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
+import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit'
+import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 
 const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
 

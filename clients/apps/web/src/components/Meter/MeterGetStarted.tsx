@@ -50,7 +50,7 @@ export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
         <SyntaxHighlighterProvider>
           <SyntaxHighlighterClient
             lang="typescript"
-            code={`import { Polar } from "@spaire/sdk";
+            code={`import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
   accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",${

@@ -317,6 +317,9 @@ importers:
       '@next/third-parties':
         specifier: 16.1.1
         version: 16.1.1(next@16.1.1(@babel/core@7.28.5)(@opentelemetry/api@1.9.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+      '@polar-sh/sdk':
+        specifier: ^0.42.1
+        version: 0.42.5
       '@posthog/ai':
         specifier: ^7.3.0
         version: 7.3.0(@ai-sdk/provider@2.0.0)(@modelcontextprotocol/sdk@1.25.1(@cfworker/json-schema@4.1.1)(hono@4.11.1)(zod@4.3.5))(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(posthog-node@5.18.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(ws@8.18.3)(zod-to-json-schema@3.25.0(zod@4.3.5))
@@ -350,9 +353,6 @@ importers:
       '@spaire/mdx':
         specifier: workspace:*
         version: link:../../packages/mdx
-      '@spaire/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
       '@spaire/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -618,9 +618,9 @@ importers:
 
   packages/checkout:
     dependencies:
-      '@spaire/sdk':
-        specifier: workspace:*
-        version: link:../sdk
+      '@polar-sh/sdk':
+        specifier: ^0.42.1
+        version: 0.42.5
       '@spaire/ui':
         specifier: workspace:^
         version: link:../ui
@@ -3088,6 +3088,9 @@ packages:
   '@pnpm/npm-conf@2.3.1':
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
+
+  '@polar-sh/sdk@0.42.5':
+    resolution: {integrity: sha512-GzC3/ElCtMO55+KeXwFTANlydZzw5qI3DU/F9vAFIsUKuegSmh+Xu03KCL+ct9/imJOvLUQucYhUSsNKqo2j2Q==}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -14235,6 +14238,11 @@ snapshots:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
+
+  '@polar-sh/sdk@0.42.5':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 4.3.5
 
   '@polka/url@1.0.0-next.29': {}
 

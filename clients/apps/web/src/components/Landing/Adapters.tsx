@@ -32,7 +32,7 @@ export const GET = Checkout({
     name: 'BetterAuth',
     code: `import { betterAuth } from "better-auth";
 import { polar, checkout, portal, usage, webhooks } from "@spaire/better-auth";
-import { Polar } from "@spaire/sdk";
+import { Polar } from "@polar-sh/sdk";
 
 const client = new Polar({ accessToken: 'xxx' });
 
@@ -55,7 +55,7 @@ const auth = betterAuth({
   },
   {
     name: 'TypeScript',
-    code: `import { Polar } from "@spaire/sdk";
+    code: `import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
   accessToken: 'xxx',

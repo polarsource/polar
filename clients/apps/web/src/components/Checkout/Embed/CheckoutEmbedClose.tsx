@@ -1,7 +1,7 @@
 'use client'
 
-import { PolarEmbedCheckout } from '@spaire/checkout/embed'
-import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import { SpaireEmbedCheckout } from '@spaire/checkout/embed'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { X } from 'lucide-react'
 import { useCallback, useEffect } from 'react'
 
@@ -16,7 +16,7 @@ const CheckoutEmbedClose: React.FC<
     if (!checkout.embedOrigin) {
       return
     }
-    PolarEmbedCheckout.postMessage({ event: 'close' }, checkout.embedOrigin)
+    SpaireEmbedCheckout.postMessage({ event: 'close' }, checkout.embedOrigin)
   }, [checkout])
 
   useEffect(() => {

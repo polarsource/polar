@@ -1,4 +1,4 @@
-import type { BillingAddressFieldMode } from '@spaire/sdk/models/components/billingaddressfieldmode'
+import type { BillingAddressFieldMode } from '@polar-sh/sdk/models/components/billingaddressfieldmode'
 
 export const isDisplayedField = (
   mode: BillingAddressFieldMode,

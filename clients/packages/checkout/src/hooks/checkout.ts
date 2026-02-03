@@ -1,5 +1,5 @@
-import type { PolarCore } from '@spaire/sdk/core'
-import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import type { PolarCore } from '@polar-sh/sdk/core'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { useEffect, useMemo } from 'react'
 
 import { createSSEListener } from '../utils/sse'

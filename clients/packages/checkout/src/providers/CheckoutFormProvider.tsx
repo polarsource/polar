@@ -1,16 +1,16 @@
 'use client'
 
-import type { AddressInput } from '@spaire/sdk/models/components/addressinput'
-import type { CheckoutConfirmStripe } from '@spaire/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@spaire/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
-import { AlreadyActiveSubscriptionError } from '@spaire/sdk/models/errors/alreadyactivesubscriptionerror.js'
-import { HTTPValidationError } from '@spaire/sdk/models/errors/httpvalidationerror'
-import { NotOpenCheckout } from '@spaire/sdk/models/errors/notopencheckout.js'
-import { PaymentError } from '@spaire/sdk/models/errors/paymenterror.js'
-import { PaymentNotReady } from '@spaire/sdk/models/errors/paymentnotready.js'
-import { TrialAlreadyRedeemed } from '@spaire/sdk/models/errors/trialalreadyredeemed'
+import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
+import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror.js'
+import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
+import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
+import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
+import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
+import { TrialAlreadyRedeemed } from '@polar-sh/sdk/models/errors/trialalreadyredeemed'
 import type {
   ConfirmationToken,
   Stripe,

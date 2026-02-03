@@ -1,5 +1,5 @@
-import { PolarEmbedCheckout } from '@spaire/checkout/embed'
-import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import { SpaireEmbedCheckout } from '@spaire/checkout/embed'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
@@ -17,7 +17,7 @@ export const useCheckoutConfirmedRedirect = (
       customerSessionToken: string | undefined,
     ) => {
       if (checkout.embedOrigin) {
-        PolarEmbedCheckout.postMessage(
+        SpaireEmbedCheckout.postMessage(
           {
             event: 'confirmed',
           },
@@ -63,7 +63,7 @@ export const useCheckoutConfirmedRedirect = (
       }
 
       if (checkout.embedOrigin) {
-        PolarEmbedCheckout.postMessage(
+        SpaireEmbedCheckout.postMessage(
           {
             event: 'success',
             successURL: parsedURL.toString(),

@@ -57,10 +57,10 @@ export const GET = Checkout({
       name: 'BetterAuth',
       link: 'https://spairehq.com/docs/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
-      packages: 'better-auth @spaire/better-auth @spaire/sdk',
+      packages: 'better-auth @spaire/better-auth @polar-sh/sdk',
       code: `import { betterAuth } from "better-auth";
 import { polar, checkout, portal, usage, webhooks } from "@spaire/better-auth";
-import { Polar } from "@spaire/sdk";
+import { Polar } from "@polar-sh/sdk";
 
 const polarClient = new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN
@@ -97,8 +97,8 @@ ${products
       name: 'Node.js',
       link: 'https://spairehq.com/docs/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
-      packages: '@spaire/sdk',
-      code: `import { Polar } from "@spaire/sdk";
+      packages: '@polar-sh/sdk',
+      code: `import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN,

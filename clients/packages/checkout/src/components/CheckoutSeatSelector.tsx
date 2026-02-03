@@ -1,7 +1,7 @@
 'use client'
 
-import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
-import { HTTPValidationError } from '@spaire/sdk/models/errors/httpvalidationerror'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@spaire/ui/components/atoms/Button'
 import Input from '@spaire/ui/components/atoms/Input'
 import { formatCurrencyAndAmount } from '@spaire/ui/lib/money'

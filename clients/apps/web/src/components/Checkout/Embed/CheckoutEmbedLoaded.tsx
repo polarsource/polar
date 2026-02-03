@@ -1,7 +1,7 @@
 'use client'
 
-import { PolarEmbedCheckout } from '@spaire/checkout/embed'
-import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import { SpaireEmbedCheckout } from '@spaire/checkout/embed'
+import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import { useEffect } from 'react'
 
 interface CheckoutEmbedLoadedProps {
@@ -15,7 +15,7 @@ const CheckoutEmbedLoaded: React.FC<
     if (!checkout.embedOrigin) {
       return
     }
-    PolarEmbedCheckout.postMessage({ event: 'loaded' }, checkout.embedOrigin)
+    SpaireEmbedCheckout.postMessage({ event: 'loaded' }, checkout.embedOrigin)
   }, [])
 
   return null

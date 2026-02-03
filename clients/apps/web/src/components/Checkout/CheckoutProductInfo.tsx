@@ -1,6 +1,6 @@
 import { markdownOptions } from '@/utils/markdown'
-import type { CheckoutOrganization } from '@spaire/sdk/models/components/checkoutorganization'
-import type { CheckoutProduct } from '@spaire/sdk/models/components/checkoutproduct'
+import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
+import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import Avatar from '@spaire/ui/components/atoms/Avatar'
 import Markdown from 'markdown-to-jsx'
 import { Slideshow } from '../Products/Slideshow'

@@ -1,6 +1,6 @@
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@spaire/client'
-import type { Organization as OrganizationSDK } from '@spaire/sdk/models/components/organization'
+import type { Organization as OrganizationSDK } from '@polar-sh/sdk/models/components/organization'
 
 export const organizationPageLink = (
   org:

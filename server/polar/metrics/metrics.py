@@ -1274,6 +1274,28 @@ class TBCommittedMonthlyRecurringRevenueMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TBActiveSubscriptionsMetric(TinybirdMetric):
+    slug = "active_subscriptions"
+    display_name = "Active Subscriptions"
+    type = MetricType.scalar
+    query = TinybirdQuery.mrr
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class TBCommittedSubscriptionsMetric(TinybirdMetric):
+    slug = "committed_subscriptions"
+    display_name = "Committed Subscriptions"
+    type = MetricType.scalar
+    query = TinybirdQuery.mrr
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 class TBCostsMetric(TinybirdMetric):
     slug = "costs"
     display_name = "Costs"
@@ -1355,6 +1377,8 @@ METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
     TBRenewedSubscriptionsNetRevenueMetric,
     TBMonthlyRecurringRevenueMetric,
     TBCommittedMonthlyRecurringRevenueMetric,
+    TBActiveSubscriptionsMetric,
+    TBCommittedSubscriptionsMetric,
 ]
 
 

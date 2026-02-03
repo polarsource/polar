@@ -1353,6 +1353,105 @@ class TBAverageRevenuePerUserMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TBCanceledSubscriptionsMetric(TinybirdMetric):
+    slug = "canceled_subscriptions"
+    display_name = "Canceled Subscriptions"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsCustomerServiceMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_customer_service"
+    display_name = "Canceled Subscriptions - Customer Service"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsLowQualityMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_low_quality"
+    display_name = "Canceled Subscriptions - Low Quality"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsMissingFeaturesMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_missing_features"
+    display_name = "Canceled Subscriptions - Missing Features"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsSwitchedServiceMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_switched_service"
+    display_name = "Canceled Subscriptions - Switched Service"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsTooComplexMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_too_complex"
+    display_name = "Canceled Subscriptions - Too Complex"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsTooExpensiveMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_too_expensive"
+    display_name = "Canceled Subscriptions - Too Expensive"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsUnusedMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_unused"
+    display_name = "Canceled Subscriptions - Unused"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCanceledSubscriptionsOtherMetric(TinybirdMetric):
+    slug = "canceled_subscriptions_other"
+    display_name = "Canceled Subscriptions - Other"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
 METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
     TBOrdersMetric,
     TBRevenueMetric,
@@ -1379,6 +1478,15 @@ METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
     TBCommittedMonthlyRecurringRevenueMetric,
     TBActiveSubscriptionsMetric,
     TBCommittedSubscriptionsMetric,
+    TBCanceledSubscriptionsMetric,
+    TBCanceledSubscriptionsCustomerServiceMetric,
+    TBCanceledSubscriptionsLowQualityMetric,
+    TBCanceledSubscriptionsMissingFeaturesMetric,
+    TBCanceledSubscriptionsSwitchedServiceMetric,
+    TBCanceledSubscriptionsTooComplexMetric,
+    TBCanceledSubscriptionsTooExpensiveMetric,
+    TBCanceledSubscriptionsUnusedMetric,
+    TBCanceledSubscriptionsOtherMetric,
 ]
 
 

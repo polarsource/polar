@@ -468,6 +468,27 @@ WITH
             AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
             {customer_filter}
         GROUP BY day
+    ),
+    canceled AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(e.canceled_at, {{tz:String}})) AS day,
+            count(*) AS canceled_subscriptions,
+            countIf(e.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
+            countIf(e.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
+            countIf(e.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
+            countIf(e.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
+            countIf(e.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
+            countIf(e.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
+            countIf(e.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
+            countIf(e.customer_cancellation_reason = 'other' OR e.customer_cancellation_reason IS NULL OR e.customer_cancellation_reason = '') AS canceled_subscriptions_other
+        FROM events_by_timestamp e
+        WHERE e.source = 'system'
+            AND e.name = 'subscription.canceled'
+            AND e.organization_id IN {{org_ids:Array(String)}}
+            AND e.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND e.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
+            {customer_filter}
+        GROUP BY day
     )
 SELECT
     w.window_start AS timestamp,
@@ -478,9 +499,19 @@ SELECT
         WHEN COALESCE(d.active_user_by_event, 0) > 0
         THEN d.costs / d.active_user_by_event
         ELSE 0
-    END AS cost_per_user
+    END AS cost_per_user,
+    COALESCE(c.canceled_subscriptions, 0) AS canceled_subscriptions,
+    COALESCE(c.canceled_subscriptions_customer_service, 0) AS canceled_subscriptions_customer_service,
+    COALESCE(c.canceled_subscriptions_low_quality, 0) AS canceled_subscriptions_low_quality,
+    COALESCE(c.canceled_subscriptions_missing_features, 0) AS canceled_subscriptions_missing_features,
+    COALESCE(c.canceled_subscriptions_switched_service, 0) AS canceled_subscriptions_switched_service,
+    COALESCE(c.canceled_subscriptions_too_complex, 0) AS canceled_subscriptions_too_complex,
+    COALESCE(c.canceled_subscriptions_too_expensive, 0) AS canceled_subscriptions_too_expensive,
+    COALESCE(c.canceled_subscriptions_unused, 0) AS canceled_subscriptions_unused,
+    COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
 FROM windows w
 LEFT JOIN daily d ON d.day = w.window_start
+LEFT JOIN canceled c ON c.day = w.window_start
 ORDER BY w.window_start
 """
 

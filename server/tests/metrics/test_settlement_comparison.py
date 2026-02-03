@@ -40,7 +40,7 @@ from polar.models import (
 )
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -67,6 +67,7 @@ class SubEvent(TypedDict):
     product: str
     start: date
     cancel: NotRequired[date]
+    cancel_reason: NotRequired[str]
     end: NotRequired[date]
     renewals: NotRequired[list[date]]
 
@@ -108,6 +109,7 @@ SCENARIO: list[CustomerScenario] = [
                 "product": "monthly",
                 "start": date(2024, 1, 1),
                 "cancel": date(2024, 2, 15),
+                "cancel_reason": "too_expensive",
                 "end": date(2024, 3, 1),
                 "renewals": [date(2024, 2, 1)],
             }
@@ -142,6 +144,7 @@ SCENARIO: list[CustomerScenario] = [
                 "product": "monthly",
                 "start": date(2024, 2, 1),
                 "cancel": date(2024, 4, 15),
+                "cancel_reason": "missing_features",
                 "end": date(2024, 5, 1),
                 "renewals": [date(2024, 3, 1), date(2024, 4, 1)],
             }
@@ -179,6 +182,7 @@ SCENARIO: list[CustomerScenario] = [
                 "product": "monthly",
                 "start": date(2024, 1, 1),
                 "cancel": date(2024, 1, 20),
+                "cancel_reason": "unused",
                 "end": date(2024, 2, 1),
             }
         ],
@@ -212,6 +216,15 @@ SETTLEMENT_METRIC_SLUGS = [
     "committed_monthly_recurring_revenue",
     "active_subscriptions",
     "committed_subscriptions",
+    "canceled_subscriptions",
+    "canceled_subscriptions_customer_service",
+    "canceled_subscriptions_low_quality",
+    "canceled_subscriptions_missing_features",
+    "canceled_subscriptions_switched_service",
+    "canceled_subscriptions_too_complex",
+    "canceled_subscriptions_too_expensive",
+    "canceled_subscriptions_unused",
+    "canceled_subscriptions_other",
 ]
 
 
@@ -309,7 +322,15 @@ async def _create_subscription_canceled_event(
     subscription: Subscription,
     cancel_date: date,
     end_date: date,
+    cancel_reason: str | None = None,
 ) -> Event:
+    metadata: dict[str, Any] = {
+        "subscription_id": str(subscription.id),
+        "canceled_at": _dt(cancel_date).isoformat(),
+        "ends_at": _dt(end_date).isoformat(),
+    }
+    if cancel_reason is not None:
+        metadata["customer_cancellation_reason"] = cancel_reason
     return await create_event(
         save_fixture,
         organization=organization,
@@ -317,11 +338,7 @@ async def _create_subscription_canceled_event(
         source=EventSource.system,
         name=SystemEvent.subscription_canceled.value,
         timestamp=_dt(cancel_date),
-        metadata={
-            "subscription_id": str(subscription.id),
-            "canceled_at": _dt(cancel_date).isoformat(),
-            "ends_at": _dt(end_date).isoformat(),
-        },
+        metadata=metadata,
     )
 
 
@@ -355,6 +372,14 @@ async def _build_scenario(
                 ended_at=_dt(sub_def["end"]) if "end" in sub_def else None,
                 ends_at=_dt(sub_def["end"]) if "end" in sub_def else None,
             )
+            if "cancel" in sub_def:
+                sub.canceled_at = _dt(sub_def["cancel"])
+                reason = sub_def.get("cancel_reason")
+                if reason is not None:
+                    sub.customer_cancellation_reason = CustomerCancellationReason(
+                        reason
+                    )
+                await save_fixture(sub)
 
             ev = await _create_subscription_created_event(
                 save_fixture, organization, customer, sub, product
@@ -395,6 +420,7 @@ async def _build_scenario(
                     sub,
                     sub_def["cancel"],
                     sub_def["end"],
+                    cancel_reason=sub_def.get("cancel_reason"),
                 )
                 all_events.append(ev)
 
@@ -509,6 +535,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 20_000,
         "active_subscriptions": 4,
         "committed_subscriptions": 4,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 1,
+        "canceled_subscriptions_other": 0,
     },
     {  # Feb — C1 still active (ends Mar 1), C8 ended (ends Feb 1)
         "orders": 3,
@@ -531,6 +566,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 20_000,
         "active_subscriptions": 4,
         "committed_subscriptions": 4,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 1,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
     },
     {  # Mar — C1 ended (ends Mar 1)
         "orders": 3,
@@ -553,6 +597,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 20_000,
         "active_subscriptions": 4,
         "committed_subscriptions": 4,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
     },
     {  # Apr — C5 still active (ends May 1)
         "orders": 5,
@@ -575,6 +628,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 25_000,
         "active_subscriptions": 5,
         "committed_subscriptions": 5,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 1,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
     },
     {  # May — C5 ended (ends May 1)
         "orders": 3,
@@ -597,6 +659,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 20_000,
         "active_subscriptions": 4,
         "committed_subscriptions": 4,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
     },
     {  # Jun — C9 yearly joins
         "orders": 4,
@@ -619,6 +690,15 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "committed_monthly_recurring_revenue": 25_000,
         "active_subscriptions": 5,
         "committed_subscriptions": 5,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
     },
 ]
 

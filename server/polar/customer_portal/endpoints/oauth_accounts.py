@@ -10,7 +10,7 @@ from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
 from pydantic import UUID4
 
-from polar.auth.models import Customer, is_anonymous, is_customer
+from polar.auth.models import Customer, Member, is_anonymous, is_customer, is_member
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.base.service import BenefitActionRequiredError
 from polar.config import settings
@@ -21,6 +21,8 @@ from polar.integrations.discord.oauth import user_client as discord_user_client
 from polar.integrations.github.client import Forbidden
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.member.repository import MemberRepository
+from polar.member_session.service import member_session as member_session_service
 from polar.models.benefit import BenefitType
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.openapi import APITag
@@ -78,17 +80,25 @@ class OAuthCallbackError(PolarError):
 async def authorize(
     request: Request,
     return_to: ReturnTo,
-    auth_subject: auth.CustomerPortalWrite,
+    auth_subject: auth.CustomerPortalOAuthAccount,
     platform: CustomerOAuthPlatform = Query(...),
     customer_id: UUID4 = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthorizeResponse:
-    customer = auth_subject.subject
-    state = {
-        "customer_id": str(customer.id),
+    state: dict[str, str] = {
         "platform": platform,
         "return_to": return_to,
     }
+
+    if is_member(auth_subject):
+        member = auth_subject.subject
+        state["customer_id"] = str(member.customer_id)
+        state["member_id"] = str(member.id)
+    elif is_customer(auth_subject):
+        state["customer_id"] = str(auth_subject.subject.id)
+    else:
+        state["customer_id"] = str(customer_id)
+
     encoded_state = jwt.encode(
         data=state, secret=settings.SECRET, type="customer_oauth"
     )
@@ -121,8 +131,18 @@ async def callback(
 
     customer_repository = CustomerRepository.from_session(session)
     customer_id = uuid.UUID(state_data.get("customer_id"))
+    member_id_str = state_data.get("member_id")
+    member: Member | None = None
     customer: Customer | None = None
-    if is_customer(auth_subject):
+
+    if member_id_str:
+        member_repository = MemberRepository.from_session(session)
+        member = await member_repository.get_by_id(uuid.UUID(member_id_str))
+
+    if is_member(auth_subject):
+        member = auth_subject.subject
+        customer = await customer_repository.get_by_id(member.customer_id)
+    elif is_customer(auth_subject):
         customer = auth_subject.subject
     elif is_anonymous(auth_subject):
         # Trust the customer ID in the state for anonymous users
@@ -135,12 +155,18 @@ async def callback(
     platform = CustomerOAuthPlatform(state_data["platform"])
 
     redirect_url = get_safe_return_url(return_to)
-    # If not authenticated, create a new customer session, we trust the customer ID in the state
+    # If not authenticated, create a session based on whether this is a member or customer flow
     if is_anonymous(auth_subject):
-        token, _ = await customer_session_service.create_customer_session(
-            session, customer
-        )
-        redirect_url = add_query_parameters(redirect_url, customer_session_token=token)
+        if member is not None:
+            token, _ = await member_session_service.create_member_session(
+                session, member
+            )
+            redirect_url = add_query_parameters(redirect_url, member_session_token=token)
+        else:
+            token, _ = await customer_session_service.create_customer_session(
+                session, customer
+            )
+            redirect_url = add_query_parameters(redirect_url, customer_session_token=token)
 
     if code is None or error is not None:
         redirect_url = add_query_parameters(
@@ -206,8 +232,14 @@ async def callback(
         account_username=platform.get_account_username(profile),
     )
 
-    customer.set_oauth_account(oauth_account, platform)
-    await customer_repository.update(customer)
+    # Store OAuth account on member or customer
+    if member is not None:
+        member.set_oauth_account(oauth_account, platform)
+        member_repository = MemberRepository.from_session(session)
+        await member_repository.update(member)
+    else:
+        customer.set_oauth_account(oauth_account, platform)
+        await customer_repository.update(customer)
 
     platform_benefit_type = {
         CustomerOAuthPlatform.discord: BenefitType.discord,
@@ -215,13 +247,22 @@ async def callback(
     }.get(platform)
     if platform_benefit_type is not None:
         grant_repository = BenefitGrantRepository.from_session(session)
-        errored_grants = (
-            await grant_repository.list_errored_by_customer_and_benefit_type(
-                customer,
-                platform_benefit_type,
-                BenefitActionRequiredError.__name__,
+        if member is not None:
+            errored_grants = (
+                await grant_repository.list_errored_by_member_and_benefit_type(
+                    member,
+                    platform_benefit_type,
+                    BenefitActionRequiredError.__name__,
+                )
             )
-        )
+        else:
+            errored_grants = (
+                await grant_repository.list_errored_by_customer_and_benefit_type(
+                    customer,
+                    platform_benefit_type,
+                    BenefitActionRequiredError.__name__,
+                )
+            )
         for grant in errored_grants:
             grant.properties = {
                 **grant.properties,

@@ -16,6 +16,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
 from polar.models import Benefit, BenefitGrant, Customer, Member, Product
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
@@ -219,6 +220,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 customer,
                 grant.properties,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -313,6 +315,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     customer,
                     grant.properties,
                     attempt=attempt,
+                    member=member,
                 )
                 grant.properties = properties
             except BenefitActionRequiredError:
@@ -446,6 +449,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if customer is None:
             return grant
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
@@ -455,6 +463,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 update=True,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -512,6 +521,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         customer = await customer_repository.get_by_id(grant.customer_id)
         assert customer is not None
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
@@ -520,6 +534,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 customer,
                 grant.properties,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -585,6 +600,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
         assert customer is not None
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         properties = await benefit_strategy.revoke(
@@ -592,6 +612,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             customer,
             grant.properties,
             attempt=attempt,
+            member=member,
         )
 
         grant.properties = properties

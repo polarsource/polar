@@ -16,7 +16,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.customer import CustomerOAuthPlatform
 
 from ..base.service import (
@@ -51,6 +51,7 @@ class BenefitGitHubRepositoryService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
@@ -102,9 +103,16 @@ class BenefitGitHubRepositoryService(
                     "The customer needs to connect their GitHub account"
                 )
 
-            oauth_account = customer.get_oauth_account(
-                account_id, CustomerOAuthPlatform.github
-            )
+            # Check member's OAuth accounts first, fall back to customer
+            oauth_account = None
+            if member is not None:
+                oauth_account = member.get_oauth_account(
+                    account_id, CustomerOAuthPlatform.github
+                )
+            if oauth_account is None:
+                oauth_account = customer.get_oauth_account(
+                    account_id, CustomerOAuthPlatform.github
+                )
 
             if oauth_account is None or oauth_account.account_username is None:
                 raise BenefitActionRequiredError(
@@ -145,6 +153,7 @@ class BenefitGitHubRepositoryService(
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantGitHubRepositoryProperties:
         return grant_properties
 
@@ -155,6 +164,7 @@ class BenefitGitHubRepositoryService(
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantGitHubRepositoryProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
@@ -171,9 +181,16 @@ class BenefitGitHubRepositoryService(
                     "The benefit was never granted to the customer"
                 )
 
-            oauth_account = customer.get_oauth_account(
-                account_id, CustomerOAuthPlatform.github
-            )
+            # Check member's OAuth accounts first, fall back to customer
+            oauth_account = None
+            if member is not None:
+                oauth_account = member.get_oauth_account(
+                    account_id, CustomerOAuthPlatform.github
+                )
+            if oauth_account is None:
+                oauth_account = customer.get_oauth_account(
+                    account_id, CustomerOAuthPlatform.github
+                )
 
             if oauth_account is None or oauth_account.account_username is None:
                 raise BenefitActionRequiredError(

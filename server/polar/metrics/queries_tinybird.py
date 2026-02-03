@@ -355,7 +355,9 @@ SELECT
         WHEN COALESCE(mrr.active_subscriber_count, 0) > 0
         THEN toInt64(round(COALESCE(mrr.monthly_recurring_revenue, 0) / mrr.active_subscriber_count))
         ELSE 0
-    END AS average_revenue_per_user
+    END AS average_revenue_per_user,
+    COALESCE(mrr.active_subscriptions, 0) AS active_subscriptions,
+    COALESCE(mrr.committed_subscriptions, 0) AS committed_subscriptions
 FROM windows w
 LEFT JOIN (
     SELECT
@@ -388,7 +390,12 @@ LEFT JOIN (
             s.ends_at <= toDateTime64(0, 3, 'UTC')
             OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
         ) AS committed_monthly_recurring_revenue,
-        count(DISTINCT s.customer_id) AS active_subscriber_count
+        count(DISTINCT s.customer_id) AS active_subscriber_count,
+        count(*) AS active_subscriptions,
+        countIf(
+            s.ends_at <= toDateTime64(0, 3, 'UTC')
+            OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
+        ) AS committed_subscriptions
     FROM windows w2
     CROSS JOIN subs s
     LEFT JOIN latest_payment lp ON toString(lp.subscription_id) = toString(s.subscription_id)

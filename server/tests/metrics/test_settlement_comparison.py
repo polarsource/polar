@@ -210,6 +210,8 @@ SETTLEMENT_METRIC_SLUGS = [
     "renewed_subscriptions_net_revenue",
     "monthly_recurring_revenue",
     "committed_monthly_recurring_revenue",
+    "active_subscriptions",
+    "committed_subscriptions",
 ]
 
 
@@ -505,6 +507,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 0,
         "monthly_recurring_revenue": 20_000,
         "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
     },
     {  # Feb — C1 still active (ends Mar 1), C8 ended (ends Feb 1)
         "orders": 3,
@@ -525,6 +529,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 10_000,
         "monthly_recurring_revenue": 20_000,
         "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
     },
     {  # Mar — C1 ended (ends Mar 1)
         "orders": 3,
@@ -545,6 +551,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 10_000,
         "monthly_recurring_revenue": 20_000,
         "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
     },
     {  # Apr — C5 still active (ends May 1)
         "orders": 5,
@@ -565,6 +573,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 15_000,
         "monthly_recurring_revenue": 25_000,
         "committed_monthly_recurring_revenue": 25_000,
+        "active_subscriptions": 5,
+        "committed_subscriptions": 5,
     },
     {  # May — C5 ended (ends May 1)
         "orders": 3,
@@ -585,6 +595,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 15_000,
         "monthly_recurring_revenue": 20_000,
         "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
     },
     {  # Jun — C9 yearly joins
         "orders": 4,
@@ -605,6 +617,8 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "renewed_subscriptions_net_revenue": 15_000,
         "monthly_recurring_revenue": 25_000,
         "committed_monthly_recurring_revenue": 25_000,
+        "active_subscriptions": 5,
+        "committed_subscriptions": 5,
     },
 ]
 

@@ -1274,14 +1274,76 @@ class TBCommittedMonthlyRecurringRevenueMetric(TinybirdMetric):
         return cumulative_last(periods, cls.slug)
 
 
+class TBCostsMetric(TinybirdMetric):
+    slug = "costs"
+    display_name = "Costs"
+    type = MetricType.currency_sub_cent
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_sum(periods, cls.slug)
+
+
+class TBCumulativeCostsMetric(TinybirdMetric):
+    slug = "cumulative_costs"
+    display_name = "Cumulative Costs"
+    type = MetricType.currency_sub_cent
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
+class TBActiveUserMetric(TinybirdMetric):
+    slug = "active_user_by_event"
+    display_name = "Active User (By event)"
+    type = MetricType.scalar
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int:
+        return int(cumulative_last(periods, ActiveSubscriptionsMetric.slug))
+
+
+class TBCostPerUserMetric(TinybirdMetric):
+    slug = "cost_per_user"
+    display_name = "Cost Per User"
+    type = MetricType.currency_sub_cent
+    query = TinybirdQuery.events
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
+        total_active_users = cumulative_last(periods, ActiveSubscriptionsMetric.slug)
+        total_costs = sum(getattr(p, CostsMetric.slug) or 0 for p in periods)
+        return total_costs / total_active_users if total_active_users > 0 else 0.0
+
+
+class TBAverageRevenuePerUserMetric(TinybirdMetric):
+    slug = "average_revenue_per_user"
+    display_name = "Average Revenue Per User"
+    type = MetricType.currency
+    query = TinybirdQuery.mrr
+
+    @classmethod
+    def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
+        return cumulative_last(periods, cls.slug)
+
+
 METRICS_TINYBIRD_SETTLEMENT: list[type[TinybirdMetric]] = [
     TBOrdersMetric,
     TBRevenueMetric,
     TBNetRevenueMetric,
     TBCumulativeRevenueMetric,
     TBNetCumulativeRevenueMetric,
+    TBCostsMetric,
+    TBCumulativeCostsMetric,
     TBAverageOrderValueMetric,
     TBNetAverageOrderValueMetric,
+    TBAverageRevenuePerUserMetric,
+    TBCostPerUserMetric,
+    TBActiveUserMetric,
     TBOneTimeProductsMetric,
     TBOneTimeProductsRevenueMetric,
     TBOneTimeProductsNetRevenueMetric,

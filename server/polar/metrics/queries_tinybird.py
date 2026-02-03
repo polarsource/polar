@@ -11,6 +11,7 @@ from polar.kit.time_queries import TimeInterval
 class TinybirdQuery(StrEnum):
     balance_orders = "balance_orders"
     mrr = "mrr"
+    events = "events"
 
 
 def _format_dt(dt: datetime) -> str:
@@ -315,7 +316,8 @@ WITH
             minMerge(started_at) AS started_at,
             argMaxMerge(ends_at) AS ends_at,
             argMaxMerge(recurring_interval) AS recurring_interval,
-            argMaxMerge(recurring_interval_count) AS recurring_interval_count
+            argMaxMerge(recurring_interval_count) AS recurring_interval_count,
+            argMaxMerge(customer_id) AS customer_id
         FROM subscription_state
         WHERE organization_id IN {{org_ids:Array(String)}}
         GROUP BY subscription_id
@@ -348,7 +350,12 @@ WITH
 SELECT
     w.window_start AS timestamp,
     COALESCE(mrr.monthly_recurring_revenue, 0) AS monthly_recurring_revenue,
-    COALESCE(mrr.committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue
+    COALESCE(mrr.committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue,
+    CASE
+        WHEN COALESCE(mrr.active_subscriber_count, 0) > 0
+        THEN toInt64(round(COALESCE(mrr.monthly_recurring_revenue, 0) / mrr.active_subscriber_count))
+        ELSE 0
+    END AS average_revenue_per_user
 FROM windows w
 LEFT JOIN (
     SELECT
@@ -380,7 +387,8 @@ LEFT JOIN (
             END,
             s.ends_at <= toDateTime64(0, 3, 'UTC')
             OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
-        ) AS committed_monthly_recurring_revenue
+        ) AS committed_monthly_recurring_revenue,
+        count(DISTINCT s.customer_id) AS active_subscriber_count
     FROM windows w2
     CROSS JOIN subs s
     LEFT JOIN latest_payment lp ON toString(lp.subscription_id) = toString(s.subscription_id)
@@ -396,6 +404,104 @@ ORDER BY w.window_start
 """
 
     return sql, params
+
+
+def _build_events_metrics_sql(
+    *,
+    organization_id: Sequence[UUID],
+    start: datetime,
+    end: datetime,
+    interval: TimeInterval,
+    timezone: str,
+    bounds_start: datetime | None = None,
+    bounds_end: datetime | None = None,
+    customer_id: Sequence[UUID] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    iv = interval.value
+    b_start = bounds_start or start
+    b_end = bounds_end or end
+    params: dict[str, Any] = {
+        "iv": iv,
+        "org_ids": [str(id) for id in organization_id],
+        "start_dt": _format_dt(start),
+        "end_dt": _format_dt(end),
+        "bounds_start": _format_dt(b_start),
+        "bounds_end": _format_dt(b_end),
+        "tz": timezone,
+    }
+
+    customer_filter = ""
+    if customer_id is not None:
+        params["customer_ids"] = [str(id) for id in customer_id]
+        customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
+
+    sql = f"""
+WITH
+    windows AS (
+        SELECT date_trunc({{iv:String}},
+            dateAdd({iv}, number, toDateTime({{start_dt:String}}, {{tz:String}}))
+        ) AS window_start
+        FROM numbers(
+            dateDiff({{iv:String}},
+                toDateTime({{start_dt:String}}, {{tz:String}}),
+                toDateTime({{end_dt:String}}, {{tz:String}})
+            ) + 1
+        )
+    ),
+    daily AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(e.timestamp, {{tz:String}})) AS day,
+            COALESCE(sum(
+                JSONExtract(e.user_metadata, '_cost', 'amount', 'Float64')
+            ), 0) AS costs,
+            countDistinct(e.customer_id) + countDistinct(e.external_customer_id) AS active_user_by_event
+        FROM events_by_timestamp e
+        WHERE e.organization_id IN {{org_ids:Array(String)}}
+            AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
+            {customer_filter}
+        GROUP BY day
+    )
+SELECT
+    w.window_start AS timestamp,
+    COALESCE(d.costs, 0) AS costs,
+    COALESCE(sum(d.costs) OVER (ORDER BY w.window_start), 0) AS cumulative_costs,
+    COALESCE(d.active_user_by_event, 0) AS active_user_by_event,
+    CASE
+        WHEN COALESCE(d.active_user_by_event, 0) > 0
+        THEN d.costs / d.active_user_by_event
+        ELSE 0
+    END AS cost_per_user
+FROM windows w
+LEFT JOIN daily d ON d.day = w.window_start
+ORDER BY w.window_start
+"""
+
+    return sql, params
+
+
+async def query_events_metrics(
+    *,
+    organization_id: Sequence[UUID],
+    start: datetime,
+    end: datetime,
+    interval: TimeInterval,
+    timezone: str,
+    bounds_start: datetime | None = None,
+    bounds_end: datetime | None = None,
+    customer_id: Sequence[UUID] | None = None,
+) -> list[dict[str, Any]]:
+    sql, params = _build_events_metrics_sql(
+        organization_id=organization_id,
+        start=start,
+        end=end,
+        interval=interval,
+        timezone=timezone,
+        bounds_start=bounds_start,
+        bounds_end=bounds_end,
+        customer_id=customer_id,
+    )
+    return await tinybird_client.query(sql, parameters=params, db_statement=sql)
 
 
 async def query_balance_order_metrics(

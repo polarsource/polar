@@ -1,0 +1,36 @@
+NODE materialize
+SQL >
+    SELECT
+        subscription_id,
+        organization_id,
+        argMaxState(customer_id, timestamp) AS customer_id,
+        argMaxState(COALESCE(new_product_id, product_id), timestamp) AS product_id,
+        minState(started_at) AS started_at,
+        argMaxState(
+            CASE
+                WHEN name = 'subscription.revoked'
+                THEN timestamp
+                WHEN name = 'subscription.canceled'
+                THEN COALESCE(ends_at, canceled_at, timestamp)
+                ELSE COALESCE(ends_at, toDateTime64(0, 3, 'UTC'))
+            END,
+            timestamp
+        ) AS ends_at,
+        argMaxState(recurring_interval, timestamp) AS recurring_interval,
+        argMaxState(recurring_interval_count, timestamp) AS recurring_interval_count
+    FROM events_by_ingested_at
+    WHERE
+        source = 'system'
+        AND name IN (
+            'subscription.created',
+            'subscription.canceled',
+            'subscription.revoked',
+            'subscription.uncanceled',
+            'subscription.cycled',
+            'subscription.product_updated'
+        )
+        AND subscription_id IS NOT NULL
+    GROUP BY subscription_id, organization_id
+
+TYPE MATERIALIZED
+DATASOURCE subscription_state

@@ -2048,7 +2048,7 @@ class TestCreate:
                             ProductPriceFixedCreate(
                                 amount_type=ProductPriceAmountType.fixed,
                                 price_amount=100_00,
-                                price_currency="usd",
+                                price_currency=PresentmentCurrency.usd,
                             ),
                         ]
                     },
@@ -2076,7 +2076,7 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=100_00,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                         ),
                     ]
                 },

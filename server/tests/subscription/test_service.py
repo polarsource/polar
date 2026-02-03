@@ -28,6 +28,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -2592,7 +2593,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2779,7 +2780,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 3, "max_seats": None, "price_per_seat": 1000},
@@ -2820,7 +2821,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2861,7 +2862,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 2, "max_seats": 20, "price_per_seat": 1000},

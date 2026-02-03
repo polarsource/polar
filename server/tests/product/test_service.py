@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.models import (
@@ -27,7 +28,7 @@ from polar.models.product_price import (
     ProductPriceFixed,
 )
 from polar.postgres import AsyncSession
-from polar.product.guard import is_static_price
+from polar.product.guard import is_metered_price, is_static_price
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
@@ -338,7 +339,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -361,7 +362,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -385,7 +386,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -414,7 +415,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -437,7 +438,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -459,7 +460,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
         )
@@ -483,7 +484,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[uuid.uuid4()],
@@ -533,7 +534,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[file.id],
@@ -573,7 +574,7 @@ class TestCreate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             medias=[file.id],
@@ -592,7 +593,7 @@ class TestCreate:
                     ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=1000,
-                        price_currency="usd",
+                        price_currency=PresentmentCurrency.usd,
                     )
                 ],
             ),
@@ -604,7 +605,7 @@ class TestCreate:
                         minimum_amount=1000,
                         maximum_amount=2000,
                         preset_amount=1500,
-                        price_currency="usd",
+                        price_currency=PresentmentCurrency.usd,
                     ),
                 ],
             ),
@@ -631,7 +632,7 @@ class TestCreate:
                 prices=[
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
-                        price_currency="usd",
+                        price_currency=PresentmentCurrency.usd,
                         unit_amount=Decimal(100),
                         meter_id=METER_ID,
                     )
@@ -673,12 +674,12 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=1000,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                         ),
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=2000,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                         ),
                     ],
                     organization_id=organization.id,
@@ -703,7 +704,7 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=uuid.uuid4(),
                         ),
@@ -730,7 +731,7 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=meter.id,
                         ),
@@ -758,13 +759,13 @@ class TestCreate:
                     prices=[
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(100),
                             meter_id=meter.id,
                         ),
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                             unit_amount=Decimal(200),
                             meter_id=meter.id,
                         ),
@@ -773,6 +774,151 @@ class TestCreate:
                 ),
                 auth_subject,
             )
+
+    @pytest.mark.auth
+    async def test_invalid_multiple_static_prices_same_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Test that multiple static prices in the same currency are not allowed"""
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateOneTime(
+                    name="Product",
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=1000,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=2000,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_invalid_different_price_sets_across_currencies(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        """Test that each currency must have the same set of prices"""
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=1000,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            unit_amount=Decimal(100),
+                            meter_id=meter.id,
+                        ),
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=900,
+                            price_currency=PresentmentCurrency.eur,
+                        ),
+                        # Missing metered price for EUR - should fail
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_valid_multi_currency_product(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        """Test that a product with multiple currencies is valid when each currency has the same price structure"""
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    # USD prices
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=1000,
+                        price_currency=PresentmentCurrency.usd,
+                    ),
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency=PresentmentCurrency.usd,
+                        unit_amount=Decimal(100),
+                        meter_id=meter.id,
+                    ),
+                    # EUR prices (same structure as USD)
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=900,
+                        price_currency=PresentmentCurrency.eur,
+                    ),
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency=PresentmentCurrency.eur,
+                        unit_amount=Decimal(90),
+                        meter_id=meter.id,
+                    ),
+                    # GBP prices (same structure as USD and EUR)
+                    ProductPriceFixedCreate(
+                        amount_type=ProductPriceAmountType.fixed,
+                        price_amount=800,
+                        price_currency=PresentmentCurrency.gbp,
+                    ),
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency=PresentmentCurrency.gbp,
+                        unit_amount=Decimal(80),
+                        meter_id=meter.id,
+                    ),
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert product.organization_id == organization.id
+        assert len(product.prices) == 6  # 2 price types × 3 currencies
+
+        # Verify each currency has both fixed and metered prices
+        for currency in ["usd", "eur", "gbp"]:
+            currency_prices = [
+                p for p in product.prices if p.price_currency == currency
+            ]
+            assert len(currency_prices) == 2
+
+            fixed_prices = [p for p in currency_prices if is_static_price(p)]
+            metered_prices = [p for p in currency_prices if is_metered_price(p)]
+
+            assert len(fixed_prices) == 1
+            assert len(metered_prices) == 1
 
 
 @pytest.mark.asyncio
@@ -903,7 +1049,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1141,7 +1287,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1209,7 +1355,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=12000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ],
         )
@@ -1239,7 +1385,7 @@ class TestUpdate:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=2000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 ),
             ]
         )
@@ -1266,7 +1412,7 @@ class TestUpdate:
             prices=[
                 ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                     unit_amount=Decimal(100),
                     meter_id=uuid.uuid4(),
                 ),

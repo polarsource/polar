@@ -20,6 +20,7 @@ from polar.custom_field.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -95,11 +96,8 @@ SeatPriceAmount = Annotated[
     ),
 ]
 PriceCurrency = Annotated[
-    str,
-    Field(
-        pattern="usd",
-        description="The currency. Currently, only `usd` is supported.",
-    ),
+    PresentmentCurrency,
+    Field(description="The currency in which the customer will be charged."),
 ]
 ProductName = Annotated[
     str,
@@ -117,7 +115,7 @@ ProductDescription = Annotated[
 
 class ProductPriceCreateBase(Schema):
     amount_type: ProductPriceAmountType
-    price_currency: PriceCurrency = "usd"
+    price_currency: PriceCurrency = PresentmentCurrency.usd
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()

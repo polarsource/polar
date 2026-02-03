@@ -21,7 +21,7 @@ from redis.asyncio import Redis as AsyncRedis
 
 from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
-from polar.auth.models import Anonymous, AuthSubject
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.ip_geolocation import _get_client_dependency
 from polar.config import settings
@@ -92,17 +92,20 @@ async def redis(worker_id: str) -> AsyncIterator[Redis]:
 
 
 @pytest_asyncio.fixture
-async def billing_app(
+async def e2e_app(
     session: AsyncSession,
     redis: Redis,
+    billing_user: User,
 ) -> AsyncGenerator[None]:
     """
     FastAPI app configured for E2E tests.
 
     Sets up dependency overrides for database session and redis,
-    and uses anonymous auth by default.
+    and authenticates as the billing_user by default.
     """
-    anon_subject = AuthSubject(Anonymous(), {Scope.web_read, Scope.web_write}, None)
+    auth_subject = AuthSubject(
+        billing_user, {Scope.web_read, Scope.web_write}, None
+    )
 
     # Override dependencies
     polar_app.dependency_overrides[get_db_session] = lambda: session
@@ -110,9 +113,9 @@ async def billing_app(
     polar_app.dependency_overrides[get_redis] = lambda: redis
     polar_app.dependency_overrides[_get_client_dependency] = lambda: None
 
-    # Override all auth subject getters to return anonymous by default
+    # Override all auth subject getters to return the billing user
     for auth_subject_getter in _auth_subject_factory_cache.values():
-        polar_app.dependency_overrides[auth_subject_getter] = lambda: anon_subject
+        polar_app.dependency_overrides[auth_subject_getter] = lambda: auth_subject
 
     yield
 
@@ -126,8 +129,8 @@ async def billing_app(
 
 
 @pytest_asyncio.fixture
-async def client(billing_app: None) -> AsyncGenerator[httpx.AsyncClient, None]:
-    """HTTP client for making API requests in billing E2E tests."""
+async def client(e2e_app: None) -> AsyncGenerator[httpx.AsyncClient, None]:
+    """HTTP client for making API requests in E2E tests."""
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=polar_app),
         base_url="http://test",

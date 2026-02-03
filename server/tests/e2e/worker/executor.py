@@ -1,143 +1,77 @@
 """
 Task executor for E2E tests.
 
-Provides utilities to execute tasks directly for E2E testing.
+Executes tasks using real Redis as message transport, matching production
+behavior for message serialization, JobQueueManager lifecycle, and queue routing.
 
-NOTE: Due to the complexity of running Dramatiq workers in tests
-(separate thread, separate event loop, session sharing issues),
-this executor takes a simpler approach: it directly invokes the
-actor functions after flushing the job queue.
+The only difference from production is that tasks are executed in-process
+(not via a separate Dramatiq Worker thread) to avoid async/threading issues.
 """
 
-import asyncio
-import contextlib
-import uuid
-from collections.abc import AsyncIterator
-from typing import Any
+import inspect
 
 import dramatiq
 import structlog
-from dramatiq.brokers.stub import StubBroker
+from dramatiq.middleware.current_message import CurrentMessage
 
 from polar.redis import Redis
 from polar.worker import JobQueueManager
-from polar.worker._enqueue import _job_queue_manager
+from polar.worker._queues import TaskQueue
 
 log = structlog.get_logger()
 
-
-class TestJobQueueManager(JobQueueManager):
-    """
-    Test-specific JobQueueManager that sends messages directly to StubBroker.
-
-    Unlike the regular JobQueueManager which writes to Redis for the RedisBroker
-    to pick up, this version sends messages directly to the StubBroker using
-    broker.enqueue().
-    """
-
-    def __init__(self, broker: StubBroker) -> None:
-        super().__init__()
-        self._broker = broker
-
-    async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
-        """
-        Flush pending jobs directly to the StubBroker.
-
-        This overrides the base class to send messages using broker.enqueue()
-        instead of writing to Redis.
-        """
-        log.info(
-            "TestJobQueueManager.flush called",
-            num_jobs=len(self._enqueued_jobs),
-            num_events=len(self._ingested_events),
-        )
-
-        if len(self._ingested_events) > 0:
-            self.enqueue_job("event.ingested", self._ingested_events)
-
-        if not self._enqueued_jobs:
-            self.reset()
-            return
-
-        for actor_name, args, kwargs, delay in self._enqueued_jobs:
-            try:
-                actor = self._broker.get_actor(actor_name)
-                # Create and send message directly to StubBroker
-                message = actor.message(*args, **kwargs)
-                self._broker.enqueue(message)
-                log.info(
-                    "TestJobQueueManager flushed job to broker",
-                    actor_name=actor_name,
-                    args=args,
-                )
-            except dramatiq.ActorNotFound:
-                log.warning("Actor not found during flush", actor_name=actor_name)
-
-        self.reset()
-
-    @classmethod
-    @contextlib.asynccontextmanager
-    async def open_for_test(
-        cls, broker: StubBroker, redis: Redis
-    ) -> AsyncIterator["TestJobQueueManager"]:
-        """Context manager for test job queue management."""
-        manager = cls(broker)
-        _job_queue_manager.set(manager)
-        try:
-            yield manager
-        finally:
-            await manager.flush(broker, redis)
-            _job_queue_manager.set(None)
+# All queue names used by Polar, including Dramatiq's default
+QUEUE_NAMES = [
+    "default",
+    TaskQueue.HIGH_PRIORITY,
+    TaskQueue.MEDIUM_PRIORITY,
+    TaskQueue.LOW_PRIORITY,
+    TaskQueue.WEBHOOKS,
+]
 
 
 class TaskExecutor:
     """
-    Helper to execute pending tasks directly.
+    Executes pending tasks using real Redis as message transport.
 
-    This executor takes a simpler approach than running a full Dramatiq
-    worker: it processes the job queue directly by calling actor functions.
-    This avoids threading/event loop issues while still testing the
-    full task chain execution.
+    This executor reads messages from Redis (where JobQueueManager.flush()
+    writes them), deserializes them, and calls actor functions directly.
+
+    Each task runs through Polar's @actor wrapper (_wrapped_fn), which
+    handles JobQueueManager lifecycle — creating a new JQM, executing the
+    task, and flushing any child jobs back to Redis on exit.
 
     Usage:
-        executor = TaskExecutor(broker, redis)
+        executor = TaskExecutor(redis)
 
-        # Enqueue jobs as normal
-        enqueue_job("subscription.cycle", subscription_id)
-
-        # Process all pending tasks
+        # API request enqueues jobs as normal via enqueue_job()
+        # Then process all pending tasks:
         await executor.run_pending()
     """
 
-    def __init__(self, broker: StubBroker, redis: Redis) -> None:
-        self._broker = broker
+    def __init__(self, redis: Redis) -> None:
         self._redis = redis
-        self._max_iterations = 100  # Prevent infinite loops
+        self._max_iterations = 100
+        self._broker = dramatiq.get_broker()
 
-    async def run_pending(self, timeout: float = 5.0) -> None:
+    async def run_pending(self, timeout: float = 10.0) -> None:
         """
         Process all pending tasks until queues are empty.
 
-        This method:
-        1. Flushes the JobQueueManager by sending messages directly to StubBroker
-        2. Processes messages by calling actor functions directly
-        3. Repeats until no more messages are pending
-
-        Args:
-            timeout: Maximum time in seconds to wait for tasks to complete
+        1. Flushes the current JobQueueManager to Redis
+        2. Reads messages from Redis queues
+        3. Deserializes and executes each message
+        4. Repeats until no more messages (tasks can enqueue child tasks)
         """
+        # Flush initial jobs (from the API request) to Redis
+        await self._flush_initial_jqm()
+
         iteration = 0
         while iteration < self._max_iterations:
             iteration += 1
 
-            # Flush any pending jobs by sending to StubBroker directly
-            # (JobQueueManager.flush() writes to Redis which StubBroker doesn't read)
-            await self._flush_jobs_to_broker()
-
-            # Process all messages in all queues
             processed = await self._process_all_queues()
             if not processed:
-                # No more messages to process
                 break
 
         if iteration >= self._max_iterations:
@@ -146,133 +80,121 @@ class TaskExecutor:
                 max_iterations=self._max_iterations,
             )
 
-    async def _flush_jobs_to_broker(self) -> None:
-        """
-        Flush pending jobs from JobQueueManager directly to the StubBroker.
-
-        This bypasses Redis and sends messages directly to the broker's queues.
-        """
+    async def _flush_initial_jqm(self) -> None:
+        """Flush the initial JobQueueManager (from the API request) to Redis."""
         try:
-            job_queue_manager = JobQueueManager.get()
+            jqm = JobQueueManager.get()
         except RuntimeError:
             return
 
-        # Get the pending jobs and clear them
-        pending_jobs = list(job_queue_manager._enqueued_jobs)
-        job_queue_manager._enqueued_jobs = []
-
-        for actor_name, args, kwargs, delay in pending_jobs:
-            try:
-                actor = self._broker.get_actor(actor_name)
-                # Create and send message directly to StubBroker
-                message = actor.message(*args, **kwargs)
-                self._broker.enqueue(message)
-                log.debug(
-                    "Flushed job to broker",
-                    actor_name=actor_name,
-                    args=args,
-                )
-            except dramatiq.ActorNotFound:
-                log.warning("Actor not found during flush", actor_name=actor_name)
+        await jqm.flush(self._broker, self._redis)
 
     async def _process_all_queues(self) -> bool:
         """
-        Process one message from each queue.
+        Process one message from each queue (including delayed queues).
 
         Returns True if any message was processed.
         """
         processed_any = False
-        queues = list(self._broker.get_declared_queues())
 
-        for queue_name in queues:
-            # Skip delay queues
-            if queue_name.endswith(".DQ"):
-                continue
+        for queue_name in QUEUE_NAMES:
+            # Check main queue
+            message = await self._pop_message(queue_name)
+            if message is not None:
+                await self._process_message(message)
+                processed_any = True
 
-            # Try to consume a message from this queue
-            try:
-                consumer = self._broker.consume(queue_name)
-                message = next(consumer, None)
-                if message is not None:
-                    await self._process_message(message)
-                    processed_any = True
-            except Exception as e:
-                log.warning(
-                    "Error consuming from queue", queue=queue_name, error=str(e)
-                )
+            # Check delayed queue (process immediately in tests)
+            dq_name = f"{queue_name}.DQ"
+            message = await self._pop_message(dq_name)
+            if message is not None:
+                await self._process_message(message)
+                processed_any = True
 
         return processed_any
 
-    async def _process_message(self, message: dramatiq.Message[Any]) -> None:
+    async def _pop_message(self, queue_name: str) -> dramatiq.Message | None:
         """
-        Process a single message by calling the original async function directly.
+        Pop a message from a Redis queue using Dramatiq's key patterns.
 
-        The Dramatiq @actor decorator wraps async functions in a sync wrapper
-        that uses get_event_loop_thread(). We bypass this by calling the
-        original async function directly via __wrapped__.
+        Dramatiq stores messages in Redis as:
+        - dramatiq:{queue} — list of message IDs (RPUSH on enqueue, LPOP on consume)
+        - dramatiq:{queue}.msgs — hash of message_id -> encoded_message
+        """
+        queue_key = f"dramatiq:{queue_name}"
+        message_id = await self._redis.lpop(queue_key)
+        if message_id is None:
+            return None
+
+        msgs_key = f"dramatiq:{queue_name}.msgs"
+        encoded = await self._redis.hget(msgs_key, message_id)
+        if encoded is None:
+            log.warning(
+                "Message ID found in queue but not in msgs hash",
+                queue=queue_name,
+                message_id=message_id,
+            )
+            return None
+
+        # Clean up the message from the hash
+        await self._redis.hdel(msgs_key, message_id)
+
+        # Deserialize using Dramatiq's encoder (real deserialization round-trip)
+        encoder = dramatiq.get_encoder()
+        raw = encoded.encode("utf-8") if isinstance(encoded, str) else encoded
+        data = encoder.decode(raw)
+        return dramatiq.Message(**data)
+
+    async def _process_message(self, message: dramatiq.Message) -> None:
+        """
+        Process a single message by calling the actor function.
+
+        Calls through Polar's _wrapped_fn (one level of __wrapped__ unwrap
+        to skip Dramatiq's sync/thread wrapper, but keep Polar's JQM wrapper).
+        This means:
+        - JobQueueManager.open() lifecycle is real
+        - Child tasks get flushed to Redis naturally
+        - Message serialization round-trips are validated
         """
         actor_name = message.actor_name
         args = message.args
         kwargs = message.kwargs
 
         log.debug(
-            "Processing message",
+            "Processing task",
             actor_name=actor_name,
             args=args,
             kwargs=kwargs,
         )
 
-        # Get the actor from the broker
         try:
             actor = self._broker.get_actor(actor_name)
         except dramatiq.ActorNotFound:
             log.warning("Actor not found", actor_name=actor_name)
             return
 
-        # Get the original async function, unwrapping multiple layers:
-        # 1. Dramatiq's async wrapper (stores original in __wrapped__)
-        # 2. Polar's @actor decorator wrapper (_wrapped_fn with JobQueueManager.open)
-        #
-        # We need to call the innermost function to avoid double-wrapping with
-        # JobQueueManager, since we use TestJobQueueManager.open_for_test() already.
-        fn = actor.fn
-
-        # First unwrap: Dramatiq's async wrapper -> Polar's _wrapped_fn
-        wrapped_fn = getattr(fn, "__wrapped__", fn)
-
-        # Second unwrap: Polar's _wrapped_fn -> original async function
-        # The @actor decorator uses @functools.wraps which sets __wrapped__
-        original_fn = getattr(wrapped_fn, "__wrapped__", wrapped_fn)
-
-        # Convert UUID strings back to UUID objects for common task patterns
-        processed_args = []
-        for arg in args:
-            if isinstance(arg, str):
-                try:
-                    processed_args.append(uuid.UUID(arg))
-                except ValueError:
-                    processed_args.append(arg)
-            else:
-                processed_args.append(arg)
+        # Set CurrentMessage context (normally done by Dramatiq's CurrentMessage
+        # middleware). Tasks can access this via CurrentMessage.get_current_message().
+        CurrentMessage._MESSAGE.set(message)
 
         try:
-            # Call the original async function directly, wrapped in TestJobQueueManager
-            # This mimics the behavior of the @actor decorator which wraps tasks
-            # with JobQueueManager.open() to flush enqueued jobs after completion.
-            # We use TestJobQueueManager which sends directly to StubBroker.
-            import inspect
+            # actor.fn is Dramatiq's sync wrapper around _wrapped_fn.
+            # Unwrap one level to get Polar's _wrapped_fn:
+            #
+            #   async def _wrapped_fn(*args, **kwargs):
+            #       async with JobQueueManager.open(broker, redis):
+            #           return await original_fn(*args, **kwargs)
+            #
+            # This runs the real JQM lifecycle: child jobs get flushed to Redis.
+            fn = actor.fn
+            wrapped_fn = getattr(fn, "__wrapped__", fn)
 
-            async with TestJobQueueManager.open_for_test(self._broker, self._redis):
-                if inspect.iscoroutinefunction(original_fn):
-                    await original_fn(*processed_args, **kwargs)
-                elif asyncio.iscoroutinefunction(original_fn):
-                    await original_fn(*processed_args, **kwargs)
-                else:
-                    # Sync function (shouldn't happen for our tasks but handle it)
-                    original_fn(*processed_args, **kwargs)
+            if inspect.iscoroutinefunction(wrapped_fn):
+                await wrapped_fn(*args, **kwargs)
+            else:
+                wrapped_fn(*args, **kwargs)
         except Exception:
-            log.exception(
-                "Task execution failed",
-                actor_name=actor_name,
-            )
+            log.exception("Task execution failed", actor_name=actor_name)
             raise
+        finally:
+            CurrentMessage._MESSAGE.set(None)

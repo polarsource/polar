@@ -14,9 +14,7 @@ class TestCheckoutFlow:
     """E2E tests for the complete checkout flow."""
 
     @pytest.mark.usefixtures(
-        "patch_broker",
-        "patch_task_middlewares",
-        "current_message",
+        "patch_worker_middlewares",
         "set_job_queue_manager",
     )
     async def test_checkout_creates_order(

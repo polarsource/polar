@@ -2,24 +2,22 @@
 Fixtures for E2E tests.
 
 These fixtures provide:
+- Real Redis connection (not FakeAsyncRedis)
+- Task execution via real Redis message transport
+- Single-point middleware patching (no per-module AsyncSessionMaker patches)
 - Test data factories for billing scenarios
-- Task execution via StubBroker
 - HTTP client for API testing
 """
 
 import contextlib
 from collections.abc import AsyncGenerator, AsyncIterator, Iterator
-from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import dramatiq
 import httpx
 import pytest
 import pytest_asyncio
-from dramatiq.brokers.stub import StubBroker
-from dramatiq.middleware.current_message import CurrentMessage
-from fastapi import FastAPI
 from pytest_mock import MockerFixture
+from redis.asyncio import Redis as AsyncRedis
 
 from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
@@ -31,10 +29,11 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Account, Organization, User, UserOrganization
 from polar.postgres import get_db_read_session, get_db_session
 from polar.redis import Redis, get_redis
-from polar.worker import JobQueueManager, RedisMiddleware
+from polar.worker import JobQueueManager
 from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
-from tests.e2e.worker.broker import create_test_broker, register_actors_to_broker
+from polar.worker._redis import RedisMiddleware
+from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 from tests.e2e.worker.executor import TaskExecutor
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -42,6 +41,49 @@ from tests.fixtures.random_objects import (
     create_organization,
     create_user,
 )
+
+# =============================================================================
+# Real Redis (Step 1)
+# =============================================================================
+
+
+def _get_e2e_redis_db(worker_id: str) -> int:
+    """Map pytest-xdist worker ID to a Redis DB index for isolation.
+
+    Worker 'gw0' -> DB 1, 'gw1' -> DB 2, etc.
+    DB 0 is reserved for the application.
+    Falls back to DB 1 when not running under xdist.
+    """
+    if worker_id == "master":
+        return 1
+    try:
+        return int(worker_id.replace("gw", "")) + 1
+    except (ValueError, AttributeError):
+        return 1
+
+
+@pytest_asyncio.fixture
+async def redis(worker_id: str) -> AsyncIterator[Redis]:
+    """Real Redis connection for E2E tests.
+
+    Overrides the FakeAsyncRedis fixture from tests/fixtures/redis.py.
+    Each xdist worker gets its own Redis DB for parallel isolation.
+    """
+    db_index = _get_e2e_redis_db(worker_id)
+    client: Redis = AsyncRedis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=db_index,
+        decode_responses=True,
+    )
+    # Clean state before each test
+    await client.flushdb()
+
+    yield client
+
+    # Clean up after test
+    await client.flushdb()
+    await client.aclose()
 
 
 # =============================================================================
@@ -53,9 +95,9 @@ from tests.fixtures.random_objects import (
 async def billing_app(
     session: AsyncSession,
     redis: Redis,
-) -> AsyncGenerator[FastAPI, None]:
+) -> AsyncGenerator[None]:
     """
-    FastAPI app configured for billing E2E tests.
+    FastAPI app configured for E2E tests.
 
     Sets up dependency overrides for database session and redis,
     and uses anonymous auth by default.
@@ -72,7 +114,7 @@ async def billing_app(
     for auth_subject_getter in _auth_subject_factory_cache.values():
         polar_app.dependency_overrides[auth_subject_getter] = lambda: anon_subject
 
-    yield polar_app
+    yield
 
     # Cleanup
     polar_app.dependency_overrides.pop(get_db_session, None)
@@ -84,10 +126,10 @@ async def billing_app(
 
 
 @pytest_asyncio.fixture
-async def client(billing_app: FastAPI) -> AsyncGenerator[httpx.AsyncClient, None]:
+async def client(billing_app: None) -> AsyncGenerator[httpx.AsyncClient, None]:
     """HTTP client for making API requests in billing E2E tests."""
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=billing_app),
+        transport=httpx.ASGITransport(app=polar_app),
         base_url="http://test",
     ) as test_client:
         yield test_client
@@ -97,6 +139,22 @@ async def client(billing_app: FastAPI) -> AsyncGenerator[httpx.AsyncClient, None
 def mock_email(mocker: MockerFixture) -> MagicMock:
     """Mock email sending."""
     return mocker.patch("polar.email.sender.enqueue_email")
+
+
+@pytest.fixture(autouse=True)
+def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
+    """Mock Stripe service for e2e tests.
+
+    Replaces the stripe_service singleton used by checkout (and other) services.
+    Individual tests can configure return values on this mock as needed.
+    """
+    from tests.fixtures.stripe import construct_stripe_customer
+
+    mock = MagicMock()
+    mock.create_customer = mocker.AsyncMock(return_value=construct_stripe_customer())
+    mock.update_customer = mocker.AsyncMock(return_value=construct_stripe_customer())
+    mocker.patch("polar.checkout.service.stripe_service", new=mock)
+    return mock
 
 
 # =============================================================================
@@ -141,7 +199,7 @@ async def billing_account(
 
 
 # =============================================================================
-# Task Execution Fixtures
+# Worker Middleware Patches (Step 3)
 # =============================================================================
 
 
@@ -154,91 +212,55 @@ async def httpx_client() -> AsyncIterator[httpx.AsyncClient]:
 
 
 @pytest.fixture
-def test_broker() -> Iterator[StubBroker]:
-    """StubBroker with all Polar actors registered."""
-    broker = create_test_broker()
-    register_actors_to_broker(broker)
-    yield broker
-    broker.close()
-
-
-@pytest.fixture
-def task_executor(test_broker: StubBroker, redis: Redis) -> TaskExecutor:
-    """Helper to execute pending tasks directly."""
-    return TaskExecutor(test_broker, redis)
-
-
-@pytest.fixture
-def patch_broker(test_broker: StubBroker) -> Iterator[None]:
-    """Patch dramatiq.get_broker to return the test broker."""
-    with patch("dramatiq.get_broker", return_value=test_broker):
-        yield
-
-
-@pytest.fixture
-def patch_task_middlewares(
+def patch_worker_middlewares(
     mocker: MockerFixture,
     session: AsyncSession,
     redis: Redis,
     httpx_client: httpx.AsyncClient,
 ) -> None:
-    """Patch middleware to use test session and redis for task execution."""
+    """Patch worker middlewares to use test resources.
+
+    Single injection point replacing the old 17-module AsyncSessionMaker patch.
+
+    - SQLAlchemyMiddleware.get_async_session: returns the test session.
+      AsyncSessionMaker() calls this at runtime (dynamic class method lookup),
+      so patching it once affects ALL task modules automatically.
+      The test session uses join_transaction_mode (bound to external connection),
+      so session.commit() in AsyncSessionMaker operates on savepoints, not the
+      outer test transaction.
+
+    - RedisMiddleware.get: returns the real test Redis.
+
+    - HTTPXMiddleware.get: returns the test httpx client.
+    """
 
     @contextlib.asynccontextmanager
-    async def mock_async_session_maker() -> AsyncIterator[AsyncSession]:
-        """Mock that returns the test session WITHOUT committing."""
+    async def _mock_get_async_session() -> AsyncIterator[AsyncSession]:
         yield session
 
-    modules_using_async_session_maker = [
-        "polar.worker._sqlalchemy",
-        "polar.worker",
-        "polar.checkout.tasks",
-        "polar.subscription.tasks",
-        "polar.order.tasks",
-        "polar.customer.tasks",
-        "polar.benefit.tasks",
-        "polar.event.tasks",
-        "polar.external_event.tasks",
-        "polar.email_update.tasks",
-        "polar.auth.tasks",
-        "polar.personal_access_token.tasks",
-        "polar.organization_access_token.tasks",
-        "polar.customer_session.tasks",
-        "polar.customer_meter.tasks",
-        "polar.meter.tasks",
-        "polar.integrations.stripe.tasks",
-    ]
-
-    for module in modules_using_async_session_maker:
-        try:
-            mocker.patch(
-                f"{module}.AsyncSessionMaker", side_effect=mock_async_session_maker
-            )
-        except AttributeError:
-            pass
-
+    mocker.patch.object(
+        SQLAlchemyMiddleware,
+        "get_async_session",
+        side_effect=_mock_get_async_session,
+    )
     mocker.patch.object(RedisMiddleware, "get", return_value=redis)
     mocker.patch.object(HTTPXMiddleware, "get", return_value=httpx_client)
 
 
+# =============================================================================
+# Task Execution Fixtures (Step 2)
+# =============================================================================
+
+
 @pytest.fixture
-def current_message() -> Iterator[dramatiq.Message[Any]]:
-    """Set up a current message context for task execution."""
-    message: dramatiq.Message[Any] = dramatiq.Message(
-        queue_name="default",
-        actor_name="actor",
-        args=(),
-        kwargs={},
-        options={"retries": 0, "max_retries": settings.WORKER_MAX_RETRIES},
-    )
-    CurrentMessage._MESSAGE.set(message)
-    yield message
-    CurrentMessage._MESSAGE.set(None)
+def task_executor(redis: Redis) -> TaskExecutor:
+    """Helper to execute pending tasks via real Redis transport."""
+    return TaskExecutor(redis)
 
 
 @pytest.fixture
 def set_job_queue_manager() -> Iterator[JobQueueManager]:
-    """Initialize the JobQueueManager context for task execution."""
+    """Initialize the JobQueueManager context for the API request."""
     manager = JobQueueManager()
     _job_queue_manager.set(manager)
     yield manager

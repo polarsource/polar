@@ -76,7 +76,6 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import (
-    is_currency_price,
     is_fixed_price,
     is_metered_price,
     is_seat_price,
@@ -700,9 +699,7 @@ class TestCreate:
         assert checkout.products == [product_one_time_free_price]
         assert checkout.amount == 0
         assert checkout.user_metadata == {"key": "value"}
-        assert checkout.currency == organization.default_presentment_currency, (
-            "Free price should use org currency"
-        )
+        assert checkout.currency == price.price_currency
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1281,7 +1278,6 @@ class TestCreate:
         assert checkout.product == product
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == expected_currency
         assert checkout.products == [product]
         assert checkout.currency == expected_currency
@@ -1314,7 +1310,6 @@ class TestCreate:
         assert checkout.product == product_one_time_multiple_currencies
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == currency
         assert checkout.products == [product_one_time_multiple_currencies]
         assert checkout.currency == currency
@@ -2578,7 +2573,6 @@ class TestCheckoutLinkCreate:
         assert checkout.product == product
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == expected_currency
         assert checkout.products == [product]
         assert checkout.currency == expected_currency
@@ -3708,7 +3702,6 @@ class TestUpdate:
         assert updated_checkout.product == product_one_time_multiple_currencies
         price = updated_checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == "usd"
         assert updated_checkout.currency == "usd"
 

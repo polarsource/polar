@@ -89,7 +89,6 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.guard import (
-    is_currency_price,
     is_custom_price,
     is_discount_applicable,
     is_fixed_price,
@@ -1445,10 +1444,7 @@ class CheckoutService:
                 ]
             )
 
-        if is_currency_price(price):
-            currency = price.price_currency
-        else:
-            currency = product.organization.default_presentment_currency
+        currency = price.price_currency
 
         return [product], product, price, currency
 
@@ -2085,12 +2081,11 @@ class CheckoutService:
     ) -> Checkout:
         checkout.product_price = price
         checkout.amount = 0
+        checkout.seats = None
         if is_fixed_price(price):
             checkout.amount = price.price_amount
-            checkout.seats = None
         elif is_custom_price(price):
             checkout.amount = price.preset_amount or price.minimum_amount
-            checkout.seats = None
         elif is_seat_price(price):
             # Use minimum_seats as default if no seats are set
             minimum_seats = price.get_minimum_seats()
@@ -2099,8 +2094,6 @@ class CheckoutService:
             self._validate_seat_limits(price, seats)
             checkout.seats = seats
             checkout.amount = price.calculate_amount(seats)
-        elif is_currency_price(price):
-            checkout.seats = None
 
         return checkout
 
@@ -2172,9 +2165,6 @@ class CheckoutService:
     ) -> Sequence[str]:
         if currency_request is not None:
             return [currency_request]
-
-        if len(product.prices) == 1 and not is_currency_price(product.prices[0]):
-            return [organization.default_presentment_currency]
 
         currencies: list[str] = []
 

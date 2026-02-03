@@ -1,7 +1,6 @@
 from typing_extensions import TypeIs
 
 from polar.models.product_price import (
-    HasPriceCurrency,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     LegacyRecurringProductPriceFree,
@@ -46,12 +45,6 @@ def is_legacy_price(price: ProductPrice) -> TypeIs[LegacyPrice]:
         | LegacyRecurringProductPriceFree
         | LegacyRecurringProductPriceCustom,
     )
-
-
-def is_currency_price(
-    price: ProductPrice,
-) -> TypeIs[FixedPrice | CustomPrice | MeteredPrice]:
-    return isinstance(price, HasPriceCurrency)
 
 
 def is_fixed_price(price: ProductPrice) -> TypeIs[FixedPrice]:

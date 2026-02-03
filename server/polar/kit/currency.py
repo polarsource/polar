@@ -1,18 +1,25 @@
 from enum import StrEnum
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from countryinfo import CountryInfo
 
+from polar.config import settings
 
-class PresentmentCurrency(StrEnum):
-    usd = "usd"
-    eur = "eur"
-    gbp = "gbp"
-    cad = "cad"
-    aud = "aud"
-    jpy = "jpy"
-    chf = "chf"
-    sek = "sek"
+if TYPE_CHECKING or settings.is_development() or settings.is_testing():
+
+    class PresentmentCurrency(StrEnum):
+        aud = "aud"
+        cad = "cad"
+        chf = "chf"
+        eur = "eur"
+        gbp = "gbp"
+        jpy = "jpy"
+        sek = "sek"
+        usd = "usd"
+else:
+    # For now, only USD is supported in production
+    class PresentmentCurrency(StrEnum):
+        usd = "usd"
 
 
 def get_presentment_currency(country: str) -> PresentmentCurrency | None:

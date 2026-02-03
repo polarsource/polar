@@ -144,7 +144,7 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
         return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/{self.order_id}"
 
     def subject(self) -> str:
-        return f"You've made a new sale ({self.formatted_price_amount})!"
+        return "You've made a new sale"
 
     @classmethod
     def template_name(cls) -> str:

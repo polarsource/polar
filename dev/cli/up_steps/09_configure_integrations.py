@@ -107,6 +107,97 @@ def _update_secrets_file(key: str, value: str | None) -> None:
             f.write(f"{k}={delimiter}{v}{delimiter}\n")
 
 
+def _is_stripe_cli_installed() -> bool:
+    """Check if Stripe CLI is installed."""
+    result = run_command(["which", "stripe"], capture=True)
+    return result is not None and result.returncode == 0
+
+
+def _get_stripe_keys_from_cli() -> tuple[str, str]:
+    """Get test mode API keys from Stripe CLI config."""
+    result = run_command(["stripe", "config", "--list"], capture=True)
+    if not result or result.returncode != 0:
+        return "", ""
+
+    secret_key = ""
+    publishable_key = ""
+
+    for line in result.stdout.split("\n"):
+        line = line.strip()
+        if line.startswith("test_mode_api_key"):
+            secret_key = line.split("=", 1)[1].strip().strip("'\"")
+        elif line.startswith("test_mode_pub_key"):
+            publishable_key = line.split("=", 1)[1].strip().strip("'\"")
+
+    return secret_key, publishable_key
+
+
+def _is_stripe_cli_logged_in() -> bool:
+    """Check if Stripe CLI is logged in by verifying API keys exist."""
+    secret_key, publishable_key = _get_stripe_keys_from_cli()
+    return bool(secret_key and publishable_key)
+
+
+def _setup_stripe() -> None:
+    """Interactive Stripe setup using Stripe CLI."""
+    console.print("\n[bold]Stripe Setup[/bold]\n")
+
+    if not _is_stripe_cli_installed():
+        step_status(False, "Stripe CLI", "not installed")
+        console.print("\n  Install with: [bold]brew install stripe/stripe-cli/stripe[/bold]")
+        console.print("  Or visit: [link=https://stripe.com/docs/stripe-cli]https://stripe.com/docs/stripe-cli[/link]\n")
+        typer.prompt("Press Enter when installed", default="")
+        if not _is_stripe_cli_installed():
+            console.print("[red]Stripe CLI not found. Please install it and try again.[/red]")
+            return
+    step_status(True, "Stripe CLI", "installed")
+
+    if not _is_stripe_cli_logged_in():
+        step_status(False, "Stripe CLI", "not logged in")
+        console.print("\n  This will open your browser to authenticate.\n")
+        if typer.confirm("  Run 'stripe login' now?", default=True):
+            run_command(["stripe", "login"], capture=False)
+            if not _is_stripe_cli_logged_in():
+                console.print("[red]Stripe login failed. Please try again.[/red]")
+                return
+        else:
+            console.print("[yellow]Stripe login required to continue.[/yellow]")
+            return
+    step_status(True, "Stripe CLI", "logged in")
+
+    console.print("\n[bold]Fetching API keys from Stripe CLI...[/bold]")
+    secret_key, publishable_key = _get_stripe_keys_from_cli()
+
+    if secret_key and publishable_key:
+        console.print(f"[green]✓ Secret key: {secret_key[:12]}...{secret_key[-4:]}[/green]")
+        console.print(f"[green]✓ Publishable key: {publishable_key[:12]}...{publishable_key[-4:]}[/green]")
+    else:
+        console.print("[yellow]Could not fetch keys automatically. Please enter manually.[/yellow]")
+        console.print("Get your test API keys from: [link=https://dashboard.stripe.com/test/apikeys]https://dashboard.stripe.com/test/apikeys[/link]\n")
+        secret_key = typer.prompt("Stripe Secret Key (sk_test_...)")
+        publishable_key = typer.prompt("Stripe Publishable Key (pk_test_...)")
+
+    console.print("\n[bold]Getting webhook secret from Stripe CLI...[/bold]")
+    result = run_command(["stripe", "listen", "--print-secret"], capture=True)
+    webhook_secret = ""
+    if result and result.returncode == 0:
+        webhook_secret = result.stdout.strip()
+        console.print("[green]✓ Webhook secret obtained[/green]")
+    else:
+        console.print("[yellow]Could not get webhook secret automatically.[/yellow]")
+        webhook_secret = typer.prompt("Enter webhook secret manually (whsec_...), or press Enter to skip", default="")
+
+    save_stripe_keys(secret_key, publishable_key, webhook_secret)
+    set_stripe_skipped(False)
+    step_status(True, "Stripe", "configured")
+
+    console.print("[dim]Updating environment files...[/dim]")
+    run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+
+    console.print("\n[bold]To receive webhooks locally, run in a separate terminal:[/bold]")
+    console.print("  [bold]stripe listen --forward-to http://127.0.0.1:8000/v1/integrations/stripe/webhook[/bold]\n")
+
+
 def run(ctx: Context) -> bool:
     """Configure GitHub and Stripe integrations."""
     if ctx.skip_integrations:
@@ -160,34 +251,7 @@ def run(ctx: Context) -> bool:
         step_status(True, "Stripe", "skipped (run with --clean to reconfigure)")
     else:
         if typer.confirm("Stripe not configured. Set it up now?", default=True):
-            console.print("\n[bold]Stripe Setup[/bold]\n")
-            console.print("[bold]Step 1:[/bold] Create a Stripe account (if you don't have one)")
-            console.print("  [link=https://dashboard.stripe.com/register]https://dashboard.stripe.com/register[/link]\n")
-
-            console.print("[bold]Step 2:[/bold] Enable billing in your Stripe account")
-            console.print("  [link=https://dashboard.stripe.com/billing/starter-guide]https://dashboard.stripe.com/billing/starter-guide[/link]\n")
-
-            console.print("[bold]Step 3:[/bold] Copy your test API keys")
-            console.print("  [link=https://dashboard.stripe.com/test/apikeys]https://dashboard.stripe.com/test/apikeys[/link]\n")
-
-            secret_key = typer.prompt("Stripe Secret Key (sk_test_...)")
-            publishable_key = typer.prompt("Stripe Publishable Key (pk_test_...)")
-
-            console.print("\n[bold]Step 4:[/bold] Create a webhook endpoint (optional, for payment events)")
-            console.print("  [link=https://dashboard.stripe.com/test/webhooks]https://dashboard.stripe.com/test/webhooks[/link]")
-            console.print("  • Click 'Add endpoint'")
-            console.print("  • URL: [bold]<your-ngrok-url>/v1/integrations/stripe/webhook[/bold]")
-            console.print("  • Events: Select 'All events'")
-            console.print("  • API version: [bold]2025-02-24.acacia[/bold]\n")
-            webhook_secret = typer.prompt("Stripe Webhook Secret (whsec_..., or Enter to skip)", default="")
-
-            save_stripe_keys(secret_key, publishable_key, webhook_secret)
-            set_stripe_skipped(False)
-            step_status(True, "Stripe", "configured")
-
-            # Re-run setup-environment to merge secrets
-            console.print("[dim]Updating environment files with Stripe keys...[/dim]")
-            run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+            _setup_stripe()
         else:
             if typer.confirm("Remember this choice?", default=True):
                 set_stripe_skipped(True)

@@ -1,9 +1,10 @@
 import Login from '@/components/Auth/Login'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
+import Link from 'next/link'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Log in to Polar',
+  title: 'Log in to Spaire',
 }
 
 export default async function Page(props: {
@@ -22,14 +23,25 @@ export default async function Page(props: {
           <PolarLogotype logoVariant="icon" size={60} />
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl text-black dark:text-white">
-              Welcome to Polar
+              Welcome back to Spaire
             </h2>
             <h2 className="dark:text-polar-400 text-lg text-gray-500">
-              The modern way to sell your SaaS and digital products
+              The financial backbone for SaaS startups selling worldwide
             </h2>
           </div>
         </div>
-        <Login returnTo={return_to} returnParams={rest} />
+        <div className="flex flex-col gap-4">
+          <Login returnTo={return_to} returnParams={rest} />
+          <p className="text-center text-sm text-gray-500 dark:text-polar-400">
+            Don't have an account?{' '}
+            <Link
+              href="/signup"
+              className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

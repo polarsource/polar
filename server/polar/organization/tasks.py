@@ -265,6 +265,8 @@ async def _backfill_owner_members(
             session, customer, organization
         )
         if member is not None:
+            if customer._oauth_accounts:
+                member._oauth_accounts = {**customer._oauth_accounts}
             count += 1
 
     log.info(
@@ -410,6 +412,10 @@ async def _backfill_seats(
             seat.member_id = member.id
             seat.email = seat_holder.email
             orphaned_customer_ids.add(old_seat_customer_id)
+
+            # Copy OAuth accounts from old seat-holder customer to the new member
+            if seat_holder._oauth_accounts:
+                member._oauth_accounts = {**seat_holder._oauth_accounts}
 
             # Transfer benefit grants from old seat-holder customer to the
             # new member under the billing customer. This preserves existing

@@ -7,6 +7,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSeat
+from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
@@ -686,6 +687,136 @@ class TestBackfillMembers:
         assert member.customer_id == billing_customer.id
         assert member.email == "holder@test.com"
         assert member.role == MemberRole.member
+
+    async def test_copies_oauth_accounts_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Customer OAuth accounts should be copied to the owner member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="oauth-owner@test.com",
+            stripe_customer_id="stripe_oauth_owner",
+        )
+
+        # Set OAuth account on customer
+        oauth_account = CustomerOAuthAccount(
+            access_token="gh_token_123",
+            account_id="12345",
+            account_username="ghuser",
+        )
+        customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.github)
+        await save_fixture(customer)
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Find the owner member
+        stmt = select(Member).where(
+            Member.customer_id == customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        owner_member = result.scalar_one()
+
+        # OAuth account should be copied to the owner member
+        member_oauth = owner_member.get_oauth_account(
+            "12345", CustomerOAuthPlatform.github
+        )
+        assert member_oauth is not None
+        assert member_oauth.access_token == "gh_token_123"
+        assert member_oauth.account_username == "ghuser"
+
+    async def test_copies_oauth_accounts_to_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Seat-holder customer OAuth accounts should be copied to the
+        new member under the billing customer."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@test.com",
+            stripe_customer_id="stripe_billing_oauth",
+        )
+        seat_holder_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="seat-oauth@test.com",
+            stripe_customer_id="stripe_seat_oauth",
+        )
+
+        # Set Discord OAuth on seat-holder customer
+        oauth_account = CustomerOAuthAccount(
+            access_token="discord_token_456",
+            account_id="99999",
+            account_username="discorduser",
+            refresh_token="refresh_456",
+        )
+        seat_holder_customer.set_oauth_account(
+            oauth_account, CustomerOAuthPlatform.discord
+        )
+        await save_fixture(seat_holder_customer)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=billing_customer,
+            seats=1,
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=seat_holder_customer,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Find the seat member under billing customer
+        stmt = select(Member).where(
+            Member.customer_id == billing_customer.id,
+            Member.email == "seat-oauth@test.com",
+            Member.role == MemberRole.member,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        seat_member = result.scalar_one()
+
+        # OAuth account should be copied from old seat-holder customer
+        member_oauth = seat_member.get_oauth_account(
+            "99999", CustomerOAuthPlatform.discord
+        )
+        assert member_oauth is not None
+        assert member_oauth.access_token == "discord_token_456"
+        assert member_oauth.account_username == "discorduser"
+        assert member_oauth.refresh_token == "refresh_456"
 
     async def test_soft_deletes_orphaned_seat_holder_customer(
         self,

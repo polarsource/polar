@@ -37,9 +37,6 @@ const CheckoutBenefits = ({
   }, [customerEvents, refetch])
 
   useEffect(() => {
-    if (isSeatBasedProduct) {
-      return
-    }
     if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
       return
     }
@@ -47,13 +44,11 @@ const CheckoutBenefits = ({
       refetch()
     }, maxWaitingTimeMs)
     return () => clearInterval(intervalId)
-  }, [
-    benefitGrants,
-    expectedBenefits,
-    maxWaitingTimeMs,
-    refetch,
-    isSeatBasedProduct,
-  ])
+  }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
+
+  if (isSeatBasedProduct) {
+    return null
+  }
 
   return (
     <>
@@ -67,8 +62,7 @@ const CheckoutBenefits = ({
               <BenefitGrant api={api} benefitGrant={benefitGrant} />
             </ListItem>
           ))}
-          {!isSeatBasedProduct &&
-            benefitGrants &&
+          {benefitGrants &&
             benefitGrants.items.length < expectedBenefits && (
               <ListItem className="flex flex-row items-center justify-center gap-2">
                 <SpinnerNoMargin className="h-4 w-4" />

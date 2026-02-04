@@ -357,7 +357,8 @@ SELECT
         ELSE 0
     END AS average_revenue_per_user,
     COALESCE(mrr.active_subscriptions, 0) AS active_subscriptions,
-    COALESCE(mrr.committed_subscriptions, 0) AS committed_subscriptions
+    COALESCE(mrr.committed_subscriptions, 0) AS committed_subscriptions,
+    COALESCE(churned.churned_subscriptions, 0) AS churned_subscriptions
 FROM windows w
 LEFT JOIN (
     SELECT
@@ -407,6 +408,14 @@ LEFT JOIN (
         )
     GROUP BY w2.window_start
 ) mrr ON mrr.window_start = w.window_start
+LEFT JOIN (
+    SELECT
+        date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) AS window_start,
+        count(*) AS churned_subscriptions
+    FROM subs s
+    WHERE s.ends_at > toDateTime64(0, 3, 'UTC')
+    GROUP BY window_start
+) churned ON churned.window_start = w.window_start
 ORDER BY w.window_start
 """
 

@@ -46,22 +46,22 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
       <div className="border-t border-gray-200 pt-4">
         <Row className="mb-2 border-b border-gray-100 pb-2">
           <Column className="w-2/5">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-700">
+            <span className="text-xs font-medium tracking-wide text-gray-700 uppercase">
               Description
             </span>
           </Column>
           <Column className="w-1/5 text-right">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-700">
+            <span className="text-xs font-medium tracking-wide text-gray-700 uppercase">
               Quantity
             </span>
           </Column>
           <Column className="w-1/5 text-right">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-700">
+            <span className="text-xs font-medium tracking-wide text-gray-700 uppercase">
               Unit Price
             </span>
           </Column>
           <Column className="w-1/5 text-right">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-700">
+            <span className="text-xs font-medium tracking-wide text-gray-700 uppercase">
               Amount
             </span>
           </Column>
@@ -71,7 +71,11 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
         {order.items.map((item, index) => (
           <Row key={item.id || index} className="mb-1">
             <Column className="w-2/5">
-              <span className="text-sm text-gray-900">{item.label}</span>
+              <span className="text-sm text-gray-900">
+                {item.label.length > 100
+                  ? `${item.label.substring(0, 100)}…`
+                  : item.label}
+              </span>
               {item.proration && (
                 <span className="block text-xs text-gray-500">
                   (Prorated charge)

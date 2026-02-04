@@ -369,8 +369,21 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
 
-        # Get existing grants for this customer and scope to avoid redundant jobs
-        existing_grants = await repository.list_by_customer_and_scope(customer, **scope)
+        # Get existing grants to avoid redundant jobs
+        # When a member_id is provided, only check that member's grants
+        if member_id is not None:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(member_id)
+            if member is not None:
+                existing_grants = await repository.list_by_member_and_scope(
+                    member, **scope
+                )
+            else:
+                existing_grants = []
+        else:
+            existing_grants = await repository.list_by_customer_and_scope(
+                customer, **scope
+            )
         granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
         # Don't retry grants that failed due to required customer action -
         # they should only be retried when the customer takes that action

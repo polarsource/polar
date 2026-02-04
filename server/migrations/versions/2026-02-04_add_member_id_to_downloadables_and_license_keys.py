@@ -65,8 +65,12 @@ def upgrade() -> None:
         NOT VALID
         """
     )
-    op.execute("ALTER TABLE downloadables VALIDATE CONSTRAINT downloadables_member_id_fkey")
-    op.execute("ALTER TABLE license_keys VALIDATE CONSTRAINT license_keys_member_id_fkey")
+    op.execute(
+        "ALTER TABLE downloadables VALIDATE CONSTRAINT downloadables_member_id_fkey"
+    )
+    op.execute(
+        "ALTER TABLE license_keys VALIDATE CONSTRAINT license_keys_member_id_fkey"
+    )
 
 
 def downgrade() -> None:

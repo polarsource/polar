@@ -17,7 +17,6 @@ from polar.kit.utils import utc_now
 
 from .benefit import Benefit
 from .customer import Customer
-
 from .member import Member
 
 if TYPE_CHECKING:

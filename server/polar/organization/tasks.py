@@ -327,11 +327,11 @@ async def _backfill_seats(
     )
 
     # Build a map of customer_id → owner member for quick lookup
-    customer_ids = set()
+    customer_ids: set[uuid.UUID] = set()
     for seat in seats:
-        if seat.subscription_id is not None:
+        if seat.subscription_id is not None and seat.subscription is not None:
             customer_ids.add(seat.subscription.customer_id)
-        elif seat.order_id is not None:
+        elif seat.order_id is not None and seat.order is not None:
             customer_ids.add(seat.order.customer_id)
         if seat.customer_id is not None:
             customer_ids.add(seat.customer_id)
@@ -348,11 +348,12 @@ async def _backfill_seats(
     orphaned_customer_ids: set[uuid.UUID] = set()
 
     for seat in seats:
-        billing_customer_id = (
-            seat.subscription.customer_id
-            if seat.subscription_id is not None
-            else seat.order.customer_id
-        )
+        if seat.subscription_id is not None and seat.subscription is not None:
+            billing_customer_id = seat.subscription.customer_id
+        elif seat.order_id is not None and seat.order is not None:
+            billing_customer_id = seat.order.customer_id
+        else:
+            continue
         old_seat_customer_id = seat.customer_id
 
         if seat.status == SeatStatus.pending:
@@ -391,12 +392,12 @@ async def _backfill_seats(
 
         if old_seat_customer_id == billing_customer_id:
             # Billing manager holds this seat → use their owner member
-            member = owner_members_map.get(billing_customer_id)
-            if member is None:
+            owner_member = owner_members_map.get(billing_customer_id)
+            if owner_member is None:
                 continue
             seat.customer_id = billing_customer_id
-            seat.member_id = member.id
-            seat.email = member.email
+            seat.member_id = owner_member.id
+            seat.email = owner_member.email
         else:
             # Someone else holds this seat → get/create member under billing customer
             seat_holder = await customer_repo.get_by_id(old_seat_customer_id)

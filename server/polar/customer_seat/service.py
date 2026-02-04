@@ -531,7 +531,7 @@ class SeatService:
         await self._publish_seat_claimed_event(seat, product_id)
         await self._enqueue_benefit_grant(seat, product_id)
 
-        if member_model_enabled:
+        if member_model_enabled and seat.member_id is not None:
             member_repository = MemberRepository.from_session(session)
             claim_member = await member_repository.get_by_id(seat.member_id)
             if not claim_member:

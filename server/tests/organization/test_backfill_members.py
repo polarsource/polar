@@ -7,6 +7,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSeat
+from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.models.customer_seat import SeatStatus
@@ -536,7 +537,7 @@ class TestBackfillMembers:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type="custom",
+            type=BenefitType.custom,
             description="Seat benefit",
         )
         subscription = await create_subscription_with_seats(
@@ -722,7 +723,7 @@ class TestBackfillMembers:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type="custom",
+            type=BenefitType.custom,
             description="Test benefit",
         )
         subscription = await create_subscription_with_seats(
@@ -800,7 +801,7 @@ class TestBackfillMembers:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type="license_keys",
+            type=BenefitType.license_keys,
             description="License key benefit",
         )
         subscription = await create_subscription_with_seats(

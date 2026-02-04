@@ -7,10 +7,10 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSeat
-from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
-from polar.models.license_key import LicenseKey
 from polar.models.benefit_grant import BenefitGrant
+from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.models.customer_seat import SeatStatus
+from polar.models.license_key import LicenseKey
 from polar.models.member import Member, MemberRole
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.tasks import (
@@ -23,8 +23,8 @@ from tests.fixtures.random_objects import (
     create_benefit_grant,
     create_customer,
     create_customer_seat,
-    create_organization,
     create_order,
+    create_organization,
     create_product,
     create_subscription,
     create_subscription_with_seats,
@@ -461,13 +461,17 @@ class TestBackfillMembers:
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
         )
-        subscription = await create_subscription_with_seats(
-            save_fixture,
-            product=product,
-            customer=customer,
-            seats=0,
-            # Use regular subscription, not seat-based
-        ) if False else None
+        subscription = (
+            await create_subscription_with_seats(
+                save_fixture,
+                product=product,
+                customer=customer,
+                seats=0,
+                # Use regular subscription, not seat-based
+            )
+            if False
+            else None
+        )
 
         # Create subscription for the grant scope (non-seat-based)
         from tests.fixtures.random_objects import create_subscription

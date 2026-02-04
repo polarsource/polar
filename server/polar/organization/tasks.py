@@ -209,9 +209,7 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
         )
 
         # Step A: Create owner members for all customers without one
-        owner_members_created = await _backfill_owner_members(
-            session, organization
-        )
+        owner_members_created = await _backfill_owner_members(session, organization)
 
         # Step B: Migrate active seats
         seats_migrated, orphaned_customer_ids = await _backfill_seats(
@@ -358,7 +356,10 @@ async def _backfill_seats(
         old_seat_customer_id = seat.customer_id
 
         if seat.status == SeatStatus.pending:
-            if old_seat_customer_id is not None and old_seat_customer_id != billing_customer_id:
+            if (
+                old_seat_customer_id is not None
+                and old_seat_customer_id != billing_customer_id
+            ):
                 seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
                 if seat_holder is not None:
                     seat.email = seat_holder.email
@@ -629,17 +630,25 @@ async def _cleanup_orphaned_seat_customers(
             continue
 
         # Check if customer has any subscriptions
-        sub_stmt = select(Subscription.id).where(
-            Subscription.customer_id == customer_id,
-        ).limit(1)
+        sub_stmt = (
+            select(Subscription.id)
+            .where(
+                Subscription.customer_id == customer_id,
+            )
+            .limit(1)
+        )
         sub_result = await session.execute(sub_stmt)
         if sub_result.scalar_one_or_none() is not None:
             continue
 
         # Check if customer has any orders
-        order_stmt = select(Order.id).where(
-            Order.customer_id == customer_id,
-        ).limit(1)
+        order_stmt = (
+            select(Order.id)
+            .where(
+                Order.customer_id == customer_id,
+            )
+            .limit(1)
+        )
         order_result = await session.execute(order_stmt)
         if order_result.scalar_one_or_none() is not None:
             continue

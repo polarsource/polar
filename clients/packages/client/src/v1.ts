@@ -17737,11 +17737,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17813,11 +17810,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17879,11 +17873,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -20700,6 +20691,8 @@ export interface components {
        * @description When the business details were submitted.
        */
       details_submitted_at: string | null
+      /** @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available. */
+      default_presentment_currency: components['schemas']['PresentmentCurrency']
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -21751,14 +21744,16 @@ export interface components {
      * @enum {string}
      */
     PresentmentCurrency:
-      | 'usd'
-      | 'eur'
-      | 'gbp'
-      | 'cad'
       | 'aud'
-      | 'jpy'
+      | 'brl'
+      | 'cad'
       | 'chf'
+      | 'eur'
+      | 'inr'
+      | 'gbp'
+      | 'jpy'
       | 'sek'
+      | 'usd'
     /**
      * Processor
      * @description Supported payment or payout processors, i.e rails for transactions.
@@ -22140,11 +22135,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22189,11 +22181,10 @@ export interface components {
        */
       amount_type: 'custom'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.
@@ -22240,11 +22231,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22279,11 +22267,10 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Price Amount
        * @description The price in cents.
@@ -22319,11 +22306,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22353,11 +22337,10 @@ export interface components {
        */
       amount_type: 'free'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
     }
     /**
      * ProductPriceMeter
@@ -22405,11 +22388,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'metered_unit'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22457,11 +22437,10 @@ export interface components {
        */
       amount_type: 'metered_unit'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Meter Id
        * Format: uuid4
@@ -22508,11 +22487,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'seat_based'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22544,11 +22520,10 @@ export interface components {
        */
       amount_type: 'seat_based'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
     }
@@ -29941,7 +29916,7 @@ export interface operations {
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
-        /** @description Filter by visibility. Defaults to `public` and `private`. */
+        /** @description Filter by visibility. */
         visibility?: components['schemas']['ProductVisibility'][] | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -43367,7 +43342,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
-> = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
+> = ['aud', 'brl', 'cad', 'chf', 'eur', 'inr', 'gbp', 'jpy', 'sek', 'usd']
 export const processorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Processor']
 > = ['stripe', 'manual']

@@ -1,6 +1,5 @@
 import { Section } from '@/components/Layout/Section'
 import { schemas } from '@polar-sh/client'
-import React from 'react'
 import { ProductMetadataForm } from '../ProductMetadataForm'
 import { ProductCheckoutSection } from './ProductCheckoutSection'
 import { ProductCustomerPortalSection } from './ProductCustomerPortalSection'
@@ -19,17 +18,22 @@ export type ProductFormType = Omit<
     metadata: { key: string; value: string | number | boolean }[]
   }
 
-interface ProductFormProps {
+const ProductForm = ({
+  organization,
+  update,
+  benefitsSlot,
+}: {
   organization: schemas['Organization']
   update?: boolean
-}
-
-const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
+  benefitsSlot: React.ReactNode
+}) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection />
 
       <ProductPricingSection organization={organization} update={update} />
+
+      {benefitsSlot}
 
       <Section
         title="Metadata"

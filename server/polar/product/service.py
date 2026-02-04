@@ -144,21 +144,6 @@ class ProductService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_embed(
-        self, session: AsyncReadSession, id: uuid.UUID
-    ) -> Product | None:
-        repository = ProductRepository.from_session(session)
-        statement = (
-            repository.get_base_statement()
-            .where(
-                Product.id == id,
-                Product.is_archived.is_(False),
-                Product.visibility != ProductVisibility.draft,
-            )
-            .options(selectinload(Product.product_medias))
-        )
-        return await repository.get_one_or_none(statement)
-
     async def create(
         self,
         session: AsyncSession,

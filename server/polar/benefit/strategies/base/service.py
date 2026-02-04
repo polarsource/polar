@@ -2,7 +2,7 @@ from typing import Any, Protocol, cast
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 
@@ -85,6 +85,7 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BGP:
         """
         Executes the logic to grant a benefit to a customer.
@@ -119,6 +120,7 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         grant_properties: BGP,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BGP:
         """
         Executes the logic when a subscription is renewed for a new cycle for a granted benefit.
@@ -150,6 +152,7 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         grant_properties: BGP,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BGP:
         """
         Executes the logic to revoke a benefit from a customer.

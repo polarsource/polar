@@ -8,7 +8,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
@@ -31,6 +31,7 @@ class BenefitLicenseKeysService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
         if update and "license_key_id" in grant_properties:
@@ -59,6 +60,7 @@ class BenefitLicenseKeysService(
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         return grant_properties
 
@@ -69,6 +71,7 @@ class BenefitLicenseKeysService(
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         license_key_id = grant_properties.get("license_key_id")
         if not license_key_id:

@@ -2,9 +2,9 @@ import { Section } from '@/components/Layout/Section'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
 import { ProductMetadataForm } from '../ProductMetadataForm'
-import { ProductCustomFieldSection } from './ProductCustomFieldSection'
+import { ProductCheckoutSection } from './ProductCheckoutSection'
+import { ProductCustomerPortalSection } from './ProductCustomerPortalSection'
 import { ProductInfoSection } from './ProductInfoSection'
-import { ProductMediaSection } from './ProductMediaSection'
 import { ProductPricingSection } from './ProductPricingSection'
 
 export interface ProductFullMediasMixin {
@@ -28,15 +28,19 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection />
+
       <ProductPricingSection organization={organization} update={update} />
-      <ProductMediaSection organization={organization} />
-      <ProductCustomFieldSection organization={organization} />
+
       <Section
         title="Metadata"
         description="Optional metadata to associate with the product"
       >
         <ProductMetadataForm />
       </Section>
+
+      <ProductCheckoutSection organization={organization} />
+
+      <ProductCustomerPortalSection />
     </div>
   )
 }

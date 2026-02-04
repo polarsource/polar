@@ -19,6 +19,7 @@ from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
     CustomerSession,
@@ -120,8 +121,22 @@ class CustomerSessionService:
         """
         member_repository = MemberRepository.from_session(session)
         members = await member_repository.list_by_email_and_organization(
-            email, organization.id
+            session, email, organization.id
         )
+
+        if not members:
+            # Try to find customer and auto-create owner member
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_email_and_organization(
+                email, organization.id
+            )
+            if customer is not None:
+                member = await member_service.create_owner_member(
+                    session, customer, organization
+                )
+                if member is not None:
+                    member.customer = customer
+                    members = [member]
 
         if not members:
             raise CustomerDoesNotExist(email, organization)

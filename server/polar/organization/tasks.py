@@ -1,8 +1,11 @@
 import uuid
 
+import structlog
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
+from polar.customer.repository import CustomerRepository
 from polar.email.react import render_email_template
 from polar.email.schemas import (
     OrganizationReviewedEmail,
@@ -14,12 +17,20 @@ from polar.email.sender import enqueue_email
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
-from polar.models import Organization
+from polar.member.repository import MemberRepository
+from polar.member.service import member_service
+from polar.models import Customer, CustomerSeat, Organization
+from polar.models.benefit_grant import BenefitGrant
+from polar.models.customer_seat import SeatStatus
+from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
+from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import OrganizationRepository
+
+log = structlog.get_logger()
 
 
 class OrganizationTaskError(PolarTaskError): ...
@@ -166,3 +177,394 @@ async def organization_deletion_requested(
         await plain_service.create_organization_deletion_thread(
             session, organization, user, blocked_reasons
         )
+
+
+@actor(actor_name="organization.backfill_members", priority=TaskPriority.LOW)
+async def backfill_members(organization_id: uuid.UUID) -> None:
+    """
+    Backfill members when member_model_enabled is turned on for an organization.
+
+    Three steps:
+    A. Create owner members for all customers without one
+    B. Migrate active (non-revoked) seats to member model format
+    C. Link existing benefit grants to their customer's owner member
+    """
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        if not organization.feature_settings.get("member_model_enabled", False):
+            log.warning(
+                "organization.backfill_members.skipped",
+                reason="member_model_not_enabled",
+                organization_id=str(organization_id),
+            )
+            return
+
+        log.info(
+            "organization.backfill_members.start",
+            organization_id=str(organization_id),
+        )
+
+        # Step A: Create owner members for all customers without one
+        owner_members_created = await _backfill_owner_members(
+            session, organization
+        )
+
+        # Step B: Migrate active seats
+        seats_migrated, orphaned_customer_ids = await _backfill_seats(
+            session, organization
+        )
+
+        # Step C: Link benefit grants to owner members
+        grants_linked = await _backfill_benefit_grants(session, organization)
+
+        # Step D: Soft-delete orphaned seat-holder customers
+        customers_deleted = await _cleanup_orphaned_seat_customers(
+            session, organization, orphaned_customer_ids
+        )
+
+        log.info(
+            "organization.backfill_members.complete",
+            organization_id=str(organization_id),
+            owner_members_created=owner_members_created,
+            seats_migrated=seats_migrated,
+            grants_linked=grants_linked,
+            customers_deleted=customers_deleted,
+        )
+
+
+async def _backfill_owner_members(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Step A: Create owner members for all customers that don't have one."""
+    # Find customers without an owner member
+    statement = (
+        select(Customer)
+        .outerjoin(
+            Member,
+            (Customer.id == Member.customer_id)
+            & (Member.role == MemberRole.owner)
+            & (Member.deleted_at.is_(None)),
+        )
+        .where(
+            Customer.organization_id == organization.id,
+            Customer.deleted_at.is_(None),
+            Member.id.is_(None),
+        )
+    )
+    result = await session.execute(statement)
+    customers_without_owner = result.scalars().all()
+
+    count = 0
+    for customer in customers_without_owner:
+        member = await member_service.create_owner_member(
+            session, customer, organization
+        )
+        if member is not None:
+            count += 1
+
+    log.info(
+        "organization.backfill_members.step_a_complete",
+        organization_id=str(organization.id),
+        customers_found=len(customers_without_owner),
+        members_created=count,
+    )
+    return count
+
+
+async def _backfill_seats(
+    session: AsyncSession,
+    organization: Organization,
+) -> tuple[int, set[uuid.UUID]]:
+    """Step B: Migrate active (non-revoked) seats to member model format.
+
+    Returns:
+        Tuple of (seats_migrated, orphaned_customer_ids) where orphaned_customer_ids
+        are seat-holder customers whose seats were migrated to a billing customer.
+    """
+    from polar.models import Order, Product, Subscription
+
+    member_repository = MemberRepository.from_session(session)
+
+    # Find non-revoked seats for this organization's products that don't have
+    # a member_id set yet. We need to join through subscription/order → product
+    # to filter by organization.
+    sub_seats_stmt = (
+        select(CustomerSeat)
+        .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
+        .join(Product, Subscription.product_id == Product.id)
+        .options(
+            joinedload(CustomerSeat.subscription),
+        )
+        .where(
+            Product.organization_id == organization.id,
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.subscription_id.is_not(None),
+        )
+    )
+    order_seats_stmt = (
+        select(CustomerSeat)
+        .join(Order, CustomerSeat.order_id == Order.id)
+        .join(Product, Order.product_id == Product.id)
+        .options(
+            joinedload(CustomerSeat.order),
+        )
+        .where(
+            Product.organization_id == organization.id,
+            CustomerSeat.status != SeatStatus.revoked,
+            CustomerSeat.order_id.is_not(None),
+        )
+    )
+
+    sub_result = await session.execute(sub_seats_stmt)
+    order_result = await session.execute(order_seats_stmt)
+    seats = list(sub_result.scalars().unique().all()) + list(
+        order_result.scalars().unique().all()
+    )
+
+    # Build a map of customer_id → owner member for quick lookup
+    customer_ids = set()
+    for seat in seats:
+        if seat.subscription_id is not None:
+            customer_ids.add(seat.subscription.customer_id)
+        elif seat.order_id is not None:
+            customer_ids.add(seat.order.customer_id)
+        if seat.customer_id is not None:
+            customer_ids.add(seat.customer_id)
+
+    owner_members_map: dict[uuid.UUID, Member] = {}
+    for cid in customer_ids:
+        owner = await member_repository.get_owner_by_customer_id(session, cid)
+        if owner is not None:
+            owner_members_map[cid] = owner
+
+    customer_repo = CustomerRepository.from_session(session)
+
+    count = 0
+    orphaned_customer_ids: set[uuid.UUID] = set()
+
+    for seat in seats:
+        billing_customer_id = (
+            seat.subscription.customer_id
+            if seat.subscription_id is not None
+            else seat.order.customer_id
+        )
+        old_seat_customer_id = seat.customer_id
+
+        if seat.status == SeatStatus.pending:
+            if old_seat_customer_id is not None and old_seat_customer_id != billing_customer_id:
+                seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
+                if seat_holder is not None:
+                    seat.email = seat_holder.email
+                orphaned_customer_ids.add(old_seat_customer_id)
+            elif old_seat_customer_id is not None:
+                # Billing manager's own pending seat — use their email
+                billing_owner = owner_members_map.get(billing_customer_id)
+                if billing_owner is not None:
+                    seat.email = billing_owner.email
+
+            seat.customer_id = billing_customer_id
+
+            # Create member for the pending seat if we have an email
+            if seat.email:
+                member = await _get_or_create_member_for_backfill(
+                    session,
+                    member_repository,
+                    billing_customer_id,
+                    organization.id,
+                    seat.email,
+                )
+                seat.member_id = member.id
+
+            count += 1
+            continue
+
+        if seat.status != SeatStatus.claimed or old_seat_customer_id is None:
+            continue
+
+        if old_seat_customer_id == billing_customer_id:
+            # Billing manager holds this seat → use their owner member
+            member = owner_members_map.get(billing_customer_id)
+            if member is None:
+                continue
+            seat.customer_id = billing_customer_id
+            seat.member_id = member.id
+            seat.email = member.email
+        else:
+            # Someone else holds this seat → get/create member under billing customer
+            seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
+            if seat_holder is None:
+                continue
+            member = await _get_or_create_member_for_backfill(
+                session,
+                member_repository,
+                billing_customer_id,
+                organization.id,
+                seat_holder.email,
+            )
+            seat.customer_id = billing_customer_id
+            seat.member_id = member.id
+            seat.email = seat_holder.email
+            orphaned_customer_ids.add(old_seat_customer_id)
+
+            # Transfer benefit grants from old seat-holder customer to the
+            # new member under the billing customer. This preserves existing
+            # benefit state (license keys, GitHub/Discord) instead of
+            # re-provisioning.
+            scope_filter = (
+                BenefitGrant.subscription_id == seat.subscription_id
+                if seat.subscription_id is not None
+                else BenefitGrant.order_id == seat.order_id
+            )
+            grants_stmt = select(BenefitGrant).where(
+                BenefitGrant.customer_id == old_seat_customer_id,
+                scope_filter,
+                BenefitGrant.deleted_at.is_(None),
+            )
+            grants_result = await session.execute(grants_stmt)
+            for grant in grants_result.scalars().all():
+                grant.customer_id = billing_customer_id
+                grant.member_id = member.id
+
+        count += 1
+
+    await session.flush()
+
+    log.info(
+        "organization.backfill_members.step_b_complete",
+        organization_id=str(organization.id),
+        seats_found=len(seats),
+        seats_migrated=count,
+        orphaned_customers=len(orphaned_customer_ids),
+    )
+    return count, orphaned_customer_ids
+
+
+async def _get_or_create_member_for_backfill(
+    session: AsyncSession,
+    member_repository: MemberRepository,
+    billing_customer_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    email: str,
+) -> Member:
+    """Get or create a member under the billing customer for seat backfill."""
+    existing = await member_repository.get_by_customer_id_and_email(
+        billing_customer_id, email
+    )
+    if existing is not None:
+        return existing
+
+    member = Member(
+        customer_id=billing_customer_id,
+        organization_id=organization_id,
+        email=email,
+        role=MemberRole.member,
+    )
+    session.add(member)
+    await session.flush()
+    return member
+
+
+async def _backfill_benefit_grants(
+    session: AsyncSession,
+    organization: Organization,
+) -> int:
+    """Step C: Link existing benefit grants to their customer's owner member."""
+    member_repository = MemberRepository.from_session(session)
+
+    # Find grants without member_id for this organization's customers
+    statement = (
+        select(BenefitGrant)
+        .join(Customer, BenefitGrant.customer_id == Customer.id)
+        .where(
+            Customer.organization_id == organization.id,
+            BenefitGrant.member_id.is_(None),
+            BenefitGrant.deleted_at.is_(None),
+        )
+    )
+    result = await session.execute(statement)
+    grants = result.scalars().all()
+
+    # Build owner member map
+    customer_ids = {g.customer_id for g in grants}
+    owner_members_map: dict[uuid.UUID, Member] = {}
+    for cid in customer_ids:
+        owner = await member_repository.get_owner_by_customer_id(session, cid)
+        if owner is not None:
+            owner_members_map[cid] = owner
+
+    count = 0
+    for grant in grants:
+        owner = owner_members_map.get(grant.customer_id)
+        if owner is not None:
+            grant.member_id = owner.id
+            count += 1
+
+    await session.flush()
+
+    log.info(
+        "organization.backfill_members.step_c_complete",
+        organization_id=str(organization.id),
+        grants_found=len(grants),
+        grants_linked=count,
+    )
+    return count
+
+
+async def _cleanup_orphaned_seat_customers(
+    session: AsyncSession,
+    organization: Organization,
+    orphaned_customer_ids: set[uuid.UUID],
+) -> int:
+    """Step D: Soft-delete seat-holder customers that have no subscriptions or orders."""
+    from polar.models import Order, Subscription
+
+    if not orphaned_customer_ids:
+        return 0
+
+    customer_repo = CustomerRepository.from_session(session)
+    member_repository = MemberRepository.from_session(session)
+
+    count = 0
+    for customer_id in orphaned_customer_ids:
+        customer = await customer_repo.get_by_id(customer_id)
+        if customer is None or customer.deleted_at is not None:
+            continue
+
+        # Check if customer has any subscriptions
+        sub_stmt = select(Subscription.id).where(
+            Subscription.customer_id == customer_id,
+        ).limit(1)
+        sub_result = await session.execute(sub_stmt)
+        if sub_result.scalar_one_or_none() is not None:
+            continue
+
+        # Check if customer has any orders
+        order_stmt = select(Order.id).where(
+            Order.customer_id == customer_id,
+        ).limit(1)
+        order_result = await session.execute(order_stmt)
+        if order_result.scalar_one_or_none() is not None:
+            continue
+
+        # Soft-delete members first (FK restrict on customer_id)
+        members = await member_repository.list_by_customer(session, customer_id)
+        for member in members:
+            await member_repository.soft_delete(member)
+
+        await customer_repo.soft_delete(customer)
+        count += 1
+
+    await session.flush()
+
+    log.info(
+        "organization.backfill_members.step_d_complete",
+        organization_id=str(organization.id),
+        orphaned_candidates=len(orphaned_customer_ids),
+        customers_deleted=count,
+    )
+    return count

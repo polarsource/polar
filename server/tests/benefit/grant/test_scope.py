@@ -135,34 +135,37 @@ class TestResolveMember:
         assert result.id == owner_member.id
         assert result.role == MemberRole.owner
 
-    async def test_b2c_raises_when_no_owner_member(
+    async def test_b2c_auto_creates_owner_member_when_missing(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """B2C with feature flag enabled but no owner member raises CustomerDoesntHaveOwnerMember."""
+        """B2C with feature flag enabled but no owner member auto-creates one."""
         organization = await create_organization(
             save_fixture, feature_settings={"member_model_enabled": True}
         )
         customer = await create_customer(save_fixture, organization=organization)
 
-        # Don't create any member for the customer
+        # No member exists — should auto-create
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
 
-        with pytest.raises(CustomerDoesntHaveOwnerMember):
-            await resolve_member(
-                session,
-                customer_id=customer.id,
-                organization=organization,
-                member_id=None,
-                is_seat_based=False,
-            )
+        assert result is not None
+        assert result.customer_id == customer.id
+        assert result.role == MemberRole.owner
+        assert result.email == customer.email
 
-    async def test_b2c_raises_when_only_regular_member(
+    async def test_b2c_auto_creates_owner_when_only_regular_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """B2C auto-resolve raises when only regular member exists (no owner)."""
+        """B2C auto-creates owner member even when only regular member exists."""
         organization = await create_organization(
             save_fixture, feature_settings={"member_model_enabled": True}
         )
@@ -177,14 +180,17 @@ class TestResolveMember:
         )
         await save_fixture(regular_member)
 
-        with pytest.raises(CustomerDoesntHaveOwnerMember):
-            await resolve_member(
-                session,
-                customer_id=customer.id,
-                organization=organization,
-                member_id=None,
-                is_seat_based=False,
-            )
+        result = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+
+        assert result is not None
+        assert result.role == MemberRole.owner
+        assert result.customer_id == customer.id
 
     async def test_b2b_without_member_id_raises_error(
         self,
@@ -237,21 +243,21 @@ class TestResolveMember:
         assert result is not None
         assert result.id == member.id
 
-    async def test_nonexistent_member_id_b2c_raises_error(
+    async def test_b2c_raises_when_customer_not_found(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """B2C: When explicit member_id doesn't exist raises error"""
+        """B2C: When customer_id doesn't match any customer, raises error."""
         organization = await create_organization(
             save_fixture, feature_settings={"member_model_enabled": True}
         )
-        customer = await create_customer(save_fixture, organization=organization)
+        fake_customer_id = uuid.uuid4()
 
-        with pytest.raises(CustomerDoesntHaveOwnerMember) as exc_info:
+        with pytest.raises(CustomerDoesntHaveOwnerMember):
             await resolve_member(
                 session,
-                customer_id=customer.id,
+                customer_id=fake_customer_id,
                 organization=organization,
                 member_id=None,
                 is_seat_based=False,

@@ -1,17 +1,21 @@
 import asyncio
 import logging.config
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import structlog
 import typer
-from sqlalchemy import text
+from sqlalchemy import CursorResult, text
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 
 cli = typer.Typer()
+
+# Batch sizes for updates to stay under 30s database timeout
+DEFAULT_BATCH_SIZE = 5000
+OAUTH_CLIENTS_BATCH_SIZE = 1000  # JSON ops are heavier
 
 DEPRECATED_SCOPES = [
     "external_organizations:read",
@@ -40,6 +44,7 @@ def typer_async(f):  # type: ignore
 
 async def run_cleanup(
     dry_run: bool = False,
+    batch_size: int = DEFAULT_BATCH_SIZE,
     session: AsyncSession | None = None,
 ) -> None:
     """
@@ -86,23 +91,41 @@ async def run_cleanup(
             typer.echo(f"{table}: {affected_count} rows to update")
 
             if not dry_run:
-                # 1. Removes all deprecated scopes (with optional trailing space)
-                # 2. Trims leading/trailing whitespace
-                # 3. Collapses multiple spaces into one
-                update_query = text(f"""
-                    UPDATE {table}
-                    SET scope = TRIM(REGEXP_REPLACE(
-                        REGEXP_REPLACE(scope, :scope_pattern, '', 'g'),
-                        ' +', ' ', 'g'
-                    ))
-                    WHERE scope ~ :scope_pattern
-                """)
-                await session.execute(
-                    update_query,
-                    {"scope_pattern": scope_pattern},
-                )
+                # Batched update to avoid database timeout
+                # Each batch is committed separately
+                updated_total = 0
+                while True:
+                    # Update a batch of rows that still match the pattern
+                    # No offset needed: updated rows no longer match WHERE clause
+                    update_query = text(f"""
+                        UPDATE {table}
+                        SET scope = TRIM(REGEXP_REPLACE(
+                            REGEXP_REPLACE(scope, :scope_pattern, '', 'g'),
+                            ' +', ' ', 'g'
+                        ))
+                        WHERE id IN (
+                            SELECT id FROM {table}
+                            WHERE scope ~ :scope_pattern
+                            LIMIT :batch_size
+                        )
+                    """)
+                    result = await session.execute(
+                        update_query,
+                        {"scope_pattern": scope_pattern, "batch_size": batch_size},
+                    )
+                    batch_count = cast(CursorResult[Any], result).rowcount
+                    if batch_count == 0:
+                        break
+                    await session.commit()
+                    updated_total += batch_count
+                    typer.echo(f"  Updated {updated_total}/{affected_count}...")
+
+                typer.echo(f"  {table}: completed ({updated_total} rows updated)")
 
         # Handle oauth2_clients.client_metadata (JSON field)
+        # Uses smaller batch size since JSON operations are heavier
+        oauth_batch_size = min(batch_size, OAUTH_CLIENTS_BATCH_SIZE)
+
         metadata_count_query = text("""
             SELECT COUNT(*) FROM oauth2_clients
             WHERE client_metadata ~ :pattern
@@ -116,24 +139,42 @@ async def run_cleanup(
             )
 
             if not dry_run:
-                # For JSON field, we do the same replacement
-                metadata_update_query = text("""
-                    UPDATE oauth2_clients
-                    SET client_metadata = TRIM(REGEXP_REPLACE(
-                        REGEXP_REPLACE(client_metadata, :scope_pattern, '', 'g'),
-                        ' +', ' ', 'g'
-                    ))
-                    WHERE client_metadata ~ :scope_pattern
-                """)
-                await session.execute(
-                    metadata_update_query,
-                    {"scope_pattern": scope_pattern},
+                # Batched update for JSON field
+                updated_total = 0
+                while True:
+                    metadata_update_query = text("""
+                        UPDATE oauth2_clients
+                        SET client_metadata = TRIM(REGEXP_REPLACE(
+                            REGEXP_REPLACE(client_metadata, :scope_pattern, '', 'g'),
+                            ' +', ' ', 'g'
+                        ))
+                        WHERE id IN (
+                            SELECT id FROM oauth2_clients
+                            WHERE client_metadata ~ :scope_pattern
+                            LIMIT :batch_size
+                        )
+                    """)
+                    result = await session.execute(
+                        metadata_update_query,
+                        {
+                            "scope_pattern": scope_pattern,
+                            "batch_size": oauth_batch_size,
+                        },
+                    )
+                    batch_count = cast(CursorResult[Any], result).rowcount
+                    if batch_count == 0:
+                        break
+                    await session.commit()
+                    updated_total += batch_count
+                    typer.echo(f"  Updated {updated_total}/{metadata_affected}...")
+
+                typer.echo(
+                    f"  oauth2_clients (client_metadata): completed ({updated_total} rows updated)"
                 )
         else:
             typer.echo("oauth2_clients (client_metadata): no rows to update")
 
         if not dry_run:
-            await session.commit()
             typer.echo("")
             typer.echo("Done!")
         else:
@@ -157,6 +198,11 @@ async def remove_deprecated_scopes(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would be updated without making changes"
     ),
+    batch_size: int = typer.Option(
+        DEFAULT_BATCH_SIZE,
+        "--batch-size",
+        help="Number of rows to update per batch (to avoid database timeout)",
+    ),
 ) -> None:
     """
     Remove deprecated scopes from all token tables.
@@ -167,6 +213,8 @@ async def remove_deprecated_scopes(
     - issues:write
     - repositories:read
     - repositories:write
+
+    Updates are batched to avoid database timeout (30s limit).
     """
     structlog.configure(processors=[drop_all])
     logging.config.dictConfig(
@@ -176,7 +224,7 @@ async def remove_deprecated_scopes(
         }
     )
 
-    await run_cleanup(dry_run=dry_run)
+    await run_cleanup(dry_run=dry_run, batch_size=batch_size)
 
 
 if __name__ == "__main__":

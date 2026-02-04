@@ -94,7 +94,8 @@ export const order: DeepPartial<schemas['OrderEmail']> = {
   items: [
     {
       id: 'item-1',
-      label: 'Premium Plan - Lifetime Access',
+      label:
+        'Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl. Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail burgdoggen flank.Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl. Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail burgdoggen flank.Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl. Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail burgdoggen flank.Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef.',
       amount: 8900, // After discount
       proration: false,
       product_price_id: 'price123',

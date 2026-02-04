@@ -67,6 +67,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                   formatCurrency(
                     summary.balance.amount,
                     summary.balance.currency,
+                    undefined,
+                    undefined,
+                    'narrowSymbol',
                   )}
               </>
             )}
@@ -94,7 +97,16 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             {isLoading ? (
               <Skeleton />
             ) : (
-              <>{summary && formatCurrency(account.credit_balance, 'usd')}</>
+              <>
+                {summary &&
+                  formatCurrency(
+                    account.credit_balance,
+                    'usd',
+                    undefined,
+                    undefined,
+                    'narrowSymbol',
+                  )}
+              </>
             )}
           </div>
         </WellContent>

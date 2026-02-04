@@ -40,6 +40,7 @@ export const formatCurrency = (
   currency: string,
   minimumFractionDigits?: number,
   maximumFractionDigits?: number,
+  currencyDisplay: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry = 'code',
 ): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const fractionDigits = decimalFactor === 1 ? 0 : 2
@@ -47,7 +48,7 @@ export const formatCurrency = (
   const currencyNumberFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-    currencyDisplay: 'code',
+    currencyDisplay,
     minimumFractionDigits: minimumFractionDigits ?? fractionDigits,
     maximumFractionDigits: maximumFractionDigits ?? fractionDigits,
   })

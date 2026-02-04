@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
-from babel.numbers import format_currency, format_decimal
+from babel.numbers import format_decimal
 from sqlalchemy import (
     Boolean,
     ColumnElement,
@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
 )
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.currency import format_currency
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.math import polar_round
@@ -327,7 +328,7 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
         label = f"({format_decimal(units, locale='en_US')} consumed units"
 
-        label += f") × {format_currency(self.unit_amount / 100, self.price_currency.upper(), locale='en_US')}"
+        label += f") × {format_currency(self.unit_amount, self.price_currency)}"
 
         billable_units = Decimal(max(0, units))
         raw_amount = self.unit_amount * billable_units
@@ -335,7 +336,9 @@ class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
 
         if self.cap_amount is not None and amount > self.cap_amount:
             amount = self.cap_amount
-            label += f"— Capped at {format_currency(self.cap_amount / 100, self.price_currency.upper(), locale='en_US')}"
+            label += (
+                f"— Capped at {format_currency(self.cap_amount, self.price_currency)}"
+            )
 
         return amount, label
 

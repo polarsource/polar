@@ -1,15 +1,12 @@
 import json
 import uuid
-from collections.abc import Generator
 from datetime import UTC, datetime
-from unittest.mock import patch
 
 import pytest
 
-from polar.config import settings
-from polar.integrations.tinybird import service as tinybird_service
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import (
+    DATASOURCE_EVENTS,
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     _event_to_tinybird,
@@ -17,21 +14,6 @@ from polar.integrations.tinybird.service import (
 from polar.models import Event
 from polar.models.event import EventSource
 from tests.fixtures.tinybird import tinybird_available
-
-
-@pytest.fixture
-def tinybird_client(
-    tinybird_workspace: str,
-) -> Generator[TinybirdClient, None, None]:
-    client = TinybirdClient(
-        api_url=settings.TINYBIRD_API_URL,
-        clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
-        api_token=tinybird_workspace,
-        clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
-        clickhouse_token=tinybird_workspace,
-    )
-    with patch.object(tinybird_service, "client", client):
-        yield client
 
 
 def create_test_event(
@@ -173,9 +155,7 @@ class TestTinybirdEventsQuery:
         ]
 
         tinybird_events = [_event_to_tinybird(e) for e in events]
-        await tinybird_client.ingest(
-            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
         query = TinybirdEventsQuery(org_id)
         stats = await query.get_event_type_stats()
@@ -204,9 +184,7 @@ class TestTinybirdEventsQuery:
         ]
 
         tinybird_events = [_event_to_tinybird(e) for e in events]
-        await tinybird_client.ingest(
-            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
         query = TinybirdEventsQuery(org_id).filter_source(EventSource.user)
         stats = await query.get_event_type_stats()
@@ -236,9 +214,7 @@ class TestTinybirdEventsQuery:
         events[2].customer_id = customer_2
 
         tinybird_events = [_event_to_tinybird(e) for e in events]
-        await tinybird_client.ingest(
-            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
         query = TinybirdEventsQuery(org_id).filter_customer_id([customer_1])
         stats = await query.get_event_type_stats()
@@ -265,9 +241,7 @@ class TestTinybirdEventsQuery:
             e.customer_id = customer_id
 
         tinybird_events = [_event_to_tinybird(e) for e in events]
-        await tinybird_client.ingest(
-            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
         query = TinybirdEventTypesQuery(org_id)
         stats = await query.get_event_type_stats()
@@ -297,9 +271,7 @@ class TestTinybirdEventsQuery:
         ]
 
         tinybird_events = [_event_to_tinybird(e) for e in events]
-        await tinybird_client.ingest(
-            tinybird_service.DATASOURCE_EVENTS, tinybird_events, wait=True
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
 
         query = TinybirdEventsQuery(org_1)
         stats = await query.get_event_type_stats()

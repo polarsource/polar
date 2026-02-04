@@ -70,6 +70,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -655,7 +656,7 @@ class SubscriptionService:
 
         # Subscription is due to cancel, revoke it
         if revoke:
-            subscription.ended_at = subscription.ends_at
+            subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
@@ -954,6 +955,18 @@ class SubscriptionService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.visibility != ProductVisibility.public:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is not available from the Customer Portal.",
                         "input": product_id,
                     }
                 ]

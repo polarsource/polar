@@ -359,6 +359,7 @@ class BalanceOrderMetadata(TypedDict):
     product_id: NotRequired[str]
     subscription_id: NotRequired[str]
     amount: int
+    net_amount: NotRequired[int]
     currency: str
     presentment_amount: int
     presentment_currency: str

@@ -38,6 +38,7 @@ export const productFixture = (
     recurring_interval_count: 1,
     trial_interval: null,
     trial_interval_count: null,
+    visibility: 'public',
     is_recurring: true,
     is_archived: false,
     prices: [],

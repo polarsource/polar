@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCurrency } from '@polar-sh/currency'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -38,7 +39,6 @@ import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
-import { formatCurrencyNumber } from '../utils/money'
 import {
   formatRecurringInterval,
   getMeteredPrices,
@@ -778,6 +778,7 @@ const BaseCheckoutForm = ({
                         currency={checkout.currency}
                         interval={interval}
                         intervalCount={intervalCount}
+                        currencySymbol="code"
                       />
                     </DetailRow>
 
@@ -786,17 +787,21 @@ const BaseCheckoutForm = ({
                         <DetailRow
                           title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
                         >
-                          {formatCurrencyNumber(
+                          {formatCurrency(
                             -checkout.discountAmount,
                             checkout.currency,
                             checkout.discountAmount % 100 === 0 ? 0 : 2,
+                            undefined,
+                            'code',
                           )}
                         </DetailRow>
                         <DetailRow title="Taxable amount">
-                          {formatCurrencyNumber(
+                          {formatCurrency(
                             checkout.netAmount,
                             checkout.currency,
                             checkout.netAmount % 100 === 0 ? 0 : 2,
+                            undefined,
+                            'code',
                           )}
                         </DetailRow>
                       </>
@@ -804,10 +809,12 @@ const BaseCheckoutForm = ({
 
                     <DetailRow title="Taxes">
                       {checkout.taxAmount !== null
-                        ? formatCurrencyNumber(
+                        ? formatCurrency(
                             checkout.taxAmount,
                             checkout.currency,
                             checkout.taxAmount % 100 === 0 ? 0 : 2,
+                            undefined,
+                            'code',
                           )
                         : '—'}
                     </DetailRow>
@@ -819,6 +826,7 @@ const BaseCheckoutForm = ({
                           currency={checkout.currency}
                           interval={interval}
                           intervalCount={intervalCount}
+                          currencySymbol="code"
                         />
                         {formattedDiscountDuration && (
                           <span className="text-xs font-normal text-gray-500">

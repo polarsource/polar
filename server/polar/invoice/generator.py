@@ -1,10 +1,10 @@
+import textwrap
 from datetime import date, datetime
 from pathlib import Path
 from typing import ClassVar, Self
 
 import pycountry
 from babel.dates import format_date as _format_date
-from babel.numbers import format_currency as _format_currency
 from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from fpdf import FPDF
@@ -14,13 +14,10 @@ from pydantic import BaseModel
 
 from polar.config import Environment, settings
 from polar.kit.address import Address
+from polar.kit.currency import format_currency
 from polar.kit.utils import utc_now
 from polar.models import Order
 from polar.tax.calculation import TaxabilityReason, TaxRate
-
-
-def format_currency(amount: int, currency: str) -> str:
-    return _format_currency(amount / 100, currency.upper(), locale="en_US")
 
 
 def format_number(n: int) -> str:
@@ -404,7 +401,7 @@ class InvoiceGenerator(FPDF):
             # Body
             for item in self.data.items:
                 row = table.row()
-                row.cell(item.description)
+                row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
                 row.cell(format_number(item.quantity))
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))

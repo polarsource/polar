@@ -20,6 +20,7 @@ from polar.custom_field.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -35,6 +36,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
@@ -94,11 +96,8 @@ SeatPriceAmount = Annotated[
     ),
 ]
 PriceCurrency = Annotated[
-    str,
-    Field(
-        pattern="usd",
-        description="The currency. Currently, only `usd` is supported.",
-    ),
+    PresentmentCurrency,
+    Field(description="The currency in which the customer will be charged."),
 ]
 ProductName = Annotated[
     str,
@@ -116,7 +115,7 @@ ProductDescription = Annotated[
 
 class ProductPriceCreateBase(Schema):
     amount_type: ProductPriceAmountType
-    price_currency: PriceCurrency = "usd"
+    price_currency: PriceCurrency = PresentmentCurrency.usd
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()
@@ -353,6 +352,10 @@ ProductPriceCreateList = Annotated[
 class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
+    visibility: ProductVisibility = Field(
+        default=ProductVisibility.public,
+        description="The visibility of the product.",
+    )
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
@@ -461,6 +464,10 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
             "and subscriptions will continue normally."
         ),
     )
+    visibility: ProductVisibility | None = Field(
+        default=None,
+        description="The visibility of the product.",
+    )
     prices: list[ProductPriceUpdate] | None = Field(
         default=None,
         description=(
@@ -505,7 +512,7 @@ class ProductPriceBase(TimestampedSchema):
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )
-    price_currency: str = Field(description="The currency.")
+    price_currency: PriceCurrency
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )
@@ -725,6 +732,7 @@ ProductPrice = Annotated[
 class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     name: str = Field(description="The name of the product.")
     description: str | None = Field(description="The description of the product.")
+    visibility: ProductVisibility = Field(description="The visibility of the product.")
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         description=(
             "The recurring interval of the product. "

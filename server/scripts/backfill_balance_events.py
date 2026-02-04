@@ -19,6 +19,7 @@ from polar.event.system import (
     BalanceRefundMetadata,
     SystemEvent,
 )
+from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Customer, Dispute, Event, Order, Refund, Transaction
@@ -138,6 +139,57 @@ async def fix_balance_order_fees(session: AsyncSession, batch_size: int = 1000) 
         typer.echo(f"  Fixed {count} fees (total: {total_fixed})...")
 
     typer.echo(f"Fixed {total_fixed} fees")
+    return total_fixed
+
+
+async def fix_balance_order_net_amount(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
+    """Set net_amount on balance.order events from order.net_amount."""
+    typer.echo("\n=== Setting balance.order net_amount ===")
+
+    total_fixed = 0
+    while True:
+        updated_ids = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{net_amount}',
+                    to_jsonb(o.subtotal_amount - o.discount_amount)
+                )
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.order'
+                      AND (o2.subtotal_amount - o2.discount_amount) != COALESCE((e2.user_metadata->>'net_amount')::numeric::int, 0)
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+                RETURNING e.id
+            """),
+            {"batch_size": batch_size},
+        )
+        ids = [row[0] for row in updated_ids.fetchall()]
+        await session.commit()
+
+        if not ids:
+            break
+
+        events = (
+            (await session.execute(select(Event).where(Event.id.in_(ids))))
+            .scalars()
+            .all()
+        )
+        await tinybird_ingest_events(events)
+
+        total_fixed += len(ids)
+        typer.echo(f"  Fixed {len(ids)} net_amounts (total: {total_fixed})...")
+
+    typer.echo(f"Fixed {total_fixed} net_amounts")
     return total_fixed
 
 
@@ -470,6 +522,7 @@ async def create_missing_balance_order_events(
                 "transaction_id": str(tx.id),
                 "order_id": str(tx.order.id),
                 "amount": tx.amount,
+                "net_amount": tx.order.net_amount,
                 "currency": tx.currency,
                 "presentment_amount": tx.presentment_amount,
                 "presentment_currency": tx.presentment_currency,
@@ -1203,6 +1256,9 @@ async def run_backfill(
             session, batch_size
         )
         results["fees_fixed"] = await fix_balance_order_fees(session, batch_size)
+        results["net_amount_fixed"] = await fix_balance_order_net_amount(
+            session, batch_size
+        )
         results["refund_subscription_id_added"] = await fix_refund_subscription_id(
             session, batch_size
         )

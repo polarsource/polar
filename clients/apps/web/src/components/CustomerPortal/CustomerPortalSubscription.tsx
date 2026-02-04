@@ -12,11 +12,11 @@ import {
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
@@ -327,7 +327,7 @@ const CustomerPortalSubscription = ({
                   header: 'Amount',
                   cell: ({ row }) => (
                     <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {formatCurrencyAndAmount(
+                      {formatCurrency(
                         row.original.total_amount,
                         row.original.currency,
                         0,

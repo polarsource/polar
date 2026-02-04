@@ -1,10 +1,10 @@
 'use client'
 
+import { formatCurrency } from '@polar-sh/currency'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
-import { formatCurrencyNumber } from '../utils/money'
 import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
@@ -78,7 +78,7 @@ const CheckoutPricing = ({
           {productPrice.amountType !== 'custom' ? (
             <CheckoutProductAmountLabel checkout={checkout} layout={layout} />
           ) : (
-            formatCurrencyNumber(amount, productPrice.priceCurrency, 0)
+            formatCurrency(amount, productPrice.priceCurrency, 0)
           )}
         </h1>
 

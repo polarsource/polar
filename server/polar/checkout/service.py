@@ -71,6 +71,7 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
+    ProductVisibility,
     Subscription,
     User,
 )
@@ -315,12 +316,15 @@ class CheckoutService:
             products = await self._get_validated_products(
                 session, auth_subject, checkout_create.products
             )
+            product = products[0]
             if checkout_create.prices:
                 ad_hoc_prices = await self._get_validated_prices(
-                    session, auth_subject, products, checkout_create.prices
+                    session,
+                    auth_subject,
+                    product.organization,
+                    products,
+                    checkout_create.prices,
                 )
-
-            product = products[0]
 
             currencies = self._get_currencies(
                 checkout_create.currency, product, product.organization, ip_country
@@ -619,6 +623,18 @@ class CheckoutService:
                 ]
             )
 
+        if product.visibility == ProductVisibility.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is a draft.",
+                        "input": checkout_create.product_id,
+                    }
+                ]
+            )
+
         if product.organization.blocked_at is not None:
             raise PolarRequestValidationError(
                 [
@@ -746,7 +762,10 @@ class CheckoutService:
     ) -> Checkout:
         products: list[Product] = []
         for product in checkout_link.products:
-            if not product.is_archived:
+            if (
+                not product.is_archived
+                and product.visibility != ProductVisibility.draft
+            ):
                 products.append(product)
 
         if len(products) == 0:
@@ -1482,6 +1501,18 @@ class CheckoutService:
                 ]
             )
 
+        if product.visibility == ProductVisibility.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is a draft.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         currencies = self._get_currencies(
             currency, product, product.organization, ip_country
         )
@@ -1538,6 +1569,17 @@ class CheckoutService:
                 )
                 continue
 
+            if product.visibility == ProductVisibility.draft:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is a draft.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
             products.append(product)
 
         organization_ids = {product.organization_id for product in products}
@@ -1560,6 +1602,7 @@ class CheckoutService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         products: Sequence[Product],
         prices: dict[uuid.UUID, ProductPriceCreateList],
     ) -> dict[Product, Sequence[ProductPrice]]:
@@ -1586,6 +1629,7 @@ class CheckoutService:
                 price_errors,
             ) = await product_service.get_validated_prices(
                 session,
+                organization,
                 product_prices,
                 product.recurring_interval,
                 product,

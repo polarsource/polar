@@ -14,11 +14,6 @@ else
     ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 fi
 
-# Calculate instance from CONDUCTOR_PORT
-# Always add 1 to avoid clashing with server/docker-compose.yml (instance 0)
-CONDUCTOR_PORT="${CONDUCTOR_PORT:-55000}"
-INSTANCE=$(( (CONDUCTOR_PORT - 55000) / 10 + 1 ))
-
 cd "$ROOT_DIR"
 
 # Generate environment files if needed
@@ -31,28 +26,5 @@ fi
 echo "Building backoffice..."
 (cd server && uv run task backoffice)
 
-# Start all services in detached mode
-./dev/docker-dev -i "$INSTANCE" -d
-
-# Calculate actual ports
-API_PORT=$((8000 + INSTANCE * 100))
-WEB_PORT=$((3000 + INSTANCE * 100))
-MINIO_CONSOLE_PORT=$((9001 + INSTANCE * 100))
-
-echo ""
-echo "============================================"
-echo "  Polar Development Environment"
-echo "  Instance: $INSTANCE"
-echo "============================================"
-echo ""
-echo "Services:"
-echo "  Web:           http://localhost:$WEB_PORT"
-echo "  API:           http://localhost:$API_PORT"
-echo "  MinIO Console: http://localhost:$MINIO_CONSOLE_PORT"
-echo ""
-echo "Commands:"
-echo "  View logs:     ./dev/docker-dev -i $INSTANCE logs"
-echo "  API logs:      ./dev/docker-dev -i $INSTANCE logs api"
-echo "  Stop:          ./dev/docker-dev -i $INSTANCE down"
-echo "  Shell (API):   ./dev/docker-dev -i $INSTANCE shell api"
-echo ""
+# Start all services in detached mode (instance auto-detected from CONDUCTOR_PORT)
+./dev/cli/dev docker up -d

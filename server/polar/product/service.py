@@ -1,5 +1,6 @@
 import builtins
 import uuid
+from collections import defaultdict
 from collections.abc import Sequence
 from typing import Literal
 
@@ -29,6 +30,7 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
+    ProductVisibility,
     User,
 )
 from polar.models.product_custom_field import ProductCustomField
@@ -36,7 +38,11 @@ from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
-from polar.product.guard import is_legacy_price, is_metered_price, is_static_price
+from polar.product.guard import (
+    is_legacy_price,
+    is_metered_price,
+    is_static_price,
+)
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -62,6 +68,7 @@ class ProductService:
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
+        visibility: Sequence[ProductVisibility] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -104,6 +111,9 @@ class ProductService:
         if is_recurring is not None:
             statement = statement.where(Product.is_recurring.is_(is_recurring))
 
+        if visibility is not None:
+            statement = statement.where(Product.visibility.in_(visibility))
+
         if benefit_id is not None:
             statement = (
                 statement.join(Product.product_benefits)
@@ -139,17 +149,6 @@ class ProductService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_embed(
-        self, session: AsyncReadSession, id: uuid.UUID
-    ) -> Product | None:
-        repository = ProductRepository.from_session(session)
-        statement = (
-            repository.get_base_statement()
-            .where(Product.id == id, Product.is_archived.is_(False))
-            .options(selectinload(Product.product_medias))
-        )
-        return await repository.get_one_or_none(statement)
-
     async def create(
         self,
         session: AsyncSession,
@@ -164,6 +163,7 @@ class ProductService:
         errors: list[ValidationError] = []
         prices, _, _, prices_errors = await self.get_validated_prices(
             session,
+            organization,
             create_schema.prices,
             create_schema.recurring_interval,
             None,
@@ -263,6 +263,7 @@ class ProductService:
                 prices_errors,
             ) = await self.get_validated_prices(
                 session,
+                product.organization,
                 update_schema.prices,
                 product.recurring_interval,
                 product,
@@ -493,6 +494,7 @@ class ProductService:
     async def get_validated_prices(
         self,
         session: AsyncSession,
+        organization: Organization,
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
@@ -507,10 +509,11 @@ class ProductService:
     ]:
         meter_repository = MeterRepository.from_session(session)
         prices: list[ProductPrice] = []
+        prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
         errors: list[ValidationError] = []
-        meters: set[uuid.UUID] = set()
+
         for index, price_schema in enumerate(prices_schema):
             if isinstance(price_schema, ExistingProductPrice):
                 assert product is not None
@@ -545,17 +548,6 @@ class ProductService:
                         )
                         continue
 
-                    if price_schema.meter_id in meters:
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index, "meter_id"),
-                                "msg": "Meter is already used for another price.",
-                                "input": price_schema.meter_id,
-                            }
-                        )
-                        continue
-
                     price.meter = await meter_repository.get_readable_by_id(
                         price_schema.meter_id, auth_subject
                     )
@@ -569,9 +561,9 @@ class ProductService:
                             }
                         )
                         continue
-                    meters.add(price_schema.meter_id)
                 added_prices.append(price)
             prices.append(price)
+            prices_per_currency[price.price_currency].append((price, index))
 
         if len(prices) < 1:
             errors.append(
@@ -583,18 +575,74 @@ class ProductService:
                 }
             )
 
-        static_prices = [p for p in prices if is_static_price(p)]
-        if len(static_prices) > 1:
-            # Bypass that rule for legacy recurring products
-            if not all(is_legacy_price(p) for p in static_prices):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": error_prefix,
-                        "msg": "Only one static price is allowed.",
-                        "input": prices_schema,
-                    }
-                )
+        # Track price structure per currency for cross-currency validation
+        price_structure_per_currency: dict[str, tuple[int, int]] = {}
+
+        for currency, currency_prices in prices_per_currency.items():
+            # Check that only one static price exists per currency
+            static_prices = [p for p, _ in currency_prices if is_static_price(p)]
+            if len(static_prices) > 1:
+                # Bypass that rule for legacy recurring products
+                if not all(is_legacy_price(p) for p in static_prices):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": error_prefix,
+                            "msg": "Only one static price is allowed.",
+                            "input": prices_schema,
+                        }
+                    )
+
+            # Check that a meter appears only once per currency
+            currency_meters: set[uuid.UUID] = set()
+            for metered_price, index in (
+                (p, i) for p, i in currency_prices if is_metered_price(p)
+            ):
+                if metered_price.meter_id in currency_meters:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index, "meter_id"),
+                            "msg": "Meter is already used for another price.",
+                            "input": metered_price.meter_id,
+                        }
+                    )
+                    continue
+                currency_meters.add(metered_price.meter_id)
+
+            # Record the structure: (static_count, metered_count)
+            price_structure_per_currency[currency] = (
+                len(static_prices),
+                len(currency_meters),
+            )
+
+        # Check that all currencies have the same price structure
+        unique_structures = set(price_structure_per_currency.values())
+        if len(unique_structures) > 1:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": error_prefix,
+                    "msg": (
+                        "All price currencies must define the same set of price types."
+                    ),
+                    "input": prices_schema,
+                }
+            )
+
+        # Check that the default presentment currency is present
+        if (
+            organization.default_presentment_currency
+            not in price_structure_per_currency
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": error_prefix,
+                    "msg": "The organization's default presentment currency must be present in the prices.",
+                    "input": prices_schema,
+                }
+            )
 
         return prices, existing_prices, added_prices, errors
 

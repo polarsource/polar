@@ -1,8 +1,8 @@
 import { useOrder } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -63,9 +63,9 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
 
     switch (event.name) {
       case 'order.paid':
-        return formatCurrencyAndAmount(order.total_amount, order.currency)
+        return formatCurrency(order.total_amount, order.currency)
       case 'order.refunded':
-        return formatCurrencyAndAmount(order.refunded_amount, order.currency)
+        return formatCurrency(order.refunded_amount, order.currency)
     }
   }, [order, event])
 

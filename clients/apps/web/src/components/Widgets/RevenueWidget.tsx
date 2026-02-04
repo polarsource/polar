@@ -2,13 +2,13 @@ import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
+import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -97,7 +97,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrencyAndAmount(period.revenue ?? 0, 'usd', 0)} in{' '}
+                    {formatCurrency(period.revenue ?? 0, 'usd', 0)} in{' '}
                     {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>

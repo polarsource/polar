@@ -17,6 +17,7 @@ from polar.kit.db.models import RecordModel
 from .benefit import Benefit
 from .customer import Customer
 from .file import File
+from .member import Member
 
 
 class DownloadableStatus(StrEnum):
@@ -50,6 +51,17 @@ class Downloadable(RecordModel):
     @declared_attr
     def customer(cls) -> Mapped[Customer]:
         return relationship("Customer", lazy="raise")
+
+    member_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("members.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def member(cls) -> Mapped[Member | None]:
+        return relationship("Member", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
         Uuid,

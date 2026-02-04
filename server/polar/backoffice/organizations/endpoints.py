@@ -7,7 +7,6 @@ from typing import Annotated, Any, Literal, override
 
 import stripe as stripe_lib
 import structlog
-from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -28,6 +27,7 @@ from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.kit.sorting import Sorting
@@ -140,7 +140,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         from babel.numbers import format_currency
 
-        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        text(format_currency(item.next_review_threshold, "usd"))
         return None
 
 
@@ -1767,17 +1767,13 @@ async def get(
                                 "future_annual_revenue"
                             )
                             if expected_revenue:
-                                text(
-                                    format_currency(
-                                        expected_revenue, "USD", locale="en_US"
-                                    )
-                                )
+                                text(format_currency(expected_revenue, "usd"))
                             else:
                                 text("—")
                             if organization.details.get("switching"):
                                 with accordion.item(a, "Switching from"):
                                     text(
-                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
+                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
                                     )
 
             # Internal Notes Section

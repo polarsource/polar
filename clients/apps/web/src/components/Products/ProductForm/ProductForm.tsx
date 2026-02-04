@@ -6,7 +6,6 @@ import { ProductCustomFieldSection } from './ProductCustomFieldSection'
 import { ProductInfoSection } from './ProductInfoSection'
 import { ProductMediaSection } from './ProductMediaSection'
 import { ProductPricingSection } from './ProductPricingSection'
-import { ProductTrialSection } from './ProductTrialSection'
 
 export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
@@ -30,7 +29,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ organization, update }) => {
     <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection />
       <ProductPricingSection organization={organization} update={update} />
-      <ProductTrialSection />
       <ProductMediaSection organization={organization} />
       <ProductCustomFieldSection organization={organization} />
       <Section

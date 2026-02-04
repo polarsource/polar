@@ -5,6 +5,7 @@ import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -38,7 +39,7 @@ import {
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 import { PlusIcon } from 'lucide-react'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useFieldArray,
   UseFieldArrayRemove,
@@ -49,13 +50,11 @@ import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
 import UnitAmountInput from './UnitAmountInput'
 
-export interface ProductPriceFixedItemProps {
+interface ProductPriceItemProps {
   index: number
 }
 
-export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
-  index,
-}) => {
+const ProductPriceFixedItem = ({ index }: ProductPriceItemProps) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
   return (
@@ -94,13 +93,7 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
   )
 }
 
-export interface ProductPriceCustomItemProps {
-  index: number
-}
-
-export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
-  index,
-}) => {
+const ProductPriceCustomItem = ({ index }: ProductPriceItemProps) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
   const validatePWYWAmount = (
@@ -211,9 +204,7 @@ export interface ProductPriceSeatBasedItemProps {
   index: number
 }
 
-export const ProductPriceSeatBasedItem: React.FC<
-  ProductPriceSeatBasedItemProps
-> = ({ index }) => {
+export const ProductPriceSeatBasedItem = ({ index }: ProductPriceItemProps) => {
   const { control, setValue, watch } = useFormContext<ProductFormType>()
   const { fields, append, remove } = useFieldArray({
     control,
@@ -475,14 +466,10 @@ export const ProductPriceSeatBasedItem: React.FC<
   )
 }
 
-export interface ProductPriceMeteredUnitItemProps {
-  organization: schemas['Organization']
-  index: number
-}
-
-export const ProductPriceMeteredUnitItem: React.FC<
-  ProductPriceMeteredUnitItemProps
-> = ({ organization, index }) => {
+export const ProductPriceMeteredUnitItem = ({
+  organization,
+  index,
+}: ProductPriceItemProps & { organization: schemas['Organization'] }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
   const { data: meters } = useMeters(organization.id, {
@@ -637,16 +624,13 @@ export const ProductPriceMeteredUnitItem: React.FC<
   )
 }
 
-interface ProductPriceItemProps {
-  organization: schemas['Organization']
-  index: number
-  remove: UseFieldArrayRemove
-}
-
-const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
+const ProductPriceItem = ({
   organization,
   index,
   remove,
+}: ProductPriceItemProps & {
+  organization: schemas['Organization']
+  remove: UseFieldArrayRemove
 }) => {
   const { register, control, setValue, watch } =
     useFormContext<ProductFormType>()
@@ -707,7 +691,14 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   )
 
   return (
-    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-2xl border border-gray-100">
+    <div
+      className={twMerge(
+        'flex flex-col divide-y rounded-2xl border',
+        amountType
+          ? 'dark:border-polar-700 dark:divide-polar-700 divide-gray-200 border-gray-200'
+          : 'dark:border-polar-700 dark:divide-polar-700 divide-gray-100 border-gray-100',
+      )}
+    >
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <FormField
         control={control}
@@ -812,12 +803,7 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
-  const {
-    control,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useFormContext<ProductFormType>()
+  const { control, setValue, watch } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
@@ -1067,6 +1053,8 @@ export const ProductPricingSection = ({
           </Button>
         )}
       </div>
+
+      {recurringInterval && <TrialConfigurationForm />}
     </Section>
   )
 }

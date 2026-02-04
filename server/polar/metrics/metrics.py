@@ -1076,7 +1076,7 @@ class TBOrdersMetric(TinybirdMetric):
     slug = "orders"
     display_name = "Orders"
     type = MetricType.scalar
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1087,7 +1087,7 @@ class TBRevenueMetric(TinybirdMetric):
     slug = "revenue"
     display_name = "Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1098,7 +1098,7 @@ class TBNetRevenueMetric(TinybirdMetric):
     slug = "net_revenue"
     display_name = "Net Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1109,7 +1109,7 @@ class TBCumulativeRevenueMetric(TinybirdMetric):
     slug = "cumulative_revenue"
     display_name = "Cumulative Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1120,7 +1120,7 @@ class TBNetCumulativeRevenueMetric(TinybirdMetric):
     slug = "net_cumulative_revenue"
     display_name = "Net Cumulative Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1131,7 +1131,7 @@ class TBAverageOrderValueMetric(TinybirdMetric):
     slug = "average_order_value"
     display_name = "Average Order Value"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -1144,7 +1144,7 @@ class TBNetAverageOrderValueMetric(TinybirdMetric):
     slug = "net_average_order_value"
     display_name = "Net Average Order Value"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
@@ -1157,7 +1157,7 @@ class TBOneTimeProductsMetric(TinybirdMetric):
     slug = "one_time_products"
     display_name = "One-Time Products"
     type = MetricType.scalar
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1168,7 +1168,7 @@ class TBOneTimeProductsRevenueMetric(TinybirdMetric):
     slug = "one_time_products_revenue"
     display_name = "One-Time Products Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1179,7 +1179,7 @@ class TBOneTimeProductsNetRevenueMetric(TinybirdMetric):
     slug = "one_time_products_net_revenue"
     display_name = "One-Time Products Net Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1190,7 +1190,7 @@ class TBNewSubscriptionsMetric(TinybirdMetric):
     slug = "new_subscriptions"
     display_name = "New Subscriptions"
     type = MetricType.scalar
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1201,7 +1201,7 @@ class TBNewSubscriptionsRevenueMetric(TinybirdMetric):
     slug = "new_subscriptions_revenue"
     display_name = "New Subscriptions Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1212,7 +1212,7 @@ class TBNewSubscriptionsNetRevenueMetric(TinybirdMetric):
     slug = "new_subscriptions_net_revenue"
     display_name = "New Subscriptions Net Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1223,7 +1223,7 @@ class TBRenewedSubscriptionsMetric(TinybirdMetric):
     slug = "renewed_subscriptions"
     display_name = "Renewed Subscriptions"
     type = MetricType.scalar
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1234,7 +1234,7 @@ class TBRenewedSubscriptionsRevenueMetric(TinybirdMetric):
     slug = "renewed_subscriptions_revenue"
     display_name = "Renewed Subscriptions Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:
@@ -1245,7 +1245,7 @@ class TBRenewedSubscriptionsNetRevenueMetric(TinybirdMetric):
     slug = "renewed_subscriptions_net_revenue"
     display_name = "Renewed Subscriptions Net Revenue"
     type = MetricType.currency
-    query = TinybirdQuery.balance_orders
+    query = TinybirdQuery.events
 
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> int | float:

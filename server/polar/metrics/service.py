@@ -32,7 +32,6 @@ from .queries import (
 )
 from .queries_tinybird import (
     TinybirdQuery,
-    query_balance_order_metrics,
     query_events_metrics,
     query_mrr_metrics,
 )
@@ -261,9 +260,9 @@ class MetricsService:
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
 
         tb_coros = []
-        if TinybirdQuery.balance_orders in tb_queries:
+        if TinybirdQuery.events in tb_queries:
             tb_coros.append(
-                query_balance_order_metrics(
+                query_events_metrics(
                     organization_id=org_ids,
                     start=start_timestamp,
                     end=end_timestamp,
@@ -288,19 +287,6 @@ class MetricsService:
                     product_id=product_id,
                     customer_id=customer_id,
                     billing_type=billing_strs,
-                )
-            )
-        if TinybirdQuery.events in tb_queries:
-            tb_coros.append(
-                query_events_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    bounds_start=original_start_timestamp,
-                    bounds_end=original_end_timestamp,
-                    customer_id=customer_id,
                 )
             )
 

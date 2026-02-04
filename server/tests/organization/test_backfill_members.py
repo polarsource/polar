@@ -8,6 +8,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSeat
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
+from polar.models.license_key import LicenseKey
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
@@ -502,6 +503,78 @@ class TestBackfillMembers:
         assert member.customer_id == customer.id
         assert member.role == MemberRole.owner
 
+    async def test_links_seat_based_grants_to_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Grants from a billing manager's subscription should be linked to the
+        seat member, not the owner member, when the customer has a seat."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@test.com",
+            stripe_customer_id="stripe_billing_seat_grant",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type="custom",
+            description="Seat benefit",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=billing_customer,
+            seats=1,
+        )
+
+        # Billing manager holds a seat (claimed by themselves)
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=billing_customer,
+            claimed_at=utc_now(),
+        )
+
+        # Grant under billing customer, scoped to subscription (no member_id yet)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=billing_customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        assert grant.member_id is None
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # The seat should now have a member_id (set by Step B)
+        refreshed_seat = await session.get(CustomerSeat, seat.id)
+        assert refreshed_seat is not None
+        assert refreshed_seat.member_id is not None
+
+        # The grant should be linked to the seat member (which is the owner
+        # member in this case, since billing manager holds their own seat)
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.member_id == refreshed_seat.member_id
+
     async def test_does_not_modify_grants_with_existing_member_id(
         self,
         session: AsyncSession,
@@ -687,6 +760,88 @@ class TestBackfillMembers:
         assert member.customer_id == billing_customer.id
         assert member.email == "holder@test.com"
         assert member.role == MemberRole.member
+
+    async def test_transfers_license_keys_from_seat_holder(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """License keys from the old seat-holder customer should be
+        transferred to the billing customer."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@test.com",
+            stripe_customer_id="stripe_billing_lk",
+        )
+        seat_holder_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder-lk@test.com",
+            stripe_customer_id="stripe_holder_lk",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type="license_keys",
+            description="License key benefit",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=billing_customer,
+            seats=1,
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=seat_holder_customer,
+            claimed_at=utc_now(),
+        )
+
+        # Create a grant and license key under the old seat-holder customer
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=seat_holder_customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        license_key = LicenseKey(
+            organization_id=organization.id,
+            customer_id=seat_holder_customer.id,
+            benefit_id=benefit.id,
+            key="POLAR-TEST-KEY-123",
+        )
+        await save_fixture(license_key)
+        lk_id = license_key.id
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # License key should be transferred to the billing customer
+        refreshed_lk = await session.get(LicenseKey, lk_id)
+        assert refreshed_lk is not None
+        assert refreshed_lk.customer_id == billing_customer.id
+
+        # Grant should also be transferred
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.customer_id == billing_customer.id
 
     async def test_copies_oauth_accounts_to_owner_member(
         self,

@@ -187,7 +187,7 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
     Three steps:
     A. Create owner members for all customers without one
     B. Migrate active (non-revoked) seats to member model format
-    C. Link existing benefit grants to their customer's owner member
+    C. Link existing benefit grants to the correct member (owner or seat)
     """
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -218,7 +218,7 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
             session, organization
         )
 
-        # Step C: Link benefit grants to owner members
+        # Step C: Link benefit grants to correct members (owner or seat)
         grants_linked = await _backfill_benefit_grants(session, organization)
 
         # Step D: Soft-delete orphaned seat-holder customers
@@ -417,10 +417,10 @@ async def _backfill_seats(
             if seat_holder._oauth_accounts:
                 member._oauth_accounts = {**seat_holder._oauth_accounts}
 
-            # Transfer benefit grants from old seat-holder customer to the
-            # new member under the billing customer. This preserves existing
-            # benefit state (license keys, GitHub/Discord) instead of
-            # re-provisioning.
+            # Transfer benefit grants and their associated records from old
+            # seat-holder customer to the new member under the billing customer.
+            # This preserves existing benefit state (license keys, downloadables,
+            # GitHub/Discord) instead of re-provisioning.
             scope_filter = (
                 BenefitGrant.subscription_id == seat.subscription_id
                 if seat.subscription_id is not None
@@ -432,9 +432,20 @@ async def _backfill_seats(
                 BenefitGrant.deleted_at.is_(None),
             )
             grants_result = await session.execute(grants_stmt)
+            transferred_benefit_ids: set[uuid.UUID] = set()
             for grant in grants_result.scalars().all():
                 grant.customer_id = billing_customer_id
                 grant.member_id = member.id
+                transferred_benefit_ids.add(grant.benefit_id)
+
+            # Transfer benefit-specific records that reference the old customer
+            if transferred_benefit_ids:
+                await _transfer_benefit_records(
+                    session,
+                    old_seat_customer_id,
+                    billing_customer_id,
+                    transferred_benefit_ids,
+                )
 
         count += 1
 
@@ -475,11 +486,49 @@ async def _get_or_create_member_for_backfill(
     return member
 
 
+async def _transfer_benefit_records(
+    session: AsyncSession,
+    old_customer_id: uuid.UUID,
+    new_customer_id: uuid.UUID,
+    benefit_ids: set[uuid.UUID],
+) -> None:
+    """Transfer benefit-specific records (license keys, downloadables)
+    from the old customer to the new billing customer."""
+    from polar.models.downloadable import Downloadable
+    from polar.models.license_key import LicenseKey
+
+    # Transfer license keys
+    lk_stmt = select(LicenseKey).where(
+        LicenseKey.customer_id == old_customer_id,
+        LicenseKey.benefit_id.in_(benefit_ids),
+    )
+    lk_result = await session.execute(lk_stmt)
+    for lk in lk_result.scalars().all():
+        lk.customer_id = new_customer_id
+
+    # Transfer downloadables
+    dl_stmt = select(Downloadable).where(
+        Downloadable.customer_id == old_customer_id,
+        Downloadable.benefit_id.in_(benefit_ids),
+    )
+    dl_result = await session.execute(dl_stmt)
+    for dl in dl_result.scalars().all():
+        dl.customer_id = new_customer_id
+
+
 async def _backfill_benefit_grants(
     session: AsyncSession,
     organization: Organization,
 ) -> int:
-    """Step C: Link existing benefit grants to their customer's owner member."""
+    """Step C: Link existing benefit grants to the correct member.
+
+    Grants from subscriptions/orders that the customer purchased themselves
+    are linked to the customer's owner member.
+
+    Grants from subscriptions/orders where the customer was assigned a seat
+    (i.e. the billing manager purchased, then assigned) are linked to the
+    corresponding seat member.
+    """
     member_repository = MemberRepository.from_session(session)
 
     # Find grants without member_id for this organization's customers
@@ -505,10 +554,18 @@ async def _backfill_benefit_grants(
 
     count = 0
     for grant in grants:
-        owner = owner_members_map.get(grant.customer_id)
-        if owner is not None:
-            grant.member_id = owner.id
+        # Check if this grant is seat-based: look for a CustomerSeat matching
+        # the grant's customer and subscription/order scope.
+        seat_member_id = await _find_seat_member_for_grant(session, grant)
+        if seat_member_id is not None:
+            grant.member_id = seat_member_id
             count += 1
+        else:
+            # No seat found — this is a direct purchase, link to owner member
+            owner = owner_members_map.get(grant.customer_id)
+            if owner is not None:
+                grant.member_id = owner.id
+                count += 1
 
     await session.flush()
 
@@ -519,6 +576,36 @@ async def _backfill_benefit_grants(
         grants_linked=count,
     )
     return count
+
+
+async def _find_seat_member_for_grant(
+    session: AsyncSession,
+    grant: BenefitGrant,
+) -> uuid.UUID | None:
+    """Find the seat member for a grant, if the grant is seat-based.
+
+    Returns the member_id from the matching CustomerSeat, or None if the
+    grant is not seat-based (i.e. the customer purchased directly).
+    """
+    if grant.subscription_id is not None:
+        stmt = select(CustomerSeat.member_id).where(
+            CustomerSeat.customer_id == grant.customer_id,
+            CustomerSeat.subscription_id == grant.subscription_id,
+            CustomerSeat.member_id.is_not(None),
+            CustomerSeat.status != SeatStatus.revoked,
+        )
+    elif grant.order_id is not None:
+        stmt = select(CustomerSeat.member_id).where(
+            CustomerSeat.customer_id == grant.customer_id,
+            CustomerSeat.order_id == grant.order_id,
+            CustomerSeat.member_id.is_not(None),
+            CustomerSeat.status != SeatStatus.revoked,
+        )
+    else:
+        return None
+
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def _cleanup_orphaned_seat_customers(

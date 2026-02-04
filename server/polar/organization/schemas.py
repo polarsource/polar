@@ -15,6 +15,7 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
@@ -312,6 +313,14 @@ class Organization(OrganizationBase):
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted.",
+    )
+
+    default_presentment_currency: PresentmentCurrency = Field(
+        description=(
+            "Default presentment currency. "
+            "Used as fallback in checkout and customer portal, "
+            "if the customer's local currency is not available."
+        )
     )
 
     feature_settings: OrganizationFeatureSettings | None = Field(

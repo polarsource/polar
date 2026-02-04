@@ -78,17 +78,17 @@ def _build_compose_cmd(instance: int, monitoring: bool = False) -> list[str]:
     return cmd
 
 
-def _resolve_instance(instance: int | None) -> int:
-    """Resolve instance number: use explicit value or auto-detect."""
-    if instance is not None:
-        return instance
-    detected = _detect_instance()
-    if detected != 0:
-        console.print(f"[dim]Auto-detected instance {detected}[/dim]")
-    return detected
+def _get_instance(ctx: typer.Context) -> int:
+    """Get the resolved instance number from the context."""
+    return ctx.obj["instance"]
 
 
-def _print_access_info(instance: int, monitoring: bool = False) -> None:
+def _instance_was_explicit(ctx: typer.Context) -> bool:
+    """Check if the instance was explicitly provided by the user."""
+    return ctx.obj["instance_explicit"]
+
+
+def _print_access_info(ctx: typer.Context, instance: int, monitoring: bool = False) -> None:
     """Print service access URLs."""
     offset = instance * 100
     console.print()
@@ -106,7 +106,7 @@ def _print_access_info(instance: int, monitoring: bool = False) -> None:
         console.print(f"  Grafana:       http://localhost:{3001 + offset} (admin/polar)")
     console.print()
     console.print("[bold]Commands:[/bold]")
-    i_flag = f" -i {instance}" if instance != 0 else ""
+    i_flag = f" -i {instance}" if _instance_was_explicit(ctx) else ""
     console.print(f"  View logs:   dev docker{i_flag} logs")
     console.print(f"  API logs:    dev docker{i_flag} logs api")
     console.print(f"  Stop:        dev docker{i_flag} down")
@@ -118,14 +118,28 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     docker_app = typer.Typer(help="Isolated Docker development environment")
     app.add_typer(docker_app, name="docker")
 
-    @docker_app.command("up")
-    def docker_up(
+    @docker_app.callback()
+    def docker_callback(
+        ctx: typer.Context,
         instance: Annotated[
             Optional[int], typer.Option("--instance", "-i", help="Instance number for port isolation (auto-detected if not set)")
         ] = None,
+    ) -> None:
+        """Isolated Docker development environment."""
+        explicit = instance is not None
+        if instance is None:
+            instance = _detect_instance()
+            console.print(f"[dim]Auto-detected instance {instance}[/dim]")
+        ctx.ensure_object(dict)
+        ctx.obj["instance"] = instance
+        ctx.obj["instance_explicit"] = explicit
+
+    @docker_app.command("up")
+    def docker_up(
+        ctx: typer.Context,
         detach: Annotated[
             bool, typer.Option("--detach", "-d", help="Run in background")
-        ] = False,
+        ] = True,
         build: Annotated[
             bool, typer.Option("--build", "-b", help="Force rebuild images")
         ] = False,
@@ -137,7 +151,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         ] = None,
     ) -> None:
         """Start the full stack in Docker containers."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance, monitoring)
@@ -160,7 +174,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if detach:
             result = run_command(up_cmd, env=env)
             if result and result.returncode == 0:
-                _print_access_info(instance, monitoring)
+                _print_access_info(ctx, instance, monitoring)
             else:
                 console.print("[red]Failed to start services[/red]")
                 raise typer.Exit(1)
@@ -170,15 +184,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("down")
     def docker_down(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
         services: Annotated[
             Optional[list[str]], typer.Argument(help="Services to stop (default: all)")
         ] = None,
     ) -> None:
         """Stop Docker services."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["down"] + (services or [])
@@ -193,9 +205,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("logs")
     def docker_logs(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
         follow: Annotated[
             bool, typer.Option("--follow", "-f", help="Follow log output")
         ] = True,
@@ -204,7 +214,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         ] = None,
     ) -> None:
         """View Docker service logs."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["logs"]
@@ -218,12 +228,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("ps")
     def docker_ps(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
     ) -> None:
         """List running Docker services."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["ps"]
@@ -233,15 +241,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("restart")
     def docker_restart(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
         services: Annotated[
             Optional[list[str]], typer.Argument(help="Services to restart (default: all)")
         ] = None,
     ) -> None:
         """Restart Docker services."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["restart"] + (services or [])
@@ -256,15 +262,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("build")
     def docker_build(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
         services: Annotated[
             Optional[list[str]], typer.Argument(help="Services to build (default: all)")
         ] = None,
     ) -> None:
         """Build or rebuild Docker images."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["build"] + (services or [])
@@ -279,15 +283,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("shell")
     def docker_shell(
+        ctx: typer.Context,
         service: Annotated[
             str, typer.Argument(help="Service to open shell in (e.g. api, web)")
         ],
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
     ) -> None:
         """Open a shell in a Docker container."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         _ensure_env_file()
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance) + ["exec", service, "/bin/bash"]
@@ -298,15 +300,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
     @docker_app.command("cleanup")
     def docker_cleanup(
-        instance: Annotated[
-            Optional[int], typer.Option("--instance", "-i", help="Instance number (auto-detected if not set)")
-        ] = None,
+        ctx: typer.Context,
         force: Annotated[
             bool, typer.Option("--force", "-f", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Stop services and remove all volumes (fresh start)."""
-        instance = _resolve_instance(instance)
+        instance = _get_instance(ctx)
         if not force:
             console.print("[yellow]This will remove all containers and volumes (database data, etc.).[/yellow]")
             if not typer.confirm("Continue?"):

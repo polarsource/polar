@@ -1,4 +1,5 @@
 import subprocess
+import time
 import uuid
 from collections.abc import Generator
 from pathlib import Path
@@ -69,6 +70,19 @@ def tinybird_workspace() -> Generator[str, None, None]:
         capture_output=True,
         cwd=TINYBIRD_DIR,
     )
+
+    for _ in range(20):
+        try:
+            r = httpx.get(
+                f"{host}/v0/datasources",
+                headers={"Authorization": f"Bearer {workspace_token}"},
+                timeout=2,
+            )
+            if r.status_code == 200:
+                break
+        except httpx.RequestError:
+            pass
+        time.sleep(0.5)
 
     yield workspace_token
 

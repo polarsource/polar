@@ -31,8 +31,9 @@ export const getCurrencyDecimalFactor = (currency: string): number => {
 }
 
 /**
- * Format an amount with currency code (e.g., "USD 10.00").
- * Uses currencyDisplay: 'code' to show the currency code instead of symbol.
+ * Format an amount with currency code (e.g., "$10.00").
+ * Uses currencyDisplay: 'symbol' to show the currency.
+ * To show "USD 10.00" instead, please pass 'code'
  * Automatically handles currencies with different decimal factors.
  */
 export const formatCurrency = (
@@ -40,7 +41,7 @@ export const formatCurrency = (
   currency: string,
   minimumFractionDigits?: number,
   maximumFractionDigits?: number,
-  currencyDisplay: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry = 'code',
+  currencyDisplay: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry = 'symbol',
 ): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const fractionDigits = decimalFactor === 1 ? 0 : 2

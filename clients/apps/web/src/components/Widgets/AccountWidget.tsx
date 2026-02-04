@@ -50,13 +50,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         </div>
         <h2 className="text-5xl font-light">
           {summary &&
-            formatCurrency(
-              summary.balance.amount,
-              summary.balance.currency,
-              0,
-              undefined,
-              'narrowSymbol',
-            )}
+            formatCurrency(summary.balance.amount, summary.balance.currency, 0)}
         </h2>
       </div>
       <div className="dark:bg-polar-700 m-2 flex flex-col gap-y-4 rounded-3xl bg-white p-4">

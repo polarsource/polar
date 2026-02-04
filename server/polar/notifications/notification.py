@@ -4,11 +4,11 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 import pycountry
-from babel.numbers import format_currency
 from pydantic import UUID4, BaseModel, Discriminator, computed_field
 
 from polar.config import settings
 from polar.email.react import render_email_template
+from polar.kit.currency import format_currency
 from polar.kit.schemas import Schema
 from polar.models.order import OrderBillingReasonInternal
 
@@ -73,7 +73,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     def formatted_price_amount(self) -> str:
         if self.tier_price_amount is None:
             return ""
-        return format_currency(self.tier_price_amount / 100, "USD", locale="en_US")
+        return format_currency(self.tier_price_amount, "usd")
 
     def subject(self) -> str:
         if self.tier_price_amount:
@@ -112,7 +112,7 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
 
     @computed_field
     def formatted_price_amount(self) -> str:
-        return format_currency(self.product_price_amount / 100, "USD", locale="en_US")
+        return format_currency(self.product_price_amount, "usd")
 
     @computed_field
     def formatted_billing_reason(self) -> str | None:
@@ -181,7 +181,7 @@ class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase
 
     @computed_field
     def formatted_amount(self) -> str:
-        return format_currency(self.amount / 100, "USD", locale="en_US")
+        return format_currency(self.amount, "usd")
 
     def subject(self) -> str:
         return f"{self.organization_name} has received {self.formatted_amount} in fee credits!"

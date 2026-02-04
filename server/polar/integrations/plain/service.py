@@ -9,7 +9,6 @@ import httpx
 import pycountry
 import pycountry.db
 import structlog
-from babel.numbers import format_currency
 from plain_client import (
     ComponentContainerContentInput,
     ComponentContainerInput,
@@ -42,6 +41,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.kit.currency import format_currency
 from polar.models import (
     Customer,
     Order,
@@ -1133,11 +1133,7 @@ class PlainService:
                     ),
                     ComponentContainerContentInput(
                         component_text=ComponentTextInput(
-                            text=format_currency(
-                                order.net_amount / 100,
-                                order.currency.upper(),
-                                locale="en_US",
-                            )
+                            text=format_currency(order.net_amount, order.currency)
                         )
                     ),
                     ComponentContainerContentInput(
@@ -1149,11 +1145,7 @@ class PlainService:
                     ),
                     ComponentContainerContentInput(
                         component_text=ComponentTextInput(
-                            text=format_currency(
-                                order.tax_amount / 100,
-                                order.currency.upper(),
-                                locale="en_US",
-                            )
+                            text=format_currency(order.tax_amount, order.currency)
                         )
                     ),
                 ]
@@ -1529,10 +1521,8 @@ class PlainService:
                                                 ComponentRowContentInput(
                                                     component_text=ComponentTextInput(
                                                         text=format_currency(
-                                                            organization.next_review_threshold
-                                                            / 100,
-                                                            "USD",
-                                                            locale="en_US",
+                                                            organization.next_review_threshold,
+                                                            "usd",
                                                         )
                                                     )
                                                 ),

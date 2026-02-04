@@ -10,6 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, classes, tag, text
 
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
@@ -659,15 +660,7 @@ async def refund(
 
     # Calculate max refundable amount
     max_refundable = (order.net_amount or 0) - (order.refunded_amount or 0)
-
-    # Format amount for display
-    from babel.numbers import format_currency
-
-    max_refundable_display = format_currency(
-        max_refundable / 100,
-        order.currency.upper() if order.currency else "USD",
-        locale="en_US",
-    )
+    max_refundable_display = format_currency(max_refundable, order.currency)
 
     with modal("Refund order", open=True):
         with tag.div(classes="flex flex-col gap-4"):

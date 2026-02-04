@@ -847,6 +847,34 @@ class TestCreate:
             )
 
     @pytest.mark.auth
+    async def test_missing_default_presentment_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        """Test that the default presentment currency is included in the product prices"""
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=900,
+                            price_currency=PresentmentCurrency.eur,
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
     async def test_valid_multi_currency_product(
         self,
         auth_subject: AuthSubject[User],

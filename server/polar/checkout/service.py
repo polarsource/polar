@@ -316,12 +316,15 @@ class CheckoutService:
             products = await self._get_validated_products(
                 session, auth_subject, checkout_create.products
             )
+            product = products[0]
             if checkout_create.prices:
                 ad_hoc_prices = await self._get_validated_prices(
-                    session, auth_subject, products, checkout_create.prices
+                    session,
+                    auth_subject,
+                    product.organization,
+                    products,
+                    checkout_create.prices,
                 )
-
-            product = products[0]
 
             currencies = self._get_currencies(
                 checkout_create.currency, product, product.organization, ip_country
@@ -1599,6 +1602,7 @@ class CheckoutService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         products: Sequence[Product],
         prices: dict[uuid.UUID, ProductPriceCreateList],
     ) -> dict[Product, Sequence[ProductPrice]]:
@@ -1625,6 +1629,7 @@ class CheckoutService:
                 price_errors,
             ) = await product_service.get_validated_prices(
                 session,
+                organization,
                 product_prices,
                 product.recurring_interval,
                 product,

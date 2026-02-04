@@ -163,6 +163,7 @@ class ProductService:
         errors: list[ValidationError] = []
         prices, _, _, prices_errors = await self.get_validated_prices(
             session,
+            organization,
             create_schema.prices,
             create_schema.recurring_interval,
             None,
@@ -262,6 +263,7 @@ class ProductService:
                 prices_errors,
             ) = await self.get_validated_prices(
                 session,
+                product.organization,
                 update_schema.prices,
                 product.recurring_interval,
                 product,
@@ -492,6 +494,7 @@ class ProductService:
     async def get_validated_prices(
         self,
         session: AsyncSession,
+        organization: Organization,
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
@@ -623,6 +626,20 @@ class ProductService:
                     "msg": (
                         "All price currencies must define the same set of price types."
                     ),
+                    "input": prices_schema,
+                }
+            )
+
+        # Check that the default presentment currency is present
+        if (
+            organization.default_presentment_currency
+            not in price_structure_per_currency
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": error_prefix,
+                    "msg": "The organization's default presentment currency must be present in the prices.",
                     "input": prices_schema,
                 }
             )

@@ -42,9 +42,9 @@ const ProductForm = ({
         <ProductMetadataForm />
       </Section>
 
-      <ProductCheckoutSection organization={organization} />
-
       <ProductCustomerPortalSection />
+
+      <ProductCheckoutSection organization={organization} />
     </div>
   )
 }

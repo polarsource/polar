@@ -24,7 +24,12 @@ export const ProductInfoSection = ({
   const { control } = useFormContext<ProductFormType>()
 
   return (
-    <Section className={className} compact={compact}>
+    <Section
+      title="Product"
+      description="Basic product information"
+      className={className}
+      compact={compact}
+    >
       <div className="flex w-full flex-col gap-y-6">
         <FormField
           control={control}
@@ -37,7 +42,7 @@ export const ProductInfoSection = ({
           render={({ field }) => (
             <FormItem>
               <div className="flex flex-row items-center justify-between">
-                <FormLabel>Product Name</FormLabel>
+                <FormLabel>Name</FormLabel>
               </div>
               <FormControl>
                 <Input {...field} value={field.value || ''} />

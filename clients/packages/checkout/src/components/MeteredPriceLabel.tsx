@@ -1,5 +1,5 @@
+import { formatUnitAmount } from '@polar-sh/currency'
 import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit.js'
-import { formatUnitAmount } from '../utils/money'
 
 interface MeteredPriceLabelProps {
   price: ProductPriceMeteredUnit

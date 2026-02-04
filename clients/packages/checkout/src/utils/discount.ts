@@ -1,8 +1,8 @@
+import { formatCurrency } from '@polar-sh/currency'
 import type { CheckoutDiscountFixedOnceForeverDuration } from '@polar-sh/sdk/models/components/checkoutdiscountfixedonceforeverduration'
 import type { CheckoutDiscountFixedRepeatDuration } from '@polar-sh/sdk/models/components/checkoutdiscountfixedrepeatduration'
 import type { CheckoutDiscountPercentageOnceForeverDuration } from '@polar-sh/sdk/models/components/checkoutdiscountpercentageonceforeverduration'
 import type { CheckoutDiscountPercentageRepeatDuration } from '@polar-sh/sdk/models/components/checkoutdiscountpercentagerepeatduration'
-import { formatCurrencyNumber } from './money'
 
 type CheckoutDiscount =
   | CheckoutDiscountPercentageOnceForeverDuration
@@ -36,7 +36,7 @@ export const getDiscountDisplay = (discount: CheckoutDiscount): string => {
     return percentageFormatter.format(-discount.basisPoints / 10000)
   }
   if (isDiscountFixed(discount)) {
-    return formatCurrencyNumber(-discount.amount, discount.currency, 0)
+    return formatCurrency(-discount.amount, discount.currency, 0)
   }
   throw new Error('Unknown discount type')
 }

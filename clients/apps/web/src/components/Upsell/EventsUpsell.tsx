@@ -1,8 +1,8 @@
 import { UpsellKey, useUpsell } from '@/hooks/upsell'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { formatCurrency } from '@polar-sh/currency'
 import AvatarWrapper from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { motion, useMotionValue, useMotionValueEvent } from 'framer-motion'
 import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
@@ -105,7 +105,7 @@ export const EventsUpsell = () => {
             <div className="flex flex-row items-center gap-x-4 font-mono text-xs">
               <span>Profit</span>
               <span className="dark:text-polar-500 text-gray-500">
-                {formatCurrencyAndAmount(profit, 'usd', 2, 'compact', 12)}
+                {formatCurrency(profit, 'usd', 2, 12)}
               </span>
             </div>
           </div>

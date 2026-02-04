@@ -1,6 +1,6 @@
 import { Box } from '@/components/Shared/Box'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import { Text } from '../Shared/Text'
 
@@ -36,7 +36,7 @@ const AmountLabel = ({
   return (
     <Box flexDirection="row" alignItems="baseline">
       <Text loading={loading} variant="bodySmall">
-        {formatCurrencyAndAmount(amount, currency, minimumFractionDigits)}
+        {formatCurrency(amount, currency, minimumFractionDigits)}
       </Text>
       <Text variant="captionSmall">{intervalDisplay}</Text>
     </Box>

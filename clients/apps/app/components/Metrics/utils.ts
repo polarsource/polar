@@ -1,5 +1,5 @@
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   differenceInDays,
   differenceInMonths,
@@ -23,7 +23,7 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return scalarFormatter.format(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd', 0)
+      return formatCurrency(value, 'usd', 0)
     case 'percentage':
       return percentageFormatter.format(value)
   }

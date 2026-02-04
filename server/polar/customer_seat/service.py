@@ -896,9 +896,11 @@ class SeatService:
                     customer_id, organization_id
                 )
             else:
-                customer = await customer_repository.get_by_external_id_and_organization(
-                    external_customer_id,  # type: ignore[arg-type]
-                    organization_id,
+                customer = (
+                    await customer_repository.get_by_external_id_and_organization(
+                        external_customer_id,  # type: ignore[arg-type]
+                        organization_id,
+                    )
                 )
             if customer is None:
                 raise InvalidSeatAssignmentRequest(

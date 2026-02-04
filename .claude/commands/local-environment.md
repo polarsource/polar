@@ -6,67 +6,42 @@ Manage the Polar local development environment using Docker.
 
 When the user invokes this command, help them manage their local development environment based on their request.
 
-### Step 1: Detect Instance (REQUIRED)
+**Instance auto-detection:** The `dev docker` command automatically detects the correct instance from `CONDUCTOR_PORT` or the workspace path. No manual `-i` flag is needed.
 
-**ALWAYS check `CONDUCTOR_PORT` first to determine the correct instance:**
-
-```bash
-echo $CONDUCTOR_PORT
-```
-
-- If `CONDUCTOR_PORT` is **not set**: Not running in Conductor, use instance 0 (default)
-- If `CONDUCTOR_PORT` is set: Calculate instance from the port
-
-**Instance calculation:**
-```bash
-INSTANCE=$((CONDUCTOR_PORT - 55090))
-```
-
-| CONDUCTOR_PORT | Instance | API Port | Web Port |
-|----------------|----------|----------|----------|
-| 55090 | 0 | 8000 | 3000 |
-| 55091 | 1 | 8100 | 3100 |
-| 55092 | 2 | 8200 | 3200 |
-| 55093 | 3 | 8300 | 3300 |
-
-**All subsequent commands must include `-i $INSTANCE`** to use the correct isolated environment.
-
-### Step 2: Quick Actions
-
-Replace `$INSTANCE` with the calculated value from Step 1:
+### Quick Actions
 
 | User Intent | Command |
 |-------------|---------|
-| Start environment | `./dev/docker-dev -i $INSTANCE -d` |
-| Stop environment | `./dev/docker-dev -i $INSTANCE down` |
-| View logs | `./dev/docker-dev -i $INSTANCE logs -f` |
-| Check status | `./dev/docker-dev -i $INSTANCE ps` |
-| Restart | `./dev/docker-dev -i $INSTANCE restart` |
-| Fresh start | `./dev/docker-dev -i $INSTANCE cleanup && ./dev/docker-dev -i $INSTANCE -d` |
+| Start environment | `dev docker up -d` |
+| Stop environment | `dev docker down` |
+| View logs | `dev docker logs` |
+| Check status | `dev docker ps` |
+| Restart | `dev docker restart` |
+| Fresh start | `dev docker cleanup -f && dev docker up -d` |
 
 ### Environment Check
 
 ```bash
-./dev/docker-dev -i $INSTANCE ps
+dev docker ps
 ```
 
 ### Viewing Logs
 
 ```bash
 # All services
-./dev/docker-dev -i $INSTANCE logs -f
+dev docker logs
 
 # Specific service
-./dev/docker-dev -i $INSTANCE logs -f api
-./dev/docker-dev -i $INSTANCE logs -f worker
-./dev/docker-dev -i $INSTANCE logs -f web
+dev docker logs api
+dev docker logs worker
+dev docker logs web
 ```
 
 ### Troubleshooting
 
 1. **Check logs:**
    ```bash
-   ./dev/docker-dev -i $INSTANCE logs api
+   dev docker logs api
    ```
 
 2. **Check Docker:**
@@ -76,18 +51,18 @@ Replace `$INSTANCE` with the calculated value from Step 1:
 
 3. **Try restart:**
    ```bash
-   ./dev/docker-dev -i $INSTANCE restart
+   dev docker restart
    ```
 
 4. **Nuclear option (loses data):**
    ```bash
-   ./dev/docker-dev -i $INSTANCE cleanup
-   ./dev/docker-dev -i $INSTANCE -d
+   dev docker cleanup -f
+   dev docker up -d
    ```
 
 ### Service URLs
 
-Port = Base Port + (Instance × 100)
+The CLI prints service URLs on startup. Ports are offset by instance × 100.
 
 | Service | Instance 0 | Instance 1 | Instance 2 |
 |---------|------------|------------|------------|
@@ -99,39 +74,39 @@ Port = Base Port + (Instance × 100)
 ### Shell Access
 
 ```bash
-./dev/docker-dev -i $INSTANCE shell api      # Python environment
-./dev/docker-dev -i $INSTANCE shell web      # Node environment
-./dev/docker-dev -i $INSTANCE shell db       # PostgreSQL
+dev docker shell api      # Python environment
+dev docker shell web      # Node environment
+dev docker shell db       # PostgreSQL
 ```
 
 ## Common Workflows
 
 ### Start Fresh Development Session
 ```bash
-./dev/docker-dev -i $INSTANCE -d
-./dev/docker-dev -i $INSTANCE logs -f api
+dev docker up -d
+dev docker logs api
 ```
 
 ### After Git Pull
 ```bash
-./dev/docker-dev -i $INSTANCE restart api worker
+dev docker restart api worker
 ```
 
 ### Run Backend Tests
 ```bash
-./dev/docker-dev -i $INSTANCE shell api
+dev docker shell api
 uv run task test
 ```
 
 ### Run Frontend Tests
 ```bash
-./dev/docker-dev -i $INSTANCE shell web
+dev docker shell web
 pnpm test
 ```
 
 ### Database Operations
 ```bash
-./dev/docker-dev -i $INSTANCE shell api
+dev docker shell api
 uv run alembic upgrade head     # Run migrations
 uv run alembic downgrade -1     # Rollback
 ```
@@ -139,5 +114,5 @@ uv run alembic downgrade -1     # Rollback
 ## Help
 
 ```bash
-./dev/docker-dev -h
+dev docker --help
 ```

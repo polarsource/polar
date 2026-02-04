@@ -129,7 +129,6 @@ export const productToCreateForm = (
         ...priceRest
       } = price
       return priceRest
-      /* eslint-enable @typescript-eslint/no-unused-vars */
     }),
     attached_custom_fields: product.attached_custom_fields.map((field) => ({
       custom_field_id: field.custom_field_id,

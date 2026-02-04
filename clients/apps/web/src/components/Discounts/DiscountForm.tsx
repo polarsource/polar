@@ -209,6 +209,7 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                     value={field.value || undefined}
                     placeholder={1000}
                     disabled={!canUpdateAmount}
+                    currency={organization.default_presentment_currency}
                   />
                 </FormControl>
                 {!canUpdateAmount && (

@@ -17,6 +17,8 @@ import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import ProductForm from './ProductForm/ProductForm'
 
+type PresentmentCurrency = schemas['PresentmentCurrency']
+
 export interface EditProductPageProps {
   organization: schemas['Organization']
   product: schemas['Product']
@@ -52,6 +54,9 @@ export const EditProductPage = ({
       ...product,
       medias: product.medias.map((media) => media.id),
       full_medias: product.medias,
+      prices: product.prices.map((price) => ({
+        ...price,
+      })),
       metadata: Object.entries(product.metadata).map(([key, value]) => ({
         key,
         value,

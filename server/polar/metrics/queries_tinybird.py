@@ -9,7 +9,6 @@ from polar.kit.time_queries import TimeInterval
 
 
 class TinybirdQuery(StrEnum):
-    balance_orders = "balance_orders"
     mrr = "mrr"
     events = "events"
 
@@ -42,7 +41,7 @@ def _build_event_filters(
     return filters
 
 
-def _build_balance_orders_sql(
+def _build_events_sql(
     *,
     organization_id: Sequence[UUID],
     start: datetime,
@@ -85,6 +84,12 @@ def _build_balance_orders_sql(
             "AND argMaxMerge(product_id) IN {product_ids:Array(String)}"
         )
 
+    customer_filter = ""
+    if customer_id is not None:
+        if "customer_ids" not in params:
+            params["customer_ids"] = [str(id) for id in customer_id]
+        customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
+
     sql = f"""
 WITH
     windows AS (
@@ -124,7 +129,22 @@ WITH
                 e.timestamp
             ) < toDateTime({{bounds_start:String}}, {{tz:String}})
     ),
-    daily AS (
+    sub_created_daily AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(timestamp, {{tz:String}})) AS day,
+            count(DISTINCT subscription_id) AS new_subscriptions
+        FROM events_by_timestamp
+        WHERE source = 'system'
+            AND name = 'subscription.created'
+            AND organization_id IN {{org_ids:Array(String)}}
+            -- TODO: investigate whether this should use bounds_start/bounds_end
+            -- like the balance order data, instead of the full window range.
+            -- Currently matches Postgres behavior which uses the window range.
+            AND timestamp >= toDateTime({{start_dt:String}}, {{tz:String}})
+            AND timestamp <= toDateTime({{end_dt:String}}, {{tz:String}})
+        GROUP BY day
+    ),
+    daily_balance AS (
         SELECT
             date_trunc({{iv:String}}, toDateTime(COALESCE(
                 JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
@@ -212,44 +232,83 @@ WITH
             ) <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     ),
-    sub_created_daily AS (
+    daily_events AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(timestamp, {{tz:String}})) AS day,
-            count(DISTINCT subscription_id) AS new_subscriptions
-        FROM events_by_timestamp
-        WHERE source = 'system'
-            AND name = 'subscription.created'
-            AND organization_id IN {{org_ids:Array(String)}}
-            -- TODO: investigate whether this should use bounds_start/bounds_end
-            -- like the balance order data, instead of the full window range.
-            -- Currently matches Postgres behavior which uses the window range.
-            AND timestamp >= toDateTime({{start_dt:String}}, {{tz:String}})
-            AND timestamp <= toDateTime({{end_dt:String}}, {{tz:String}})
+            date_trunc({{iv:String}}, toDateTime(e.timestamp, {{tz:String}})) AS day,
+            COALESCE(sum(
+                JSONExtract(e.user_metadata, '_cost', 'amount', 'Float64')
+            ), 0) AS costs,
+            countDistinct(e.customer_id) + countDistinct(e.external_customer_id) AS active_user_by_event
+        FROM events_by_timestamp e
+        WHERE e.organization_id IN {{org_ids:Array(String)}}
+            AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
+            {customer_filter}
+        GROUP BY day
+    ),
+    canceled AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(e.canceled_at, {{tz:String}})) AS day,
+            count(*) AS canceled_subscriptions,
+            countIf(e.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
+            countIf(e.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
+            countIf(e.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
+            countIf(e.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
+            countIf(e.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
+            countIf(e.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
+            countIf(e.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
+            countIf(e.customer_cancellation_reason = 'other' OR e.customer_cancellation_reason IS NULL OR e.customer_cancellation_reason = '') AS canceled_subscriptions_other
+        FROM events_by_timestamp e
+        WHERE e.source = 'system'
+            AND e.name = 'subscription.canceled'
+            AND e.organization_id IN {{org_ids:Array(String)}}
+            AND e.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND e.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
+            {customer_filter}
         GROUP BY day
     )
 SELECT
     w.window_start AS timestamp,
-    COALESCE(d.orders, 0) AS orders,
-    COALESCE(d.revenue, 0) AS revenue,
-    COALESCE(d.net_revenue, 0) AS net_revenue,
-    COALESCE(sum(d.revenue) OVER (ORDER BY w.window_start), 0)
+    COALESCE(db.orders, 0) AS orders,
+    COALESCE(db.revenue, 0) AS revenue,
+    COALESCE(db.net_revenue, 0) AS net_revenue,
+    COALESCE(sum(db.revenue) OVER (ORDER BY w.window_start), 0)
         + b.hist_revenue AS cumulative_revenue,
-    COALESCE(sum(d.net_revenue) OVER (ORDER BY w.window_start), 0)
+    COALESCE(sum(db.net_revenue) OVER (ORDER BY w.window_start), 0)
         + b.hist_net_revenue AS net_cumulative_revenue,
-    COALESCE(d.average_order_value, 0) AS average_order_value,
-    COALESCE(d.net_average_order_value, 0) AS net_average_order_value,
-    COALESCE(d.one_time_products, 0) AS one_time_products,
-    COALESCE(d.one_time_products_revenue, 0) AS one_time_products_revenue,
-    COALESCE(d.one_time_products_net_revenue, 0) AS one_time_products_net_revenue,
+    COALESCE(db.average_order_value, 0) AS average_order_value,
+    COALESCE(db.net_average_order_value, 0) AS net_average_order_value,
+    COALESCE(db.one_time_products, 0) AS one_time_products,
+    COALESCE(db.one_time_products_revenue, 0) AS one_time_products_revenue,
+    COALESCE(db.one_time_products_net_revenue, 0) AS one_time_products_net_revenue,
     COALESCE(sc.new_subscriptions, 0) AS new_subscriptions,
-    COALESCE(d.new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
-    COALESCE(d.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,
-    COALESCE(d.renewed_subscriptions, 0) AS renewed_subscriptions,
-    COALESCE(d.renewed_subscriptions_revenue, 0) AS renewed_subscriptions_revenue,
-    COALESCE(d.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue
+    COALESCE(db.new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
+    COALESCE(db.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,
+    COALESCE(db.renewed_subscriptions, 0) AS renewed_subscriptions,
+    COALESCE(db.renewed_subscriptions_revenue, 0) AS renewed_subscriptions_revenue,
+    COALESCE(db.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue,
+    COALESCE(de.costs, 0) AS costs,
+    COALESCE(sum(de.costs) OVER (ORDER BY w.window_start), 0) AS cumulative_costs,
+    COALESCE(de.active_user_by_event, 0) AS active_user_by_event,
+    CASE
+        WHEN COALESCE(de.active_user_by_event, 0) > 0
+        THEN de.costs / de.active_user_by_event
+        ELSE 0
+    END AS cost_per_user,
+    COALESCE(c.canceled_subscriptions, 0) AS canceled_subscriptions,
+    COALESCE(c.canceled_subscriptions_customer_service, 0) AS canceled_subscriptions_customer_service,
+    COALESCE(c.canceled_subscriptions_low_quality, 0) AS canceled_subscriptions_low_quality,
+    COALESCE(c.canceled_subscriptions_missing_features, 0) AS canceled_subscriptions_missing_features,
+    COALESCE(c.canceled_subscriptions_switched_service, 0) AS canceled_subscriptions_switched_service,
+    COALESCE(c.canceled_subscriptions_too_complex, 0) AS canceled_subscriptions_too_complex,
+    COALESCE(c.canceled_subscriptions_too_expensive, 0) AS canceled_subscriptions_too_expensive,
+    COALESCE(c.canceled_subscriptions_unused, 0) AS canceled_subscriptions_unused,
+    COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
 FROM windows w
-LEFT JOIN daily d ON d.day = w.window_start
+LEFT JOIN daily_balance db ON db.day = w.window_start
+LEFT JOIN daily_events de ON de.day = w.window_start
 LEFT JOIN sub_created_daily sc ON sc.day = w.window_start
+LEFT JOIN canceled c ON c.day = w.window_start
 CROSS JOIN baseline b
 ORDER BY w.window_start
 """
@@ -422,136 +481,7 @@ ORDER BY w.window_start
     return sql, params
 
 
-def _build_events_metrics_sql(
-    *,
-    organization_id: Sequence[UUID],
-    start: datetime,
-    end: datetime,
-    interval: TimeInterval,
-    timezone: str,
-    bounds_start: datetime | None = None,
-    bounds_end: datetime | None = None,
-    customer_id: Sequence[UUID] | None = None,
-) -> tuple[str, dict[str, Any]]:
-    iv = interval.value
-    b_start = bounds_start or start
-    b_end = bounds_end or end
-    params: dict[str, Any] = {
-        "iv": iv,
-        "org_ids": [str(id) for id in organization_id],
-        "start_dt": _format_dt(start),
-        "end_dt": _format_dt(end),
-        "bounds_start": _format_dt(b_start),
-        "bounds_end": _format_dt(b_end),
-        "tz": timezone,
-    }
-
-    customer_filter = ""
-    if customer_id is not None:
-        params["customer_ids"] = [str(id) for id in customer_id]
-        customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
-
-    sql = f"""
-WITH
-    windows AS (
-        SELECT date_trunc({{iv:String}},
-            dateAdd({iv}, number, toDateTime({{start_dt:String}}, {{tz:String}}))
-        ) AS window_start
-        FROM numbers(
-            dateDiff({{iv:String}},
-                toDateTime({{start_dt:String}}, {{tz:String}}),
-                toDateTime({{end_dt:String}}, {{tz:String}})
-            ) + 1
-        )
-    ),
-    daily AS (
-        SELECT
-            date_trunc({{iv:String}}, toDateTime(e.timestamp, {{tz:String}})) AS day,
-            COALESCE(sum(
-                JSONExtract(e.user_metadata, '_cost', 'amount', 'Float64')
-            ), 0) AS costs,
-            countDistinct(e.customer_id) + countDistinct(e.external_customer_id) AS active_user_by_event
-        FROM events_by_timestamp e
-        WHERE e.organization_id IN {{org_ids:Array(String)}}
-            AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
-            AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
-            {customer_filter}
-        GROUP BY day
-    ),
-    canceled AS (
-        SELECT
-            date_trunc({{iv:String}}, toDateTime(e.canceled_at, {{tz:String}})) AS day,
-            count(*) AS canceled_subscriptions,
-            countIf(e.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
-            countIf(e.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
-            countIf(e.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
-            countIf(e.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
-            countIf(e.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
-            countIf(e.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
-            countIf(e.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
-            countIf(e.customer_cancellation_reason = 'other' OR e.customer_cancellation_reason IS NULL OR e.customer_cancellation_reason = '') AS canceled_subscriptions_other
-        FROM events_by_timestamp e
-        WHERE e.source = 'system'
-            AND e.name = 'subscription.canceled'
-            AND e.organization_id IN {{org_ids:Array(String)}}
-            AND e.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
-            AND e.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
-            {customer_filter}
-        GROUP BY day
-    )
-SELECT
-    w.window_start AS timestamp,
-    COALESCE(d.costs, 0) AS costs,
-    COALESCE(sum(d.costs) OVER (ORDER BY w.window_start), 0) AS cumulative_costs,
-    COALESCE(d.active_user_by_event, 0) AS active_user_by_event,
-    CASE
-        WHEN COALESCE(d.active_user_by_event, 0) > 0
-        THEN d.costs / d.active_user_by_event
-        ELSE 0
-    END AS cost_per_user,
-    COALESCE(c.canceled_subscriptions, 0) AS canceled_subscriptions,
-    COALESCE(c.canceled_subscriptions_customer_service, 0) AS canceled_subscriptions_customer_service,
-    COALESCE(c.canceled_subscriptions_low_quality, 0) AS canceled_subscriptions_low_quality,
-    COALESCE(c.canceled_subscriptions_missing_features, 0) AS canceled_subscriptions_missing_features,
-    COALESCE(c.canceled_subscriptions_switched_service, 0) AS canceled_subscriptions_switched_service,
-    COALESCE(c.canceled_subscriptions_too_complex, 0) AS canceled_subscriptions_too_complex,
-    COALESCE(c.canceled_subscriptions_too_expensive, 0) AS canceled_subscriptions_too_expensive,
-    COALESCE(c.canceled_subscriptions_unused, 0) AS canceled_subscriptions_unused,
-    COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
-FROM windows w
-LEFT JOIN daily d ON d.day = w.window_start
-LEFT JOIN canceled c ON c.day = w.window_start
-ORDER BY w.window_start
-"""
-
-    return sql, params
-
-
 async def query_events_metrics(
-    *,
-    organization_id: Sequence[UUID],
-    start: datetime,
-    end: datetime,
-    interval: TimeInterval,
-    timezone: str,
-    bounds_start: datetime | None = None,
-    bounds_end: datetime | None = None,
-    customer_id: Sequence[UUID] | None = None,
-) -> list[dict[str, Any]]:
-    sql, params = _build_events_metrics_sql(
-        organization_id=organization_id,
-        start=start,
-        end=end,
-        interval=interval,
-        timezone=timezone,
-        bounds_start=bounds_start,
-        bounds_end=bounds_end,
-        customer_id=customer_id,
-    )
-    return await tinybird_client.query(sql, parameters=params, db_statement=sql)
-
-
-async def query_balance_order_metrics(
     *,
     organization_id: Sequence[UUID],
     start: datetime,
@@ -564,7 +494,7 @@ async def query_balance_order_metrics(
     customer_id: Sequence[UUID] | None = None,
     billing_type: Sequence[str] | None = None,
 ) -> list[dict[str, Any]]:
-    sql, params = _build_balance_orders_sql(
+    sql, params = _build_events_sql(
         organization_id=organization_id,
         start=start,
         end=end,

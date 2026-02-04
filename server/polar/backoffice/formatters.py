@@ -1,8 +1,7 @@
 from datetime import datetime as dt
 from decimal import Decimal
 
-from babel.numbers import format_currency
-
+from polar.kit.currency import format_currency
 from polar.tax.tax_id import TaxID
 
 
@@ -13,12 +12,7 @@ def datetime(value: dt) -> str:
 def currency(
     value: int | Decimal | float, currency: str, *, decimal_quantization: bool = True
 ) -> str:
-    return format_currency(
-        value / 100,
-        currency.upper(),
-        locale="en_US",
-        decimal_quantization=decimal_quantization,
-    )
+    return format_currency(value, currency, decimal_quantization=decimal_quantization)
 
 
 def tax_id(value: TaxID) -> str:

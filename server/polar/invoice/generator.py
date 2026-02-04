@@ -1,3 +1,4 @@
+import textwrap
 from datetime import date, datetime
 from pathlib import Path
 from typing import ClassVar, Self
@@ -400,7 +401,7 @@ class InvoiceGenerator(FPDF):
             # Body
             for item in self.data.items:
                 row = table.row()
-                row.cell(item.description)
+                row.cell(textwrap.shorten(item.description, width=90, placeholder="…"))
                 row.cell(format_number(item.quantity))
                 row.cell(format_currency(item.unit_amount, self.data.currency))
                 row.cell(format_currency(item.amount, self.data.currency))

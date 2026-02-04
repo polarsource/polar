@@ -9,11 +9,11 @@ import {
 import { canRetryOrderPayment } from '@/utils/order'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import React, { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
@@ -186,9 +186,7 @@ const CustomerPortalOrder = ({
                     key={item.id}
                     label={item.label}
                     value={
-                      <span>
-                        {formatCurrencyAndAmount(item.amount, order.currency)}
-                      </span>
+                      <span>{formatCurrency(item.amount, order.currency)}</span>
                     }
                     valueClassName="justify-end"
                   />
@@ -202,10 +200,7 @@ const CustomerPortalOrder = ({
               label="Subtotal"
               value={
                 <span>
-                  {formatCurrencyAndAmount(
-                    order.subtotal_amount,
-                    order.currency,
-                  )}
+                  {formatCurrency(order.subtotal_amount, order.currency)}
                 </span>
               }
               valueClassName="justify-end"
@@ -215,10 +210,7 @@ const CustomerPortalOrder = ({
               value={
                 <span>
                   {order.discount_amount
-                    ? formatCurrencyAndAmount(
-                        -order.discount_amount,
-                        order.currency,
-                      )
+                    ? formatCurrency(-order.discount_amount, order.currency)
                     : '—'}
                 </span>
               }
@@ -227,18 +219,14 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Net amount"
               value={
-                <span>
-                  {formatCurrencyAndAmount(order.net_amount, order.currency)}
-                </span>
+                <span>{formatCurrency(order.net_amount, order.currency)}</span>
               }
               valueClassName="justify-end"
             />
             <DetailRow
               label="Tax"
               value={
-                <span>
-                  {formatCurrencyAndAmount(order.tax_amount, order.currency)}
-                </span>
+                <span>{formatCurrency(order.tax_amount, order.currency)}</span>
               }
               valueClassName="justify-end"
             />
@@ -246,7 +234,7 @@ const CustomerPortalOrder = ({
               label="Total"
               value={
                 <span>
-                  {formatCurrencyAndAmount(order.total_amount, order.currency)}
+                  {formatCurrency(order.total_amount, order.currency)}
                 </span>
               }
               valueClassName="justify-end"
@@ -257,7 +245,7 @@ const CustomerPortalOrder = ({
                   label="Applied balance"
                   value={
                     <span>
-                      {formatCurrencyAndAmount(
+                      {formatCurrency(
                         order.applied_balance_amount,
                         order.currency,
                       )}
@@ -269,10 +257,7 @@ const CustomerPortalOrder = ({
                   label="To be paid"
                   value={
                     <span>
-                      {formatCurrencyAndAmount(
-                        order.due_amount,
-                        order.currency,
-                      )}
+                      {formatCurrency(order.due_amount, order.currency)}
                     </span>
                   }
                   valueClassName="justify-end"
@@ -285,10 +270,7 @@ const CustomerPortalOrder = ({
                 label="Refunded amount"
                 value={
                   <span>
-                    {formatCurrencyAndAmount(
-                      order.refunded_amount,
-                      order.currency,
-                    )}
+                    {formatCurrency(order.refunded_amount, order.currency)}
                   </span>
                 }
                 valueClassName="justify-end"

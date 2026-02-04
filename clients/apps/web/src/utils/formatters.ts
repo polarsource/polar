@@ -1,3 +1,5 @@
+import { getCurrencyDecimalFactor } from '@polar-sh/currency'
+
 const stripTrailingZeros = (value: string): string => {
   return value.replace(/\.0+([^0-9]*)$/g, '$1')
 }
@@ -34,17 +36,21 @@ export const formatPercentage = (() => {
 export const formatCurrency = (() => {
   const currencyFormatterCache: { [key: string]: Intl.NumberFormat } = {}
   return (value: number, currency: string): string => {
-    if (!currencyFormatterCache[currency]) {
-      currencyFormatterCache[currency] = new Intl.NumberFormat('en-US', {
+    const lowerCurrency = currency.toLowerCase()
+    if (!currencyFormatterCache[lowerCurrency]) {
+      const decimalFactor = getCurrencyDecimalFactor(lowerCurrency)
+      const fractionDigits = decimalFactor === 1 ? 0 : 2
+      currencyFormatterCache[lowerCurrency] = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency,
         currencyDisplay: 'narrowSymbol',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
       })
     }
+    const decimalFactor = getCurrencyDecimalFactor(lowerCurrency)
     return stripTrailingZeros(
-      currencyFormatterCache[currency].format(value / 100),
+      currencyFormatterCache[lowerCurrency].format(value / decimalFactor),
     )
   }
 })()
@@ -57,28 +63,40 @@ export const formatHumanFriendlyCurrency = (() => {
   const threshold = 1_000
 
   return (value: number, currency: string): string => {
-    if (!smallNumberFormatterCache[currency]) {
-      smallNumberFormatterCache[currency] = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
+    const lowerCurrency = currency.toLowerCase()
+    const decimalFactor = getCurrencyDecimalFactor(lowerCurrency)
+    const fractionDigits = decimalFactor === 1 ? 0 : 2
+
+    if (!smallNumberFormatterCache[lowerCurrency]) {
+      smallNumberFormatterCache[lowerCurrency] = new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
+        },
+      )
     }
-    if (!largeNumberFormatterCache[currency]) {
-      largeNumberFormatterCache[currency] = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-        notation: 'compact',
-        compactDisplay: 'short',
-      })
+    if (!largeNumberFormatterCache[lowerCurrency]) {
+      largeNumberFormatterCache[lowerCurrency] = new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+          notation: 'compact',
+          compactDisplay: 'short',
+        },
+      )
     }
     return stripTrailingZeros(
-      value > threshold * 1000
-        ? largeNumberFormatterCache[currency].format(value / 100)
-        : smallNumberFormatterCache[currency].format(value / 100),
+      value > threshold * decimalFactor
+        ? largeNumberFormatterCache[lowerCurrency].format(value / decimalFactor)
+        : smallNumberFormatterCache[lowerCurrency].format(
+            value / decimalFactor,
+          ),
     )
   }
 })()
@@ -91,28 +109,40 @@ export const formatAccountingFriendlyCurrency = (() => {
   const threshold = 10_000
 
   return (value: number, currency: string): string => {
-    if (!smallNumberFormatterCache[currency]) {
-      smallNumberFormatterCache[currency] = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
+    const lowerCurrency = currency.toLowerCase()
+    const decimalFactor = getCurrencyDecimalFactor(lowerCurrency)
+    const fractionDigits = decimalFactor === 1 ? 0 : 2
+
+    if (!smallNumberFormatterCache[lowerCurrency]) {
+      smallNumberFormatterCache[lowerCurrency] = new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: fractionDigits,
+          maximumFractionDigits: fractionDigits,
+        },
+      )
     }
-    if (!largeNumberFormatterCache[currency]) {
-      largeNumberFormatterCache[currency] = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 3,
-        notation: 'compact',
-        compactDisplay: 'short',
-      })
+    if (!largeNumberFormatterCache[lowerCurrency]) {
+      largeNumberFormatterCache[lowerCurrency] = new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: currency,
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3,
+          notation: 'compact',
+          compactDisplay: 'short',
+        },
+      )
     }
     return stripTrailingZeros(
-      value > threshold * 1000
-        ? largeNumberFormatterCache[currency].format(value / 100)
-        : smallNumberFormatterCache[currency].format(value / 100),
+      value > threshold * decimalFactor
+        ? largeNumberFormatterCache[lowerCurrency].format(value / decimalFactor)
+        : smallNumberFormatterCache[lowerCurrency].format(
+            value / decimalFactor,
+          ),
     )
   }
 })()
@@ -120,16 +150,20 @@ export const formatAccountingFriendlyCurrency = (() => {
 export const formatSubCentCurrency = (() => {
   const currencyFormatterCache: { [key: string]: Intl.NumberFormat } = {}
   return (value: number, currency: string): string => {
-    if (!currencyFormatterCache[currency]) {
-      currencyFormatterCache[currency] = new Intl.NumberFormat('en-US', {
+    const lowerCurrency = currency.toLowerCase()
+    const decimalFactor = getCurrencyDecimalFactor(lowerCurrency)
+    const fractionDigits = decimalFactor === 1 ? 0 : 4
+
+    if (!currencyFormatterCache[lowerCurrency]) {
+      currencyFormatterCache[lowerCurrency] = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency,
-        minimumFractionDigits: 4,
-        maximumFractionDigits: 4,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
       })
     }
     return stripTrailingZeros(
-      currencyFormatterCache[currency].format(value / 100),
+      currencyFormatterCache[lowerCurrency].format(value / decimalFactor),
     )
   }
 })()

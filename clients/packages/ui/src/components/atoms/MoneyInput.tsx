@@ -1,9 +1,10 @@
-import { DollarSign } from 'lucide-react'
+import { getCurrencyDecimalFactor } from '@polar-sh/currency'
 import {
   ChangeEvent,
   FocusEvent,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -12,6 +13,7 @@ import Input from './Input'
 interface Props {
   name: string
   placeholder: number
+  currency: string
   id?: string
   onChange?: (value: number | null) => void
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
@@ -24,29 +26,13 @@ interface Props {
   step?: number
 }
 
-const getCents = (value: string): number => {
-  let newAmount = Number.parseFloat(value)
-  if (isNaN(newAmount)) {
-    newAmount = 0
-  }
-  // Round to avoid floating point errors
-  return Math.round(newAmount * 100)
-}
-
-const getInternalValue = (
-  value: number | null | undefined,
-): string | undefined => {
-  return value !== undefined && value !== null
-    ? (value / 100).toFixed(2)
-    : undefined
-}
-
 const MoneyInput = (props: Props) => {
   let {
     id,
     name,
     value,
     placeholder,
+    currency,
     preSlot,
     postSlot,
     onChange: _onChange,
@@ -55,6 +41,41 @@ const MoneyInput = (props: Props) => {
     disabled,
     step = 0.1,
   } = props
+
+  const decimalFactor = useMemo(
+    () => getCurrencyDecimalFactor(currency),
+    [currency],
+  )
+  const isNonDecimalCurrency = decimalFactor === 1
+
+  const getInternalValue = useCallback(
+    (value: number | null | undefined): string | undefined => {
+      if (value === undefined || value === null) {
+        return undefined
+      }
+      if (isNonDecimalCurrency) {
+        return value.toString()
+      }
+      return (value / decimalFactor).toFixed(2)
+    },
+    [decimalFactor, isNonDecimalCurrency],
+  )
+
+  const getUnits = useCallback(
+    (value: string): number => {
+      let newAmount = Number.parseFloat(value)
+      if (isNaN(newAmount)) {
+        newAmount = 0
+      }
+      if (isNonDecimalCurrency) {
+        return Math.round(newAmount)
+      }
+      // Round to avoid floating point errors
+      return Math.round(newAmount * decimalFactor)
+    },
+    [decimalFactor, isNonDecimalCurrency],
+  )
+
   const [previousValue, setPreviousValue] = useState<number | null | undefined>(
     value,
   )
@@ -67,7 +88,7 @@ const MoneyInput = (props: Props) => {
       setPreviousValue(value)
       setInternalValue(getInternalValue(value))
     }
-  }, [value, previousValue])
+  }, [value, previousValue, getInternalValue])
 
   const updateValue = useCallback(
     (newValue: string) => {
@@ -76,15 +97,15 @@ const MoneyInput = (props: Props) => {
           setPreviousValue(null)
           _onChange(null)
         } else {
-          const centsValue = getCents(newValue)
-          setPreviousValue(centsValue)
-          _onChange(centsValue)
+          const unitsValue = getUnits(newValue)
+          setPreviousValue(unitsValue)
+          _onChange(unitsValue)
         }
       }
 
       setInternalValue(newValue)
     },
-    [_onChange],
+    [_onChange, getUnits],
   )
 
   const onChange = useCallback(
@@ -94,6 +115,13 @@ const MoneyInput = (props: Props) => {
       // If input is completely empty, allow clearing the field
       if (input === '') {
         updateValue('')
+        return
+      }
+
+      // For non-decimal currencies, only allow whole numbers
+      if (isNonDecimalCurrency) {
+        const cleaned = input.replace(/[^0-9]/g, '')
+        updateValue(cleaned)
         return
       }
 
@@ -144,7 +172,7 @@ const MoneyInput = (props: Props) => {
 
       updateValue(newValue)
     },
-    [updateValue],
+    [updateValue, isNonDecimalCurrency],
   )
 
   const onBlur = useCallback(
@@ -152,14 +180,16 @@ const MoneyInput = (props: Props) => {
       if (internalValue) {
         let nextValue = internalValue
 
-        // Add 0 as integer part if value starts with `.`
-        if (nextValue.startsWith('.')) {
-          nextValue = `0${nextValue}`
-        }
+        if (!isNonDecimalCurrency) {
+          // Add 0 as integer part if value starts with `.`
+          if (nextValue.startsWith('.')) {
+            nextValue = `0${nextValue}`
+          }
 
-        // Strip trailing decimal point
-        if (nextValue.endsWith('.')) {
-          nextValue = nextValue.replace(/\.$/, '')
+          // Strip trailing decimal point
+          if (nextValue.endsWith('.')) {
+            nextValue = nextValue.replace(/\.$/, '')
+          }
         }
 
         if (nextValue !== internalValue) {
@@ -171,11 +201,26 @@ const MoneyInput = (props: Props) => {
         _onBlur(e)
       }
     },
-    [_onBlur, internalValue, updateValue],
+    [_onBlur, internalValue, updateValue, isNonDecimalCurrency],
   )
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // For non-decimal currencies, only allow digits and control keys
+      if (isNonDecimalCurrency) {
+        if (
+          !/[0-9]/.test(e.key) &&
+          !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(
+            e.key,
+          ) &&
+          !e.ctrlKey &&
+          !e.metaKey
+        ) {
+          e.preventDefault()
+        }
+        return
+      }
+
       // Allow only digits, decimal point, and control keys
       if (
         !/[0-9.,]/.test(e.key) &&
@@ -218,28 +263,38 @@ const MoneyInput = (props: Props) => {
         e.preventDefault()
       }
     },
-    [step, updateValue],
+    [step, updateValue, isNonDecimalCurrency],
   )
+
+  const currencyLabel = (
+    <span className="dark:text-polar-500 text-sm font-medium text-gray-500">
+      {currency.toUpperCase()}
+    </span>
+  )
+
+  const placeholderValue = useMemo(() => {
+    if (!placeholder) return undefined
+    if (isNonDecimalCurrency) {
+      return placeholder.toLocaleString('en-US')
+    }
+    return (placeholder / decimalFactor).toLocaleString('en-US')
+  }, [placeholder, decimalFactor, isNonDecimalCurrency])
 
   return (
     <Input
       type="text"
-      inputMode="decimal"
+      inputMode={isNonDecimalCurrency ? 'numeric' : 'decimal'}
       id={id}
       name={name}
       className={twMerge(
-        'dark:placeholder:text-polar-500 block w-full px-4 pl-8 text-base font-normal placeholder:text-gray-400',
+        'dark:placeholder:text-polar-500 block w-full px-4 pl-14 text-base font-normal placeholder:text-gray-400',
         props.className ?? '',
       )}
       value={internalValue}
       onChange={onChange}
       onKeyDown={onKeyDown}
-      placeholder={
-        placeholder
-          ? `${(placeholder / 100).toLocaleString('en-US')}`
-          : undefined
-      }
-      preSlot={preSlot ? preSlot : <DollarSign className="h-4 w-4" />}
+      placeholder={placeholderValue}
+      preSlot={preSlot ? preSlot : currencyLabel}
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}

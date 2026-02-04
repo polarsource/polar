@@ -2,6 +2,7 @@ import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -9,7 +10,6 @@ import {
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -62,7 +62,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0 pb-3">
         <h3 className="min-w-0 truncate">{order.description}</h3>
         <span className="">
-          {formatCurrencyAndAmount(order.net_amount, order.currency, 0)}
+          {formatCurrency(order.net_amount, order.currency, 0)}
         </span>
       </CardContent>
     </Card>

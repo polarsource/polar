@@ -69,6 +69,9 @@ importers:
       '@polar-sh/client':
         specifier: workspace:*
         version: link:../../packages/client
+      '@polar-sh/currency':
+        specifier: workspace:^
+        version: link:../../packages/currency
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.1.0(typescript@5.9.3))(@types/react@19.2.3)(react@19.1.0))
@@ -328,6 +331,9 @@ importers:
       '@polar-sh/client':
         specifier: workspace:*
         version: link:../../packages/client
+      '@polar-sh/currency':
+        specifier: workspace:^
+        version: link:../../packages/currency
       '@polar-sh/customer-portal':
         specifier: workspace:*
         version: link:../../packages/customer-portal
@@ -623,6 +629,9 @@ importers:
 
   packages/checkout:
     dependencies:
+      '@polar-sh/currency':
+        specifier: workspace:^
+        version: link:../currency
       '@polar-sh/sdk':
         specifier: ^0.42.5
         version: 0.42.5
@@ -682,6 +691,18 @@ importers:
       openapi-typescript:
         specifier: ^7.10.1
         version: 7.10.1(patch_hash=d5d81a1091dd25eaff66014508c84e42c721bcbe3f7693dcf58aa2c28132735b)(typescript@5.9.3)
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: latest
+        version: 5.9.3
+
+  packages/currency:
+    devDependencies:
+      '@polar-sh/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       tsup:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
@@ -787,6 +808,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@polar-sh/currency':
+        specifier: workspace:^
+        version: link:../currency
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.3))(@types/react@19.2.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

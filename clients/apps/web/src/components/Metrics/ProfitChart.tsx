@@ -5,6 +5,7 @@ import {
   getTimestampFormatter,
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   CartesianGrid,
@@ -15,7 +16,6 @@ import {
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useTheme } from 'next-themes'
 import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -63,7 +63,7 @@ const ProfitChart = forwardRef<HTMLDivElement, ProfitChartProps>(
           <div className="flex flex-col gap-y-4">
             <h3 className="text-xl">Profit</h3>
             <h3 className="text-5xl font-light">
-              {formatCurrencyAndAmount(
+              {formatCurrency(
                 data
                   ? (data.totals.revenue ?? 0) - (data.totals.costs ?? 0)
                   : 0,

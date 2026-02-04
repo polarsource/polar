@@ -35,7 +35,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -295,7 +294,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
                   <div key={wallet.id}>
-                    {formatCurrencyAndAmount(wallet.balance, wallet.currency)}
+                    {formatCurrency(wallet.balance, wallet.currency)}
                   </div>
                 ))
               : '—'}

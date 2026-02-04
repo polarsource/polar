@@ -1,5 +1,6 @@
 import { useCreateRefund } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -18,7 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useForm } from 'react-hook-form'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
 import { toast } from '../Toast/use-toast'
@@ -66,7 +66,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
       if (data) {
         toast({
           title: 'Refund Created',
-          description: `Refund for ${formatCurrencyAndAmount(
+          description: `Refund for ${formatCurrency(
             data.amount,
             data.currency,
           )} created successfully`,
@@ -101,7 +101,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                 },
                 max: {
                   value: maximumRefundAmount,
-                  message: `Amount must be less or equal to ${formatCurrencyAndAmount(
+                  message: `Amount must be less or equal to ${formatCurrency(
                     maximumRefundAmount,
                     order.currency,
                   )}`,
@@ -111,7 +111,11 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <MoneyInput placeholder={0} {...field} />
+                    <MoneyInput
+                      placeholder={0}
+                      currency={order.currency}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

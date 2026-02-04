@@ -1,7 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { Payout } from '@/hooks/polar/finance'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { Link } from 'expo-router'
 import React from 'react'
 import { StyleProp, TextStyle } from 'react-native'
@@ -44,7 +44,7 @@ export const PayoutRow = ({ payout, style }: PayoutRowProps) => {
         <Box flex={1} flexDirection="column" gap="spacing-4">
           <Box flexDirection="row" justifyContent="space-between">
             <Text variant="bodyMedium">
-              {formatCurrencyAndAmount(payout.amount, payout.currency)}
+              {formatCurrency(payout.amount, payout.currency)}
             </Text>
             <Pill color={statusColors[payout.status]}>
               {payout.status.split('_').join(' ')}

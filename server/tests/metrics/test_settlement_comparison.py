@@ -225,6 +225,7 @@ SETTLEMENT_METRIC_SLUGS = [
     "canceled_subscriptions_too_expensive",
     "canceled_subscriptions_unused",
     "canceled_subscriptions_other",
+    "churned_subscriptions",
 ]
 
 
@@ -544,6 +545,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 0,
         "canceled_subscriptions_unused": 1,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
     },
     {  # Feb — C1 still active (ends Mar 1), C8 ended (ends Feb 1)
         "orders": 3,
@@ -575,6 +577,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 1,
         "canceled_subscriptions_unused": 0,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
     },
     {  # Mar — C1 ended (ends Mar 1)
         "orders": 3,
@@ -606,6 +609,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 0,
         "canceled_subscriptions_unused": 0,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
     },
     {  # Apr — C5 still active (ends May 1)
         "orders": 5,
@@ -637,6 +641,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 0,
         "canceled_subscriptions_unused": 0,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
     },
     {  # May — C5 ended (ends May 1)
         "orders": 3,
@@ -668,6 +673,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 0,
         "canceled_subscriptions_unused": 0,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
     },
     {  # Jun — C9 yearly joins
         "orders": 4,
@@ -699,6 +705,7 @@ EXPECTED_MONTHLY: list[dict[str, int]] = [
         "canceled_subscriptions_too_expensive": 0,
         "canceled_subscriptions_unused": 0,
         "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
     },
 ]
 

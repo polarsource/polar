@@ -2089,6 +2089,73 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
+    async def test_seat_based_to_fixed_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=customer,
+            seats=2,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=fixed_product.id,
+            )
+
+    async def test_fixed_to_seat_based_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=fixed_product,
+            customer=customer,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=seat_product.id,
+            )
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:

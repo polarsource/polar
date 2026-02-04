@@ -10,21 +10,21 @@ tags: docker, stop, cleanup
 
 **Stop all services:**
 ```bash
-./dev/docker-dev down
+dev docker down
 ```
 
 This stops and removes containers but preserves data volumes.
 
 **Stop specific instance:**
 ```bash
-./dev/docker-dev -i 1 down
+dev docker down -i 1
 ```
 
 ## Complete Cleanup
 
 **Remove containers AND volumes (fresh start):**
 ```bash
-./dev/docker-dev cleanup
+dev docker cleanup
 ```
 
 **WARNING**: This deletes:
@@ -43,14 +43,14 @@ Use cleanup when:
 
 **Restart (keeps containers, faster):**
 ```bash
-./dev/docker-dev restart
-./dev/docker-dev restart api
+dev docker restart
+dev docker restart api
 ```
 
 **Stop/Start (recreates containers):**
 ```bash
-./dev/docker-dev down
-./dev/docker-dev -d
+dev docker down
+dev docker up -d
 ```
 
 Prefer restart for quick changes. Use stop/start when:

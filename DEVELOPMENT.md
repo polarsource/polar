@@ -254,7 +254,7 @@ For a fully containerized development environment with hot-reloading, you can us
 ### Quick Start
 
 ```sh
-./dev/docker-dev
+dev docker up
 ```
 
 This single command will:
@@ -277,25 +277,25 @@ This single command will:
 
 ```sh
 # Start in background (detached mode)
-./dev/docker-dev -d
+dev docker up -d
 
 # View logs
-./dev/docker-dev logs
+dev docker logs
 
 # View logs for specific service
-./dev/docker-dev logs api
+dev docker logs api
 
 # Stop all services
-./dev/docker-dev down
+dev docker down
 
 # Rebuild images
-./dev/docker-dev -b
+dev docker build
 
 # Open shell in container
-./dev/docker-dev shell api
+dev docker shell api
 
 # Include monitoring (Prometheus + Grafana)
-./dev/docker-dev --monitoring
+dev docker up --monitoring
 ```
 
 ### Running Multiple Instances
@@ -304,13 +304,13 @@ For parallel development or testing, you can run multiple isolated instances:
 
 ```sh
 # Instance 0 (default): API on 8000, Web on 3000
-./dev/docker-dev -d
+dev docker up -d
 
 # Instance 1: API on 8100, Web on 3100
-./dev/docker-dev -i 1 -d
+dev docker up -i 1 -d
 
 # Instance 2: API on 8200, Web on 3200
-./dev/docker-dev -i 2 -d
+dev docker up -i 2 -d
 ```
 
 Each instance has its own:

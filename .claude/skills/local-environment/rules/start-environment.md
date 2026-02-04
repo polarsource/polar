@@ -6,26 +6,26 @@ tags: docker, start, development
 
 # Starting the Local Environment
 
-Use `./dev/docker-dev` to start the Polar development environment.
+Use `dev docker up` to start the Polar development environment.
 
 ## Basic Commands
 
 **Start in background (recommended):**
 ```bash
-./dev/docker-dev -d
+dev docker up -d
 ```
 
 **Start in foreground (see logs directly):**
 ```bash
-./dev/docker-dev
+dev docker up
 ```
 
 **Start specific services:**
 ```bash
-./dev/docker-dev api              # API only
-./dev/docker-dev web              # Web only
-./dev/docker-dev api worker       # API and worker
-./dev/docker-dev -d api web       # API and web in background
+dev docker up api              # API only
+dev docker up web              # Web only
+dev docker up api worker       # API and worker
+dev docker up -d api web       # API and web in background
 ```
 
 ## Options
@@ -41,16 +41,16 @@ Use `./dev/docker-dev` to start the Polar development environment.
 
 ```bash
 # Full stack in background
-./dev/docker-dev -d
+dev docker up -d
 
 # Rebuild and start
-./dev/docker-dev -b -d
+dev docker up -b -d
 
 # Instance 1 with monitoring
-./dev/docker-dev -i 1 --monitoring -d
+dev docker up -i 1 --monitoring -d
 
 # Just API for backend work
-./dev/docker-dev -d api
+dev docker up -d api
 ```
 
 ## First-Time Startup

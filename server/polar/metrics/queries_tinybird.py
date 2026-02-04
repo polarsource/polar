@@ -425,26 +425,26 @@ LEFT JOIN (
         sum(
             CASE
                 WHEN s.recurring_interval = 'year'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / 12))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
                 WHEN s.recurring_interval = 'month'
-                    THEN COALESCE(lp.settlement_amount, 0)
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
                 WHEN s.recurring_interval = 'week'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 4))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
                 WHEN s.recurring_interval = 'day'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 30))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
                 ELSE toInt64(0)
             END
         ) AS monthly_recurring_revenue,
         sumIf(
             CASE
                 WHEN s.recurring_interval = 'year'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / 12))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
                 WHEN s.recurring_interval = 'month'
-                    THEN COALESCE(lp.settlement_amount, 0)
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
                 WHEN s.recurring_interval = 'week'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 4))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
                 WHEN s.recurring_interval = 'day'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 30))
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
                 ELSE toInt64(0)
             END,
             s.ends_at <= toDateTime64(0, 3, 'UTC')

@@ -10071,6 +10071,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -10408,6 +10410,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -13862,6 +13866,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -14341,6 +14347,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -15276,6 +15284,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -16612,6 +16622,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -20340,6 +20352,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -21797,6 +21811,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -21896,6 +21912,11 @@ export interface components {
        */
       description?: string | null
       /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
+      /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
        */
@@ -21961,6 +21982,11 @@ export interface components {
        * @description The description of the product.
        */
       description?: string | null
+      /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
@@ -22656,6 +22682,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -22750,6 +22778,8 @@ export interface components {
        * @description Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
        */
       is_archived?: boolean | null
+      /** @description The visibility of the product. */
+      visibility?: components['schemas']['ProductVisibility'] | null
       /**
        * Prices
        * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
@@ -22776,6 +22806,11 @@ export interface components {
         | components['schemas']['AttachedCustomFieldCreate'][]
         | null
     }
+    /**
+     * ProductVisibility
+     * @enum {string}
+     */
+    ProductVisibility: 'draft' | 'private' | 'public'
     /** PropertyAggregation */
     PropertyAggregation: {
       /**
@@ -29918,6 +29953,8 @@ export interface operations {
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
+        /** @description Filter by visibility. Defaults to `public` and `private`. */
+        visibility?: components['schemas']['ProductVisibility'][] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -43408,6 +43445,9 @@ export const productSortPropertyValues: ReadonlyArray<
   'price_amount',
   '-price_amount',
 ]
+export const productVisibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductVisibility']
+> = ['draft', 'private', 'public']
 export const propertyAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']

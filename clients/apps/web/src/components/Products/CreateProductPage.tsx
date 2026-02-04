@@ -78,6 +78,7 @@ export const CreateProductPage = ({
 
     return {
       recurring_interval: null,
+      visibility: 'public' as const,
       ...{
         prices: [
           {

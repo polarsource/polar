@@ -1,3 +1,4 @@
+import builtins
 from typing import Annotated
 
 from fastapi import Depends, Query
@@ -9,6 +10,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Product
+from polar.models.product import ProductVisibility
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -74,6 +76,10 @@ async def list(
         title="BenefitID Filter",
         description="Filter products granting specific benefit.",
     ),
+    visibility: builtins.list[ProductVisibility] | None = Query(
+        default=None,
+        description="Filter by visibility.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ProductSchema]:
     """List products."""
@@ -85,6 +91,7 @@ async def list(
         query=query,
         is_archived=is_archived,
         is_recurring=is_recurring,
+        visibility=visibility,
         benefit_id=benefit_id,
         metadata=metadata,
         pagination=pagination,

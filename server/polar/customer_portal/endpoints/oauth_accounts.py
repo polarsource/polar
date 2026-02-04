@@ -137,9 +137,7 @@ async def callback(
 
     if member_id_str:
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_id_and_customer_id(
-            uuid.UUID(member_id_str), customer_id
-        )
+        member = await member_repository.get_by_id(uuid.UUID(member_id_str))
 
     if is_member(auth_subject):
         member = auth_subject.subject

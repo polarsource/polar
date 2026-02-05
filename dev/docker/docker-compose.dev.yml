@@ -1,10 +1,10 @@
 # Docker Compose for full-stack Polar development environment
-# Usage: ./dev/docker-dev
+# Usage: dev docker up
 #
 # This file defines all services needed to run Polar in development mode
 # with hot-reloading support. Source code is mounted from the host.
 #
-# For multiple isolated instances, use: ./dev/docker-dev -i <instance_number>
+# For multiple isolated instances, use: dev docker up -i <instance_number>
 # Each instance uses different ports (offset by 100 * instance_number)
 
 # Load environment variables from server/.env

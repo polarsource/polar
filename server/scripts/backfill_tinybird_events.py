@@ -31,7 +31,7 @@ async def _ingest_batch(
     tinybird_events = [_event_to_tinybird(e) for e in events]
 
     try:
-        await client.ingest("events_by_ingested_at", tinybird_events, wait=True)
+        await client.ingest("events_by_ingested_at", tinybird_events, wait=False)
     except TinybirdPayloadTooLargeError:
         if len(events) <= 1:
             raise

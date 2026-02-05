@@ -1,6 +1,6 @@
-import { Container, Font, Head, Html, Tailwind } from '@react-email/components'
+import { Font, Head, Html, Tailwind } from '@react-email/components'
 
-const Wrapper = ({ children }: { children: React.ReactNode }) => {
+const WrapperBase = ({ children }: { children: React.ReactNode }) => {
   return (
     <Tailwind
       config={{
@@ -18,7 +18,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
           <Font
             fontFamily="Inter"
             fallbackFontFamily="sans-serif"
-            fontWeight="100 900"
+            fontWeight="400 700"
             fontStyle="normal"
             webFont={{
               url: 'https://fonts.gstatic.com/s/inter/v19/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2',
@@ -26,10 +26,10 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
             }}
           />
         </Head>
-        <Container className="p-[20px]">{children}</Container>
+        {children}
       </Html>
     </Tailwind>
   )
 }
 
-export default Wrapper
+export default WrapperBase

@@ -1,25 +1,34 @@
+import { getCurrencyDecimalFactor } from '@polar-sh/currency'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Big from 'big.js'
-import { DollarSign } from 'lucide-react'
 import React, { ComponentProps, useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const UnitAmountInput = ({
   ref,
+  currency,
   ...props
 }: ComponentProps<typeof Input> & {
+  currency: string
   onValueChange: (value: number) => void
 }) => {
   const { value, onValueChange, className, ...rest } = props
+
+  const decimalFactor = useMemo(
+    () => getCurrencyDecimalFactor(currency),
+    [currency],
+  )
+  const isNonDecimalCurrency = decimalFactor === 1
+
   const formatter = useMemo(
     () =>
       new Intl.NumberFormat('en-US', {
         style: 'decimal',
         minimumIntegerDigits: 1,
         minimumSignificantDigits: 1,
-        maximumFractionDigits: 14,
+        maximumFractionDigits: isNonDecimalCurrency ? 0 : 14,
       }),
-    [],
+    [isNonDecimalCurrency],
   )
 
   const parsedValue: string | undefined = useMemo(() => {
@@ -30,27 +39,48 @@ const UnitAmountInput = ({
     if (isNaN(parsed)) {
       return undefined
     }
-    return formatter.format(new Big(parsed).div(100).toNumber())
-  }, [value, formatter])
-
-  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Allow only digits, decimal point, and control keys
-    if (
-      !/[0-9.]/.test(e.key) &&
-      !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(
-        e.key,
-      ) &&
-      !e.ctrlKey &&
-      !e.metaKey
-    ) {
-      e.preventDefault()
+    if (isNonDecimalCurrency) {
+      return formatter.format(parsed)
     }
+    return formatter.format(new Big(parsed).div(decimalFactor).toNumber())
+  }, [value, formatter, decimalFactor, isNonDecimalCurrency])
 
-    // Prevent multiple decimal points
-    if (e.key === '.' && e.currentTarget.value.includes('.')) {
-      e.preventDefault()
-    }
-  }, [])
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // For non-decimal currencies, only allow digits and control keys
+      if (isNonDecimalCurrency) {
+        if (
+          !/[0-9]/.test(e.key) &&
+          !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(
+            e.key,
+          ) &&
+          !e.ctrlKey &&
+          !e.metaKey
+        ) {
+          e.preventDefault()
+        }
+        return
+      }
+
+      // Allow only digits, decimal point, and control keys
+      if (
+        !/[0-9.]/.test(e.key) &&
+        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(
+          e.key,
+        ) &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault()
+      }
+
+      // Prevent multiple decimal points
+      if (e.key === '.' && e.currentTarget.value.includes('.')) {
+        e.preventDefault()
+      }
+    },
+    [isNonDecimalCurrency],
+  )
 
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,10 +89,20 @@ const UnitAmountInput = ({
       if (isNaN(parsed)) {
         return
       }
-      const cents = new Big(parsed).times(100).toNumber()
-      onValueChange(cents)
+      if (isNonDecimalCurrency) {
+        onValueChange(Math.round(parsed))
+        return
+      }
+      const units = new Big(parsed).times(decimalFactor).toNumber()
+      onValueChange(units)
     },
-    [onValueChange],
+    [onValueChange, decimalFactor, isNonDecimalCurrency],
+  )
+
+  const currencyLabel = (
+    <span className="dark:text-polar-500 text-sm font-medium text-gray-500">
+      {currency.toUpperCase()}
+    </span>
   )
 
   return (
@@ -70,15 +110,15 @@ const UnitAmountInput = ({
       ref={ref}
       {...rest}
       className={twMerge(
-        'dark:placeholder:text-polar-500 block w-full px-4 pl-8 text-base font-normal placeholder:text-gray-400',
+        'dark:placeholder:text-polar-500 block w-full px-4 pl-14 text-base font-normal placeholder:text-gray-400',
         className ?? '',
       )}
       type="text"
-      inputMode="decimal"
+      inputMode={isNonDecimalCurrency ? 'numeric' : 'decimal'}
       value={parsedValue}
       onKeyDown={onKeyDown}
       onChange={onChange}
-      preSlot={<DollarSign className="h-4 w-4" />}
+      preSlot={currencyLabel}
     />
   )
 }

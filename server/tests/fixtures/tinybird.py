@@ -1,12 +1,17 @@
 import subprocess
+import time
 import uuid
 from collections.abc import Generator
 from pathlib import Path
+from unittest.mock import patch
 
 import httpx
 import pytest
 
 from polar.config import settings
+from polar.integrations.tinybird import service as tinybird_service
+from polar.integrations.tinybird.client import TinybirdClient
+from polar.metrics import queries_tinybird
 
 TINYBIRD_DIR = Path(__file__).parent.parent.parent / "tinybird"
 
@@ -66,6 +71,24 @@ def tinybird_workspace() -> Generator[str, None, None]:
         cwd=TINYBIRD_DIR,
     )
 
+    for _ in range(30):
+        try:
+            r = httpx.post(
+                f"{host}/v0/events",
+                params={"name": "events_by_ingested_at", "wait": "true"},
+                content="",
+                headers={
+                    "Authorization": f"Bearer {workspace_token}",
+                    "Content-Type": "application/x-ndjson",
+                },
+                timeout=2,
+            )
+            if r.status_code != 403:
+                break
+        except httpx.RequestError:
+            pass
+        time.sleep(0.5)
+
     yield workspace_token
 
     httpx.delete(
@@ -74,4 +97,27 @@ def tinybird_workspace() -> Generator[str, None, None]:
     )
 
 
-__all__ = ["get_tinybird_tokens", "tinybird_available", "tinybird_workspace"]
+@pytest.fixture
+def tinybird_client(
+    tinybird_workspace: str,
+) -> Generator[TinybirdClient]:
+    client = TinybirdClient(
+        api_url=settings.TINYBIRD_API_URL,
+        clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
+        api_token=tinybird_workspace,
+        clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
+        clickhouse_token=tinybird_workspace,
+    )
+    with (
+        patch.object(tinybird_service, "client", client),
+        patch.object(queries_tinybird, "tinybird_client", client),
+    ):
+        yield client
+
+
+__all__ = [
+    "get_tinybird_tokens",
+    "tinybird_available",
+    "tinybird_client",
+    "tinybird_workspace",
+]

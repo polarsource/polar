@@ -10,7 +10,7 @@ from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from . import schemas
@@ -40,6 +40,7 @@ class BenefitDownloadablesService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDownloadablesProperties:
         properties = self._get_properties(benefit)
         file_ids = get_active_file_ids(properties)
@@ -68,6 +69,7 @@ class BenefitDownloadablesService(
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDownloadablesProperties:
         return grant_properties
 
@@ -78,6 +80,7 @@ class BenefitDownloadablesService(
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDownloadablesProperties:
         await downloadable_service.revoke_for_benefit(
             self.session,

@@ -28,13 +28,13 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -189,59 +189,47 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow
                   key={item.id}
                   label={item.label}
-                  value={formatCurrencyAndAmount(item.amount, order.currency)}
+                  value={formatCurrency(item.amount, order.currency)}
                 />
               ))}
             </div>
 
             <DetailRow
               label="Subtotal"
-              value={formatCurrencyAndAmount(
-                order.subtotal_amount,
-                order.currency,
-              )}
+              value={formatCurrency(order.subtotal_amount, order.currency)}
             />
             <DetailRow
               label="Discount"
               value={
                 order.discount_amount
-                  ? formatCurrencyAndAmount(
-                      -order.discount_amount,
-                      order.currency,
-                    )
+                  ? formatCurrency(-order.discount_amount, order.currency)
                   : '—'
               }
             />
             <DetailRow
               label="Net amount"
-              value={formatCurrencyAndAmount(order.net_amount, order.currency)}
+              value={formatCurrency(order.net_amount, order.currency)}
             />
             <DetailRow
               label="Tax"
-              value={formatCurrencyAndAmount(order.tax_amount, order.currency)}
+              value={formatCurrency(order.tax_amount, order.currency)}
             />
             <DetailRow
               label="Total"
-              value={formatCurrencyAndAmount(
-                order.total_amount,
-                order.currency,
-              )}
+              value={formatCurrency(order.total_amount, order.currency)}
             />
             {order.applied_balance_amount !== 0 && (
               <>
                 <DetailRow
                   label="Applied balance"
-                  value={formatCurrencyAndAmount(
+                  value={formatCurrency(
                     order.applied_balance_amount,
                     order.currency,
                   )}
                 />
                 <DetailRow
                   label="To be paid"
-                  value={formatCurrencyAndAmount(
-                    order.due_amount,
-                    order.currency,
-                  )}
+                  value={formatCurrency(order.due_amount, order.currency)}
                 />
               </>
             )}
@@ -390,10 +378,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrencyAndAmount(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
+                  formatCurrency(row.original.amount, row.original.currency),
               },
               {
                 accessorKey: 'status',
@@ -455,10 +440,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrencyAndAmount(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
+                  formatCurrency(row.original.amount, row.original.currency),
               },
               {
                 accessorKey: 'status',

@@ -2,8 +2,7 @@ import { Hr, Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function EmailUpdate({
@@ -12,9 +11,8 @@ export function EmailUpdate({
   url,
 }: schemas['EmailUpdateProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>Here is the verification link to update your email</Preview>
-      <PolarHeader />
       <IntroWithHi>
         Here is the verification link to update your email. Click the button
         below to complete the update process.{' '}
@@ -38,7 +36,7 @@ export function EmailUpdate({
         </Text>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

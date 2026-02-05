@@ -9,8 +9,8 @@ import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
 import { useProduct, useProductUpdate } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useContext, useMemo } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
@@ -110,9 +110,10 @@ export default function Index() {
         />
         <MetricsBox
           label="Revenue"
-          value={formatCurrencyAndAmount(
+          value={formatCurrency(
             metrics?.periods[metrics?.periods.length - 1].cumulative_revenue ??
               0,
+            'usd',
           )}
         />
       </Box>

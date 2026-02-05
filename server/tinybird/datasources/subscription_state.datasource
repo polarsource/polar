@@ -1,0 +1,12 @@
+SCHEMA >
+    `subscription_id` UUID,
+    `organization_id` UUID,
+    `customer_id` AggregateFunction(argMax, Nullable(UUID), DateTime64(3)),
+    `product_id` AggregateFunction(argMax, Nullable(UUID), DateTime64(3)),
+    `started_at` AggregateFunction(min, Nullable(DateTime64(3))),
+    `ends_at` AggregateFunction(argMax, DateTime64(3), DateTime64(3)),
+    `recurring_interval` AggregateFunction(argMax, Nullable(String), DateTime64(3)),
+    `recurring_interval_count` AggregateFunction(argMax, Nullable(Int32), DateTime64(3))
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, subscription_id

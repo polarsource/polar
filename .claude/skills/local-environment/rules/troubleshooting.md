@@ -22,14 +22,14 @@ docker info
 
 **Check container logs:**
 ```bash
-./dev/docker-dev logs api
-./dev/docker-dev logs web
+dev docker logs api
+dev docker logs web
 ```
 
 **Try stop and restart:**
 ```bash
-./dev/docker-dev down
-./dev/docker-dev -d
+dev docker down
+dev docker up -d
 ```
 
 ## Database Connection Failed
@@ -38,13 +38,13 @@ docker info
 
 **Check db container:**
 ```bash
-./dev/docker-dev ps
-./dev/docker-dev logs db
+dev docker ps
+dev docker logs db
 ```
 
 **Verify database is healthy:**
 ```bash
-./dev/docker-dev shell db
+dev docker shell db
 psql -U polar -d polar -c "SELECT 1"
 ```
 
@@ -52,18 +52,19 @@ psql -U polar -d polar -c "SELECT 1"
 
 **Check file mounting:**
 ```bash
-./dev/docker-dev shell api
+dev docker shell api
 ls -la /app/server/polar/
 ```
 
 **Restart the service:**
 ```bash
-./dev/docker-dev restart api
+dev docker restart api
 ```
 
 **If still broken, rebuild:**
 ```bash
-./dev/docker-dev -b restart api
+dev docker build api
+dev docker restart api
 ```
 
 ## Out of Memory
@@ -72,8 +73,8 @@ ls -la /app/server/polar/
 
 **Stop unused instances:**
 ```bash
-./dev/docker-dev -i 1 down
-./dev/docker-dev -i 2 down
+dev docker down -i 1
+dev docker down -i 2
 ```
 
 **Clean up Docker:**
@@ -85,7 +86,7 @@ docker system prune
 
 **Check minio-setup logs:**
 ```bash
-./dev/docker-dev logs minio-setup
+dev docker logs minio-setup
 ```
 
 **Access MinIO console:**
@@ -99,25 +100,25 @@ docker system prune
 
 **Clear Next.js cache:**
 ```bash
-./dev/docker-dev shell web
+dev docker shell web
 rm -rf .next
 exit
-./dev/docker-dev restart web
+dev docker restart web
 ```
 
 **Reinstall dependencies:**
 ```bash
-./dev/docker-dev shell web
+dev docker shell web
 pnpm install
 exit
-./dev/docker-dev restart web
+dev docker restart web
 ```
 
 ## Migration Issues
 
 **Check current migration state:**
 ```bash
-./dev/docker-dev shell api
+dev docker shell api
 uv run alembic current
 ```
 
@@ -135,16 +136,16 @@ uv run alembic downgrade -1
 
 **When all else fails:**
 ```bash
-./dev/docker-dev cleanup
-./dev/docker-dev -b -d
+dev docker cleanup -f
+dev docker up -b -d
 ```
 
 This removes all data and rebuilds from scratch.
 
 ## Getting Help
 
-1. Check logs: `./dev/docker-dev logs`
-2. Check status: `./dev/docker-dev ps`
+1. Check logs: `dev docker logs`
+2. Check status: `dev docker ps`
 3. Check Docker: `docker info`
-4. Try restart: `./dev/docker-dev restart`
-5. Try cleanup: `./dev/docker-dev cleanup`
+4. Try restart: `dev docker restart`
+5. Try cleanup: `dev docker cleanup`

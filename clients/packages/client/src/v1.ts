@@ -5891,7 +5891,6 @@ export interface components {
        *       "metrics:read": "Read metrics",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
-       *       "external_organizations:read": "Read external organizations",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -5977,7 +5976,6 @@ export interface components {
        *       "metrics:read": "Read metrics",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
-       *       "external_organizations:read": "Read external organizations",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -6065,13 +6063,8 @@ export interface components {
       | 'metrics:read'
       | 'webhooks:read'
       | 'webhooks:write'
-      | 'external_organizations:read'
       | 'license_keys:read'
       | 'license_keys:write'
-      | 'repositories:read'
-      | 'repositories:write'
-      | 'issues:read'
-      | 'issues:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -17744,11 +17737,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17820,11 +17810,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17886,11 +17873,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -19692,7 +19676,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19757,7 +19741,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19803,7 +19787,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -20707,6 +20691,8 @@ export interface components {
        * @description When the business details were submitted.
        */
       details_submitted_at: string | null
+      /** @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available. */
+      default_presentment_currency: components['schemas']['PresentmentCurrency']
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -21758,14 +21744,16 @@ export interface components {
      * @enum {string}
      */
     PresentmentCurrency:
-      | 'usd'
-      | 'eur'
-      | 'gbp'
-      | 'cad'
       | 'aud'
-      | 'jpy'
+      | 'brl'
+      | 'cad'
       | 'chf'
+      | 'eur'
+      | 'inr'
+      | 'gbp'
+      | 'jpy'
       | 'sek'
+      | 'usd'
     /**
      * Processor
      * @description Supported payment or payout processors, i.e rails for transactions.
@@ -22147,11 +22135,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22196,11 +22181,10 @@ export interface components {
        */
       amount_type: 'custom'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.
@@ -22247,11 +22231,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22286,11 +22267,10 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Price Amount
        * @description The price in cents.
@@ -22326,11 +22306,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22360,11 +22337,10 @@ export interface components {
        */
       amount_type: 'free'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
     }
     /**
      * ProductPriceMeter
@@ -22412,11 +22388,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'metered_unit'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22464,11 +22437,10 @@ export interface components {
        */
       amount_type: 'metered_unit'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Meter Id
        * Format: uuid4
@@ -22515,11 +22487,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'seat_based'
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22551,11 +22520,10 @@ export interface components {
        */
       amount_type: 'seat_based'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
     }
@@ -23171,13 +23139,8 @@ export interface components {
       | 'metrics:read'
       | 'webhooks:read'
       | 'webhooks:write'
-      | 'external_organizations:read'
       | 'license_keys:read'
       | 'license_keys:write'
-      | 'repositories:read'
-      | 'repositories:write'
-      | 'issues:read'
-      | 'issues:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -29953,7 +29916,7 @@ export interface operations {
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
-        /** @description Filter by visibility. Defaults to `public` and `private`. */
+        /** @description Filter by visibility. */
         visibility?: components['schemas']['ProductVisibility'][] | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -42194,13 +42157,8 @@ export const availableScopeValues: ReadonlyArray<
   'metrics:read',
   'webhooks:read',
   'webhooks:write',
-  'external_organizations:read',
   'license_keys:read',
   'license_keys:write',
-  'repositories:read',
-  'repositories:write',
-  'issues:read',
-  'issues:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',
@@ -43384,7 +43342,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
-> = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
+> = ['aud', 'brl', 'cad', 'chf', 'eur', 'inr', 'gbp', 'jpy', 'sek', 'usd']
 export const processorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Processor']
 > = ['stripe', 'manual']
@@ -43524,13 +43482,8 @@ export const scopeValues: ReadonlyArray<
   'metrics:read',
   'webhooks:read',
   'webhooks:write',
-  'external_organizations:read',
   'license_keys:read',
   'license_keys:write',
-  'repositories:read',
-  'repositories:write',
-  'issues:read',
-  'issues:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',

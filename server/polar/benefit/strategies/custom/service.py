@@ -1,7 +1,7 @@
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitCustomProperties, BenefitGrantCustomProperties
@@ -18,6 +18,7 @@ class BenefitCustomService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantCustomProperties:
         return {}
 
@@ -28,6 +29,7 @@ class BenefitCustomService(
         grant_properties: BenefitGrantCustomProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantCustomProperties:
         return {}
 
@@ -38,6 +40,7 @@ class BenefitCustomService(
         grant_properties: BenefitGrantCustomProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantCustomProperties:
         return {}
 

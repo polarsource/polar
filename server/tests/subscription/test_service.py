@@ -28,6 +28,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -2089,6 +2090,73 @@ class TestUpdateProduct:
         price = updated_subscription.prices[0]
         assert price.price_currency == "usd"
 
+    async def test_seat_based_to_fixed_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=customer,
+            seats=2,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=fixed_product.id,
+            )
+
+    async def test_fixed_to_seat_based_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=fixed_product,
+            customer=customer,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=seat_product.id,
+            )
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:
@@ -2592,7 +2660,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2779,7 +2847,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 3, "max_seats": None, "price_per_seat": 1000},
@@ -2820,7 +2888,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2861,7 +2929,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 2, "max_seats": 20, "price_per_seat": 1000},

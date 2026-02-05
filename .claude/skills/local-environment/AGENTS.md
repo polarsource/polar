@@ -2,27 +2,15 @@
 
 This document provides comprehensive instructions for Claude to manage the Polar local development environment using Docker.
 
-## CRITICAL: Conductor Instance Detection
+## Instance Auto-Detection
 
-**ALWAYS check `CONDUCTOR_PORT` first before running any docker-dev commands:**
+The `dev docker` command **automatically detects** the correct instance number. No manual `-i` flag is needed.
 
-```bash
-echo $CONDUCTOR_PORT
-```
+**Detection priority:**
+1. `CONDUCTOR_PORT` env var → `(port - 55000) / 10 + 1`
+2. Workspace path hash → stable instance derived from the repo root path
 
-**Instance Calculation:**
-
-- If `CONDUCTOR_PORT` is **not set**: Not running in Conductor, use instance 0
-- If `CONDUCTOR_PORT` is **set**: `INSTANCE=$((CONDUCTOR_PORT - 55090))`
-
-| CONDUCTOR_PORT | Instance | API Port | Web Port |
-| -------------- | -------- | -------- | -------- |
-| 55090          | 0        | 8000     | 3000     |
-| 55091          | 1        | 8100     | 3100     |
-| 55092          | 2        | 8200     | 3200     |
-| 55093          | 3        | 8300     | 3300     |
-
-**All docker-dev commands must include `-i $INSTANCE`** to use the correct isolated environment when running in Conductor.
+You can override with `-i N` if needed, but just running `dev docker up -d` will auto-detect the right instance.
 
 ---
 
@@ -35,60 +23,7 @@ The Polar development environment runs as a Docker Compose stack with:
 - **Infrastructure**: PostgreSQL, Redis, MinIO (S3-compatible storage)
 - **Optional Monitoring**: Prometheus + Grafana
 
-All management is done through the `./dev/docker-dev` script.
-
----
-
-## 0. Conductor Integration (IMPORTANT)
-
-**When running in Conductor, ALWAYS check `CONDUCTOR_PORT` first to determine the correct instance number:**
-
-```bash
-echo $CONDUCTOR_PORT
-```
-
-### Detecting Conductor Environment
-
-- If `CONDUCTOR_PORT` is set → Running in Conductor app
-- If not set → Not running in Conductor, use instance 0 or ask user
-
-### Deriving Instance Number
-
-```bash
-# Formula: Extract last 2 digits, subtract 90, divide by 10
-INSTANCE=$(( (${CONDUCTOR_PORT: -2} - 90) / 10 ))
-
-# Examples:
-# CONDUCTOR_PORT=55090 → instance 0
-# CONDUCTOR_PORT=55190 → instance 1
-# CONDUCTOR_PORT=55290 → instance 2
-```
-
-### Why This Matters
-
-Each Conductor workspace runs in parallel and needs isolated Docker environments:
-
-- Different database instances
-- Different ports for API, web, etc.
-- No conflicts between workspaces
-
-### Recommended Pattern
-
-```bash
-# First, detect instance
-if [ -n "$CONDUCTOR_PORT" ]; then
-    INSTANCE=$(( (${CONDUCTOR_PORT: -2} - 90) / 10 ))
-    echo "Running in Conductor, using instance $INSTANCE"
-else
-    INSTANCE=0
-    echo "Not in Conductor, using default instance 0"
-fi
-
-# Then use instance in all commands
-./dev/docker-dev -i $INSTANCE -d
-./dev/docker-dev -i $INSTANCE logs -f api
-./dev/docker-dev -i $INSTANCE ps
-```
+All management is done through the `dev docker` CLI command.
 
 ---
 
@@ -97,7 +32,7 @@ fi
 ### Basic Start (Foreground)
 
 ```bash
-./dev/docker-dev
+dev docker up
 ```
 
 This starts all services and shows logs in the terminal. Use Ctrl+C to stop.
@@ -105,7 +40,7 @@ This starts all services and shows logs in the terminal. Use Ctrl+C to stop.
 ### Background Start (Recommended)
 
 ```bash
-./dev/docker-dev -d
+dev docker up -d
 ```
 
 Starts in detached mode. Services continue running after terminal closes.
@@ -113,16 +48,16 @@ Starts in detached mode. Services continue running after terminal closes.
 ### Start Specific Services
 
 ```bash
-./dev/docker-dev api              # API only (includes db, redis, minio)
-./dev/docker-dev web              # Web only (includes api dependencies)
-./dev/docker-dev api worker       # API and worker
-./dev/docker-dev -d api web       # API and web in background
+dev docker up api              # API only (includes db, redis, minio)
+dev docker up web              # Web only (includes api dependencies)
+dev docker up api worker       # API and worker
+dev docker up -d api web       # API and web in background
 ```
 
 ### Start with Monitoring
 
 ```bash
-./dev/docker-dev --monitoring -d
+dev docker up --monitoring -d
 ```
 
 Includes Prometheus (port 9090) and Grafana (port 3001, login: admin/polar).
@@ -130,7 +65,7 @@ Includes Prometheus (port 9090) and Grafana (port 3001, login: admin/polar).
 ### Force Rebuild Images
 
 ```bash
-./dev/docker-dev -b -d
+dev docker up -b -d
 ```
 
 Rebuilds Docker images before starting. Use after Dockerfile changes.
@@ -142,7 +77,7 @@ Rebuilds Docker images before starting. Use after Dockerfile changes.
 ### Stop All Services
 
 ```bash
-./dev/docker-dev down
+dev docker down
 ```
 
 Stops and removes containers but preserves volumes (data persists).
@@ -150,13 +85,13 @@ Stops and removes containers but preserves volumes (data persists).
 ### Stop Specific Instance
 
 ```bash
-./dev/docker-dev -i 1 down    # Stop instance 1
+dev docker down -i 1    # Stop instance 1
 ```
 
 ### Complete Cleanup (Fresh Start)
 
 ```bash
-./dev/docker-dev cleanup
+dev docker cleanup
 ```
 
 **WARNING**: This removes all containers AND volumes. Database and file storage will be reset.
@@ -168,29 +103,29 @@ Stops and removes containers but preserves volumes (data persists).
 ### All Services (Last Output)
 
 ```bash
-./dev/docker-dev logs
+dev docker logs
 ```
 
 ### Follow Logs (Real-Time)
 
 ```bash
-./dev/docker-dev logs -f
+dev docker logs -f
 ```
 
 ### Specific Service Logs
 
 ```bash
-./dev/docker-dev logs api        # API logs
-./dev/docker-dev logs worker     # Worker logs
-./dev/docker-dev logs web        # Frontend logs
-./dev/docker-dev logs db         # Database logs
-./dev/docker-dev logs -f api     # Follow API logs
+dev docker logs api        # API logs
+dev docker logs worker     # Worker logs
+dev docker logs web        # Frontend logs
+dev docker logs db         # Database logs
+dev docker logs -f api     # Follow API logs (default)
 ```
 
 ### Don't Follow (Exit Immediately)
 
 ```bash
-./dev/docker-dev --no-follow logs
+dev docker logs --no-follow
 ```
 
 ---
@@ -200,7 +135,7 @@ Stops and removes containers but preserves volumes (data persists).
 ### List Running Containers
 
 ```bash
-./dev/docker-dev ps
+dev docker ps
 ```
 
 Shows container names, status, and port mappings.
@@ -208,7 +143,7 @@ Shows container names, status, and port mappings.
 ### Check Specific Instance
 
 ```bash
-./dev/docker-dev -i 1 ps
+dev docker ps -i 1
 ```
 
 ---
@@ -244,27 +179,27 @@ Port = Base Port + (Instance Number × 100)
 ### Start Instance
 
 ```bash
-./dev/docker-dev -i 1 -d        # Start instance 1
-./dev/docker-dev -i 2 -d        # Start instance 2
+dev docker up -i 1 -d        # Start instance 1
+dev docker up -i 2 -d        # Start instance 2
 ```
 
 ### Manage Instance
 
 ```bash
-./dev/docker-dev -i 1 logs      # View instance 1 logs
-./dev/docker-dev -i 1 ps        # Check instance 1 status
-./dev/docker-dev -i 1 down      # Stop instance 1
-./dev/docker-dev -i 1 cleanup   # Reset instance 1
+dev docker logs -i 1          # View instance 1 logs
+dev docker ps -i 1            # Check instance 1 status
+dev docker down -i 1          # Stop instance 1
+dev docker cleanup -i 1       # Reset instance 1
 ```
 
 ### Running Multiple Instances
 
 ```bash
 # Terminal 1
-./dev/docker-dev -i 0 -d
+dev docker up -i 0 -d
 
 # Terminal 2
-./dev/docker-dev -i 1 -d
+dev docker up -i 1 -d
 
 # Both running independently
 # Instance 0: http://localhost:3000 (web), http://localhost:8000 (api)
@@ -278,10 +213,10 @@ Port = Base Port + (Instance Number × 100)
 ### Open Shell in Container
 
 ```bash
-./dev/docker-dev shell api      # Python environment
-./dev/docker-dev shell worker   # Python environment
-./dev/docker-dev shell web      # Node environment
-./dev/docker-dev shell db       # PostgreSQL container
+dev docker shell api      # Python environment
+dev docker shell worker   # Python environment
+dev docker shell web      # Node environment
+dev docker shell db       # PostgreSQL container
 ```
 
 ### Useful Commands Inside Containers
@@ -316,15 +251,15 @@ psql -U polar -d polar        # Connect to database
 ### Restart All Services
 
 ```bash
-./dev/docker-dev restart
+dev docker restart
 ```
 
 ### Restart Specific Service
 
 ```bash
-./dev/docker-dev restart api
-./dev/docker-dev restart worker
-./dev/docker-dev restart web
+dev docker restart api
+dev docker restart worker
+dev docker restart web
 ```
 
 **When to Restart:**
@@ -341,20 +276,20 @@ psql -U polar -d polar        # Connect to database
 ### Rebuild All Images
 
 ```bash
-./dev/docker-dev build
+dev docker build
 ```
 
 ### Rebuild Specific Service
 
 ```bash
-./dev/docker-dev build api
-./dev/docker-dev build web
+dev docker build api
+dev docker build web
 ```
 
 ### Start with Rebuild
 
 ```bash
-./dev/docker-dev -b -d
+dev docker up -b -d
 ```
 
 **When to Rebuild:**
@@ -494,13 +429,13 @@ Services use Docker network hostnames:
 3. Check logs for errors:
 
     ```bash
-    ./dev/docker-dev logs api
+    dev docker logs api
     ```
 
 4. Try cleanup and restart:
     ```bash
-    ./dev/docker-dev down
-    ./dev/docker-dev -d
+    dev docker down
+    dev docker up -d
     ```
 
 ### Database Connection Failed
@@ -508,14 +443,14 @@ Services use Docker network hostnames:
 1. Check db container is healthy:
 
     ```bash
-    ./dev/docker-dev ps
+    dev docker ps
     ```
 
 2. Wait for health check (takes ~40 seconds on first start)
 
 3. Check db logs:
     ```bash
-    ./dev/docker-dev logs db
+    dev docker logs db
     ```
 
 ### Hot-Reload Not Working
@@ -523,19 +458,20 @@ Services use Docker network hostnames:
 1. Check file is being mounted:
 
     ```bash
-    ./dev/docker-dev shell api
+    dev docker shell api
     ls -la /app/server/polar/
     ```
 
 2. Restart the service:
 
     ```bash
-    ./dev/docker-dev restart api
+    dev docker restart api
     ```
 
 3. Rebuild if needed:
     ```bash
-    ./dev/docker-dev -b restart api
+    dev docker build api
+    dev docker restart api
     ```
 
 ### Out of Memory
@@ -545,8 +481,8 @@ Services use Docker network hostnames:
 2. Stop unused instances:
 
     ```bash
-    ./dev/docker-dev -i 1 down
-    ./dev/docker-dev -i 2 down
+    dev docker down -i 1
+    dev docker down -i 2
     ```
 
 3. Clear unused Docker resources:
@@ -559,7 +495,7 @@ Services use Docker network hostnames:
 1. Check minio-setup completed:
 
     ```bash
-    ./dev/docker-dev logs minio-setup
+    dev docker logs minio-setup
     ```
 
 2. Access MinIO console: http://localhost:9001
@@ -573,18 +509,18 @@ Services use Docker network hostnames:
 1. Clear Next.js cache:
 
     ```bash
-    ./dev/docker-dev shell web
+    dev docker shell web
     rm -rf .next
     exit
-    ./dev/docker-dev restart web
+    dev docker restart web
     ```
 
 2. Reinstall dependencies:
     ```bash
-    ./dev/docker-dev shell web
+    dev docker shell web
     pnpm install
     exit
-    ./dev/docker-dev restart web
+    dev docker restart web
     ```
 
 ### Complete Reset
@@ -592,8 +528,8 @@ Services use Docker network hostnames:
 When all else fails:
 
 ```bash
-./dev/docker-dev cleanup
-./dev/docker-dev -b -d
+dev docker cleanup -f
+dev docker up -b -d
 ```
 
 This removes all containers, volumes, and rebuilds from scratch.
@@ -606,38 +542,39 @@ This removes all containers, volumes, and rebuilds from scratch.
 
 ```bash
 # Start environment
-./dev/docker-dev -d
+dev docker up -d
 
 # Check status
-./dev/docker-dev ps
+dev docker ps
 
 # View logs as you work
-./dev/docker-dev logs -f api
+dev docker logs api
 
 # When done
-./dev/docker-dev down
+dev docker down
 ```
 
 ### After Git Pull
 
 ```bash
 # Usually hot-reload handles it, but if issues:
-./dev/docker-dev restart api worker
+dev docker restart api worker
 
 # If dependencies changed:
-./dev/docker-dev -b restart api worker
+dev docker build api worker
+dev docker restart api worker
 ```
 
 ### Running Tests
 
 ```bash
 # Backend tests (in container)
-./dev/docker-dev shell api
+dev docker shell api
 uv run task test
 exit
 
 # Frontend tests (in container)
-./dev/docker-dev shell web
+dev docker shell web
 pnpm test
 exit
 ```
@@ -646,13 +583,13 @@ exit
 
 ```bash
 # Connect to database
-./dev/docker-dev shell api
+dev docker shell api
 uv run alembic upgrade head      # Run migrations
 uv run alembic downgrade -1      # Rollback one migration
 exit
 
 # Direct SQL access
-./dev/docker-dev shell db
+dev docker shell db
 psql -U polar -d polar
 ```
 
@@ -660,13 +597,13 @@ psql -U polar -d polar
 
 ```bash
 # Follow API logs
-./dev/docker-dev logs -f api
+dev docker logs api
 
 # Enable SQL debugging (in server/.env)
 # POLAR_SQLALCHEMY_DEBUG=1
 
 # Restart API
-./dev/docker-dev restart api
+dev docker restart api
 ```
 
 ---
@@ -689,20 +626,20 @@ psql -U polar -d polar
 
 | Task               | Command                              |
 | ------------------ | ------------------------------------ |
-| Start (foreground) | `./dev/docker-dev`                   |
-| Start (background) | `./dev/docker-dev -d`                |
-| Start instance     | `./dev/docker-dev -i {n} -d`         |
-| Stop               | `./dev/docker-dev down`              |
-| Cleanup (reset)    | `./dev/docker-dev cleanup`           |
-| Logs (all)         | `./dev/docker-dev logs`              |
-| Logs (follow)      | `./dev/docker-dev logs -f`           |
-| Logs (service)     | `./dev/docker-dev logs {service}`    |
-| Status             | `./dev/docker-dev ps`                |
-| Restart            | `./dev/docker-dev restart {service}` |
-| Shell              | `./dev/docker-dev shell {service}`   |
-| Rebuild            | `./dev/docker-dev -b -d`             |
-| Monitoring         | `./dev/docker-dev --monitoring -d`   |
-| Help               | `./dev/docker-dev -h`                |
+| Start (foreground) | `dev docker up`                      |
+| Start (background) | `dev docker up -d`                   |
+| Start instance     | `dev docker up -i {n} -d`            |
+| Stop               | `dev docker down`                    |
+| Cleanup (reset)    | `dev docker cleanup`                 |
+| Logs (all)         | `dev docker logs`                    |
+| Logs (follow)      | `dev docker logs -f`                 |
+| Logs (service)     | `dev docker logs {service}`          |
+| Status             | `dev docker ps`                      |
+| Restart            | `dev docker restart {service}`       |
+| Shell              | `dev docker shell {service}`         |
+| Rebuild            | `dev docker up -b -d`                |
+| Monitoring         | `dev docker up --monitoring -d`      |
+| Help               | `dev docker --help`                  |
 
 ---
 

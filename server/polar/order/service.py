@@ -1596,6 +1596,7 @@ class OrderService:
                 "transaction_id": str(payment_transaction.id),
                 "order_id": str(order.id),
                 "amount": payment_transaction.amount,
+                "net_amount": order.net_amount,
                 "currency": payment_transaction.currency,
                 "presentment_amount": payment_transaction.presentment_amount,
                 "presentment_currency": payment_transaction.presentment_currency,
@@ -1837,6 +1838,11 @@ class OrderService:
 
         assert order.subscription is not None
         await subscription_service.mark_past_due(session, order.subscription)
+
+        # Re-enqueue benefit revocation to check if grace period has expired
+        # We might end up here in the event that a user goes via the subscription product
+        # update flow, so we need to ensure that they don't get benefits they shouldn't have.
+        await subscription_service.enqueue_benefits_grants(session, order.subscription)
 
         return order
 

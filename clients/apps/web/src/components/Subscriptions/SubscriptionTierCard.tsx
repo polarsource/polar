@@ -7,13 +7,13 @@ import {
 } from '@/hooks/products'
 import { markdownOptionsJustText } from '@/utils/markdown'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -57,11 +57,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <>
               {price.amount_type === 'fixed' && (
                 <>
-                  {formatCurrencyAndAmount(
-                    price.price_amount,
-                    price.price_currency,
-                    0,
-                  )}
+                  {formatCurrency(price.price_amount, price.price_currency, 0)}
                   <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
                     {recurringBillingLabel}
                   </span>

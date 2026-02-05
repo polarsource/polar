@@ -19,6 +19,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -32,7 +33,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { EllipsisVertical } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -162,10 +162,7 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrencyAndAmount(
-                  original.gross_amount,
-                  original.currency,
-                )
+              ? formatCurrency(original.gross_amount, original.currency)
               : '—'}
           </div>
         )
@@ -184,11 +181,8 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrencyAndAmount(original.fees_amount, original.currency)
-              : formatCurrencyAndAmount(
-                  Math.abs(original.amount),
-                  original.currency,
-                )}
+              ? formatCurrency(original.fees_amount, original.currency)
+              : formatCurrency(Math.abs(original.amount), original.currency)}
           </div>
         )
       },
@@ -206,7 +200,7 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrencyAndAmount(original.amount, original.currency)
+              ? formatCurrency(original.amount, original.currency)
               : '—'}
           </div>
         )

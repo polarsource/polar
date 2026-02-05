@@ -1,0 +1,787 @@
+"""
+Settlement metrics comparison: Original Postgres vs Tinybird.
+
+Verifies that the Tinybird metrics path (events_by_timestamp + subscription_state MV)
+produces the same results as the original Postgres metrics path (Order/Subscription tables)
+for all settlement-related metrics.
+
+Scenario: 1 org, 10 customers with diverse subscription lifecycles across H1 2024.
+"""
+
+from collections.abc import Sequence
+from datetime import UTC, date, datetime
+from typing import Any, NotRequired, TypedDict
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
+
+import pytest
+import pytest_asyncio
+
+from polar.auth.models import AuthSubject
+from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
+from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.service import (
+    DATASOURCE_EVENTS,
+    _event_to_tinybird,
+)
+from polar.kit.time_queries import TimeInterval
+from polar.metrics.schemas import MetricsPeriod, MetricsResponse
+from polar.metrics.service import metrics as metrics_service
+from polar.models import (
+    Customer,
+    Event,
+    Organization,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
+from polar.models.event import EventSource
+from polar.models.order import OrderStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_event,
+    create_order,
+    create_payment_transaction,
+    create_product,
+    create_subscription,
+)
+from tests.fixtures.tinybird import tinybird_available
+
+MONTHLY_PRICE = 50_00
+YEARLY_PRICE = 600_00
+ONE_TIME_PRICE = 100_00
+
+
+def _dt(d: date) -> datetime:
+    return datetime(d.year, d.month, d.day, tzinfo=UTC)
+
+
+class SubEvent(TypedDict):
+    product: str
+    start: date
+    cancel: NotRequired[date]
+    cancel_reason: NotRequired[str]
+    end: NotRequired[date]
+    renewals: NotRequired[list[date]]
+
+
+class BuyEvent(TypedDict):
+    product: str
+    on: date
+
+
+class CustomerScenario(TypedDict):
+    name: str
+    subs: NotRequired[list[SubEvent]]
+    buys: NotRequired[list[BuyEvent]]
+
+
+SCENARIO: list[CustomerScenario] = [
+    # C0: Loyal monthly — subscribes Jan, renews every month through Jun
+    {
+        "name": "loyal_monthly",
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 1, 1),
+                "renewals": [
+                    date(2024, 2, 1),
+                    date(2024, 3, 1),
+                    date(2024, 4, 1),
+                    date(2024, 5, 1),
+                    date(2024, 6, 1),
+                ],
+            }
+        ],
+    },
+    # C1: Early churner — subscribes Jan, cancels Feb 15, ends Mar 1
+    {
+        "name": "early_churner",
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 1, 1),
+                "cancel": date(2024, 2, 15),
+                "cancel_reason": "too_expensive",
+                "end": date(2024, 3, 1),
+                "renewals": [date(2024, 2, 1)],
+            }
+        ],
+    },
+    # C2: Yearly subscriber — subscribes Jan, stays active
+    {
+        "name": "yearly_subscriber",
+        "subs": [{"product": "yearly", "start": date(2024, 1, 1)}],
+    },
+    # C3: One-time buyer in January
+    {
+        "name": "one_time_jan",
+        "buys": [{"product": "one_time", "on": date(2024, 1, 15)}],
+    },
+    # C4: Late monthly — subscribes Apr, renews through Jun
+    {
+        "name": "late_monthly",
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 4, 1),
+                "renewals": [date(2024, 5, 1), date(2024, 6, 1)],
+            }
+        ],
+    },
+    # C5: Mid-year churner — subscribes Feb, cancels Apr 15, ends May 1
+    {
+        "name": "mid_churner",
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 2, 1),
+                "cancel": date(2024, 4, 15),
+                "cancel_reason": "missing_features",
+                "end": date(2024, 5, 1),
+                "renewals": [date(2024, 3, 1), date(2024, 4, 1)],
+            }
+        ],
+    },
+    # C6: Mixed — one-time purchase in Jan, then monthly sub from Mar
+    {
+        "name": "mixed_buyer",
+        "buys": [{"product": "one_time", "on": date(2024, 1, 10)}],
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 3, 1),
+                "renewals": [
+                    date(2024, 4, 1),
+                    date(2024, 5, 1),
+                    date(2024, 6, 1),
+                ],
+            }
+        ],
+    },
+    # C7: Two one-time purchases
+    {
+        "name": "repeat_buyer",
+        "buys": [
+            {"product": "one_time", "on": date(2024, 1, 5)},
+            {"product": "one_time", "on": date(2024, 4, 20)},
+        ],
+    },
+    # C8: Short-lived monthly — subscribes Jan, cancels Jan 20, ends Feb 1
+    {
+        "name": "quick_churner",
+        "subs": [
+            {
+                "product": "monthly",
+                "start": date(2024, 1, 1),
+                "cancel": date(2024, 1, 20),
+                "cancel_reason": "unused",
+                "end": date(2024, 2, 1),
+            }
+        ],
+    },
+    # C9: Mid-year yearly — subscribes Jun
+    {
+        "name": "yearly_jun",
+        "subs": [{"product": "yearly", "start": date(2024, 6, 1)}],
+    },
+]
+
+
+SETTLEMENT_METRIC_SLUGS = [
+    "orders",
+    "revenue",
+    "net_revenue",
+    "cumulative_revenue",
+    "net_cumulative_revenue",
+    "average_order_value",
+    "net_average_order_value",
+    "one_time_products",
+    "one_time_products_revenue",
+    "one_time_products_net_revenue",
+    "new_subscriptions",
+    "new_subscriptions_revenue",
+    "new_subscriptions_net_revenue",
+    "renewed_subscriptions",
+    "renewed_subscriptions_revenue",
+    "renewed_subscriptions_net_revenue",
+    "monthly_recurring_revenue",
+    "committed_monthly_recurring_revenue",
+    "active_subscriptions",
+    "committed_subscriptions",
+    "canceled_subscriptions",
+    "canceled_subscriptions_customer_service",
+    "canceled_subscriptions_low_quality",
+    "canceled_subscriptions_missing_features",
+    "canceled_subscriptions_switched_service",
+    "canceled_subscriptions_too_complex",
+    "canceled_subscriptions_too_expensive",
+    "canceled_subscriptions_unused",
+    "canceled_subscriptions_other",
+    "churned_subscriptions",
+]
+
+
+# ---------------------------------------------------------------------------
+# Fixture helpers
+# ---------------------------------------------------------------------------
+
+
+def _price_for(product_key: str) -> int:
+    return {
+        "monthly": MONTHLY_PRICE,
+        "yearly": YEARLY_PRICE,
+        "one_time": ONE_TIME_PRICE,
+    }[product_key]
+
+
+async def _create_balance_event(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    product: Product,
+    subscription: Subscription | None,
+    order_date: date,
+    amount: int,
+) -> Event:
+    order = await create_order(
+        save_fixture,
+        status=OrderStatus.paid,
+        product=product,
+        customer=customer,
+        subtotal_amount=amount,
+        created_at=_dt(order_date),
+        subscription=subscription,
+    )
+    txn = await create_payment_transaction(
+        save_fixture, order=order, amount=order.net_amount, tax_amount=order.tax_amount
+    )
+    metadata: dict[str, Any] = {
+        "transaction_id": str(txn.id),
+        "order_id": str(order.id),
+        "product_id": str(order.product_id),
+        "amount": txn.amount,
+        "currency": txn.currency,
+        "presentment_amount": txn.presentment_amount or txn.amount,
+        "presentment_currency": txn.presentment_currency or txn.currency,
+        "tax_amount": order.tax_amount,
+        "fee": 0,
+    }
+    if subscription is not None:
+        metadata["subscription_id"] = str(subscription.id)
+
+    return await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.balance_order.value,
+        timestamp=_dt(order_date),
+        metadata=metadata,
+    )
+
+
+async def _create_subscription_created_event(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    subscription: Subscription,
+    product: Product,
+) -> Event:
+    assert subscription.started_at is not None
+    return await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.subscription_created.value,
+        timestamp=subscription.started_at,
+        metadata={
+            "subscription_id": str(subscription.id),
+            "product_id": str(product.id),
+            "customer_id": str(customer.id),
+            "started_at": subscription.started_at.isoformat(),
+            "recurring_interval": product.recurring_interval.value
+            if product.recurring_interval
+            else None,
+            "recurring_interval_count": 1,
+        },
+    )
+
+
+async def _create_subscription_canceled_event(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    subscription: Subscription,
+    cancel_date: date,
+    end_date: date,
+    cancel_reason: str | None = None,
+) -> Event:
+    metadata: dict[str, Any] = {
+        "subscription_id": str(subscription.id),
+        "canceled_at": _dt(cancel_date).isoformat(),
+        "ends_at": _dt(end_date).isoformat(),
+    }
+    if cancel_reason is not None:
+        metadata["customer_cancellation_reason"] = cancel_reason
+    return await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.subscription_canceled.value,
+        timestamp=_dt(cancel_date),
+        metadata=metadata,
+    )
+
+
+async def _build_scenario(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    products: dict[str, Product],
+) -> list[Event]:
+    """Create all customers, subscriptions, orders, and events from SCENARIO."""
+    all_events: list[Event] = []
+
+    for i, cs in enumerate(SCENARIO):
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email=f"c{i}@test.com",
+            name=cs["name"],
+            stripe_customer_id=f"cus_{cs['name']}",
+        )
+
+        for sub_def in cs.get("subs", []):
+            product = products[sub_def["product"]]
+            price = _price_for(sub_def["product"])
+
+            sub = await create_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                status=SubscriptionStatus.active,
+                started_at=_dt(sub_def["start"]),
+                ended_at=_dt(sub_def["end"]) if "end" in sub_def else None,
+                ends_at=_dt(sub_def["end"]) if "end" in sub_def else None,
+            )
+            if "cancel" in sub_def:
+                sub.canceled_at = _dt(sub_def["cancel"])
+                reason = sub_def.get("cancel_reason")
+                if reason is not None:
+                    sub.customer_cancellation_reason = CustomerCancellationReason(
+                        reason
+                    )
+                await save_fixture(sub)
+
+            ev = await _create_subscription_created_event(
+                save_fixture, organization, customer, sub, product
+            )
+            all_events.append(ev)
+
+            # Initial order
+            ev = await _create_balance_event(
+                save_fixture,
+                organization,
+                customer,
+                product,
+                sub,
+                sub_def["start"],
+                price,
+            )
+            all_events.append(ev)
+
+            # Renewals
+            for renew_date in sub_def.get("renewals", []):
+                ev = await _create_balance_event(
+                    save_fixture,
+                    organization,
+                    customer,
+                    product,
+                    sub,
+                    renew_date,
+                    price,
+                )
+                all_events.append(ev)
+
+            # Cancellation
+            if "cancel" in sub_def and "end" in sub_def:
+                ev = await _create_subscription_canceled_event(
+                    save_fixture,
+                    organization,
+                    customer,
+                    sub,
+                    sub_def["cancel"],
+                    sub_def["end"],
+                    cancel_reason=sub_def.get("cancel_reason"),
+                )
+                all_events.append(ev)
+
+        for buy_def in cs.get("buys", []):
+            product = products[buy_def["product"]]
+            price = _price_for(buy_def["product"])
+            ev = await _create_balance_event(
+                save_fixture,
+                organization,
+                customer,
+                product,
+                None,
+                buy_def["on"],
+                price,
+            )
+            all_events.append(ev)
+
+    return all_events
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest_asyncio.fixture
+async def products(
+    save_fixture: SaveFixture, organization: Organization
+) -> dict[str, Product]:
+    monthly = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(MONTHLY_PRICE, "usd")],
+    )
+    yearly = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.year,
+        prices=[(YEARLY_PRICE, "usd")],
+    )
+    one_time = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        prices=[(ONE_TIME_PRICE, "usd")],
+    )
+    return {"monthly": monthly, "yearly": yearly, "one_time": one_time}
+
+
+@pytest_asyncio.fixture
+async def scenario_events(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    products: dict[str, Product],
+    tinybird_client: TinybirdClient,
+) -> list[Event]:
+    events = await _build_scenario(save_fixture, organization, products)
+    tinybird_events = [_event_to_tinybird(e) for e in events]
+    await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+    return events
+
+
+# ---------------------------------------------------------------------------
+# Comparison helpers
+# ---------------------------------------------------------------------------
+
+
+def _period_slug_value(period: MetricsPeriod, slug: str) -> int | float:
+    v = getattr(period, slug, None)
+    return v if v is not None else 0
+
+
+async def _enable_tinybird_compare(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "tinybird_compare": True,
+    }
+    await save_fixture(organization)
+
+
+# Expected values per month for the full H1 2024 scenario (UTC, monthly interval).
+# fee=0 throughout, so net_revenue == revenue and net variants match gross.
+#
+#       Jan: C0+C1+C2+C8 sub initial, C3+C6+C7 one-time  → 7 orders
+#       Feb: C0+C1 renewal, C5 initial                    → 3 orders
+#       Mar: C0+C5 renewal, C6 initial                    → 3 orders
+#       Apr: C0+C5+C6 renewal, C4 initial, C7 one-time    → 5 orders
+#       May: C0+C4+C6 renewal                             → 3 orders
+#       Jun: C0+C4+C6 renewal, C9 yearly initial          → 4 orders
+EXPECTED_MONTHLY: list[dict[str, int]] = [
+    {  # Jan
+        "orders": 7,
+        "revenue": 105_000,
+        "net_revenue": 105_000,
+        "cumulative_revenue": 105_000,
+        "net_cumulative_revenue": 105_000,
+        "average_order_value": 15_000,
+        "net_average_order_value": 15_000,
+        "one_time_products": 3,
+        "one_time_products_revenue": 30_000,
+        "one_time_products_net_revenue": 30_000,
+        "new_subscriptions": 4,
+        "new_subscriptions_revenue": 75_000,
+        "new_subscriptions_net_revenue": 75_000,
+        "renewed_subscriptions": 0,
+        "renewed_subscriptions_revenue": 0,
+        "renewed_subscriptions_net_revenue": 0,
+        "monthly_recurring_revenue": 20_000,
+        "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 1,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
+    },
+    {  # Feb — C1 still active (ends Mar 1), C8 ended (ends Feb 1)
+        "orders": 3,
+        "revenue": 15_000,
+        "net_revenue": 15_000,
+        "cumulative_revenue": 120_000,
+        "net_cumulative_revenue": 120_000,
+        "average_order_value": 5_000,
+        "net_average_order_value": 5_000,
+        "one_time_products": 0,
+        "one_time_products_revenue": 0,
+        "one_time_products_net_revenue": 0,
+        "new_subscriptions": 1,
+        "new_subscriptions_revenue": 5_000,
+        "new_subscriptions_net_revenue": 5_000,
+        "renewed_subscriptions": 2,
+        "renewed_subscriptions_revenue": 10_000,
+        "renewed_subscriptions_net_revenue": 10_000,
+        "monthly_recurring_revenue": 20_000,
+        "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 1,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
+    },
+    {  # Mar — C1 ended (ends Mar 1)
+        "orders": 3,
+        "revenue": 15_000,
+        "net_revenue": 15_000,
+        "cumulative_revenue": 135_000,
+        "net_cumulative_revenue": 135_000,
+        "average_order_value": 5_000,
+        "net_average_order_value": 5_000,
+        "one_time_products": 0,
+        "one_time_products_revenue": 0,
+        "one_time_products_net_revenue": 0,
+        "new_subscriptions": 1,
+        "new_subscriptions_revenue": 5_000,
+        "new_subscriptions_net_revenue": 5_000,
+        "renewed_subscriptions": 2,
+        "renewed_subscriptions_revenue": 10_000,
+        "renewed_subscriptions_net_revenue": 10_000,
+        "monthly_recurring_revenue": 20_000,
+        "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
+    },
+    {  # Apr — C5 still active (ends May 1)
+        "orders": 5,
+        "revenue": 30_000,
+        "net_revenue": 30_000,
+        "cumulative_revenue": 165_000,
+        "net_cumulative_revenue": 165_000,
+        "average_order_value": 6_000,
+        "net_average_order_value": 6_000,
+        "one_time_products": 1,
+        "one_time_products_revenue": 10_000,
+        "one_time_products_net_revenue": 10_000,
+        "new_subscriptions": 1,
+        "new_subscriptions_revenue": 5_000,
+        "new_subscriptions_net_revenue": 5_000,
+        "renewed_subscriptions": 3,
+        "renewed_subscriptions_revenue": 15_000,
+        "renewed_subscriptions_net_revenue": 15_000,
+        "monthly_recurring_revenue": 25_000,
+        "committed_monthly_recurring_revenue": 25_000,
+        "active_subscriptions": 5,
+        "committed_subscriptions": 5,
+        "canceled_subscriptions": 1,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 1,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
+    },
+    {  # May — C5 ended (ends May 1)
+        "orders": 3,
+        "revenue": 15_000,
+        "net_revenue": 15_000,
+        "cumulative_revenue": 180_000,
+        "net_cumulative_revenue": 180_000,
+        "average_order_value": 5_000,
+        "net_average_order_value": 5_000,
+        "one_time_products": 0,
+        "one_time_products_revenue": 0,
+        "one_time_products_net_revenue": 0,
+        "new_subscriptions": 0,
+        "new_subscriptions_revenue": 0,
+        "new_subscriptions_net_revenue": 0,
+        "renewed_subscriptions": 3,
+        "renewed_subscriptions_revenue": 15_000,
+        "renewed_subscriptions_net_revenue": 15_000,
+        "monthly_recurring_revenue": 20_000,
+        "committed_monthly_recurring_revenue": 20_000,
+        "active_subscriptions": 4,
+        "committed_subscriptions": 4,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 1,
+    },
+    {  # Jun — C9 yearly joins
+        "orders": 4,
+        "revenue": 75_000,
+        "net_revenue": 75_000,
+        "cumulative_revenue": 255_000,
+        "net_cumulative_revenue": 255_000,
+        "average_order_value": 18_750,
+        "net_average_order_value": 18_750,
+        "one_time_products": 0,
+        "one_time_products_revenue": 0,
+        "one_time_products_net_revenue": 0,
+        "new_subscriptions": 1,
+        "new_subscriptions_revenue": 60_000,
+        "new_subscriptions_net_revenue": 60_000,
+        "renewed_subscriptions": 3,
+        "renewed_subscriptions_revenue": 15_000,
+        "renewed_subscriptions_net_revenue": 15_000,
+        "monthly_recurring_revenue": 25_000,
+        "committed_monthly_recurring_revenue": 25_000,
+        "active_subscriptions": 5,
+        "committed_subscriptions": 5,
+        "canceled_subscriptions": 0,
+        "canceled_subscriptions_customer_service": 0,
+        "canceled_subscriptions_low_quality": 0,
+        "canceled_subscriptions_missing_features": 0,
+        "canceled_subscriptions_switched_service": 0,
+        "canceled_subscriptions_too_complex": 0,
+        "canceled_subscriptions_too_expensive": 0,
+        "canceled_subscriptions_unused": 0,
+        "canceled_subscriptions_other": 0,
+        "churned_subscriptions": 0,
+    },
+]
+
+
+async def _run_shadow_mode(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    auth_subject: AuthSubject[User | Organization],
+    organization: Organization,
+    *,
+    start_date: date,
+    end_date: date,
+    timezone: ZoneInfo,
+    interval: TimeInterval,
+    metrics: Sequence[str],
+) -> MetricsResponse:
+    """Run metrics in shadow mode — PG + Tinybird comparison, returns PG values."""
+    await _enable_tinybird_compare(save_fixture, organization)
+    with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+        return await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=start_date,
+            end_date=end_date,
+            timezone=timezone,
+            interval=interval,
+            organization_id=[organization.id],
+            metrics=list(metrics),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+@pytest.mark.usefixtures("scenario_events")
+class TestSettlementComparison:
+    """Compare original Postgres metrics with Tinybird settlement metrics.
+
+    All query patterns run in a single test because the DB session is
+    function-scoped with transaction rollback — PG data can't survive
+    across test methods. Each pattern is labelled so failures identify
+    which variant broke.
+    """
+
+    async def test_shadow_mode_returns_pg_values(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        run = _run_shadow_mode
+
+        result = await run(
+            save_fixture,
+            session,
+            auth_subject,
+            organization,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 6, 30),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            metrics=SETTLEMENT_METRIC_SLUGS,
+        )
+        assert len(result.periods) == 6
+        for i, expected in enumerate(EXPECTED_MONTHLY):
+            period = result.periods[i]
+            for slug, value in expected.items():
+                actual = _period_slug_value(period, slug)
+                assert actual == value, (
+                    f"[monthly] Period {i} ({period.timestamp.date()}): "
+                    f"{slug} expected {value}, got {actual}"
+                )

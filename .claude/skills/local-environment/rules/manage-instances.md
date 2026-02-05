@@ -31,28 +31,28 @@ Instances allow running multiple isolated development environments simultaneousl
 
 **Start instance:**
 ```bash
-./dev/docker-dev -i 1 -d
-./dev/docker-dev -i 2 -d
+dev docker up -i 1 -d
+dev docker up -i 2 -d
 ```
 
 **Check instance status:**
 ```bash
-./dev/docker-dev -i 1 ps
+dev docker ps -i 1
 ```
 
 **View instance logs:**
 ```bash
-./dev/docker-dev -i 1 logs -f api
+dev docker logs -i 1 api
 ```
 
 **Stop instance:**
 ```bash
-./dev/docker-dev -i 1 down
+dev docker down -i 1
 ```
 
 **Shell into instance:**
 ```bash
-./dev/docker-dev -i 1 shell api
+dev docker shell -i 1 api
 ```
 
 ## Use Cases

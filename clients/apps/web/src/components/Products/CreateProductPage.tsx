@@ -79,18 +79,15 @@ export const CreateProductPage = ({
     return {
       recurring_interval: null,
       visibility: 'public' as const,
-      ...{
-        prices: [
-          {
-            price_amount: undefined,
-            price_currency: 'usd',
-          },
-        ],
-      },
-      ...{
-        medias: [],
-        full_medias: [],
-      },
+      prices: [
+        {
+          amount_type: 'fixed' as const,
+          price_amount: 0,
+          price_currency: organization.default_presentment_currency,
+        },
+      ],
+      medias: [],
+      full_medias: [],
       organization_id: organization.id,
       metadata: [],
     }

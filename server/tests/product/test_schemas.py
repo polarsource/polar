@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.currency import PresentmentCurrency
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.schemas import (
     ProductCreateRecurring,
@@ -33,7 +34,7 @@ def test_incomplete_trial_configuration(payload: dict[str, Any]) -> None:
                 ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=1000,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
             ],
             **payload,
@@ -55,7 +56,7 @@ class TestProductPriceMeteredUnitCreate:
         """Test that cap_amount can be None."""
         schema = ProductPriceMeteredUnitCreate(
             amount_type=ProductPriceAmountType.metered_unit,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             unit_amount=Decimal("1.0"),
             meter_id=METER_ID,
             cap_amount=None,
@@ -66,7 +67,7 @@ class TestProductPriceMeteredUnitCreate:
         """Test that cap_amount can be 0."""
         schema = ProductPriceMeteredUnitCreate(
             amount_type=ProductPriceAmountType.metered_unit,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             unit_amount=Decimal("1.0"),
             meter_id=METER_ID,
             cap_amount=0,
@@ -77,7 +78,7 @@ class TestProductPriceMeteredUnitCreate:
         """Test that cap_amount can be a positive integer."""
         schema = ProductPriceMeteredUnitCreate(
             amount_type=ProductPriceAmountType.metered_unit,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             unit_amount=Decimal("1.0"),
             meter_id=METER_ID,
             cap_amount=100_000,
@@ -88,7 +89,7 @@ class TestProductPriceMeteredUnitCreate:
         """Test that cap_amount can be the maximum allowed value."""
         schema = ProductPriceMeteredUnitCreate(
             amount_type=ProductPriceAmountType.metered_unit,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             unit_amount=Decimal("1.0"),
             meter_id=METER_ID,
             cap_amount=INT_MAX_VALUE,
@@ -100,7 +101,7 @@ class TestProductPriceMeteredUnitCreate:
         with pytest.raises(ValidationError) as exc_info:
             ProductPriceMeteredUnitCreate(
                 amount_type=ProductPriceAmountType.metered_unit,
-                price_currency="usd",
+                price_currency=PresentmentCurrency.usd,
                 unit_amount=Decimal("1.0"),
                 meter_id=METER_ID,
                 cap_amount=-1,
@@ -116,7 +117,7 @@ class TestProductPriceMeteredUnitCreate:
         with pytest.raises(ValidationError) as exc_info:
             ProductPriceMeteredUnitCreate(
                 amount_type=ProductPriceAmountType.metered_unit,
-                price_currency="usd",
+                price_currency=PresentmentCurrency.usd,
                 unit_amount=Decimal("1.0"),
                 meter_id=METER_ID,
                 cap_amount=INT_MAX_VALUE + 1,
@@ -132,7 +133,7 @@ class TestProductPriceMeteredUnitCreate:
         with pytest.raises(ValidationError) as exc_info:
             ProductPriceMeteredUnitCreate(
                 amount_type=ProductPriceAmountType.metered_unit,
-                price_currency="usd",
+                price_currency=PresentmentCurrency.usd,
                 unit_amount=Decimal("1.0"),
                 meter_id=METER_ID,
                 cap_amount=100_000_000_000,  # The value from the bug report

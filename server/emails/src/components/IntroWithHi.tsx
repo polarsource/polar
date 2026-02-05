@@ -10,7 +10,7 @@ export function IntroWithHi({
   children,
 }: PropsWithChildren<IntroWithHiProps>) {
   return (
-    <Section className="pt-10">
+    <Section>
       <Text className="text-[22px] font-bold">{hiMsg}</Text>
       <Text className="text-[16px]">{children}</Text>
     </Section>

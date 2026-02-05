@@ -17,6 +17,7 @@ from polar.kit.utils import utc_now
 
 from .benefit import Benefit
 from .customer import Customer
+from .member import Member
 
 if TYPE_CHECKING:
     from .license_key_activation import LicenseKeyActivation
@@ -50,6 +51,17 @@ class LicenseKey(RecordModel):
     @declared_attr
     def customer(cls) -> Mapped[Customer]:
         return relationship("Customer", lazy="raise")
+
+    member_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("members.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def member(cls) -> Mapped[Member | None]:
+        return relationship("Member", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
         Uuid,

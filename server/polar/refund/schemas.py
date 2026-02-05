@@ -1,11 +1,11 @@
 import inspect
 from typing import Annotated
 
-from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import UUID4, Field
 
 from polar.dispute.schemas import DisputeBase
+from polar.kit.currency import format_currency
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -40,13 +40,7 @@ class Refund(MetadataOutputMixin, IDSchema, TimestampedSchema):
     dispute: RefundDispute | None
 
     def get_amount_display(self) -> str:
-        return f"{
-            format_currency(
-                self.amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }"
+        return format_currency(self.amount, self.currency)
 
 
 class RefundCreate(MetadataInputMixin, Schema):

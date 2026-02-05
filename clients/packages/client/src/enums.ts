@@ -7,6 +7,7 @@ export {
   checkoutStatusValues,
   countAggregationFuncValues,
   customFieldTypeValues,
+  presentmentCurrencyValues,
   propertyAggregationFuncValues,
   refundReasonValues,
   stripeAccountCountryValues,

@@ -7,7 +7,6 @@ from typing import Annotated, Any, Literal, override
 
 import stripe as stripe_lib
 import structlog
-from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -28,6 +27,7 @@ from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.kit.sorting import Sorting
@@ -140,7 +140,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         from babel.numbers import format_currency
 
-        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        text(format_currency(item.next_review_threshold, "usd"))
         return None
 
 
@@ -191,16 +191,6 @@ async def get_payment_statistics(
 
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
-    if not account_id:
-        return PaymentStatistics(
-            payment_count=0,
-            p50_risk=0,
-            p90_risk=0,
-            refunds_count=0,
-            transfer_sum=0,
-            refunds_amount=0,
-            total_payment_amount=0,
-        )
 
     # Get payment statistics
     (
@@ -217,10 +207,13 @@ async def get_payment_statistics(
         organization_id
     )
 
-    # Get transfer sum (used for review threshold checking)
-    transfer_sum = await transaction_service.get_transactions_sum(
-        session, account_id, type=TransactionType.balance
-    )
+    if account_id:
+        # Get transfer sum (used for review threshold checking)
+        transfer_sum = await transaction_service.get_transactions_sum(
+            session, account_id, type=TransactionType.balance
+        )
+    else:
+        transfer_sum = 0
 
     return PaymentStatistics(
         payment_count=payment_count,
@@ -1767,17 +1760,13 @@ async def get(
                                 "future_annual_revenue"
                             )
                             if expected_revenue:
-                                text(
-                                    format_currency(
-                                        expected_revenue, "USD", locale="en_US"
-                                    )
-                                )
+                                text(format_currency(expected_revenue, "usd"))
                             else:
                                 text("—")
                             if organization.details.get("switching"):
                                 with accordion.item(a, "Switching from"):
                                     text(
-                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
+                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
                                     )
 
             # Internal Notes Section

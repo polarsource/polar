@@ -1,15 +1,17 @@
+import asyncio
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import logfire
+import structlog
 from sqlalchemy import ColumnElement, FromClause, select, text
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Organization, User
+from polar.models import Organization, User, UserOrganization
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -17,6 +19,7 @@ from .metrics import (
     METRICS,
     METRICS_POST_COMPUTE,
     METRICS_SQL,
+    METRICS_TINYBIRD_SETTLEMENT,
     MetaMetric,
     Metric,
     SQLMetric,
@@ -27,7 +30,14 @@ from .queries import (
     MetricQuery,
     QueryCallable,
 )
+from .queries_tinybird import (
+    TinybirdQuery,
+    query_events_metrics,
+    query_mrr_metrics,
+)
 from .schemas import MetricsPeriod, MetricsResponse
+
+log = structlog.get_logger()
 
 
 def _expand_metrics_with_dependencies(
@@ -170,6 +180,259 @@ def _get_filtered_all_metrics(
 
 
 class MetricsService:
+    async def _get_tinybird_enabled_org(
+        self,
+        session: AsyncSession | AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[uuid.UUID] | None,
+    ) -> Organization | None:
+        if not settings.TINYBIRD_EVENTS_READ:
+            return None
+
+        org: Organization | None
+        if is_organization(auth_subject):
+            org = auth_subject.subject
+        elif is_user(auth_subject):
+            if not organization_id:
+                return None
+            statement = select(Organization).where(
+                Organization.id == organization_id[0],
+                Organization.id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                ),
+            )
+            result = await session.execute(statement)
+            org = result.scalar_one_or_none()
+            if org is None:
+                return None
+        else:
+            return None
+
+        if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
+            "tinybird_compare", False
+        ):
+            return org
+
+        return None
+
+    async def _get_metrics_from_tinybird(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        original_start_timestamp: datetime,
+        original_end_timestamp: datetime,
+        timezone: ZoneInfo,
+        interval: TimeInterval,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        billing_type: Sequence[ProductBillingType] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        metrics: Sequence[str] | None = None,
+        now: datetime | None = None,
+    ) -> MetricsResponse:
+        now_dt = now or datetime.now(tz=timezone)
+        tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
+
+        org_ids: list[uuid.UUID] = []
+        if organization_id is not None and len(organization_id) > 0:
+            org_ids = list(organization_id)
+        elif is_organization(auth_subject):
+            org_ids = [auth_subject.subject.id]
+
+        if metrics is not None:
+            tb_needed = {s for s in metrics if s in tb_slugs}
+        else:
+            tb_needed = tb_slugs
+
+        if not tb_needed or not org_ids:
+            return MetricsResponse.model_validate(
+                {"periods": [], "totals": {}, "metrics": {}}
+            )
+
+        tb_queries = {
+            m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed
+        }
+        billing_strs = [bt.value for bt in billing_type] if billing_type else None
+
+        tb_coros = []
+        if TinybirdQuery.events in tb_queries:
+            tb_coros.append(
+                query_events_metrics(
+                    organization_id=org_ids,
+                    start=start_timestamp,
+                    end=end_timestamp,
+                    interval=interval,
+                    timezone=timezone.key,
+                    bounds_start=original_start_timestamp,
+                    bounds_end=original_end_timestamp,
+                    product_id=product_id,
+                    customer_id=customer_id,
+                    billing_type=billing_strs,
+                )
+            )
+        if TinybirdQuery.mrr in tb_queries:
+            tb_coros.append(
+                query_mrr_metrics(
+                    organization_id=org_ids,
+                    start=start_timestamp,
+                    end=end_timestamp,
+                    interval=interval,
+                    timezone=timezone.key,
+                    now=now_dt,
+                    product_id=product_id,
+                    customer_id=customer_id,
+                    billing_type=billing_strs,
+                )
+            )
+
+        with logfire.span(
+            "Execute Tinybird metric queries",
+            queries=[q.value for q in tb_queries],
+        ):
+            tb_results = await asyncio.gather(*tb_coros) if tb_coros else []
+
+        tb_rows: list[dict[str, int | float]] = []
+        if len(tb_results) == 1:
+            tb_rows = tb_results[0]
+        elif len(tb_results) >= 2:
+            for i in range(len(tb_results[0])):
+                merged = dict(tb_results[0][i])
+                for j in range(1, len(tb_results)):
+                    merged.update(
+                        {k: v for k, v in tb_results[j][i].items() if k != "timestamp"}
+                    )
+                tb_rows.append(merged)
+
+        periods: list[MetricsPeriod] = []
+        for row in tb_rows:
+            ts = row.get("timestamp")
+            if isinstance(ts, date) and not isinstance(ts, datetime):
+                row["timestamp"] = datetime(ts.year, ts.month, ts.day, tzinfo=timezone)
+            elif isinstance(ts, datetime) and ts.tzinfo is None:
+                row["timestamp"] = ts.replace(tzinfo=timezone)
+
+            filtered = {
+                k: v for k, v in row.items() if k == "timestamp" or k in tb_needed
+            }
+            periods.append(MetricsPeriod.model_validate(filtered))
+
+        tb_by_slug = {m.slug: m for m in METRICS_TINYBIRD_SETTLEMENT}
+        tb_metrics = [tb_by_slug[s] for s in tb_needed if s in tb_by_slug]
+
+        totals: dict[str, int | float] = {}
+        for metric in tb_metrics:
+            totals[metric.slug] = metric.get_cumulative(periods)
+
+        return MetricsResponse.model_validate(
+            {
+                "periods": periods,
+                "totals": totals,
+                "metrics": {m.slug: m for m in tb_metrics},
+            }
+        )
+
+    def _log_tinybird_comparison(
+        self,
+        organization_id: uuid.UUID,
+        pg_response: MetricsResponse,
+        tb_response: MetricsResponse,
+    ) -> None:
+        tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
+        mismatches: list[dict[str, object]] = []
+
+        for i, (pg_period, tb_period) in enumerate(
+            zip(pg_response.periods, tb_response.periods)
+        ):
+            for slug in tb_slugs:
+                pg_val = getattr(pg_period, slug, None)
+                tb_val = getattr(tb_period, slug, None)
+                if pg_val is not None and tb_val is not None and pg_val != tb_val:
+                    mismatches.append(
+                        {
+                            "period": i,
+                            "timestamp": str(pg_period.timestamp),
+                            "slug": slug,
+                            "pg": pg_val,
+                            "tinybird": tb_val,
+                        }
+                    )
+
+        with logfire.span(
+            "tinybird.metrics.shadow.comparison",
+            organization_id=str(organization_id),
+            pg_periods=len(pg_response.periods),
+            tb_periods=len(tb_response.periods),
+            has_diff=len(mismatches) > 0,
+            mismatches=mismatches,
+            mismatch_count=len(mismatches),
+        ):
+            pass
+
+    def _merge_tinybird_over_pg(
+        self,
+        pg_response: MetricsResponse,
+        tb_response: MetricsResponse,
+        metrics: Sequence[str] | None = None,
+    ) -> MetricsResponse:
+        tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
+        filtered_post_compute = _get_filtered_post_compute_metrics(metrics)
+        requested_slugs = (
+            set(metrics) if metrics else {m.slug for m in METRICS} | tb_slugs
+        )
+
+        periods: list[MetricsPeriod] = []
+        for pg_period, tb_period in zip(pg_response.periods, tb_response.periods):
+            period_dict = pg_period.model_dump()
+            for slug in tb_slugs:
+                tb_val = getattr(tb_period, slug, None)
+                if tb_val is not None:
+                    period_dict[slug] = tb_val
+
+            temp_dict = dict(period_dict)
+            for meta_metric in filtered_post_compute:
+                temp_dict[meta_metric.slug] = 0
+            for meta_metric in filtered_post_compute:
+                temp_period = MetricsPeriod.model_validate(temp_dict)
+                computed = meta_metric.compute_from_period(temp_period)
+                temp_dict[meta_metric.slug] = computed
+                period_dict[meta_metric.slug] = computed
+
+            filtered = {
+                k: v
+                for k, v in period_dict.items()
+                if k == "timestamp" or k in requested_slugs
+            }
+            periods.append(MetricsPeriod.model_validate(filtered))
+
+        tb_by_slug = {m.slug: m for m in METRICS_TINYBIRD_SETTLEMENT}
+        sql_by_slug = {m.slug: m for m in METRICS_SQL}
+        meta_by_slug = {m.slug: m for m in METRICS_POST_COMPUTE}
+        all_metrics: list[type[Metric]] = []
+        for slug in requested_slugs:
+            if slug in tb_by_slug:
+                all_metrics.append(tb_by_slug[slug])
+            elif slug in meta_by_slug:
+                all_metrics.append(meta_by_slug[slug])
+            elif slug in sql_by_slug:
+                all_metrics.append(sql_by_slug[slug])
+
+        totals: dict[str, int | float] = {}
+        for metric in all_metrics:
+            totals[metric.slug] = metric.get_cumulative(periods)
+
+        return MetricsResponse.model_validate(
+            {
+                "periods": periods,
+                "totals": totals,
+                "metrics": {m.slug: m for m in all_metrics},
+            }
+        )
+
     async def get_metrics(
         self,
         session: AsyncSession | AsyncReadSession,
@@ -316,13 +579,55 @@ class MetricsService:
             for metric in filtered_all_metrics:
                 totals[metric.slug] = metric.get_cumulative(periods)
 
-        return MetricsResponse.model_validate(
+        pg_response = MetricsResponse.model_validate(
             {
                 "periods": periods,
                 "totals": totals,
                 "metrics": {m.slug: m for m in filtered_all_metrics},
             }
         )
+
+        org = await self._get_tinybird_enabled_org(
+            session, auth_subject, organization_id
+        )
+        if org is None:
+            return pg_response
+
+        tinybird_compare = org.feature_settings.get("tinybird_compare", False)
+        tinybird_read = org.feature_settings.get("tinybird_read", False)
+
+        try:
+            tb_response = await self._get_metrics_from_tinybird(
+                auth_subject,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                original_start_timestamp=original_start_timestamp,
+                original_end_timestamp=original_end_timestamp,
+                timezone=timezone,
+                interval=interval,
+                organization_id=organization_id,
+                product_id=product_id,
+                billing_type=billing_type,
+                customer_id=customer_id,
+                metrics=metrics,
+                now=now,
+            )
+        except Exception as e:
+            log.error(
+                "tinybird.metrics.query.failed",
+                organization_id=str(org.id),
+                error=str(e),
+            )
+            return pg_response
+
+        if tinybird_compare:
+            self._log_tinybird_comparison(org.id, pg_response, tb_response)
+            return pg_response
+
+        if tinybird_read:
+            return self._merge_tinybird_over_pg(pg_response, tb_response, metrics)
+
+        return pg_response
 
 
 metrics = MetricsService()

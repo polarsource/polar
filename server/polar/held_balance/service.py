@@ -133,6 +133,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 "transaction_id": str(payment_transaction.id),
                 "order_id": str(order.id),
                 "amount": payment_transaction.amount,
+                "net_amount": order.net_amount,
                 "currency": payment_transaction.currency,
                 "presentment_amount": payment_transaction.presentment_amount,
                 "presentment_currency": payment_transaction.presentment_currency,

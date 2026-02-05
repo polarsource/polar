@@ -89,6 +89,20 @@ Thank you for your business!
             },
             "long_seller_info",
         ),
+        (
+            {
+                "items": [
+                    InvoiceItem(
+                        description="Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl. Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail burgdoggen flank.Bacon ipsum dolor amet flank venison swine, tenderloin ham hock turducken short loin bacon. Pork chop cupim turkey short ribs bacon rump picanha ham hock jerky salami ground round ham shoulder swine brisket. Ham hock pork chop chislic cow hamburger tongue beef. Jerky pastrami biltong pancetta. Ground round chuck meatloaf jowl. Tongue short ribs boudin jowl, frankfurter sausage meatloaf short loin tail burgdoggen flank."
+                        * 100,
+                        quantity=1,
+                        unit_amount=50_00,
+                        amount=50_00,
+                    ),
+                ],
+            },
+            "long_item_description",
+        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:

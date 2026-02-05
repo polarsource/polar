@@ -4,6 +4,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   DataTable,
   DataTableColumnDef,
@@ -11,7 +12,6 @@ import {
   ReactQueryLoading,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 
 const getTransactionMeta = (transaction: schemas['Transaction']) => {
@@ -180,7 +180,7 @@ const TransactionsList = ({
 
         return (
           <div className="flex flex-row justify-end">
-            {formatCurrencyAndAmount(amount, transaction.currency)}
+            {formatCurrency(amount, transaction.currency)}
           </div>
         )
       },
@@ -205,7 +205,7 @@ const TransactionsList = ({
         return (
           <div className="flex justify-end">
             {incurredAmount !== undefined
-              ? formatCurrencyAndAmount(incurredAmount, transaction.currency)
+              ? formatCurrency(incurredAmount, transaction.currency)
               : '—'}
           </div>
         )
@@ -231,7 +231,7 @@ const TransactionsList = ({
         return (
           <div className="flex justify-end">
             {netAmount !== undefined
-              ? formatCurrencyAndAmount(netAmount, transaction.currency)
+              ? formatCurrency(netAmount, transaction.currency)
               : '—'}
           </div>
         )

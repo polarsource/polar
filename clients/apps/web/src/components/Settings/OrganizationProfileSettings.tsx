@@ -610,6 +610,7 @@ export const OrganizationDetailsForm: React.FC<
                       <MoneyInput
                         {...field}
                         placeholder={100_000_000}
+                        currency="usd"
                         className="w-full"
                       />
                       <FormMessage />

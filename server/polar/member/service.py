@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import structlog
@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -19,6 +20,9 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import MemberRepository
 from .sorting import MemberSortProperty
+
+if TYPE_CHECKING:
+    from polar.customer_seat.service import SeatService
 
 log = structlog.get_logger()
 
@@ -76,13 +80,19 @@ class MemberService:
         self,
         session: AsyncSession,
         member: Member,
+        customer_seat_service: "SeatService | None" = None,
     ) -> Member:
         """
         Soft delete a member.
 
+        Any active seats assigned to this member will be automatically revoked
+        before deletion.
+
         Args:
             session: Database session
             member: Member to delete
+            customer_seat_service: Optional seat service for revoking seats.
+                If not provided, will be imported lazily.
 
         Returns:
             Deleted Member
@@ -108,12 +118,34 @@ class MemberService:
                     ]
                 )
 
+        # Revoke any active seats assigned to this member
+        seat_repository = CustomerSeatRepository.from_session(session)
+        active_seats = await seat_repository.list_active_by_member_id(
+            member.id, options=seat_repository.get_eager_options()
+        )
+
+        if active_seats:
+            # Lazy import to avoid circular dependency
+            if customer_seat_service is None:
+                from polar.customer_seat.service import seat_service
+
+                customer_seat_service = seat_service
+
+            for seat in active_seats:
+                await customer_seat_service.revoke_seat(session, seat)
+                log.info(
+                    "member.delete.seat_revoked",
+                    member_id=member.id,
+                    seat_id=seat.id,
+                )
+
         deleted_member = await repository.soft_delete(member)
         log.info(
             "member.delete.success",
             member_id=member.id,
             customer_id=member.customer_id,
             organization_id=member.organization_id,
+            seats_revoked=len(active_seats),
         )
         return deleted_member
 

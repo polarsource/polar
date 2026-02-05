@@ -17,6 +17,17 @@ def org_id() -> uuid.UUID:
 
 
 @pytest.fixture
+def mock_organization_service(mocker: MockerFixture, org_id: uuid.UUID) -> MagicMock:
+    """Mock organization_service.get to return an org with the test org_id."""
+    mock_org = MagicMock()
+    mock_org.id = org_id
+    return mocker.patch(
+        "polar.cli.endpoints.organization_service.get",
+        return_value=mock_org,
+    )
+
+
+@pytest.fixture
 def mock_subscribe(mocker: MockerFixture) -> MagicMock:
     """Mock subscribe to yield controlled messages, capturing on_iteration."""
 
@@ -38,9 +49,8 @@ def mock_subscribe(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def mock_auth_subject(org_id: uuid.UUID) -> AsyncMock:
+def mock_auth_subject() -> AsyncMock:
     subject = AsyncMock()
-    subject.subject.id = org_id
     return subject
 
 
@@ -55,6 +65,7 @@ class TestListenEndpoint:
         self,
         redis: Redis,
         org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
         mock_subscribe: MagicMock,
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
@@ -63,6 +74,7 @@ class TestListenEndpoint:
         from polar.cli.endpoints import listen
 
         response = await listen(
+            id=org_id,
             request=mock_request,
             auth_subject=mock_auth_subject,
             redis=redis,
@@ -80,6 +92,7 @@ class TestListenEndpoint:
         self,
         redis: Redis,
         org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
         mock_subscribe: MagicMock,
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
@@ -88,6 +101,7 @@ class TestListenEndpoint:
         from polar.cli.endpoints import listen
 
         response = await listen(
+            id=org_id,
             request=mock_request,
             auth_subject=mock_auth_subject,
             redis=redis,
@@ -95,8 +109,7 @@ class TestListenEndpoint:
         )
 
         # Fully consume the generator (simulates client disconnect)
-        gen = response.body_iterator
-        async for _ in gen:
+        async for _ in response.body_iterator:
             pass
 
         # After generator is exhausted, key should be deleted
@@ -106,6 +119,7 @@ class TestListenEndpoint:
         self,
         redis: Redis,
         org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
         mocker: MockerFixture,
@@ -129,6 +143,7 @@ class TestListenEndpoint:
         from polar.cli.endpoints import listen
 
         response = await listen(
+            id=org_id,
             request=mock_request,
             auth_subject=mock_auth_subject,
             redis=redis,
@@ -138,9 +153,8 @@ class TestListenEndpoint:
         assert await has_active_listener(redis, org_id) is True
 
         # Consume the generator — the error in subscribe triggers the finally block
-        gen = response.body_iterator
         with pytest.raises(ConnectionError):
-            async for _ in gen:
+            async for _ in response.body_iterator:
                 pass
 
         assert await has_active_listener(redis, org_id) is False
@@ -149,6 +163,7 @@ class TestListenEndpoint:
         self,
         redis: Redis,
         org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
         mocker: MockerFixture,
@@ -175,6 +190,7 @@ class TestListenEndpoint:
         from polar.cli.endpoints import listen
 
         response = await listen(
+            id=org_id,
             request=mock_request,
             auth_subject=mock_auth_subject,
             redis=redis,
@@ -201,6 +217,7 @@ class TestListenEndpoint:
         self,
         redis: Redis,
         org_id: uuid.UUID,
+        mock_organization_service: MagicMock,
         mock_subscribe: MagicMock,
         mock_auth_subject: AsyncMock,
         mock_request: AsyncMock,
@@ -209,6 +226,7 @@ class TestListenEndpoint:
         from polar.cli.endpoints import listen
 
         response = await listen(
+            id=org_id,
             request=mock_request,
             auth_subject=mock_auth_subject,
             redis=redis,

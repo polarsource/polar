@@ -12,8 +12,11 @@ from polar.cli import auth
 from polar.cli.listener import mark_active, mark_inactive
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -21,6 +24,11 @@ from polar.routing import APIRouter
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/cli", tags=["cli", APITag.private])
+
+OrganizationNotFound = {
+    "description": "Organization not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 async def transform_webhook_events(
@@ -72,28 +80,44 @@ async def transform_webhook_events(
         yield message
 
 
-@router.get("/listen")
+@router.get(
+    "/listen/{id}",
+    summary="CLI Listen",
+    responses={
+        200: {"description": "Organization updated."},
+        403: {
+            "description": "You don't have the permission to listen on this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.public],
+)
 async def listen(
+    id: OrganizationID,
     request: Request,
     auth_subject: auth.CLIRead,
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
-    org_id = auth_subject.subject.id
+    org = await organization_service.get(session, auth_subject, id)
 
-    await mark_active(redis, org_id)
+    if org is None:
+        raise ResourceNotFound()
+
+    await mark_active(redis, org.id)
 
     async def refresh_listener() -> None:
-        await mark_active(redis, org_id)
+        await mark_active(redis, org.id)
 
-    receivers = Receivers(organization_id=org_id)
+    receivers = Receivers(organization_id=org.id)
     event_stream = subscribe(
         redis, receivers.get_channels(), request, on_iteration=refresh_listener
     )
-    transformed_stream = transform_webhook_events(str(org_id), event_stream)
+    transformed_stream = transform_webhook_events(str(org.id), event_stream)
 
     async def first_event_wrapper() -> AsyncGenerator[str]:
-        secret = str(org_id).replace("-", "")
+        secret = str(org.id).replace("-", "")
 
         # Send a first event announcing connection established
         yield json.dumps(
@@ -108,6 +132,6 @@ async def listen(
             async for message in transformed_stream:
                 yield message
         finally:
-            await mark_inactive(redis, org_id)
+            await mark_inactive(redis, org.id)
 
     return EventSourceResponse(first_event_wrapper())

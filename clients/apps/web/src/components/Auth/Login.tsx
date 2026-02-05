@@ -1,8 +1,8 @@
 'use client'
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
-import { schemas } from '@spaire/client'
-import LabeledSeparator from '@spaire/ui/components/atoms/LabeledSeparator'
+import { schemas } from '@polar-sh/client'
+import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'

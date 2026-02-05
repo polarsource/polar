@@ -3742,8 +3742,6 @@ class TestConfirm:
                 },
             ),
             (
-                # When confirmation_token_id is provided, customer_name is not required
-                # because it can be extracted from the wallet payment (Apple Pay, etc.)
                 {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
                 {
                     ("customer_email",),

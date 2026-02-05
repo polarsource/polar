@@ -93,12 +93,6 @@ interface WalletPaymentExperimentConfig {
   paymentElementOptions: StripePaymentElementOptions
 }
 
-/**
- * Experiment: checkout_wallet_payment
- *
- * Determines checkout behavior for wallet payments (Apple Pay, Google Pay).
- * When experiment ends, delete this helper and inline the winning variant's logic.
- */
 function getWalletPaymentExperimentConfig(
   variant: WalletPaymentExperimentVariant,
   selectedPaymentMethod: string | undefined,

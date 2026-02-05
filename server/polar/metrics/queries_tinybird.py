@@ -109,8 +109,9 @@ WITH
             minMerge(started_at) AS started_at
         FROM subscription_state
         WHERE organization_id IN {{org_ids:Array(String)}}
-        {sub_product_filter}
         GROUP BY subscription_id
+        HAVING 1=1
+            {sub_product_filter}
     ),
     baseline AS (
         SELECT
@@ -352,7 +353,7 @@ def _build_mrr_sql(
     if customer_id is not None:
         params["customer_ids"] = [str(id) for id in customer_id]
         sub_customer_filter = (
-            "AND argMaxMerge(customer_id) IN {customer_ids:Array(String)}"
+            "AND customer_id IN {customer_ids:Array(String)}"
         )
         payment_customer_filter = "AND customer_id IN {customer_ids:Array(String)}"
 

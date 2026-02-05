@@ -72,11 +72,9 @@ class TestListenEndpoint:
         # Before consuming the generator, the key should already be set
         assert await has_active_listener(redis, org_id) is True
 
-        # Consume and close the generator to clean up
-        gen = response.body_iterator
-        async for _ in gen:
+        # Consume the generator to clean up
+        async for _ in response.body_iterator:
             break
-        await gen.aclose()
 
     async def test_mark_inactive_on_disconnect(
         self,
@@ -217,12 +215,10 @@ class TestListenEndpoint:
             session=AsyncMock(),
         )
 
-        gen = response.body_iterator
-        first_event = await gen.__anext__()
+        first_event = await anext(aiter(response.body_iterator))
+        assert isinstance(first_event, str)
         data = json.loads(first_event)
 
         assert data["key"] == "connected"
         assert data["secret"] == str(org_id).replace("-", "")
         assert "ts" in data
-
-        await gen.aclose()

@@ -71,14 +71,19 @@ def tinybird_workspace() -> Generator[str, None, None]:
         cwd=TINYBIRD_DIR,
     )
 
-    for _ in range(20):
+    for _ in range(30):
         try:
-            r = httpx.get(
-                f"{host}/v0/datasources",
-                headers={"Authorization": f"Bearer {workspace_token}"},
+            r = httpx.post(
+                f"{host}/v0/events",
+                params={"name": "events_by_ingested_at", "wait": "true"},
+                content="",
+                headers={
+                    "Authorization": f"Bearer {workspace_token}",
+                    "Content-Type": "application/x-ndjson",
+                },
                 timeout=2,
             )
-            if r.status_code == 200:
+            if r.status_code != 403:
                 break
         except httpx.RequestError:
             pass

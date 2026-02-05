@@ -2,8 +2,7 @@ import { Heading, Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,10 +14,9 @@ export function SubscriptionUncanceled({
   url,
 }: schemas['SubscriptionUncanceledProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>Your subscription to {product.name} is now uncanceled</Preview>
-      <OrganizationHeader organization={organization} />
-      <Section className="pt-10">
+      <Section>
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription is now uncanceled
         </Heading>
@@ -42,7 +40,7 @@ export function SubscriptionUncanceled({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

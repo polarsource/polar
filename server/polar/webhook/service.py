@@ -30,6 +30,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    Member,
     Order,
     Organization,
     Product,
@@ -49,13 +50,14 @@ from polar.organization.resolver import get_payload_organization
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from polar.worker import enqueue_job
-
-from .repository import (
+from polar.webhook.repository import (
     WebhookDeliveryRepository,
     WebhookEndpointRepository,
     WebhookEventRepository,
 )
+from polar.worker import enqueue_job
+
+from .eventstream import publish_webhook_event
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
@@ -514,6 +516,33 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
+        event: Literal[WebhookEventType.member_created],
+        data: Member,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.member_updated],
+        data: Member,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.member_deleted],
+        data: Member,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
         event: Literal[WebhookEventType.order_created],
         data: Order,
     ) -> list[WebhookEvent]: ...
@@ -717,6 +746,12 @@ class WebhookService:
         now = utc_now()
         payload = WebhookPayloadTypeAdapter.validate_python(
             {"type": event, "timestamp": now, "data": data}
+        )
+
+        # Publish to eventstream for CLI listeners, regardless of webhook endpoints
+        await publish_webhook_event(
+            organization_id=target.id,
+            payload=payload.get_raw_payload(),
         )
 
         events: list[WebhookEvent] = []

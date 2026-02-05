@@ -1,6 +1,6 @@
 import { useCustomerSubscriptionChargePreview } from '@/hooks/queries/customerPortal'
-import { formatCurrency } from '@/utils/formatters'
 import { Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 
 interface CurrentPeriodOverviewProps {
@@ -103,7 +103,10 @@ export const CurrentPeriodOverview = ({
                   {meter.meter.name}
                 </span>
                 <span className="font-medium">
-                  {formatCurrency(meter.amount, subscription.currency)}
+                  {formatCurrency('compact')(
+                    meter.amount,
+                    subscription.currency,
+                  )}
                 </span>
               </div>
             ))}
@@ -115,7 +118,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
               <span>Subtotal</span>
               <span>
-                {formatCurrency(
+                {formatCurrency('compact')(
                   subscriptionPreview.subtotal_amount,
                   subscription.currency,
                 )}
@@ -127,7 +130,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Discount</span>
               <span>
-                {formatCurrency(
+                {formatCurrency('compact')(
                   -1 * subscriptionPreview.discount_amount,
                   subscription.currency,
                 )}
@@ -139,7 +142,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Taxes</span>
               <span>
-                {formatCurrency(
+                {formatCurrency('compact')(
                   subscriptionPreview.tax_amount,
                   subscription.currency,
                 )}
@@ -153,7 +156,7 @@ export const CurrentPeriodOverview = ({
             </span>
             <span className="text-lg font-medium">
               {subscriptionPreview ? (
-                formatCurrency(
+                formatCurrency('compact')(
                   subscriptionPreview.total_amount,
                   subscription.currency,
                 )

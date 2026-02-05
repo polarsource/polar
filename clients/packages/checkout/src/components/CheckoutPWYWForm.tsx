@@ -41,11 +41,11 @@ export const CheckoutPWYWForm = ({
     (value: number): string | true => {
       // Handle gap validation when free is allowed (minimumAmount = 0)
       if (minimumAmount === 0 && value > 0 && value < 50) {
-        return `Amount must be $0 or at least ${formatCurrency(50, checkout.currency)}`
+        return `Amount must be $0 or at least ${formatCurrency('compact')(50, checkout.currency)}`
       }
 
       if (value < minimumAmount) {
-        return `Amount must be at least ${formatCurrency(minimumAmount, checkout.currency)}`
+        return `Amount must be at least ${formatCurrency('compact')(minimumAmount, checkout.currency)}`
       }
 
       return true
@@ -80,7 +80,7 @@ export const CheckoutPWYWForm = ({
   const minLabelText =
     minimumAmount === 0
       ? null
-      : `${formatCurrency(minimumAmount, checkout.currency)} minimum`
+      : `${formatCurrency('compact')(minimumAmount, checkout.currency)} minimum`
 
   return (
     <Form {...form}>

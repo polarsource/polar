@@ -119,9 +119,8 @@ export const Notification = ({
         const { customer_name, product_name, product_price_amount } =
           payload as MaintainerNewProductSaleNotificationPayload
         return `${customer_name} bought ${product_name} for ${formatCurrency(
-          product_price_amount,
-          'usd',
-        )}`
+          'compact',
+        )(product_price_amount, 'usd')}`
       case 'MaintainerAccountUnderReviewNotification':
         return 'Your account is under review'
       case 'MaintainerAccountReviewedNotification':
@@ -131,7 +130,7 @@ export const Notification = ({
       case 'MaintainerAccountCreditsGrantedNotification':
         const { organization_name, amount } =
           payload as MaintainerAccountCreditsGrantedNotificationPayload
-        return `${organization_name} has received ${formatCurrency(amount, 'usd')} in fee credits!`
+        return `${organization_name} has received ${formatCurrency('compact')(amount, 'usd')} in fee credits!`
       default:
         return 'A new notification has been created'
     }

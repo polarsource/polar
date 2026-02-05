@@ -16,7 +16,6 @@ import { FadeUp } from '../Animated/FadeUp'
 import { Benefits } from '../Products/Benefits/Benefits'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
-import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
@@ -157,14 +156,6 @@ export const ProductStep = () => {
           <div className="flex flex-col md:gap-y-4">
             <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
               <ProductInfoSection compact />
-            </FadeUp>
-
-            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-              <ProductMediaSection
-                className="py-0"
-                organization={organization}
-                compact
-              />
             </FadeUp>
 
             <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">

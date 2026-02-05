@@ -65,7 +65,9 @@ export const FeeCreditGrantsModal = ({
                         )}
                       </span>
                     </div>
-                    <span>{formatCurrency(credit.amount, 'usd')}</span>
+                    <span>
+                      {formatCurrency('accounting')(credit.amount, 'usd')}
+                    </span>
                   </ListItem>
                 ))}
             </List>

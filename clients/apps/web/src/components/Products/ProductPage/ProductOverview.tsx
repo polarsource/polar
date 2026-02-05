@@ -257,7 +257,9 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Amount" />
               ),
               cell: ({ row: { original: order } }) => (
-                <span>{formatCurrency(order.net_amount, order.currency)}</span>
+                <span>
+                  {formatCurrency('compact')(order.net_amount, order.currency)}
+                </span>
               ),
             },
             {

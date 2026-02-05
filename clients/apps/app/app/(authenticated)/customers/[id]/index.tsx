@@ -126,7 +126,7 @@ export default function Index() {
           >
             <Text color="subtext">Revenue</Text>
             <Text>
-              {formatCurrency(
+              {formatCurrency('statistics')(
                 metrics?.periods[metrics?.periods.length - 1]
                   .cumulative_revenue ?? 0,
                 'usd',

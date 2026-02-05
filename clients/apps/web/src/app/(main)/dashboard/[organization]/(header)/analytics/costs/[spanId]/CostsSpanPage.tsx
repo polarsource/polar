@@ -8,9 +8,9 @@ import {
   useEventHierarchyStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
-import { formatSubCentCurrency } from '@/utils/formatters'
 import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { endOfDay, format, subMonths } from 'date-fns'
 import {
@@ -261,7 +261,10 @@ export default function SpanDetailPage({
                         Total
                       </dt>
                       <dd className="tabular-nums">
-                        {formatSubCentCurrency(costMetrics.totalCost, 'usd')}
+                        {formatCurrency('subcent')(
+                          costMetrics.totalCost,
+                          'usd',
+                        )}
                       </dd>
                     </div>
                     <div className="flex flex-row gap-x-2">
@@ -269,7 +272,10 @@ export default function SpanDetailPage({
                         Average
                       </dt>
                       <dd className="tabular-nums">
-                        {formatSubCentCurrency(costMetrics.averageCost, 'usd')}
+                        {formatCurrency('subcent')(
+                          costMetrics.averageCost,
+                          'usd',
+                        )}
                       </dd>
                     </div>
                   </dl>
@@ -279,7 +285,7 @@ export default function SpanDetailPage({
                     data={chartData}
                     xAxisFormatter={(value) => timestampFormatter(value)}
                     yAxisFormatter={(value) =>
-                      formatSubCentCurrency(value, 'usd')
+                      formatCurrency('subcent')(value, 'usd')
                     }
                     labelFormatter={(value) =>
                       value.toLocaleDateString('en-US', {

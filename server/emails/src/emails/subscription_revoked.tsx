@@ -2,8 +2,7 @@ import { Heading, Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,10 +14,9 @@ export function SubscriptionRevoked({
   url,
 }: schemas['SubscriptionRevokedProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>Your subscription to {product.name} has now ended</Preview>
-      <OrganizationHeader organization={organization} />
-      <Section className="pt-10">
+      <Section>
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription has now ended
         </Heading>
@@ -30,10 +28,10 @@ export function SubscriptionRevoked({
           We hope to see you again in the future - you're always welcome back.
         </BodyText>
       </Section>
-      <Section className="my-8 text-center">
+      <Section className="my-4 text-center">
         <Button href={url}>View subscription</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6">
+      <Section className="mt-4 border-t border-gray-200 pt-2">
         <Text className="text-sm text-gray-600">
           If you're having trouble with the button above, copy and paste the URL
           below into your web browser.
@@ -45,7 +43,7 @@ export function SubscriptionRevoked({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

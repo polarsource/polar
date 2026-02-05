@@ -189,47 +189,68 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow
                   key={item.id}
                   label={item.label}
-                  value={formatCurrency(item.amount, order.currency)}
+                  value={formatCurrency('accounting')(
+                    item.amount,
+                    order.currency,
+                  )}
                 />
               ))}
             </div>
 
             <DetailRow
               label="Subtotal"
-              value={formatCurrency(order.subtotal_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.subtotal_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Discount"
               value={
                 order.discount_amount
-                  ? formatCurrency(-order.discount_amount, order.currency)
+                  ? formatCurrency('accounting')(
+                      -order.discount_amount,
+                      order.currency,
+                    )
                   : '—'
               }
             />
             <DetailRow
               label="Net amount"
-              value={formatCurrency(order.net_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.net_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Tax"
-              value={formatCurrency(order.tax_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.tax_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Total"
-              value={formatCurrency(order.total_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.total_amount,
+                order.currency,
+              )}
             />
             {order.applied_balance_amount !== 0 && (
               <>
                 <DetailRow
                   label="Applied balance"
-                  value={formatCurrency(
+                  value={formatCurrency('accounting')(
                     order.applied_balance_amount,
                     order.currency,
                   )}
                 />
                 <DetailRow
                   label="To be paid"
-                  value={formatCurrency(order.due_amount, order.currency)}
+                  value={formatCurrency('accounting')(
+                    order.due_amount,
+                    order.currency,
+                  )}
                 />
               </>
             )}
@@ -378,7 +399,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrency(row.original.amount, row.original.currency),
+                  formatCurrency('compact')(
+                    row.original.amount,
+                    row.original.currency,
+                  ),
               },
               {
                 accessorKey: 'status',
@@ -440,7 +464,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrency(row.original.amount, row.original.currency),
+                  formatCurrency('compact')(
+                    row.original.amount,
+                    row.original.currency,
+                  ),
               },
               {
                 accessorKey: 'status',

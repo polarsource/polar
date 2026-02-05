@@ -9,7 +9,7 @@ export const Section = ({
   cta,
   compact,
 }: {
-  title: string
+  title?: string
   description?: string
   children: React.ReactNode
   className?: string
@@ -35,10 +35,14 @@ const SectionDescription = ({
   description,
   cta,
 }: {
-  title: string
+  title?: string
   description?: string
   cta?: React.ReactNode
 }) => {
+  if (!title && !description && !cta) {
+    return null
+  }
+
   return (
     <div className="flex w-full flex-col gap-y-6">
       <div className="flex flex-col gap-y-2">

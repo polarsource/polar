@@ -25,6 +25,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             : product.recurringInterval
         }
         intervalCount={product.recurringIntervalCount}
+        mode="compact"
       />
     )
   } else if (price.amountType === 'custom') {

@@ -1,12 +1,8 @@
 import { useMetrics } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import {
-  formatAccountingFriendlyCurrency,
-  formatCurrency,
-  formatSubCentCurrency,
-} from '@/utils/formatters'
 import { getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { startOfDay, subDays } from 'date-fns'
 import {
@@ -108,7 +104,7 @@ const CashflowChart = ({
             </span>
           </div>
           <h3 className="text-5xl font-light">
-            {formatAccountingFriendlyCurrency(
+            {formatCurrency('compact')(
               metricsData ? (metricsData.totals.cashflow ?? 0) : 0,
               'usd',
             )}
@@ -154,7 +150,7 @@ const CashflowChart = ({
                         }}
                         data-empty={period.costs === 0 ? true : undefined}
                       >
-                        {formatSubCentCurrency(
+                        {formatCurrency('subcent')(
                           Math.abs(period.costs ?? 0),
                           'usd',
                         )}
@@ -196,7 +192,10 @@ const CashflowChart = ({
                               )}
                             </span>
                             {order.description} -{' '}
-                            {formatCurrency(order.net_amount, order.currency)}
+                            {formatCurrency('compact')(
+                              order.net_amount,
+                              order.currency,
+                            )}
                           </li>
                         ))}
                       </ul>

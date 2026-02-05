@@ -1,4 +1,4 @@
-import { getCurrencyDecimalFactor } from '@polar-sh/currency'
+import { getCurrencyDecimalFactor, isDecimalCurrency } from '@polar-sh/currency'
 import {
   ChangeEvent,
   FocusEvent,
@@ -46,7 +46,7 @@ const MoneyInput = (props: Props) => {
     () => getCurrencyDecimalFactor(currency),
     [currency],
   )
-  const isNonDecimalCurrency = decimalFactor === 1
+  const isNonDecimalCurrency = !isDecimalCurrency(currency)
 
   const getInternalValue = useCallback(
     (value: number | null | undefined): string | undefined => {

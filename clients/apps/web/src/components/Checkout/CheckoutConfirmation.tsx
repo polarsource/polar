@@ -206,13 +206,14 @@ export const CheckoutConfirmation = ({
         {status === 'succeeded' && (
           <>
             <CheckoutSeatInvitations checkout={checkout} />
-            {hasProductCheckout(checkout) && (
-              <CheckoutBenefits
-                checkout={checkout}
-                customerSessionToken={customerSessionToken}
-                maxWaitingTimeMs={maxWaitingTimeMs}
-              />
-            )}
+            {hasProductCheckout(checkout) &&
+              checkout.productPrice.amountType !== 'seat_based' && (
+                <CheckoutBenefits
+                  checkout={checkout}
+                  customerSessionToken={customerSessionToken}
+                  maxWaitingTimeMs={maxWaitingTimeMs}
+                />
+              )}
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of
               Record, Polar, who also handles order-related inquiries and

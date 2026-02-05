@@ -208,3 +208,62 @@ async def webhook_event_archive() -> None:
         return await webhook_service.archive_events(
             session, older_than=utc_now() - settings.WEBHOOK_EVENT_RETENTION_PERIOD
         )
+
+
+@actor(actor_name="webhook_event.publish", priority=TaskPriority.MEDIUM)
+async def webhook_event_publish(webhook_event_id: UUID, organization_id: UUID) -> None:
+    """
+    Publish a webhook event to the eventstream for CLI listeners.
+
+    Args:
+        webhook_event_id: ID of the webhook event to publish
+        organization_id: ID of the organization (used as signing secret)
+    """
+    async with AsyncSessionMaker() as session:
+        return await _webhook_event_publish(
+            session, webhook_event_id=webhook_event_id, organization_id=organization_id
+        )
+
+
+async def _webhook_event_publish(
+    session: AsyncSession, *, webhook_event_id: UUID, organization_id: UUID
+) -> None:
+    from polar.eventstream.service import publish
+    from polar.webhook.eventstream import WebhookEvent
+
+    repository = WebhookEventRepository.from_session(session)
+    event = await repository.get_by_id(
+        webhook_event_id, options=repository.get_eager_options()
+    )
+    if event is None:
+        log.warning(
+            "Webhook event not found for eventstream publishing",
+            webhook_event_id=webhook_event_id,
+        )
+        return
+
+    if event.payload is None:
+        log.debug(
+            "Webhook event has no payload, skipping eventstream publish",
+            webhook_event_id=webhook_event_id,
+        )
+        return
+
+    try:
+        # Publish raw webhook event data to eventstream
+        # The CLI endpoint will apply transformation (headers, signing) when sending to client
+        await publish(
+            WebhookEvent.webhook_created,
+            {
+                "webhook_event_id": str(event.id),
+                "payload": event.payload,
+            },
+            organization_id=organization_id,
+        )
+    except Exception as e:
+        log.warning(
+            "Failed to publish webhook to eventstream",
+            webhook_event_id=webhook_event_id,
+            organization_id=organization_id,
+            error=str(e),
+        )

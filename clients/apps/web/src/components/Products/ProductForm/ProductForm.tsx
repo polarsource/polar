@@ -1,11 +1,10 @@
+import { Section } from '@/components/Layout/Section'
 import { schemas } from '@polar-sh/client'
-import React from 'react'
-import { ProductCustomFieldSection } from './ProductCustomFieldSection'
+import { ProductMetadataForm } from '../ProductMetadataForm'
+import { ProductCheckoutSection } from './ProductCheckoutSection'
+import { ProductCustomerPortalSection } from './ProductCustomerPortalSection'
 import { ProductInfoSection } from './ProductInfoSection'
-import { ProductMediaSection } from './ProductMediaSection'
-import { ProductMetadataSection } from './ProductMetadataSection'
 import { ProductPricingSection } from './ProductPricingSection'
-import { ProductTrialSection } from './ProductTrialSection'
 
 export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
@@ -19,32 +18,33 @@ export type ProductFormType = Omit<
     metadata: { key: string; value: string | number | boolean }[]
   }
 
-interface ProductFormProps {
-  organization: schemas['Organization']
-  update?: boolean
-  compact?: boolean
-}
-
-const ProductForm: React.FC<ProductFormProps> = ({
+const ProductForm = ({
   organization,
   update,
-  compact,
+  benefitsSlot,
+}: {
+  organization: schemas['Organization']
+  update?: boolean
+  benefitsSlot: React.ReactNode
 }) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
-      <ProductInfoSection compact={compact} />
-      <ProductPricingSection
-        organization={organization}
-        update={update}
-        compact={compact}
-      />
-      <ProductTrialSection compact={compact} />
-      <ProductMediaSection organization={organization} compact={compact} />
-      <ProductCustomFieldSection
-        organization={organization}
-        compact={compact}
-      />
-      <ProductMetadataSection compact={compact} />
+      <ProductInfoSection />
+
+      <ProductPricingSection organization={organization} update={update} />
+
+      {benefitsSlot}
+
+      <Section
+        title="Metadata"
+        description="Optional metadata to associate with the product"
+      >
+        <ProductMetadataForm />
+      </Section>
+
+      <ProductCustomerPortalSection />
+
+      <ProductCheckoutSection organization={organization} />
     </div>
   )
 }

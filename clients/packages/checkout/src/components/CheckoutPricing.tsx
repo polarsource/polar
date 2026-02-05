@@ -39,6 +39,7 @@ const CheckoutProductAmountLabel = ({
             : product.recurringInterval
         }
         intervalCount={product.recurringIntervalCount}
+        mode="compact"
       />
       <div className="flex flex-row items-center gap-x-2 text-lg">
         <div className="text-gray-400 line-through">
@@ -78,7 +79,7 @@ const CheckoutPricing = ({
           {productPrice.amountType !== 'custom' ? (
             <CheckoutProductAmountLabel checkout={checkout} layout={layout} />
           ) : (
-            formatCurrency(amount, productPrice.priceCurrency, 0)
+            formatCurrency('compact')(amount, productPrice.priceCurrency)
           )}
         </h1>
 

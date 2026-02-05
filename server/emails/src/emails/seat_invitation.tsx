@@ -2,8 +2,7 @@ import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import IntroWithHi from '../components/IntroWithHi'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,11 +14,10 @@ export function SeatInvitation({
   claim_url,
 }: schemas['SeatInvitationProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>
         You've been invited to access {product_name} by {organization.name}
       </Preview>
-      <OrganizationHeader organization={organization} />
       <IntroWithHi>
         {billing_manager_email} has invited you to access{' '}
         <span className="font-bold">{product_name}</span> from{' '}
@@ -48,7 +46,7 @@ export function SeatInvitation({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

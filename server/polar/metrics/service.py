@@ -212,7 +212,7 @@ class MetricsService:
             return None
 
         if org.feature_settings.get("tinybird_read", False) or org.feature_settings.get(
-            "tinybird_compare", False
+            "tinybird_compare", True
         ):
             return org
 
@@ -593,7 +593,7 @@ class MetricsService:
         if org is None:
             return pg_response
 
-        tinybird_compare = org.feature_settings.get("tinybird_compare", False)
+        tinybird_compare = org.feature_settings.get("tinybird_compare", True)
         tinybird_read = org.feature_settings.get("tinybird_read", False)
 
         try:

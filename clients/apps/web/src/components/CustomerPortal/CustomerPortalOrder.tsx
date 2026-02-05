@@ -186,7 +186,12 @@ const CustomerPortalOrder = ({
                     key={item.id}
                     label={item.label}
                     value={
-                      <span>{formatCurrency(item.amount, order.currency)}</span>
+                      <span>
+                        {formatCurrency('accounting')(
+                          item.amount,
+                          order.currency,
+                        )}
+                      </span>
                     }
                     valueClassName="justify-end"
                   />
@@ -200,7 +205,10 @@ const CustomerPortalOrder = ({
               label="Subtotal"
               value={
                 <span>
-                  {formatCurrency(order.subtotal_amount, order.currency)}
+                  {formatCurrency('accounting')(
+                    order.subtotal_amount,
+                    order.currency,
+                  )}
                 </span>
               }
               valueClassName="justify-end"
@@ -210,7 +218,10 @@ const CustomerPortalOrder = ({
               value={
                 <span>
                   {order.discount_amount
-                    ? formatCurrency(-order.discount_amount, order.currency)
+                    ? formatCurrency('accounting')(
+                        -order.discount_amount,
+                        order.currency,
+                      )
                     : '—'}
                 </span>
               }
@@ -219,14 +230,24 @@ const CustomerPortalOrder = ({
             <DetailRow
               label="Net amount"
               value={
-                <span>{formatCurrency(order.net_amount, order.currency)}</span>
+                <span>
+                  {formatCurrency('accounting')(
+                    order.net_amount,
+                    order.currency,
+                  )}
+                </span>
               }
               valueClassName="justify-end"
             />
             <DetailRow
               label="Tax"
               value={
-                <span>{formatCurrency(order.tax_amount, order.currency)}</span>
+                <span>
+                  {formatCurrency('accounting')(
+                    order.tax_amount,
+                    order.currency,
+                  )}
+                </span>
               }
               valueClassName="justify-end"
             />
@@ -234,7 +255,10 @@ const CustomerPortalOrder = ({
               label="Total"
               value={
                 <span>
-                  {formatCurrency(order.total_amount, order.currency)}
+                  {formatCurrency('accounting')(
+                    order.total_amount,
+                    order.currency,
+                  )}
                 </span>
               }
               valueClassName="justify-end"
@@ -245,7 +269,7 @@ const CustomerPortalOrder = ({
                   label="Applied balance"
                   value={
                     <span>
-                      {formatCurrency(
+                      {formatCurrency('accounting')(
                         order.applied_balance_amount,
                         order.currency,
                       )}
@@ -257,7 +281,10 @@ const CustomerPortalOrder = ({
                   label="To be paid"
                   value={
                     <span>
-                      {formatCurrency(order.due_amount, order.currency)}
+                      {formatCurrency('accounting')(
+                        order.due_amount,
+                        order.currency,
+                      )}
                     </span>
                   }
                   valueClassName="justify-end"
@@ -270,7 +297,10 @@ const CustomerPortalOrder = ({
                 label="Refunded amount"
                 value={
                   <span>
-                    {formatCurrency(order.refunded_amount, order.currency)}
+                    {formatCurrency('accounting')(
+                      order.refunded_amount,
+                      order.currency,
+                    )}
                   </span>
                 }
                 valueClassName="justify-end"

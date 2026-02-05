@@ -5,6 +5,7 @@ import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -732,7 +733,14 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const hasOtherStaticPrice = staticPriceForCurrency && !isCurrentPriceStatic
 
   return (
-    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-2xl border border-gray-100">
+    <div
+      className={twMerge(
+        'flex flex-col divide-y rounded-2xl border',
+        amountType
+          ? 'dark:border-polar-700 dark:divide-polar-700 divide-gray-200 border-gray-200'
+          : 'dark:border-polar-700 dark:divide-polar-700 divide-gray-100 border-gray-100',
+      )}
+    >
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <FormField
         control={control}
@@ -1423,6 +1431,8 @@ export const ProductPricingSection = ({
           </Button>
         )}
       </div>
+
+      {recurringInterval && <TrialConfigurationForm />}
     </Section>
   )
 }

@@ -57,7 +57,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.member import member_service
+from polar.member.service import member_service
 from polar.models import (
     Account,
     Checkout,

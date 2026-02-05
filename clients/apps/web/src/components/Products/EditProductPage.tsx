@@ -192,18 +192,23 @@ export const EditProductPage = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-6"
           >
-            <ProductForm organization={organization} update={true} />
+            <ProductForm
+              organization={organization}
+              update={true}
+              benefitsSlot={
+                <Benefits
+                  organization={organization}
+                  benefits={organizationBenefits}
+                  totalBenefitCount={totalBenefitCount}
+                  selectedBenefits={enabledBenefits}
+                  onSelectBenefit={onSelectBenefit}
+                  onRemoveBenefit={onRemoveBenefit}
+                  onReorderBenefits={onReorderBenefits}
+                />
+              }
+            />
           </form>
         </Form>
-        <Benefits
-          organization={organization}
-          benefits={organizationBenefits}
-          totalBenefitCount={totalBenefitCount}
-          selectedBenefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-          onReorderBenefits={onReorderBenefits}
-        />
       </div>
       {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
         <div className="rounded-2xl bg-yellow-50 p-4 text-sm text-yellow-500 dark:bg-yellow-950">

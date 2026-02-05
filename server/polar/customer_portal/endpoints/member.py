@@ -172,7 +172,9 @@ async def update_member(
             ]
         )
 
-    return await member_service.update(session, member, role=member_update.role)
+    return await member_service.update(
+        session, member, role=member_update.role, caller_member=actor_member
+    )
 
 
 @router.delete(

@@ -24,10 +24,6 @@ const CheckoutBenefits = ({
   })
   const expectedBenefits = checkout.product.benefits.length
 
-  const isSeatBasedProduct = checkout.product.prices.some(
-    (price) => price.amountType === 'seat_based',
-  )
-
   const customerEvents = useCustomerSSE(customerSessionToken)
   useEffect(() => {
     customerEvents.on('benefit.granted', refetch)
@@ -37,9 +33,6 @@ const CheckoutBenefits = ({
   }, [customerEvents, refetch])
 
   useEffect(() => {
-    if (isSeatBasedProduct) {
-      return
-    }
     if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
       return
     }
@@ -47,13 +40,7 @@ const CheckoutBenefits = ({
       refetch()
     }, maxWaitingTimeMs)
     return () => clearInterval(intervalId)
-  }, [
-    benefitGrants,
-    expectedBenefits,
-    maxWaitingTimeMs,
-    refetch,
-    isSeatBasedProduct,
-  ])
+  }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
   return (
     <>
@@ -67,16 +54,14 @@ const CheckoutBenefits = ({
               <BenefitGrant api={api} benefitGrant={benefitGrant} />
             </ListItem>
           ))}
-          {!isSeatBasedProduct &&
-            benefitGrants &&
-            benefitGrants.items.length < expectedBenefits && (
-              <ListItem className="flex flex-row items-center justify-center gap-2">
-                <SpinnerNoMargin className="h-4 w-4" />
-                <p className="dark:text-polar-500 text-gray-500">
-                  Granting benefits...
-                </p>
-              </ListItem>
-            )}
+          {benefitGrants && benefitGrants.items.length < expectedBenefits && (
+            <ListItem className="flex flex-row items-center justify-center gap-2">
+              <SpinnerNoMargin className="h-4 w-4" />
+              <p className="dark:text-polar-500 text-gray-500">
+                Granting benefits...
+              </p>
+            </ListItem>
+          )}
         </List>
       </div>
     </>

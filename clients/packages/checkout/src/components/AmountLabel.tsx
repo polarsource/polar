@@ -6,9 +6,9 @@ import { formatRecurringInterval } from '../utils/product'
 interface AmountLabelProps {
   amount: number
   currency: string
+  mode: 'compact' | 'standard'
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
-  currencySymbol?: keyof Intl.NumberFormatOptionsCurrencyDisplayRegistry
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -16,7 +16,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   currency,
   interval,
   intervalCount,
-  currencySymbol,
+  mode,
 }) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
@@ -26,22 +26,9 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     return formatted ? ` / ${formatted}` : ''
   }, [interval, intervalCount])
 
-  const minimumFractionDigits = useMemo(
-    // Show 0 decimals if a round number, show default decimals (2 for USD) otherwise
-    // This will trip when we add multi-currency (e.g. for JPY etc)
-    () => (amount % 100 === 0 ? 0 : 2),
-    [amount],
-  )
-
   return (
     <div className="flex flex-row items-baseline gap-x-1">
-      {formatCurrency(
-        amount,
-        currency,
-        minimumFractionDigits,
-        undefined,
-        currencySymbol,
-      )}
+      {formatCurrency(mode)(amount, currency)}
       {intervalDisplay ? (
         <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
       ) : null}

@@ -11,8 +11,7 @@ import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import OrderSummary from '../components/OrderSummary'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -24,10 +23,9 @@ export function OrderConfirmation({
   url,
 }: schemas['OrderConfirmationProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>Thank you for your order of {order.description}!</Preview>
-      <OrganizationHeader organization={organization} />
-      <Section className="pt-12">
+      <Section>
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Thank you for your order!
         </Heading>
@@ -61,7 +59,7 @@ export function OrderConfirmation({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

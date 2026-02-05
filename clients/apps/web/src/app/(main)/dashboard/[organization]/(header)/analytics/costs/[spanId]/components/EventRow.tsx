@@ -7,8 +7,8 @@ import {
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
-import { formatSubCentCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   ArrowDownFromLineIcon,
@@ -145,7 +145,7 @@ function TreeNode({
 
   const costDisplay = useMemo(() => {
     if ('_cost' in event.metadata && event.metadata._cost) {
-      return formatSubCentCurrency(
+      return formatCurrency('subcent')(
         Number(event.metadata._cost?.amount ?? 0),
         event.metadata._cost?.currency ?? 'usd',
       )
@@ -359,7 +359,7 @@ export function EventRow({
           {costMetadata && (
             <div className="ml-auto flex flex-row items-center justify-end gap-x-3">
               <span className="font-mono">
-                {formatSubCentCurrency(
+                {formatCurrency('subcent')(
                   parsedCost,
                   (
                     event.metadata as {

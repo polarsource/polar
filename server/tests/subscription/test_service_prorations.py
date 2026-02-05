@@ -1089,4 +1089,3 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == 20000
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
-

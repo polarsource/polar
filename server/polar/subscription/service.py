@@ -1026,12 +1026,8 @@ class SubscriptionService:
                     ]
                 )
 
-        old_has_seat_prices = any(
-            is_seat_price(p) for p in previous_prices
-        )
-        new_has_seat_prices = any(
-            is_seat_price(p) for p in currency_prices
-        )
+        old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
+        new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
         if old_has_seat_prices != new_has_seat_prices:
             raise PolarRequestValidationError(
                 [

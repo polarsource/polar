@@ -75,6 +75,23 @@ export const useThemePreset = (
         '.TabIcon--selected': {
           fill: 'white',
         },
+        '.AccordionItem': {
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
+          borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
+          borderRadius: '0.75rem',
+        },
+        '.AccordionItem--selected': {
+          backgroundColor: theme === 'dark' ? 'rgb(23 23 25)' : 'white',
+          borderColor: '#0062FF',
+          borderWidth: '2px',
+        },
+        '.AccordionItemLabel': {
+          color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
+          fontWeight: '500',
+        },
+        '.AccordionItemLabel--selected': {
+          color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
+        },
         '.Block': {
           backgroundColor: 'transparent',
           borderColor: theme === 'dark' ? '#353641' : '#EEE',

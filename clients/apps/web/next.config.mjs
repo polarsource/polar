@@ -143,6 +143,11 @@ const nextConfig = {
         source: '/ingest/decide',
         destination: 'https://us.i.posthog.com/decide',
       },
+      // API proxy for Apple Pay testing (ngrok HTTPS -> local HTTP backend)
+      {
+        source: '/v1/:path*',
+        destination: 'http://127.0.0.1:8000/v1/:path*',
+      },
     ]
   },
 

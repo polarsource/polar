@@ -33,7 +33,7 @@ import {
   StripeElements,
   StripeElementsOptions,
 } from '@stripe/stripe-js'
-import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
+import { PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
@@ -94,6 +94,7 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  selectedPaymentMethod?: string
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +108,7 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  selectedPaymentMethod,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -373,12 +375,16 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.isPaymentFormRequired && (
+              {checkout.isPaymentFormRequired &&
+                selectedPaymentMethod !== 'apple_pay' &&
+                selectedPaymentMethod !== 'google_pay' && (
                 <FormField
                   control={control}
                   name="customerName"
                   rules={{
-                    required: 'This field is required',
+                    required: selectedPaymentMethod === 'apple_pay' || selectedPaymentMethod === 'google_pay'
+                      ? false
+                      : 'This field is required',
                   }}
                   render={({ field }) => (
                     <FormItem>
@@ -957,6 +963,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     () => loadStripe(publishable_key),
     [publishable_key],
   )
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined)
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -1012,11 +1019,21 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
+            selectedPaymentMethod={selectedPaymentMethod}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement
+                onChange={(event) => {
+                  setSelectedPaymentMethod(event.value.type)
+                }}
                 options={{
-                  layout: 'tabs',
+                  layout: {
+                    type: 'accordion',
+                    defaultCollapsed: false,
+                    radios: false,
+                    spacedAccordionItems: true,
+                  },
+                  paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
                   fields: {
                     billingDetails: {
                       name: 'never',

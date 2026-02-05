@@ -30,12 +30,14 @@ from polar.integrations.discord.webhook import (
     get_branded_discord_embed,
 )
 from polar.kit.schemas import IDSchema, Schema
+from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
     BenefitGrant,
     Checkout,
     Customer,
     CustomerSeat,
+    Member,
     Order,
     Organization,
     Product,
@@ -65,6 +67,9 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.customer_seat_assigned], CustomerSeat]
     | tuple[Literal[WebhookEventType.customer_seat_claimed], CustomerSeat]
     | tuple[Literal[WebhookEventType.customer_seat_revoked], CustomerSeat]
+    | tuple[Literal[WebhookEventType.member_created], Member]
+    | tuple[Literal[WebhookEventType.member_updated], Member]
+    | tuple[Literal[WebhookEventType.member_deleted], Member]
     | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.order_updated], Order]
     | tuple[Literal[WebhookEventType.order_paid], Order]
@@ -328,6 +333,50 @@ class WebhookCustomerSeatRevokedPayload(BaseWebhookPayload):
 
     type: Literal[WebhookEventType.customer_seat_revoked]
     data: CustomerSeatSchema  # type: ignore[assignment]
+
+
+class WebhookMemberCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new member is created.
+
+    A member represents an individual within a customer (team).
+    This event is triggered when a member is added to a customer,
+    either programmatically via the API or when an owner is automatically
+    created for a new customer.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.member_created]
+    data: MemberSchema
+
+
+class WebhookMemberUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a member is updated.
+
+    This event is triggered when member details are updated,
+    such as their name or role within the customer.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.member_updated]
+    data: MemberSchema
+
+
+class WebhookMemberDeletedPayload(BaseWebhookPayload):
+    """
+    Sent when a member is deleted.
+
+    This event is triggered when a member is removed from a customer.
+    Any active seats assigned to the member will be automatically revoked.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.member_deleted]
+    data: MemberSchema
 
 
 class WebhookOrderPayloadBase(BaseWebhookPayload):
@@ -1245,6 +1294,9 @@ WebhookPayload = Annotated[
     | WebhookCustomerSeatAssignedPayload
     | WebhookCustomerSeatClaimedPayload
     | WebhookCustomerSeatRevokedPayload
+    | WebhookMemberCreatedPayload
+    | WebhookMemberUpdatedPayload
+    | WebhookMemberDeletedPayload
     | WebhookOrderCreatedPayload
     | WebhookOrderUpdatedPayload
     | WebhookOrderPaidPayload

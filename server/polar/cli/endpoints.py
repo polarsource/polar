@@ -9,6 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.cli import auth
+from polar.cli.listener import mark_active, mark_inactive
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.kit.utils import utc_now
@@ -78,14 +79,21 @@ async def listen(
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
-    receivers = Receivers(organization_id=auth_subject.subject.id)
-    event_stream = subscribe(redis, receivers.get_channels(), request)
-    transformed_stream = transform_webhook_events(
-        str(auth_subject.subject.id), event_stream
+    org_id = auth_subject.subject.id
+
+    await mark_active(redis, org_id)
+
+    async def refresh_listener() -> None:
+        await mark_active(redis, org_id)
+
+    receivers = Receivers(organization_id=org_id)
+    event_stream = subscribe(
+        redis, receivers.get_channels(), request, on_iteration=refresh_listener
     )
+    transformed_stream = transform_webhook_events(str(org_id), event_stream)
 
     async def first_event_wrapper() -> AsyncGenerator[str]:
-        secret = str(auth_subject.subject.id).replace("-", "")
+        secret = str(org_id).replace("-", "")
 
         # Send a first event announcing connection established
         yield json.dumps(
@@ -96,7 +104,10 @@ async def listen(
             }
         )
 
-        async for message in transformed_stream:
-            yield message
+        try:
+            async for message in transformed_stream:
+                yield message
+        finally:
+            await mark_inactive(redis, org_id)
 
     return EventSourceResponse(first_event_wrapper())

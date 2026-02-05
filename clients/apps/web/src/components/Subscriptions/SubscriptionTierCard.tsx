@@ -57,7 +57,10 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <>
               {price.amount_type === 'fixed' && (
                 <>
-                  {formatCurrency(price.price_amount, price.price_currency, 0)}
+                  {formatCurrency('presenting')(
+                    price.price_amount,
+                    price.price_currency,
+                  )}
                   <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
                     {recurringBillingLabel}
                   </span>

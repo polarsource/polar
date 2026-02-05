@@ -44,7 +44,7 @@ export const PayoutRow = ({ payout, style }: PayoutRowProps) => {
         <Box flex={1} flexDirection="column" gap="spacing-4">
           <Box flexDirection="row" justifyContent="space-between">
             <Text variant="bodyMedium">
-              {formatCurrency(payout.amount, payout.currency)}
+              {formatCurrency('accounting')(payout.amount, payout.currency)}
             </Text>
             <Pill color={statusColors[payout.status]}>
               {payout.status.split('_').join(' ')}

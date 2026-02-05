@@ -47,21 +47,21 @@ export default function Index() {
         <Details>
           <DetailRow
             label="Amount"
-            value={formatCurrency(
+            value={formatCurrency('accounting')(
               estimate?.gross_amount ?? 0,
               summary?.balance.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Fees"
-            value={formatCurrency(
+            value={formatCurrency('accounting')(
               estimate?.fees_amount ?? 0,
               summary?.balance.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Net"
-            value={formatCurrency(
+            value={formatCurrency('accounting')(
               estimate?.net_amount ?? 0,
               summary?.balance.currency ?? 'usd',
             )}

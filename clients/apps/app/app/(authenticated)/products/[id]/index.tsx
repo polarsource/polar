@@ -110,7 +110,7 @@ export default function Index() {
         />
         <MetricsBox
           label="Revenue"
-          value={formatCurrency(
+          value={formatCurrency('statistics')(
             metrics?.periods[metrics?.periods.length - 1].cumulative_revenue ??
               0,
             'usd',

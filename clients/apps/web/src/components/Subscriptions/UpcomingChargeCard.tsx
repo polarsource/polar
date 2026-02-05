@@ -2,8 +2,8 @@
 
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
-import { formatCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
 const UpcomingChargeCard = ({
@@ -77,7 +77,10 @@ const UpcomingChargeCard = ({
               isCancelingAtPeriodEnd ? (
                 <span className="text-gray-500">Canceled</span>
               ) : (
-                formatCurrency(subscription.amount, subscription.currency)
+                formatCurrency('presenting')(
+                  subscription.amount,
+                  subscription.currency,
+                )
               )
             }
           />
@@ -92,7 +95,10 @@ const UpcomingChargeCard = ({
                 <DetailRow
                   key={meter.id}
                   label={meter.meter.name}
-                  value={formatCurrency(meter.amount, subscription.currency)}
+                  value={formatCurrency('presenting')(
+                    meter.amount,
+                    subscription.currency,
+                  )}
                 />
               ))}
             </>
@@ -112,7 +118,7 @@ const UpcomingChargeCard = ({
                   {(hasTaxes || hasDiscount) && (
                     <DetailRow
                       label="Subtotal"
-                      value={formatCurrency(
+                      value={formatCurrency('accounting')(
                         chargePreview.subtotal_amount,
                         subscription.currency,
                       )}
@@ -124,7 +130,7 @@ const UpcomingChargeCard = ({
                   {hasDiscount && (
                     <DetailRow
                       label="Discount"
-                      value={formatCurrency(
+                      value={formatCurrency('accounting')(
                         -1 * chargePreview.discount_amount,
                         subscription.currency,
                       )}
@@ -136,7 +142,7 @@ const UpcomingChargeCard = ({
                   {hasTaxes && (
                     <DetailRow
                       label="Taxes"
-                      value={formatCurrency(
+                      value={formatCurrency('accounting')(
                         chargePreview.tax_amount,
                         subscription.currency,
                       )}
@@ -154,7 +160,7 @@ const UpcomingChargeCard = ({
                       .join(' ')}
                     value={
                       <span className="text-lg font-semibold">
-                        {formatCurrency(
+                        {formatCurrency('accounting')(
                           chargePreview.total_amount,
                           subscription.currency,
                         )}

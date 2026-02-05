@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   differenceInDays,
   differenceInMonths,
@@ -14,12 +15,9 @@ import {
   subYears,
 } from 'date-fns'
 import {
-  formatAccountingFriendlyCurrency,
-  formatHumanFriendlyCurrency,
   formatHumanFriendlyScalar,
   formatPercentage,
   formatScalar,
-  formatSubCentCurrency,
 } from './formatters'
 
 /**
@@ -47,11 +45,11 @@ export const getTickFormatter = (
     case 'scalar':
       return formatHumanFriendlyScalar
     case 'currency':
-      return (value: number) => formatHumanFriendlyCurrency(value, 'usd')
+      return (value: number) => formatCurrency('presenting')(value, 'usd')
     case 'percentage':
       return formatPercentage
     case 'currency_sub_cent':
-      return (value: number) => formatSubCentCurrency(value, 'usd')
+      return (value: number) => formatCurrency('subcent')(value, 'usd')
   }
 }
 
@@ -63,11 +61,11 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return formatScalar(value)
     case 'currency':
-      return formatAccountingFriendlyCurrency(value, 'usd')
+      return formatCurrency('presenting')(value, 'usd')
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':
-      return formatSubCentCurrency(value, 'usd')
+      return formatCurrency('subcent')(value, 'usd')
   }
 }
 

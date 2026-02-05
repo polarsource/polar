@@ -20,7 +20,8 @@ import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { formatSubCentCurrency } from '@/utils/formatters'
+
+import { formatCurrency } from '@polar-sh/currency'
 import {
   BadgeDollarSignIcon,
   CircleUserRound,
@@ -274,7 +275,7 @@ function EventStatisticsCard({
                   <BadgeDollarSignIcon className="size-4" strokeWidth={1.5} />
                 </dt>
                 <dd>
-                  {formatSubCentCurrency(
+                  {formatCurrency('subcent')(
                     Number(eventStatistics.totals?._cost_amount),
                     'usd',
                   )}

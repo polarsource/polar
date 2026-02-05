@@ -49,14 +49,14 @@ export default function Index() {
           />
           <DetailRow
             label="Gross"
-            value={formatCurrency(
+            value={formatCurrency('accounting')(
               payout?.gross_amount ?? 0,
               payout?.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Fees"
-            value={formatCurrency(
+            value={formatCurrency('accounting')(
               payout?.fees_amount ?? 0,
               payout?.currency ?? 'usd',
             )}

@@ -32,6 +32,7 @@ import {
   Stripe,
   StripeElements,
   StripeElementsOptions,
+  StripePaymentElementOptions,
 } from '@stripe/stripe-js'
 import { PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
@@ -84,6 +85,70 @@ const XIcon = ({ className }: { className?: string }) => {
   )
 }
 
+export type WalletPaymentExperimentVariant = 'control' | 'treatment'
+
+interface WalletPaymentExperimentConfig {
+  showCardholderNameField: boolean
+  isCardholderNameRequired: boolean
+  paymentElementOptions: StripePaymentElementOptions
+}
+
+/**
+ * Experiment: checkout_wallet_payment
+ *
+ * Determines checkout behavior for wallet payments (Apple Pay, Google Pay).
+ * When experiment ends, delete this helper and inline the winning variant's logic.
+ */
+function getWalletPaymentExperimentConfig(
+  variant: WalletPaymentExperimentVariant,
+  selectedPaymentMethod: string | undefined,
+): WalletPaymentExperimentConfig {
+  const isWalletPayment =
+    selectedPaymentMethod === 'apple_pay' ||
+    selectedPaymentMethod === 'google_pay'
+
+  if (variant === 'treatment') {
+    return {
+      showCardholderNameField: !isWalletPayment,
+      isCardholderNameRequired: !isWalletPayment,
+      paymentElementOptions: {
+        layout: {
+          type: 'accordion',
+          defaultCollapsed: false,
+          radios: false,
+          spacedAccordionItems: true,
+        },
+        paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
+        fields: {
+          billingDetails: {
+            name: 'never',
+            email: 'never',
+            phone: 'never',
+            address: 'never',
+          },
+        },
+      },
+    }
+  }
+
+  // Control: matches current main behavior
+  return {
+    showCardholderNameField: true,
+    isCardholderNameRequired: true,
+    paymentElementOptions: {
+      layout: 'tabs',
+      fields: {
+        billingDetails: {
+          name: 'never',
+          email: 'never',
+          phone: 'never',
+          address: 'never',
+        },
+      },
+    },
+  }
+}
+
 interface BaseCheckoutFormProps {
   form: UseFormReturn<CheckoutUpdatePublic>
   checkout: CheckoutPublic
@@ -95,6 +160,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   selectedPaymentMethod?: string
+  walletPaymentExperiment?: WalletPaymentExperimentVariant
 }
 
 const BaseCheckoutForm = ({
@@ -109,7 +175,13 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
   selectedPaymentMethod,
+  walletPaymentExperiment = 'control',
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
+  const experimentConfig = getWalletPaymentExperimentConfig(
+    walletPaymentExperiment,
+    selectedPaymentMethod,
+  )
+
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
       ? checkout.productPrice.recurringInterval
@@ -376,32 +448,31 @@ const BaseCheckoutForm = ({
               {children}
 
               {checkout.isPaymentFormRequired &&
-                selectedPaymentMethod !== 'apple_pay' &&
-                selectedPaymentMethod !== 'google_pay' && (
-                <FormField
-                  control={control}
-                  name="customerName"
-                  rules={{
-                    required: selectedPaymentMethod === 'apple_pay' || selectedPaymentMethod === 'google_pay'
-                      ? false
-                      : 'This field is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cardholder name</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          autoComplete="name"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                experimentConfig.showCardholderNameField && (
+                  <FormField
+                    control={control}
+                    name="customerName"
+                    rules={{
+                      required: experimentConfig.isCardholderNameRequired
+                        ? 'This field is required'
+                        : false,
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cardholder name</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            autoComplete="name"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
               {(checkout.isPaymentFormRequired ||
                 checkout.requireBillingAddress) && (
@@ -943,6 +1014,7 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  walletPaymentExperiment?: WalletPaymentExperimentVariant
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -955,6 +1027,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     disabled,
     isUpdatePending,
     themePreset: themePresetProps,
+    walletPaymentExperiment = 'control',
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -963,8 +1036,15 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     () => loadStripe(publishable_key),
     [publishable_key],
   )
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    string | undefined
+  >(undefined)
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+
+  const experimentConfig = getWalletPaymentExperimentConfig(
+    walletPaymentExperiment,
+    selectedPaymentMethod,
+  )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -1021,31 +1101,21 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
             selectedPaymentMethod={selectedPaymentMethod}
+            walletPaymentExperiment={walletPaymentExperiment}
           >
             {checkout.isPaymentFormRequired && (
-              <div style={{ opacity: isPaymentElementReady ? 1 : 0, transition: 'opacity 0.15s ease-in' }}>
+              <div
+                style={{
+                  opacity: isPaymentElementReady ? 1 : 0,
+                  transition: 'opacity 0.15s ease-in',
+                }}
+              >
                 <PaymentElement
                   onReady={() => setIsPaymentElementReady(true)}
                   onChange={(event) => {
                     setSelectedPaymentMethod(event.value.type)
                   }}
-                  options={{
-                    layout: {
-                      type: 'accordion',
-                      defaultCollapsed: false,
-                      radios: false,
-                      spacedAccordionItems: true,
-                    },
-                    paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
-                    fields: {
-                      billingDetails: {
-                        name: 'never',
-                        email: 'never',
-                        phone: 'never',
-                        address: 'never',
-                      },
-                    },
-                  }}
+                  options={experimentConfig.paymentElementOptions}
                 />
               </div>
             )}

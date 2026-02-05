@@ -1,6 +1,7 @@
 'use client'
 
 import CheckoutForm from './CheckoutForm'
+import type { WalletPaymentExperimentVariant } from './CheckoutForm'
 import CheckoutPricing from './CheckoutPricing'
 import CheckoutProductSwitcher from './CheckoutProductSwitcher'
 import { CheckoutPWYWForm } from './CheckoutPWYWForm'
@@ -15,3 +16,5 @@ export {
   CheckoutSeatSelector,
   MeteredPricesDisplay,
 }
+
+export type { WalletPaymentExperimentVariant }

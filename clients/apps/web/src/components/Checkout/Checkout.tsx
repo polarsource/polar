@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -9,6 +10,7 @@ import {
   CheckoutForm,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
+  type WalletPaymentExperimentVariant,
 } from '@polar-sh/checkout/components'
 import {
   hasProductCheckout,
@@ -53,6 +55,10 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const posthog = usePostHog()
+
+  const { variant: walletPaymentExperiment } = useExperiment(
+    'checkout_wallet_payment',
+  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -224,6 +230,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          walletPaymentExperiment={
+            walletPaymentExperiment as WalletPaymentExperimentVariant
+          }
         />
       </ShadowBox>
     )
@@ -289,6 +298,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             themePreset={themePreset}
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
+            walletPaymentExperiment={
+              walletPaymentExperiment as WalletPaymentExperimentVariant
+            }
           />
         </div>
       </ShadowBoxOnMd>

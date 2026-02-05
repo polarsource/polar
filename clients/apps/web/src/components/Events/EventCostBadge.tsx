@@ -1,6 +1,6 @@
-import { formatSubCentCurrency } from '@/utils/formatters'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
+import { formatCurrency } from '@polar-sh/currency'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -84,7 +84,7 @@ export const EventCostBadge = (props: EventCostBadgeProps) => {
 
   return (
     <div className="flex flex-row items-center gap-x-4 font-mono">
-      {formatSubCentCurrency(parsedNumber, currency)}
+      {formatCurrency('subcent')(parsedNumber, currency)}
       <EventCostIndicator type={cost === 0 ? 'neutral' : type} />
     </div>
   )

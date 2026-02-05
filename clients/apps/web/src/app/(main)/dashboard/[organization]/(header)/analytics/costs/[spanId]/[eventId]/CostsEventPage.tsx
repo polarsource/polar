@@ -10,8 +10,8 @@ import {
 import { useEventTypes } from '@/hooks/queries/event_types'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { getAnonymousCustomerName } from '@/utils/anonymous-customer'
-import { formatSubCentCurrency } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import type { LucideIcon } from 'lucide-react'
 import { BadgeDollarSignIcon, BotIcon, BracesIcon } from 'lucide-react'
@@ -118,7 +118,7 @@ export default function EventDetailPage({
             </div>
             {'_cost' in event.metadata && event.metadata._cost && (
               <span className="dark:text-polar-400 font-mono text-3xl text-gray-600 tabular-nums">
-                {formatSubCentCurrency(
+                {formatCurrency('subcent')(
                   Number(event.metadata._cost?.amount ?? 0),
                   event.metadata._cost?.currency ?? 'usd',
                 )}
@@ -298,7 +298,7 @@ const SpanEventDetailsCard = ({
           <dl className="flex flex-col gap-y-2">
             <DataRow
               label="Cost"
-              value={formatSubCentCurrency(
+              value={formatCurrency('subcent')(
                 Number(costMetadata.amount),
                 costMetadata.currency ?? 'usd',
               )}
@@ -364,7 +364,7 @@ function TreeNode({
 
   const costDisplay = useMemo(() => {
     if ('_cost' in event.metadata && event.metadata._cost) {
-      return formatSubCentCurrency(
+      return formatCurrency('subcent')(
         Number(event.metadata._cost?.amount ?? 0),
         event.metadata._cost?.currency ?? 'usd',
       )

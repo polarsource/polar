@@ -106,7 +106,10 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
           loading={loading}
           placeholderText="$1,234"
         >
-          {formatCurrency(metrics.data?.totals.revenue ?? 0, 'usd', 0, 0)}
+          {formatCurrency('statistics')(
+            metrics.data?.totals.revenue ?? 0,
+            'usd',
+          )}
         </Text>
       </Box>
     </Tile>

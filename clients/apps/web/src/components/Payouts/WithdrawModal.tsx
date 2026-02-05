@@ -150,17 +150,26 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <DetailRow
                       label="Gross Amount"
                       valueClassName="justify-end"
-                      value={formatCurrency(payoutEstimate.gross_amount, 'usd')}
+                      value={formatCurrency('accounting')(
+                        payoutEstimate.gross_amount,
+                        'usd',
+                      )}
                     />
                     <DetailRow
                       label="Fees Amount"
                       valueClassName="justify-end"
-                      value={formatCurrency(payoutEstimate.fees_amount, 'usd')}
+                      value={formatCurrency('accounting')(
+                        payoutEstimate.fees_amount,
+                        'usd',
+                      )}
                     />
                     <DetailRow
                       label="Net Amount"
                       valueClassName="justify-end"
-                      value={formatCurrency(payoutEstimate.net_amount, 'usd')}
+                      value={formatCurrency('accounting')(
+                        payoutEstimate.net_amount,
+                        'usd',
+                      )}
                     />
                   </div>
                 </div>

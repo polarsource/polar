@@ -162,7 +162,10 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrency(original.gross_amount, original.currency)
+              ? formatCurrency('accounting')(
+                  original.gross_amount,
+                  original.currency,
+                )
               : '—'}
           </div>
         )
@@ -181,8 +184,14 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrency(original.fees_amount, original.currency)
-              : formatCurrency(Math.abs(original.amount), original.currency)}
+              ? formatCurrency('accounting')(
+                  original.fees_amount,
+                  original.currency,
+                )
+              : formatCurrency('accounting')(
+                  Math.abs(original.amount),
+                  original.currency,
+                )}
           </div>
         )
       },
@@ -200,7 +209,7 @@ export default function ClientPage({
         return (
           <div className="flex flex-row justify-end">
             {isPayout(original)
-              ? formatCurrency(original.amount, original.currency)
+              ? formatCurrency('accounting')(original.amount, original.currency)
               : '—'}
           </div>
         )

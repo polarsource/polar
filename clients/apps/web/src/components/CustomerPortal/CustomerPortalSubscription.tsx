@@ -327,10 +327,9 @@ const CustomerPortalSubscription = ({
                   header: 'Amount',
                   cell: ({ row }) => (
                     <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {formatCurrency(
+                      {formatCurrency('presenting')(
                         row.original.total_amount,
                         row.original.currency,
-                        0,
                       )}
                     </span>
                   ),

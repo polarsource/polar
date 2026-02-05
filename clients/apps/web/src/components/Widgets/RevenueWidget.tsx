@@ -97,8 +97,8 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrency(period.revenue ?? 0, 'usd', 0)} in{' '}
-                    {format(period.timestamp, 'MMMM')}
+                    {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}{' '}
+                    in {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>
               </Tooltip>

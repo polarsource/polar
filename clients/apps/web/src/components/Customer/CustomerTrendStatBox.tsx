@@ -1,10 +1,6 @@
-import {
-  formatHumanFriendlyCurrency,
-  formatHumanFriendlyScalar,
-  formatPercentage,
-  formatSubCentCurrency,
-} from '@/utils/formatters'
+import { formatHumanFriendlyScalar, formatPercentage } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import {
   Tooltip,
   TooltipContent,
@@ -37,13 +33,13 @@ export const CustomerTrendStatBox = ({
   const formatter = useMemo(() => {
     switch (trend?.metric.type) {
       case 'currency':
-        return formatHumanFriendlyCurrency
+        return formatCurrency('presenting')
       case 'scalar':
         return formatHumanFriendlyScalar
       case 'percentage':
         return formatPercentage
       case 'currency_sub_cent':
-        return formatSubCentCurrency
+        return formatCurrency('subcent')
     }
   }, [trend])
 

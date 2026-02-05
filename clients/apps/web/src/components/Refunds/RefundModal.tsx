@@ -66,7 +66,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
       if (data) {
         toast({
           title: 'Refund Created',
-          description: `Refund for ${formatCurrency(
+          description: `Refund for ${formatCurrency('presenting')(
             data.amount,
             data.currency,
           )} created successfully`,
@@ -102,9 +102,8 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                 max: {
                   value: maximumRefundAmount,
                   message: `Amount must be less or equal to ${formatCurrency(
-                    maximumRefundAmount,
-                    order.currency,
-                  )}`,
+                    'presenting',
+                  )(maximumRefundAmount, order.currency)}`,
                 },
               }}
               render={({ field }) => (

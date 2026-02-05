@@ -3,8 +3,7 @@ import Button from '../components/Button'
 import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function WebhookEndpointDisabled({
@@ -14,12 +13,11 @@ export function WebhookEndpointDisabled({
   dashboard_url,
 }: schemas['WebhookEndpointDisabledProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         Webhook endpoint disabled for {organization.name} due to continuous
         failures
       </Preview>
-      <PolarHeader />
       <IntroWithHi>
         We've automatically disabled a webhook endpoint for{' '}
         <span className="font-bold">{organization.name}</span> due to continuous
@@ -52,7 +50,7 @@ export function WebhookEndpointDisabled({
         <Button href={dashboard_url}>Go to Webhooks Dashboard</Button>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 
@@ -65,8 +63,7 @@ WebhookEndpointDisabled.PreviewProps = {
     avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=200&v=4',
   },
   webhook_endpoint_url: 'https://api.example.com/webhooks/polar',
-  dashboard_url:
-    'https://polar.sh/dashboard/acme-inc/settings/webhooks',
+  dashboard_url: 'https://polar.sh/dashboard/acme-inc/settings/webhooks',
 }
 
 export default WebhookEndpointDisabled

@@ -1,6 +1,6 @@
-import { Container, Font, Head, Html, Tailwind } from '@react-email/components'
+import { Font, Head, Html, Tailwind } from '@react-email/components'
 
-const Wrapper = ({ children }: { children: React.ReactNode }) => {
+const WrapperBase = ({ children }: { children: React.ReactNode }) => {
   return (
     <Tailwind
       config={{
@@ -26,10 +26,10 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
             }}
           />
         </Head>
-        <Container className="p-[20px]">{children}</Container>
+        {children}
       </Html>
     </Tailwind>
   )
 }
 
-export default Wrapper
+export default WrapperBase

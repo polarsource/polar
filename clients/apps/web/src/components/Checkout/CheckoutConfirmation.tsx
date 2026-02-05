@@ -4,7 +4,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { PolarCore } from '@spaire/sdk/core'
+import { SpaireCore } from '@spaire/sdk/core'
 import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -109,7 +109,7 @@ export const CheckoutConfirmation = ({
   maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
   const router = useRouter()
-  const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
+  const client = useMemo(() => new SpaireCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { status, organization } = checkout
 

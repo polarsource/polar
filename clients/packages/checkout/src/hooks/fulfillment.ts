@@ -1,6 +1,6 @@
 'use client'
 
-import type { PolarCore } from '@spaire/sdk/core'
+import type { SpaireCore } from '@spaire/sdk/core'
 import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import type { CheckoutStatus } from '@spaire/sdk/models/components/checkoutstatus'
 import { useCallback, useState } from 'react'
@@ -9,7 +9,7 @@ import { hasProductCheckout } from '../guards'
 import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
-  client: PolarCore,
+  client: SpaireCore,
   checkout: CheckoutPublic,
   maxWaitingTimeMs: number = 15000,
 ): [() => Promise<void>, string | null] => {

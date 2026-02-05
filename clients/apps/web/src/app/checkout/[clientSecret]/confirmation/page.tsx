@@ -1,7 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
-import { PolarCore } from '@spaire/sdk/core'
+import { SpaireCore } from '@spaire/sdk/core'
 import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@spaire/sdk/models/errors/expiredcheckouterror'
 import { ResourceNotFound } from '@spaire/sdk/models/errors/resourcenotfound'
@@ -23,7 +23,7 @@ export default async function Page(props: {
 
   const { clientSecret } = params
 
-  const client = new PolarCore({ serverURL: getServerURL() })
+  const client = new SpaireCore({ serverURL: getServerURL() })
   const {
     ok,
     value: checkout,

@@ -15,4 +15,4 @@ onlyBuiltDependencies:
 
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - '@polar-sh/sdk'
+  - '@spaire/sdk'

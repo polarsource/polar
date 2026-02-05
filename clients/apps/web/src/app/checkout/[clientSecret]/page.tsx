@@ -3,7 +3,7 @@ import {
   CheckoutFormProvider,
   CheckoutProvider,
 } from '@polar-sh/checkout/providers'
-import { PolarCore } from '@spaire/sdk/core'
+import { SpaireCore } from '@spaire/sdk/core'
 import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@spaire/sdk/models/errors/expiredcheckouterror'
 import { ResourceNotFound } from '@spaire/sdk/models/errors/resourcenotfound'
@@ -23,7 +23,7 @@ export default async function Page(props: {
   const { clientSecret } = params
 
   const embed = _embed === 'true'
-  const client = new PolarCore({ serverURL: getServerURL() })
+  const client = new SpaireCore({ serverURL: getServerURL() })
 
   const {
     ok,

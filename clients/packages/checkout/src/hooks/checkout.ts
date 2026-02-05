@@ -1,11 +1,11 @@
-import type { PolarCore } from '@spaire/sdk/core'
+import type { SpaireCore } from '@spaire/sdk/core'
 import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import { useEffect, useMemo } from 'react'
 
 import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutListener = (
-  client: PolarCore,
+  client: SpaireCore,
   checkout: CheckoutPublic,
 ) => {
   const [checkoutEvents, listen] = useMemo(() => {

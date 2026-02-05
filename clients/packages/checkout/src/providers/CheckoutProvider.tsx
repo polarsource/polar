@@ -1,6 +1,6 @@
 'use client'
 
-import { PolarCore } from '@spaire/sdk/core'
+import { SpaireCore } from '@spaire/sdk/core'
 import { checkoutsClientConfirm } from '@spaire/sdk/funcs/checkoutsClientConfirm'
 import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
 import { checkoutsClientUpdate } from '@spaire/sdk/funcs/checkoutsClientUpdate'
@@ -93,7 +93,7 @@ export interface CheckoutContextProps {
       | ConnectionError
     >
   >
-  client: PolarCore
+  client: SpaireCore
 }
 
 // @ts-ignore
@@ -112,7 +112,7 @@ export const CheckoutProvider = ({
   children,
 }: React.PropsWithChildren<CheckoutProviderProps>) => {
   const client = useMemo(
-    () => new PolarCore({ server, serverURL }),
+    () => new SpaireCore({ server, serverURL }),
     [server, serverURL],
   )
   const [checkout, setCheckout] = useState<CheckoutPublic | null>(null)

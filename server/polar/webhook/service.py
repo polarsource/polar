@@ -56,6 +56,7 @@ from polar.webhook.repository import (
 )
 from polar.worker import enqueue_job
 
+from .eventstream import publish_webhook_event
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
@@ -719,6 +720,12 @@ class WebhookService:
             {"type": event, "timestamp": now, "data": data}
         )
 
+        # Publish to eventstream for CLI listeners, regardless of webhook endpoints
+        await publish_webhook_event(
+            organization_id=target.id,
+            payload=payload.get_raw_payload(),
+        )
+
         events: list[WebhookEvent] = []
         for endpoint in await self._get_event_target_endpoints(
             session, event=event, target=target
@@ -735,12 +742,6 @@ class WebhookService:
                 events.append(event_type)
                 await session.flush()
                 enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
-                # Publish webhook event to eventstream for CLI listeners
-                enqueue_job(
-                    "webhook_event.publish",
-                    webhook_event_id=event_type.id,
-                    organization_id=target.id,
-                )
             except UnsupportedTarget as e:
                 # Log the error but do not raise to not fail the whole request
                 log.error(e.message)

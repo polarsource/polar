@@ -2268,6 +2268,47 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_called_once_with(session, subscription)
 
     @freeze_time("2024-01-01 12:00:00")
+    async def test_first_dunning_enqueues_benefit_revocation(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """When a subscription product update grants benefits before payment,
+        the first dunning attempt must re-enqueue benefit grants so that
+        benefits are revoked for the now past-due subscription."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        mock_enqueue_benefits_grants = mocker.patch(
+            "polar.subscription.service.subscription.enqueue_benefits_grants"
+        )
+
+        await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+        mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
     async def test_ignores_payment_failure_for_already_paid_order(
         self,
         session: AsyncSession,

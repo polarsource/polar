@@ -1839,6 +1839,11 @@ class OrderService:
         assert order.subscription is not None
         await subscription_service.mark_past_due(session, order.subscription)
 
+        # Re-enqueue benefit revocation to check if grace period has expired
+        # We might end up here in the event that a user goes via the subscription product
+        # update flow, so we need to ensure that they don't get benefits they shouldn't have.
+        await subscription_service.enqueue_benefits_grants(session, order.subscription)
+
         return order
 
     async def _handle_consecutive_dunning_attempts(

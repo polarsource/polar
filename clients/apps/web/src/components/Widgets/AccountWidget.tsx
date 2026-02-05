@@ -50,7 +50,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         </div>
         <h2 className="text-5xl font-light">
           {summary &&
-            formatCurrency('statistics')(
+            formatCurrency('compact')(
               summary.balance.amount,
               summary.balance.currency,
             )}
@@ -61,7 +61,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
           <div className="flex flex-col">
             <div className="flex flex-row items-center justify-between gap-x-2">
               <h3 className="text-lg">
-                {formatCurrency('statistics')(
+                {formatCurrency('compact')(
                   lastPayout.amount,
                   lastPayout.currency,
                 )}

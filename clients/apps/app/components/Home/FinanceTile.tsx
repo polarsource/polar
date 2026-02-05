@@ -39,7 +39,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
             loading={loading}
             placeholderText="$1,234"
           >
-            {formatCurrency('statistics')(summary?.balance.amount ?? 0, 'usd')}
+            {formatCurrency('compact')(summary?.balance.amount ?? 0, 'usd')}
           </Text>
         </Box>
         <Box flexDirection="row" justifyContent="flex-start">

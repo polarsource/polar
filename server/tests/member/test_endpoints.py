@@ -722,13 +722,14 @@ class TestUpdateMember:
         assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
 
     @pytest.mark.auth
-    async def test_update_member_cannot_promote_to_owner_when_owner_exists(
+    async def test_update_member_can_transfer_ownership(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        """Admin API can transfer ownership - old owner is demoted to billing_manager."""
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -758,9 +759,14 @@ class TestUpdateMember:
             json={"role": "owner"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
         json = response.json()
-        assert "must have exactly one owner" in json["detail"][0]["msg"].lower()
+        assert json["role"] == "owner"
+
+        # Verify the old owner was demoted
+        response = await client.get(f"/v1/members/{owner.id}")
+        assert response.status_code == 200
+        assert response.json()["role"] == "billing_manager"
 
     @pytest.mark.auth
     async def test_update_member_not_found(

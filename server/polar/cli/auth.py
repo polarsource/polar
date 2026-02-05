@@ -3,9 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
-from polar.models.organization import Organization
 
 _CLIRead = Authenticator(
     required_scopes={
@@ -14,6 +13,6 @@ _CLIRead = Authenticator(
         Scope.webhooks_read,
         Scope.webhooks_write,
     },
-    allowed_subjects={Organization},
+    allowed_subjects={User, Organization},
 )
-CLIRead = Annotated[AuthSubject[Organization], Depends(_CLIRead)]
+CLIRead = Annotated[AuthSubject[User | Organization], Depends(_CLIRead)]

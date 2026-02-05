@@ -90,7 +90,7 @@ export const useThemePreset = (
           fontWeight: '500',
         },
         '.AccordionItemLabel--selected': {
-          color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
+          color: '#0062FF',
         },
         '.Block': {
           backgroundColor: 'transparent',

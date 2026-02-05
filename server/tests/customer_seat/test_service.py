@@ -2396,6 +2396,7 @@ class TestAssignSeatToDeletedMember:
 
         # Step 2: Revoke the seat (this clears member_id, customer_id, email from seat)
         await session.refresh(seat, ["subscription"])
+        assert seat.subscription is not None
         await session.refresh(seat.subscription, ["product"])
         await session.refresh(seat.subscription.product, ["organization"])
         await seat_service.revoke_seat(session, seat)

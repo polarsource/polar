@@ -24,10 +24,6 @@ const CheckoutBenefits = ({
   })
   const expectedBenefits = checkout.product.benefits.length
 
-  const isSeatBasedProduct = checkout.product.prices.some(
-    (price) => price.amountType === 'seat_based',
-  )
-
   const customerEvents = useCustomerSSE(customerSessionToken)
   useEffect(() => {
     customerEvents.on('benefit.granted', refetch)
@@ -45,10 +41,6 @@ const CheckoutBenefits = ({
     }, maxWaitingTimeMs)
     return () => clearInterval(intervalId)
   }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
-
-  if (isSeatBasedProduct) {
-    return null
-  }
 
   return (
     <>

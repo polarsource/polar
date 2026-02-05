@@ -1918,6 +1918,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/cli/listen/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * CLI Listen
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli:listen']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/files/': {
     parameters: {
       query?: never
@@ -4558,6 +4578,83 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'member.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.created
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.updated
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.deleted
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_deleted_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'order.created': {
     parameters: {
       query?: never
@@ -6437,6 +6534,8 @@ export interface components {
       subscription_id?: string
       /** Amount */
       amount: number
+      /** Net Amount */
+      net_amount?: number
       /** Currency */
       currency: string
       /** Presentment Amount */
@@ -16816,6 +16915,8 @@ export interface components {
     DownloadableFileCreate: {
       /** Organization Id */
       organization_id?: string | null
+      /** User Id */
+      user_id?: string | null
       /** Name */
       name: string
       /** Mime Type */
@@ -16844,11 +16945,8 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Name */
       name: string
       /** Path */
@@ -17348,6 +17446,7 @@ export interface components {
       | components['schemas']['DownloadableFileCreate']
       | components['schemas']['ProductMediaFileCreate']
       | components['schemas']['OrganizationAvatarFileCreate']
+      | components['schemas']['OAuthLogoFileCreate']
     /** FileDownload */
     FileDownload: {
       /**
@@ -17356,11 +17455,8 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Name */
       name: string
       /** Path */
@@ -17399,7 +17495,11 @@ export interface components {
      * FileServiceTypes
      * @enum {string}
      */
-    FileServiceTypes: 'downloadable' | 'product_media' | 'organization_avatar'
+    FileServiceTypes:
+      | 'downloadable'
+      | 'product_media'
+      | 'organization_avatar'
+      | 'oauth_logo'
     /** FileUpload */
     FileUpload: {
       /**
@@ -17408,11 +17508,8 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Name */
       name: string
       /** Path */
@@ -18397,6 +18494,7 @@ export interface components {
         | components['schemas']['DownloadableFileRead']
         | components['schemas']['ProductMediaFileRead']
         | components['schemas']['OrganizationAvatarFileRead']
+        | components['schemas']['OAuthLogoFileRead']
       )[]
       pagination: components['schemas']['Pagination']
     }
@@ -19853,6 +19951,88 @@ export interface components {
       account_username: string | null
     }
     /**
+     * OAuthLogoFileCreate
+     * @description Schema to create a file to be used as an OAuth application logo.
+     */
+    OAuthLogoFileCreate: {
+      /** Organization Id */
+      organization_id?: string | null
+      /** User Id */
+      user_id?: string | null
+      /** Name */
+      name: string
+      /**
+       * Mime Type
+       * @description MIME type of the file. Only images are supported for this type of file.
+       */
+      mime_type: string
+      /**
+       * Size
+       * @description Size of the file. A maximum of 1 MB is allowed for this type of file.
+       */
+      size: number
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64?: string | null
+      upload: components['schemas']['S3FileCreateMultipart']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'oauth_logo'
+      /** Version */
+      version?: string | null
+    }
+    /**
+     * OAuthLogoFileRead
+     * @description File to be used as an OAuth application logo.
+     */
+    OAuthLogoFileRead: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Organization Id */
+      organization_id?: string | null
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+      /** Mime Type */
+      mime_type: string
+      /** Size */
+      size: number
+      /** Storage Version */
+      storage_version: string | null
+      /** Checksum Etag */
+      checksum_etag: string | null
+      /** Checksum Sha256 Base64 */
+      checksum_sha256_base64: string | null
+      /** Checksum Sha256 Hex */
+      checksum_sha256_hex: string | null
+      /** Last Modified At */
+      last_modified_at: string | null
+      /** Version */
+      version: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      service: 'oauth_logo'
+      /** Is Uploaded */
+      is_uploaded: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Size Readable */
+      readonly size_readable: string
+      /** Public Url */
+      readonly public_url: string
+    }
+    /**
      * OAuthPlatform
      * @enum {string}
      */
@@ -20811,6 +20991,8 @@ export interface components {
     OrganizationAvatarFileCreate: {
       /** Organization Id */
       organization_id?: string | null
+      /** User Id */
+      user_id?: string | null
       /** Name */
       name: string
       /**
@@ -20845,11 +21027,8 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Name */
       name: string
       /** Path */
@@ -22024,6 +22203,8 @@ export interface components {
     ProductMediaFileCreate: {
       /** Organization Id */
       organization_id?: string | null
+      /** User Id */
+      user_id?: string | null
       /** Name */
       name: string
       /**
@@ -22058,11 +22239,8 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
+      /** Organization Id */
+      organization_id?: string | null
       /** Name */
       name: string
       /** Path */
@@ -26272,6 +26450,9 @@ export interface components {
       | 'customer_seat.assigned'
       | 'customer_seat.claimed'
       | 'customer_seat.revoked'
+      | 'member.created'
+      | 'member.updated'
+      | 'member.deleted'
       | 'order.created'
       | 'order.updated'
       | 'order.paid'
@@ -26299,6 +26480,77 @@ export interface components {
      * @enum {string}
      */
     WebhookFormat: 'raw' | 'discord' | 'slack'
+    /**
+     * WebhookMemberCreatedPayload
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberCreatedPayload: {
+      /**
+       * Type
+       * @example member.created
+       * @constant
+       */
+      type: 'member.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberDeletedPayload
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberDeletedPayload: {
+      /**
+       * Type
+       * @example member.deleted
+       * @constant
+       */
+      type: 'member.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberUpdatedPayload
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberUpdatedPayload: {
+      /**
+       * Type
+       * @example member.updated
+       * @constant
+       */
+      type: 'member.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
     /**
      * WebhookOrderCreatedPayload
      * @description Sent when a new order is created.
@@ -30964,6 +31216,55 @@ export interface operations {
       }
     }
   }
+  'cli:listen': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Organization updated. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description You don't have the permission to listen on this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'files:list': {
     parameters: {
       query?: {
@@ -31061,6 +31362,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['OAuthLogoFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -31165,6 +31467,7 @@ export interface operations {
             | components['schemas']['DownloadableFileRead']
             | components['schemas']['ProductMediaFileRead']
             | components['schemas']['OrganizationAvatarFileRead']
+            | components['schemas']['OAuthLogoFileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -39041,6 +39344,105 @@ export interface operations {
       }
     }
   }
+  _endpointmember_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberDeletedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointorder_created_post: {
     parameters: {
       query?: never
@@ -43085,7 +43487,7 @@ export const eventTypesSortPropertyValues: ReadonlyArray<
 ]
 export const fileServiceTypesValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FileServiceTypes']
-> = ['downloadable', 'product_media', 'organization_avatar']
+> = ['downloadable', 'product_media', 'organization_avatar', 'oauth_logo']
 export const filterConjunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['FilterConjunction']
 > = ['and', 'or']
@@ -43164,6 +43566,12 @@ export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: Re
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OAuth2ClientConfigurationUpdate']['grant_types']
 > = ['authorization_code', 'refresh_token']
+export const oAuthLogoFileCreateServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OAuthLogoFileCreate']['service']
+> = ['oauth_logo']
+export const oAuthLogoFileReadServiceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OAuthLogoFileRead']['service']
+> = ['oauth_logo']
 export const oAuthPlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OAuthPlatform']
 > = ['github', 'github_repository_benefit', 'google', 'apple']
@@ -43830,6 +44238,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'customer_seat.assigned',
   'customer_seat.claimed',
   'customer_seat.revoked',
+  'member.created',
+  'member.updated',
+  'member.deleted',
   'order.created',
   'order.updated',
   'order.paid',

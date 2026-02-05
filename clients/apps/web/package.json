@@ -59,7 +59,6 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-table": "^8.21.3",
-    "@vercel/blob": "^0.23.4",
     "ai": "^5.0.113",
     "big.js": "^7.0.1",
     "class-variance-authority": "^0.7.1",

@@ -62,15 +62,14 @@ const CheckoutBenefits = ({
               <BenefitGrant api={api} benefitGrant={benefitGrant} />
             </ListItem>
           ))}
-          {benefitGrants &&
-            benefitGrants.items.length < expectedBenefits && (
-              <ListItem className="flex flex-row items-center justify-center gap-2">
-                <SpinnerNoMargin className="h-4 w-4" />
-                <p className="dark:text-polar-500 text-gray-500">
-                  Granting benefits...
-                </p>
-              </ListItem>
-            )}
+          {benefitGrants && benefitGrants.items.length < expectedBenefits && (
+            <ListItem className="flex flex-row items-center justify-center gap-2">
+              <SpinnerNoMargin className="h-4 w-4" />
+              <p className="dark:text-polar-500 text-gray-500">
+                Granting benefits...
+              </p>
+            </ListItem>
+          )}
         </List>
       </div>
     </>

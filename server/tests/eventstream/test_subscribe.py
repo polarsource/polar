@@ -20,9 +20,7 @@ def _no_uvicorn_exit(mocker: MockerFixture) -> None:
 def _make_request(disconnect_after: int) -> AsyncMock:
     """Create a mock request that disconnects after N iterations."""
     request = AsyncMock()
-    request.is_disconnected = AsyncMock(
-        side_effect=[False] * disconnect_after + [True]
-    )
+    request.is_disconnected = AsyncMock(side_effect=[False] * disconnect_after + [True])
     return request
 
 
@@ -71,9 +69,7 @@ class TestSubscribeOnIteration:
         task = asyncio.create_task(publish_after_subscribe())
 
         messages = []
-        async for msg in subscribe(
-            redis, [channel], request, on_iteration=callback
-        ):
+        async for msg in subscribe(redis, [channel], request, on_iteration=callback):
             messages.append(msg)
 
         await task
@@ -83,9 +79,7 @@ class TestSubscribeOnIteration:
         assert b"msg2" in messages or "msg2" in messages
         assert callback.call_count >= 1
 
-    async def test_on_iteration_called_before_get_message(
-        self, redis: Redis
-    ) -> None:
+    async def test_on_iteration_called_before_get_message(self, redis: Redis) -> None:
         """on_iteration is called before waiting for messages, not after."""
         channel = "test:order"
         call_order: list[str] = []

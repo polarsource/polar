@@ -352,9 +352,7 @@ def _build_mrr_sql(
     payment_customer_filter = ""
     if customer_id is not None:
         params["customer_ids"] = [str(id) for id in customer_id]
-        sub_customer_filter = (
-            "AND customer_id IN {customer_ids:Array(String)}"
-        )
+        sub_customer_filter = "AND customer_id IN {customer_ids:Array(String)}"
         payment_customer_filter = "AND customer_id IN {customer_ids:Array(String)}"
 
     sql = f"""

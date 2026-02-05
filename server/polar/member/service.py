@@ -10,12 +10,15 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
+from polar.organization.repository import OrganizationRepository
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import MemberRepository
@@ -121,6 +124,18 @@ class MemberService:
             customer_id=member.customer_id,
             organization_id=member.organization_id,
         )
+
+        # Send webhook
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(member.organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.member_deleted,
+                deleted_member,
+            )
+
         return deleted_member
 
     async def create_owner_member(
@@ -190,6 +205,12 @@ class MemberService:
                 customer_id=customer.id,
                 member_id=created_member.id,
                 organization_id=organization.id,
+            )
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.member_created,
+                created_member,
             )
             return created_member
         except IntegrityError as e:
@@ -436,6 +457,12 @@ class MemberService:
                 organization_id=customer.organization_id,
                 role=role,
             )
+            await webhook_service.send(
+                session,
+                customer.organization,
+                WebhookEventType.member_created,
+                created_member,
+            )
             return created_member
         except IntegrityError as e:
             log.warning(
@@ -572,6 +599,18 @@ class MemberService:
             organization_id=member.organization_id,
             updated_fields=list(update_dict.keys()),
         )
+
+        # Send webhook
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(member.organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.member_updated,
+                updated_member,
+            )
+
         return updated_member
 
 

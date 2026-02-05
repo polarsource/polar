@@ -112,8 +112,6 @@ class MemberService:
                     ]
                 )
 
-        # Enqueue job to revoke any active seats assigned to this member
-        # This is done asynchronously to avoid circular dependencies
         enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
 
         deleted_member = await repository.soft_delete(member)

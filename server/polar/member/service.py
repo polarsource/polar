@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -20,9 +20,6 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import MemberRepository
 from .sorting import MemberSortProperty
-
-if TYPE_CHECKING:
-    from polar.customer_seat.service import SeatService
 
 log = structlog.get_logger()
 
@@ -80,7 +77,6 @@ class MemberService:
         self,
         session: AsyncSession,
         member: Member,
-        customer_seat_service: "SeatService | None" = None,
     ) -> Member:
         """
         Soft delete a member.
@@ -91,8 +87,6 @@ class MemberService:
         Args:
             session: Database session
             member: Member to delete
-            customer_seat_service: Optional seat service for revoking seats.
-                If not provided, will be imported lazily.
 
         Returns:
             Deleted Member
@@ -126,13 +120,10 @@ class MemberService:
 
         if active_seats:
             # Lazy import to avoid circular dependency
-            if customer_seat_service is None:
-                from polar.customer_seat.service import seat_service
-
-                customer_seat_service = seat_service
+            from polar.customer_seat.service import seat_service
 
             for seat in active_seats:
-                await customer_seat_service.revoke_seat(session, seat)
+                await seat_service.revoke_seat(session, seat)
                 log.info(
                     "member.delete.seat_revoked",
                     member_id=member.id,

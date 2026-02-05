@@ -191,16 +191,6 @@ async def get_payment_statistics(
 
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
-    if not account_id:
-        return PaymentStatistics(
-            payment_count=0,
-            p50_risk=0,
-            p90_risk=0,
-            refunds_count=0,
-            transfer_sum=0,
-            refunds_amount=0,
-            total_payment_amount=0,
-        )
 
     # Get payment statistics
     (

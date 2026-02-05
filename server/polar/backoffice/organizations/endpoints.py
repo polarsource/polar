@@ -207,10 +207,13 @@ async def get_payment_statistics(
         organization_id
     )
 
-    # Get transfer sum (used for review threshold checking)
-    transfer_sum = await transaction_service.get_transactions_sum(
-        session, account_id, type=TransactionType.balance
-    )
+    if account_id:
+        # Get transfer sum (used for review threshold checking)
+        transfer_sum = await transaction_service.get_transactions_sum(
+            session, account_id, type=TransactionType.balance
+        )
+    else:
+        transfer_sum = 0
 
     return PaymentStatistics(
         payment_count=payment_count,

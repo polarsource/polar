@@ -1,4 +1,4 @@
-export const CURRENCY_DECIMAL_FACTORS: Record<string, number> = {
+const CURRENCY_DECIMAL_FACTORS: Record<string, number> = {
   aud: 100,
   brl: 100,
   cad: 100,
@@ -11,13 +11,48 @@ export const CURRENCY_DECIMAL_FACTORS: Record<string, number> = {
   usd: 100,
 }
 
+/**
+ * Returns the decimal factor for a given currency.
+ * 
+ * The decimal factor represents how many units of the smallest currency unit
+ * make up one unit of the base currency. For most currencies (decimal currencies),
+ * this is 100 (e.g., 100 cents = 1 USD). For non-decimal currencies like JPY,
+ * this is 1 (no fractional units).
+ * 
+ * @param currency - The currency code in lowercase (e.g., 'usd', 'eur', 'jpy')
+ * @returns The decimal factor for the currency (100 for most currencies, 1 for JPY)
+ * @example
+ * // Returns 100 for USD
+ * getCurrencyDecimalFactor('usd')
+ * @example
+ * // Returns 1 for JPY
+ * getCurrencyDecimalFactor('jpy')
+ */
 export const getCurrencyDecimalFactor = (currency: string): number => {
   return CURRENCY_DECIMAL_FACTORS[currency.toLowerCase()] ?? 100
 }
 
+/**
+ * Checks if a currency is a decimal currency.
+ * 
+ * Decimal currencies are those that use 100 as their decimal factor (e.g., USD, EUR).
+ * Non-decimal currencies like JPY use a factor of 1.
+ * 
+ * @param currency - The currency code in lowercase (e.g., 'usd', 'eur', 'jpy')
+ * @returns true if the currency is decimal (uses 100 as factor), false otherwise
+ * @example
+ * // Returns true for USD
+ * isDecimalCurrency('usd')
+ * @example
+ * // Returns false for JPY
+ * isDecimalCurrency('jpy')
+ */
 export const isDecimalCurrency = (currency: string): boolean =>
   getCurrencyDecimalFactor(currency) === 100
 
+/**
+ * Formatting modes for currency display
+ */
 type FormattingMode = 'presenting' | 'accounting' | 'statistics' | 'subcent'
 
 const formatCurrencyPresenting = (cents: number, currency: string): string => {
@@ -71,11 +106,49 @@ const formatCurrencySubcent = (cents: number, currency: string): string => {
 
   return currencyNumberFormat.format(cents / decimalFactor)
 }
+
 /**
- * Format an amount with currency code (e.g., "$10.00").
- * Uses currencyDisplay: 'symbol' to show the currency.
- * To show "USD 10.00" instead, please pass 'code'
- * Automatically handles currencies with different decimal factors.
+ * Formats currency amounts for display in various contexts.
+ * 
+ * This function returns a curried function that takes the amount in cents and currency code
+ * and returns a formatted string. The formatting behavior depends on the mode parameter.
+ * 
+ * @param mode - The formatting mode to use:
+ *   - 'presenting': User-facing display with currency symbol, hides unnecessary decimals
+ *   - 'accounting': Formal display with currency code, always shows decimals for decimal currencies
+ *   - 'statistics': Compact display for charts/graphs, uses abbreviations (K, M, B)
+ *   - 'subcent': High-precision display for very small amounts
+ * 
+ * @returns A function that takes cents and currency and returns the formatted string
+ * 
+ * @example
+ * // Presenting mode - user-friendly display
+ * const formatPresenting = formatCurrency('presenting')
+ * formatPresenting(12345, 'usd') // Returns: "$123.45"
+ * formatPresenting(12300, 'usd') // Returns: "$123" (hides .00)
+ * formatPresenting(12300, 'jpy') // Returns: "¥12,300"
+ * 
+ * @example
+ * // Accounting mode - formal display with currency codes
+ * const formatAccounting = formatCurrency('accounting')
+ * formatAccounting(12345, 'usd') // Returns: "USD 123.45"
+ * formatAccounting(12300, 'usd') // Returns: "USD 123.00" (always shows decimals)
+ * formatAccounting(12300, 'jpy') // Returns: "JPY 12,300"
+ * 
+ * @example
+ * // Statistics mode - compact display for charts
+ * const formatStatistics = formatCurrency('statistics')
+ * formatStatistics(12345, 'usd') // Returns: "$123.5"
+ * formatStatistics(4200000, 'usd') // Returns: "$42K"
+ * formatStatistics(4212010, 'usd') // Returns: "$42.1K"
+ * formatStatistics(12300, 'jpy') // Returns: "¥12.3K"
+ * 
+ * @example
+ * // Subcent mode - high precision for very small amounts
+ * const formatSubcent = formatCurrency('subcent')
+ * formatSubcent(1, 'usd') // Returns: "$0.01"
+ * formatSubcent(0.00000001, 'usd') // Returns: "$0.0000000001"
+ * formatSubcent(0.0000000101, 'usd') // Returns: "$0.000000000101"
  */
 export const formatCurrency =
   (mode: FormattingMode) =>

@@ -161,6 +161,7 @@ async def update_member(
         member,
         name=member_update.name,
         role=member_update.role,
+        allow_ownership_transfer=True,
     )
 
     return Member.model_validate(updated_member)

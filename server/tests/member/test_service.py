@@ -561,7 +561,7 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError) as exc_info:
             await member_service.update(session, member, role=MemberRole.owner)
 
-        assert "must have exactly one owner" in str(exc_info.value).lower()
+        assert "only the owner can transfer ownership" in str(exc_info.value).lower()
 
     @pytest.mark.auth
     async def test_update_no_changes(

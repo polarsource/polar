@@ -36,7 +36,7 @@ export const getDiscountDisplay = (discount: CheckoutDiscount): string => {
     return percentageFormatter.format(-discount.basisPoints / 10000)
   }
   if (isDiscountFixed(discount)) {
-    return formatCurrency('presenting')(-discount.amount, discount.currency, 0)
+    return formatCurrency('compact')(-discount.amount, discount.currency, 0)
   }
   throw new Error('Unknown discount type')
 }

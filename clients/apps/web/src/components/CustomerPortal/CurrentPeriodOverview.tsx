@@ -103,7 +103,7 @@ export const CurrentPeriodOverview = ({
                   {meter.meter.name}
                 </span>
                 <span className="font-medium">
-                  {formatCurrency('presenting')(
+                  {formatCurrency('compact')(
                     meter.amount,
                     subscription.currency,
                   )}
@@ -118,7 +118,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1.5 flex items-center justify-between text-gray-500">
               <span>Subtotal</span>
               <span>
-                {formatCurrency('presenting')(
+                {formatCurrency('compact')(
                   subscriptionPreview.subtotal_amount,
                   subscription.currency,
                 )}
@@ -130,7 +130,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Discount</span>
               <span>
-                {formatCurrency('presenting')(
+                {formatCurrency('compact')(
                   -1 * subscriptionPreview.discount_amount,
                   subscription.currency,
                 )}
@@ -142,7 +142,7 @@ export const CurrentPeriodOverview = ({
             <div className="dark:text-polar-500 mb-1 flex items-center justify-between text-gray-500">
               <span>Taxes</span>
               <span>
-                {formatCurrency('presenting')(
+                {formatCurrency('compact')(
                   subscriptionPreview.tax_amount,
                   subscription.currency,
                 )}
@@ -156,7 +156,7 @@ export const CurrentPeriodOverview = ({
             </span>
             <span className="text-lg font-medium">
               {subscriptionPreview ? (
-                formatCurrency('presenting')(
+                formatCurrency('compact')(
                   subscriptionPreview.total_amount,
                   subscription.currency,
                 )

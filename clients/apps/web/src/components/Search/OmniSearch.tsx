@@ -239,7 +239,7 @@ export const OmniSearch = ({
         return (
           <Result
             title={result.product_name}
-            description={`${result.customer_name || result.customer_email} • ${formatCurrency('presenting')(result.amount, 'usd')}`}
+            description={`${result.customer_name || result.customer_email} • ${formatCurrency('compact')(result.amount, 'usd')}`}
           />
         )
       case 'subscription':

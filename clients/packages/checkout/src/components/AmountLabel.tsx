@@ -6,7 +6,7 @@ import { formatRecurringInterval } from '../utils/product'
 interface AmountLabelProps {
   amount: number
   currency: string
-  mode: 'presenting' | 'accounting'
+  mode: 'compact' | 'standard'
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
 }

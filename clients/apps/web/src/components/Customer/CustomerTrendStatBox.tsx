@@ -33,7 +33,7 @@ export const CustomerTrendStatBox = ({
   const formatter = useMemo(() => {
     switch (trend?.metric.type) {
       case 'currency':
-        return formatCurrency('presenting')
+        return formatCurrency('compact')
       case 'scalar':
         return formatHumanFriendlyScalar
       case 'percentage':

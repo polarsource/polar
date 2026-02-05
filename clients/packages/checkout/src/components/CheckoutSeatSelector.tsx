@@ -146,10 +146,10 @@ const CheckoutSeatSelector = ({
       {/* Total Amount Display */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light text-gray-900 dark:text-white">
-          {formatCurrency('presenting')(netAmount, currency)}
+          {formatCurrency('compact')(netAmount, currency)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrency('presenting')(pricePerSeat, currency)} per seat
+          {formatCurrency('compact')(pricePerSeat, currency)} per seat
         </p>
       </div>
 

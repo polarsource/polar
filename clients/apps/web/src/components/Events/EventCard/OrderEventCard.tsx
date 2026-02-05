@@ -63,12 +63,9 @@ export const OrderEventCard = ({ event }: OrderEventCardProps) => {
 
     switch (event.name) {
       case 'order.paid':
-        return formatCurrency('presenting')(order.total_amount, order.currency)
+        return formatCurrency('compact')(order.total_amount, order.currency)
       case 'order.refunded':
-        return formatCurrency('presenting')(
-          order.refunded_amount,
-          order.currency,
-        )
+        return formatCurrency('compact')(order.refunded_amount, order.currency)
     }
   }, [order, event])
 

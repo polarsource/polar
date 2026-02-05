@@ -141,7 +141,7 @@ const CustomerSubscriptionDetails = ({
                 {subscriptionBaseAmount &&
                   subscription.amount !== subscriptionBaseAmount && (
                     <span className="text-gray-500 line-through">
-                      {formatCurrency('presenting')(
+                      {formatCurrency('compact')(
                         subscriptionBaseAmount,
                         subscription.currency,
                       )}
@@ -221,7 +221,7 @@ const CustomerSubscriptionDetails = ({
                     {subscriptionMeter.meter.name}
                   </span>
                   <span>
-                    {formatCurrency('presenting')(
+                    {formatCurrency('compact')(
                       subscriptionMeter.amount,
                       subscription.currency,
                     )}

@@ -77,7 +77,7 @@ const UpcomingChargeCard = ({
               isCancelingAtPeriodEnd ? (
                 <span className="text-gray-500">Canceled</span>
               ) : (
-                formatCurrency('presenting')(
+                formatCurrency('compact')(
                   subscription.amount,
                   subscription.currency,
                 )
@@ -95,7 +95,7 @@ const UpcomingChargeCard = ({
                 <DetailRow
                   key={meter.id}
                   label={meter.meter.name}
-                  value={formatCurrency('presenting')(
+                  value={formatCurrency('compact')(
                     meter.amount,
                     subscription.currency,
                   )}

@@ -1,37 +1,101 @@
-import { describe, expect, it } from 'vitest'
-import { formatCurrency } from './index'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_LOCALE, formatCurrency } from './index'
+
+const mockIntlNumberFormat = (locale: Intl.LocalesArgument) => {
+  const originalNumberFormat = Intl.NumberFormat
+
+  const MockNumberFormat = vi.fn(function (
+    this: any,
+    _?: Intl.LocalesArgument,
+    options?: Intl.NumberFormatOptions,
+  ) {
+    return new originalNumberFormat(locale, options)
+  }) as unknown as typeof Intl.NumberFormat
+
+  vi.stubGlobal('Intl', {
+    ...Intl,
+    NumberFormat: MockNumberFormat,
+  })
+
+  return () => {
+    vi.unstubAllGlobals()
+  }
+}
 
 describe('formatCurrency', () => {
-  describe('Presenting mode', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  describe('Compact mode', () => {
     it('should format with small currency symbol', () => {
-      expect(formatCurrency('presenting')(12345, 'usd')).toEqual('$123.45')
+      expect(formatCurrency('compact')(12345, 'usd')).toEqual('$123.45')
     })
     it('should hide decimals if not necessary', () => {
-      expect(formatCurrency('presenting')(12300, 'usd')).toEqual('$123')
+      expect(formatCurrency('compact')(12300, 'usd')).toEqual('$123')
     })
-    it('should be ambiguous on non-US dollar currencies', () => {
-      expect(formatCurrency('presenting')(12300, 'cad')).toEqual('$123')
+    it('should be ambiguous on non-US dollar currencies in USA', () => {
+      expect(formatCurrency('compact')(12300, 'cad')).toEqual('$123')
     })
+    it.skipIf(DEFAULT_LOCALE !== undefined)(
+      'should be ambiguous on non-US dollar currencies in FR',
+      () => {
+        mockIntlNumberFormat('fr-FR')
+        expect(formatCurrency('compact')(12300, 'cad')).toEqual('123 $')
+      },
+    )
     it('should handle non-decimal currencies', () => {
-      expect(formatCurrency('presenting')(12300, 'jpy')).toEqual('¥12,300')
+      expect(formatCurrency('compact')(12300, 'jpy')).toEqual('¥12,300')
+    })
+  })
+
+  describe('Standard mode', () => {
+    it('should format with currency symbol and hide unnecessary decimals', () => {
+      expect(formatCurrency('standard')(12345, 'usd')).toEqual('$123.45')
+      expect(formatCurrency('standard')(12300, 'usd')).toEqual('$123')
+    })
+    it('should be explicit on non-US dollar currencies in USA', () => {
+      expect(formatCurrency('standard')(12300, 'cad')).toEqual('CA$123')
+    })
+    it.skipIf(DEFAULT_LOCALE !== undefined)(
+      'should be explicit on non euro currencies in FR',
+      () => {
+        mockIntlNumberFormat('fr-FR')
+        expect(formatCurrency('standard')(12300, 'usd')).toEqual('123 $US')
+      },
+    )
+    it('should handle non-decimal currencies', () => {
+      expect(formatCurrency('standard')(12300, 'jpy')).toEqual('¥12,300')
+    })
+    it('should disambiguate currency symbols unlike compact mode', () => {
+      // Both modes show $ for USD (ambiguous in en-US locale)
+      expect(formatCurrency('compact')(12345, 'usd')).toEqual('$123.45')
+      expect(formatCurrency('standard')(12345, 'usd')).toEqual('$123.45')
+
+      // But standard mode disambiguates CAD as CA$ while compact shows just $
+      expect(formatCurrency('compact')(12345, 'cad')).toEqual('$123.45') // Ambiguous
+      expect(formatCurrency('standard')(12345, 'cad')).toEqual('CA$123.45') // Disambiguated
     })
   })
 
   describe('Accounting mode', () => {
-    it('should format with currency code', () => {
-      expect(formatCurrency('accounting')(12345, 'usd')).toEqual(
-        'USD\u00A0123.45',
-      )
+    it('should format with unambiguous currency symbol in USA', () => {
+      expect(formatCurrency('accounting')(12345, 'usd')).toEqual('$123.45')
+      expect(formatCurrency('accounting')(12345, 'cad')).toEqual('CA$123.45')
     })
+    it.skipIf(DEFAULT_LOCALE !== undefined)(
+      'should format with unambiguous currency symbol in FR',
+      () => {
+        mockIntlNumberFormat('fr-FR')
+        expect(formatCurrency('accounting')(12345, 'usd')).toEqual('123,45 $US')
+        expect(formatCurrency('accounting')(12345, 'cad')).toEqual('123,45 $CA')
+      },
+    )
     it('should always show decimals', () => {
-      expect(formatCurrency('accounting')(12300, 'usd')).toEqual(
-        'USD\u00A0123.00',
-      )
+      expect(formatCurrency('accounting')(12300, 'usd')).toEqual('$123.00')
     })
     it('should handle non-decimal currencies', () => {
-      expect(formatCurrency('accounting')(12300, 'jpy')).toEqual(
-        'JPY\u00A012,300',
-      )
+      expect(formatCurrency('accounting')(12300, 'jpy')).toEqual('¥12,300')
     })
   })
 

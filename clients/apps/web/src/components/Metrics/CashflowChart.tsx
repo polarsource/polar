@@ -104,7 +104,7 @@ const CashflowChart = ({
             </span>
           </div>
           <h3 className="text-5xl font-light">
-            {formatCurrency('presenting')(
+            {formatCurrency('compact')(
               metricsData ? (metricsData.totals.cashflow ?? 0) : 0,
               'usd',
             )}
@@ -192,7 +192,7 @@ const CashflowChart = ({
                               )}
                             </span>
                             {order.description} -{' '}
-                            {formatCurrency('presenting')(
+                            {formatCurrency('compact')(
                               order.net_amount,
                               order.currency,
                             )}

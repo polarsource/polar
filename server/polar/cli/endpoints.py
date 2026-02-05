@@ -84,7 +84,7 @@ async def listen(
         str(auth_subject.subject.id), event_stream
     )
 
-    async def first_event_wrapper():
+    async def first_event_wrapper() -> AsyncGenerator[str]:
         secret = str(auth_subject.subject.id).replace("-", "")
 
         # Send a first event announcing connection established

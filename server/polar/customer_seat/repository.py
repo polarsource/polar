@@ -208,6 +208,20 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_all(statement)
 
+    async def list_active_by_member_id(
+        self, member_id: UUID, *, options: Options = ()
+    ) -> Sequence[CustomerSeat]:
+        """List active (pending or claimed) seats for a member."""
+        statement = (
+            select(CustomerSeat)
+            .where(
+                CustomerSeat.member_id == member_id,
+                CustomerSeat.status.in_([SeatStatus.pending, SeatStatus.claimed]),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def get_by_subscription_and_customer(
         self,
         subscription_id: UUID,

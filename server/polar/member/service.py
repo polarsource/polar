@@ -16,6 +16,7 @@ from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import MemberRepository
 from .sorting import MemberSortProperty
@@ -80,6 +81,9 @@ class MemberService:
         """
         Soft delete a member.
 
+        Any active seats assigned to this member will be automatically revoked
+        before deletion.
+
         Args:
             session: Database session
             member: Member to delete
@@ -107,6 +111,8 @@ class MemberService:
                         }
                     ]
                 )
+
+        enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
 
         deleted_member = await repository.soft_delete(member)
         log.info(

@@ -1,9 +1,9 @@
-import type { CustomField } from '@polar-sh/sdk/models/components/customfield'
-import type { CustomFieldCheckbox } from '@polar-sh/sdk/models/components/customfieldcheckbox'
-import type { CustomFieldDate } from '@polar-sh/sdk/models/components/customfielddate'
-import type { CustomFieldNumber } from '@polar-sh/sdk/models/components/customfieldnumber'
-import type { CustomFieldSelect } from '@polar-sh/sdk/models/components/customfieldselect'
-import type { CustomFieldText } from '@polar-sh/sdk/models/components/customfieldtext'
+import type { CustomField } from '@spaire/sdk/models/components/customfield'
+import type { CustomFieldCheckbox } from '@spaire/sdk/models/components/customfieldcheckbox'
+import type { CustomFieldDate } from '@spaire/sdk/models/components/customfielddate'
+import type { CustomFieldNumber } from '@spaire/sdk/models/components/customfieldnumber'
+import type { CustomFieldSelect } from '@spaire/sdk/models/components/customfieldselect'
+import type { CustomFieldText } from '@spaire/sdk/models/components/customfieldtext'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,

@@ -36,7 +36,7 @@ from .schemas import (
 )
 from .sorting import CheckoutLinkSortProperty
 
-CHECKOUT_LINK_CLIENT_SECRET_PREFIX = "polar_cl_"
+CHECKOUT_LINK_CLIENT_SECRET_PREFIX = "spaire_cl_"
 
 
 class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):

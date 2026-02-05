@@ -4,9 +4,9 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import { PolarCore } from '@spaire/sdk/core'
+import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -216,7 +216,7 @@ export const CheckoutConfirmation = ({
               )}
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of
-              Record, Polar, who also handles order-related inquiries and
+              Record, Spaire, who also handles order-related inquiries and
               returns.
             </p>
           </>

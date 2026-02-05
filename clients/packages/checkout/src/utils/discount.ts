@@ -1,8 +1,8 @@
 import { formatCurrency } from '@polar-sh/currency'
-import type { CheckoutDiscountFixedOnceForeverDuration } from '@polar-sh/sdk/models/components/checkoutdiscountfixedonceforeverduration'
-import type { CheckoutDiscountFixedRepeatDuration } from '@polar-sh/sdk/models/components/checkoutdiscountfixedrepeatduration'
-import type { CheckoutDiscountPercentageOnceForeverDuration } from '@polar-sh/sdk/models/components/checkoutdiscountpercentageonceforeverduration'
-import type { CheckoutDiscountPercentageRepeatDuration } from '@polar-sh/sdk/models/components/checkoutdiscountpercentagerepeatduration'
+import type { CheckoutDiscountFixedOnceForeverDuration } from '@spaire/sdk/models/components/checkoutdiscountfixedonceforeverduration'
+import type { CheckoutDiscountFixedRepeatDuration } from '@spaire/sdk/models/components/checkoutdiscountfixedrepeatduration'
+import type { CheckoutDiscountPercentageOnceForeverDuration } from '@spaire/sdk/models/components/checkoutdiscountpercentageonceforeverduration'
+import type { CheckoutDiscountPercentageRepeatDuration } from '@spaire/sdk/models/components/checkoutdiscountpercentagerepeatduration'
 
 type CheckoutDiscount =
   | CheckoutDiscountPercentageOnceForeverDuration

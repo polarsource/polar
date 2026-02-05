@@ -84,12 +84,12 @@ class TestValidatePayload:
                 [
                     {
                         "token": "TOKEN",
-                        "type": "polar_personal_access_token",
+                        "type": "spaire_personal_access_token",
                         "source": "github",
                     },
                     {
                         "token": "TOKEN",
-                        "type": "polar_client_secret",
+                        "type": "spaire_client_secret",
                         "source": "github",
                         "url": "https://example.com",
                     },

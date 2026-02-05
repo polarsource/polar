@@ -44,35 +44,35 @@ const frameworks = (products: schemas['Product'][]) =>
     {
       slug: 'nextjs',
       name: 'Next.js',
-      link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
+      link: 'https://docs.spairehq.com/integrate/sdk/adapters/nextjs',
       icon: <NextJsIcon size={24} />,
-      packages: '@polar-sh/nextjs',
-      code: `import { Checkout } from "@polar-sh/nextjs";
+      packages: '@spaire/nextjs',
+      code: `import { Checkout } from "@spaire/nextjs";
 
 export const GET = Checkout({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  successUrl: process.env.POLAR_SUCCESS_URL
+  accessToken: process.env.SPAIRE_ACCESS_TOKEN,
+  successUrl: process.env.SPAIRE_SUCCESS_URL
 });`,
     },
     {
       slug: 'better-auth',
       name: 'BetterAuth',
-      link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
+      link: 'https://docs.spairehq.com/integrate/sdk/adapters/better-auth',
       icon: <BetterAuthIcon size={24} />,
-      packages: 'better-auth @polar-sh/better-auth @polar-sh/sdk',
+      packages: 'better-auth @spaire/better-auth @spaire/sdk',
       code: `import { betterAuth } from "better-auth";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { spaire, checkout, portal, usage, webhooks } from "@spaire/better-auth";
+import { Spaire } from "@spaire/sdk";
 
-const polarClient = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN
+const spaireClient = new Spaire({
+    accessToken: process.env.SPAIRE_ACCESS_TOKEN
 });
 
 const auth = betterAuth({
     // ... Better Auth config
     plugins: [
-        polar({
-            client: polarClient,
+        spaire({
+            client: spaireClient,
             createCustomerOnSignUp: true,
             use: [
                 checkout({
@@ -86,7 +86,7 @@ ${products
   )
   .join(',\n')}
                     ],
-                    successUrl: process.env.POLAR_SUCCESS_URL,
+                    successUrl: process.env.SPAIRE_SUCCESS_URL,
                     authenticatedUsersOnly: true
                 })
             ],
@@ -97,20 +97,20 @@ ${products
     {
       slug: 'nodejs',
       name: 'Node.js',
-      link: 'https://polar.sh/docs/integrate/sdk/typescript',
+      link: 'https://docs.spairehq.com/integrate/sdk/typescript',
       icon: <NodeJsIcon size={24} />,
-      packages: '@polar-sh/sdk',
-      code: `import { Polar } from "@polar-sh/sdk";
+      packages: '@spaire/sdk',
+      code: `import { Spaire } from "@spaire/sdk";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
+const spaire = new Spaire({
+  accessToken: process.env.SPAIRE_ACCESS_TOKEN,
 });
 
-const checkout = await polar.checkouts.create({
+const checkout = await spaire.checkouts.create({
   products: [
 ${products.map((p) => `    "${p.id}"`).join(',\n')}
   ],
-  successUrl: process.env.POLAR_SUCCESS_URL
+  successUrl: process.env.SPAIRE_SUCCESS_URL
 });
 
 redirect(checkout.url)`,
@@ -118,21 +118,21 @@ redirect(checkout.url)`,
     {
       slug: 'python',
       name: 'Python',
-      link: 'https://polar.sh/docs/integrate/sdk/python',
+      link: 'https://docs.spairehq.com/integrate/sdk/python',
       icon: <PythonIcon size={24} />,
-      pythonInstall: 'pip install polar-sdk',
+      pythonInstall: 'pip install spaire-sdk',
       code: `import os
-from polar_sdk import Polar
+from spaire_sdk import Spaire
 
-with Polar(
-    access_token=os.environ.get("POLAR_ACCESS_TOKEN"),
-) as polar:
+with Spaire(
+    access_token=os.environ.get("SPAIRE_ACCESS_TOKEN"),
+) as spaire:
 
-    res = polar.checkouts.create(request={
+    res = spaire.checkouts.create(request={
         "products": [
 ${products.map((p) => `            "${p.id}"`).join(',\n')}
         ],
-        "success_url": os.environ.get("POLAR_SUCCESS_URL")
+        "success_url": os.environ.get("SPAIRE_SUCCESS_URL")
     })
 
     # Handle response

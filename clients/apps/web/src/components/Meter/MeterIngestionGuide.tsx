@@ -45,14 +45,14 @@ export const MeterIngestionGuide = () => {
           <Well className="dark:bg-polar-900 flex-1 shrink overflow-auto bg-white p-6 text-sm">
             <SyntaxHighlighterClient
               lang="typescript"
-              code={`import { Polar } from "@polar-sh/sdk";
+              code={`import { Spaire } from "@spaire/sdk";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const spaire = new Spaire({
+  accessToken: process.env["SPAIRE_ACCESS_TOKEN"] ?? "",
 });
 
 export const GET = async (req: Request, res: Response) => {
-  await polar.events.ingest({
+  await spaire.events.ingest({
     events: [
       {
         name: "api_call",

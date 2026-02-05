@@ -215,7 +215,7 @@ class CheckoutLocked(CheckoutError):
         super().__init__(message, 409)
 
 
-CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
+CHECKOUT_CLIENT_SECRET_PREFIX = "spaire_c_"
 
 
 class CheckoutService:

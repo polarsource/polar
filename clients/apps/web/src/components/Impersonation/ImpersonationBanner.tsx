@@ -9,7 +9,7 @@ const ImpersonationBanner = () => {
     const checkCookie = () => {
       const cookies = document.cookie.split(';')
       const hasImpersonationCookie = cookies.some((cookie) =>
-        cookie.trim().startsWith('polar_is_impersonating='),
+        cookie.trim().startsWith('spaire_is_impersonating='),
       )
       setIsImpersonating(hasImpersonationCookie)
     }

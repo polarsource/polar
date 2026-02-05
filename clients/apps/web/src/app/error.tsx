@@ -15,7 +15,7 @@ export default function Error({ error }: { error: Error }) {
               window.location.href = '/'
             }}
           >
-            <span>Go back to Polar</span>
+            <span>Go back to Spaire</span>
           </Button>
 
           <p className="pt-24 text-gray-400"></p>

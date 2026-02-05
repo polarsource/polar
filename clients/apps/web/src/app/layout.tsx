@@ -24,30 +24,30 @@ import {
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {
     title: {
-      template: '%s | Polar',
-      default: 'Polar',
+      template: '%s | Spaire',
+      default: 'Spaire',
     },
     description:
       'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
     openGraph: {
-      images: 'https://polar.sh/assets/brand/polar_og.jpg',
+      images: 'https://app.spairehq.com/assets/brand/polar_og.jpg',
       type: 'website',
-      siteName: 'Polar',
-      title: 'Polar | Monetize your software with ease',
+      siteName: 'Spaire',
+      title: 'Spaire | Monetize your software with ease',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
       locale: 'en_US',
     },
     twitter: {
-      images: 'https://polar.sh/assets/brand/polar_og.jpg',
+      images: 'https://app.spairehq.com/assets/brand/polar_og.jpg',
       card: 'summary_large_image',
-      title: 'Polar | Monetize your software with ease',
+      title: 'Spaire | Monetize your software with ease',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
     },
-    metadataBase: new URL('https://polar.sh/'),
+    metadataBase: new URL('https://app.spairehq.com/'),
     alternates: {
-      canonical: 'https://polar.sh/',
+      canonical: 'https://app.spairehq.com/',
     },
   }
 

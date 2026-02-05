@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
     CURRENT_JWK_KID: str = "polar_dev"
-    WWW_AUTHENTICATE_REALM: str = "polar"
+    WWW_AUTHENTICATE_REALM: str = "spaire"
 
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
@@ -107,7 +107,7 @@ class Settings(BaseSettings):
 
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
-    USER_SESSION_COOKIE_KEY: str = "polar_session"
+    USER_SESSION_COOKIE_KEY: str = "spaire_session"
     USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
     # Customer session
@@ -116,8 +116,8 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
 
     # Impersonation session
-    IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
-    IMPERSONATION_INDICATOR_COOKIE_KEY: str = "polar_is_impersonating"
+    IMPERSONATION_COOKIE_KEY: str = "spaire_original_session"
+    IMPERSONATION_INDICATOR_COOKIE_KEY: str = "spaire_is_impersonating"
 
     # Login code
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
@@ -125,7 +125,7 @@ class Settings(BaseSettings):
 
     # OAuth state
     OAUTH_STATE_TTL: timedelta = timedelta(minutes=10)
-    OAUTH_STATE_COOKIE_KEY: str = "polar_oauth_state"
+    OAUTH_STATE_COOKIE_KEY: str = "spaire_oauth_state"
 
     # App Review bypass (for testing login flow during Apple/Google app reviews)
     APP_REVIEW_EMAIL: str | None = None
@@ -174,11 +174,11 @@ class Settings(BaseSettings):
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     RESEND_API_BASE_URL: str = "https://api.resend.com"
-    EMAIL_FROM_NAME: str = "Polar"
-    EMAIL_FROM_DOMAIN: str = "notifications.polar.sh"
+    EMAIL_FROM_NAME: str = "Spaire"
+    EMAIL_FROM_DOMAIN: str = "notifications.spairehq.com"
     EMAIL_FROM_LOCAL: str = "mail"
-    EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
-    EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
+    EMAIL_DEFAULT_REPLY_TO_NAME: str = "Spaire Support"
+    EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@spairehq.com"
 
     # Github App
     GITHUB_CLIENT_ID: str = ""
@@ -220,7 +220,7 @@ class Settings(BaseSettings):
     # Stripe webhook secrets
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
-    STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
+    STRIPE_STATEMENT_DESCRIPTOR: str = "SPAIRE"
 
     # Numeral
     NUMERAL_API_KEY: str | None = None
@@ -312,8 +312,8 @@ class Settings(BaseSettings):
         state="US-CA",
         country=CountryAlpha2("US"),
     )
-    INVOICES_ADDITIONAL_INFO: str | None = "[support@polar.sh](mailto:support@polar.sh)"
-    PAYOUT_INVOICES_PREFIX: str = "POLAR-"
+    INVOICES_ADDITIONAL_INFO: str | None = "[support@spairehq.com](mailto:support@spairehq.com)"
+    PAYOUT_INVOICES_PREFIX: str = "SPAIRE-"
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100

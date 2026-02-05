@@ -110,7 +110,7 @@ class InvoiceService:
                     amount=gross_amount,
                 ),
                 InvoiceItem(
-                    description="Polar revenue share",
+                    description="Spaire revenue share",
                     quantity=1,
                     unit_amount=payment_fees_amount,
                     amount=payment_fees_amount,
@@ -124,8 +124,8 @@ class InvoiceService:
             ],
             notes=(f"{account.billing_notes}\n\n" if account.billing_notes else "")
             + (
-                "Polar Software, Inc. is the merchant of record reselling digital services.\n"
-                "Polar Software, Inc. captures and remits international sales tax from such sales – as needed.\n"
+                "Spaire is the merchant of record reselling digital services.\n"
+                "Spaire captures and remits international sales tax from such sales – as needed.\n"
                 "Payouts (reverse invoices) are therefore without taxes."
             ),
             extra_heading_items=[

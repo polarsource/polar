@@ -1,4 +1,4 @@
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import CheckoutEmbedClose from './CheckoutEmbedClose'
 import CheckoutEmbedLoaded from './CheckoutEmbedLoaded'
 

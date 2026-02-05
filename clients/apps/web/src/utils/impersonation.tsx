@@ -3,7 +3,7 @@
 export const isImpersonating = () => {
   const cookies = document.cookie.split(';')
   const impersonationCookie = cookies.filter((cookie) =>
-    cookie.trim().startsWith('polar_is_impersonating='),
+    cookie.trim().startsWith('spaire_is_impersonating='),
   )
   if (impersonationCookie.length == 0) {
     return false

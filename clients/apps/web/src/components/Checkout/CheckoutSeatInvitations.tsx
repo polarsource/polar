@@ -3,7 +3,7 @@
 import { useAssignSeatFromCheckout } from '@/hooks/queries'
 import { validateEmail } from '@/utils/validation'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react'

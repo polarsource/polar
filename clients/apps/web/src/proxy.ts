@@ -6,9 +6,9 @@ import { NextResponse } from 'next/server'
 import { createServerSideAPI } from './utils/client'
 
 const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+  process.env.POLAR_AUTH_COOKIE_KEY || 'spaire_session'
 
-const DISTINCT_ID_COOKIE = 'polar_distinct_id'
+const DISTINCT_ID_COOKIE = 'spaire_distinct_id'
 const DISTINCT_ID_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 const AUTHENTICATED_ROUTES = [
@@ -187,7 +187,7 @@ export async function proxy(request: NextRequest) {
     getOrCreateDistinctId(request)
 
   const headers: Record<string, string> = {
-    'x-polar-distinct-id': distinctId,
+    'x-spaire-distinct-id': distinctId,
   }
   if (user) {
     headers['x-polar-user'] = JSON.stringify(user)

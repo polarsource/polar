@@ -1,7 +1,7 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
-import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
+import { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic.js'
+import { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic.js'
+import { ProductPriceCustom } from '@spaire/sdk/models/components/productpricecustom.js'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Form,

@@ -30,7 +30,7 @@ class TestRevokeLeaked:
     ) -> None:
         result = await organization_access_token_service.revoke_leaked(
             session,
-            "polar_pat_123",
+            "spaire_pat_123",
             TokenType.organization_access_token,
             notifier="github",
             url="https://github.com",
@@ -47,7 +47,7 @@ class TestRevokeLeaked:
         user_organization: UserOrganization,
         enqueue_email_mock: MagicMock,
     ) -> None:
-        token_hash = get_token_hash("polar_pat_123", secret=settings.SECRET)
+        token_hash = get_token_hash("spaire_pat_123", secret=settings.SECRET)
         organization_access_token = OrganizationAccessToken(
             comment="Test",
             token=token_hash,
@@ -59,7 +59,7 @@ class TestRevokeLeaked:
 
         result = await organization_access_token_service.revoke_leaked(
             session,
-            "polar_pat_123",
+            "spaire_pat_123",
             TokenType.organization_access_token,
             notifier="github",
             url="https://github.com",

@@ -16,11 +16,11 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
-import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import type { CheckoutConfirmStripe } from '@spaire/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublicConfirmed } from '@spaire/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import { ProductPriceCustom } from '@spaire/sdk/models/components/productpricecustom.js'
+import { ExpiredCheckoutError } from '@spaire/sdk/models/errors/expiredcheckouterror'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import ShadowBox, {
   ShadowBoxOnMd,

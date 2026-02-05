@@ -438,7 +438,7 @@ class InvoiceGenerator(FPDF):
     def set_metadata(self) -> None:
         """Set metadata for the PDF document."""
         self.set_title(f"Invoice {self.data.number}")
-        self.set_creator("Polar")
+        self.set_creator("Spaire")
         self.set_author(settings.INVOICES_NAME)
         self.set_creation_date(utc_now())
 

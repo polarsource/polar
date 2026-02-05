@@ -522,7 +522,7 @@ class TestAuthenticate:
         # Authenticate
         token, session_obj = await customer_session_service.authenticate(session, code)
 
-        # Should return CustomerSession with polar_cst_ prefix
+        # Should return CustomerSession with spaire_cst_ prefix
         assert token.startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert isinstance(session_obj, CustomerSession)
         assert session_obj.customer_id == customer.id
@@ -533,7 +533,7 @@ class TestAuthenticate:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that member-enabled org returns MemberSession with polar_mst_ prefix."""
+        """Test that member-enabled org returns MemberSession with spaire_mst_ prefix."""
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -558,7 +558,7 @@ class TestAuthenticate:
         # Authenticate
         token, session_obj = await customer_session_service.authenticate(session, code)
 
-        # Should return MemberSession with polar_mst_ prefix
+        # Should return MemberSession with spaire_mst_ prefix
         assert token.startswith(MEMBER_SESSION_TOKEN_PREFIX)
         assert isinstance(session_obj, MemberSession)
         assert session_obj.member_id == owner_member.id

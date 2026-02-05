@@ -16,7 +16,7 @@ export function LoginCode({
         {code_lifetime_minutes.toFixed()} minutes.
       </Preview>
       <IntroWithHi>
-        Here is your code to sign in to Polar.{' '}
+        Here is your code to sign in to Spaire.{' '}
         <span className="font-bold">
           This code is only valid for the next {code_lifetime_minutes} minutes.
         </span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
 import { useEffect } from 'react'
 
 interface CheckoutEmbedLoadedProps {

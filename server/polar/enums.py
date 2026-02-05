@@ -68,15 +68,15 @@ class InvoiceNumbering(StrEnum):
 
 
 class TokenType(StrEnum):
-    client_secret = "polar_client_secret"
-    client_registration_token = "polar_client_registration_token"
-    authorization_code = "polar_authorization_code"
-    access_token = "polar_access_token"
-    refresh_token = "polar_refresh_token"
-    personal_access_token = "polar_personal_access_token"
-    organization_access_token = "polar_organization_access_token"
-    customer_session_token = "polar_customer_session_token"
-    user_session_token = "polar_user_session_token"
+    client_secret = "spaire_client_secret"
+    client_registration_token = "spaire_client_registration_token"
+    authorization_code = "spaire_authorization_code"
+    access_token = "spaire_access_token"
+    refresh_token = "spaire_refresh_token"
+    personal_access_token = "spaire_personal_access_token"
+    organization_access_token = "spaire_organization_access_token"
+    customer_session_token = "spaire_customer_session_token"
+    user_session_token = "spaire_user_session_token"
 
 
 class RateLimitGroup(StrEnum):

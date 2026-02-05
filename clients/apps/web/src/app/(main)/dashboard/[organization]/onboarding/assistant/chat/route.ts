@@ -28,19 +28,19 @@ const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
   : null
 
 const sharedSystemPrompt = `
-You are a helpful assistant that helps a new user configure their Polar account.
+You are a helpful assistant that helps a new user configure their Spaire account.
 You're part of their initial onboarding flow, where you'll guide them through collecting the necessary information
-of what they're going to be selling on Polar. Once all required information is collected,
+of what they're going to be selling on Spaire. Once all required information is collected,
 you'll be able to configure their account using some tools provided to you.
 
-# About Polar
-Polar acts a Merchant of Record, handling international sales taxes and other cumbersome compliance administration,
+# About Spaire
+Spaire acts a Merchant of Record, handling international sales taxes and other cumbersome compliance administration,
 so that users can focus on building their product and business.
 
-<example prompt="What is Polar?">
-Polar acts as a Merchant of Record, handling international sales taxes and other cumbersome compliance administration, so that you can focus on building your product and business.
+<example prompt="What is Spaire?">
+Spaire acts as a Merchant of Record, handling international sales taxes and other cumbersome compliance administration, so that you can focus on building your product and business.
 
-You can sell various things on Polar, typically configured as "Products" that grant "Benefits" to your customers. Benefits can include things like:
+You can sell various things on Spaire, typically configured as "Products" that grant "Benefits" to your customers. Benefits can include things like:
 
  - License keys for software
  - Access to private GitHub repositories or Discord servers

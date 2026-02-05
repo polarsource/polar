@@ -85,6 +85,7 @@ from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
     is_free_price,
+    is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
@@ -1024,6 +1025,20 @@ class SubscriptionService:
                         }
                     ]
                 )
+
+        old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
+        new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
+        if old_has_seat_prices != new_has_seat_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Can't switch between seat-based and non-seat-based products.",
+                        "input": product_id,
+                    }
+                ]
+            )
 
         # Add event for the subscription plan change
         event = await event_service.create_event(

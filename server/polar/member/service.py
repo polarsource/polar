@@ -18,6 +18,7 @@ from polar.models.organization import Organization as OrgModel
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import MemberRepository
@@ -124,9 +125,6 @@ class MemberService:
             organization_id=member.organization_id,
         )
 
-        # Send webhook (import here to avoid circular import)
-        from polar.webhook.service import webhook as webhook_service
-
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(member.organization_id)
         if organization:
@@ -207,9 +205,6 @@ class MemberService:
                 member_id=created_member.id,
                 organization_id=organization.id,
             )
-            # Import here to avoid circular import
-            from polar.webhook.service import webhook as webhook_service
-
             await webhook_service.send(
                 session,
                 organization,
@@ -461,9 +456,6 @@ class MemberService:
                 organization_id=customer.organization_id,
                 role=role,
             )
-            # Import here to avoid circular import
-            from polar.webhook.service import webhook as webhook_service
-
             await webhook_service.send(
                 session,
                 customer.organization,
@@ -606,9 +598,6 @@ class MemberService:
             organization_id=member.organization_id,
             updated_fields=list(update_dict.keys()),
         )
-
-        # Send webhook (import here to avoid circular import)
-        from polar.webhook.service import webhook as webhook_service
 
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(member.organization_id)

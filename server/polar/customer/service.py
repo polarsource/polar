@@ -19,7 +19,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.member import member_service
+from polar.member.service import member_service
 from polar.member.schemas import Member as MemberSchema
 from polar.models import BenefitGrant, Customer, Organization, User
 from polar.models.customer import CustomerType

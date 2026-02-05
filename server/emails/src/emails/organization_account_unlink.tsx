@@ -2,8 +2,7 @@ import { Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationAccountUnlink({
@@ -12,13 +11,16 @@ export function OrganizationAccountUnlink({
   organizations_unlinked,
 }: schemas['OrganizationAccountUnlinkProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         Important: Organization Account Update for {organization_kept_name}
       </Preview>
-      <PolarHeader />
       <IntroWithHi>
-        We'd like to inform you that some of your Stripe payout accounts associated with organizations in Polar have been detached. This update was made as part of our ongoing efforts to enhance security and ensure compliance, as sharing the same Stripe account across multiple organizations will no longer be permitted going forward.
+        We'd like to inform you that some of your Stripe payout accounts
+        associated with organizations in Polar have been detached. This update
+        was made as part of our ongoing efforts to enhance security and ensure
+        compliance, as sharing the same Stripe account across multiple
+        organizations will no longer be permitted going forward.
       </IntroWithHi>
       <Section>
         <BodyText>
@@ -32,17 +34,24 @@ export function OrganizationAccountUnlink({
         <Text className="m-0 text-[16px] font-bold text-blue-900">
           What This Means
         </Text>
-        <ul className="p-0 ml-4 list-disc text-[14px] text-blue-900">
+        <ul className="ml-4 list-disc p-0 text-[14px] text-blue-900">
           <li className="">
             <span className="font-bold">{organization_kept_name}</span> keeps
-            the existing Stripe payout account with no changes required on your end.
+            the existing Stripe payout account with no changes required on your
+            end.
           </li>
           <li className="mt-2">
-            The following organizations require you to connect a new Stripe payout account:
-            <ul className="p-0 ml-4 list-disc">
+            The following organizations require you to connect a new Stripe
+            payout account:
+            <ul className="ml-4 list-disc p-0">
               {organizations_unlinked.map((org: string) => (
                 <li key={org} className="mt-2">
-                  <span className="font-bold">{org}</span> at <Link href={`https://polar.com/dashboard/${org}/finance/account`}>https://polar.com/dashboard/{org}/finance/account</Link>
+                  <span className="font-bold">{org}</span> at{' '}
+                  <Link
+                    href={`https://polar.com/dashboard/${org}/finance/account`}
+                  >
+                    https://polar.com/dashboard/{org}/finance/account
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -53,17 +62,21 @@ export function OrganizationAccountUnlink({
         <Text className="m-0 text-[16px] font-bold text-yellow-900">
           Important Information
         </Text>
-        <ul className="p-0 ml-4 list-disc text-[14px] text-yellow-900">
+        <ul className="ml-4 list-disc p-0 text-[14px] text-yellow-900">
           <li className="">
-            <span className="font-bold">Payments:</span> This update does not affect your ability to receive payments - customers can continue making payments as usual.
+            <span className="font-bold">Payments:</span> This update does not
+            affect your ability to receive payments - customers can continue
+            making payments as usual.
           </li>
           <li className="mt-2">
-            <span className="font-bold">Withdrawals:</span> Withdrawals can be resumed as soon as the new Stripe payout account is connected.
+            <span className="font-bold">Withdrawals:</span> Withdrawals can be
+            resumed as soon as the new Stripe payout account is connected.
           </li>
           <li className="mt-2">
             <span className="font-bold">Payout history:</span> All payout
             history is still available on{' '}
-            <span className="font-bold">{organization_kept_name}</span> organization.
+            <span className="font-bold">{organization_kept_name}</span>{' '}
+            organization.
           </li>
         </ul>
       </Section>
@@ -74,7 +87,7 @@ export function OrganizationAccountUnlink({
         </BodyText>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

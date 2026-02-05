@@ -11,8 +11,7 @@ import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import OrderSummary from '../components/OrderSummary'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -25,10 +24,9 @@ export function SubscriptionUpdated({
   url,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>Your subscription has been updated to {product.name}</Preview>
-      <OrganizationHeader organization={organization} />
-      <Section className="pt-10">
+      <Section>
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription has been updated
         </Heading>
@@ -73,7 +71,7 @@ export function SubscriptionUpdated({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

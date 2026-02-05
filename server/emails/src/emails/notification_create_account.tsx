@@ -3,8 +3,7 @@ import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function NotificationCreateAccount({
@@ -12,9 +11,8 @@ export function NotificationCreateAccount({
   url,
 }: schemas['MaintainerCreateAccountNotificationPayload']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>Your Polar account is being reviewed</Preview>
-      <PolarHeader />
       <IntroWithHi>
         Now that you got your first payment to {organization_name}, you should
         create a payout account in order to receive your funds.
@@ -30,7 +28,7 @@ export function NotificationCreateAccount({
       </Text>
       <Link href={url}>{url}</Link>
       <Footer email={null} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

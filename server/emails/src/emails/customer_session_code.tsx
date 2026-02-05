@@ -1,9 +1,8 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import FooterCustomer from '../components/FooterCustomer'
 import IntroWithHi from '../components/IntroWithHi'
-import OrganizationHeader from '../components/OrganizationHeader'
 import OTPCode from '../components/OTPCode'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { organization } from '../preview'
 import type { schemas } from '../types'
 
@@ -15,11 +14,10 @@ export function CustomerSessionCode({
   url,
 }: schemas['CustomerSessionCodeProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>
         Here is your code to access your {organization.name} purchases
       </Preview>
-      <OrganizationHeader organization={organization} />
       <IntroWithHi>
         Here is your code to access your {organization.name}{' '}
         <span className="font-bold">
@@ -38,7 +36,7 @@ export function CustomerSessionCode({
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

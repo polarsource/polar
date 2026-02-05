@@ -2,8 +2,7 @@ import { Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationInvite({
@@ -13,9 +12,8 @@ export function OrganizationInvite({
   invite_url,
 }: schemas['OrganizationInviteProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>You've been added to {organization_name} on Polar</Preview>
-      <PolarHeader />
       <IntroWithHi>
         {inviter_email} has added you to{' '}
         <span className="font-bold">{organization_name}</span> on Polar.
@@ -30,7 +28,7 @@ export function OrganizationInvite({
         <Button href={invite_url}>Go to the Polar dashboard</Button>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

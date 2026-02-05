@@ -1,8 +1,7 @@
 import { Hr, Img, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function NotificationNewSale({
@@ -34,15 +33,14 @@ export function NotificationNewSale({
     addressParts.length > 0 ? addressParts.join(', ') : null
 
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         {displayName} placed an order for {product_name}
       </Preview>
-      <PolarHeader />
-
-      <Section className="pt-8">
+      <Section>
         <Text className="m-0 text-lg text-gray-900">
-          <strong>{displayName}</strong> placed an order{formattedDate ? ` on ${formattedDate}` : ''}!
+          <strong>{displayName}</strong> placed an order
+          {formattedDate ? ` on ${formattedDate}` : ''}!
         </Text>
       </Section>
 
@@ -118,7 +116,7 @@ export function NotificationNewSale({
       </Section>
 
       <Footer email={null} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

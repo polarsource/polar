@@ -1057,7 +1057,7 @@ class CheckoutService:
         ):
             raise PaymentNotReady()
 
-        required_fields = self._get_required_confirm_fields(checkout)
+        required_fields = self._get_required_confirm_fields(checkout, checkout_confirm)
         for required_field in required_fields:
             if (
                 attrgetter(checkout, required_field) is None
@@ -1101,6 +1101,31 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        # For wallet payments (Apple Pay, Google Pay), we hide the customer name field for better UX and
+        # instead extract the name from Stripe's confirmation token
+        if (
+            checkout.payment_processor == PaymentProcessor.stripe
+            and checkout_confirm.confirmation_token_id is not None
+            and checkout.customer_name is None
+        ):
+            try:
+                confirmation_token = await stripe_service.get_confirmation_token(
+                    checkout_confirm.confirmation_token_id
+                )
+                if (
+                    confirmation_token.payment_method_preview is not None
+                    and confirmation_token.payment_method_preview.billing_details
+                    is not None
+                ):
+                    wallet_name = (
+                        confirmation_token.payment_method_preview.billing_details.name
+                    )
+                    if wallet_name:
+                        checkout.customer_name = wallet_name
+                        session.add(checkout)
+            except stripe_lib.StripeError:
+                pass
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -2400,10 +2425,20 @@ class CheckoutService:
                 ]
             )
 
-    def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
+    def _get_required_confirm_fields(
+        self, checkout: Checkout, checkout_confirm: CheckoutConfirm | None = None
+    ) -> set[tuple[str, ...]]:
         fields: set[tuple[str, ...]] = {("customer_email",)}
         if checkout.is_payment_form_required:
-            fields.update({("customer_name",), ("customer_billing_address",)})
+            # For wallet payments (Apple Pay, Google Pay), customer_name is not required
+            # because it will be extracted from the confirmation token
+            has_confirmation_token = (
+                checkout_confirm is not None
+                and checkout_confirm.confirmation_token_id is not None
+            )
+            if not has_confirmation_token:
+                fields.add(("customer_name",))
+            fields.add(("customer_billing_address",))
             for (
                 address_field,
                 required,

@@ -964,6 +964,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     [publishable_key],
   )
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined)
+  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -1022,28 +1023,31 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             selectedPaymentMethod={selectedPaymentMethod}
           >
             {checkout.isPaymentFormRequired && (
-              <PaymentElement
-                onChange={(event) => {
-                  setSelectedPaymentMethod(event.value.type)
-                }}
-                options={{
-                  layout: {
-                    type: 'accordion',
-                    defaultCollapsed: false,
-                    radios: false,
-                    spacedAccordionItems: true,
-                  },
-                  paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
-                  fields: {
-                    billingDetails: {
-                      name: 'never',
-                      email: 'never',
-                      phone: 'never',
-                      address: 'never',
+              <div style={{ opacity: isPaymentElementReady ? 1 : 0, transition: 'opacity 0.15s ease-in' }}>
+                <PaymentElement
+                  onReady={() => setIsPaymentElementReady(true)}
+                  onChange={(event) => {
+                    setSelectedPaymentMethod(event.value.type)
+                  }}
+                  options={{
+                    layout: {
+                      type: 'accordion',
+                      defaultCollapsed: false,
+                      radios: false,
+                      spacedAccordionItems: true,
                     },
-                  },
-                }}
-              />
+                    paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
+                    fields: {
+                      billingDetails: {
+                        name: 'never',
+                        email: 'never',
+                        phone: 'never',
+                        address: 'never',
+                      },
+                    },
+                  }}
+                />
+              </div>
             )}
           </BaseCheckoutForm>
         )}

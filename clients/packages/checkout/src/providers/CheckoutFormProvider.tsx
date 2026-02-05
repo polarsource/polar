@@ -164,9 +164,8 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
           elements,
           params: {
             payment_method_data: {
-              // Stripe requires fields to be explicitly set to null if they are not provided
               billing_details: {
-                name: data.customerName,
+                name: data.customerName || '',
                 email: data.customerEmail,
                 address: {
                   line1: data.customerBillingAddress?.line1 || null,

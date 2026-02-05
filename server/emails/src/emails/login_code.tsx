@@ -24,7 +24,7 @@ export function LoginCode({
         </span>
       </IntroWithHi>
       <Section className="text-center">
-        <Text className="text-brand text-5xl font-bold tracking-wider">
+        <Text className="text-5xl font-bold tracking-wider text-black">
           {code}
         </Text>
       </Section>

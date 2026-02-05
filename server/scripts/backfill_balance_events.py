@@ -599,6 +599,7 @@ async def create_missing_balance_credit_order_events(
                         Transaction.order_id.is_not(None),
                     )
                 ),
+                (Order.subtotal_amount - Order.discount_amount + Order.tax_amount) > 0,
             )
             .order_by(Order.created_at, Order.id)
             .limit(batch_size)
@@ -1222,10 +1223,33 @@ async def create_missing_balance_refund_reversal_events(
     return created_count
 
 
+async def delete_invalid_balance_credit_order_events(
+    session: AsyncSession,
+) -> int:
+    """Delete balance.credit_order events that were incorrectly created for $0/trial orders."""
+    typer.echo("\n=== Deleting invalid balance.credit_order events for $0 orders ===")
+
+    result = await session.execute(
+        text("""
+            DELETE FROM events WHERE id IN (
+                SELECT e.id FROM events e
+                JOIN orders o ON (e.user_metadata->>'order_id')::uuid = o.id
+                WHERE e.source = 'system'
+                  AND e.name = 'balance.credit_order'
+                  AND (o.subtotal_amount - o.discount_amount + o.tax_amount) <= 0
+            )
+        """)
+    )
+    deleted = cast(CursorResult[Any], result).rowcount or 0
+    typer.echo(f"Deleted {deleted} invalid balance.credit_order events")
+    return deleted
+
+
 async def run_backfill(
     batch_size: int = settings.DATABASE_STREAM_YIELD_PER,
     rate_limit_delay: float = 0.5,
     session: AsyncSession | None = None,
+    cleanup: bool = False,
 ) -> dict[str, int]:
     """
     Run all backfill operations for balance events.
@@ -1274,6 +1298,11 @@ async def run_backfill(
         results[
             "refund_reversal_order_created_at_added"
         ] = await fix_refund_reversal_order_created_at(session, batch_size)
+
+        if cleanup:
+            results[
+                "invalid_credit_order_deleted"
+            ] = await delete_invalid_balance_credit_order_events(session)
 
         results["balance_order_created"] = await create_missing_balance_order_events(
             session, batch_size, rate_limit_delay
@@ -1328,6 +1357,9 @@ async def backfill(
     rate_limit_delay: float = typer.Option(
         0.5, help="Delay in seconds between batches"
     ),
+    cleanup: bool = typer.Option(
+        False, help="Delete invalid balance.credit_order events for $0 orders"
+    ),
 ) -> None:
     """
     Backfill balance events for existing transactions.
@@ -1361,7 +1393,9 @@ async def backfill(
         cache_logger_on_first_use=True,
     )
 
-    await run_backfill(batch_size=batch_size, rate_limit_delay=rate_limit_delay)
+    await run_backfill(
+        batch_size=batch_size, rate_limit_delay=rate_limit_delay, cleanup=cleanup
+    )
 
 
 if __name__ == "__main__":

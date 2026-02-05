@@ -122,7 +122,7 @@ WITH
                 sum(e.amount) - sum(COALESCE(e.fee, 0)),
                 0
             ) AS hist_net_revenue
-        FROM events_by_timestamp FINAL AS e
+        FROM events_by_timestamp AS e FINAL
         WHERE {event_filters}
             AND COALESCE(
                 JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
@@ -217,7 +217,7 @@ WITH
                 AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) != day
             ), 0) AS renewed_subscriptions_net_revenue
 
-        FROM events_by_timestamp FINAL AS e
+        FROM events_by_timestamp AS e FINAL
         LEFT JOIN sub_state ss ON toString(e.subscription_id) = toString(ss.subscription_id)
         WHERE {event_filters}
             AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
@@ -239,7 +239,7 @@ WITH
                 JSONExtract(e.user_metadata, '_cost', 'amount', 'Float64')
             ), 0) AS costs,
             countDistinct(e.customer_id) + countDistinct(e.external_customer_id) AS active_user_by_event
-        FROM events_by_timestamp FINAL AS e
+        FROM events_by_timestamp AS e FINAL
         WHERE e.organization_id IN {{org_ids:Array(String)}}
             AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
@@ -258,7 +258,7 @@ WITH
             countIf(e.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
             countIf(e.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
             countIf(e.customer_cancellation_reason = 'other' OR e.customer_cancellation_reason IS NULL OR e.customer_cancellation_reason = '') AS canceled_subscriptions_other
-        FROM events_by_timestamp FINAL AS e
+        FROM events_by_timestamp AS e FINAL
         WHERE e.source = 'system'
             AND e.name = 'subscription.canceled'
             AND e.organization_id IN {{org_ids:Array(String)}}

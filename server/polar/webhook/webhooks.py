@@ -24,13 +24,13 @@ from polar.customer.schemas.customer import Customer as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
 from polar.exceptions import PolarError
-from polar.member.schemas import Member as MemberSchema
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,
     DiscordPayload,
     get_branded_discord_embed,
 )
 from polar.kit.schemas import IDSchema, Schema
+from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
     BenefitGrant,

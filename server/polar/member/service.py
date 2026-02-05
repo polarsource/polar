@@ -200,7 +200,7 @@ class MemberService:
         )
 
         try:
-            created_member = await repository.create(member)
+            created_member = await repository.create(member, flush=True)
             log.info(
                 "member.create_owner_member.success",
                 customer_id=customer.id,

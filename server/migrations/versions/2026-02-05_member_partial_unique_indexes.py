@@ -45,12 +45,8 @@ def upgrade() -> None:
         )
 
     # Now drop the old unique constraints
-    op.drop_constraint(
-        "members_customer_id_email_key", "members", type_="unique"
-    )
-    op.drop_constraint(
-        "members_customer_id_external_id_key", "members", type_="unique"
-    )
+    op.drop_constraint("members_customer_id_email_key", "members", type_="unique")
+    op.drop_constraint("members_customer_id_external_id_key", "members", type_="unique")
 
 
 def downgrade() -> None:

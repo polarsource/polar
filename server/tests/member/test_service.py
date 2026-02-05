@@ -607,9 +607,7 @@ class TestDelete:
         organization: Organization,
     ) -> None:
         """Test that deleting a member enqueues a job to revoke their seats."""
-        enqueue_job_mock: MagicMock = mocker.patch(
-            "polar.member.service.enqueue_job"
-        )
+        enqueue_job_mock: MagicMock = mocker.patch("polar.member.service.enqueue_job")
 
         customer = await create_customer(
             save_fixture,

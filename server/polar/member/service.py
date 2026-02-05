@@ -9,7 +9,6 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.customer.repository import CustomerRepository
-from polar.customer_seat.repository import CustomerSeatRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -17,6 +16,7 @@ from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import MemberRepository
 from .sorting import MemberSortProperty
@@ -112,23 +112,9 @@ class MemberService:
                     ]
                 )
 
-        # Revoke any active seats assigned to this member
-        seat_repository = CustomerSeatRepository.from_session(session)
-        active_seats = await seat_repository.list_active_by_member_id(
-            member.id, options=seat_repository.get_eager_options()
-        )
-
-        if active_seats:
-            # Lazy import to avoid circular dependency
-            from polar.customer_seat.service import seat_service
-
-            for seat in active_seats:
-                await seat_service.revoke_seat(session, seat)
-                log.info(
-                    "member.delete.seat_revoked",
-                    member_id=member.id,
-                    seat_id=seat.id,
-                )
+        # Enqueue job to revoke any active seats assigned to this member
+        # This is done asynchronously to avoid circular dependencies
+        enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
 
         deleted_member = await repository.soft_delete(member)
         log.info(
@@ -136,7 +122,6 @@ class MemberService:
             member_id=member.id,
             customer_id=member.customer_id,
             organization_id=member.organization_id,
-            seats_revoked=len(active_seats),
         )
         return deleted_member
 

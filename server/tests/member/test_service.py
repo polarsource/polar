@@ -1,20 +1,17 @@
+from unittest.mock import MagicMock
+
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.member.service import member_service
 from polar.models import Customer, Member, Organization, User, UserOrganization
-from polar.models.customer_seat import SeatStatus
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    create_customer,
-    create_customer_seat,
-    create_product,
-    create_subscription_with_seats,
-)
+from tests.fixtures.random_objects import create_customer
 
 
 @pytest.mark.asyncio
@@ -602,13 +599,18 @@ class TestUpdate:
 
 @pytest.mark.asyncio
 class TestDelete:
-    async def test_delete_member_without_seats(
+    async def test_delete_member_enqueues_seat_revocation_job(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        """Test that a member without seats can be deleted normally."""
+        """Test that deleting a member enqueues a job to revoke their seats."""
+        enqueue_job_mock: MagicMock = mocker.patch(
+            "polar.member.service.enqueue_job"
+        )
+
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -636,298 +638,15 @@ class TestDelete:
 
         deleted_member = await member_service.delete(session, member)
 
+        # Verify member is soft-deleted
         assert deleted_member.id == member.id
         assert deleted_member.deleted_at is not None
 
-    async def test_delete_member_revokes_active_seats(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that deleting a member with active seats automatically revokes them."""
-        from polar.enums import SubscriptionRecurringInterval
-        from polar.kit.utils import utc_now
-        from polar.models.subscription import SubscriptionStatus
-
-        # Enable seat-based pricing
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": True,
-        }
-        await save_fixture(organization)
-
-        # Create billing customer
-        billing_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="billing@example.com",
-        )
-
-        # Create product with seat pricing
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
-        )
-
-        # Create subscription with seats
-        subscription = await create_subscription_with_seats(
-            save_fixture,
-            product=product,
-            customer=billing_customer,
-            seats=5,
-            status=SubscriptionStatus.active,
-            started_at=utc_now(),
-        )
-
-        # Create owner member
-        owner = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="owner@example.com",
-            name="Owner",
-            role=MemberRole.owner,
-        )
-        await save_fixture(owner)
-
-        # Create a member that will be deleted
-        member = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Member To Delete",
-            role=MemberRole.member,
-        )
-        await save_fixture(member)
-
-        # Create a claimed seat for this member
-        seat = await create_customer_seat(
-            save_fixture,
-            subscription=subscription,
-            customer=billing_customer,
-            status=SeatStatus.claimed,
-            claimed_at=utc_now(),
+        # Verify enqueue_job was called with correct parameters
+        enqueue_job_mock.assert_called_once_with(
+            "customer_seat.revoke_seats_for_member",
             member_id=member.id,
-            email=member.email,
         )
-
-        # Refresh to load relationships needed for revoke_seat
-        await session.refresh(seat, ["subscription"])
-        assert seat.subscription is not None
-        await session.refresh(seat.subscription, ["product"])
-        assert seat.subscription.product is not None
-        await session.refresh(seat.subscription.product, ["organization"])
-
-        # Delete the member
-        deleted_member = await member_service.delete(session, member)
-
-        # Verify member is soft-deleted
-        assert deleted_member.deleted_at is not None
-
-        # Verify seat was revoked
-        await session.refresh(seat)
-        assert seat.status == SeatStatus.revoked
-        assert seat.member_id is None
-        assert seat.customer_id is None
-        assert seat.revoked_at is not None
-
-    async def test_delete_member_revokes_multiple_seats(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that deleting a member revokes all their active seats."""
-        from polar.enums import SubscriptionRecurringInterval
-        from polar.kit.utils import utc_now
-        from polar.models.subscription import SubscriptionStatus
-
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": True,
-        }
-        await save_fixture(organization)
-
-        billing_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="billing@example.com",
-        )
-
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
-        )
-
-        subscription = await create_subscription_with_seats(
-            save_fixture,
-            product=product,
-            customer=billing_customer,
-            seats=10,
-            status=SubscriptionStatus.active,
-            started_at=utc_now(),
-        )
-
-        owner = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="owner@example.com",
-            name="Owner",
-            role=MemberRole.owner,
-        )
-        await save_fixture(owner)
-
-        member = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="member@example.com",
-            name="Member To Delete",
-            role=MemberRole.member,
-        )
-        await save_fixture(member)
-
-        # Create multiple seats for the same member (e.g., from different products)
-        seats = []
-        for i in range(3):
-            seat = await create_customer_seat(
-                save_fixture,
-                subscription=subscription,
-                customer=billing_customer,
-                status=SeatStatus.claimed,
-                claimed_at=utc_now(),
-                member_id=member.id,
-                email=member.email,
-            )
-            await session.refresh(seat, ["subscription"])
-            assert seat.subscription is not None
-            await session.refresh(seat.subscription, ["product"])
-            assert seat.subscription.product is not None
-            await session.refresh(seat.subscription.product, ["organization"])
-            seats.append(seat)
-
-        # Delete the member
-        deleted_member = await member_service.delete(session, member)
-
-        assert deleted_member.deleted_at is not None
-
-        # Verify all seats were revoked
-        for seat in seats:
-            await session.refresh(seat)
-            assert seat.status == SeatStatus.revoked
-            assert seat.member_id is None
-
-    async def test_delete_member_does_not_revoke_other_members_seats(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        """Test that deleting a member does not affect other members' seats."""
-        from polar.enums import SubscriptionRecurringInterval
-        from polar.kit.utils import utc_now
-        from polar.models.subscription import SubscriptionStatus
-
-        organization.feature_settings = {
-            **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
-            "member_model_enabled": True,
-        }
-        await save_fixture(organization)
-
-        billing_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="billing@example.com",
-        )
-
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[("seat", 1000, "usd")],
-        )
-
-        subscription = await create_subscription_with_seats(
-            save_fixture,
-            product=product,
-            customer=billing_customer,
-            seats=10,
-            status=SubscriptionStatus.active,
-            started_at=utc_now(),
-        )
-
-        owner = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="owner@example.com",
-            name="Owner",
-            role=MemberRole.owner,
-        )
-        await save_fixture(owner)
-
-        member_to_delete = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="member1@example.com",
-            name="Member To Delete",
-            role=MemberRole.member,
-        )
-        await save_fixture(member_to_delete)
-
-        other_member = Member(
-            customer_id=billing_customer.id,
-            organization_id=organization.id,
-            email="member2@example.com",
-            name="Other Member",
-            role=MemberRole.member,
-        )
-        await save_fixture(other_member)
-
-        # Create seat for member to delete
-        seat_to_revoke = await create_customer_seat(
-            save_fixture,
-            subscription=subscription,
-            customer=billing_customer,
-            status=SeatStatus.claimed,
-            claimed_at=utc_now(),
-            member_id=member_to_delete.id,
-            email=member_to_delete.email,
-        )
-        await session.refresh(seat_to_revoke, ["subscription"])
-        assert seat_to_revoke.subscription is not None
-        await session.refresh(seat_to_revoke.subscription, ["product"])
-        assert seat_to_revoke.subscription.product is not None
-        await session.refresh(seat_to_revoke.subscription.product, ["organization"])
-
-        # Create seat for other member
-        other_seat = await create_customer_seat(
-            save_fixture,
-            subscription=subscription,
-            customer=billing_customer,
-            status=SeatStatus.claimed,
-            claimed_at=utc_now(),
-            member_id=other_member.id,
-            email=other_member.email,
-        )
-
-        # Delete the first member
-        await member_service.delete(session, member_to_delete)
-
-        # Verify first member's seat was revoked
-        await session.refresh(seat_to_revoke)
-        assert seat_to_revoke.status == SeatStatus.revoked
-        assert seat_to_revoke.member_id is None
-
-        # Verify other member's seat is unchanged
-        await session.refresh(other_seat)
-        assert other_seat.status == SeatStatus.claimed
-        assert other_seat.member_id == other_member.id
 
     async def test_cannot_delete_only_owner(
         self,

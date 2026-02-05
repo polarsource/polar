@@ -18,7 +18,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
           <Font
             fontFamily="Inter"
             fallbackFontFamily="sans-serif"
-            fontWeight="100 900"
+            fontWeight="400 700"
             fontStyle="normal"
             webFont={{
               url: 'https://fonts.gstatic.com/s/inter/v19/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2',

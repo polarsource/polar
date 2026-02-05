@@ -97,8 +97,8 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}{' '}
-                    in {format(period.timestamp, 'MMMM')}
+                    {formatCurrency('compact')(period.revenue ?? 0, 'usd')} in{' '}
+                    {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>
               </Tooltip>
@@ -108,12 +108,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
                   <span className="dark:text-polar-500 text-sm text-gray-500">
-                    $
-                    {((period.revenue ?? 0) / 100).toLocaleString('en-US', {
-                      style: 'decimal',
-                      compactDisplay: 'short',
-                      notation: 'compact',
-                    })}
+                    {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}
                   </span>
                   {!isTrendFlat ? (
                     <Tooltip>

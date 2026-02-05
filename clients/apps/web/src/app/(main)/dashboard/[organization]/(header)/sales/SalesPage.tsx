@@ -156,7 +156,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: order } }) => (
         <span>
-          {formatCurrency('presenting')(order.net_amount, order.currency)}
+          {formatCurrency('compact')(order.net_amount, order.currency)}
         </span>
       ),
     },

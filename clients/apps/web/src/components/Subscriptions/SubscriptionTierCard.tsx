@@ -57,7 +57,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <>
               {price.amount_type === 'fixed' && (
                 <>
-                  {formatCurrency('presenting')(
+                  {formatCurrency('compact')(
                     price.price_amount,
                     price.price_currency,
                   )}

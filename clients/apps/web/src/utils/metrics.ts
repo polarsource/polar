@@ -45,7 +45,7 @@ export const getTickFormatter = (
     case 'scalar':
       return formatHumanFriendlyScalar
     case 'currency':
-      return (value: number) => formatCurrency('presenting')(value, 'usd')
+      return (value: number) => formatCurrency('compact')(value, 'usd')
     case 'percentage':
       return formatPercentage
     case 'currency_sub_cent':
@@ -61,7 +61,7 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return formatScalar(value)
     case 'currency':
-      return formatCurrency('presenting')(value, 'usd')
+      return formatCurrency('compact')(value, 'usd')
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':

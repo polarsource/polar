@@ -778,7 +778,7 @@ const BaseCheckoutForm = ({
                         currency={checkout.currency}
                         interval={interval}
                         intervalCount={intervalCount}
-                        mode="accounting"
+                        mode="standard"
                       />
                     </DetailRow>
 
@@ -787,13 +787,13 @@ const BaseCheckoutForm = ({
                         <DetailRow
                           title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
                         >
-                          {formatCurrency('accounting')(
+                          {formatCurrency('standard')(
                             -checkout.discountAmount,
                             checkout.currency,
                           )}
                         </DetailRow>
                         <DetailRow title="Taxable amount">
-                          {formatCurrency('accounting')(
+                          {formatCurrency('standard')(
                             checkout.netAmount,
                             checkout.currency,
                           )}
@@ -803,7 +803,7 @@ const BaseCheckoutForm = ({
 
                     <DetailRow title="Taxes">
                       {checkout.taxAmount !== null
-                        ? formatCurrency('accounting')(
+                        ? formatCurrency('standard')(
                             checkout.taxAmount,
                             checkout.currency,
                           )
@@ -817,7 +817,7 @@ const BaseCheckoutForm = ({
                           currency={checkout.currency}
                           interval={interval}
                           intervalCount={intervalCount}
-                          mode="accounting"
+                          mode="standard"
                         />
                         {formattedDiscountDuration && (
                           <span className="text-xs font-normal text-gray-500">

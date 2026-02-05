@@ -19,6 +19,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:watch": "vitest watch",
     "build": "rm -rf dist/ && tsup",
     "format": "prettier --write ./src",
     "format:check": "prettier -c ./src",

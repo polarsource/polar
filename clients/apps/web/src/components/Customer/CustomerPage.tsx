@@ -405,7 +405,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Amount',
                 accessorKey: 'amount',
                 cell: ({ row: { original } }) =>
-                  formatCurrency('presenting')(
+                  formatCurrency('compact')(
                     original.net_amount,
                     original.currency,
                   ),

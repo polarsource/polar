@@ -34,7 +34,7 @@ const AmountLabel = ({
   return (
     <Box flexDirection="row" alignItems="baseline">
       <Text loading={loading} variant="bodySmall">
-        {formatCurrency('presenting')(amount, currency)}
+        {formatCurrency('compact')(amount, currency)}
       </Text>
       <Text variant="captionSmall">{intervalDisplay}</Text>
     </Box>

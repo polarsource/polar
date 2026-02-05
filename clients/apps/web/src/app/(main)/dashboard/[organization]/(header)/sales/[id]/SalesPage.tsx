@@ -399,7 +399,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrency('presenting')(
+                  formatCurrency('compact')(
                     row.original.amount,
                     row.original.currency,
                   ),
@@ -464,7 +464,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrency('presenting')(
+                  formatCurrency('compact')(
                     row.original.amount,
                     row.original.currency,
                   ),

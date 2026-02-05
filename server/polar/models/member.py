@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
+from sqlalchemy import ForeignKey, Index, String, UniqueConstraint, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -20,17 +20,22 @@ class MemberRole(StrEnum):
 class Member(RecordModel):
     __tablename__ = "members"
     __table_args__ = (
-        UniqueConstraint(
+        # Partial unique index: only one active (non-deleted) member per customer+email
+        # This allows soft-deleted members to exist without blocking new members
+        Index(
+            "members_customer_id_email_active_key",
             "customer_id",
             "email",
-            name="members_customer_id_email_key",
-            postgresql_nulls_not_distinct=True,
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
         ),
-        UniqueConstraint(
+        # Partial unique index for external_id: only applies to non-deleted members
+        Index(
+            "members_customer_id_external_id_active_key",
             "customer_id",
             "external_id",
-            name="members_customer_id_external_id_key",
-            postgresql_nulls_not_distinct=False,
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

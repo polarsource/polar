@@ -10,11 +10,14 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.worker import (
     AsyncSessionMaker,
     RedisMiddleware,
     TaskPriority,
     actor,
+    enqueue_job,
     get_retries,
 )
 
@@ -90,6 +93,32 @@ async def enqueue_benefits_grants(
 
         await benefit_grant_service.enqueue_benefits_grants(
             session, task, customer, product, member_id=member_id, **resolved_scope
+        )
+
+
+@actor(actor_name="benefit.enqueue_grants", priority=TaskPriority.MEDIUM)
+async def benefit_enqueue_grants(
+    customer_id: uuid.UUID,
+    grant_benefit_ids: list[uuid.UUID],
+    member_id: uuid.UUID | None = None,
+    **scope: Unpack[BenefitGrantScopeArgs],
+) -> None:
+    if subscription_id := scope.get("subscription_id"):
+        async with AsyncSessionMaker() as session:
+            repository = SubscriptionRepository.from_session(session)
+            subscription = await repository.get_by_id(
+                subscription_id, options=repository.get_eager_options()
+            )
+            if subscription:
+                await subscription_service.reset_meters(session, subscription)
+
+    for benefit_id in grant_benefit_ids:
+        enqueue_job(
+            "benefit.grant",
+            customer_id=customer_id,
+            benefit_id=benefit_id,
+            member_id=member_id,
+            **scope,
         )
 
 

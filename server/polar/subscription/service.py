@@ -499,9 +499,6 @@ class SubscriptionService:
         # So we manually trigger it here to keep the same behavior.
         await self._on_subscription_updated(session, subscription)
 
-        # Reset the subscription meters to start fresh
-        await self.reset_meters(session, subscription)
-
         # Enqueue the benefits grants for the subscription
         await self.enqueue_benefits_grants(session, subscription)
 

@@ -1,20 +1,13 @@
 import { PolarHog, usePostHog } from '@/hooks/posthog'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
 import CodeOutlined from '@mui/icons-material/CodeOutlined'
-import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
-import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
-import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingUp from '@mui/icons-material/TrendingUp'
 import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -159,7 +152,7 @@ export const useAccountRoutes = (): RouteWithActive[] => {
 const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
-    title: 'Home',
+    title: 'Overview',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}`,
     checkIsActive: (currentRoute: string) =>
@@ -167,41 +160,14 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
-    id: 'new-products',
-    title: 'Products',
+    id: 'catalog',
+    title: 'Catalog',
     icon: <HiveOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/products`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/products`)
     },
     if: true,
-    subs: [
-      {
-        title: 'Catalogue',
-        link: `/dashboard/${org?.slug}/products`,
-        icon: <HiveOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Checkout Links',
-        link: `/dashboard/${org?.slug}/products/checkout-links`,
-        icon: <LinkOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Discounts',
-        link: `/dashboard/${org?.slug}/products/discounts`,
-        icon: <DiscountOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Benefits',
-        link: `/dashboard/${org?.slug}/products/benefits`,
-        icon: <DiamondOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Meters',
-        link: `/dashboard/${org?.slug}/products/meters`,
-        icon: <DonutLargeOutlined fontSize="inherit" />,
-      },
-    ],
   },
   {
     id: 'customers',
@@ -218,56 +184,20 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     title: 'Analytics',
     icon: <TrendingUp fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/analytics`)
+    },
     if: true,
-    subs: [
-      {
-        title: 'Metrics',
-        link: `/dashboard/${org?.slug}/analytics/metrics`,
-      },
-      {
-        title: 'Events',
-        link: `/dashboard/${org?.slug}/analytics/events`,
-      },
-      {
-        title: 'Costs',
-        link: `/dashboard/${org?.slug}/analytics/costs`,
-        if: () => org?.feature_settings?.revops_enabled ?? false,
-        extra: (
-          <Status
-            status="Beta"
-            size="small"
-            className="bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-          />
-        ),
-      },
-    ],
   },
   {
-    id: 'org-sales',
-    title: 'Sales',
+    id: 'revenue',
+    title: 'Revenue',
     icon: <ShoppingBagOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/sales`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/sales`)
     },
     if: true,
-    subs: [
-      {
-        title: 'Orders',
-        link: `/dashboard/${org?.slug}/sales`,
-        icon: <ShoppingBagOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Subscriptions',
-        link: `/dashboard/${org?.slug}/sales/subscriptions`,
-        icon: <AllInclusiveOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Checkouts',
-        link: `/dashboard/${org?.slug}/sales/checkouts`,
-        icon: <ShoppingCart />,
-      },
-    ],
   },
 ]
 
@@ -295,57 +225,25 @@ const accountRoutesList = (): Route[] => [
   },
 ]
 
-const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
-  {
-    title: 'Income',
-    link: `/dashboard/${org?.slug}/finance/income`,
-  },
-  {
-    title: 'Payouts',
-    link: `/dashboard/${org?.slug}/finance/payouts`,
-  },
-  {
-    title: 'Account',
-    link: `/dashboard/${org?.slug}/finance/account`,
-  },
-]
-
 const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'finance',
-    title: 'Finance',
-    link: `/dashboard/${org?.slug}/finance`,
+    title: 'Balance',
+    link: `/dashboard/${org?.slug}/finance/income`,
     icon: <AttachMoneyOutlined fontSize="inherit" />,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/finance`)
+    },
     if: true,
-    subs: orgFinanceSubRoutesList(org),
   },
   {
     id: 'settings',
     title: 'Settings',
     link: `/dashboard/${org?.slug}/settings`,
     icon: <TuneOutlined fontSize="inherit" />,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/settings`)
+    },
     if: true,
-    subs: [
-      {
-        title: 'General',
-        link: `/dashboard/${org?.slug}/settings`,
-      },
-      {
-        title: 'Billing',
-        link: `/dashboard/${org?.slug}/settings/billing`,
-      },
-      {
-        title: 'Members',
-        link: `/dashboard/${org?.slug}/settings/members`,
-      },
-      {
-        title: 'Webhooks',
-        link: `/dashboard/${org?.slug}/settings/webhooks`,
-      },
-      {
-        title: 'Custom Fields',
-        link: `/dashboard/${org?.slug}/settings/custom-fields`,
-      },
-    ],
   },
 ]

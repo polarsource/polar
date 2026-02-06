@@ -82,9 +82,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     ) {
       return {
         type: 'loading',
-        title: 'Validating Organization Details...',
+        title: 'Verifying your business...',
         message:
-          'Our AI is reviewing your organization details against our acceptable use policy. This may take up to 25 seconds.',
+          "We're reviewing your SaaS business details. This usually takes a few seconds.",
         icon: <Loader2 className="h-8 w-8 animate-spin" />,
       }
     }
@@ -93,7 +93,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
     if (aiValidation.isError || reviewStatus.isError || timedOut) {
       return {
         type: 'review_required',
-        title: 'Payment Access Denied',
+        title: 'Verification Failed',
         message:
           'Technical error during validation. Manual review will be conducted.',
         icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
@@ -110,16 +110,16 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       case 'PASS':
         return {
           type: 'pass',
-          title: 'AI Validation Successful',
+          title: 'Verification Passed',
           message:
-            'Your organization details have been automatically validated against our acceptable use policy.',
+            'Your SaaS business has been verified and approved.',
           icon: <CheckCircle className="h-8 w-8 text-gray-600" />,
         }
       case 'FAIL':
       case 'UNCERTAIN':
         return {
           type: 'review_required',
-          title: 'Payment Access Denied',
+          title: 'Verification Failed',
           message: result.reason,
           icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
           severity: 'error',
@@ -154,10 +154,10 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
               <h4 className={`text-sm font-medium`}>What happens next?</h4>
               <p className={`dark:text-polar-400 mt-1 text-sm text-gray-600`}>
                 {status.type === 'pass'
-                  ? 'Your organization details passed our automated compliance check. You can accept payments immediately, but a manual review will still occur before your first payout as part of our standard process.'
+                  ? 'Your business has been verified. You can start accepting payments immediately. A final review will happen before your first payout.'
                   : status.type === 'review_required'
-                    ? 'Payments are currently blocked for your organization due to our compliance review. You can submit an appeal below if you believe this decision is incorrect.'
-                    : 'Please wait while we validate your organization details.'}
+                    ? "We couldn't verify your business automatically. You can submit additional details below for manual review."
+                    : "Please wait while we verify your business details."}
               </p>
             </div>
           </div>

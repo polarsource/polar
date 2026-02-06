@@ -101,7 +101,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
             })}
           </h3>
           <span className="text-lg">
-            {orderMetrics.data?.totals.orders === 1 ? 'Order' : 'Orders'}
+            {orderMetrics.data?.totals.orders === 1 ? 'Transaction' : 'Transactions'}
           </span>
         </div>
       </div>
@@ -192,7 +192,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                           {day.orders.toLocaleString('en-US', {
                             style: 'decimal',
                           })}{' '}
-                          {day.orders === 1 ? 'Order' : 'Orders'}
+                          {day.orders === 1 ? 'Transaction' : 'Transactions'}
                         </span>
                       </TooltipContent>
                     </Tooltip>

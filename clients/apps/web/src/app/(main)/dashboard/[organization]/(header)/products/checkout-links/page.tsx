@@ -46,15 +46,17 @@ export default async function Page(props: {
     redirect(redirectUrl)
   }
 
-  // Otherwise show empty state
+  // Otherwise show empty state as onboarding
   return (
-    <div className="flex h-full flex-col items-center justify-center pt-32">
-      <div className="flex flex-col items-center justify-center gap-y-8">
+    <div className="flex h-full flex-col items-center justify-center px-4 pt-24">
+      <div className="flex max-w-md flex-col items-center justify-center gap-y-6 text-center">
         <LinkOutlined fontSize="large" />
         <div className="flex flex-col items-center justify-center gap-y-2">
-          <h3 className="text-xl">No Checkout Links</h3>
+          <h3 className="text-xl font-medium">Share a checkout link</h3>
           <p className="dark:text-polar-500 text-gray-500">
-            Create a new checkout link to share with your customers
+            Checkout links let you sell products anywhere — embed them in
+            your site, share on social media, or send directly to customers.
+            Each link tracks conversions automatically.
           </p>
         </div>
         <Link

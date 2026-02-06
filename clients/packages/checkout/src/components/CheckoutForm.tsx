@@ -48,7 +48,7 @@ import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import MeteredPriceLabel from './MeteredPriceLabel'
 import PolarLogo from './PolarLogo'
-
+// test
 const DetailRow = ({
   title,
   emphasis,

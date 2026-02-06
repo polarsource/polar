@@ -948,6 +948,7 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  locale?: SupportedLocale
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -960,6 +961,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     disabled,
     isUpdatePending,
     themePreset: themePresetProps,
+    locale,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -1004,7 +1006,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        locale: 'en',
+        locale,
         customerSessionClientSecret: (
           checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string

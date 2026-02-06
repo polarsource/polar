@@ -25,11 +25,6 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/cli", tags=["cli", APITag.private])
 
-OrganizationNotFound = {
-    "description": "Organization not found.",
-    "model": ResourceNotFound.schema(),
-}
-
 
 async def transform_webhook_events(
     organization_id: str, event_stream: AsyncGenerator[Any, Any]

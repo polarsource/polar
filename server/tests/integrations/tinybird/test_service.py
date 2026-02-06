@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import UTC, datetime
@@ -279,3 +280,89 @@ class TestTinybirdEventsQuery:
         assert len(stats) == 1
         assert stats[0].name == "org1.event"
         assert stats[0].occurrences == 2
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+class TestTinybirdDelete:
+    async def test_delete_by_id(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id, name="delete.test", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="delete.test", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="keep.test", source=EventSource.system
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        query = TinybirdEventsQuery(org_id)
+        stats_before = await query.get_event_type_stats()
+        stats_by_name = {s.name: s for s in stats_before}
+        assert stats_by_name["delete.test"].occurrences == 2
+        assert stats_by_name["keep.test"].occurrences == 1
+
+        event_to_delete = events[0]
+        delete_condition = f"id = '{event_to_delete.id}'"
+        result = await tinybird_client.delete(DATASOURCE_EVENTS, delete_condition)
+
+        assert "job_id" in result
+        job_id = result["job_id"]
+
+        job = await tinybird_client.get_job(job_id)
+        while job.get("status") not in ("done", "error"):
+            await asyncio.sleep(0.5)
+            job = await tinybird_client.get_job(job_id)
+
+        assert job["status"] == "done"
+
+        stats_after = await query.get_event_type_stats()
+        stats_by_name_after = {s.name: s for s in stats_after}
+        assert stats_by_name_after["delete.test"].occurrences == 1
+        assert stats_by_name_after["keep.test"].occurrences == 1
+
+    async def test_delete_multiple_by_id(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        events = [
+            create_test_event(
+                organization_id=org_id, name="batch.delete", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="batch.delete", source=EventSource.system
+            ),
+            create_test_event(
+                organization_id=org_id, name="batch.keep", source=EventSource.system
+            ),
+        ]
+
+        tinybird_events = [_event_to_tinybird(e) for e in events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        query = TinybirdEventsQuery(org_id)
+        stats_before = await query.get_event_type_stats()
+        stats_by_name = {s.name: s for s in stats_before}
+        assert stats_by_name["batch.delete"].occurrences == 2
+        assert stats_by_name["batch.keep"].occurrences == 1
+
+        ids_to_delete = [str(events[0].id), str(events[1].id)]
+        delete_condition = f"id IN ('{ids_to_delete[0]}', '{ids_to_delete[1]}')"
+        result = await tinybird_client.delete(DATASOURCE_EVENTS, delete_condition)
+
+        job_id = result["job_id"]
+        job = await tinybird_client.get_job(job_id)
+        while job.get("status") not in ("done", "error"):
+            await asyncio.sleep(0.5)
+            job = await tinybird_client.get_job(job_id)
+
+        assert job["status"] == "done"
+
+        stats_after = await query.get_event_type_stats()
+        stats_by_name_after = {s.name: s for s in stats_after}
+        assert "batch.delete" not in stats_by_name_after
+        assert stats_by_name_after["batch.keep"].occurrences == 1

@@ -84,7 +84,7 @@ async def transform_webhook_events(
     "/listen/{id}",
     summary="CLI Listen",
     responses={
-        200: {"description": "Organization updated."},
+        200: {"description": "Listening for organization webhooks"},
         403: {
             "description": "You don't have the permission to listen on this organization.",
             "model": NotPermitted.schema(),

@@ -4,6 +4,99 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-11-14">
+## Trial Abuse Prevention
+
+Prevent customers from redeeming multiple trials with email aliases or different payment methods:
+
+* Email normalization strips `+aliases` to detect duplicates
+* Payment method fingerprinting tracks card usage
+* Enable via Settings → Subscription → "Prevent trial abuse"
+* Blocked customers see error and can still subscribe without trial
+* Checkout parameter `allow_trial` to force disable trials
+
+Perfect for controlling trial costs while still allowing new customers to subscribe.
+
+## Event Types & Aggregation
+
+New event types system for better organization and analytics:
+
+* Event types automatically created for events with the same name
+* Custom display names for better readability
+* Statistics endpoint for event aggregation
+* Event closure tables for efficient hierarchy queries
+
+## Mobile App (Beta)
+
+Polar mobile app added to the monorepo:
+
+* React Native implementation with Expo
+* Expo workflow for development and builds
+* Shared workspace with web dashboard
+* Foundation for mobile-first experiences
+
+## Webhook Events
+
+Skipped events now properly tracked:
+
+* Events skipped when endpoint disabled no longer count as failures
+* Prevents false positives in health checks
+* Better webhook reliability metrics
+
+## File Uploads
+
+Large file upload support:
+
+* Handles files larger than memory limits
+* Multipart upload handling
+* SHA256 validation per part
+* Better progress tracking
+
+## Subscription Management
+
+### Billing Period Control
+
+New API to change current billing period end date:
+
+* Useful for custom billing arrangements
+* Prorations calculated automatically
+* Prevented on already-cancelled subscriptions
+
+### Payout Improvements
+
+* Increased minimum payout amounts for certain currencies
+* Better error logging for Stripe payout failures
+
+## UI & UX
+
+### Analytics Improvements
+
+* Fixed timezone issues with date range selection
+* Better interval formatting in legends
+* Improved preset intervals ("this year", "last year")
+* Consistent date handling across dashboard
+
+### Customer Portal
+
+* Fixed overflowing invoice action buttons
+* Improved mobile experience
+
+### Settings
+
+* Auto-prefix social media URLs
+* Removed seat-based billing toggle (now standard)
+
+## Bug Fixes
+
+* Fixed `allow_trial` parameter handling
+* Fixed dark mode colors across dashboard
+* Fixed tax rate limiting in sandbox environment
+* Fixed Stripe trial redemption error handling
+* Fixed member invitation dialog Enter key submission
+* Fixed large file upload memory issues
+* Fixed metrics organization filtering
+</Update>
+
 <Update label="2025-11-07">
 ## Hierarchical Events & Spans
 

@@ -12,7 +12,7 @@ const SandboxBanner = () => {
         not processed
       </div>
       <div>
-        <a href="https://polar.sh/start" className="font-bold hover:opacity-50">
+        <a href="https://app.spairehq.com/start" className="font-bold hover:opacity-50">
           Exit sandbox
         </a>
       </div>

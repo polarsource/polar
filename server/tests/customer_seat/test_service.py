@@ -1579,7 +1579,7 @@ class TestClaimSeat:
         assert claimed_seat.invitation_token is None  # Token should be cleared
         assert session_token is not None
         assert len(session_token) > 0
-        assert session_token.startswith("polar_mst_")
+        assert session_token.startswith("spaire_mst_")
 
 
 class TestRevokeSeat:

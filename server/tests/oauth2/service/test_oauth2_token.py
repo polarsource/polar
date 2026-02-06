@@ -24,10 +24,10 @@ class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
         [
-            ("polar_at_u_123", TokenType.access_token),
-            ("polar_rt_u_123", TokenType.refresh_token),
-            ("polar_at_o_123", TokenType.access_token),
-            ("polar_rt_o_123", TokenType.refresh_token),
+            ("spaire_at_u_123", TokenType.access_token),
+            ("spaire_rt_u_123", TokenType.refresh_token),
+            ("spaire_at_o_123", TokenType.access_token),
+            ("spaire_rt_o_123", TokenType.refresh_token),
         ],
     )
     async def test_false_positive(
@@ -47,8 +47,8 @@ class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
         [
-            ("polar_at_u_123", TokenType.access_token),
-            ("polar_rt_u_123", TokenType.refresh_token),
+            ("spaire_at_u_123", TokenType.access_token),
+            ("spaire_rt_u_123", TokenType.refresh_token),
         ],
     )
     async def test_true_positive_user(
@@ -64,8 +64,8 @@ class TestRevokeLeaked:
         oauth2_token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_u_123",
-            refresh_token="polar_rt_u_123",
+            access_token="spaire_at_u_123",
+            refresh_token="spaire_rt_u_123",
             scopes=["openid"],
             user=user,
         )
@@ -83,8 +83,8 @@ class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
         [
-            ("polar_at_o_123", TokenType.access_token),
-            ("polar_rt_o_123", TokenType.refresh_token),
+            ("spaire_at_o_123", TokenType.access_token),
+            ("spaire_rt_o_123", TokenType.refresh_token),
         ],
     )
     async def test_true_positive_organization(
@@ -101,8 +101,8 @@ class TestRevokeLeaked:
         oauth2_token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_o_123",
-            refresh_token="polar_rt_o_123",
+            access_token="spaire_at_o_123",
+            refresh_token="spaire_rt_o_123",
             scopes=["openid"],
             organization=organization,
         )
@@ -128,8 +128,8 @@ class TestRevokeLeaked:
         await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_u_123",
-            refresh_token="polar_rt_u_123",
+            access_token="spaire_at_u_123",
+            refresh_token="spaire_rt_u_123",
             scopes=["openid"],
             user=user,
             access_token_revoked_at=1,
@@ -137,7 +137,7 @@ class TestRevokeLeaked:
         )
 
         result = await oauth2_token_service.revoke_leaked(
-            session, "polar_at_u_123", TokenType.access_token, notifier="github"
+            session, "spaire_at_u_123", TokenType.access_token, notifier="github"
         )
         assert result is True
 

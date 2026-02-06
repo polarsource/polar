@@ -1,8 +1,8 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import { HTTPValidationError } from '@spaire/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { useEffect, useState } from 'react'

@@ -22,13 +22,13 @@ export const EventCostCreationGuideModal = () => {
         <Well className="dark:bg-polar-800 rounded-lg bg-gray-100 p-4 text-sm">
           <SyntaxHighlighterClient
             lang="typescript"
-            code={`import { Polar } from "@polar-sh/sdk";
+            code={`import { Spaire } from "@spaire/sdk";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const spaire = new Spaire({
+  accessToken: process.env["SPAIRE_ACCESS_TOKEN"] ?? "",
 });
 
-const result = await polar.events.ingest({
+const result = await spaire.events.ingest({
   events: [
     {
       name: "<value>",
@@ -47,7 +47,7 @@ const result = await polar.events.ingest({
         </Well>
         <div className="flex flex-row items-center gap-x-4">
           <Link
-            href="https://docs.polar.sh/features/cost-insights/cost-events"
+            href="https://docs.spairehq.com/features/cost-insights/cost-events"
             target="_blank"
             className="flex flex-row items-center"
           >

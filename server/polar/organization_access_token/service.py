@@ -34,7 +34,7 @@ from .sorting import OrganizationAccessTokenSortProperty
 
 log: Logger = structlog.get_logger()
 
-TOKEN_PREFIX = "polar_oat_"
+TOKEN_PREFIX = "spaire_oat_"
 
 
 class OrganizationAccessTokenService:

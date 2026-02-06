@@ -16,8 +16,8 @@ export async function generateMetadata(props: {
   return {
     title: `Team | ${organization.name}`,
     openGraph: {
-      title: `Team | ${organization.name} on Polar`,
-      description: `Manage team members | ${organization.name} on Polar`,
+      title: `Team | ${organization.name} on Spaire`,
+      description: `Manage team members | ${organization.name} on Spaire`,
       siteName: 'Polar',
       type: 'website',
       images: [
@@ -34,12 +34,12 @@ export async function generateMetadata(props: {
           url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.name} on Polar`,
+          alt: `${organization.name} on Spaire`,
         },
       ],
       card: 'summary_large_image',
-      title: `Team | ${organization.name} on Polar`,
-      description: `Manage team members | ${organization.name} on Polar`,
+      title: `Team | ${organization.name} on Spaire`,
+      description: `Manage team members | ${organization.name} on Spaire`,
     },
   }
 }

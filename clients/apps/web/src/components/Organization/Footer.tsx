@@ -21,11 +21,11 @@ const Footer = () => {
                 href="/signup"
                 className="flex w-fit flex-row items-center gap-x-2 border-b border-black pb-0.5 dark:border-white"
               >
-                <span>Join Polar today</span>
+                <span>Join Spaire today</span>
                 <ArrowOutwardOutlined fontSize="inherit" />
               </Link>
               <span className="dark:text-polar-500 w-full text-gray-500">
-                &copy; Polar Software, Inc. {new Date().getFullYear()}
+                &copy; Spaire {new Date().getFullYear()}
               </span>
             </div>
           </div>
@@ -44,7 +44,7 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4 text-sm">
             <h3 className="dark:text-polar-500 text-gray-500">Resources</h3>
             <div className="flex flex-col gap-y-3">
-              <FooterLink href="/resources/why">Why Polar</FooterLink>
+              <FooterLink href="/resources/why">Why Spaire</FooterLink>
               <FooterLink href="/resources/merchant-of-record">
                 Merchant of Record
               </FooterLink>
@@ -55,7 +55,7 @@ const Footer = () => {
           <div className="flex flex-col gap-y-4 text-sm">
             <h3 className="dark:text-polar-500 text-gray-500">Company</h3>
             <div className="flex flex-col gap-y-3">
-              <FooterLink href="/company">About Polar</FooterLink>
+              <FooterLink href="/company">About Spaire</FooterLink>
               <FooterLink href="https://github.com/polarsource">
                 GitHub
               </FooterLink>
@@ -78,7 +78,7 @@ const Footer = () => {
             <h3 className="dark:text-polar-500 text-gray-500">Support</h3>
             <div className="flex flex-col gap-y-3">
               <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
-              <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
+              <FooterLink href="mailto:support@spairehq.com">Contact</FooterLink>
               <FooterLink href="https://status.polar.sh">
                 Service Status
               </FooterLink>

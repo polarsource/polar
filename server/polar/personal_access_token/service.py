@@ -25,7 +25,7 @@ from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
 
-TOKEN_PREFIX = "polar_pat_"
+TOKEN_PREFIX = "spaire_pat_"
 
 
 class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):

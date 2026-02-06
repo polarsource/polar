@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import {
   CheckoutPublic$inboundSchema,
   type CheckoutPublic,
-} from '@polar-sh/sdk/models/components/checkoutpublic'
+} from '@spaire/sdk/models/components/checkoutpublic'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
 ## Clipeo mentiris arquato obliqua lacerta

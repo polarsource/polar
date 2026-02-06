@@ -340,9 +340,6 @@ importers:
       '@polar-sh/mdx':
         specifier: workspace:*
         version: link:../../packages/mdx
-      '@polar-sh/sdk':
-        specifier: ^0.42.5
-        version: 0.42.5
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -367,6 +364,9 @@ importers:
       '@shikijs/rehype':
         specifier: ^3.21.0
         version: 3.21.0
+      '@spaire/sdk':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@stripe/react-stripe-js':
         specifier: ^4.0.2
         version: 4.0.2(@stripe/stripe-js@7.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -632,12 +632,12 @@ importers:
       '@polar-sh/currency':
         specifier: workspace:^
         version: link:../currency
-      '@polar-sh/sdk':
-        specifier: ^0.42.5
-        version: 0.42.5
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
+      '@spaire/sdk':
+        specifier: ^1.0.0
+        version: 1.0.0
       event-source-plus:
         specifier: ^0.1.15
         version: 0.1.15
@@ -3143,9 +3143,6 @@ packages:
     resolution: {integrity: sha512-h104Kh26rR8tm+a3Qkc5S4VLYint3FE48as7+/5oCEcKR2idC/pF1G6AhIXKI+eHPJa/3J9i5z0Al47IeGHPkA==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.42.5':
-    resolution: {integrity: sha512-GzC3/ElCtMO55+KeXwFTANlydZzw5qI3DU/F9vAFIsUKuegSmh+Xu03KCL+ct9/imJOvLUQucYhUSsNKqo2j2Q==}
-
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
 
@@ -4364,6 +4361,9 @@ packages:
 
   '@sinonjs/fake-timers@10.3.0':
     resolution: {integrity: sha512-V4BG07kuYSUkTCSBHG8G8TNhM+F19jXFWnQtzj+we8DrkpSBCee9Z3Ms8yiGer/dlmhe35/Xdgyo3/0rQKg7YA==}
+
+  '@spaire/sdk@1.0.0':
+    resolution: {integrity: sha512-Y5Hk84zTX1hZA6h/Zk+r9OM6u75kLo+ZALftqbA3bQSuSDgrQU8WlH4Dww0XTJcgHbwV8rOauscERYQZR7HCpA==}
 
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
@@ -14383,11 +14383,6 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.42.5':
-    dependencies:
-      standardwebhooks: 1.0.0
-      zod: 4.3.6
-
   '@polka/url@1.0.0-next.29': {}
 
   '@popperjs/core@2.11.8': {}
@@ -16035,6 +16030,11 @@ snapshots:
   '@sinonjs/fake-timers@10.3.0':
     dependencies:
       '@sinonjs/commons': 3.0.1
+
+  '@spaire/sdk@1.0.0':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 4.3.6
 
   '@stablelib/base64@1.0.1': {}
 

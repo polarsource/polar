@@ -21,8 +21,8 @@ class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
         [
-            ("polar_cs_123", TokenType.client_secret),
-            ("polar_crt_123", TokenType.client_registration_token),
+            ("spaire_cs_123", TokenType.client_secret),
+            ("spaire_crt_123", TokenType.client_registration_token),
         ],
     )
     async def test_false_positive(

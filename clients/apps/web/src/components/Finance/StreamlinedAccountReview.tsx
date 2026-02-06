@@ -446,7 +446,7 @@ export default function StreamlinedAccountReview({
               </div>
               <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
                 {requireDetails
-                  ? "Tell us about your organization so we can review if it's an acceptable use case for Polar."
+                  ? "Tell us about your organization so we can review if it's an acceptable use case for Spaire."
                   : 'Review your submitted organization details below.'}
               </p>
             </div>

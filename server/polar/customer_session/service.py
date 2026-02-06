@@ -24,7 +24,7 @@ from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
 
 log: Logger = structlog.get_logger()
 
-CUSTOMER_SESSION_TOKEN_PREFIX = "polar_cst_"
+CUSTOMER_SESSION_TOKEN_PREFIX = "spaire_cst_"
 
 
 class CustomerSessionService(ResourceServiceReader[CustomerSession]):

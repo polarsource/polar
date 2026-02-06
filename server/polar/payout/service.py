@@ -509,7 +509,7 @@ class PayoutService:
                 description = ""
                 if transaction.platform_fee_type is not None:
                     if transaction.platform_fee_type == "platform":
-                        description = "Polar fee"
+                        description = "Spaire fee"
                     else:
                         description = (
                             f"Payment processor fee ({transaction.platform_fee_type})"

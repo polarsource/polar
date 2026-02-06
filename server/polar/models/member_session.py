@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from .member import Member
 
-MEMBER_SESSION_TOKEN_PREFIX = "polar_mst_"
+MEMBER_SESSION_TOKEN_PREFIX = "spaire_mst_"
 
 
 def get_expires_at() -> datetime:

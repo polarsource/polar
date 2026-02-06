@@ -1,11 +1,7 @@
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { NextRequest } from 'next/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { config, proxy } from './proxy'
-
-vi.mock('./utils/client', () => ({
-  createServerSideAPI: vi.fn(),
-}))
 
 const nextConfig = {}
 
@@ -182,14 +178,17 @@ describe('proxy matcher configuration', () => {
 })
 
 describe('middleware function', () => {
-  let createServerSideAPI: ReturnType<typeof vi.fn>
+  const originalFetch = global.fetch
 
-  beforeEach(async () => {
-    const clientModule = await import('./utils/client')
-    createServerSideAPI = clientModule.createServerSideAPI as ReturnType<
-      typeof vi.fn
-    >
+  beforeEach(() => {
     vi.clearAllMocks()
+    // Set API URL env var for tests
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com'
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+    delete process.env.NEXT_PUBLIC_API_URL
   })
 
   it('should redirect unauthenticated users from protected routes', async () => {
@@ -204,15 +203,14 @@ describe('middleware function', () => {
 
   it('should allow authenticated users to access protected routes', async () => {
     const mockUser = { id: '123', email: 'test@example.com' }
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: mockUser,
-        response: { ok: true, status: 200, headers: new Headers() },
-      }),
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(mockUser),
     })
 
     const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'valid-session-token')
+    request.cookies.set('spaire_session', 'valid-session-token')
 
     const response = await proxy(request)
 
@@ -242,32 +240,32 @@ describe('middleware function', () => {
     expect(location).toContain('return_to=%2Fdashboard%3Ffoo%3Dbar%26baz%3Dqux')
   })
 
-  it('should throw error on unexpected API response status', async () => {
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: undefined,
-        response: { ok: false, status: 500, headers: new Headers() },
-      }),
+  it('should redirect on unexpected API response status', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({}),
     })
 
     const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'valid-session-token')
+    request.cookies.set('spaire_session', 'valid-session-token')
 
-    await expect(proxy(request)).rejects.toThrow(
-      'Unexpected response status while fetching authenticated user',
-    )
+    const response = await proxy(request)
+
+    // Non-ok responses are logged but gracefully degrade to unauthenticated
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toContain('/login')
   })
 
   it('should handle 401 responses gracefully', async () => {
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: undefined,
-        response: { ok: false, status: 401, headers: new Headers() },
-      }),
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({}),
     })
 
     const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'invalid-session-token')
+    request.cookies.set('spaire_session', 'invalid-session-token')
 
     const response = await proxy(request)
 

@@ -1,6 +1,6 @@
-import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import type { CheckoutProduct } from '@spaire/sdk/models/components/checkoutproduct'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import type { ProductPrice } from '@spaire/sdk/models/components/productprice'
 
 interface ProductCheckoutMixin {
   product_id: string

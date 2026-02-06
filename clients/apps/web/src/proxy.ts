@@ -1,14 +1,14 @@
-import { schemas } from '@polar-sh/client'
 import { nanoid } from 'nanoid'
-import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { createServerSideAPI } from './utils/client'
 
 const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+  process.env.POLAR_AUTH_COOKIE_KEY || 'spaire_session'
+// Legacy cookie name fallback - the backend may still set 'polar_session'
+// if it hasn't been redeployed with the rebrand changes yet
+const LEGACY_AUTH_COOKIE_KEY = 'polar_session'
 
-const DISTINCT_ID_COOKIE = 'polar_distinct_id'
+const DISTINCT_ID_COOKIE = 'spaire_distinct_id'
 const DISTINCT_ID_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 const AUTHENTICATED_ROUTES = [
@@ -158,28 +158,70 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
-  let user: schemas['UserRead'] | undefined = undefined
+  let user: Record<string, unknown> | undefined = undefined
 
-  if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
-      request.headers,
-      RequestCookiesAdapter.seal(request.cookies),
-    )
-    const { data, response } = await api.GET('/v1/users/me', {
-      cache: 'no-cache',
-    })
-    if (!response.ok && response.status !== 401) {
-      console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
-      throw new Error(
-        'Unexpected response status while fetching authenticated user',
-      )
+  // Resolve API URL at request time (not module load time) to ensure
+  // runtime env vars are available in Edge Runtime
+  const apiUrl =
+    process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || ''
+
+  const hasCookie =
+    request.cookies.has(POLAR_AUTH_COOKIE_KEY) ||
+    request.cookies.has(LEGACY_AUTH_COOKIE_KEY)
+  if (hasCookie && apiUrl) {
+    // Build Cookie header from all incoming request cookies
+    const cookieHeader = request.cookies
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join('; ')
+
+    const fetchHeaders: Record<string, string> = {
+      Cookie: cookieHeader,
     }
-    user = data
+    const xForwardedFor = request.headers.get('X-Forwarded-For')
+    if (xForwardedFor) {
+      fetchHeaders['X-Forwarded-For'] = xForwardedFor
+    }
+
+    try {
+      // Use direct fetch instead of openapi-fetch client to avoid
+      // credentials: 'include' which can interfere with custom Cookie
+      // headers in Edge Runtime environments
+      const authResponse = await fetch(`${apiUrl}/v1/users/me`, {
+        method: 'GET',
+        headers: fetchHeaders,
+        cache: 'no-cache',
+      })
+
+      if (authResponse.ok) {
+        user = await authResponse.json()
+      } else if (authResponse.status === 401) {
+        console.error(
+          `[proxy] Auth cookie '${POLAR_AUTH_COOKIE_KEY}' present but /v1/users/me returned 401. apiUrl: ${apiUrl}`,
+        )
+      } else {
+        console.error(
+          `[proxy] Unexpected response from /v1/users/me: status=${authResponse.status}, apiUrl: ${apiUrl}`,
+        )
+      }
+    } catch (error) {
+      console.error(
+        `[proxy] Failed to verify user session: ${error}. apiUrl: ${apiUrl}`,
+      )
+      // Don't throw - gracefully degrade to unauthenticated
+    }
   }
 
   if (requiresAuthentication(request) && !user) {
+    if (!apiUrl) {
+      console.error(
+        '[proxy] Auth redirect: POLAR_API_URL and NEXT_PUBLIC_API_URL are both unset - cannot verify sessions',
+      )
+    } else if (!hasCookie) {
+      console.error(
+        `[proxy] Auth redirect: cookie '${POLAR_AUTH_COOKIE_KEY}' not found. Available cookies: ${request.cookies.getAll().map((c) => c.name).join(', ') || 'none'}`,
+      )
+    }
     return getLoginResponse(request)
   }
 
@@ -187,7 +229,7 @@ export async function proxy(request: NextRequest) {
     getOrCreateDistinctId(request)
 
   const headers: Record<string, string> = {
-    'x-polar-distinct-id': distinctId,
+    'x-spaire-distinct-id': distinctId,
   }
   if (user) {
     headers['x-polar-user'] = JSON.stringify(user)

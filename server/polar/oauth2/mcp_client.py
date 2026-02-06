@@ -33,7 +33,7 @@ async def create_client(add_to_env_file: bool) -> None:
         )
         oauth2_client.set_client_metadata(
             {
-                "client_name": "Polar MCP Client",
+                "client_name": "Spaire MCP Client",
                 "redirect_uris": [],
                 "token_endpoint_auth_method": "client_secret_post",
                 "grant_types": ["web"],

@@ -1,29 +1,29 @@
 'use client'
 
-import { PolarCore } from '@polar-sh/sdk/core'
-import { checkoutsClientConfirm } from '@polar-sh/sdk/funcs/checkoutsClientConfirm'
-import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { checkoutsClientUpdate } from '@polar-sh/sdk/funcs/checkoutsClientUpdate'
-import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
-import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
-import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
-import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import type { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alreadyactivesubscriptionerror'
-import type { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import { SpaireCore } from '@spaire/sdk/core'
+import { checkoutsClientConfirm } from '@spaire/sdk/funcs/checkoutsClientConfirm'
+import { checkoutsClientGet } from '@spaire/sdk/funcs/checkoutsClientGet'
+import { checkoutsClientUpdate } from '@spaire/sdk/funcs/checkoutsClientUpdate'
+import type { CheckoutConfirmStripe } from '@spaire/sdk/models/components/checkoutconfirmstripe'
+import type { CheckoutPublic } from '@spaire/sdk/models/components/checkoutpublic'
+import type { CheckoutPublicConfirmed } from '@spaire/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@spaire/sdk/models/components/checkoutupdatepublic'
+import type { AlreadyActiveSubscriptionError } from '@spaire/sdk/models/errors/alreadyactivesubscriptionerror'
+import type { ExpiredCheckoutError } from '@spaire/sdk/models/errors/expiredcheckouterror'
 import type {
   ConnectionError,
   InvalidRequestError,
   RequestAbortedError,
   RequestTimeoutError,
   UnexpectedClientError,
-} from '@polar-sh/sdk/models/errors/httpclienterrors'
-import type { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
-import type { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
-import type { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
-import type { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
-import type { SDKError } from '@polar-sh/sdk/models/errors/sdkerror'
-import type { SDKValidationError } from '@polar-sh/sdk/models/errors/sdkvalidationerror'
-import type { Result } from '@polar-sh/sdk/types/fp'
+} from '@spaire/sdk/models/errors/httpclienterrors'
+import type { HTTPValidationError } from '@spaire/sdk/models/errors/httpvalidationerror'
+import type { NotOpenCheckout } from '@spaire/sdk/models/errors/notopencheckout.js'
+import type { PaymentError } from '@spaire/sdk/models/errors/paymenterror.js'
+import type { ResourceNotFound } from '@spaire/sdk/models/errors/resourcenotfound'
+import type { SDKError } from '@spaire/sdk/models/errors/sdkerror'
+import type { SDKValidationError } from '@spaire/sdk/models/errors/sdkvalidationerror'
+import type { Result } from '@spaire/sdk/types/fp'
 import {
   createContext,
   useCallback,
@@ -93,7 +93,7 @@ export interface CheckoutContextProps {
       | ConnectionError
     >
   >
-  client: PolarCore
+  client: SpaireCore
 }
 
 // @ts-ignore
@@ -112,7 +112,7 @@ export const CheckoutProvider = ({
   children,
 }: React.PropsWithChildren<CheckoutProviderProps>) => {
   const client = useMemo(
-    () => new PolarCore({ server, serverURL }),
+    () => new SpaireCore({ server, serverURL }),
     [server, serverURL],
   )
   const [checkout, setCheckout] = useState<CheckoutPublic | null>(null)

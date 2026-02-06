@@ -21,25 +21,25 @@ import {
 const adapters = [
   {
     name: 'Next.js',
-    code: `import { Checkout } from "@polar-sh/nextjs";
+    code: `import { Checkout } from "@spaire/nextjs";
 
 export const GET = Checkout({
   accessToken: 'xxx'
 });`,
-    link: 'https://polar.sh/docs/integrate/sdk/adapters/nextjs',
+    link: 'https://docs.spairehq.com/integrate/sdk/adapters/nextjs',
   },
   {
     name: 'BetterAuth',
     code: `import { betterAuth } from "better-auth";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+import { spaire, checkout, portal, usage, webhooks } from "@spaire/better-auth";
+import { Spaire } from "@spaire/sdk";
 
-const client = new Polar({ accessToken: 'xxx' });
+const client = new Spaire({ accessToken: 'xxx' });
 
 const auth = betterAuth({
     // ... Better Auth config
     plugins: [
-        polar({
+        spaire({
             client,
             createCustomerOnSignUp: true,
             use: [
@@ -51,22 +51,22 @@ const auth = betterAuth({
         })
     ]
 });`,
-    link: 'https://polar.sh/docs/integrate/sdk/adapters/better-auth',
+    link: 'https://docs.spairehq.com/integrate/sdk/adapters/better-auth',
   },
   {
     name: 'TypeScript',
-    code: `import { Polar } from "@polar-sh/sdk";
+    code: `import { Spaire } from "@spaire/sdk";
 
-const polar = new Polar({
+const spaire = new Spaire({
   accessToken: 'xxx',
 });
 
-const checkout = await polar.checkouts.create({
+const checkout = await spaire.checkouts.create({
   products: ["<PRODUCT_ID>"]
 });
 
 redirect(checkout.url)`,
-    link: 'https://polar.sh/docs/api-reference/checkouts/create-session',
+    link: 'https://docs.spairehq.com/api-reference/checkouts/create-session',
   },
 ]
 
@@ -113,7 +113,7 @@ export const Adapters = () => {
                 </TabsTrigger>
               ))}
               <Link
-                href="https://polar.sh/docs/integrate/sdk/adapters/nextjs"
+                href="https://docs.spairehq.com/integrate/sdk/adapters/nextjs"
                 target="_blank"
               >
                 <Button className="rounded-full" variant="ghost">

@@ -17,7 +17,7 @@ export function OrganizationAccountUnlink({
       </Preview>
       <IntroWithHi>
         We'd like to inform you that some of your Stripe payout accounts
-        associated with organizations in Polar have been detached. This update
+        associated with organizations in Spaire have been detached. This update
         was made as part of our ongoing efforts to enhance security and ensure
         compliance, as sharing the same Stripe account across multiple
         organizations will no longer be permitted going forward.
@@ -48,9 +48,9 @@ export function OrganizationAccountUnlink({
                 <li key={org} className="mt-2">
                   <span className="font-bold">{org}</span> at{' '}
                   <Link
-                    href={`https://polar.com/dashboard/${org}/finance/account`}
+                    href={`https://app.spairehq.com/dashboard/${org}/finance/account`}
                   >
-                    https://polar.com/dashboard/{org}/finance/account
+                    https://app.spairehq.com/dashboard/{org}/finance/account
                   </Link>
                 </li>
               ))}

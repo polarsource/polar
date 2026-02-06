@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import type { ProductPrice } from '@spaire/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
 import { getMeteredPrices } from '../utils/product'

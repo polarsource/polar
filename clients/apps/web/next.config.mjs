@@ -5,14 +5,14 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
+  process.env.POLAR_AUTH_COOKIE_KEY || 'spaire_session'
 const ENVIRONMENT =
   process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 const CODESPACES = process.env.CODESPACES === 'true'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
-  : 'polar.sh'
+  : 'app.spairehq.com'
 
 const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
   .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
@@ -199,7 +199,7 @@ const nextConfig = {
         ],
       },
 
-      // Logged-in user redirections
+      // Logged-in user redirections (check both new and legacy cookie names)
       {
         source: '/',
         destination: '/start',
@@ -207,6 +207,21 @@ const nextConfig = {
           {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
+          },
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
+        ],
+        permanent: false,
+      },
+      {
+        source: '/',
+        destination: '/start',
+        has: [
+          {
+            type: 'cookie',
+            key: 'polar_session',
           },
           {
             type: 'host',

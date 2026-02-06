@@ -16,7 +16,7 @@ class TestRevokeLeaked:
     async def test_false_positive(self, session: AsyncSession) -> None:
         result = await oauth2_authorization_code_service.revoke_leaked(
             session,
-            "polar_ac_123",
+            "spaire_ac_123",
             TokenType.authorization_code,
             notifier="github",
             url="https://github.com",
@@ -33,7 +33,7 @@ class TestRevokeLeaked:
         authorization_code = await create_oauth2_authorization_code(
             save_fixture,
             client=oauth2_client,
-            code="polar_ac_123",
+            code="spaire_ac_123",
             scopes=["read"],
             redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
             user=user,
@@ -41,7 +41,7 @@ class TestRevokeLeaked:
 
         result = await oauth2_authorization_code_service.revoke_leaked(
             session,
-            "polar_ac_123",
+            "spaire_ac_123",
             TokenType.authorization_code,
             notifier="github",
             url="https://github.com",

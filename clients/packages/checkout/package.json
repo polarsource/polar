@@ -17,7 +17,7 @@
   "exports": {
     "./guards": {
       "types": "./dist/guards.d.ts",
-      "default": "./dist/guards.js"
+      "default": "./src/guards.ts"
     },
     "./embed": {
       "types": "./dist/embed.d.ts",
@@ -25,15 +25,40 @@
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
-      "default": "./dist/components/index.js"
+      "default": "./src/components/index.ts"
     },
     "./hooks": {
       "types": "./dist/hooks/index.d.ts",
-      "default": "./dist/hooks/index.js"
+      "default": "./src/hooks/index.ts"
     },
     "./providers": {
       "types": "./dist/providers/index.d.ts",
-      "default": "./dist/providers/index.js"
+      "default": "./src/providers/index.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./guards": {
+        "types": "./dist/guards.d.ts",
+        "default": "./dist/guards.js"
+      },
+      "./embed": {
+        "types": "./dist/embed.d.ts",
+        "default": "./dist/embed.js"
+      },
+      "./components": {
+        "types": "./dist/components/index.d.ts",
+        "default": "./dist/components/index.js"
+      },
+      "./hooks": {
+        "types": "./dist/hooks/index.d.ts",
+        "default": "./dist/hooks/index.js"
+      },
+      "./providers": {
+        "types": "./dist/providers/index.d.ts",
+        "default": "./dist/providers/index.js"
+      }
     }
   },
   "devDependencies": {
@@ -45,9 +70,6 @@
     "terser": "^5.46.0",
     "tsup": "^8.5.1",
     "typescript": "latest"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "dependencies": {
     "@polar-sh/currency": "workspace:^",

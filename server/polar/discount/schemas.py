@@ -13,6 +13,7 @@ from pydantic import (
     model_validator,
 )
 
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -135,11 +136,7 @@ Amount = Annotated[
     ),
 ]
 Currency = Annotated[
-    str,
-    Field(
-        pattern="usd",
-        description="The currency. Currently, only `usd` is supported.",
-    ),
+    PresentmentCurrency, Field(description="The currency of the fixed amount discount.")
 ]
 BasisPoints = Annotated[
     int,
@@ -201,7 +198,7 @@ class DiscountRepeatDurationCreateBase(Schema):
 class DiscountFixedCreateBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
     amount: Amount
-    currency: Currency = "usd"
+    currency: Currency = PresentmentCurrency.usd
 
 
 class DiscountPercentageCreateBase(Schema):

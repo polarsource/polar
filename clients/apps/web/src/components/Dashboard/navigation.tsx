@@ -159,7 +159,7 @@ export const useAccountRoutes = (): RouteWithActive[] => {
 const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
-    title: 'Home',
+    title: 'Overview',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}`,
     checkIsActive: (currentRoute: string) =>
@@ -177,7 +177,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
     subs: [
       {
-        title: 'Catalogue',
+        title: 'All Products',
         link: `/dashboard/${org?.slug}/products`,
         icon: <HiveOutlined fontSize="inherit" />,
       },
@@ -244,7 +244,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   },
   {
     id: 'org-sales',
-    title: 'Sales',
+    title: 'Revenue',
     icon: <ShoppingBagOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/sales`,
     checkIsActive: (currentRoute: string): boolean => {
@@ -253,7 +253,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
     subs: [
       {
-        title: 'Orders',
+        title: 'Transactions',
         link: `/dashboard/${org?.slug}/sales`,
         icon: <ShoppingBagOutlined fontSize="inherit" />,
       },
@@ -297,7 +297,7 @@ const accountRoutesList = (): Route[] => [
 
 const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
   {
-    title: 'Income',
+    title: 'Overview',
     link: `/dashboard/${org?.slug}/finance/income`,
   },
   {
@@ -313,7 +313,7 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
 const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'finance',
-    title: 'Finance',
+    title: 'Balance',
     link: `/dashboard/${org?.slug}/finance`,
     icon: <AttachMoneyOutlined fontSize="inherit" />,
     if: true,
@@ -327,7 +327,7 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
     subs: [
       {
-        title: 'General',
+        title: 'Organization',
         link: `/dashboard/${org?.slug}/settings`,
       },
       {

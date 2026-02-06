@@ -146,6 +146,8 @@ async def login_callback(
         session, request, user, return_to=return_to
     )
     clear_login_cookie(request, response)
+    # Commit session before sending redirect to avoid race condition
+    await session.commit()
     return response
 
 

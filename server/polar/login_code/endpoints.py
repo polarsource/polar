@@ -79,6 +79,10 @@ async def authenticate_login_code(
         posthog.user_login(user, "code")
         await loops_service.user_update(session, user, emailLogin=True)
 
-    return await auth_service.get_login_response(
+    response = await auth_service.get_login_response(
         session, request, user, return_to=return_to
     )
+    # Commit session before sending redirect to avoid race condition
+    # where the browser follows the redirect before the session is persisted
+    await session.commit()
+    return response

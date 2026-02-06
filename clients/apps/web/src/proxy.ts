@@ -160,26 +160,44 @@ export async function proxy(request: NextRequest) {
 
   let user: schemas['UserRead'] | undefined = undefined
 
-  if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
-      request.headers,
-      RequestCookiesAdapter.seal(request.cookies),
-    )
-    const { data, response } = await api.GET('/v1/users/me', {
-      cache: 'no-cache',
-    })
-    if (!response.ok && response.status !== 401) {
+  const hasCookie = request.cookies.has(POLAR_AUTH_COOKIE_KEY)
+  if (hasCookie) {
+    try {
+      const api = await createServerSideAPI(
+        request.headers,
+        RequestCookiesAdapter.seal(request.cookies),
+      )
+      const { data, response } = await api.GET('/v1/users/me', {
+        cache: 'no-cache',
+      })
+      if (!response.ok && response.status !== 401) {
+        console.error(
+          `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+        )
+        throw new Error(
+          'Unexpected response status while fetching authenticated user',
+        )
+      }
+      if (response.status === 401) {
+        console.error(
+          `Auth cookie present but /v1/users/me returned 401. Cookie key: ${POLAR_AUTH_COOKIE_KEY}, API URL: ${process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || 'MISSING'}`,
+        )
+      }
+      user = data
+    } catch (error) {
       console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+        `Failed to verify user session: ${error}. Cookie key: ${POLAR_AUTH_COOKIE_KEY}, API URL: ${process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || 'MISSING'}`,
       )
-      throw new Error(
-        'Unexpected response status while fetching authenticated user',
-      )
+      throw error
     }
-    user = data
   }
 
   if (requiresAuthentication(request) && !user) {
+    if (!hasCookie) {
+      console.error(
+        `Auth redirect: cookie '${POLAR_AUTH_COOKIE_KEY}' not found. Available cookies: ${request.cookies.getAll().map((c) => c.name).join(', ') || 'none'}`,
+      )
+    }
     return getLoginResponse(request)
   }
 

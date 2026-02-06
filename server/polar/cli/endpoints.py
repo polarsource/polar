@@ -12,7 +12,7 @@ from polar.cli import auth
 from polar.cli.listener import mark_active, mark_inactive
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -80,19 +80,7 @@ async def transform_webhook_events(
         yield message
 
 
-@router.get(
-    "/listen/{id}",
-    summary="CLI Listen",
-    responses={
-        200: {"description": "Listening for organization webhooks"},
-        403: {
-            "description": "You don't have the permission to listen on this organization.",
-            "model": NotPermitted.schema(),
-        },
-        404: OrganizationNotFound,
-    },
-    tags=[APITag.public],
-)
+@router.get("/listen/{id}")
 async def listen(
     id: OrganizationID,
     request: Request,

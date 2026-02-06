@@ -33,14 +33,12 @@ const _invalidateBenefitsQueries = ({
       queryKey: ['infinite', 'benefits', 'organization', orgId],
     })
 
-    queryClient.invalidateQueries({
-      queryKey: ['benefits', 'grants', id, orgId],
-    })
+    if (id) {
+      queryClient.invalidateQueries({
+        queryKey: ['benefits', 'grants', id, orgId],
+      })
+    }
   }
-
-  queryClient.invalidateQueries({
-    queryKey: ['subscriptionTiers'],
-  })
 }
 
 export const useInfiniteBenefits = (

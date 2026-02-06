@@ -4,6 +4,135 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-12-31">
+## System Events for Subscriptions
+
+Expanded system events to provide detailed subscription lifecycle tracking:
+
+* **Subscription cycled** - when billing periods roll over
+* **Subscription canceled** - when subscriptions are canceled
+* **Subscription past due** - when payment fails (separate from permanent revocation)
+* All events include product IDs and relevant metadata
+* Perfect for analytics and building custom workflows
+
+## iOS Widget
+
+New iOS home screen and lock screen widget:
+
+* Real-time revenue display
+* Support for dark and light mode
+* Multiple widget sizes
+* Quick glance at your sales without opening the app
+
+Built with `@bacons/apple-targets` for native iOS integration.
+
+## Product Management Improvements
+
+Major UX improvements for managing products:
+
+### Sorting & Filtering
+
+* Sort products by name, creation date, update date, and end date
+* Custom pagination size (20, 50, 100 items per page)
+* Product rows are clickable links for cmd+click support
+
+### Editing Experience
+
+* Unsaved changes alert prevents accidental data loss
+* Update button at top right for easier access
+* Auto-save for most settings
+* Fixed empty state flashing when sorting/filtering
+
+### File Management
+
+* Client-side pagination for downloadable benefit files (10 per page)
+* Better file upload error messages
+* Fixed React state issues in benefit forms
+
+### Product Duplication
+
+* Re-uploads images when duplicating to prevent shared references
+* Deleting an image from a duplicate no longer affects the original
+
+## Search Improvements
+
+Significant search infrastructure updates:
+
+* Search vectors for full-text search
+* Union queries for better performance
+* PostgreSQL text search capabilities
+
+## Member Management
+
+Enhanced member endpoint functionality:
+
+* Added `member_id` to relevant API endpoints
+* Improved B2B customer management
+
+## Mobile App Improvements
+
+### iOS Updates
+
+* iOS widget for home and lock screen
+* App rating prompts at appropriate times
+* Login screen animations (fade in, Ken Burns effect)
+* Fixed multi-account crash on settings
+* Fixed scroll issues with many organizations
+* Version bumped to 1.1.0
+
+### Android Support
+
+* Full Android build support
+* App store ready for both platforms
+* Consistent design system across iOS and Android
+
+## Customer Meter Enhancements
+
+Significant improvements to customer meter calculation:
+
+* Speed improvements with optimized queries (avoided cartesian joins)
+* Better activation logic for meters with events
+* Fixed organization ID tracking
+* Increased lock time to 30s for slow queries
+* Debug information in window event spans
+* Proper external customer ID handling
+
+## Webhook Management
+
+Better webhook health tracking:
+
+* Discord rate limit logging
+* Missing event types added to schema
+* Improved error handling
+* Repository-based webhook service
+
+## Checkout Links
+
+* Added checkout links to mobile app
+* Better link management
+* Share and track checkout performance on mobile
+
+## OAuth2 Improvements
+
+* First-party clients auto-save grants
+* No authorization prompt for trusted apps
+* Better user experience for internal tools
+
+## Bug Fixes
+
+* Fixed undefined organization in dashboard sidebar
+* Fixed customer meter updates for soft-deleted customers
+* Fixed seat and trial end updates for seat-based products
+* Fixed tax calculation error handling
+* Fixed product empty state flashing
+* Fixed notifications on iOS simulator
+* Fixed Switch rendering on Android
+* Fixed Polar logo not linking to home
+* Fixed image duplication on product creation
+* Handle null Stripe refund reasons
+* Fixed subscription fields in system events
+</Update>
+
 <Update label="2025-12-07">
 ## Dispute & Chargeback Management
 

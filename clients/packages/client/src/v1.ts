@@ -15971,11 +15971,10 @@ export interface components {
        */
       amount: number
       /**
-       * Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency of the fixed amount discount.
        * @default usd
        */
-      currency: string
+      currency: components['schemas']['PresentmentCurrency']
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -16199,11 +16198,10 @@ export interface components {
        */
       amount: number
       /**
-       * Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency of the fixed amount discount.
        * @default usd
        */
-      currency: string
+      currency: components['schemas']['PresentmentCurrency']
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -16810,8 +16808,7 @@ export interface components {
       type?: components['schemas']['DiscountType'] | null
       /** Amount */
       amount?: number | null
-      /** Currency */
-      currency?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
       /** Basis Points */
       basis_points?: number | null
       /** Products */

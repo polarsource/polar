@@ -7,15 +7,15 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from tagflow import classes, tag, text
 
 from polar.account.repository import AccountRepository
 from polar.account.sorting import AccountSortProperty
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Account, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus, OAuthAccount
-from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.user import sorting
@@ -246,39 +246,54 @@ async def get(
         #####################
         ### Organizations ###
         #####################
-        orgs = await OrganizationRepository.from_session(session).get_all(
-            OrganizationRepository.from_session(session)
-            .get_base_statement(include_deleted=True)
-            .join(UserOrganization)
-            .where(
-                UserOrganization.user_id == user.id,
-            )
+        user_orgs_result = await session.execute(
+            select(UserOrganization)
+            .options(selectinload(UserOrganization.organization))
+            .where(UserOrganization.user_id == user.id)
         )
+        user_orgs = user_orgs_result.scalars().all()
+
         with tag.div(classes="flex flex-col gap-4 pt-16"):
             with tag.h2(classes="text-2xl"):
                 text("Organizations")
-            with datatable.Datatable[Organization, OrganizationSortProperty](
+            with datatable.Datatable[UserOrganization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
-                    "id", "ID", href_route_name="organizations:get", clipboard=True
+                    "organization.id",
+                    "ID",
+                    external_href=lambda r, i: str(
+                        r.url_for("organizations:get", id=i.organization_id)
+                    ),
+                    clipboard=True,
                 ),
-                datatable.DatatableDateTimeColumn("created_at", "Created At"),
-                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
-                datatable.DatatableDateTimeColumn("blocked_at", "Blocked At"),
+                datatable.DatatableDateTimeColumn(
+                    "organization.created_at", "Created At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "organization.deleted_at", "Organization Deleted At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "deleted_at", "Membership Deleted At"
+                ),
+                datatable.DatatableDateTimeColumn(
+                    "organization.blocked_at", "Blocked At"
+                ),
                 datatable.DatatableAttrColumn(
-                    "slug",
+                    "organization.slug",
                     "Slug",
                     clipboard=True,
                 ),
                 datatable.DatatableActionsColumn(
                     "",
-                    datatable.DatatableActionHTMX[Organization](
+                    datatable.DatatableActionHTMX[UserOrganization](
                         "Delete Organization",
-                        lambda r, i: str(r.url_for("organizations:delete", id=i.id)),
+                        lambda r, i: str(
+                            r.url_for("organizations:delete", id=i.organization_id)
+                        ),
                         target="#modal",
-                        hidden=lambda _, i: i.deleted_at is not None,
+                        hidden=lambda _, i: i.organization.deleted_at is not None,
                     ),
                 ),
-            ).render(request, orgs):
+            ).render(request, user_orgs):
                 pass
 
         ################

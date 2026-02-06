@@ -153,7 +153,7 @@ const StepCard = ({
 }) => (
   <div className="dark:border-polar-700 dark:bg-polar-900 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
     {/* Card header */}
-    <div className="dark:border-polar-700 border-b border-gray-100 px-8 py-6">
+    <div className="dark:border-polar-700 border-b border-gray-100 px-8 py-6 text-center">
       <h2 className="text-lg font-semibold dark:text-white">{title}</h2>
       <p className="dark:text-polar-400 mt-1 text-sm text-gray-500">
         {subtitle}
@@ -307,7 +307,8 @@ export default function StreamlinedAccountReview({
           Get started with Spaire
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
-          Set up your merchant of record account to start selling your SaaS
+          We handle payments, taxes, and compliance so you can focus on your
+          product
         </p>
       </div>
 
@@ -322,7 +323,7 @@ export default function StreamlinedAccountReview({
           title="About Your SaaS"
           subtitle={
             requireDetails
-              ? 'Tell us about your SaaS business so we can configure your merchant of record account.'
+              ? 'Tell us about your SaaS so we can start handling payments and taxes for you.'
               : 'Review your submitted business details below.'
           }
         >

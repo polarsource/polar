@@ -4,6 +4,121 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-01-31">
+## Team Member Management (B2B)
+
+Complete team member management system for B2B customers:
+
+* Owner and billing managers can add/remove team members
+* Role-based access control (owner, billing_manager, member)
+* Member-specific benefit grants and portal access
+* Team portal page with member list and management
+* Member sessions (`polar_mst_`) preserve identity and permissions
+* Members tab on customer detail pages
+
+Perfect for B2B customers managing team access and permissions.
+
+## Customer Balance & Credits
+
+Customer balance system built on wallet infrastructure:
+
+* Track customer credit balances
+* Apply balances automatically to invoices
+* API support for balance management
+* Balance events for order credits and refunds
+* Foundation for store credit and refund credits
+
+## Members API
+
+New members management endpoints for B2B:
+
+* `GET /v1/members` with pagination
+* Filter members by customer ID
+* Auto-create owner member on customer creation
+* Member details included in customer endpoints
+* Proper organization scoping
+
+## OAuth2 Improvements
+
+Major OAuth authorization flow improvements:
+
+* Revamped authorization UI
+* Allow creating organizations during OAuth flow
+* First-party clients auto-save grants (no prompt)
+* Better consent screen design
+* Organization selector improvements
+
+## Trial Abuse Prevention
+
+Prevent multiple trial redemptions:
+
+* Email normalization strips `+aliases`
+* Payment method fingerprinting
+* Enable via Settings → Subscription → "Prevent trial abuse"
+* Blocked customers can still subscribe without trial
+* Checkout parameter `allow_trial` to force disable
+
+### Explicit Currency Display
+
+Currency symbols now show explicitly (e.g., `USD 123.45`) instead of just `$123.45` to prevent confusion for non-US dollar users.
+## Event & Metering Enhancements
+
+### Member-Level Event Attribution
+
+Events now support member tracking:
+
+* `member_id` and `external_member_id` fields
+* Member validation during event ingestion
+* B2B usage tracking at member level
+
+### Timezone Handling
+
+Fixed timezone issues in meter quantities endpoint:
+
+* Added `timezone` parameter
+* Set database session timezone properly
+* Correct date grouping for non-UTC users
+
+## Customer Portal Enhancements
+
+### Benefit Grants UI
+
+* Complex benefit grants list with search and pagination
+* Better display for benefit details
+* Improved OAuth benefit grant buttons
+
+### Payment Retry Fixes
+
+* 3DS modal display (popup instead of redirect)
+* Retry persistence after 3DS cancellation
+* Proper dunning management on manual retries
+
+## Discount Management
+
+### Redemption Count Optimization
+
+* Added `redemptions_count` column to discounts table
+* Replaced runtime count with persisted column
+* Better performance for discount queries
+
+### Discount Code Selection
+
+Searchable combobox instead of dropdown for better UX with many codes.
+
+## Bug Fixes
+
+* Fixed meter credit loss during subscription updates
+* Fixed timezone handling in various endpoints
+* Fixed SQL ILIKE injection in customer portal
+* Fixed event handler accumulation in EmbedCheckout
+* Fixed product duplication creating multiple entries
+* Fixed lock error handling for PostgreSQL
+* Fixed inactive prices being billed
+* Fixed OAuth subject badge dark mode
+* Fixed meter reset on subscription_update orders
+* Fixed discount redemption race conditions
+</Update>
+
 <Update label="2025-12-31">
 ## System Events for Subscriptions
 

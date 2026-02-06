@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Literal
 
 import httpx
@@ -216,8 +217,6 @@ async def _fetch_website_content(url: str) -> str | None:
         Markdown content or None if fetch fails
     """
     try:
-        import random
-
         # Select a random user agent to avoid bot detection
         user_agent = random.choice(USER_AGENTS)
 

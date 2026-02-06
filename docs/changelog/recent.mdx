@@ -18,46 +18,6 @@ Complete team member management system for B2B customers:
 
 Perfect for B2B customers managing team access and permissions.
 
-## Customer Balance & Credits
-
-Customer balance system built on wallet infrastructure:
-
-* Track customer credit balances
-* Apply balances automatically to invoices
-* API support for balance management
-* Balance events for order credits and refunds
-* Foundation for store credit and refund credits
-
-## Members API
-
-New members management endpoints for B2B:
-
-* `GET /v1/members` with pagination
-* Filter members by customer ID
-* Auto-create owner member on customer creation
-* Member details included in customer endpoints
-* Proper organization scoping
-
-## OAuth2 Improvements
-
-Major OAuth authorization flow improvements:
-
-* Revamped authorization UI
-* Allow creating organizations during OAuth flow
-* First-party clients auto-save grants (no prompt)
-* Better consent screen design
-* Organization selector improvements
-
-## Trial Abuse Prevention
-
-Prevent multiple trial redemptions:
-
-* Email normalization strips `+aliases`
-* Payment method fingerprinting
-* Enable via Settings → Subscription → "Prevent trial abuse"
-* Blocked customers can still subscribe without trial
-* Checkout parameter `allow_trial` to force disable
-
 ### Explicit Currency Display
 
 Currency symbols now show explicitly (e.g., `USD 123.45`) instead of just `$123.45` to prevent confusion for non-US dollar users.
@@ -98,25 +58,6 @@ Fixed timezone issues in meter quantities endpoint:
 ### Redemption Count Optimization
 
 * Added `redemptions_count` column to discounts table
-* Replaced runtime count with persisted column
-* Better performance for discount queries
-
-### Discount Code Selection
-
-Searchable combobox instead of dropdown for better UX with many codes.
-
-## Bug Fixes
-
-* Fixed meter credit loss during subscription updates
-* Fixed timezone handling in various endpoints
-* Fixed SQL ILIKE injection in customer portal
-* Fixed event handler accumulation in EmbedCheckout
-* Fixed product duplication creating multiple entries
-* Fixed lock error handling for PostgreSQL
-* Fixed inactive prices being billed
-* Fixed OAuth subject badge dark mode
-* Fixed meter reset on subscription_update orders
-* Fixed discount redemption race conditions
 </Update>
 
 <Update label="2025-12-31">

@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
-import type { SearchResult, SearchResultPage } from './types'
+import { SearchResult, SearchResultPage } from './types'
 
 interface OmniSearchProps {
   open: boolean
@@ -239,7 +239,7 @@ export const OmniSearch = ({
         return (
           <Result
             title={result.product_name}
-            description={`${result.customer_name || result.customer_email} • ${formatCurrency('compact')(result.amount, 'usd')}`}
+            description={`${result.customer_name || result.customer_email} • ${formatCurrency('compact')(result.amount, result.currency)}`}
           />
         )
       case 'subscription':

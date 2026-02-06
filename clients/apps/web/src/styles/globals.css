@@ -21,20 +21,21 @@
 
   --text-xxs: 0.65rem;
 
-  /* BLUE → #006054 */
-  --color-blue-50:  #006054;
-  --color-blue-100: #006054;
-  --color-blue-200: #006054;
-  --color-blue-300: #006054;
-  --color-blue-400: #006054;
-  --color-blue-500: #006054;
-  --color-blue-600: #006054;
-  --color-blue-700: #006054;
-  --color-blue-800: #006054;
-  --color-blue-900: #006054;
-  --color-blue-950: #006054;
-  --color-blue: #006054;
+  /* ================= BLUE (kept for safety) ================= */
+  --color-blue-50: oklch(0.97 0.014 254.604);
+  --color-blue-100: oklch(0.932 0.032 255.585);
+  --color-blue-200: oklch(0.882 0.059 254.128);
+  --color-blue-300: oklch(0.809 0.105 251.813);
+  --color-blue-400: oklch(0.707 0.165 254.624);
+  --color-blue-500: oklch(0.623 0.214 259.815);
+  --color-blue-600: oklch(0.546 0.245 262.881);
+  --color-blue-700: oklch(0.488 0.243 264.376);
+  --color-blue-800: oklch(0.424 0.199 265.638);
+  --color-blue-900: oklch(0.379 0.146 265.522);
+  --color-blue-950: oklch(0.282 0.091 267.935);
+  --color-blue: var(--color-blue-600);
 
+  /* ================= GREEN (interactive emphasis) ================= */
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);
   --color-green-200: oklch(0.905 0.093 164.15);
@@ -47,6 +48,10 @@
   --color-green-900: oklch(0.378 0.077 168.94);
   --color-green-950: oklch(0.262 0.051 172.552);
 
+  --color-green-brand: var(--color-green-600);
+  --color-black: #000000;
+
+  /* ================= RED ================= */
   --color-red-50: oklch(0.971 0.013 17.38);
   --color-red-100: oklch(0.936 0.032 17.717);
   --color-red-200: oklch(0.885 0.062 18.334);
@@ -59,6 +64,7 @@
   --color-red-900: oklch(0.396 0.141 25.723);
   --color-red-950: oklch(0.258 0.092 26.042);
 
+  /* ================= GRAYS ================= */
   --color-gray-50: oklch(0.985 0.002 247.839);
   --color-gray-100: oklch(0.967 0.003 264.542);
   --color-gray-200: oklch(0.928 0.006 264.531);
@@ -71,6 +77,7 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
+  /* ================= POLAR ================= */
   --color-polar-50: hsl(233, 5%, 85%);
   --color-polar-100: hsl(233, 5%, 79%);
   --color-polar-200: hsl(233, 5%, 68%);
@@ -83,7 +90,7 @@
   --color-polar-900: hsl(233, 5%, 6.5%);
   --color-polar-950: hsl(233, 5%, 3%);
 
-  /* shadcn */
+  /* ================= SHADCN ALIASES ================= */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -131,17 +138,29 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
-/* BASE */
+/* ================= BASE ================= */
 
 @layer base {
   html { @apply text-gray-900; }
   html.dark { @apply text-gray-200; }
 
-  *, ::after, ::before, ::backdrop, ::file-selector-button {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
     border-color: var(--border);
   }
 
   body { color: var(--foreground); }
+
+  a {
+    color: var(--color-green-brand);
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -151,7 +170,7 @@
   }
 }
 
-/* SHADCN/UI */
+/* ================= SHADCN UI ================= */
 
 @layer base {
   :root {
@@ -166,12 +185,14 @@
 
     --sidebar-background: var(--color-gray-100);
     --sidebar-foreground: var(--color-gray-900);
-    --sidebar-primary: var(--color-blue);
-    --sidebar-primary-foreground: var(--color-gray-50);
+    --sidebar-primary: var(--color-black);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--color-green-brand);
+    --sidebar-accent-foreground: var(--color-white);
     --sidebar-border: var(--color-gray-300);
 
-    --primary: var(--color-blue);
-    --primary-foreground: var(--color-gray-50);
+    --primary: var(--color-black);
+    --primary-foreground: var(--color-white);
 
     --secondary: var(--color-gray-100);
     --secondary-foreground: var(--color-gray-900);
@@ -179,7 +200,7 @@
     --muted: var(--color-gray-100);
     --muted-foreground: var(--color-gray-500);
 
-    --accent: var(--color-blue);
+    --accent: var(--color-green-brand);
     --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
@@ -187,7 +208,8 @@
 
     --border: var(--color-gray-200);
     --input: var(--color-gray-200);
-    --ring: var(--color-gray-200);
+    --ring: var(--color-green-brand);
+
     --radius: 0.6rem;
   }
 
@@ -203,12 +225,14 @@
 
     --sidebar-background: var(--color-polar-950);
     --sidebar-foreground: var(--color-polar-50);
-    --sidebar-primary: var(--color-blue);
-    --sidebar-primary-foreground: var(--color-polar-50);
+    --sidebar-primary: var(--color-black);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--color-green-brand);
+    --sidebar-accent-foreground: var(--color-white);
     --sidebar-border: var(--color-polar-700);
 
-    --primary: var(--color-blue);
-    --primary-foreground: var(--color-polar-50);
+    --primary: var(--color-black);
+    --primary-foreground: var(--color-white);
 
     --secondary: var(--color-polar-900);
     --secondary-foreground: var(--color-polar-50);
@@ -216,17 +240,19 @@
     --muted: var(--color-polar-700);
     --muted-foreground: var(--color-polar-500);
 
-    --accent: var(--color-blue);
-    --accent-foreground: var(--color-polar-50);
+    --accent: var(--color-green-brand);
+    --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
     --destructive-foreground: var(--color-red-500);
 
     --border: var(--color-polar-700);
     --input: var(--color-polar-700);
-    --ring: var(--color-polar-700);
+    --ring: var(--color-green-brand);
   }
 }
+
+/* ================= SHIKI ================= */
 
 pre.shiki {
   overflow: auto;

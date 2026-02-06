@@ -294,7 +294,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
-            title="Orders"
+            title="Transactions"
             value={metricsData?.totals.orders}
             metric={metricsData?.metrics.orders}
           />

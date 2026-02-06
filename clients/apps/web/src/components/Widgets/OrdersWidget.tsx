@@ -88,7 +88,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
       {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="absolute inset-2 flex flex-col">
           <div className="flex items-center justify-between p-4">
-            <h3 className="text-lg">Latest Orders</h3>
+            <h3 className="text-lg">Recent Transactions</h3>
             <Link href={`/dashboard/${org.slug}/sales`}>
               <Button
                 variant="secondary"
@@ -116,7 +116,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
             className="dark:text-polar-600 text-gray-300"
             fontSize="large"
           />
-          <h3>No orders found</h3>
+          <h3>No transactions yet</h3>
         </Card>
       )}
     </div>

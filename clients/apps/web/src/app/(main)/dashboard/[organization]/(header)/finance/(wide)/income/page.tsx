@@ -6,7 +6,7 @@ import IncomePage from './IncomePage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Finance - Income`, // " | Polar is added by the template"
+    title: `Balance - Overview`, // " | Polar is added by the template"
   }
 }
 

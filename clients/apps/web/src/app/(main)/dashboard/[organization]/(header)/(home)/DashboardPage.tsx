@@ -2,107 +2,156 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
-import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
-import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import {
   useMetrics,
-  useOrganizationAccount,
   useOrganizationPaymentStatus,
-  useTransactionsSummary,
 } from '@/hooks/queries'
 import {
-  ALL_METRICS,
   getChartRangeParams,
   getPreviousParams,
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
+import { CheckCircle2, Circle } from 'lucide-react'
+import Link from 'next/link'
 import React from 'react'
+import { twMerge } from 'tailwind-merge'
 
-interface HeroChartProps {
+const OVERVIEW_METRICS: {
+  slug: keyof schemas['Metrics']
+  display_name: string
+}[] = [
+  { slug: 'revenue', display_name: 'Revenue' },
+  { slug: 'net_revenue', display_name: 'Net Revenue' },
+  { slug: 'orders', display_name: 'Transactions' },
+  { slug: 'new_subscriptions', display_name: 'New Subscriptions' },
+]
+
+interface MetricCardProps {
   organization: schemas['Organization']
+  metric: keyof schemas['Metrics']
 }
 
-const HeroChart = ({ organization }: HeroChartProps) => {
-  const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof schemas['Metrics']>('revenue')
+const MetricCard = ({ organization, metric }: MetricCardProps) => {
   const [startDate, endDate, interval] = React.useMemo(
     () => getChartRangeParams('30d', organization.created_at),
     [organization.created_at],
   )
 
-  const { data: currentPeriodData, isLoading: currentPeriodLoading } =
-    useMetrics({
-      organization_id: organization.id,
-      startDate: startDate,
-      endDate: endDate,
-      interval: interval,
-      metrics: [selectedMetric],
-    })
+  const { data, isLoading } = useMetrics({
+    organization_id: organization.id,
+    startDate,
+    endDate,
+    interval,
+    metrics: [metric],
+  })
 
   const previousParams = React.useMemo(
     () => getPreviousParams(startDate, '30d'),
     [startDate],
   )
 
-  const { data: previousPeriodData, isLoading: previousPeriodLoading } =
-    useMetrics(
-      {
-        organization_id: organization.id,
-        startDate: previousParams ? previousParams[0] : startDate,
-        endDate: previousParams ? previousParams[1] : endDate,
-        interval: interval,
-        metrics: [selectedMetric],
-      },
-      previousParams !== null,
-    )
+  const { data: previousData } = useMetrics(
+    {
+      organization_id: organization.id,
+      startDate: previousParams ? previousParams[0] : startDate,
+      endDate: previousParams ? previousParams[1] : endDate,
+      interval,
+      metrics: [metric],
+    },
+    previousParams !== null,
+  )
 
   return (
     <MetricChartBox
-      metric={selectedMetric}
-      onMetricChange={setSelectedMetric}
-      data={currentPeriodData}
-      previousData={previousPeriodData}
+      metric={metric}
+      data={data}
+      previousData={previousData}
       interval={interval}
-      loading={currentPeriodLoading || previousPeriodLoading}
+      loading={isLoading}
+      height={120}
+      compact
+      shareable={false}
+      simple
       chartType="line"
-      availableMetrics={ALL_METRICS}
     />
   )
 }
 
-interface BalanceCardProps {
-  organizationId: string
+interface AccountSetupBannerProps {
+  organization: schemas['Organization']
 }
 
-const BalanceCard = ({ organizationId }: BalanceCardProps) => {
-  const { data: account } = useOrganizationAccount(organizationId)
-  const { data: summary } = useTransactionsSummary(account?.id ?? '')
+const AccountSetupBanner = ({ organization }: AccountSetupBannerProps) => {
+  const { data: paymentStatus, isLoading } = useOrganizationPaymentStatus(
+    organization.id,
+  )
+
+  if (isLoading || !paymentStatus || paymentStatus.payment_ready) {
+    return null
+  }
+
+  const completedCount = paymentStatus.steps.filter((s) => s.completed).length
+  const totalCount = paymentStatus.steps.length
 
   return (
-    <Card className="rounded-2xl">
-      <CardHeader className="pb-2">
-        <span className="dark:text-polar-500 text-gray-500">Balance</span>
-      </CardHeader>
-      <CardContent>
-        <h3 className="text-2xl">
-          {summary
-            ? formatCurrency('statistics')(
-                summary.balance.amount,
-                summary.balance.currency,
-              )
-            : '$0'}
-        </h3>
-      </CardContent>
-    </Card>
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-y-1">
+          <h3 className="text-lg font-medium dark:text-white">
+            Activate your account
+          </h3>
+          <p className="dark:text-polar-400 text-sm text-gray-500">
+            Complete these steps to start accepting payments and receiving
+            payouts.
+          </p>
+        </div>
+        <Link
+          href={`/dashboard/${organization.slug}/finance/account`}
+        >
+          <Button size="sm">
+            Continue Setup
+          </Button>
+        </Link>
+      </div>
+
+      {/* Step indicators */}
+      <div className="flex flex-col gap-3">
+        {/* Progress bar */}
+        <div className="dark:bg-polar-700 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full rounded-full bg-blue-500 transition-all duration-500"
+            style={{ width: `${(completedCount / totalCount) * 100}%` }}
+          />
+        </div>
+
+        {/* Steps */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {paymentStatus.steps.map((step, i) => (
+            <div
+              key={step.id}
+              className={twMerge(
+                'flex items-center gap-x-2.5 rounded-lg px-3 py-2 text-sm',
+                step.completed
+                  ? 'dark:text-polar-400 text-gray-500'
+                  : 'dark:text-white text-gray-900',
+              )}
+            >
+              {step.completed ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+              ) : (
+                <Circle className="dark:text-polar-500 h-4 w-4 shrink-0 text-gray-300" />
+              )}
+              <span className={step.completed ? 'line-through' : ''}>
+                {step.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -111,24 +160,6 @@ interface OverviewPageProps {
 }
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
-  const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
-
-  const { data: todayMetrics } = useMetrics({
-    organization_id: organization.id,
-    startDate: new Date(),
-    endDate: new Date(),
-    interval: 'day',
-    metrics: ['revenue', 'orders'],
-  })
-
-  const { data: subscriptionMetrics } = useMetrics({
-    organization_id: organization.id,
-    startDate: new Date(),
-    endDate: new Date(),
-    interval: 'day',
-    metrics: ['active_subscriptions'],
-  })
-
   const motionVariants = {
     variants: {
       initial: { opacity: 0 },
@@ -139,60 +170,32 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
 
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-10">
-      {paymentStatus && !paymentStatus.payment_ready && (
-        <PaymentOnboardingStepper organization={organization} />
-      )}
+      {/* Account setup banner — disappears when payment_ready */}
+      <AccountSetupBanner organization={organization} />
 
-      {/* Key metrics strip */}
+      {/* Metric chart cards — Stripe-style 2x2 grid with sparklines */}
       <motion.div
-        className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2"
         initial="initial"
         animate="animate"
         exit="exit"
         transition={{ staggerChildren: 0.06 }}
       >
-        <motion.div {...motionVariants}>
-          <MiniMetricChartBox
-            title="Today's Revenue"
-            value={todayMetrics?.totals.revenue}
-            metric={todayMetrics?.metrics.revenue}
-          />
-        </motion.div>
-        <motion.div {...motionVariants}>
-          <MiniMetricChartBox
-            title="Transactions Today"
-            value={todayMetrics?.totals.orders}
-            metric={todayMetrics?.metrics.orders}
-          />
-        </motion.div>
-        <motion.div {...motionVariants}>
-          <MiniMetricChartBox
-            title="Active Subscriptions"
-            value={subscriptionMetrics?.totals.active_subscriptions}
-            metric={subscriptionMetrics?.metrics.active_subscriptions}
-          />
-        </motion.div>
-        <motion.div {...motionVariants}>
-          <BalanceCard organizationId={organization.id} />
-        </motion.div>
+        {OVERVIEW_METRICS.map((m) => (
+          <motion.div key={m.slug} {...motionVariants}>
+            <MetricCard organization={organization} metric={m.slug} />
+          </motion.div>
+        ))}
       </motion.div>
 
-      {/* Hero chart */}
-      <HeroChart organization={organization} />
-
-      {/* Recent activity + Revenue trend */}
+      {/* Recent transactions */}
       <motion.div
-        className="grid grid-cols-1 gap-6 xl:grid-cols-2"
         initial="initial"
         animate="animate"
         exit="exit"
-        transition={{ staggerChildren: 0.1 }}
       >
-        <motion.div className="flex h-full flex-col" {...motionVariants}>
+        <motion.div {...motionVariants}>
           <OrdersWidget />
-        </motion.div>
-        <motion.div className="flex h-full flex-col" {...motionVariants}>
-          <RevenueWidget />
         </motion.div>
       </motion.div>
     </DashboardBody>

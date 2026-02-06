@@ -199,7 +199,7 @@ const nextConfig = {
         ],
       },
 
-      // Logged-in user redirections
+      // Logged-in user redirections (check both new and legacy cookie names)
       {
         source: '/',
         destination: '/start',
@@ -207,6 +207,21 @@ const nextConfig = {
           {
             type: 'cookie',
             key: POLAR_AUTH_COOKIE_KEY,
+          },
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
+        ],
+        permanent: false,
+      },
+      {
+        source: '/',
+        destination: '/start',
+        has: [
+          {
+            type: 'cookie',
+            key: 'polar_session',
           },
           {
             type: 'host',

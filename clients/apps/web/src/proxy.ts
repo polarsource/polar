@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'spaire_session'
+// Legacy cookie name fallback - the backend may still set 'polar_session'
+// if it hasn't been redeployed with the rebrand changes yet
+const LEGACY_AUTH_COOKIE_KEY = 'polar_session'
 
 const DISTINCT_ID_COOKIE = 'spaire_distinct_id'
 const DISTINCT_ID_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
@@ -162,7 +165,9 @@ export async function proxy(request: NextRequest) {
   const apiUrl =
     process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || ''
 
-  const hasCookie = request.cookies.has(POLAR_AUTH_COOKIE_KEY)
+  const hasCookie =
+    request.cookies.has(POLAR_AUTH_COOKIE_KEY) ||
+    request.cookies.has(LEGACY_AUTH_COOKIE_KEY)
   if (hasCookie && apiUrl) {
     // Build Cookie header from all incoming request cookies
     const cookieHeader = request.cookies

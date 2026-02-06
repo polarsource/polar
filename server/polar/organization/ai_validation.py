@@ -1,5 +1,5 @@
 import asyncio
-import random
+import secrets
 from typing import Literal
 
 import httpx
@@ -218,7 +218,7 @@ async def _fetch_website_content(url: str) -> str | None:
     """
     try:
         # Select a random user agent to avoid bot detection
-        user_agent = random.choice(USER_AGENTS)
+        user_agent = secrets.choice(USER_AGENTS)
 
         async with httpx.AsyncClient() as client:
             response = await client.get(

@@ -22,6 +22,7 @@ type Surface =
 
 type Category =
   | 'benefits'
+  | 'checkout'
   | 'subscriptions'
   | 'user'
   | 'organizations'

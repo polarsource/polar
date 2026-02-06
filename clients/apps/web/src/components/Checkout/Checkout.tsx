@@ -59,6 +59,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     if (openedTrackedRef.current) return
     openedTrackedRef.current = true
 
+    posthog.capture('storefront:checkout:page:view')
+
     const cookies = document.cookie.split(';')
     const distinctIdCookie = cookies.find((c) =>
       c.trim().startsWith('polar_distinct_id='),

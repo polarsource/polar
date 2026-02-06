@@ -6,7 +6,7 @@ import ProductsPage from './ProductsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Products', // " | Polar is added by the template"
+    title: 'Catalog', // " | Polar is added by the template"
   }
 }
 

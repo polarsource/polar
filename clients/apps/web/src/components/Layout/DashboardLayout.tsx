@@ -150,6 +150,40 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
+const PageTabNav = ({ tabs }: { tabs: PageTab[] }) => {
+  const pathname = usePathname()
+
+  return (
+    <Tabs
+      value={
+        tabs.find(
+          (t) =>
+            pathname === t.href ||
+            (t.href !== tabs[0]?.href && pathname.startsWith(t.href)),
+        )?.title ?? tabs[0]?.title
+      }
+    >
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
+        {tabs.map((tab) => (
+          <Link key={tab.href} href={tab.href} prefetch={true}>
+            <TabsTrigger
+              className="flex flex-row items-center gap-x-2 px-4"
+              value={tab.title}
+            >
+              <h3>{tab.title}</h3>
+            </TabsTrigger>
+          </Link>
+        ))}
+      </TabsList>
+    </Tabs>
+  )
+}
+
+export interface PageTab {
+  title: string
+  href: string
+}
+
 export interface DashboardBodyProps {
   children?: React.ReactNode
   className?: string
@@ -159,6 +193,7 @@ export interface DashboardBodyProps {
   contextViewClassName?: string
   contextViewPlacement?: 'left' | 'right'
   header?: JSX.Element
+  tabs?: PageTab[]
   wide?: boolean
 }
 
@@ -171,6 +206,7 @@ export const DashboardBody = ({
   contextViewClassName,
   contextViewPlacement = 'right',
   header,
+  tabs,
   wide = false,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
@@ -219,6 +255,8 @@ export const DashboardBody = ({
               ) : null}
             </div>
           )}
+
+          {tabs && tabs.length > 0 && <PageTabNav tabs={tabs} />}
 
           <motion.div
             className={twMerge('flex w-full flex-col pb-8', className)}

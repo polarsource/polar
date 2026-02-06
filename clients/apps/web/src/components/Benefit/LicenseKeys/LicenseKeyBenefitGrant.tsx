@@ -1,6 +1,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
 import { LicenseKeyDetails } from './LicenseKeyDetails'
@@ -8,10 +9,14 @@ import { LicenseKeyDetails } from './LicenseKeyDetails'
 const LicenseKey = ({
   api,
   licenseKey,
+  locale,
 }: {
   api: Client
   licenseKey: schemas['LicenseKeyWithActivations']
+  locale?: SupportedLocale
 }) => {
+  const t = useTranslations(locale ?? 'en')
+
   if (!licenseKey) {
     return <></>
   }
@@ -20,15 +25,16 @@ const LicenseKey = ({
     <>
       <CopyToClipboardInput
         value={licenseKey.key}
+        buttonLabel={t('checkout.benefits.licenseKey.copy')}
         onCopy={() => {
           toast({
-            title: 'Copied To Clipboard',
-            description: `License Key was copied to clipboard`,
+            title: t('checkout.benefits.licenseKey.copiedToClipboard'),
+            description: t('checkout.benefits.licenseKey.copiedToClipboardDescription'),
           })
         }}
       />
-      <LicenseKeyDetails licenseKey={licenseKey} />
-      <LicenseKeyActivations api={api} licenseKey={licenseKey} />
+      <LicenseKeyDetails licenseKey={licenseKey} locale={locale} />
+      <LicenseKeyActivations api={api} licenseKey={licenseKey} locale={locale} />
     </>
   )
 }
@@ -36,10 +42,13 @@ const LicenseKey = ({
 export const LicenseKeyBenefitGrant = ({
   api,
   benefitGrant,
+  locale,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantLicenseKeys']
+  locale?: SupportedLocale
 }) => {
+  const t = useTranslations(locale ?? 'en')
   const { data: licenseKey, isLoading } = useCustomerLicenseKey(
     api,
     benefitGrant.properties.license_key_id as string,
@@ -47,7 +56,7 @@ export const LicenseKeyBenefitGrant = ({
 
   if (isLoading) {
     // TODO: Style me
-    return <div>Loading...</div>
+    return <div>{t('checkout.benefits.licenseKey.loading')}</div>
   }
 
   if (!licenseKey) {
@@ -56,7 +65,7 @@ export const LicenseKeyBenefitGrant = ({
 
   return (
     <div className="flex w-full flex-col gap-y-6">
-      <LicenseKey api={api} licenseKey={licenseKey} />
+      <LicenseKey api={api} licenseKey={licenseKey} locale={locale} />
     </div>
   )
 }

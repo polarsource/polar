@@ -1,6 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
+import { resolveLocale } from '@/utils/i18n'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
@@ -12,12 +13,15 @@ export default async function Page(props: {
   searchParams: Promise<{
     embed?: string
     theme?: 'light' | 'dark'
+    locale?: string
     customer_session_token?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed, theme, customer_session_token } = searchParams
+  const { embed, theme, locale: _locale, customer_session_token } = searchParams
+
+  const locale = await resolveLocale(_locale)
 
   const params = await props.params
 
@@ -67,6 +71,7 @@ export default async function Page(props: {
         checkout={checkout}
         embed={embed === 'true'}
         theme={theme}
+        locale={locale}
         customerSessionToken={customer_session_token}
       />
     </CheckoutLayout>

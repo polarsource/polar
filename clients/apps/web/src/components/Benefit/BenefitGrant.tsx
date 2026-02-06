@@ -1,6 +1,7 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -15,11 +16,12 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DownloadablesBenefitGrant from './Downloadables/DownloadablesBenefitGrant'
 import { LicenseKeyBenefitGrant } from './LicenseKeys/LicenseKeyBenefitGrant'
-import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
+import { resolveBenefitIcon } from './utils'
 
 interface BenefitGrantProps {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrant']
+  locale?: SupportedLocale
 }
 
 const BenefitGrantCustom = ({
@@ -48,6 +50,7 @@ const BenefitGrantOAuth = ({
   api,
   benefitGrant,
   platform,
+  locale,
   connectButtonText,
   openButtonUrl,
   openButtonText,
@@ -58,11 +61,13 @@ const BenefitGrantOAuth = ({
     | schemas['CustomerBenefitGrantGitHubRepository']
     | schemas['CustomerBenefitGrantDiscord']
   platform: 'github' | 'discord'
+  locale?: SupportedLocale
   openButtonText: string
   openButtonUrl: string
   connectButtonText: string
   selectPlaceholder: string
 }) => {
+  const t = useTranslations(locale ?? 'en')
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const {
@@ -199,7 +204,7 @@ const BenefitGrantOAuth = ({
               variant="secondary"
               className="grow"
             >
-              Request new invite
+              {t('checkout.benefits.requestNewInvite')}
             </Button>
           </>
         )}
@@ -214,7 +219,7 @@ const BenefitGrantOAuth = ({
                 disabled={retryCountdown > 0}
               >
                 {retryCountdown > 0
-                  ? `Try again in ${retryCountdown} second${retryCountdown === 1 ? '' : 's'}`
+                  ? t('checkout.benefits.retryIn', { count: retryCountdown })
                   : connectButtonText}
               </Button>
             ) : (
@@ -240,7 +245,7 @@ const BenefitGrantOAuth = ({
                         {account.account_username}
                       </SelectItem>
                     ))}
-                    <SelectItem value="add">Connect new account</SelectItem>
+                    <SelectItem value="add">{t('checkout.benefits.connectNewAccount')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -249,7 +254,7 @@ const BenefitGrantOAuth = ({
                   fullWidth
                   variant="secondary"
                 >
-                  Request my invite
+                  {t('checkout.benefits.requestMyInvite')}
                 </Button>
               </>
             )}
@@ -268,10 +273,13 @@ const BenefitGrantOAuth = ({
 const BenefitGrantGitHubRepository = ({
   api,
   benefitGrant,
+  locale,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantGitHubRepository']
+  locale?: SupportedLocale
 }) => {
+  const t = useTranslations(locale ?? 'en')
   const {
     benefit: {
       properties: { repository_owner, repository_name },
@@ -282,10 +290,13 @@ const BenefitGrantGitHubRepository = ({
       api={api}
       benefitGrant={benefitGrant}
       platform="github"
-      connectButtonText="Connect GitHub account"
-      openButtonText={`Go to ${repository_owner}/${repository_name}`}
+      locale={locale}
+      connectButtonText={t('checkout.benefits.github.connect')}
+      openButtonText={t('checkout.benefits.github.goTo', {
+        repository: `${repository_owner}/${repository_name}`,
+      })}
       openButtonUrl={`https://github.com/${repository_owner}/${repository_name}/invitations`}
-      selectPlaceholder="Select a GitHub account"
+      selectPlaceholder={t('checkout.benefits.github.selectAccount')}
     />
   )
 }
@@ -293,10 +304,13 @@ const BenefitGrantGitHubRepository = ({
 const BenefitGrantDiscord = ({
   api,
   benefitGrant,
+  locale,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantDiscord']
+  locale?: SupportedLocale
 }) => {
+  const t = useTranslations(locale ?? 'en')
   const {
     benefit: {
       properties: { guild_id },
@@ -307,15 +321,17 @@ const BenefitGrantDiscord = ({
       api={api}
       benefitGrant={benefitGrant}
       platform="discord"
-      connectButtonText="Connect Discord account"
-      openButtonText="Open Discord"
+      locale={locale}
+      connectButtonText={t('checkout.benefits.discord.connect')}
+      openButtonText={t('checkout.benefits.discord.open')}
       openButtonUrl={`https://www.discord.com/channels/${guild_id}`}
-      selectPlaceholder="Select a Discord account"
+      selectPlaceholder={t('checkout.benefits.discord.selectAccount')}
     />
   )
 }
 
-export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
+export const BenefitGrant = ({ api, benefitGrant, locale }: BenefitGrantProps) => {
+  const t = useTranslations(locale ?? 'en')
   const { benefit } = benefitGrant
 
   return (
@@ -329,7 +345,7 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
         <div className="flex flex-col">
           <h3 className="text-sm font-medium">{benefit.description}</h3>
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
-            {benefitsDisplayNames[benefit.type]}
+            {t(`benefitTypes.${benefit.type}.displayName`)}
           </p>
         </div>
       </div>
@@ -352,6 +368,7 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
           benefitGrant={
             benefitGrant as schemas['CustomerBenefitGrantLicenseKeys']
           }
+          locale={locale}
         />
       )}
       {benefit.type === 'github_repository' && (
@@ -360,12 +377,14 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
           benefitGrant={
             benefitGrant as schemas['CustomerBenefitGrantGitHubRepository']
           }
+          locale={locale}
         />
       )}
       {benefit.type === 'discord' && (
         <BenefitGrantDiscord
           api={api}
           benefitGrant={benefitGrant as schemas['CustomerBenefitGrantDiscord']}
+          locale={locale}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ export const nl = {
     footer: {
       poweredBy: 'Mogelijk gemaakt door',
       merchantOfRecord:
-        'Deze bestelling wordt verwerkt door onze online reseller & Merchant of Record, Polar, die ook vragen en retourzendingen met betrekking tot bestellingen afhandelt.',
+        'Deze bestelling wordt verwerkt door onze online reseller & Merchant of Record, Polar, die ook vragen over bestellingen en terugbetalingen afhandelt.',
     },
     form: {
       email: 'E-mail',
@@ -35,7 +35,7 @@ export const nl = {
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       everyInterval: 'Elke {interval}',
-      additionalMeteredUsage: 'Extra verbruik op basis van gebruik',
+      additionalMeteredUsage: 'Extra verbruikskosten',
       perUnit: '/ eenheid',
       discount: {
         duration: {
@@ -102,6 +102,63 @@ export const nl = {
         other: 'Toon # extra voordelen',
       },
       showLess: 'Toon minder',
+      granting: 'Voordelen worden toegekend...',
+      requestNewInvite: 'Nieuwe uitnodiging aanvragen',
+      retryIn: {
+        _mode: 'plural',
+        '=1': 'Probeer opnieuw over # seconde',
+        other: 'Probeer opnieuw over # seconden',
+      },
+      connectNewAccount: 'Nieuw account koppelen',
+      requestMyInvite: 'Mijn uitnodiging aanvragen',
+      github: {
+        connect: 'GitHub-account koppelen',
+        goTo: 'Ga naar {repository}',
+        selectAccount: 'Selecteer een GitHub-account',
+      },
+      discord: {
+        connect: 'Discord-account koppelen',
+        open: 'Open Discord',
+        selectAccount: 'Selecteer een Discord-account',
+      },
+      licenseKey: {
+        copy: 'Kopiëren',
+        copiedToClipboard: 'Gekopieerd naar klembord',
+        copiedToClipboardDescription:
+          'Licentiesleutel is gekopieerd naar het klembord',
+        loading: 'Laden...',
+        status: 'Status',
+        statusGranted: 'Toegekend',
+        statusRevoked: 'Ingetrokken',
+        statusDisabled: 'Uitgeschakeld',
+        usage: 'Gebruik',
+        validations: 'Validaties',
+        validatedAt: 'Gevalideerd op',
+        neverValidated: 'Nooit gevalideerd',
+        expiryDate: 'Vervaldatum',
+        noExpiry: 'Geen vervaldatum',
+        activations: 'Activaties',
+        activationDeleted: 'Licentiesleutelactivatie verwijderd',
+        activationDeletedDescription: 'Activatie succesvol verwijderd',
+        activationDeactivationFailed: 'Deactivatie mislukt',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Betaling bevestigen',
+      processingTitle: 'We verwerken je bestelling',
+      successTitle: 'Je bestelling is geslaagd!',
+      failedTitle:
+        'Er is een probleem opgetreden bij het verwerken van je bestelling',
+      processingDescription: 'Even geduld terwijl we je betaling bevestigen.',
+      successDescription: 'Je hebt nu recht op de voordelen van {product}.',
+      failedDescription: 'Probeer het opnieuw of neem contact op met support.',
+    },
+    loading: {
+      processingOrder: 'Bestelling verwerken...',
+      processingPayment: 'Betaling verwerken',
+      paymentSuccessful: 'Betaling geslaagd! Je producten worden klaargezet...',
+      confirmationTokenFailed:
+        'Bevestigingstoken aanmaken mislukt, probeer het later opnieuw.',
     },
     cta: {
       startTrial: 'Proefperiode starten',
@@ -131,6 +188,15 @@ export const nl = {
       year: 'jaarlijks',
       everyOrdinalInterval: 'elke {ordinal} {interval}',
     },
+  },
+  benefitTypes: {
+    usage: { displayName: 'Gebruik' },
+    license_keys: { displayName: 'Licentiesleutels' },
+    github_repository: { displayName: 'Toegang tot GitHub-repository' },
+    discord: { displayName: 'Discord-uitnodiging' },
+    downloadables: { displayName: 'Downloads' },
+    custom: { displayName: 'Custom' },
+    meter_credit: { displayName: 'Verbruikstegoed' },
   },
   playground: {
     interpolation: 'Dit is een {test}',

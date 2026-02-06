@@ -2,6 +2,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -10,12 +11,15 @@ import { useCallback } from 'react'
 interface LicenseKeyActivationsProps {
   api: Client
   licenseKey: schemas['LicenseKeyWithActivations']
+  locale?: SupportedLocale
 }
 
 export const LicenseKeyActivations = ({
   api,
   licenseKey,
+  locale,
 }: LicenseKeyActivationsProps) => {
+  const t = useTranslations(locale ?? 'en')
   const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 
   const handleDeactivateActivation = useCallback(
@@ -28,18 +32,18 @@ export const LicenseKeyActivations = ({
         })
         .then(() => {
           toast({
-            title: 'License Key Activation Deleted',
-            description: `Activation deleted successfully`,
+            title: t('checkout.benefits.licenseKey.activationDeleted'),
+            description: t('checkout.benefits.licenseKey.activationDeletedDescription'),
           })
         })
         .catch((error) => {
           toast({
-            title: 'Activation Deactivation Failed',
-            description: `Error deactivating activation ${activationId}: ${error.message}`,
+            title: t('checkout.benefits.licenseKey.activationDeactivationFailed'),
+            description: `${error.message}`,
           })
         })
     },
-    [onDeactivate, licenseKey],
+    [onDeactivate, licenseKey, t],
   )
 
   const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
@@ -50,7 +54,7 @@ export const LicenseKeyActivations = ({
 
   return (
     <div className="flex flex-col gap-y-4">
-      <h3>Activations</h3>
+      <h3>{t('checkout.benefits.licenseKey.activations')}</h3>
       <List size="small">
         {licenseKey?.activations.map((activation) => (
           <ListItem key={activation.id} size="small">

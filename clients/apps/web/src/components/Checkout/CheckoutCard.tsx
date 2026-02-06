@@ -6,7 +6,7 @@ import {
   CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
-import type { SupportedLocale } from '@polar-sh/i18n'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 export interface CheckoutCardProps {
@@ -22,13 +22,14 @@ export const CheckoutCard = ({
   disabled,
   locale,
 }: CheckoutCardProps) => {
+  const t = useTranslations(locale ?? 'en')
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
 
   return (
     <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
       {isSeatBased && update ? (
-        <CheckoutSeatSelector checkout={checkout} update={update} />
+        <CheckoutSeatSelector checkout={checkout} update={update} locale={locale} />
       ) : (
         <CheckoutPricing
           checkout={checkout}
@@ -40,9 +41,9 @@ export const CheckoutCard = ({
 
       {product.benefits.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h1 className="font-medium dark:text-white">Included</h1>
+          <h1 className="font-medium dark:text-white">{t('checkout.card.included')}</h1>
           <div className="flex flex-col gap-y-2">
-            <BenefitList benefits={product.benefits} toggle={true} />
+            <BenefitList benefits={product.benefits} toggle={true} locale={locale} />
           </div>
         </div>
       ) : (

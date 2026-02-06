@@ -84,6 +84,9 @@ export const formatRecurringFrequency = (
   return t.intervals.frequency[interval]
 }
 
+export const capitalize = (s: string): string =>
+  s.charAt(0).toUpperCase() + s.slice(1)
+
 export const isLegacyRecurringPrice = (
   price: ProductPrice | LegacyRecurringProductPrice,
 ): price is LegacyRecurringProductPrice => 'legacy' in price

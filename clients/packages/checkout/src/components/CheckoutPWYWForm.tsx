@@ -1,4 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
 import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
@@ -20,6 +21,7 @@ export interface CheckoutPWYWFormProps {
   checkout: CheckoutPublic
   productPrice: ProductPriceCustom
   themePreset: ThemingPresetProps
+  locale?: SupportedLocale
 }
 
 export const CheckoutPWYWForm = ({
@@ -27,7 +29,9 @@ export const CheckoutPWYWForm = ({
   checkout,
   productPrice,
   themePreset,
+  locale,
 }: CheckoutPWYWFormProps) => {
+  const t = useTranslations(locale ?? 'en')
   const { amount } = checkout
 
   const form = useForm<{ amount: number }>({
@@ -41,11 +45,15 @@ export const CheckoutPWYWForm = ({
     (value: number): string | true => {
       // Handle gap validation when free is allowed (minimumAmount = 0)
       if (minimumAmount === 0 && value > 0 && value < 50) {
-        return `Amount must be $0 or at least ${formatCurrency('compact')(50, checkout.currency)}`
+        return t('checkout.pwywForm.amountFreeOrMinimum', {
+          min: formatCurrency('compact')(50, checkout.currency),
+        })
       }
 
       if (value < minimumAmount) {
-        return `Amount must be at least ${formatCurrency('compact')(minimumAmount, checkout.currency)}`
+        return t('checkout.pwywForm.amountMinimum', {
+          min: formatCurrency('compact')(minimumAmount, checkout.currency),
+        })
       }
 
       return true
@@ -80,13 +88,15 @@ export const CheckoutPWYWForm = ({
   const minLabelText =
     minimumAmount === 0
       ? null
-      : `${formatCurrency('compact')(minimumAmount, checkout.currency)} minimum`
+      : t('checkout.pwywForm.minimum', {
+          amount: formatCurrency('compact')(minimumAmount, checkout.currency),
+        })
 
   return (
     <Form {...form}>
       <form className="flex w-full flex-col gap-3">
         <FormLabel>
-          Name a fair price
+          {t('checkout.pwywForm.label')}
           {minLabelText && (
             <>
               {' '}

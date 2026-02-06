@@ -1,4 +1,4 @@
-import type { SupportedLocale } from '@polar-sh/i18n'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -17,6 +17,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   price,
   locale,
 }) => {
+  const t = useTranslations(locale ?? 'en')
+
   if (price.amountType === 'fixed') {
     return (
       <AmountLabel
@@ -33,15 +35,15 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       />
     )
   } else if (price.amountType === 'custom') {
-    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+    return <div className="text-[min(1em,24px)]">{t('checkout.pricing.payWhatYouWant')}</div>
   } else if (price.amountType === 'free') {
-    return <div className="text-[min(1em,24px)]">Free</div>
+    return <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
   } else if (price.amountType === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">
         {price.meter.name}
         {' — '}
-        <MeteredPriceLabel price={price} />
+        <MeteredPriceLabel price={price} locale={locale} />
       </div>
     )
   }

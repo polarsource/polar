@@ -1,6 +1,6 @@
 'use client'
 
-import type { SupportedLocale } from '@polar-sh/i18n'
+import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -13,6 +13,7 @@ import { cn } from '@polar-sh/ui/lib/utils'
 import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import {
+  capitalize,
   formatRecurringFrequency,
   hasLegacyRecurringPrices,
 } from '../utils/product'
@@ -32,6 +33,8 @@ const CheckoutProductSwitcher = ({
   themePreset,
   locale,
 }: CheckoutProductSwitcherProps) => {
+  const t = useTranslations(locale ?? 'en')
+
   const {
     product: selectedProduct,
     productPrice: selectedPrice,
@@ -74,11 +77,11 @@ const CheckoutProductSwitcher = ({
     const intervalCount = product.recurringIntervalCount
 
     if (interval) {
-      const recurringLabel = formatRecurringFrequency(interval, intervalCount, locale)
-      return `Billed ${recurringLabel}`
+      const frequency = capitalize(formatRecurringFrequency(interval, intervalCount, locale))
+      return t('checkout.productSwitcher.billedRecurring', { frequency })
     }
 
-    return `One-time purchase`
+    return t('checkout.productSwitcher.oneTimePurchase')
   }
 
   return (

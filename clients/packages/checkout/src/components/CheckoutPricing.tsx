@@ -89,7 +89,7 @@ const CheckoutPricing = ({
           )}
         </h1>
 
-        <MeteredPricesDisplay checkout={checkout} />
+        <MeteredPricesDisplay checkout={checkout} locale={locale} />
       </div>
     </div>
   )

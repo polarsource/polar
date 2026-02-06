@@ -330,7 +330,12 @@ const BaseCheckoutForm = ({
 
   const totalLabel = useMemo(() => {
     if (interval) {
-      const formatted = formatRecurringInterval(interval, intervalCount, 'long', locale)
+      const formatted = formatRecurringInterval(
+        interval,
+        intervalCount,
+        'long',
+        locale,
+      )
       return t('checkout.pricing.everyInterval', { interval: formatted })
     }
 
@@ -874,7 +879,10 @@ const BaseCheckoutForm = ({
                         title={meteredPrice.meter.name}
                         key={meteredPrice.id}
                       >
-                        <MeteredPriceLabel price={meteredPrice} />
+                        <MeteredPriceLabel
+                          price={meteredPrice}
+                          locale={locale}
+                        />
                       </DetailRow>
                     ))}
                   </>

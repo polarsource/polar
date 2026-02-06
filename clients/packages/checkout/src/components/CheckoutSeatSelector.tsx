@@ -1,6 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -12,11 +13,13 @@ import MeteredPricesDisplay from './MeteredPricesDisplay'
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
   update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
+  locale?: SupportedLocale
 }
 
 const CheckoutSeatSelector = ({
   checkout,
   update,
+  locale,
 }: CheckoutSeatSelectorProps) => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -237,7 +240,7 @@ const CheckoutSeatSelector = ({
         )}
       </div>
 
-      <MeteredPricesDisplay checkout={checkout} />
+      <MeteredPricesDisplay checkout={checkout} locale={locale} />
     </div>
   )
 }

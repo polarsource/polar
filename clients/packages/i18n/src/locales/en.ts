@@ -32,9 +32,11 @@ export const en = {
       taxableAmount: 'Taxable amount',
       taxes: 'Taxes',
       free: 'Free',
+      payWhatYouWant: 'Pay what you want',
       total: 'Total',
       everyInterval: 'Every {interval}',
       additionalMeteredUsage: 'Additional metered usage',
+      perUnit: '/ unit',
       discount: {
         duration: {
           months: {
@@ -75,11 +77,37 @@ export const en = {
         },
       },
     },
+    pwywForm: {
+      label: 'Name a fair price',
+      minimum: '{amount} minimum',
+      amountMinimum: 'Amount must be at least {min}',
+      amountFreeOrMinimum: 'Amount must be $0 or at least {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Billed {frequency}',
+      oneTimePurchase: 'One-time purchase',
+    },
+    card: {
+      included: 'Included',
+    },
+    benefits: {
+      moreBenefits: {
+        _mode: 'plural',
+        '=1': '# more benefit',
+        other: '# more benefits',
+      },
+      showMoreBenefits: {
+        _mode: 'plural',
+        '=1': 'Show # more benefit',
+        other: 'Show # more benefits',
+      },
+      showLess: 'Show less',
+    },
     cta: {
       startTrial: 'Start Trial',
       subscribeNow: 'Subscribe now',
       payNow: 'Pay now',
-      getFree: 'Submit',
+      getFree: 'Get for free',
       paymentsUnavailable: 'Payments are currently unavailable',
     },
   },

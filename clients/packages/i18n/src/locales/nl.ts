@@ -30,11 +30,13 @@ export const nl = {
     pricing: {
       subtotal: 'Subtotaal',
       taxableAmount: 'Belastbaar bedrag',
-      taxes: 'Belasting',
+      taxes: 'BTW',
       free: 'Gratis',
+      payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       everyInterval: 'Elke {interval}',
       additionalMeteredUsage: 'Extra verbruik op basis van gebruik',
+      perUnit: '/ eenheid',
       discount: {
         duration: {
           months: {
@@ -75,11 +77,37 @@ export const nl = {
         },
       },
     },
+    pwywForm: {
+      label: 'Noem een eerlijke prijs',
+      minimum: '{amount} minimum',
+      amountMinimum: 'Bedrag moet minimaal {min} zijn',
+      amountFreeOrMinimum: 'Bedrag moet $0 of minimaal {min} zijn',
+    },
+    productSwitcher: {
+      billedRecurring: '{frequency} gefactureerd',
+      oneTimePurchase: 'Eenmalige aankoop',
+    },
+    card: {
+      included: 'Inbegrepen',
+    },
+    benefits: {
+      moreBenefits: {
+        _mode: 'plural',
+        '=1': '# extra voordeel',
+        other: '# extra voordelen',
+      },
+      showMoreBenefits: {
+        _mode: 'plural',
+        '=1': 'Toon # extra voordeel',
+        other: 'Toon # extra voordelen',
+      },
+      showLess: 'Toon minder',
+    },
     cta: {
       startTrial: 'Proefperiode starten',
       subscribeNow: 'Nu abonneren',
       payNow: 'Nu betalen',
-      getFree: 'Verzenden',
+      getFree: 'Gratis verkrijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
   },

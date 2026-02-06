@@ -219,6 +219,7 @@ const Checkout = ({
                 update={update}
                 productPrice={checkout.productPrice as ProductPriceCustom}
                 themePreset={themePreset}
+                locale={locale}
               />
             )}
           </>
@@ -275,6 +276,7 @@ const Checkout = ({
                   update={update}
                   productPrice={checkout.productPrice as ProductPriceCustom}
                   themePreset={themePreset}
+                  locale={locale}
                 />
               )}
               <CheckoutCard

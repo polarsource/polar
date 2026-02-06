@@ -19,7 +19,7 @@ from polar.models.user import User
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 
-TOKEN_PREFIX = "polar_ev_"
+TOKEN_PREFIX = "spaire_ev_"
 
 
 class EmailUpdateError(PolarError): ...

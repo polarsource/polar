@@ -279,8 +279,8 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
               <CodeWrapper>
                 <SyntaxHighlighterClient
                   lang="bash"
-                  code={`POLAR_ACCESS_TOKEN=${createdToken ?? 'XXX'}
-POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
+                  code={`SPAIRE_ACCESS_TOKEN=${createdToken ?? 'XXX'}
+SPAIRE_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
                 />
               </CodeWrapper>
             </div>

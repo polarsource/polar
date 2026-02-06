@@ -112,7 +112,7 @@ async def get_auth_subject(
         if is_registration_token_prefix(token):
             return AuthSubject(Anonymous(), set(), None)
 
-        # Try MemberSession first (polar_mst_ prefix)
+        # Try MemberSession first (spaire_mst_ prefix)
         if token.startswith(MEMBER_SESSION_TOKEN_PREFIX):
             member_session = await get_member_session(session, token)
             if member_session:

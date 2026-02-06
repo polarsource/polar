@@ -403,7 +403,9 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
     <DashboardBody wide className="gap-y-8 pb-16 md:gap-y-10">
       {/* Full payout account setup flow — disappears when complete */}
-      <AccountSetupFlow organization={organization} />
+      <div className="flex w-full justify-center">
+        <AccountSetupFlow organization={organization} />
+      </div>
 
       {/* Metric charts — same grid as Analytics */}
       <OverviewMetrics organization={organization} />

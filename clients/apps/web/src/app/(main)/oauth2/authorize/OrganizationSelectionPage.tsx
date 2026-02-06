@@ -1,6 +1,7 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { CurrencySelector } from '@/components/CurrencySelector'
 import SupportedUseCases from '@/components/Onboarding/components/SupportedUseCases'
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
@@ -14,6 +15,7 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
+  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -25,6 +27,13 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 import SharedLayout from './components/SharedLayout'
+
+type FormSchema = Pick<
+  schemas['OrganizationCreate'],
+  'name' | 'slug' | 'default_presentment_currency'
+> & {
+  terms: boolean
+}
 
 const OrganizationSelectionPage = ({
   authorizeResponse: { client, organizations },
@@ -38,14 +47,11 @@ const OrganizationSelectionPage = ({
   const createOrganization = useCreateOrganization()
   const [editedSlug, setEditedSlug] = useState(false)
 
-  const form = useForm<{
-    name: string
-    slug: string
-    terms: boolean
-  }>({
+  const form = useForm<FormSchema>({
     defaultValues: {
       name: '',
       slug: '',
+      default_presentment_currency: 'usd',
       terms: false,
     },
   })
@@ -90,17 +96,11 @@ const OrganizationSelectionPage = ({
     return `?${serializedSearchParams}`
   }
 
-  const onSubmit = async (data: {
-    name: string
-    slug: string
-    terms: boolean
-  }) => {
+  const onSubmit = async (data: FormSchema) => {
     if (!data.terms) return
 
-    const { data: organization, error } = await createOrganization.mutateAsync({
-      name: data.name,
-      slug: data.slug,
-    })
+    const { data: organization, error } =
+      await createOrganization.mutateAsync(data)
 
     if (error) {
       if (error.detail) {
@@ -193,6 +193,31 @@ const OrganizationSelectionPage = ({
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name="default_presentment_currency"
+                rules={{
+                  required: 'Currency is required',
+                }}
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormControl className="flex w-full flex-col gap-y-4">
+                      <Label htmlFor="default_presentment_currency">
+                        Default Payment Currency
+                      </Label>
+                      <CurrencySelector
+                        value={field.value as schemas['PresentmentCurrency']}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormDescription>
+                      The default currency for your products
+                    </FormDescription>
                   </FormItem>
                 )}
               />

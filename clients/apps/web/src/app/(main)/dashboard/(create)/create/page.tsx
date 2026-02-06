@@ -33,6 +33,7 @@ export default async function Page(props: {
       body: {
         name: slug,
         slug,
+        default_presentment_currency: 'usd',
       },
     })
     if (error && error.detail) {

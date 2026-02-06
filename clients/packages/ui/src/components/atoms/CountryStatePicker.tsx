@@ -85,6 +85,7 @@ const CountryStatePicker = ({
   itemClassName,
   contentClassName,
   disabled,
+  placeholder = 'State',
 }: {
   className?: string
   contentClassName?: string
@@ -94,6 +95,7 @@ const CountryStatePicker = ({
   country?: string
   autoComplete?: string
   disabled?: boolean
+  placeholder?: string
 }) => {
   if (country === 'US' || country === 'CA') {
     const states = country === 'US' ? US_STATES : CA_PROVINCES
@@ -106,7 +108,7 @@ const CountryStatePicker = ({
       >
         <SelectTrigger className={className}>
           <SelectValue
-            placeholder={country === 'US' ? 'State' : 'Province'}
+            placeholder={placeholder}
             // Avoids issues due to browser automatic translation
             // https://github.com/shadcn-ui/ui/issues/852
             translate="no"

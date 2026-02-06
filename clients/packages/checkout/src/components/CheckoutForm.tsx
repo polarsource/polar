@@ -592,6 +592,9 @@ const BaseCheckoutForm = ({
                                 country={country}
                                 value={field.value || ''}
                                 onChange={field.onChange}
+                                placeholder={
+                                  country === 'US' ? 'State' : 'Province'
+                                }
                               />
                               <FormMessage />
                             </>

@@ -1,9 +1,6 @@
-import { schemas } from '@polar-sh/client'
 import { nanoid } from 'nanoid'
-import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { createServerSideAPI } from './utils/client'
 
 const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'spaire_session'
@@ -158,44 +155,66 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
-  let user: schemas['UserRead'] | undefined = undefined
+  let user: Record<string, unknown> | undefined = undefined
+
+  // Resolve API URL at request time (not module load time) to ensure
+  // runtime env vars are available in Edge Runtime
+  const apiUrl =
+    process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || ''
 
   const hasCookie = request.cookies.has(POLAR_AUTH_COOKIE_KEY)
-  if (hasCookie) {
+  if (hasCookie && apiUrl) {
+    // Build Cookie header from all incoming request cookies
+    const cookieHeader = request.cookies
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join('; ')
+
+    const fetchHeaders: Record<string, string> = {
+      Cookie: cookieHeader,
+    }
+    const xForwardedFor = request.headers.get('X-Forwarded-For')
+    if (xForwardedFor) {
+      fetchHeaders['X-Forwarded-For'] = xForwardedFor
+    }
+
     try {
-      const api = await createServerSideAPI(
-        request.headers,
-        RequestCookiesAdapter.seal(request.cookies),
-      )
-      const { data, response } = await api.GET('/v1/users/me', {
+      // Use direct fetch instead of openapi-fetch client to avoid
+      // credentials: 'include' which can interfere with custom Cookie
+      // headers in Edge Runtime environments
+      const authResponse = await fetch(`${apiUrl}/v1/users/me`, {
+        method: 'GET',
+        headers: fetchHeaders,
         cache: 'no-cache',
       })
-      if (!response.ok && response.status !== 401) {
+
+      if (authResponse.ok) {
+        user = await authResponse.json()
+      } else if (authResponse.status === 401) {
         console.error(
-          `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
+          `[proxy] Auth cookie '${POLAR_AUTH_COOKIE_KEY}' present but /v1/users/me returned 401. apiUrl: ${apiUrl}`,
         )
-        throw new Error(
-          'Unexpected response status while fetching authenticated user',
+      } else {
+        console.error(
+          `[proxy] Unexpected response from /v1/users/me: status=${authResponse.status}, apiUrl: ${apiUrl}`,
         )
       }
-      if (response.status === 401) {
-        console.error(
-          `Auth cookie present but /v1/users/me returned 401. Cookie key: ${POLAR_AUTH_COOKIE_KEY}, API URL: ${process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || 'MISSING'}`,
-        )
-      }
-      user = data
     } catch (error) {
       console.error(
-        `Failed to verify user session: ${error}. Cookie key: ${POLAR_AUTH_COOKIE_KEY}, API URL: ${process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL || 'MISSING'}`,
+        `[proxy] Failed to verify user session: ${error}. apiUrl: ${apiUrl}`,
       )
-      throw error
+      // Don't throw - gracefully degrade to unauthenticated
     }
   }
 
   if (requiresAuthentication(request) && !user) {
-    if (!hasCookie) {
+    if (!apiUrl) {
       console.error(
-        `Auth redirect: cookie '${POLAR_AUTH_COOKIE_KEY}' not found. Available cookies: ${request.cookies.getAll().map((c) => c.name).join(', ') || 'none'}`,
+        '[proxy] Auth redirect: POLAR_API_URL and NEXT_PUBLIC_API_URL are both unset - cannot verify sessions',
+      )
+    } else if (!hasCookie) {
+      console.error(
+        `[proxy] Auth redirect: cookie '${POLAR_AUTH_COOKIE_KEY}' not found. Available cookies: ${request.cookies.getAll().map((c) => c.name).join(', ') || 'none'}`,
       )
     }
     return getLoginResponse(request)

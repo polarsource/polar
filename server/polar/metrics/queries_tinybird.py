@@ -17,30 +17,6 @@ def _format_dt(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _build_event_filters(
-    params: dict[str, Any],
-    *,
-    product_id: Sequence[UUID] | None = None,
-    customer_id: Sequence[UUID] | None = None,
-    billing_type: Sequence[str] | None = None,
-) -> list[str]:
-    filters = [
-        "e.source = 'system'",
-        "e.name IN ('balance.order', 'balance.credit_order', 'balance.refund')",
-        "e.organization_id IN {org_ids:Array(String)}",
-    ]
-    if product_id is not None:
-        params["product_ids"] = [str(id) for id in product_id]
-        filters.append("e.product_id IN {product_ids:Array(String)}")
-    if customer_id is not None:
-        params["customer_ids"] = [str(id) for id in customer_id]
-        filters.append("e.customer_id IN {customer_ids:Array(String)}")
-    if billing_type is not None:
-        params["billing_types"] = list(billing_type)
-        filters.append("e.billing_type IN {billing_types:Array(String)}")
-    return filters
-
-
 def _build_events_sql(
     *,
     organization_id: Sequence[UUID],
@@ -69,26 +45,26 @@ def _build_events_sql(
         "buffer_end": _format_dt(b_end + timedelta(days=1)),
     }
 
-    event_filters = " AND ".join(
-        _build_event_filters(
-            params,
-            product_id=product_id,
-            customer_id=customer_id,
-            billing_type=billing_type,
-        )
-    )
-
     sub_product_filter = ""
     if product_id is not None:
+        params["product_ids"] = [str(id) for id in product_id]
         sub_product_filter = (
             "AND argMaxMerge(product_id) IN {product_ids:Array(String)}"
         )
 
     customer_filter = ""
     if customer_id is not None:
-        if "customer_ids" not in params:
-            params["customer_ids"] = [str(id) for id in customer_id]
+        params["customer_ids"] = [str(id) for id in customer_id]
         customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
+
+    balance_product_filter = ""
+    if product_id is not None:
+        balance_product_filter = "AND se.product_id IN {product_ids:Array(String)}"
+
+    balance_billing_filter = ""
+    if billing_type is not None:
+        params["billing_types"] = list(billing_type)
+        balance_billing_filter = "AND se.billing_type IN {billing_types:Array(String)}"
 
     sql = f"""
 WITH
@@ -113,22 +89,45 @@ WITH
         HAVING 1=1
             {sub_product_filter}
     ),
-    balance_events AS (
+    system_events_raw AS (
         SELECT
-            e.name,
-            e.amount,
-            e.fee,
-            e.subscription_id,
-            COALESCE(
-                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                e.timestamp
-            ) AS effective_ts,
-            ss.started_at AS sub_started_at
-        FROM events_by_timestamp AS e FINAL
-        LEFT JOIN sub_state ss ON e.subscription_id = ss.subscription_id
-        WHERE {event_filters}
+            e.id,
+            argMax(e.name, e.ingested_at) AS name,
+            argMax(e.amount, e.ingested_at) AS amount,
+            argMax(e.fee, e.ingested_at) AS fee,
+            argMax(e.subscription_id, e.ingested_at) AS subscription_id,
+            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
+            argMax(e.user_metadata, e.ingested_at) AS user_metadata,
+            argMax(e.canceled_at, e.ingested_at) AS canceled_at,
+            argMax(e.customer_cancellation_reason, e.ingested_at) AS customer_cancellation_reason,
+            argMax(e.product_id, e.ingested_at) AS product_id,
+            argMax(e.billing_type, e.ingested_at) AS billing_type,
+            argMax(e.customer_id, e.ingested_at) AS customer_id
+        FROM events_by_timestamp AS e
+        WHERE e.source = 'system'
+            AND e.name IN ('balance.order', 'balance.credit_order', 'balance.refund', 'subscription.created', 'subscription.canceled')
+            AND e.organization_id IN {{org_ids:Array(String)}}
             AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
+            {customer_filter}
+        GROUP BY e.id
+    ),
+    balance_events AS (
+        SELECT
+            se.name,
+            se.amount,
+            se.fee,
+            se.subscription_id,
+            COALESCE(
+                JSONExtract(se.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
+                se.event_timestamp
+            ) AS effective_ts,
+            ss.started_at AS sub_started_at
+        FROM system_events_raw AS se
+        LEFT JOIN sub_state ss ON se.subscription_id = ss.subscription_id
+        WHERE se.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
+            {balance_product_filter}
+            {balance_billing_filter}
     ),
     baseline AS (
         SELECT
@@ -145,17 +144,15 @@ WITH
     ),
     sub_created_daily AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(timestamp, {{tz:String}})) AS day,
-            count(DISTINCT subscription_id) AS new_subscriptions
-        FROM events_by_timestamp FINAL
-        WHERE source = 'system'
-            AND name = 'subscription.created'
-            AND organization_id IN {{org_ids:Array(String)}}
-            -- TODO: investigate whether this should use bounds_start/bounds_end
-            -- like the balance order data, instead of the full window range.
-            -- Currently matches Postgres behavior which uses the window range.
-            AND timestamp >= toDateTime({{start_dt:String}}, {{tz:String}})
-            AND timestamp <= toDateTime({{end_dt:String}}, {{tz:String}})
+            date_trunc({{iv:String}}, toDateTime(se.event_timestamp, {{tz:String}})) AS day,
+            count(DISTINCT se.subscription_id) AS new_subscriptions
+        FROM system_events_raw AS se
+        -- TODO: investigate whether this should use bounds_start/bounds_end
+        -- like the balance order data, instead of the full window range.
+        -- Currently matches Postgres behavior which uses the window range.
+        WHERE se.name = 'subscription.created'
+            AND se.event_timestamp >= toDateTime({{start_dt:String}}, {{tz:String}})
+            AND se.event_timestamp <= toDateTime({{end_dt:String}}, {{tz:String}})
         GROUP BY day
     ),
     daily_balance AS (
@@ -233,39 +230,44 @@ WITH
             AND be.effective_ts <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     ),
-    daily_events AS (
+    all_events_raw AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(e.timestamp, {{tz:String}})) AS day,
-            COALESCE(sum(
-                JSONExtract(e.user_metadata, '_cost', 'amount', 'Float64')
-            ), 0) AS costs,
-            countDistinct(e.customer_id) + countDistinct(e.external_customer_id) AS active_user_by_event
-        FROM events_by_timestamp AS e FINAL
+            e.id,
+            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
+            argMax(e.cost_amount, e.ingested_at) AS cost_amount,
+            argMax(e.customer_id, e.ingested_at) AS customer_id,
+            argMax(e.external_customer_id, e.ingested_at) AS external_customer_id
+        FROM events_by_timestamp AS e
         WHERE e.organization_id IN {{org_ids:Array(String)}}
             AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
             {customer_filter}
+        GROUP BY e.id
+    ),
+    daily_events AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(ae.event_timestamp, {{tz:String}})) AS day,
+            COALESCE(sum(ae.cost_amount), 0) AS costs,
+            countDistinct(ae.customer_id) + countDistinct(ae.external_customer_id) AS active_user_by_event
+        FROM all_events_raw AS ae
         GROUP BY day
     ),
     canceled AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(e.canceled_at, {{tz:String}})) AS day,
+            date_trunc({{iv:String}}, toDateTime(se.canceled_at, {{tz:String}})) AS day,
             count(*) AS canceled_subscriptions,
-            countIf(e.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
-            countIf(e.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
-            countIf(e.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
-            countIf(e.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
-            countIf(e.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
-            countIf(e.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
-            countIf(e.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
-            countIf(e.customer_cancellation_reason = 'other' OR e.customer_cancellation_reason IS NULL OR e.customer_cancellation_reason = '') AS canceled_subscriptions_other
-        FROM events_by_timestamp AS e FINAL
-        WHERE e.source = 'system'
-            AND e.name = 'subscription.canceled'
-            AND e.organization_id IN {{org_ids:Array(String)}}
-            AND e.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
-            AND e.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
-            {customer_filter}
+            countIf(se.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
+            countIf(se.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
+            countIf(se.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
+            countIf(se.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
+            countIf(se.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
+            countIf(se.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
+            countIf(se.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
+            countIf(se.customer_cancellation_reason = 'other' OR se.customer_cancellation_reason IS NULL OR se.customer_cancellation_reason = '') AS canceled_subscriptions_other
+        FROM system_events_raw AS se
+        WHERE se.name = 'subscription.canceled'
+            AND se.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND se.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     )
 SELECT
@@ -383,17 +385,26 @@ WITH
             {sub_product_filter}
             {sub_customer_filter}
     ),
+    payment_events_raw AS (
+        SELECT
+            e.id,
+            argMax(e.amount, e.ingested_at) AS amount,
+            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
+            argMax(e.subscription_id, e.ingested_at) AS subscription_id
+        FROM events_by_timestamp AS e
+        WHERE e.source = 'system'
+            AND e.name IN ('balance.order', 'balance.credit_order')
+            AND e.organization_id IN {{org_ids:Array(String)}}
+            AND e.subscription_id IS NOT NULL
+            {payment_product_filter}
+            {payment_customer_filter}
+        GROUP BY e.id
+    ),
     latest_payment AS (
         SELECT
             subscription_id,
-            argMax(amount, timestamp) AS settlement_amount
-        FROM events_by_timestamp FINAL
-        WHERE source = 'system'
-            AND name IN ('balance.order', 'balance.credit_order')
-            AND organization_id IN {{org_ids:Array(String)}}
-            AND subscription_id IS NOT NULL
-            {payment_product_filter}
-            {payment_customer_filter}
+            argMax(amount, event_timestamp) AS settlement_amount
+        FROM payment_events_raw
         GROUP BY subscription_id
     ),
     subs_with_mrr AS (

@@ -4,6 +4,104 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-10-31">
+
+## Cost Insights
+
+We've launched Cost Insights - a powerful way to track and analyze costs associated with usage. Now you can:
+
+* Track costs per event with sub-cent precision
+* View cost analytics across your dashboard
+* See cost breakdowns by customer and product
+* Monitor cost trends with dedicated charts
+
+Perfect for understanding unit economics and profitability of your usage-based offerings.
+
+[Read more](/features/usage-billing/cost-insights)
+
+## Webhook Management
+
+### Auto-Disable Failing Webhooks
+
+Webhooks that continuously fail (10+ consecutive failures by default) are now automatically disabled to save resources. You can manually re-enable them from the dashboard once the issue is fixed.
+
+### Email Notifications for Webhook Failures
+
+When webhooks are automatically disabled due to continuous failures, all organization members receive an email notification with details and steps to re-enable.
+
+## Benefit Revocation Grace Period
+
+Configure a grace period for benefit revocation when subscription payments fail. Instead of immediately revoking benefits, you can now give customers time to resolve payment issues:
+
+* Immediate revocation (default)
+* Grace period matching payment retry window
+
+This applies to both regular benefits and customer seat benefits.
+
+## Customer Portal Enhancements
+
+### Upcoming Charge Display
+
+Subscription detail pages now show the upcoming charge amount and date, including:
+
+* Trial end dates with first charge amount
+* Next billing cycle charges for active subscriptions
+* Automatic updates when subscriptions change
+
+### Usage & Metering View
+
+Improved the customer usage view:
+
+* Respect archived meters - they no longer appear in usage tracking
+* Better empty states for customers with granted credits
+* Create customer meters automatically when meter credits are granted
+
+### Navigation & UX Improvements
+
+* Fixed navigation highlighting on mobile
+* Better handling of expired login codes
+* Removed unnecessary scrolling
+* Can't switch plans during trial period (not supported yet)
+
+## Seat Management Updates
+
+* API support for assigning seats programmatically
+* $0/seat pricing now allowed for seat-based tiers
+* Fixed eager loading issues with customer seats
+* Better webhooks for customer seat events
+
+## Invoice Numbering
+
+Two invoice numbering modes:
+
+* **Organization-wide** (default) - Sequential across all customers
+* **Per-customer** - Each customer has independent invoice numbering starting at 1
+
+Useful when you want to hide sales volume from customers.
+
+## System Events
+
+New system events automatically created for:
+
+* Orders paid
+* Orders refunded
+* Customer creation
+* Customer updates
+
+These events are available in the events explorer with cost tracking where applicable.
+
+## Discount Management
+
+Improved discount code selection with a searchable combobox instead of a dropdown, making it easier to find specific codes.
+
+## Bug Fixes
+
+* Fixed customer meter matching to include external customer IDs
+* Fixed Indian GST tax validation
+* Fixed subscription dunning process when payment is deleted
+* Fixed order confirmation emails for orders without products
+</Update>
+
 <Update label="2025-10-24">
 
 ## Seat-Based Pricing for One-Time Products

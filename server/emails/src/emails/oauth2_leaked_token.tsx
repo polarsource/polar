@@ -49,8 +49,8 @@ export function OAuth2LeakedToken({
           .
         </Text>
       </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-2">
+        <Text className="m-0 text-sm text-gray-600">
           You can read more about why you received this alert in our{' '}
           <Link
             href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"

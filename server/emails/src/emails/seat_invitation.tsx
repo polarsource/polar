@@ -35,12 +35,13 @@ export function SeatInvitation({
       <Section className="text-center">
         <Button href={claim_url}>Claim Your Seat</Button>
       </Section>
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          You can also claim your seat at the following URL
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
+        <Text className="m-0 text-xs text-gray-600">
+          If you're having trouble with the button above, copy & paste the URL
+          below into your web browser.
         </Text>
-        <Text className="text-sm">
-          <Link href={claim_url} className="text-blue-600 underline">
+        <Text className="mt-2 mb-0 text-xs">
+          <Link href={claim_url} className="break-all text-blue-600 underline">
             {claim_url}
           </Link>
         </Text>

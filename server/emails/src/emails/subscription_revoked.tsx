@@ -31,13 +31,13 @@ export function SubscriptionRevoked({
       <Section className="my-4 text-center">
         <Button href={url}>View subscription</Button>
       </Section>
-      <Section className="mt-4 border-t border-gray-200 pt-2">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
+        <Text className="m-0 text-xs text-gray-600">
+          If you're having trouble with the button above, copy & paste the URL
           below into your web browser.
         </Text>
-        <Text className="text-sm">
-          <Link href={url} className="text-blue-600 underline">
+        <Text className="mt-2 mb-0 text-xs">
+          <Link href={url} className="break-all text-blue-600 underline">
             {url}
           </Link>
         </Text>

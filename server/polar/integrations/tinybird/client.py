@@ -123,6 +123,32 @@ class TinybirdClient:
             result = await ch.query(sql, parameters=parameters)
             return [dict(zip(result.column_names, row)) for row in result.result_rows]
 
+    async def delete(self, datasource: str, delete_condition: str) -> dict[str, Any]:
+        log.debug(
+            "tinybird.delete",
+            datasource=datasource,
+            delete_condition=delete_condition,
+        )
+
+        with logfire.span(
+            "DELETE tinybird {datasource}",
+            datasource=datasource,
+            delete_condition=delete_condition,
+        ) as span:
+            span.set_attribute("db.system", "tinybird")
+            span.set_attribute("db.operation", "DELETE")
+            response = await self.client.post(
+                f"/v0/datasources/{datasource}/delete",
+                data={"delete_condition": delete_condition},
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def get_job(self, job_id: str) -> dict[str, Any]:
+        response = await self.client.get(f"/v0/jobs/{job_id}")
+        response.raise_for_status()
+        return response.json()
+
 
 client = TinybirdClient(
     api_url=settings.TINYBIRD_API_URL,

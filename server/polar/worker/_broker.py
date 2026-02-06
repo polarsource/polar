@@ -10,12 +10,17 @@ import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
 from dramatiq.brokers.redis import RedisBroker
+from dramatiq.middleware.group_callbacks import GroupCallbacks
+from dramatiq.rate_limits.backends import RedisBackend as RateLimiterBackend
+from dramatiq.results import Results
+from dramatiq.results.backends import RedisBackend as ResultsBackend
 
 from polar.config import settings
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
 from ._debounce import DebounceMiddleware
+from ._encoder import JSONEncoder
 from ._health import HealthMiddleware
 from ._httpx import HTTPXMiddleware
 from ._metrics import PrometheusMiddleware
@@ -141,10 +146,17 @@ def get_broker() -> dramatiq.Broker:
         client_name=f"{settings.ENV.value}.worker.dramatiq",
     )
 
+    result_backend = ResultsBackend(url=settings.redis_url, encoder=JSONEncoder())
+    rate_limiter_backend = RateLimiterBackend(url=settings.redis_url)
+
     middleware_list = [
         # Infrastructure & async support
         middleware.ShutdownNotifications(),
         middleware.AsyncIO(),
+        # Results backend for pipeline/group support
+        Results(backend=result_backend, result_ttl=60_000),
+        # Group completion callbacks for orchestrating task sequences
+        GroupCallbacks(rate_limiter_backend),
         # Resource lifecycle (worker boot/shutdown)
         SQLAlchemyMiddleware(),
         RedisMiddleware(),

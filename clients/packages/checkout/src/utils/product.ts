@@ -1,23 +1,31 @@
+import {
+  getTranslations,
+  type SupportedLocale,
+} from '@polar-sh/i18n'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 
-const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
-
-const suffixes = {
+const enSuffixes: Record<string, string> = {
   zero: '',
   one: 'st',
   two: 'nd',
   few: 'rd',
   many: '',
   other: 'th',
-} as const
+}
 
-const ordinal = (number: number): string => {
-  const category = ordinalRules.select(number)
-  const suffix = suffixes[category]
-  return number + suffix
+const ordinal = (number: number, locale: SupportedLocale = 'en'): string => {
+  const rules = new Intl.PluralRules(locale, { type: 'ordinal' })
+  const category = rules.select(number)
+
+  if (locale === 'nl') {
+    return `${number}e`
+  }
+
+  const suffix = enSuffixes[category] ?? ''
+  return `${number}${suffix}`
 }
 
 /**
@@ -25,70 +33,55 @@ const ordinal = (number: number): string => {
  * @param interval - The recurring interval (day, week, month, year)
  * @param intervalCount - The number of intervals (e.g., 2 for "2nd month")
  * @param format - Display format: 'short' (mo, yr) or 'long' (month, year)
+ * @param locale - The locale to use for translations
  * @returns Formatted string like "month", "2nd month", "mo", "3rd wk"
  */
 export const formatRecurringInterval = (
   interval: SubscriptionRecurringInterval | null | undefined,
   intervalCount?: number | null,
   format: 'short' | 'long' = 'long',
+  locale: SupportedLocale = 'en',
 ): string => {
   if (!interval) {
     return ''
   }
 
+  const t = getTranslations(locale)
   const count = intervalCount && intervalCount > 1 ? intervalCount : null
-  const prefix = count ? `${ordinal(count)} ` : ''
+  const prefix = count ? `${ordinal(count, locale)} ` : ''
+  const label = format === 'short'
+    ? t.intervals.short[interval]
+    : t.intervals.long[interval]
 
-  if (format === 'short') {
-    switch (interval) {
-      case 'day':
-        return `${prefix}dy`
-      case 'week':
-        return `${prefix}wk`
-      case 'month':
-        return `${prefix}mo`
-      case 'year':
-        return `${prefix}yr`
-      default:
-        return ''
-    }
-  }
-
-  return `${prefix}${interval}`
+  return `${prefix}${label}`
 }
 
 /**
  * Format a recurring frequency for display in billing descriptions
  * @param interval - The recurring interval (day, week, month, year)
  * @param intervalCount - The number of intervals (e.g., 2 for "every 2nd month")
+ * @param locale - The locale to use for translations
  * @returns Formatted string like "monthly", "every 2nd month", "yearly", "every 3rd week"
  */
 export const formatRecurringFrequency = (
   interval: SubscriptionRecurringInterval | null | undefined,
   intervalCount?: number | null,
+  locale: SupportedLocale = 'en',
 ): string => {
   if (!interval) {
     return ''
   }
 
+  const t = getTranslations(locale)
   const count = intervalCount && intervalCount > 1 ? intervalCount : null
 
   if (count) {
-    return `every ${ordinal(count)} ${interval}`
+    return t.intervals.frequency.everyOrdinalInterval
+      .replace('{ordinal}', ordinal(count, locale))
+      .replace('{interval}', t.intervals.long[interval])
   }
 
-  switch (interval) {
-    case 'day':
-      return 'daily'
-    case 'week':
-      return 'weekly'
-    case 'month':
-      return 'monthly'
-    case 'year':
-      return 'yearly'
-    default:
-      return interval
-  }
+  return t.intervals.frequency[interval]
 }
 
 export const isLegacyRecurringPrice = (

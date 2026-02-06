@@ -6,18 +6,21 @@ import {
   CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 export interface CheckoutCardProps {
   checkout: ProductCheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
+  locale?: SupportedLocale
 }
 
 export const CheckoutCard = ({
   checkout,
   update,
   disabled,
+  locale,
 }: CheckoutCardProps) => {
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
@@ -31,6 +34,7 @@ export const CheckoutCard = ({
           checkout={checkout}
           update={update}
           disabled={disabled}
+          locale={locale}
         />
       )}
 

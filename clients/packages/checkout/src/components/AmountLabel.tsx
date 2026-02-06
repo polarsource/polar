@@ -1,4 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
 import { formatRecurringInterval } from '../utils/product'
@@ -9,6 +10,7 @@ interface AmountLabelProps {
   mode: 'compact' | 'standard'
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
+  locale?: SupportedLocale
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -17,14 +19,15 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   interval,
   intervalCount,
   mode,
+  locale,
 }) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
       return ''
     }
-    const formatted = formatRecurringInterval(interval, intervalCount, 'short')
+    const formatted = formatRecurringInterval(interval, intervalCount, 'short', locale)
     return formatted ? ` / ${formatted}` : ''
-  }, [interval, intervalCount])
+  }, [interval, intervalCount, locale])
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">

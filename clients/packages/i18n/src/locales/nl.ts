@@ -79,6 +79,27 @@ export const nl = {
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
   },
+  intervals: {
+    short: {
+      day: 'dag',
+      week: 'wk',
+      month: 'mnd',
+      year: 'jr',
+    },
+    long: {
+      day: 'dag',
+      week: 'week',
+      month: 'maand',
+      year: 'jaar',
+    },
+    frequency: {
+      day: 'dagelijks',
+      week: 'wekelijks',
+      month: 'maandelijks',
+      year: 'jaarlijks',
+      everyOrdinalInterval: 'elke {ordinal} {interval}',
+    },
+  },
   playground: {
     interpolation: 'Dit is een {test}',
     plurals: {

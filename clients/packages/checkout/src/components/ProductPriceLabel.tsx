@@ -1,3 +1,4 @@
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -8,11 +9,13 @@ import MeteredPriceLabel from './MeteredPriceLabel'
 interface ProductPriceLabelProps {
   product: CheckoutProduct
   price: ProductPrice | LegacyRecurringProductPrice
+  locale?: SupportedLocale
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
+  locale,
 }) => {
   if (price.amountType === 'fixed') {
     return (
@@ -26,6 +29,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         }
         intervalCount={product.recurringIntervalCount}
         mode="compact"
+        locale={locale}
       />
     )
   } else if (price.amountType === 'custom') {

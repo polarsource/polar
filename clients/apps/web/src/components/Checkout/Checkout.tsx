@@ -211,6 +211,7 @@ const Checkout = ({
                 ) => Promise<ProductCheckoutPublic>
               }
               themePreset={themePreset}
+              locale={locale}
             />
             {checkout.productPrice.amountType === 'custom' && (
               <CheckoutPWYWForm
@@ -266,6 +267,7 @@ const Checkout = ({
                   ) => Promise<ProductCheckoutPublic>
                 }
                 themePreset={themePreset}
+                locale={locale}
               />
               {checkout.productPrice.amountType === 'custom' && (
                 <CheckoutPWYWForm
@@ -282,6 +284,7 @@ const Checkout = ({
                     data: CheckoutUpdatePublic,
                   ) => Promise<ProductCheckoutPublic>
                 }
+                locale={locale}
               />
             </>
           )}

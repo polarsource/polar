@@ -1,5 +1,6 @@
 'use client'
 
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -22,12 +23,14 @@ interface CheckoutProductSwitcherProps {
   update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
+  locale?: SupportedLocale
 }
 
 const CheckoutProductSwitcher = ({
   checkout,
   update,
   themePreset,
+  locale,
 }: CheckoutProductSwitcherProps) => {
   const {
     product: selectedProduct,
@@ -71,7 +74,7 @@ const CheckoutProductSwitcher = ({
     const intervalCount = product.recurringIntervalCount
 
     if (interval) {
-      const recurringLabel = formatRecurringFrequency(interval, intervalCount)
+      const recurringLabel = formatRecurringFrequency(interval, intervalCount, locale)
       return `Billed ${recurringLabel}`
     }
 
@@ -105,7 +108,7 @@ const CheckoutProductSwitcher = ({
                   />
                   <div className="flex grow flex-row items-center justify-between text-sm">
                     <div>{product.name}</div>
-                    <ProductPriceLabel product={product} price={price} />
+                    <ProductPriceLabel product={product} price={price} locale={locale} />
                   </div>
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">
@@ -137,6 +140,7 @@ const CheckoutProductSwitcher = ({
                 <ProductPriceLabel
                   product={product}
                   price={prices[product.id][0]}
+                  locale={locale}
                 />
               </div>
             </div>

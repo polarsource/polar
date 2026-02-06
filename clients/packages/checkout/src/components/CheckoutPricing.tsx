@@ -1,6 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
+import type { SupportedLocale } from '@polar-sh/i18n'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductCheckoutPublic } from '../guards'
@@ -13,13 +14,15 @@ import ProductPriceLabel from './ProductPriceLabel'
 const CheckoutProductAmountLabel = ({
   checkout,
   layout = 'default',
+  locale,
 }: {
   checkout: ProductCheckoutPublic
   layout?: 'default' | 'stacked'
+  locale?: SupportedLocale
 }) => {
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
-    return <ProductPriceLabel product={product} price={productPrice} />
+    return <ProductPriceLabel product={product} price={productPrice} locale={locale} />
   }
 
   return (
@@ -40,10 +43,11 @@ const CheckoutProductAmountLabel = ({
         }
         intervalCount={product.recurringIntervalCount}
         mode="compact"
+        locale={locale}
       />
       <div className="flex flex-row items-center gap-x-2 text-lg">
         <div className="text-gray-400 line-through">
-          <ProductPriceLabel product={product} price={productPrice} />
+          <ProductPriceLabel product={product} price={productPrice} locale={locale} />
         </div>
 
         <div className="relative rounded-xs bg-linear-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
@@ -62,6 +66,7 @@ interface CheckoutPricingProps {
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
   layout?: 'default' | 'stacked'
+  locale?: SupportedLocale
 }
 
 const CheckoutPricing = ({
@@ -69,6 +74,7 @@ const CheckoutPricing = ({
   update,
   disabled,
   layout = 'default',
+  locale,
 }: CheckoutPricingProps) => {
   const { product, productPrice, amount } = checkout
 
@@ -77,7 +83,7 @@ const CheckoutPricing = ({
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light">
           {productPrice.amountType !== 'custom' ? (
-            <CheckoutProductAmountLabel checkout={checkout} layout={layout} />
+            <CheckoutProductAmountLabel checkout={checkout} layout={layout} locale={locale} />
           ) : (
             formatCurrency('compact')(amount, productPrice.priceCurrency)
           )}

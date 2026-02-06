@@ -79,6 +79,27 @@ export const en = {
       paymentsUnavailable: 'Payments are currently unavailable',
     },
   },
+  intervals: {
+    short: {
+      day: 'dy',
+      week: 'wk',
+      month: 'mo',
+      year: 'yr',
+    },
+    long: {
+      day: 'day',
+      week: 'week',
+      month: 'month',
+      year: 'year',
+    },
+    frequency: {
+      day: 'daily',
+      week: 'weekly',
+      month: 'monthly',
+      year: 'yearly',
+      everyOrdinalInterval: 'every {ordinal} {interval}',
+    },
+  },
   playground: {
     interpolation: 'This is a {test}',
     plurals: {

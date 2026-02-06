@@ -330,7 +330,7 @@ const BaseCheckoutForm = ({
 
   const totalLabel = useMemo(() => {
     if (interval) {
-      const formatted = formatRecurringInterval(interval, intervalCount, 'long')
+      const formatted = formatRecurringInterval(interval, intervalCount, 'long', locale)
       return t('checkout.pricing.everyInterval', { interval: formatted })
     }
 
@@ -806,6 +806,7 @@ const BaseCheckoutForm = ({
                         interval={interval}
                         intervalCount={intervalCount}
                         mode="standard"
+                        locale={locale}
                       />
                     </DetailRow>
 
@@ -845,6 +846,7 @@ const BaseCheckoutForm = ({
                           interval={interval}
                           intervalCount={intervalCount}
                           mode="standard"
+                          locale={locale}
                         />
                         {formattedDiscountDuration && (
                           <span className="text-xs font-normal text-gray-500">

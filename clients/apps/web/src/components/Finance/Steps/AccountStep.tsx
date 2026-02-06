@@ -41,10 +41,10 @@ export default function AccountStep({
         </div>
         <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
           {isAccountSetupComplete
-            ? 'Your payout account details and status.'
+            ? 'Your payout account is connected and active.'
             : isNotAdmin
               ? 'Account setup requires admin privileges.'
-              : 'Set up your Stripe account to receive payments.'}
+              : 'Connect your bank account to receive payouts from Spaire.'}
         </p>
       </div>
 
@@ -100,10 +100,10 @@ export default function AccountStep({
             <div className="space-y-4">
               <div className="space-y-4 text-center">
                 <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-8">
-                  <h4 className="mb-2 font-medium">Create Payout Account</h4>
+                  <h4 className="mb-2 font-medium">Connect Payout Account</h4>
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
-                    Connect or create a Stripe account to receive payments from
-                    your customers.
+                    Connect your bank account so Spaire can send you your
+                    earnings.
                   </p>
                   <Button onClick={onStartAccountSetup} className="w-auto">
                     Continue with Account Setup

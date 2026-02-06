@@ -82,17 +82,17 @@ const AppealForm: React.FC<AppealFormProps> = ({
             <div className="flex-1">
               <h3 className="text-lg font-medium">
                 {decision === 'approved'
-                  ? 'Appeal Approved'
+                  ? 'Review Approved'
                   : decision === 'rejected'
-                    ? 'Appeal Denied'
-                    : 'Appeal Under Review'}
+                    ? 'Review Denied'
+                    : 'Under Review'}
               </h3>
               <p className="dark:text-polar-400 mt-1 text-sm text-gray-600">
                 {decision === 'approved'
-                  ? 'Your appeal has been approved. Payment access has been restored.'
+                  ? 'Your business has been approved. You can proceed with setup.'
                   : decision === 'rejected'
-                    ? 'Your appeal has been reviewed and denied. Please contact support for further assistance.'
-                    : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'}
+                    ? "Unfortunately, your business doesn't meet our requirements at this time. Please contact support for more information."
+                    : 'Thanks for the additional details. Our team will review your case shortly.'}
               </p>
               {submissionDate && (
                 <p className="dark:text-polar-400 mt-2 text-xs text-gray-500">
@@ -115,7 +115,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
           ) : decision !== 'rejected' && onContinueAfterSubmission ? (
             <div className="flex justify-center pt-4">
               <Button onClick={onContinueAfterSubmission} className="w-auto">
-                Continue Setup While Appeal is Reviewed
+                Continue Setup While Under Review
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -125,7 +125,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
           {appealReason && (
             <div className="border-t pt-4">
               <h4 className="dark:text-polar-300 mb-2 text-sm font-medium text-gray-700">
-                Your Appeal:
+                Your Submission:
               </h4>
               <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-3">
                 <p className="dark:text-polar-300 text-sm whitespace-pre-wrap text-gray-700">
@@ -143,11 +143,11 @@ const AppealForm: React.FC<AppealFormProps> = ({
     return (
       <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
         <div className="space-y-4 text-center">
-          <h3 className="text-lg font-medium">Submit an Appeal</h3>
+          <h3 className="text-lg font-medium">Request Manual Review</h3>
           <p className="dark:text-polar-400 text-sm text-gray-600">
             {disabled
-              ? 'Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect.'
-              : 'If you believe your organization was incorrectly flagged, you can submit an appeal for manual review.'}
+              ? 'Manual review is currently unavailable. Please contact support if you believe this is a mistake.'
+              : 'If you believe this is a mistake, provide more details and our team will review your case.'}
           </p>
           <Button
             onClick={() => setShowForm(true)}
@@ -155,7 +155,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
             disabled={disabled}
           >
             <Send className="mr-2 h-4 w-4" />
-            {disabled ? 'Appeal Disabled' : 'Start Appeal'}
+            {disabled ? 'Review Unavailable' : 'Provide Details'}
           </Button>
         </div>
       </Card>
@@ -166,7 +166,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
     <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Submit Appeal</h3>
+          <h3 className="text-lg font-medium">Request Review</h3>
           <Button
             type="button"
             variant="ghost"
@@ -180,12 +180,12 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
         <div className="space-y-2">
           <label className="text-sm font-medium">
-            Why should your organization be approved? *
+            Tell us more about your SaaS business *
           </label>
           <p className="dark:text-polar-400 text-xs text-gray-500">
             {disabled
-              ? 'Appeal submission is currently disabled. Please contact support for assistance.'
-              : "Please provide a detailed explanation of your business model and why it complies with our acceptable use policy. Be specific about what you're selling and how it fits within our guidelines."}
+              ? 'Manual review is currently unavailable. Please contact support for assistance.'
+              : 'Describe your SaaS product, your customers, and how you generate revenue. The more detail you provide, the faster we can review your case.'}
           </p>
           <Textarea
             value={appealReason}
@@ -194,8 +194,8 @@ const AppealForm: React.FC<AppealFormProps> = ({
             className={`min-h-32 w-full`}
             placeholder={
               disabled
-                ? 'Appeal submission disabled...'
-                : 'Explain why your organization should be approved for payments...'
+                ? 'Review unavailable...'
+                : 'Describe your SaaS product, target customers, and pricing model...'
             }
             maxLength={5000}
           />
@@ -234,7 +234,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            {disabled ? 'Appeal Disabled' : 'Submit Appeal'}
+            {disabled ? 'Review Unavailable' : 'Submit for Review'}
           </Button>
         </div>
       </form>

@@ -415,9 +415,9 @@ export default function StreamlinedAccountReview({
     <div className="mx-auto w-full max-w-4xl space-y-8">
       {/* Header */}
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-semibold">Set up your payout account</h1>
+        <h1 className="text-2xl font-semibold">Get started with Spaire</h1>
         <p className="dark:text-polar-400 text-gray-600">
-          Complete these steps to start accepting payments
+          Set up your merchant of record account to start selling your SaaS
         </p>
       </div>
 
@@ -442,12 +442,12 @@ export default function StreamlinedAccountReview({
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
-                <h1 className="text-2xl font-semibold">Organization Details</h1>
+                <h1 className="text-2xl font-semibold">About Your SaaS</h1>
               </div>
               <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
                 {requireDetails
-                  ? "Tell us about your organization so we can review if it's an acceptable use case for Spaire."
-                  : 'Review your submitted organization details below.'}
+                  ? 'Tell us about your SaaS business so we can configure your merchant of record account.'
+                  : 'Review your submitted business details below.'}
               </p>
             </div>
 
@@ -478,12 +478,12 @@ export default function StreamlinedAccountReview({
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
-                <h1 className="text-2xl font-semibold">Compliance Check</h1>
+                <h1 className="text-2xl font-semibold">Business Verification</h1>
               </div>
               <p className="dark:text-polar-400 mx-auto max-w-2xl text-lg text-gray-600">
                 {organizationReviewStatus?.verdict
-                  ? 'Review your validation results and appeal status below.'
-                  : 'Our AI is reviewing your organization details against our acceptable use policy.'}
+                  ? 'Review your verification results below.'
+                  : "We're verifying your SaaS business details."}
               </p>
             </div>
 

@@ -36,7 +36,7 @@ export default function IdentityStep({
               ? 'Your identity verification is being processed.'
               : identityVerificationStatus === 'failed'
                 ? 'Identity verification failed. Please try again.'
-                : 'Verify your identity to comply with financial regulations.'}
+                : 'Final step — verify your identity to activate your Spaire account.'}
         </p>
       </div>
 
@@ -92,9 +92,9 @@ export default function IdentityStep({
                   </div>
                   <h4 className="mb-2 font-medium">Verify Your Identity</h4>
                   <p className="dark:text-polar-400 mx-auto mb-6 max-w-md text-sm text-gray-600">
-                    To comply with financial regulations and secure your
-                    account, we need to verify your identity using a
-                    government-issued ID.
+                    As your merchant of record, we&apos;re required to verify
+                    the identity of account holders. This takes less than 2
+                    minutes.
                   </p>
                   <Button
                     onClick={onStartIdentityVerification}

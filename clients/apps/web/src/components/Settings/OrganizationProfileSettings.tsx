@@ -415,8 +415,7 @@ export const OrganizationDetailsForm: React.FC<
               Social Media {inKYCMode && '*'}
             </label>
             <p className="mt-2 text-xs text-gray-600">
-              Your personal social media links are used for identity
-              verification. They will never be shown publicly.
+              Used to verify your identity. Never shown publicly.
             </p>
           </div>
           <OrganizationSocialLinks required={inKYCMode} />
@@ -429,18 +428,18 @@ export const OrganizationDetailsForm: React.FC<
           <div className="mb-6">
             <h3 className="mb-2 text-lg font-medium">Business Details</h3>
             <p className="text-sm text-gray-600">
-              Help us understand your business for compliance and payment setup.
+              Tell us about your SaaS so we can handle taxes, billing, and
+              compliance for you.
             </p>
           </div>
 
           <div className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Describe your business *
+                What does your SaaS do? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: what industry you&apos;re in, what problem you solve,
-                and who your customers are
+                What problem do you solve and who are your target customers?
               </p>
               <FormField
                 control={control}
@@ -460,7 +459,7 @@ export const OrganizationDetailsForm: React.FC<
                   <div>
                     <CompactTextArea
                       field={field}
-                      placeholder="We make project management software for design teams."
+                      placeholder="We build a design collaboration platform for remote teams."
                     />
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
@@ -475,11 +474,11 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                What do you sell? Include type and features that are granted *
+                Describe your plans and pricing *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: product type (SaaS, course, service, etc.) and main
-                features (advanced reporting, team collaboration, etc.)
+                What plans do you offer, what&apos;s included, and how much do
+                they cost?
               </p>
               <FormField
                 control={control}
@@ -499,7 +498,7 @@ export const OrganizationDetailsForm: React.FC<
                   <div>
                     <CompactTextArea
                       field={field}
-                      placeholder="SaaS project management tool with team collaboration, file sharing, and reporting. $29/month per user."
+                      placeholder="Pro plan at $29/mo includes 5 seats, unlimited projects, and priority support. Enterprise at $99/mo adds SSO and dedicated support."
                     />
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
@@ -514,11 +513,10 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                How will you integrate Spaire into your business? *
+                How will you use Spaire? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Spaire, what features
-                you&apos;ll use, and how it fits your workflow
+                How will your customers subscribe and pay through Spaire?
               </p>
               <FormField
                 control={control}
@@ -538,7 +536,7 @@ export const OrganizationDetailsForm: React.FC<
                   <div>
                     <CompactTextArea
                       field={field}
-                      placeholder="Checkout on our website, API for subscription billing, webhooks for user access"
+                      placeholder="Embedded checkout on our pricing page, API for managing subscriptions, webhooks to provision user accounts"
                     />
                     <div className="mt-1 flex items-center justify-between">
                       <FormMessage />
@@ -600,7 +598,7 @@ export const OrganizationDetailsForm: React.FC<
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-medium">
-                  Expected annual revenue *
+                  Expected annual recurring revenue (ARR) *
                 </label>
                 <FormField
                   control={control}
@@ -621,7 +619,7 @@ export const OrganizationDetailsForm: React.FC<
 
               <div>
                 <label className="mb-2 block text-sm font-medium">
-                  Currently using
+                  Current billing provider
                 </label>
                 <FormField
                   control={control}
@@ -642,7 +640,7 @@ export const OrganizationDetailsForm: React.FC<
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">
-                            This is my first payment platform
+                            This is my first billing provider
                           </SelectItem>
                           {Object.entries(SwitchingFromOptions).map(
                             ([key, label]) => (

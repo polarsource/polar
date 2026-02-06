@@ -361,6 +361,10 @@ class OrganizationCreate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency = Field(
+        PresentmentCurrency.usd,
+        description="Default presentment currency for the organization",
+    )
 
 
 class OrganizationUpdate(Schema):
@@ -384,6 +388,9 @@ class OrganizationUpdate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency | None = Field(
+        None, description="Default presentment currency for the organization"
+    )
 
 
 class OrganizationPaymentStep(Schema):

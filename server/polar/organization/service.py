@@ -22,6 +22,7 @@ from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationErr
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
@@ -223,6 +224,35 @@ class OrganizationService:
         )
         return organization
 
+    async def _validate_currency_change(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        new_currency: PresentmentCurrency,
+    ) -> None:
+        """Validate that all active products have the target currency."""
+        if new_currency == organization.default_presentment_currency:
+            return
+
+        product_repo = ProductRepository.from_session(session)
+        products_without_currency = await product_repo.get_products_without_currency(
+            organization.id, new_currency
+        )
+
+        if products_without_currency:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "default_presentment_currency"),
+                        "msg": (
+                            "All active products must have prices in the new currency."
+                        ),
+                        "type": "value_error",
+                        "input": new_currency,
+                    }
+                ]
+            )
+
     async def update(
         self,
         session: AsyncSession,
@@ -247,6 +277,11 @@ class OrganizationService:
 
         if update_schema.notification_settings is not None:
             organization.notification_settings = update_schema.notification_settings
+
+        if update_schema.default_presentment_currency is not None:
+            await self._validate_currency_change(
+                session, organization, update_schema.default_presentment_currency
+            )
 
         previous_details = organization.details
         update_dict = update_schema.model_dump(

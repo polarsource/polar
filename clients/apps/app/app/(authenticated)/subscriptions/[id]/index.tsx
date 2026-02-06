@@ -125,7 +125,10 @@ export default function Index() {
 
       <CustomerRow customer={subscription.customer} />
 
-      <ProductRow product={subscription.product} />
+      <ProductRow
+        product={subscription.product}
+        currency={subscription.currency}
+      />
 
       <Box>
         <Details>

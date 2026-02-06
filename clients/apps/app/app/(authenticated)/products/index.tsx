@@ -25,11 +25,18 @@ function ProductsList() {
     )
   }, [data])
 
+  if (!organization) {
+    return null
+  }
+
   return (
     <FlashList
       data={flatData}
       renderItem={({ item }: { item: schemas['Product'] }) => (
-        <ProductRow product={item} />
+        <ProductRow
+          product={item}
+          currency={organization.default_presentment_currency}
+        />
       )}
       contentContainerStyle={{
         padding: theme.spacing['spacing-16'],

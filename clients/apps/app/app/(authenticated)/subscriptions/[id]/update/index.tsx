@@ -161,7 +161,10 @@ export default function Index() {
               >
                 <Text>{product.name}</Text>
                 <Box flexDirection="row" alignItems="center" gap="spacing-12">
-                  <ProductPriceLabel product={product} />
+                  <ProductPriceLabel
+                    product={product}
+                    currency={subscription.currency}
+                  />
                   <MaterialIcons
                     name="check"
                     size={16}

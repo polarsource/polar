@@ -343,6 +343,14 @@ const nextConfig = {
         ],
         permanent: false,
       },
+
+      // CLI Install Script
+      {
+        source: '/install.sh',
+        destination:
+          'https://raw.githubusercontent.com/polarsource/cli/main/install.sh',
+        permanent: false,
+      },
     ]
   },
   async headers() {

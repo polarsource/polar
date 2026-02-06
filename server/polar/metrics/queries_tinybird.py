@@ -113,22 +113,35 @@ WITH
         HAVING 1=1
             {sub_product_filter}
     ),
+    balance_events AS (
+        SELECT
+            e.name,
+            e.amount,
+            e.fee,
+            e.subscription_id,
+            COALESCE(
+                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
+                e.timestamp
+            ) AS effective_ts,
+            ss.started_at AS sub_started_at
+        FROM events_by_timestamp AS e FINAL
+        LEFT JOIN sub_state ss ON e.subscription_id = ss.subscription_id
+        WHERE {event_filters}
+            AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
+            AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
+    ),
     baseline AS (
         SELECT
             COALESCE(sumIf(
-                e.amount,
-                e.name IN ('balance.order', 'balance.credit_order')
+                be.amount,
+                be.name IN ('balance.order', 'balance.credit_order')
             ), 0) AS hist_revenue,
             COALESCE(
-                sum(e.amount) - sum(COALESCE(e.fee, 0)),
+                sum(be.amount) - sum(COALESCE(be.fee, 0)),
                 0
             ) AS hist_net_revenue
-        FROM events_by_timestamp AS e FINAL
-        WHERE {event_filters}
-            AND COALESCE(
-                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                e.timestamp
-            ) < toDateTime({{bounds_start:String}}, {{tz:String}})
+        FROM balance_events AS be
+        WHERE be.effective_ts < toDateTime({{bounds_start:String}}, {{tz:String}})
     ),
     sub_created_daily AS (
         SELECT
@@ -147,90 +160,77 @@ WITH
     ),
     daily_balance AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(COALESCE(
-                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                e.timestamp
-            ), {{tz:String}})) AS day,
+            date_trunc({{iv:String}}, toDateTime(be.effective_ts, {{tz:String}})) AS day,
 
-            countIf(e.name IN ('balance.order', 'balance.credit_order')) AS orders,
+            countIf(be.name IN ('balance.order', 'balance.credit_order')) AS orders,
 
-            COALESCE(sumIf(e.amount, e.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
+            COALESCE(sumIf(be.amount, be.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
 
-            COALESCE(sum(e.amount) - sum(COALESCE(e.fee, 0)), 0) AS net_revenue,
+            COALESCE(sum(be.amount) - sum(COALESCE(be.fee, 0)), 0) AS net_revenue,
 
             CASE
-                WHEN countIf(e.name IN ('balance.order', 'balance.credit_order')) > 0
+                WHEN countIf(be.name IN ('balance.order', 'balance.credit_order')) > 0
                 THEN toInt64(ceil(
-                    sumIf(e.amount, e.name IN ('balance.order', 'balance.credit_order'))
-                    / countIf(e.name IN ('balance.order', 'balance.credit_order'))
+                    sumIf(be.amount, be.name IN ('balance.order', 'balance.credit_order'))
+                    / countIf(be.name IN ('balance.order', 'balance.credit_order'))
                 ))
                 ELSE 0
             END AS average_order_value,
 
             CASE
-                WHEN countIf(e.name IN ('balance.order', 'balance.credit_order')) > 0
+                WHEN countIf(be.name IN ('balance.order', 'balance.credit_order')) > 0
                 THEN toInt64(ceil(
-                    (sum(e.amount) - sum(COALESCE(e.fee, 0)))
-                    / countIf(e.name IN ('balance.order', 'balance.credit_order'))
+                    (sum(be.amount) - sum(COALESCE(be.fee, 0)))
+                    / countIf(be.name IN ('balance.order', 'balance.credit_order'))
                 ))
                 ELSE 0
             END AS net_average_order_value,
 
             countIf(
-                e.name IN ('balance.order', 'balance.credit_order')
-                AND e.subscription_id IS NULL
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NULL
             ) AS one_time_products,
 
-            COALESCE(sumIf(e.amount,
-                e.name IN ('balance.order', 'balance.credit_order')
-                AND e.subscription_id IS NULL
+            COALESCE(sumIf(be.amount,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NULL
             ), 0) AS one_time_products_revenue,
 
-            COALESCE(sumIf(e.amount - COALESCE(e.fee, 0),
-                e.subscription_id IS NULL
+            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+                be.subscription_id IS NULL
             ), 0) AS one_time_products_net_revenue,
 
-            COALESCE(sumIf(e.amount,
-                e.name IN ('balance.order', 'balance.credit_order')
-                AND e.subscription_id IS NOT NULL
-                AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) = day
+            COALESCE(sumIf(be.amount,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NOT NULL
+                AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) = day
             ), 0) AS new_subscriptions_revenue,
 
-            COALESCE(sumIf(e.amount - COALESCE(e.fee, 0),
-                e.subscription_id IS NOT NULL
-                AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) = day
+            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+                be.subscription_id IS NOT NULL
+                AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) = day
             ), 0) AS new_subscriptions_net_revenue,
 
-            countDistinctIf(e.subscription_id,
-                e.name IN ('balance.order', 'balance.credit_order')
-                AND e.subscription_id IS NOT NULL
-                AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) != day
+            countDistinctIf(be.subscription_id,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NOT NULL
+                AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ) AS renewed_subscriptions,
 
-            COALESCE(sumIf(e.amount,
-                e.name IN ('balance.order', 'balance.credit_order')
-                AND e.subscription_id IS NOT NULL
-                AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) != day
+            COALESCE(sumIf(be.amount,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NOT NULL
+                AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ), 0) AS renewed_subscriptions_revenue,
 
-            COALESCE(sumIf(e.amount - COALESCE(e.fee, 0),
-                e.subscription_id IS NOT NULL
-                AND date_trunc({{iv:String}}, toDateTime(ss.started_at, {{tz:String}})) != day
+            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+                be.subscription_id IS NOT NULL
+                AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ), 0) AS renewed_subscriptions_net_revenue
 
-        FROM events_by_timestamp AS e FINAL
-        LEFT JOIN sub_state ss ON toString(e.subscription_id) = toString(ss.subscription_id)
-        WHERE {event_filters}
-            AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
-            AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
-            AND COALESCE(
-                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                e.timestamp
-            ) >= toDateTime({{bounds_start:String}}, {{tz:String}})
-            AND COALESCE(
-                JSONExtract(e.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                e.timestamp
-            ) <= toDateTime({{bounds_end:String}}, {{tz:String}})
+        FROM balance_events AS be
+        WHERE be.effective_ts >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND be.effective_ts <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     ),
     daily_events AS (
@@ -379,19 +379,14 @@ WITH
         FROM subscription_state
         WHERE organization_id IN {{org_ids:Array(String)}}
         GROUP BY subscription_id
-        -- HAVING 1=1 anchor for optional AND-prefixed aggregate filters
         HAVING 1=1
             {sub_product_filter}
             {sub_customer_filter}
     ),
-    latest_payments AS (
+    latest_payment AS (
         SELECT
             subscription_id,
-            amount AS settlement_amount,
-            ROW_NUMBER() OVER (
-                PARTITION BY subscription_id
-                ORDER BY timestamp DESC
-            ) AS rn
+            argMax(amount, timestamp) AS settlement_amount
         FROM events_by_timestamp FINAL
         WHERE source = 'system'
             AND name IN ('balance.order', 'balance.credit_order')
@@ -399,11 +394,27 @@ WITH
             AND subscription_id IS NOT NULL
             {payment_product_filter}
             {payment_customer_filter}
+        GROUP BY subscription_id
     ),
-    latest_payment AS (
-        SELECT subscription_id, settlement_amount
-        FROM latest_payments
-        WHERE rn = 1
+    subs_with_mrr AS (
+        SELECT
+            s.subscription_id,
+            s.started_at,
+            s.ends_at,
+            s.customer_id,
+            CASE
+                WHEN s.recurring_interval = 'year'
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
+                WHEN s.recurring_interval = 'month'
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
+                WHEN s.recurring_interval = 'week'
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
+                WHEN s.recurring_interval = 'day'
+                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
+                ELSE toInt64(0)
+            END AS monthly_amount
+        FROM subs s
+        LEFT JOIN latest_payment lp ON lp.subscription_id = s.subscription_id
     )
 SELECT
     w.window_start AS timestamp,
@@ -421,31 +432,9 @@ FROM windows w
 LEFT JOIN (
     SELECT
         w2.window_start,
-        sum(
-            CASE
-                WHEN s.recurring_interval = 'year'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
-                WHEN s.recurring_interval = 'month'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
-                WHEN s.recurring_interval = 'week'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
-                WHEN s.recurring_interval = 'day'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
-                ELSE toInt64(0)
-            END
-        ) AS monthly_recurring_revenue,
+        sum(s.monthly_amount) AS monthly_recurring_revenue,
         sumIf(
-            CASE
-                WHEN s.recurring_interval = 'year'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / (12 * s.recurring_interval_count)))
-                WHEN s.recurring_interval = 'month'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) / s.recurring_interval_count))
-                WHEN s.recurring_interval = 'week'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
-                WHEN s.recurring_interval = 'day'
-                    THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
-                ELSE toInt64(0)
-            END,
+            s.monthly_amount,
             s.ends_at <= toDateTime64(0, 3, 'UTC')
             OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
         ) AS committed_monthly_recurring_revenue,
@@ -456,8 +445,7 @@ LEFT JOIN (
             OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
         ) AS committed_subscriptions
     FROM windows w2
-    CROSS JOIN subs s
-    LEFT JOIN latest_payment lp ON toString(lp.subscription_id) = toString(s.subscription_id)
+    CROSS JOIN subs_with_mrr s
     WHERE
         (s.started_at IS NULL OR date_trunc({{iv:String}}, toDateTime(s.started_at, {{tz:String}})) <= w2.window_start)
         AND (

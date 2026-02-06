@@ -1918,6 +1918,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/cli/listen/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Listen
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli:listen']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/files/': {
     parameters: {
       query?: never
@@ -4558,6 +4578,83 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'member.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.created
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.updated
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.deleted
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_deleted_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'order.created': {
     parameters: {
       query?: never
@@ -6437,6 +6534,8 @@ export interface components {
       subscription_id?: string
       /** Amount */
       amount: number
+      /** Net Amount */
+      net_amount?: number
       /** Currency */
       currency: string
       /** Presentment Amount */
@@ -23186,6 +23285,8 @@ export interface components {
       product_name: string
       /** Amount */
       amount: number
+      /** Currency */
+      currency: string
     }
     /** SearchResultProduct */
     SearchResultProduct: {
@@ -23226,6 +23327,8 @@ export interface components {
       status: string
       /** Amount */
       amount: number
+      /** Currency */
+      currency: string
     }
     /** SearchResults */
     SearchResults: {
@@ -26272,6 +26375,9 @@ export interface components {
       | 'customer_seat.assigned'
       | 'customer_seat.claimed'
       | 'customer_seat.revoked'
+      | 'member.created'
+      | 'member.updated'
+      | 'member.deleted'
       | 'order.created'
       | 'order.updated'
       | 'order.paid'
@@ -26299,6 +26405,77 @@ export interface components {
      * @enum {string}
      */
     WebhookFormat: 'raw' | 'discord' | 'slack'
+    /**
+     * WebhookMemberCreatedPayload
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberCreatedPayload: {
+      /**
+       * Type
+       * @example member.created
+       * @constant
+       */
+      type: 'member.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberDeletedPayload
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberDeletedPayload: {
+      /**
+       * Type
+       * @example member.deleted
+       * @constant
+       */
+      type: 'member.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberUpdatedPayload
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberUpdatedPayload: {
+      /**
+       * Type
+       * @example member.updated
+       * @constant
+       */
+      type: 'member.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
     /**
      * WebhookOrderCreatedPayload
      * @description Sent when a new order is created.
@@ -30951,6 +31128,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ExpiredCheckoutError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cli:listen': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -39041,6 +39249,105 @@ export interface operations {
       }
     }
   }
+  _endpointmember_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberDeletedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointorder_created_post: {
     parameters: {
       query?: never
@@ -43830,6 +44137,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'customer_seat.assigned',
   'customer_seat.claimed',
   'customer_seat.revoked',
+  'member.created',
+  'member.updated',
+  'member.deleted',
   'order.created',
   'order.updated',
   'order.paid',

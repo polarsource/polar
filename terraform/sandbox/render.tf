@@ -94,6 +94,12 @@ module "sandbox" {
       tag                = "latest"
       dramatiq_prom_port = "10000"
     }
+    worker-sandbox-webhook = {
+      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues webhooks"
+      tag                = "latest"
+      dramatiq_prom_port = "10001"
+      database_pool_size = "16"
+    }
   }
 
   google_secrets = {

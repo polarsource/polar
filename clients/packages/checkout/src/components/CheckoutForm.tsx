@@ -343,7 +343,9 @@ const BaseCheckoutForm = ({
     }
 
     if (checkout.isPaymentFormRequired) {
-      return interval ? t('checkout.cta.subscribeNow') : t('checkout.cta.payNow')
+      return interval
+        ? t('checkout.cta.subscribeNow')
+        : t('checkout.cta.payNow')
     }
 
     return t('checkout.cta.getFree')
@@ -447,7 +449,9 @@ const BaseCheckoutForm = ({
                       }}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('checkout.form.businessName')}</FormLabel>
+                          <FormLabel>
+                            {t('checkout.form.businessName')}
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="text"
@@ -463,7 +467,9 @@ const BaseCheckoutForm = ({
                   )}
 
                   <FormItem>
-                    <FormLabel>{t('checkout.form.billingAddress.label')}</FormLabel>
+                    <FormLabel>
+                      {t('checkout.form.billingAddress.label')}
+                    </FormLabel>
                     {isDisplayedField(checkout.billingAddressFields.line1) && (
                       <FormControl>
                         <FormField
@@ -481,7 +487,9 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="billing address-line1"
-                                placeholder={t('checkout.form.billingAddress.line1')}
+                                placeholder={t(
+                                  'checkout.form.billingAddress.line1',
+                                )}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -508,7 +516,9 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="billing address-line2"
-                                placeholder={t('checkout.form.billingAddress.line2')}
+                                placeholder={t(
+                                  'checkout.form.billingAddress.line2',
+                                )}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -542,7 +552,9 @@ const BaseCheckoutForm = ({
                                   <Input
                                     type="text"
                                     autoComplete="billing postal-code"
-                                    placeholder={t('checkout.form.billingAddress.postalCode')}
+                                    placeholder={t(
+                                      'checkout.form.billingAddress.postalCode',
+                                    )}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -571,7 +583,9 @@ const BaseCheckoutForm = ({
                                   <Input
                                     type="text"
                                     autoComplete="billing address-level2"
-                                    placeholder={t('checkout.form.billingAddress.city')}
+                                    placeholder={t(
+                                      'checkout.form.billingAddress.city',
+                                    )}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -840,7 +854,10 @@ const BaseCheckoutForm = ({
                       </div>
                     </DetailRow>
                     {meteredPrices.length > 0 && (
-                      <DetailRow title={t('checkout.pricing.additionalMeteredUsage')} emphasis />
+                      <DetailRow
+                        title={t('checkout.pricing.additionalMeteredUsage')}
+                        emphasis
+                      />
                     )}
                     {meteredPrices.map((meteredPrice) => (
                       <DetailRow
@@ -864,12 +881,20 @@ const BaseCheckoutForm = ({
                           emphasis
                           title={
                             checkout.activeTrialInterval === 'year'
-                              ? t('checkout.trial.duration.years', { count: checkout.activeTrialIntervalCount })
+                              ? t('checkout.trial.duration.years', {
+                                  count: checkout.activeTrialIntervalCount,
+                                })
                               : checkout.activeTrialInterval === 'month'
-                                ? t('checkout.trial.duration.months', { count: checkout.activeTrialIntervalCount })
+                                ? t('checkout.trial.duration.months', {
+                                    count: checkout.activeTrialIntervalCount,
+                                  })
                                 : checkout.activeTrialInterval === 'week'
-                                  ? t('checkout.trial.duration.weeks', { count: checkout.activeTrialIntervalCount })
-                                  : t('checkout.trial.duration.days', { count: checkout.activeTrialIntervalCount })
+                                  ? t('checkout.trial.duration.weeks', {
+                                      count: checkout.activeTrialIntervalCount,
+                                    })
+                                  : t('checkout.trial.duration.days', {
+                                      count: checkout.activeTrialIntervalCount,
+                                    })
                           }
                         >
                           <span>{t('checkout.pricing.free')}</span>

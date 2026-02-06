@@ -16,26 +16,49 @@
   --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
   --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
 
-  --font-sans: var(--font-geist-sans), sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  /* Fonts */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
 
   --text-xxs: 0.65rem;
 
-  /* ================= BLUE (kept for safety) ================= */
-  --color-blue-50: oklch(0.97 0.014 254.604);
-  --color-blue-100: oklch(0.932 0.032 255.585);
-  --color-blue-200: oklch(0.882 0.059 254.128);
-  --color-blue-300: oklch(0.809 0.105 251.813);
-  --color-blue-400: oklch(0.707 0.165 254.624);
-  --color-blue-500: oklch(0.623 0.214 259.815);
-  --color-blue-600: oklch(0.546 0.245 262.881);
-  --color-blue-700: oklch(0.488 0.243 264.376);
-  --color-blue-800: oklch(0.424 0.199 265.638);
-  --color-blue-900: oklch(0.379 0.146 265.522);
-  --color-blue-950: oklch(0.282 0.091 267.935);
-  --color-blue: var(--color-blue-600);
+  /* Brand palette (teal) - replacing peach, anchored around #1e5a6a */
+  --color-peach-50:  oklch(0.985 0.010 210);
+  --color-peach-100: oklch(0.965 0.018 210);
+  --color-peach-200: oklch(0.930 0.032 210);
+  --color-peach-300: oklch(0.880 0.055 210);
+  --color-peach-400: oklch(0.810 0.085 210);
+  --color-peach-500: oklch(0.720 0.110 210);
+  /* ~ #1e5a6a */
+  --color-peach-600: oklch(0.610 0.095 210);
+  --color-peach-700: oklch(0.520 0.080 210);
+  --color-peach-800: oklch(0.430 0.060 210);
+  --color-peach-900: oklch(0.360 0.045 210);
+  --color-peach-950: oklch(0.260 0.030 210);
 
-  /* ================= GREEN (interactive emphasis) ================= */
+  /* Primary brand token */
+  --color-peach: var(--color-peach-600);
+
+  /* Blue aliased to brand */
+  --color-blue-50: var(--color-peach-50);
+  --color-blue-100: var(--color-peach-100);
+  --color-blue-200: var(--color-peach-200);
+  --color-blue-300: var(--color-peach-300);
+  --color-blue-400: var(--color-peach-400);
+  --color-blue-500: var(--color-peach-500);
+  --color-blue-600: var(--color-peach-600);
+  --color-blue-700: var(--color-peach-700);
+  --color-blue-800: var(--color-peach-800);
+  --color-blue-900: var(--color-peach-900);
+  --color-blue-950: var(--color-peach-950);
+  --color-blue: var(--color-peach);
+
+  /* Greens */
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);
   --color-green-200: oklch(0.905 0.093 164.15);
@@ -48,10 +71,7 @@
   --color-green-900: oklch(0.378 0.077 168.94);
   --color-green-950: oklch(0.262 0.051 172.552);
 
-  --color-green-brand: var(--color-green-600);
-  --color-black: #000000;
-
-  /* ================= RED ================= */
+  /* Reds */
   --color-red-50: oklch(0.971 0.013 17.38);
   --color-red-100: oklch(0.936 0.032 17.717);
   --color-red-200: oklch(0.885 0.062 18.334);
@@ -64,7 +84,7 @@
   --color-red-900: oklch(0.396 0.141 25.723);
   --color-red-950: oklch(0.258 0.092 26.042);
 
-  /* ================= GRAYS ================= */
+  /* Grays */
   --color-gray-50: oklch(0.985 0.002 247.839);
   --color-gray-100: oklch(0.967 0.003 264.542);
   --color-gray-200: oklch(0.928 0.006 264.531);
@@ -77,7 +97,7 @@
   --color-gray-900: oklch(0.21 0.034 264.665);
   --color-gray-950: oklch(0.13 0.028 261.692);
 
-  /* ================= POLAR ================= */
+  /* Polar */
   --color-polar-50: hsl(233, 5%, 85%);
   --color-polar-100: hsl(233, 5%, 79%);
   --color-polar-200: hsl(233, 5%, 68%);
@@ -90,7 +110,7 @@
   --color-polar-900: hsl(233, 5%, 6.5%);
   --color-polar-950: hsl(233, 5%, 3%);
 
-  /* ================= SHADCN ALIASES ================= */
+  /* shadcn tokens */
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -126,11 +146,11 @@
 
   @keyframes accordion-down {
     0% { height: 0; }
-    100% { height: 'var(--radix-accordion-content-height)'; }
+    100% { height: var(--radix-accordion-content-height); }
   }
 
   @keyframes accordion-up {
-    0% { height: 'var(--radix-accordion-content-height)'; }
+    0% { height: var(--radix-accordion-content-height); }
     100% { height: 0; }
   }
 
@@ -138,11 +158,15 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
-/* ================= BASE ================= */
-
 @layer base {
-  html { @apply text-gray-900; }
-  html.dark { @apply text-gray-200; }
+  html {
+    @apply text-gray-900 antialiased;
+    font-family: var(--font-sans);
+  }
+
+  html.dark {
+    @apply text-gray-200;
+  }
 
   *,
   ::after,
@@ -152,14 +176,8 @@
     border-color: var(--border);
   }
 
-  body { color: var(--foreground); }
-
-  a {
-    color: var(--color-green-brand);
-  }
-
-  a:hover {
-    text-decoration: underline;
+  body {
+    color: var(--foreground);
   }
 }
 
@@ -170,7 +188,7 @@
   }
 }
 
-/* ================= SHADCN UI ================= */
+/* shadcn/ui */
 
 @layer base {
   :root {
@@ -181,18 +199,16 @@
     --card-foreground: var(--color-gray-900);
 
     --popover: var(--color-white);
-    --popover-foreground: hsl(224 71.4% 4.1%);
+    --popover-foreground: var(--color-gray-900);
 
     --sidebar-background: var(--color-gray-100);
     --sidebar-foreground: var(--color-gray-900);
-    --sidebar-primary: var(--color-black);
-    --sidebar-primary-foreground: var(--color-white);
-    --sidebar-accent: var(--color-green-brand);
-    --sidebar-accent-foreground: var(--color-white);
+    --sidebar-primary: var(--color-peach);
+    --sidebar-primary-foreground: var(--color-gray-50);
     --sidebar-border: var(--color-gray-300);
 
-    --primary: var(--color-black);
-    --primary-foreground: var(--color-white);
+    --primary: var(--color-peach);
+    --primary-foreground: var(--color-gray-50);
 
     --secondary: var(--color-gray-100);
     --secondary-foreground: var(--color-gray-900);
@@ -200,7 +216,7 @@
     --muted: var(--color-gray-100);
     --muted-foreground: var(--color-gray-500);
 
-    --accent: var(--color-green-brand);
+    --accent: var(--color-peach);
     --accent-foreground: var(--color-white);
 
     --destructive: var(--color-red-500);
@@ -208,8 +224,7 @@
 
     --border: var(--color-gray-200);
     --input: var(--color-gray-200);
-    --ring: var(--color-green-brand);
-
+    --ring: var(--color-peach);
     --radius: 0.6rem;
   }
 
@@ -225,14 +240,12 @@
 
     --sidebar-background: var(--color-polar-950);
     --sidebar-foreground: var(--color-polar-50);
-    --sidebar-primary: var(--color-black);
-    --sidebar-primary-foreground: var(--color-white);
-    --sidebar-accent: var(--color-green-brand);
-    --sidebar-accent-foreground: var(--color-white);
+    --sidebar-primary: var(--color-peach);
+    --sidebar-primary-foreground: var(--color-polar-50);
     --sidebar-border: var(--color-polar-700);
 
-    --primary: var(--color-black);
-    --primary-foreground: var(--color-white);
+    --primary: var(--color-peach);
+    --primary-foreground: var(--color-polar-50);
 
     --secondary: var(--color-polar-900);
     --secondary-foreground: var(--color-polar-50);
@@ -240,19 +253,17 @@
     --muted: var(--color-polar-700);
     --muted-foreground: var(--color-polar-500);
 
-    --accent: var(--color-green-brand);
-    --accent-foreground: var(--color-white);
+    --accent: var(--color-peach);
+    --accent-foreground: var(--color-polar-50);
 
     --destructive: var(--color-red-500);
     --destructive-foreground: var(--color-red-500);
 
     --border: var(--color-polar-700);
     --input: var(--color-polar-700);
-    --ring: var(--color-green-brand);
+    --ring: var(--color-peach);
   }
 }
-
-/* ================= SHIKI ================= */
 
 pre.shiki {
   overflow: auto;

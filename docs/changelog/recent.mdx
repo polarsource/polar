@@ -4,6 +4,72 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-11-07">
+## Hierarchical Events & Spans
+
+Events can now be organized hierarchically with parent-child relationships, perfect for tracking complex workflows:
+
+* Create event spans with `parent_id` reference
+* Use `external_id` as idempotency key to prevent duplicate events
+* View nested events in the dashboard
+* Navigate event hierarchies with dedicated event detail pages
+* Query transitive closure for efficient sub-hierarchy analysis
+
+This enables use cases like tracking LLM requests with multiple steps, or multi-phase order fulfillment workflows.
+
+## Master-Detail Layout
+
+New master-detail layout pattern across the dashboard:
+
+* List view on the left, detail view on the right
+* Proper nested routing for direct linking
+* Better navigation and state management
+* Improved querystring handling
+
+Applied to customers, subscriptions, events, and more.
+
+## Improved Date Range Picker
+
+Better date range selection throughout analytics:
+
+* Fixed "this year" and "last year" presets
+* Smart interval selection based on date range
+* Consistent behavior across all views
+* Better timezone handling
+
+## Settings Auto-Save
+
+Settings now auto-save as you type instead of requiring manual save button clicks. Includes proper debouncing and error handling for a smoother experience.
+
+## Customer Management Enhancements
+
+### Product Subscription View
+
+Product overview now shows active subscriptions table, making it easier to see who's using each product.
+
+### Customer Filtering
+
+Filter subscriptions by cancellation status - find subscriptions that will cancel at period end.
+
+### Benefit Grants
+
+Added direct links to customers and subscriptions from benefit grants overview for easier navigation.
+
+## Account Management
+
+* Email notifications when unlinking accounts from organizations
+* Fixed OAuth account disconnection for users with multiple accounts on the same platform
+
+## Bug Fixes
+
+* Fixed customer update trying to set email to None when explicitly provided
+* Fixed payment method handling when soft-deleted methods are updated from Stripe
+* Added maximum length validation to customer names
+* Fixed customer portal theming
+* Fixed subscription double cycling with proper locking mechanisms
+* Fixed Mintlify docs CSP configuration
+</Update>
+
 <Update label="2025-10-31">
 
 ## Cost Insights

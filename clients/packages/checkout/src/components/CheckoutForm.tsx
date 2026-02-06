@@ -95,8 +95,6 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
-  subscribeNowButtonExperiment?: boolean
-  payNowButtonExperiment?: boolean
   locale?: SupportedLocale
 }
 
@@ -111,8 +109,6 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
-  subscribeNowButtonExperiment,
-  payNowButtonExperiment,
   locale: localeProp,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)

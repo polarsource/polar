@@ -21,18 +21,19 @@
 
   --text-xxs: 0.65rem;
 
-  --color-blue-50: oklch(0.97 0.014 254.604);
-  --color-blue-100: oklch(0.932 0.032 255.585);
-  --color-blue-200: oklch(0.882 0.059 254.128);
-  --color-blue-300: oklch(0.809 0.105 251.813);
-  --color-blue-400: oklch(0.707 0.165 254.624);
-  --color-blue-500: oklch(0.623 0.214 259.815);
-  --color-blue-600: oklch(0.546 0.245 262.881);
-  --color-blue-700: oklch(0.488 0.243 264.376);
-  --color-blue-800: oklch(0.424 0.199 265.638);
-  --color-blue-900: oklch(0.379 0.146 265.522);
-  --color-blue-950: oklch(0.282 0.091 267.935);
-  --color-blue: var(--color-blue-600);
+  /* BLUE → #006054 */
+  --color-blue-50:  #006054;
+  --color-blue-100: #006054;
+  --color-blue-200: #006054;
+  --color-blue-300: #006054;
+  --color-blue-400: #006054;
+  --color-blue-500: #006054;
+  --color-blue-600: #006054;
+  --color-blue-700: #006054;
+  --color-blue-800: #006054;
+  --color-blue-900: #006054;
+  --color-blue-950: #006054;
+  --color-blue: #006054;
 
   --color-green-50: oklch(0.979 0.021 166.113);
   --color-green-100: oklch(0.95 0.052 163.051);
@@ -117,47 +118,30 @@
   --radius-4xl: 2rem;
 
   @keyframes accordion-down {
-    0%: {
-      height: 0;
-    }
-    100% {
-      height: 'var(--radix-accordion-content-height)';
-    }
+    0% { height: 0; }
+    100% { height: 'var(--radix-accordion-content-height)'; }
   }
 
   @keyframes accordion-up {
-    0% {
-      height: 'var(--radix-accordion-content-height)';
-    }
-    100% {
-      height: 0;
-    }
+    0% { height: 'var(--radix-accordion-content-height)'; }
+    100% { height: 0; }
   }
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
+/* BASE */
+
 @layer base {
-  html {
-    @apply text-gray-900;
-  }
+  html { @apply text-gray-900; }
+  html.dark { @apply text-gray-200; }
 
-  html.dark {
-    @apply text-gray-200;
-  }
-
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--border);
   }
 
-  body {
-    color: var(--foreground);
-  }
+  body { color: var(--foreground); }
 }
 
 @media (prefers-color-scheme: light) {
@@ -167,7 +151,7 @@
   }
 }
 
-/* shadcn/ui */
+/* SHADCN/UI */
 
 @layer base {
   :root {

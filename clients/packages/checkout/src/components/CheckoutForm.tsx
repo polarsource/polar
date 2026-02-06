@@ -617,8 +617,13 @@ const BaseCheckoutForm = ({
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder={
-                                  country === 'US' ? 'State' : 'Province'
+                                  country === 'US'
+                                    ? t('checkout.form.billingAddress.state')
+                                    : t('checkout.form.billingAddress.province')
                                 }
+                                fallbackPlaceholder={t(
+                                  'checkout.form.billingAddress.stateProvince',
+                                )}
                               />
                               <FormMessage />
                             </>
@@ -649,6 +654,9 @@ const BaseCheckoutForm = ({
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
+                                placeholder={t(
+                                  'checkout.form.billingAddress.country',
+                                )}
                               />
                               <FormMessage />
                             </>

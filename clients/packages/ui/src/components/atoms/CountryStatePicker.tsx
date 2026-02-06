@@ -86,6 +86,7 @@ const CountryStatePicker = ({
   contentClassName,
   disabled,
   placeholder = 'State',
+  fallbackPlaceholder = 'State / Province',
 }: {
   className?: string
   contentClassName?: string
@@ -96,6 +97,7 @@ const CountryStatePicker = ({
   autoComplete?: string
   disabled?: boolean
   placeholder?: string
+  fallbackPlaceholder?: string
 }) => {
   if (country === 'US' || country === 'CA') {
     const states = country === 'US' ? US_STATES : CA_PROVINCES
@@ -135,7 +137,7 @@ const CountryStatePicker = ({
   return (
     <Input
       type="text"
-      placeholder="State / Province"
+      placeholder={fallbackPlaceholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}

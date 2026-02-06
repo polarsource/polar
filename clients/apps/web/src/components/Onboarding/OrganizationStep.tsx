@@ -14,6 +14,7 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
+  FormDescription,
   FormField,
   FormItem,
   FormMessage,
@@ -27,6 +28,7 @@ import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
+import { CurrencySelector } from '../CurrencySelector'
 import { getStatusRedirect } from '../Toast/utils'
 import SupportedUseCases from './components/SupportedUseCases'
 
@@ -35,6 +37,13 @@ export interface OrganizationStepProps {
   validationErrors?: schemas['ValidationError'][]
   error?: string
   hasExistingOrg: boolean
+}
+
+type FormSchema = Pick<
+  schemas['OrganizationCreate'],
+  'name' | 'slug' | 'default_presentment_currency'
+> & {
+  terms: boolean
 }
 
 export const OrganizationStep = ({
@@ -53,14 +62,11 @@ export const OrganizationStep = ({
     experimentVariant,
   } = useOnboardingTracking()
 
-  const form = useForm<{
-    name: string
-    slug: string
-    terms: boolean
-  }>({
+  const form = useForm<FormSchema>({
     defaultValues: {
       name: initialSlug || '',
       slug: initialSlug || '',
+      default_presentment_currency: 'usd',
       terms: false,
     },
   })
@@ -121,11 +127,7 @@ export const OrganizationStep = ({
     }
   }, [name, editedSlug, slug, setValue])
 
-  const onSubmit = async (data: {
-    name: string
-    slug: string
-    terms: boolean
-  }) => {
+  const onSubmit = async (data: FormSchema) => {
     if (!data.terms) return
 
     const params = {
@@ -149,7 +151,7 @@ export const OrganizationStep = ({
     setUserOrganizations((orgs) => [...orgs, organization])
 
     if (!hasExistingOrg) {
-      await trackStepCompleted('org', organization.id)
+      trackStepCompleted('org', organization.id)
     }
 
     let queryParams = ''
@@ -236,6 +238,35 @@ export const OrganizationStep = ({
                           />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FadeUp>
+
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                  <FormField
+                    control={control}
+                    name="default_presentment_currency"
+                    rules={{
+                      required: 'Currency is required',
+                    }}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl className="flex w-full flex-col gap-y-4">
+                          <Label htmlFor="default_presentment_currency">
+                            Default Payment Currency
+                          </Label>
+                          <CurrencySelector
+                            value={
+                              field.value as schemas['PresentmentCurrency']
+                            }
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                        <FormDescription>
+                          The default currency for your products
+                        </FormDescription>
                       </FormItem>
                     )}
                   />

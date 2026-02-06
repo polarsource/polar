@@ -27,6 +27,30 @@ const phClient = process.env.NEXT_PUBLIC_POSTHOG_TOKEN
     })
   : null
 
+const getCurrencyInfo = (currency: string) => {
+  const currencyUpper = currency.toUpperCase()
+  const currencyLower = currency.toLowerCase()
+
+  // Map currencies to their symbols and full names
+  const currencyMap: Record<
+    string,
+    { symbol: string; name: string; code: string }
+  > = {
+    usd: { symbol: '$', name: 'US Dollar', code: 'USD' },
+    eur: { symbol: '€', name: 'Euro', code: 'EUR' },
+    gbp: { symbol: '£', name: 'British Pound', code: 'GBP' },
+    cad: { symbol: 'CA$', name: 'Canadian Dollar', code: 'CAD' },
+    aud: { symbol: 'A$', name: 'Australian Dollar', code: 'AUD' },
+    jpy: { symbol: '¥', name: 'Japanese Yen', code: 'JPY' },
+    chf: { symbol: 'CHF', name: 'Swiss Franc', code: 'CHF' },
+    sek: { symbol: 'SEK', name: 'Swedish Krona', code: 'SEK' },
+    inr: { symbol: '₹', name: 'Indian Rupee', code: 'INR' },
+    brl: { symbol: 'R$', name: 'Brazilian Real', code: 'BRL' },
+  }
+
+  return currencyMap[currencyLower] || { symbol: currencyUpper, name: currencyUpper, code: currencyUpper }
+}
+
 const sharedSystemPrompt = `
 You are a helpful assistant that helps a new user configure their Polar account.
 You're part of their initial onboarding flow, where you'll guide them through collecting the necessary information
@@ -152,7 +176,10 @@ Always respond in JSON format with the JSON object ONLY and do not include any e
 Do not return Markdown formatting or code fences.
 `
 
-const conversationalSystemPrompt = `
+const getConversationalSystemPrompt = (currency: string) => {
+  const currencyInfo = getCurrencyInfo(currency)
+  
+  return `
 ${sharedSystemPrompt}
 
 # Product Configuration
@@ -168,9 +195,9 @@ So, in general, you should follow this order:
 # Rules
 - Never render ID's in your text response.
 - Prefer no formatting in your response, but if you do, use valid Markdown (limited to bold, italic, and lists. No headings.)
-- Prices will always be in USD. If you are prompted about a different currency, mention that this is not supported yet,
-  and ask them to specify their prices in USD. If no currency is mentioned, assume USD. Never ask to confirm the currency,
-  nor mention this limitation proactively. Use only a dollar sign ($), no need to repeat USD.
+- All prices must be in ${currencyInfo.code} (${currencyInfo.name}). This is the default currency configured for this organization.
+  Only use ${currencyInfo.code} for all products. Do not suggest or allow multiple currencies.
+  Use the ${currencyInfo.symbol} symbol when displaying prices. Never ask to confirm the currency.
 - The product name is not that important, and can be renamed, so if a user says "A premium plan" just use "Premium" as the name.
 - Do not include the word "plan" in the product name except if it's explictly phrased as such.
 - You are capable of creating multiple products at the same time, so you should hold all of them in context, and don't
@@ -182,7 +209,7 @@ So, in general, you should follow this order:
 - The goal is to get the user to a minimal configuration fast, so once there is reasonable confidence that you have all the information you need,
   do not ask for more information. Users will always be able to add more products, descriptions, and details later.
 - If a user mentions a price for a software product but they don't specify a billing interval, assume it's a recurring monthly subscription.
-- If a user mentions "$x per month" for a yearly plan, or vice versa, do the math for them.
+- If a user mentions "${currencyInfo.symbol}x per month" for a yearly plan, or vice versa, do the math for them.
 - If a recurring price is mentioned without product specifics, assume it's a software subscription.
 - If a price is mentioned without a recurring interval, it's a one-time purchase and you should try to determine whether it's a specific benefit or a generic access through a custom benefit
 - If the request is not relevant to the configuration of a product, gently decline the request and mention that you're only able to configure the user's Polar account.
@@ -196,6 +223,7 @@ So, in general, you should follow this order:
 
 The user will now describe their product and you will start the configuration assistant.
 `
+}
 
 async function generateOAT(
   userId: string,
@@ -304,6 +332,21 @@ export async function POST(req: Request) {
   if (!organizationId) {
     return new Response('Organization ID is required', { status: 400 })
   }
+
+  // Fetch organization to get default presentment currency
+  const api = await getServerSideAPI()
+  const { data: organization, error: orgError } = await api.GET(
+    '/v1/organizations/{id}',
+    {
+      params: { path: { id: organizationId } },
+    },
+  )
+
+  if (orgError || !organization) {
+    return new Response('Failed to fetch organization', { status: 500 })
+  }
+
+  const defaultCurrency = organization.default_presentment_currency || 'usd'
 
   let tools = {}
 
@@ -437,6 +480,8 @@ based on the conversation history whether you're done.
   })
 
   let streamStarted = false
+
+  const conversationalSystemPrompt = getConversationalSystemPrompt(defaultCurrency)
 
   const result = streamText({
     // Gemini 2.5 Flash for quick & cheap responses, Sonnet 4.5 for better tool usage

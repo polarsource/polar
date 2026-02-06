@@ -21026,6 +21026,11 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
+      /**
+       * @description Default presentment currency for the organization
+       * @default usd
+       */
+      default_presentment_currency: components['schemas']['PresentmentCurrency']
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -21457,6 +21462,10 @@ export interface components {
         | null
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
+        | null
+      /** @description Default presentment currency for the organization */
+      default_presentment_currency?:
+        | components['schemas']['PresentmentCurrency']
         | null
     }
     /**

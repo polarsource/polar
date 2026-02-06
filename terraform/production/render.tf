@@ -153,7 +153,7 @@ module "production" {
       dramatiq_prom_port = "10000"
     }
     "worker-medium-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues default medium_priority"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }

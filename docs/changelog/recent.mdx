@@ -4,6 +4,231 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-12-07">
+## Dispute & Chargeback Management
+
+Complete dispute tracking and prevention system:
+
+* Dispute model to track chargebacks from Stripe
+* Chargeback Stop integration for rapid dispute resolution (RDR)
+* Auto-refund on RDR disputes to prevent chargebacks
+* Link refunds to disputes for better tracking
+* Improved dispute event handling from Stripe webhooks
+
+Helps reduce chargeback fees and protect your account standing.
+
+## Metrics API
+
+New metrics filtering system:
+
+* `metrics` query parameter to filter specific metrics
+* Removed deprecated `focus_metrics` parameter
+* Better performance by only calculating requested metrics
+
+## iOS App Updates
+
+* App rating prompts at appropriate times
+* iOS upsell banner on homepage
+* Animations on login screen (fade in, Ken Burns effect, staggered elements)
+* Fixed multi-account crash on settings screen
+* Fixed onboarding redirect after org creation
+* Fixed scroll issue with many orgs
+* Version bumped to 1.1.0
+
+## Mobile App (Android)
+
+Added Android support:
+
+* Android targets in build scripts
+* App store ready for both iOS and Android
+
+## Email Improvements
+
+* Updated Polar logo in all emails
+* Better email DNS validation
+* Fixed invalid email domain issues
+
+## Worker Queue Management
+
+Better task prioritization:
+
+* Low, medium, and high priority queues
+* Separate workers for different priorities
+* Schedule tasks moved to high priority worker
+</Update>
+
+<Update label="2025-11-28">
+## Downloads Page
+
+New dedicated downloads page at polar.sh/downloads for easy access to desktop and mobile apps.
+
+## Customer Balance Refunds
+
+* Handle refunds on orders with customer balance applied
+* Proper balance credit restoration
+* Block refunds on specific orders via API flag
+
+## Worker Priority Queues
+
+Introduced task prioritization system:
+
+* Low priority queue for background tasks
+* Medium priority queue for standard tasks
+* High priority queue for time-sensitive operations
+* Separate workers consuming from each queue
+
+Ensures critical tasks get processed first.
+
+## Rate Limiting
+
+* New restricted rate limit group for abusive patterns
+* Better rate limit handling across endpoints
+
+## Email Validation
+
+Added DNS validation for email addresses across checkout, customer creation, and user management to prevent typos and invalid domains.
+
+## Event Query Optimization
+
+Massive performance improvements:
+
+* Removed unnecessary ordering from event queries (3x faster)
+* Better customer latest event queries
+* New indexes on events table
+* Optimized IN queries for customer meters
+
+## Mobile App Improvements
+
+* Account deletion functionality
+* Proper logout and login flow fixes
+* Better error handling
+* Login screen animations with Ken Burns effect
+
+## Bug Fixes
+
+* Fixed settings scroll with many organizations
+* Fixed app onboarding redirect
+* Fixed organization service name in Logfire
+* Fixed customer meter organization ID tracking
+* Fixed bitwise SQL operator parentheses
+</Update>
+
+<Update label="2025-11-21">
+## Customer Balance
+
+Customer balance system built on top of wallet infrastructure:
+
+* Track customer credit balances
+* Apply balances automatically to invoices
+* API support for balance management
+* Foundation for store credit and refund credits
+
+## Members API
+
+New members management system for B2B customers:
+
+* GET `/v1/members` endpoint with pagination
+* Filter members by customer ID
+* Auto-create owner member when customer is created
+* Override owner member details via API
+* Members included in customer endpoints
+* Proper organization scoping and access control
+
+Perfect for managing team members across B2B customer accounts.
+
+## Sign in with Apple
+
+Added Apple OAuth for authentication:
+
+* Apple OAuth integration
+
+## Ad-hoc Checkout Pricing
+
+Create checkouts with dynamic pricing that override catalog prices:
+
+* Useful for custom deals, usage-based pricing, or testing
+* Supports all price types (fixed, free, custom)
+* Full API and SDK support
+
+[Read more](/docs/features/checkout/session#ad-hoc-prices)
+
+## Churn Rate
+
+New churn rate metric on analytics dashboard:
+
+* Track subscription cancellations over time
+* Understand retention patterns
+* Available on homepage and customers page
+
+## Event Labels
+
+Events now have customizable labels:
+
+* System events get readable labels automatically
+* User events can have custom labels
+* Labels shown throughout events UI
+* Edit labels via event type settings
+
+Makes events more readable and meaningful for your team.
+
+## Spans View
+
+New spans interface for hierarchical event tracking (hidden for now):
+
+* List and detail views for event spans
+* Charts and sparklines for visualization
+* Time-series data with proper timezone handling
+* Cost aggregation across event hierarchies
+
+## Metrics Performance
+
+Significant performance improvements for analytics:
+
+* Optimized metrics queries with window functions
+* Better date range bounds handling
+* Indexes on subscription date columns
+* Cumulative revenue includes full history
+* Fixed timezone and interval issues
+
+## Invoice Numbering
+
+Changed default invoice numbering to per-customer (was organization-wide):
+
+* Each customer starts invoice numbering at 1
+* Hides sales volume from individual customers
+* Can still switch to organization-wide in settings
+
+## Tax & Billing
+
+* Show taxable amount after discount in checkout
+* Fixed tax ID formatting (was showing raw strings)
+* Fixed Stripe coupon name length validation
+* Fixed conflicting invoice numbering issues
+
+## Checkout Improvements
+
+* Persist business name across checkouts
+* Hide cookie consent banner when logging in via app
+* Fixed expired checkout intent handling
+
+## Bug Fixes
+
+* Fixed 404 after deleting customers, benefits, or checkout links
+* Fixed product price configurator validation
+* Fixed custom field number constraint validation
+* Fixed benefit capitalization in customer portal
+* Fixed organization cache after profile picture update
+* Fixed social link parsing
+
+## Mobile App
+
+* Continue with Apple support
+* Disabled tablet support (phone-only for now)
+* Fixed EAS build configuration
+* Removed demo mode
+* Better workspace integration
+</Update>
+
 <Update label="2025-11-14">
 ## Trial Abuse Prevention
 

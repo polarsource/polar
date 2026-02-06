@@ -233,6 +233,7 @@ const Checkout = ({
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          locale={locale}
         />
       </ShadowBox>
     )

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 
-export const SUPPORTED_LOCALES = ['en'] as const
+export const SUPPORTED_LOCALES = ['en', 'nl'] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en'
 
@@ -9,6 +9,7 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
 }
 
 import { en } from './locales/en'
+import { nl } from './locales/nl'
 
 export type Translations = typeof en
 
@@ -44,6 +45,39 @@ type ExtractPlaceholders<S extends string> =
     ? Key | ExtractPlaceholders<Rest>
     : never
 
+type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never
+
+type StringShape<S extends string> =
+  ExtractPlaceholders<S> extends never
+    ? string
+    : UnionToIntersection<
+        ExtractPlaceholders<S> extends infer P extends string
+          ? `${string}{${P}}${string}`
+          : never
+      >
+
+type PluralShape<T> = {
+  [K in keyof T]: K extends '_mode'
+    ? T[K]
+    : T[K] extends string
+      ? StringShape<T[K]>
+      : T[K]
+}
+
+type LocaleShape<T> = {
+  [K in keyof T]: T[K] extends { _mode: string }
+    ? PluralShape<T[K]>
+    : T[K] extends string
+      ? StringShape<T[K]>
+      : T[K] extends object
+        ? LocaleShape<T[K]>
+        : T[K]
+}
+
 // Get all required interpolation keys for a translation key
 // Plurals always require 'count' + any {placeholders} in the templates
 type InterpolationKeys<K extends TranslationKey> =
@@ -69,14 +103,15 @@ type TranslateFn = <K extends TranslationKey>(
     : [interpolations: InterpolationsRecord<InterpolationKeys<K>>]
 ) => string
 
-const translations: Record<SupportedLocale, typeof en> = {
+const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   en,
+  nl,
 }
 
 export function getTranslations(
   locale: SupportedLocale = DEFAULT_LOCALE,
 ): Translations {
-  return translations[locale] ?? translations[DEFAULT_LOCALE]
+  return (translations[locale] ?? translations[DEFAULT_LOCALE]) as Translations
 }
 
 export const useTranslations = (locale: SupportedLocale): TranslateFn => {
@@ -133,6 +168,3 @@ export const useTranslations = (locale: SupportedLocale): TranslateFn => {
   )
 }
 
-type _DebugValue = ValueAtPath<Translations, 'playground.interpolation'>
-type _DebugExtract = ExtractPlaceholders<'This is a {test}'>
-type _DebugDirect = Translations['playground']['interpolation']

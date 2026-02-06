@@ -58,8 +58,8 @@ const DetailRow = ({
     <div
       className={`flex flex-row items-start justify-between gap-x-8 ${emphasis ? 'font-medium' : 'dark:text-polar-500 text-gray-500'}`}
     >
-      <span>{title}</span>
-      {children}
+      <span className="min-w-0 truncate">{title}</span>
+      <span className="shrink-0">{children}</span>
     </div>
   )
 }
@@ -788,7 +788,7 @@ const BaseCheckoutForm = ({
                     {checkout.discount && (
                       <>
                         <DetailRow
-                          title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
+                          title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount)})` : ''}`}
                         >
                           {formatCurrency('standard')(
                             -checkout.discountAmount,

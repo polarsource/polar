@@ -111,12 +111,15 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
           </div>
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 bg-gray-50 p-6 text-gray-400">
+        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-4 bg-gray-50 p-6 text-center text-gray-400">
           <ShoppingCartOutlined
             className="dark:text-polar-600 text-gray-300"
             fontSize="large"
           />
-          <h3>No transactions yet</h3>
+          <div className="flex flex-col gap-y-1">
+            <h3 className="font-medium dark:text-white text-gray-700">No transactions yet</h3>
+            <p className="text-sm">Transactions will appear here as customers complete checkouts</p>
+          </div>
         </Card>
       )}
     </div>

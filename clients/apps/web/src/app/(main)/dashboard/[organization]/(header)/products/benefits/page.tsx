@@ -43,13 +43,17 @@ export default async function Page(props: {
     redirect(redirectUrl)
   }
 
-  // Otherwise show empty state
+  // Otherwise show empty state as onboarding
   return (
-    <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
-      <h1 className="text-2xl font-normal">No Benefits</h1>
-      <p className="dark:text-polar-500 text-gray-500">
-        Create a benefit to get started
-      </p>
+    <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 px-4 py-24">
+      <div className="flex max-w-md flex-col items-center gap-y-4 text-center">
+        <h1 className="text-xl font-medium">Add value with benefits</h1>
+        <p className="dark:text-polar-500 text-gray-500">
+          Benefits are extras you attach to products — file downloads,
+          Discord access, license keys, custom integrations, and more.
+          Customers receive them automatically after purchase.
+        </p>
+      </div>
       <Link
         href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
       >

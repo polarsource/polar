@@ -226,21 +226,26 @@ export default function ClientPage({
             </List>
           </Pagination>
         ) : (
-          <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
-            <HiveOutlined
-              className="dark:text-polar-600 text-5xl text-gray-300"
-              fontSize="large"
-            />
-            <div className="flex flex-col items-center gap-y-6">
+          <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-24">
+            <div className="flex max-w-md flex-col items-center gap-y-6 text-center">
+              <HiveOutlined
+                className="dark:text-polar-600 text-5xl text-gray-300"
+                fontSize="large"
+              />
               <div className="flex flex-col items-center gap-y-2">
-                <h3 className="text-lg font-medium">No products found</h3>
+                <h3 className="text-xl font-medium">
+                  Create your first product
+                </h3>
                 <p className="dark:text-polar-500 text-gray-500">
-                  Start selling digital products today
+                  Products are what your customers purchase — subscriptions,
+                  one-time payments, or usage-based plans. Set up pricing,
+                  benefits, and checkout in one place.
                 </p>
               </div>
               <Link href={`/dashboard/${org.slug}/products/new`}>
-                <Button role="link" variant="secondary">
-                  <span>Create Product</span>
+                <Button role="link">
+                  <AddOutlined className="h-4 w-4" />
+                  <span>New Product</span>
                 </Button>
               </Link>
             </div>

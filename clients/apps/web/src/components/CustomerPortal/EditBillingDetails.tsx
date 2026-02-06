@@ -235,6 +235,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                       country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
+                      placeholder={country === 'US' ? 'State' : 'Province'}
                     />
                     <FormMessage />
                   </div>

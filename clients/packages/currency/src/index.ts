@@ -60,11 +60,13 @@ type FormattingMode =
   | 'statistics'
   | 'subcent'
 
-export const DEFAULT_LOCALE = undefined // Let the browser determine the default locale
-
-const formatCurrencyCompact = (cents: number, currency: string): string => {
+const formatCurrencyCompact = (
+  cents: number,
+  currency: string,
+  locales?: Intl.LocalesArgument,
+): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
@@ -74,9 +76,13 @@ const formatCurrencyCompact = (cents: number, currency: string): string => {
   return currencyNumberFormat.format(cents / decimalFactor)
 }
 
-const formatCurrencyStandard = (cents: number, currency: string): string => {
+const formatCurrencyStandard = (
+  cents: number,
+  currency: string,
+  locales?: Intl.LocalesArgument,
+): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
     currency,
     currencyDisplay: 'symbol',
@@ -86,9 +92,13 @@ const formatCurrencyStandard = (cents: number, currency: string): string => {
   return currencyNumberFormat.format(cents / decimalFactor)
 }
 
-const formatCurrencyAccounting = (cents: number, currency: string): string => {
+const formatCurrencyAccounting = (
+  cents: number,
+  currency: string,
+  locales?: Intl.LocalesArgument,
+): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
     currency,
     currencyDisplay: 'symbol',
@@ -98,9 +108,13 @@ const formatCurrencyAccounting = (cents: number, currency: string): string => {
   return currencyNumberFormat.format(cents / decimalFactor)
 }
 
-const formatCurrencyStatistics = (cents: number, currency: string): string => {
+const formatCurrencyStatistics = (
+  cents: number,
+  currency: string,
+  locales?: Intl.LocalesArgument,
+): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
@@ -113,9 +127,13 @@ const formatCurrencyStatistics = (cents: number, currency: string): string => {
   return currencyNumberFormat.format(cents / decimalFactor)
 }
 
-const formatCurrencySubcent = (cents: number, currency: string): string => {
+const formatCurrencySubcent = (
+  cents: number,
+  currency: string,
+  locales?: Intl.LocalesArgument,
+): string => {
   const decimalFactor = getCurrencyDecimalFactor(currency)
-  const currencyNumberFormat = new Intl.NumberFormat(DEFAULT_LOCALE, {
+  const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
@@ -138,6 +156,8 @@ const formatCurrencySubcent = (cents: number, currency: string): string => {
  *   - 'accounting': Formal display with disambiguated currency symbol, always shows decimals for decimal currencies
  *   - 'statistics': Compact display for charts/graphs, uses abbreviations (K, M, B)
  *   - 'subcent': High-precision display for very small amounts
+ * @param locales - Optional locale specification. If undefined, the browser's default locale is used (recommended).
+ *                  Use explicit locales only when you need consistent formatting across different environments.
  *
  * @returns A function that takes cents and currency and returns the formatted string
  *
@@ -180,18 +200,18 @@ const formatCurrencySubcent = (cents: number, currency: string): string => {
  * formatSubcent(0.0000000101, 'usd') // Returns: "$0.000000000101"
  */
 export const formatCurrency =
-  (mode: FormattingMode) =>
+  (mode: FormattingMode, locales?: Intl.LocalesArgument) =>
   (cents: number, currency: string): string => {
     switch (mode) {
       case 'compact':
-        return formatCurrencyCompact(cents, currency)
+        return formatCurrencyCompact(cents, currency, locales)
       case 'standard':
-        return formatCurrencyStandard(cents, currency)
+        return formatCurrencyStandard(cents, currency, locales)
       case 'accounting':
-        return formatCurrencyAccounting(cents, currency)
+        return formatCurrencyAccounting(cents, currency, locales)
       case 'statistics':
-        return formatCurrencyStatistics(cents, currency)
+        return formatCurrencyStatistics(cents, currency, locales)
       case 'subcent':
-        return formatCurrencySubcent(cents, currency)
+        return formatCurrencySubcent(cents, currency, locales)
     }
   }

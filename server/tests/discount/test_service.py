@@ -12,6 +12,7 @@ from polar.discount.schemas import (
 )
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.models import (
     Checkout,
@@ -57,7 +58,7 @@ class TestCreate:
                 duration=DiscountDuration.once,
                 type=DiscountType.fixed,
                 amount=1000,
-                currency="usd",
+                currency=PresentmentCurrency.usd,
                 name="A" * 256,
                 code=None,
                 starts_at=None,
@@ -181,14 +182,14 @@ class TestUpdate:
                     basis_points=2000,
                     # Make sure passing "currency" doesn't cause AttributeError
                     # on percentage discounts
-                    currency="usd",
+                    currency=PresentmentCurrency.usd,
                 ),
             ),
             (
                 DiscountType.fixed,
                 DiscountUpdate(
                     amount=2000,
-                    currency="usd",
+                    currency=PresentmentCurrency.usd,
                     # Make sure passing "basis_points" doesn't cause AttributeError
                     # on percentage discounts
                     basis_points=2000,

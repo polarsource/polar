@@ -1,5 +1,6 @@
 import { useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { isDiscountFixed } from '@/utils/discount'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -26,6 +27,9 @@ const UpdateDiscountModalContent = ({
   const form = useForm<schemas['DiscountUpdate']>({
     defaultValues: {
       ...discount,
+      currency: isDiscountFixed(discount)
+        ? (discount.currency as schemas['PresentmentCurrency'])
+        : undefined,
       products: discount.products.map((product) => product.id),
     },
   })

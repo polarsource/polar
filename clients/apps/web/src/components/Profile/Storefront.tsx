@@ -97,7 +97,11 @@ export const Storefront = ({
                     `products/${product.id}`,
                   )}
                 >
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    currency="usd"
+                  />
                 </Link>
               ))}
             </ProductsGrid>

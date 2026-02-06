@@ -135,7 +135,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
     >
       {product && (
         <List size="small">
-          <ProductListItem organization={organization} product={product} />
+          <ProductListItem
+            organization={organization}
+            product={product}
+            currency={order.currency}
+          />
         </List>
       )}
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">

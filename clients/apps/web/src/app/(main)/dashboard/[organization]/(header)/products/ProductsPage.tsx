@@ -221,6 +221,7 @@ export default function ClientPage({
                     key={product.id}
                     organization={org}
                     product={product}
+                    currency={org.default_presentment_currency}
                   />
                 ))}
             </List>

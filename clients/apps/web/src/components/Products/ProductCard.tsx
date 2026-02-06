@@ -8,9 +8,10 @@ import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductCardProps {
   product: schemas['ProductStorefront']
+  currency: string
 }
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = ({ product, currency }: ProductCardProps) => {
   return (
     <div className="flex h-full w-full flex-col gap-4 transition-opacity hover:opacity-50">
       {product.medias.length > 0 ? (
@@ -39,7 +40,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               {hasLegacyRecurringPrices(product) ? (
                 <LegacyRecurringProductPrices product={product} />
               ) : (
-                <ProductPriceLabel product={product} />
+                <ProductPriceLabel product={product} currency={currency} />
               )}
             </h3>
             {product.benefits.length > 0 && (

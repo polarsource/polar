@@ -1,0 +1,54 @@
+---
+title: "Integrating Webhooks Locally"
+sidebarTitle: "Local Development"
+description: "Setup Webhook delivery to your local machine"
+---
+
+### Install Polar CLI
+
+macOS, Linux, WSL:
+
+```bash
+curl -fsSL https://polar.sh/install.sh | bash
+```
+
+### Login to your account
+
+This will allow you to authenticate with Polar.
+
+```bash
+polar login
+```
+
+### Listen for Webhooks
+
+```bash
+polar listen http://localhost:3000/
+```
+
+You will be prompted to select which Organization you want to listen for.
+
+```bash
+✔ Select Organization …  My Organization
+
+  Connected  My Organization
+  Secret     6t3c8ce2247c493a3ade20uea4484d64
+  Forwarding http://localhost:3000
+
+  Waiting for events...
+```
+
+### Set the secret
+
+Make sure that you copy the secret & set it in your environment variables.
+
+If you don't set the correct secret, you'll see 403 errors if you use our Webhook utilities in your app.
+
+```bash
+# .env
+POLAR_WEBHOOK_SECRET=6t3c8ce2247c493a3ade20uea4484d64
+```
+
+### All set!
+
+You're now fully setup. Webhooks will be tunneled via the CLI listen connection, and relayed to the specified target URL.

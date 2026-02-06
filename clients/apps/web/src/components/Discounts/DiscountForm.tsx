@@ -210,6 +210,13 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                     placeholder={1000}
                     disabled={!canUpdateAmount}
                     currency={organization.default_presentment_currency}
+                    onChange={(e) => {
+                      field.onChange(e)
+                      setValue(
+                        'currency',
+                        organization.default_presentment_currency as schemas['PresentmentCurrency'],
+                      )
+                    }}
                   />
                 </FormControl>
                 {!canUpdateAmount && (

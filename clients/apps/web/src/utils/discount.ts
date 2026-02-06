@@ -8,7 +8,7 @@ type CheckoutDiscount =
   | schemas['CheckoutDiscountPercentageOnceForeverDuration']
   | schemas['CheckoutDiscountPercentageRepeatDuration']
 
-const isDiscountFixed = (
+export const isDiscountFixed = (
   discount: CheckoutDiscount,
 ): discount is
   | schemas['CheckoutDiscountFixedOnceForeverDuration']
@@ -16,7 +16,7 @@ const isDiscountFixed = (
   return discount.type === 'fixed'
 }
 
-const isDiscountPercentage = (
+export const isDiscountPercentage = (
   discount: CheckoutDiscount,
 ): discount is
   | schemas['CheckoutDiscountPercentageOnceForeverDuration']

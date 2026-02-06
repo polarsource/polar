@@ -14,6 +14,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import (
@@ -64,6 +65,7 @@ from polar.product.guard import (
     is_metered_price,
 )
 from polar.product.price_set import PriceSet
+from polar.redis import Redis
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
@@ -334,7 +336,9 @@ class TestCreate:
         assert subscription.current_period_end > subscription.current_period_start
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_valid_with_external_customer_id(
         self,
@@ -363,7 +367,9 @@ class TestCreate:
         assert subscription.prices == product_recurring_free_price.prices
 
         assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
 
 @pytest.mark.asyncio
@@ -372,6 +378,7 @@ class TestCreateOrUpdateFromCheckout:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_one_time: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -381,13 +388,14 @@ class TestCreateOrUpdateFromCheckout:
         )
         with pytest.raises(NotARecurringProduct):
             await subscription_service.create_or_update_from_checkout(
-                session, checkout, None
+                session, redis, checkout, None
             )
 
     async def test_missing_customer(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product: Product,
     ) -> None:
         checkout = await create_checkout(
@@ -397,7 +405,7 @@ class TestCreateOrUpdateFromCheckout:
         )
         with pytest.raises(MissingCheckoutCustomer):
             await subscription_service.create_or_update_from_checkout(
-                session, checkout, None
+                session, redis, checkout, None
             )
 
     async def test_new_fixed(
@@ -406,6 +414,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product: Product,
         customer: Customer,
         payment_method: PaymentMethod,
@@ -421,7 +430,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -440,7 +449,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_new_custom(
         self,
@@ -448,6 +459,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_custom_price: Product,
         customer: Customer,
         payment_method: PaymentMethod,
@@ -465,7 +477,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -479,7 +491,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_new_free(
         self,
@@ -487,6 +501,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_free_price: Product,
         customer: Customer,
     ) -> None:
@@ -501,7 +516,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, None
+            session, redis, checkout, None
         )
 
         assert created is True
@@ -515,7 +530,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_new_metered(
         self,
@@ -523,6 +540,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_metered: Product,
         customer: Customer,
         payment_method: PaymentMethod,
@@ -538,7 +556,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -552,7 +570,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
         event_repository = EventRepository.from_session(session)
         for subscription_meter in subscription.meters:
@@ -567,6 +587,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_custom_price: Product,
         customer: Customer,
         discount_percentage_100: Discount,
@@ -586,7 +607,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -600,7 +621,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_upgrade_fixed(
         self,
@@ -608,6 +631,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_free_price: Product,
         product: Product,
         customer: Customer,
@@ -634,7 +658,7 @@ class TestCreateOrUpdateFromCheckout:
             updated_subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is False
@@ -656,8 +680,69 @@ class TestCreateOrUpdateFromCheckout:
             checkout.client_secret, CheckoutEvent.subscription_created
         )
         enqueue_benefits_grants_mock.assert_called_once_with(
-            session, updated_subscription
+            session, updated_subscription, skip_outdated_revokes=True
         )
+
+    async def test_product_change_revokes_before_reset(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        """Test that outdated benefits are revoked BEFORE the meter reset during product changes."""
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=old_product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        call_order: list[str] = []
+        revoke_mock = mocker.patch.object(
+            benefit_grant_service,
+            "revoke_outdated_benefits",
+            side_effect=lambda *a, **kw: call_order.append("revoke"),
+        )
+        reset_mock = mocker.patch.object(
+            subscription_service,
+            "reset_meters",
+            side_effect=lambda *a, **kw: call_order.append("reset"),
+        )
+
+        upgrade_checkout = await create_checkout(
+            save_fixture,
+            products=[new_product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            subscription=subscription,
+        )
+
+        (
+            updated_subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, redis, upgrade_checkout, payment_method
+        )
+
+        assert created is False
+        assert updated_subscription.product_id == new_product.id
+        assert call_order == ["revoke", "reset"]
+        revoke_mock.assert_called_once()
+        reset_mock.assert_called_once()
 
     async def test_trial(
         self,
@@ -665,6 +750,7 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product: Product,
         customer: Customer,
         payment_method: PaymentMethod,
@@ -682,7 +768,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -703,12 +789,15 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
-        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, subscription, skip_outdated_revokes=False
+        )
 
     async def test_multi_currencies(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         product_recurring_multiple_currencies: Product,
         customer: Customer,
         payment_method: PaymentMethod,
@@ -725,7 +814,7 @@ class TestCreateOrUpdateFromCheckout:
             subscription,
             created,
         ) = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_method
+            session, redis, checkout, payment_method
         )
 
         assert created is True
@@ -1315,7 +1404,7 @@ class TestRevoke:
         assert updated_subscription.ended_at == frozen_time
 
         enqueue_benefits_grants_mock.assert_called_once_with(
-            session, updated_subscription
+            session, updated_subscription, skip_outdated_revokes=False
         )
 
 

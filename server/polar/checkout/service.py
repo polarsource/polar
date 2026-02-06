@@ -99,6 +99,7 @@ from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
+from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCalculationError, TaxCode, get_tax_service
@@ -1226,6 +1227,7 @@ class CheckoutService:
     async def handle_success(
         self,
         session: AsyncSession,
+        redis: Redis,
         checkout: Checkout,
         payment: Payment | None = None,
         payment_method: PaymentMethod | None = None,
@@ -1247,7 +1249,7 @@ class CheckoutService:
                 subscription,
                 created,
             ) = await subscription_service.create_or_update_from_checkout(
-                session, checkout, payment_method
+                session, redis, checkout, payment_method
             )
             await order_service.create_from_checkout_subscription(
                 session,

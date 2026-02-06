@@ -24,7 +24,14 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.user.service import user as user_service
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    can_retry,
+    get_retries,
+)
 
 from . import payment
 
@@ -120,7 +127,9 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
             try:
-                await payment.handle_success(session, setup_intent)
+                await payment.handle_success(
+                    session, RedisMiddleware.get(), setup_intent
+                )
             except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
                 # Retry because we've seen in the wild a Stripe webhook coming
                 # *before* we updated the Checkout Session status in the database!
@@ -197,7 +206,7 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
             try:
-                await payment.handle_success(session, charge)
+                await payment.handle_success(session, RedisMiddleware.get(), charge)
             except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
                 # Retry because we've seen in the wild a Stripe webhook coming
                 # *before* we updated the Checkout Session status in the database!

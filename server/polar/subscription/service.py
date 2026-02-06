@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -91,6 +92,7 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.redis import Redis
 from polar.tax.calculation import get_tax_service
 from polar.tax.calculation.base import TaxCalculationError
 from polar.webhook.service import webhook as webhook_service
@@ -510,6 +512,7 @@ class SubscriptionService:
     async def create_or_update_from_checkout(
         self,
         session: AsyncSession,
+        redis: Redis,
         checkout: Checkout,
         payment_method: PaymentMethod | None = None,
     ) -> tuple[Subscription, bool]:
@@ -552,6 +555,7 @@ class SubscriptionService:
         created = False
         previous_is_canceled = subscription.canceled if subscription else False
         previous_status = subscription.status if subscription else None
+        previous_product = subscription.product if subscription else None
 
         status = SubscriptionStatus.active
         current_period_start = utc_now()
@@ -629,11 +633,30 @@ class SubscriptionService:
                 checkout.id, subscription.id
             )
 
+        # For product changes, revoke outdated benefits BEFORE resetting meters
+        # This ensures meter credits are properly deducted before the reset clears the meter
+        is_product_change = (
+            not created
+            and previous_product is not None
+            and previous_product.id != product.id
+        )
+        if is_product_change:
+            await benefit_grant_service.revoke_outdated_benefits(
+                session,
+                redis,
+                customer,
+                product,
+                subscription=subscription,
+            )
+
         # Reset the subscription meters to start fresh
         await self.reset_meters(session, subscription)
 
         # Enqueue the benefits grants for the subscription
-        await self.enqueue_benefits_grants(session, subscription)
+        # Skip outdated revokes if we already handled them above
+        await self.enqueue_benefits_grants(
+            session, subscription, skip_outdated_revokes=is_product_change
+        )
 
         # Notify checkout channel that a subscription has been created from it
         await publish_checkout_event(
@@ -2177,6 +2200,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         delay: int | None = None,
+        skip_outdated_revokes: bool = False,
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(subscription.product_id)
@@ -2220,6 +2244,7 @@ class SubscriptionService:
             product_id=product.id,
             subscription_id=subscription.id,
             delay=delay,
+            skip_outdated_revokes=skip_outdated_revokes,
         )
 
     async def update_product_benefits_grants(

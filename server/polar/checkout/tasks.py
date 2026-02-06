@@ -5,6 +5,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
+    RedisMiddleware,
     TaskPriority,
     actor,
     enqueue_job,
@@ -33,7 +34,7 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
         )
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
-        await checkout_service.handle_success(session, checkout)
+        await checkout_service.handle_success(session, RedisMiddleware.get(), checkout)
 
 
 @actor(

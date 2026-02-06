@@ -81,6 +81,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.schemas import ProductPriceFixedCreate
+from polar.redis import Redis
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import TaxabilityReason
 from polar.tax.calculation.base import TaxCalculationError
@@ -4888,21 +4889,24 @@ class TestConfirm:
 @pytest.mark.asyncio
 class TestHandleSuccess:
     async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+        self, session: AsyncSession, redis: Redis, checkout_one_time_fixed: Checkout
     ) -> None:
         with pytest.raises(NotConfirmedCheckout):
-            await checkout_service.handle_success(session, checkout_one_time_fixed)
+            await checkout_service.handle_success(
+                session, redis, checkout_one_time_fixed
+            )
 
     async def test_one_time(
         self,
         order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
         checkout = await checkout_service.handle_success(
-            session, checkout_confirmed_one_time, payment
+            session, redis, checkout_confirmed_one_time, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded
@@ -4916,6 +4920,7 @@ class TestHandleSuccess:
         order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_recurring: Checkout,
         payment: Payment,
     ) -> None:
@@ -4926,12 +4931,12 @@ class TestHandleSuccess:
         )
 
         checkout = await checkout_service.handle_success(
-            session, checkout_confirmed_recurring, payment
+            session, redis, checkout_confirmed_recurring, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded
         subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
-            ANY, checkout, None
+            ANY, ANY, checkout, None
         )
         order_service_mock.create_from_checkout_subscription.assert_called_once_with(
             ANY,
@@ -4947,6 +4952,7 @@ class TestHandleSuccess:
         order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_recurring: Checkout,
         customer: Customer,
         payment: Payment,
@@ -4962,12 +4968,12 @@ class TestHandleSuccess:
         await save_fixture(checkout_confirmed_recurring)
 
         checkout = await checkout_service.handle_success(
-            session, checkout_confirmed_recurring, payment
+            session, redis, checkout_confirmed_recurring, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded
         subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
-            ANY, checkout, None
+            ANY, ANY, checkout, None
         )
         order_service_mock.create_from_checkout_subscription.assert_called_once_with(
             ANY,
@@ -5178,6 +5184,7 @@ class TestHandleSuccessPostHogTracking:
         mocker: MockerFixture,
         order_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
@@ -5185,7 +5192,7 @@ class TestHandleSuccessPostHogTracking:
         checkout_confirmed_one_time.customer_email = "customer@example.com"
 
         checkout = await checkout_service.handle_success(
-            session, checkout_confirmed_one_time, payment
+            session, redis, checkout_confirmed_one_time, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded
@@ -5201,6 +5208,7 @@ class TestHandleSuccessPostHogTracking:
         mocker: MockerFixture,
         order_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
@@ -5209,7 +5217,7 @@ class TestHandleSuccessPostHogTracking:
         checkout_confirmed_one_time.customer_email = None
 
         await checkout_service.handle_success(
-            session, checkout_confirmed_one_time, payment
+            session, redis, checkout_confirmed_one_time, payment
         )
 
         posthog_mock.capture.assert_called_once()
@@ -5224,6 +5232,7 @@ class TestHandleSuccessPostHogTracking:
         mocker: MockerFixture,
         order_service_mock: MagicMock,
         session: AsyncSession,
+        redis: Redis,
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
@@ -5233,7 +5242,7 @@ class TestHandleSuccessPostHogTracking:
         log_mock = mocker.patch("polar.checkout.service.log")
 
         checkout = await checkout_service.handle_success(
-            session, checkout_confirmed_one_time, payment
+            session, redis, checkout_confirmed_one_time, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded

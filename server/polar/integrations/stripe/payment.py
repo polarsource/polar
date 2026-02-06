@@ -19,6 +19,7 @@ from polar.order.service import order as order_service
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
 
 
@@ -118,7 +119,9 @@ async def resolve_order(
 
 
 async def handle_success(
-    session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
+    session: AsyncSession,
+    redis: Redis,
+    object: stripe_lib.Charge | stripe_lib.SetupIntent,
 ) -> None:
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
@@ -149,6 +152,7 @@ async def handle_success(
 
         await checkout_service.handle_success(
             session,
+            redis,
             checkout,
             payment=payment,
             payment_method=payment_method,

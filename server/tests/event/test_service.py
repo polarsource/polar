@@ -42,6 +42,7 @@ from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -1710,6 +1711,7 @@ class TestSystemEvents:
     async def test_subscription_created(
         self,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -1723,7 +1725,7 @@ class TestSystemEvents:
         )
 
         subscription, _ = await subscription_service.create_or_update_from_checkout(
-            session, checkout
+            session, redis, checkout
         )
 
         event_repository = EventRepository.from_session(session)

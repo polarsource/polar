@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
@@ -358,6 +359,49 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
         return grant
 
+    async def revoke_outdated_benefits(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+        product: Product,
+        member_id: UUID | None = None,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> None:
+        """
+        Revokes benefits that are no longer part of the product (e.g., after upgrade).
+
+        This is called synchronously before meter reset during subscription upgrades
+        to ensure revokes happen before the reset, preventing incorrect credit
+        calculations.
+        """
+        repository = BenefitGrantRepository.from_session(session)
+        benefit_repository = BenefitRepository.from_session(session)
+
+        outdated_grants = await repository.list_outdated_grants(product, **scope)
+
+        member = None
+        if member_id is not None:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(member_id)
+
+        for outdated_grant in outdated_grants:
+            benefit = await benefit_repository.get_by_id(
+                outdated_grant.benefit_id,
+                options=benefit_repository.get_eager_options(),
+            )
+            if benefit is None:
+                continue
+
+            await self.revoke_benefit(
+                session,
+                redis,
+                customer,
+                benefit,
+                member=member,
+                **scope,
+            )
+
     async def enqueue_benefits_grants(
         self,
         session: AsyncSession,
@@ -365,6 +409,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         customer: Customer,
         product: Product,
         member_id: UUID | None = None,
+        skip_outdated_revokes: bool = False,
         **scope: Unpack[BenefitGrantScope],
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
@@ -416,15 +461,17 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         # Get granted benefits that are not part of this product.
         # It happens if the subscription has been upgraded/downgraded.
-        outdated_grants = await repository.list_outdated_grants(product, **scope)
-        for outdated_grant in outdated_grants:
-            enqueue_job(
-                "benefit.revoke",
-                customer_id=customer.id,
-                benefit_id=outdated_grant.benefit_id,
-                member_id=member_id,
-                **scope_to_args(scope),
-            )
+        # Skip if revokes were already handled synchronously (e.g., during upgrades)
+        if not skip_outdated_revokes:
+            outdated_grants = await repository.list_outdated_grants(product, **scope)
+            for outdated_grant in outdated_grants:
+                enqueue_job(
+                    "benefit.revoke",
+                    customer_id=customer.id,
+                    benefit_id=outdated_grant.benefit_id,
+                    member_id=member_id,
+                    **scope_to_args(scope),
+                )
 
     async def enqueue_benefit_grant_updates(
         self,

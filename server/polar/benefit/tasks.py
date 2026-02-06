@@ -69,6 +69,7 @@ async def enqueue_benefits_grants(
     customer_id: uuid.UUID,
     product_id: uuid.UUID,
     member_id: uuid.UUID | None = None,
+    skip_outdated_revokes: bool = False,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
@@ -89,7 +90,13 @@ async def enqueue_benefits_grants(
         resolved_scope = await resolve_scope(session, scope)
 
         await benefit_grant_service.enqueue_benefits_grants(
-            session, task, customer, product, member_id=member_id, **resolved_scope
+            session,
+            task,
+            customer,
+            product,
+            member_id=member_id,
+            skip_outdated_revokes=skip_outdated_revokes,
+            **resolved_scope,
         )
 
 

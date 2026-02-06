@@ -4,6 +4,95 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-10-24">
+
+## Seat-Based Pricing for One-Time Products
+
+You can now offer seat-based pricing for one-time purchases, not just subscriptions. Customers can select the number of seats during checkout, and you can manage seats for one-time orders through both the dashboard and API.
+
+This extends our seat management capabilities to all product types, giving you more flexibility in how you price and package your offerings.
+
+## Ability to Change Subscription Seats
+
+Customers can now change the number of seats on their active subscriptions directly from the Customer Portal. The changes are prorated automatically, making it easy for teams to scale up or down as needed.
+
+## Flexible Subscription Intervals
+
+We've added support for flexible subscription intervals beyond monthly and yearly. You can now create subscriptions with custom billing periods:
+
+* Daily subscriptions
+* Weekly subscriptions
+* Custom intervals (e.g., every 2 weeks, every 3 months)
+
+Configure the interval count when creating or updating subscription products through both the dashboard and API.
+
+## Subscription Creation API
+
+We've launched a new API endpoint to create subscriptions programmatically. This enables you to set up subscriptions directly without requiring customers to go through the checkout flow.
+
+[Read more](/api-reference/subscriptions/create)
+
+## Enhanced Email Confirmations
+
+Order confirmation emails now include:
+
+* **Invoice PDFs attached** - Invoices are automatically generated and attached to confirmation emails for one-time purchases
+* **Order details** - Complete breakdown of what was purchased
+* **Benefits list** - Clear view of all benefits the customer will receive
+
+## Customer Portal Improvements
+
+### Seat Management
+
+Customers with seat-based subscriptions can now:
+
+* View all active seats
+* Add or remove seats (with automatic proration)
+* Manage team members directly from the portal
+
+### URL Encoding Fix
+
+Fixed an issue where email addresses with special characters (like `+` signs in email aliases) weren't properly encoded in customer portal links, causing the wrong email to be pre-filled.
+
+## Events & Metering
+
+### Cost Tracking
+
+Events can now include cost metadata, enabling you to track costs associated with usage. Costs are displayed throughout the events explorer and analytics.
+
+### Event Explorer Enhancements
+
+* Metadata filtering - Search and filter events by metadata fields
+* Customer filtering - Filter events by specific customers
+* Query search - Full-text search across event data
+* Improved event cards with better timestamps and cost visualization
+
+## Order Export
+
+You can now export orders to CSV directly from the dashboard. Filter by product and the export will respect your current filters, making it easy to analyze sales data.
+
+## OAuth2 Flow Improvements
+
+* If no scope is passed in the authorize request, the client's default scope is now used automatically
+* Improved organization selector UI in the OAuth2 authorization flow
+
+## Checkout Improvements
+
+* Fixed seat selector visibility on mobile devices
+* Server-side prefilling of checkout link query parameters
+* Improved discount code validation flow
+
+## Statement Descriptor Enhancement
+
+First payments after a trial period now include "TRIAL OVER" in the statement descriptor, making it clearer to customers why they're being charged.
+
+## Bug Fixes
+
+* Fixed customer state API for trialing subscriptions
+* Fixed broken customer links in events explorer
+* Fixed discount duration calculation for very long durations (capped at 999 months)
+</Update>
+
 <Update label="2025-10-17">
   ## Ability to update subscription to an updated price of the product
 

@@ -88,7 +88,10 @@ export const CurrentPeriodOverview = ({
             {isCancelingAtPeriodEnd ? (
               'Canceled'
             ) : (
-              <ProductPriceLabel product={subscription.product} />
+              <ProductPriceLabel
+                product={subscription.product}
+                currency={subscription.currency}
+              />
             )}
           </span>
         </div>

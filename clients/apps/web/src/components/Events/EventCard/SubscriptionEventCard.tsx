@@ -58,7 +58,10 @@ export const SubscriptionEventCard = ({
               <span className="">{subscription.product.name}</span>
             </div>
             <span className="dark:text-polar-500 text-gray-500">
-              <ProductPriceLabel product={subscription.product} />
+              <ProductPriceLabel
+                product={subscription.product}
+                currency={subscription.currency}
+              />
             </span>
           </div>
           {status ? (

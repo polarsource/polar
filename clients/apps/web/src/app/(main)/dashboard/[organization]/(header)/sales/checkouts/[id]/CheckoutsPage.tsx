@@ -55,6 +55,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
             key={product.id}
             organization={organization}
             product={product}
+            currency={checkout.currency}
           />
         ))}
       </List>

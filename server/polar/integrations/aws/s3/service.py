@@ -70,14 +70,15 @@ class S3Service:
     def create_multipart_upload(
         self, data: S3FileCreate, namespace: str = ""
     ) -> S3FileUpload:
-        if not data.organization_id:
-            raise S3FileError("Organization ID is required")
+        owner_id = data.organization_id or data.user_id
+        if not owner_id:
+            raise S3FileError("Organization ID or User ID is required")
 
         file_uuid = generate_uuid()
-        # Each organization gets its own directory
+        # Each owner (organization or user) gets its own directory
         # Containing one directory per file: {file_uuid}/{data.name}
         # Allowing multiple files to be named the same.
-        path = f"{namespace}/{data.organization_id}/{file_uuid}/{data.name}"
+        path = f"{namespace}/{owner_id}/{file_uuid}/{data.name}"
 
         file = S3File(
             id=file_uuid,

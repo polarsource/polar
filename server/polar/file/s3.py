@@ -18,4 +18,5 @@ S3_SERVICES: dict[FileServiceTypes, S3Service] = {
     FileServiceTypes.organization_avatar: _get_s3_service(
         settings.S3_FILES_PUBLIC_BUCKET_NAME
     ),
+    FileServiceTypes.oauth_logo: _get_s3_service(settings.S3_FILES_PUBLIC_BUCKET_NAME),
 }

@@ -38,6 +38,7 @@ class S3FileCreateMultipart(Schema):
 
 class S3FileCreate(Schema):
     organization_id: OrganizationID | None = None
+    user_id: UUID4 | None = None
     name: str
     mime_type: str
     size: int
@@ -48,7 +49,7 @@ class S3FileCreate(Schema):
 
 
 class S3File(IDSchema, validate_assignment=True):
-    organization_id: UUID4
+    organization_id: UUID4 | None = None
 
     name: str
     path: str
@@ -73,10 +74,11 @@ class S3File(IDSchema, validate_assignment=True):
     def to_metadata(self) -> dict[str, str]:
         metadata = {
             "polar-id": str(self.id),
-            "polar-organization-id": str(self.organization_id),
             "polar-name": self.name.encode("ascii", "ignore").decode("ascii"),
             "polar-size": str(self.size),
         }
+        if self.organization_id:
+            metadata["polar-organization-id"] = str(self.organization_id)
         if self.checksum_sha256_base64:
             metadata["polar-sha256-base64"] = self.checksum_sha256_base64
         if self.checksum_sha256_hex:

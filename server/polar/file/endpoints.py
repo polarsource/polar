@@ -3,10 +3,12 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
+from polar.auth.models import is_user
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import File
+from polar.models.file import FileServiceTypes
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
@@ -75,6 +77,15 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> FileUpload:
     """Create a file."""
+    if file_create.service == FileServiceTypes.oauth_logo and is_user(auth_subject):
+        user = auth_subject.subject
+        file_create.user_id = user.id
+        return await file_service.generate_presigned_upload(
+            session,
+            user=user,
+            create_schema=file_create,
+        )
+
     organization = await get_payload_organization(session, auth_subject, file_create)
 
     file_create.organization_id = organization.id

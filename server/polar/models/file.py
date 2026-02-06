@@ -23,6 +23,7 @@ from polar.kit.db.models import RecordModel
 if TYPE_CHECKING:
     from polar.models import (
         Organization,
+        User,
     )
 
 
@@ -30,21 +31,33 @@ class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
     product_media = "product_media"
     organization_avatar = "organization_avatar"
+    oauth_logo = "oauth_logo"
 
 
 class File(RecordModel):
     __tablename__ = "files"
 
-    organization_id: Mapped[UUID] = mapped_column(
+    organization_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
     @declared_attr
-    def organization(cls) -> Mapped["Organization"]:
+    def organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="raise")
+
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("users.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -89,4 +102,10 @@ class ProductMediaFile(File):
 class OrganizationAvatarFile(File):
     __mapper_args__ = {
         "polymorphic_identity": FileServiceTypes.organization_avatar,
+    }
+
+
+class OAuthLogoFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.oauth_logo,
     }

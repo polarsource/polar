@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, or_, select
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -34,11 +34,14 @@ class FileRepository(
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(
-                File.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
+                or_(
+                    File.organization_id.in_(
+                        select(UserOrganization.organization_id).where(
+                            UserOrganization.user_id == user.id,
+                            UserOrganization.deleted_at.is_(None),
+                        )
+                    ),
+                    File.user_id == user.id,
                 )
             )
         elif is_organization(auth_subject):

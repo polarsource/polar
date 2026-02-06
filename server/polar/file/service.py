@@ -7,7 +7,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
-from polar.models.file import File, ProductMediaFile
+from polar.models.file import File, FileServiceTypes, ProductMediaFile
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import FileRepository
@@ -86,9 +86,17 @@ class FileService:
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
+        organization: Organization | None = None,
+        user: User | None = None,
         create_schema: FileCreate,
     ) -> FileUpload:
+        if create_schema.service == FileServiceTypes.oauth_logo:
+            assert user is not None, "user is required for oauth_logo files"
+        else:
+            assert organization is not None, (
+                "organization is required for non-oauth_logo files"
+            )
+
         s3_service = S3_SERVICES[create_schema.service]
         upload = s3_service.create_multipart_upload(
             create_schema, namespace=create_schema.service.value
@@ -96,6 +104,7 @@ class FileService:
 
         instance = File(
             organization=organization,
+            user=user,
             service=create_schema.service,
             is_enabled=True,
             is_uploaded=False,

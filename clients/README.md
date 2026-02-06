@@ -8,7 +8,7 @@ This [Turborepo](https://turbo.build/) includes the following packages/apps:
 
 - `apps/web`: [polar.sh](https://polar.sh) – [Next.js](https://nextjs.org/) app
 - `packages/ui`: Shared resources
-- `packages/sdk`: API types
+- `packages/client`: Internal API client generated from OpenAPI spec
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
@@ -26,17 +26,14 @@ To build all apps and packages, run the following command:
 pnpm build
 ```
 
-### Develop web
+### Develop
 
 ```bash
-pnpm dev-web
+pnpm dev
 ```
 
-### Generate API definitions
+### Generate API client from OpenAPI spec
 
 ```bash
 pnpm generate
 ```
-
-**Adding a new API class?**
-You might need to manually add the generated model to `src/client/PolarAPI.ts` in the SDK package.

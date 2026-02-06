@@ -243,34 +243,36 @@ export const OrganizationStep = ({
                   />
                 </FadeUp>
 
-                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-                  <FormField
-                    control={control}
-                    name="default_presentment_currency"
-                    rules={{
-                      required: 'Currency is required',
-                    }}
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <FormControl className="flex w-full flex-col gap-y-4">
-                          <Label htmlFor="default_presentment_currency">
-                            Default Payment Currency
-                          </Label>
-                          <CurrencySelector
-                            value={
-                              field.value as schemas['PresentmentCurrency']
-                            }
-                            onChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        <FormDescription>
-                          The default currency for your products
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                </FadeUp>
+                {false && (
+                  <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
+                    <FormField
+                      control={control}
+                      name="default_presentment_currency"
+                      rules={{
+                        required: 'Currency is required',
+                      }}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <FormControl className="flex w-full flex-col gap-y-4">
+                            <Label htmlFor="default_presentment_currency">
+                              Default Payment Currency
+                            </Label>
+                            <CurrencySelector
+                              value={
+                                field.value as schemas['PresentmentCurrency']
+                              }
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                          <FormDescription>
+                            The default currency for your products
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </FadeUp>
+                )}
 
                 <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <SupportedUseCases />

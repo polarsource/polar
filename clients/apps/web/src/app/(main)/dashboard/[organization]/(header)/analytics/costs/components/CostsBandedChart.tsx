@@ -63,7 +63,7 @@ export const CostsBandedChart = ({
     () => ({
       average: {
         label: 'Average',
-        color: '#2563eb',
+        color: '#004664',
       },
       p99: {
         label: 'P99',
@@ -153,7 +153,7 @@ export const CostsBandedChart = ({
                     key: 'average',
                     label: 'Average',
                     value: payload.average,
-                    color: '#2563eb',
+                    color: '#004664',
                   },
                   {
                     key: 'p10',
@@ -213,7 +213,7 @@ export const CostsBandedChart = ({
                   <div className="flex items-center gap-1.5 whitespace-nowrap">
                     <div
                       className="h-2 w-2 shrink-0 rounded-[2px]"
-                      style={{ backgroundColor: '#2563eb' }}
+                      style={{ backgroundColor: '#004664' }}
                     />
                     Average
                   </div>
@@ -248,7 +248,7 @@ export const CostsBandedChart = ({
             <Line
               type="linear"
               dataKey="average"
-              stroke="#2563eb"
+              stroke="#004664"
               strokeWidth={1.5}
               dot={false}
               connectNulls

@@ -428,8 +428,7 @@ export const OrganizationDetailsForm: React.FC<
           <div className="mb-6">
             <h3 className="mb-2 text-lg font-medium">Business Details</h3>
             <p className="text-sm text-gray-600">
-              Tell us about your SaaS so we can handle taxes, billing, and
-              compliance for you.
+              Help us understand your business model
             </p>
           </div>
 

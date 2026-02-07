@@ -304,7 +304,7 @@ export default function StreamlinedAccountReview({
       {/* Header */}
       <div className="space-y-1 text-center">
         <h1 className="text-2xl font-semibold tracking-tight dark:text-white">
-          Get started with Spaire
+          Get started with spaire
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
           We handle payments, taxes, and compliance so you can focus on your
@@ -320,10 +320,10 @@ export default function StreamlinedAccountReview({
       {/* Step content */}
       {currentStep === 'review' && (
         <StepCard
-          title="About Your SaaS"
+          title="Tell us about your startup"
           subtitle={
             requireDetails
-              ? 'Tell us about your SaaS so we can start handling payments and taxes for you.'
+              ? 'We’ll use this to set up your global payment infrastructure and automated tax compliance.'
               : 'Review your submitted business details below.'
           }
         >

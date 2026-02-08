@@ -85,6 +85,7 @@ dev = [
   "polar-sdk==0.27.3",
   "locust>=2.20.0",
   "debugpy>=1.8.19",
+  "sqlfluff>=4.0.1.post1",
 ]
 
 [tool.taskipy.tasks]
@@ -98,6 +99,7 @@ loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
+lint_sql = { cmd = "python -m scripts.lint_tinybird_sql", help = "run sqlfluff linter on Tinybird queries" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }

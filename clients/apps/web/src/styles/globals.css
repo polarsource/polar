@@ -162,34 +162,6 @@
 /* shadcn/ui */
 @layer base {
   :root {
-    --background: var(--color-gray-50);
-    --foreground: var(--color-gray-900);
-    --card: var(--color-white);
-    --card-foreground: var(--color-gray-900);
-    --popover: var(--color-white);
-    --popover-foreground: hsl(224 71.4% 4.1%);
-    --sidebar-background: var(--color-gray-100);
-    --sidebar-foreground: var(--color-gray-900);
-    --sidebar-primary: var(--color-blue);
-    --sidebar-primary-foreground: var(--color-gray-50);
-    --sidebar-border: var(--color-gray-300);
-    --primary: var(--color-blue);
-    --primary-foreground: var(--color-gray-50);
-    --secondary: var(--color-gray-100);
-    --secondary-foreground: var(--color-gray-900);
-    --muted: var(--color-gray-100);
-    --muted-foreground: var(--color-gray-500);
-    --accent: var(--color-blue);
-    --accent-foreground: var(--color-white);
-    --destructive: var(--color-red-500);
-    --destructive-foreground: var(--color-red-600);
-    --border: var(--color-gray-200);
-    --input: var(--color-gray-200);
-    --ring: var(--color-gray-200);
-    --radius: 0.6rem;
-  }
-
-  :root.dark {
     --background: var(--color-polar-800);
     --foreground: var(--color-polar-500);
     --card: var(--color-polar-800);
@@ -214,6 +186,7 @@
     --border: var(--color-polar-700);
     --input: var(--color-polar-700);
     --ring: var(--color-polar-700);
+    --radius: 0.6rem;
   }
 }
 

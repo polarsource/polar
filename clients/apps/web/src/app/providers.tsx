@@ -6,7 +6,6 @@ import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
-import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
@@ -42,28 +41,16 @@ export function PolarPostHogProvider({
 
 export function PolarThemeProvider({
   children,
-  forceTheme,
 }: {
   children: React.ReactNode
   forceTheme?: 'light' | 'dark'
 }) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const theme = searchParams.get('theme')
-
-  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/midday/portal']
-  const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.some((path) =>
-    pathname.includes(path),
-  )
-    ? 'dark'
-    : forceTheme
-
   return (
     <ThemeProvider
-      defaultTheme="system"
-      enableSystem
+      defaultTheme="dark"
+      enableSystem={false}
       attribute="class"
-      forcedTheme={theme ?? forcedTheme}
+      forcedTheme="dark"
     >
       {children}
     </ThemeProvider>

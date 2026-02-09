@@ -122,7 +122,7 @@ WITH
             argMax(e.name, e.ingested_at) AS name,
             argMax(e.amount, e.ingested_at) AS amount,
             argMax(e.fee, e.ingested_at) AS fee,
-            argMax(e.subscription_id, e.ingested_at) AS subscription_id,
+            nullIf(argMax(e.subscription_id, e.ingested_at), '') AS subscription_id,
             argMax(e.timestamp, e.ingested_at) AS event_timestamp,
             argMax(e.user_metadata, e.ingested_at) AS user_metadata,
             argMax(e.product_id, e.ingested_at) AS product_id,

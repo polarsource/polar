@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 from collections.abc import Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import logfire
@@ -481,7 +481,9 @@ class MetricsService:
 
         # Truncate start_timestamp to the beginning of the interval period
         # This ensures the timestamp series aligns with how daily metrics are grouped
-        if interval == TimeInterval.month:
+        if interval == TimeInterval.week:
+            start_timestamp -= timedelta(days=start_timestamp.weekday())
+        elif interval == TimeInterval.month:
             start_timestamp = start_timestamp.replace(day=1)
         elif interval == TimeInterval.year:
             start_timestamp = start_timestamp.replace(month=1, day=1)

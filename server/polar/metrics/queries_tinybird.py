@@ -252,22 +252,30 @@ WITH
             AND be.effective_ts <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     ),
-    canceled AS (
+    latest_canceled AS (
         SELECT
-            date_trunc({{iv:String}}, toDateTime(se.canceled_at, {{tz:String}})) AS day,
-            count(*) AS canceled_subscriptions,
-            countIf(se.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
-            countIf(se.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
-            countIf(se.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
-            countIf(se.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
-            countIf(se.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
-            countIf(se.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
-            countIf(se.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
-            countIf(se.customer_cancellation_reason = 'other' OR se.customer_cancellation_reason IS NULL OR se.customer_cancellation_reason = '') AS canceled_subscriptions_other
+            se.subscription_id,
+            argMax(se.canceled_at, se.event_timestamp) AS canceled_at,
+            argMax(se.customer_cancellation_reason, se.event_timestamp) AS customer_cancellation_reason
         FROM subscription_events_raw AS se
         WHERE se.name = 'subscription.canceled'
-            AND se.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
-            AND se.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
+        GROUP BY se.subscription_id
+    ),
+    canceled AS (
+        SELECT
+            date_trunc({{iv:String}}, toDateTime(lc.canceled_at, {{tz:String}})) AS day,
+            count(*) AS canceled_subscriptions,
+            countIf(lc.customer_cancellation_reason = 'customer_service') AS canceled_subscriptions_customer_service,
+            countIf(lc.customer_cancellation_reason = 'low_quality') AS canceled_subscriptions_low_quality,
+            countIf(lc.customer_cancellation_reason = 'missing_features') AS canceled_subscriptions_missing_features,
+            countIf(lc.customer_cancellation_reason = 'switched_service') AS canceled_subscriptions_switched_service,
+            countIf(lc.customer_cancellation_reason = 'too_complex') AS canceled_subscriptions_too_complex,
+            countIf(lc.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
+            countIf(lc.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
+            countIf(lc.customer_cancellation_reason = 'other' OR lc.customer_cancellation_reason IS NULL OR lc.customer_cancellation_reason = '') AS canceled_subscriptions_other
+        FROM latest_canceled AS lc
+        WHERE lc.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND lc.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     )
 SELECT

@@ -127,7 +127,7 @@ module "sandbox" {
     auth_cookie_domain         = "polar.sh"
     auth_cookie_key            = "polar_sandbox_session"
     invoices_additional_info   = ""
-    default_tax_processor      = "numeral"
+    tax_processors             = "[\"numeral\",\"stripe\"]"
   }
 
   backend_secrets = {

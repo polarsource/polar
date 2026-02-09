@@ -7,6 +7,7 @@ from polar.config import settings
 from polar.enums import TaxProcessor
 from polar.kit.address import Address
 from polar.logging import Logger
+from polar.observability import TAX_CALCULATION_TOTAL
 
 from ..tax_id import TaxID
 from .base import (
@@ -69,7 +70,7 @@ class TaxCalculationService:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
             try:
-                return await tax_processor_service.calculate(
+                result = await tax_processor_service.calculate(
                     identifier=identifier,
                     currency=currency,
                     amount=amount,
@@ -77,13 +78,20 @@ class TaxCalculationService:
                     address=address,
                     tax_ids=tax_ids,
                     customer_exempt=customer_exempt,
-                ), processor
+                )
+                TAX_CALCULATION_TOTAL.labels(
+                    provider=processor.value, success="true"
+                ).inc()
+                return result, processor
             except TaxCalculationTechnicalError as e:
                 log.warning(
                     "Tax calculation failed with technical error, trying next processor",
                     processor=processor,
                     error=str(e),
                 )
+                TAX_CALCULATION_TOTAL.labels(
+                    provider=processor.value, success="false"
+                ).inc()
                 continue
 
         raise TaxCalculationTechnicalError("All tax processors failed to calculate tax")

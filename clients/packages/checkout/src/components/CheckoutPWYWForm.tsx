@@ -1,5 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
 import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
@@ -21,7 +21,7 @@ export interface CheckoutPWYWFormProps {
   checkout: CheckoutPublic
   productPrice: ProductPriceCustom
   themePreset: ThemingPresetProps
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 export const CheckoutPWYWForm = ({
@@ -46,19 +46,19 @@ export const CheckoutPWYWForm = ({
       // Handle gap validation when free is allowed (minimumAmount = 0)
       if (minimumAmount === 0 && value > 0 && value < 50) {
         return t('checkout.pwywForm.amountFreeOrMinimum', {
-          min: formatCurrency('compact')(50, checkout.currency),
+          min: formatCurrency('compact', locale)(50, checkout.currency),
         })
       }
 
       if (value < minimumAmount) {
         return t('checkout.pwywForm.amountMinimum', {
-          min: formatCurrency('compact')(minimumAmount, checkout.currency),
+          min: formatCurrency('compact', locale)(minimumAmount, checkout.currency),
         })
       }
 
       return true
     },
-    [minimumAmount, checkout.currency],
+    [minimumAmount, checkout.currency, locale],
   )
 
   const debouncedAmountUpdate = useDebouncedCallback(
@@ -89,7 +89,7 @@ export const CheckoutPWYWForm = ({
     minimumAmount === 0
       ? null
       : t('checkout.pwywForm.minimum', {
-          amount: formatCurrency('compact')(minimumAmount, checkout.currency),
+          amount: formatCurrency('compact', locale)(minimumAmount, checkout.currency),
         })
 
   return (

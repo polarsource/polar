@@ -3,7 +3,7 @@
 import Checkout from '@/components/Checkout/Checkout'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { useCheckout } from '@polar-sh/checkout/providers'
-import { SupportedLocale } from '@polar-sh/i18n'
+import { AcceptedLocale } from '@polar-sh/i18n'
 
 const ClientPage = ({
   embed,
@@ -12,7 +12,7 @@ const ClientPage = ({
 }: {
   embed: boolean
   theme?: 'light' | 'dark'
-  locale: SupportedLocale
+  locale: AcceptedLocale
 }) => {
   const { checkout } = useCheckout()
 

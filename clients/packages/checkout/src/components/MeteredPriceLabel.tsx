@@ -1,10 +1,10 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit.js'
 
 interface MeteredPriceLabelProps {
   price: ProductPriceMeteredUnit
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
@@ -15,7 +15,7 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">
-      {formatCurrency('subcent')(
+      {formatCurrency('subcent', locale)(
         Number.parseFloat(price.unitAmount),
         price.priceCurrency,
       )}

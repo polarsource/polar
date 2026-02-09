@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import type { SupportedLocale } from '@polar-sh/i18n'
+import type { AcceptedLocale } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -13,7 +13,7 @@ import MeteredPricesDisplay from './MeteredPricesDisplay'
 export interface CheckoutSeatSelectorProps {
   checkout: ProductCheckoutPublic
   update: (body: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const CheckoutSeatSelector = ({
@@ -149,10 +149,10 @@ const CheckoutSeatSelector = ({
       {/* Total Amount Display */}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light text-gray-900 dark:text-white">
-          {formatCurrency('compact')(netAmount, currency)}
+          {formatCurrency('compact', locale)(netAmount, currency)}
         </h1>
         <p className="dark:text-polar-400 text-sm text-gray-500">
-          {formatCurrency('compact')(pricePerSeat, currency)} per seat
+          {formatCurrency('compact', locale)(pricePerSeat, currency)} per seat
         </p>
       </div>
 

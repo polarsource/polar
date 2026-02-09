@@ -1,6 +1,6 @@
 'use client'
 
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -24,7 +24,7 @@ interface CheckoutProductSwitcherProps {
   update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const CheckoutProductSwitcher = ({

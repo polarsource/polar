@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import type { SupportedLocale } from '@polar-sh/i18n'
+import type { AcceptedLocale } from '@polar-sh/i18n'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductCheckoutPublic } from '../guards'
@@ -18,7 +18,7 @@ const CheckoutProductAmountLabel = ({
 }: {
   checkout: ProductCheckoutPublic
   layout?: 'default' | 'stacked'
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }) => {
   const { product, productPrice, discount } = checkout
   if (!discount || productPrice.amountType !== 'fixed') {
@@ -51,7 +51,7 @@ const CheckoutProductAmountLabel = ({
         </div>
 
         <div className="relative rounded-xs bg-linear-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
-          <span>{getDiscountDisplay(discount)}</span>
+          <span>{getDiscountDisplay(discount, locale)}</span>
 
           <div className="dark:bg-polar-800 absolute top-1/2 left-0 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
           <div className="dark:bg-polar-800 absolute top-1/2 right-0 -mr-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
@@ -66,7 +66,7 @@ interface CheckoutPricingProps {
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
   layout?: 'default' | 'stacked'
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const CheckoutPricing = ({
@@ -85,7 +85,7 @@ const CheckoutPricing = ({
           {productPrice.amountType !== 'custom' ? (
             <CheckoutProductAmountLabel checkout={checkout} layout={layout} locale={locale} />
           ) : (
-            formatCurrency('compact')(amount, productPrice.priceCurrency)
+            formatCurrency('compact', locale)(amount, productPrice.priceCurrency)
           )}
         </h1>
 

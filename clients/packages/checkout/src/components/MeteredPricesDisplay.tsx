@@ -1,6 +1,6 @@
 'use client'
 
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
@@ -29,7 +29,7 @@ const GaugeIcon = ({ className }: { className?: string }) => {
 
 interface MeteredPricesDisplayProps {
   checkout: ProductCheckoutPublic
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const MeteredPricesDisplay = ({ checkout, locale }: MeteredPricesDisplayProps) => {

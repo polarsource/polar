@@ -1,4 +1,4 @@
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -9,7 +9,7 @@ import MeteredPriceLabel from './MeteredPriceLabel'
 interface ProductPriceLabelProps {
   product: CheckoutProduct
   price: ProductPrice | LegacyRecurringProductPrice
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({

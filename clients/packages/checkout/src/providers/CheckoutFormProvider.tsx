@@ -11,7 +11,7 @@ import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
 import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
 import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
 import { TrialAlreadyRedeemed } from '@polar-sh/sdk/models/errors/trialalreadyredeemed'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type {
   ConfirmationToken,
   Stripe,
@@ -50,7 +50,7 @@ export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 export const CheckoutFormProvider = ({
   children,
   locale,
-}: React.PropsWithChildren<{ locale?: SupportedLocale }>) => {
+}: React.PropsWithChildren<{ locale?: AcceptedLocale }>) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
   const t = useTranslations(locale ?? 'en')
   const [loading, setLoading] = useState(false)

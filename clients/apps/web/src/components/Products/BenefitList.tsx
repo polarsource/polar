@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -36,7 +36,7 @@ export const BenefitList = ({
       }[]
     | undefined
   toggle?: boolean
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? 'en')
   const [showAll, setShowAll] = useState(false)

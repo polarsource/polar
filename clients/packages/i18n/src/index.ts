@@ -4,10 +4,38 @@ export const SUPPORTED_LOCALES = ['en', 'nl'] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en'
 
+// Expand bare language codes to include region variants,
+// but keep region-specific codes (like future 'pt-BR') exact
+type Alpha =
+  | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'
+  | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
+type ResolveBCP47<T extends string> =
+  T extends `${string}-${string}`
+    ? T
+    : T | `${T}-${Alpha}${Alpha}`
+
+export type AcceptedLocale = ResolveBCP47<SupportedLocale>
+
+export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
+  if (SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
+    return locale as SupportedLocale
+  }
+  const language = locale.split('-')[0].toLowerCase()
+  if (SUPPORTED_LOCALES.includes(language as SupportedLocale)) {
+    return language as SupportedLocale
+  }
+  return DEFAULT_LOCALE
+}
+
+export function isAcceptedLocale(value: string): value is AcceptedLocale {
+  const language = value.split('-')[0].toLowerCase()
+  return SUPPORTED_LOCALES.includes(language as SupportedLocale)
+}
+
 const formatterCache = new Map<string, Intl.DateTimeFormat>()
 
 function formatCacheKey(
-  locale: SupportedLocale,
+  locale: string,
   options: Intl.DateTimeFormatOptions,
 ): string {
   const sorted = Object.keys(options)
@@ -20,7 +48,7 @@ function formatCacheKey(
 }
 
 function getDateFormatter(
-  locale: SupportedLocale,
+  locale: string,
   options?: Intl.DateTimeFormatOptions,
 ): Intl.DateTimeFormat {
   const opts = options ?? { dateStyle: 'medium' as const }
@@ -35,7 +63,7 @@ function getDateFormatter(
 
 export function formatDate(
   date: Date | string,
-  locale: SupportedLocale = DEFAULT_LOCALE,
+  locale: AcceptedLocale = DEFAULT_LOCALE,
   options?: Intl.DateTimeFormatOptions,
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date
@@ -147,12 +175,13 @@ const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
 }
 
 export function getTranslations(
-  locale: SupportedLocale = DEFAULT_LOCALE,
+  locale: AcceptedLocale = DEFAULT_LOCALE,
 ): Translations {
-  return (translations[locale] ?? translations[DEFAULT_LOCALE]) as Translations
+  const translationLocale = getTranslationLocale(locale)
+  return (translations[translationLocale] ?? translations[DEFAULT_LOCALE]) as Translations
 }
 
-export const useTranslations = (locale: SupportedLocale): TranslateFn => {
+export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
   return useCallback(
     ((key: string, interpolations?: Record<string, unknown>) => {
       const translations = getTranslations(locale)

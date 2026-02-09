@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { twMerge } from 'tailwind-merge'
@@ -7,7 +7,7 @@ import { twMerge } from 'tailwind-merge'
 export interface LicenseKeyDetails {
   className?: string
   licenseKey: schemas['LicenseKeyRead']
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 export const LicenseKeyDetails = ({

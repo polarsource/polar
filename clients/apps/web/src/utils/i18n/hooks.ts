@@ -1,11 +1,11 @@
 import {
-  type SupportedLocale,
+  type AcceptedLocale,
   type TranslationKey,
   getTranslations,
 } from '@polar-sh/i18n'
 import { useCallback } from 'react'
 
-export const useTranslations = (locale: SupportedLocale) => {
+export const useTranslations = (locale: AcceptedLocale) => {
   return useCallback(
     (key: TranslationKey): string => {
       const translations = getTranslations(locale)

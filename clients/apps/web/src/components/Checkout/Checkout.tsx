@@ -16,7 +16,7 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
-import { SupportedLocale } from '@polar-sh/i18n'
+import { AcceptedLocale } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -37,7 +37,7 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const Checkout = ({
@@ -58,7 +58,7 @@ const Checkout = ({
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
-  const locale: SupportedLocale = _locale || 'en'
+  const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
   const openedTrackedRef = useRef(false)

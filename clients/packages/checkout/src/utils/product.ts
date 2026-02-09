@@ -1,6 +1,7 @@
 import {
+  type AcceptedLocale,
+  getTranslationLocale,
   getTranslations,
-  type SupportedLocale,
 } from '@polar-sh/i18n'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -16,11 +17,11 @@ const enSuffixes: Record<string, string> = {
   other: 'th',
 }
 
-const ordinal = (number: number, locale: SupportedLocale = 'en'): string => {
+const ordinal = (number: number, locale: AcceptedLocale = 'en'): string => {
   const rules = new Intl.PluralRules(locale, { type: 'ordinal' })
   const category = rules.select(number)
 
-  if (locale === 'nl') {
+  if (getTranslationLocale(locale) === 'nl') {
     return `${number}e`
   }
 
@@ -40,7 +41,7 @@ export const formatRecurringInterval = (
   interval: SubscriptionRecurringInterval | null | undefined,
   intervalCount?: number | null,
   format: 'short' | 'long' = 'long',
-  locale: SupportedLocale = 'en',
+  locale: AcceptedLocale = 'en',
 ): string => {
   if (!interval) {
     return ''
@@ -66,7 +67,7 @@ export const formatRecurringInterval = (
 export const formatRecurringFrequency = (
   interval: SubscriptionRecurringInterval | null | undefined,
   intervalCount?: number | null,
-  locale: SupportedLocale = 'en',
+  locale: AcceptedLocale = 'en',
 ): string => {
   if (!interval) {
     return ''

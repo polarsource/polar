@@ -4,7 +4,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { type SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -34,7 +34,7 @@ const StripeRequiresAction = ({
 }: {
   stripe: Stripe | null
   checkout: CheckoutPublic
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale ?? 'en')
   const [pendingHandling, setPendingHandling] = useState(false)
@@ -99,7 +99,7 @@ export interface CheckoutConfirmationProps {
   checkout: CheckoutPublic
   embed: boolean
   theme?: 'light' | 'dark'
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
   customerSessionToken?: string
   disabled?: boolean
   maxWaitingTimeMs?: number

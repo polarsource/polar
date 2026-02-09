@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import { SupportedLocale, formatDate, useTranslations } from '@polar-sh/i18n'
+import { type AcceptedLocale, formatDate, getTranslationLocale, useTranslations } from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -94,7 +94,7 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const BaseCheckoutForm = ({
@@ -137,7 +137,7 @@ const BaseCheckoutForm = ({
     [product],
   )
 
-  const locale: SupportedLocale = localeProp || 'en'
+  const locale: AcceptedLocale = localeProp || 'en'
 
   const t = useTranslations(locale)
 
@@ -825,15 +825,15 @@ const BaseCheckoutForm = ({
                     {checkout.discount && (
                       <>
                         <DetailRow
-                          title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount)})` : ''}`}
+                          title={`${checkout.discount.name}${checkout.discount.type === 'percentage' ? ` (${getDiscountDisplay(checkout.discount, locale)})` : ''}`}
                         >
-                          {formatCurrency('standard')(
+                          {formatCurrency('standard', locale)(
                             -checkout.discountAmount,
                             checkout.currency,
                           )}
                         </DetailRow>
                         <DetailRow title={t('checkout.pricing.taxableAmount')}>
-                          {formatCurrency('standard')(
+                          {formatCurrency('standard', locale)(
                             checkout.netAmount,
                             checkout.currency,
                           )}
@@ -843,7 +843,7 @@ const BaseCheckoutForm = ({
 
                     <DetailRow title={t('checkout.pricing.taxes')}>
                       {checkout.taxAmount !== null
-                        ? formatCurrency('standard')(
+                        ? formatCurrency('standard', locale)(
                             checkout.taxAmount,
                             checkout.currency,
                           )
@@ -988,7 +988,7 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -1046,7 +1046,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        locale,
+        locale: locale ? getTranslationLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.paymentProcessorMetadata as {
             customer_session_client_secret?: string

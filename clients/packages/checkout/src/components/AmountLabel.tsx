@@ -1,5 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
-import type { SupportedLocale } from '@polar-sh/i18n'
+import type { AcceptedLocale } from '@polar-sh/i18n'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
 import { formatRecurringInterval } from '../utils/product'
@@ -10,7 +10,7 @@ interface AmountLabelProps {
   mode: 'compact' | 'standard'
   interval?: SubscriptionRecurringInterval | null
   intervalCount?: number | null
-  locale?: SupportedLocale
+  locale?: AcceptedLocale
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({
@@ -31,7 +31,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">
-      {formatCurrency(mode)(amount, currency)}
+      {formatCurrency(mode, locale)(amount, currency)}
       {intervalDisplay ? (
         <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
       ) : null}

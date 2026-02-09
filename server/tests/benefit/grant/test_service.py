@@ -399,7 +399,7 @@ class TestEnqueueBenefitsGrants:
 
         enqueue_job_mock.assert_called_once()
         call_args = enqueue_job_mock.call_args
-        assert call_args[0][0] == "benefit.enqueue_grants"
+        assert call_args[0][0] == "benefit.reset_meters_and_enqueue_grants"
         assert call_args[1]["customer_id"] == customer.id
         assert set(call_args[1]["grant_benefit_ids"]) == {b.id for b in benefits}
         assert call_args[1]["subscription_id"] == subscription.id
@@ -432,7 +432,7 @@ class TestEnqueueBenefitsGrants:
         )
 
         call_args = enqueue_job_mock.call_args
-        assert call_args[0][0] == "benefit.enqueue_grants"
+        assert call_args[0][0] == "benefit.reset_meters_and_enqueue_grants"
         grant_benefit_ids = call_args[1]["grant_benefit_ids"]
         assert benefits[0].id not in grant_benefit_ids
         assert set(grant_benefit_ids) == {b.id for b in benefits[1:]}
@@ -465,7 +465,7 @@ class TestEnqueueBenefitsGrants:
         )
 
         call_args = enqueue_job_mock.call_args
-        assert call_args[0][0] == "benefit.enqueue_grants"
+        assert call_args[0][0] == "benefit.reset_meters_and_enqueue_grants"
         grant_benefit_ids = call_args[1]["grant_benefit_ids"]
         assert benefits[0].id not in grant_benefit_ids
         assert set(grant_benefit_ids) == {b.id for b in benefits[1:]}
@@ -488,7 +488,7 @@ class TestEnqueueBenefitsGrants:
         enqueue_grants_actor = MagicMock()
         actors = {
             "benefit.revoke": revoke_actor,
-            "benefit.enqueue_grants": enqueue_grants_actor,
+            "benefit.reset_meters_and_enqueue_grants": enqueue_grants_actor,
         }
         broker_mock.return_value.get_actor.side_effect = lambda name: actors.get(
             name, MagicMock()
@@ -574,7 +574,7 @@ class TestEnqueueBenefitsGrants:
         enqueue_grants_actor = MagicMock()
         actors = {
             "benefit.revoke": revoke_actor,
-            "benefit.enqueue_grants": enqueue_grants_actor,
+            "benefit.reset_meters_and_enqueue_grants": enqueue_grants_actor,
         }
         broker_mock.return_value.get_actor.side_effect = lambda name: actors.get(
             name, MagicMock()

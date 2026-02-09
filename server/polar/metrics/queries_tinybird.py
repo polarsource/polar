@@ -482,6 +482,7 @@ WITH
         SELECT
             e.id,
             argMax(e.amount, e.ingested_at) AS amount,
+            argMax(e.discount_basis_points, e.ingested_at) AS discount_basis_points,
             argMax(e.timestamp, e.ingested_at) AS event_timestamp,
             argMax(e.subscription_id, e.ingested_at) AS subscription_id
         FROM events_by_timestamp AS e
@@ -496,7 +497,17 @@ WITH
     latest_payment AS (
         SELECT
             subscription_id,
-            argMax(amount, event_timestamp) AS settlement_amount
+            argMax(amount, event_timestamp) AS settlement_amount,
+            argMax(
+                CASE
+                    WHEN discount_basis_points IS NOT NULL
+                        AND discount_basis_points > 0
+                        AND discount_basis_points < 10000
+                    THEN toInt64(round(amount / (1 - discount_basis_points / 10000.0)))
+                    ELSE amount
+                END,
+                event_timestamp
+            ) AS gross_settlement_amount
         FROM payment_events_raw
         GROUP BY subscription_id
     ),
@@ -516,14 +527,27 @@ WITH
                 WHEN s.recurring_interval = 'day'
                     THEN toInt64(round(COALESCE(lp.settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
                 ELSE toInt64(0)
-            END AS monthly_amount
+            END AS monthly_amount,
+            CASE
+                WHEN s.recurring_interval = 'year'
+                    THEN toInt64(round(COALESCE(lp.gross_settlement_amount, 0) / (12 * s.recurring_interval_count)))
+                WHEN s.recurring_interval = 'month'
+                    THEN toInt64(round(COALESCE(lp.gross_settlement_amount, 0) / s.recurring_interval_count))
+                WHEN s.recurring_interval = 'week'
+                    THEN toInt64(round(COALESCE(lp.gross_settlement_amount, 0) * 52 / (12 * s.recurring_interval_count)))
+                WHEN s.recurring_interval = 'day'
+                    THEN toInt64(round(COALESCE(lp.gross_settlement_amount, 0) * 365 / (12 * s.recurring_interval_count)))
+                ELSE toInt64(0)
+            END AS gross_monthly_amount
         FROM subs s
         LEFT JOIN latest_payment lp ON lp.subscription_id = s.subscription_id
     )
 SELECT
     w.window_start AS timestamp,
-    COALESCE(mrr.monthly_recurring_revenue, 0) AS monthly_recurring_revenue,
-    COALESCE(mrr.committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue,
+    -- COALESCE(mrr.monthly_recurring_revenue, 0) AS monthly_recurring_revenue,
+    -- COALESCE(mrr.committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue,
+    COALESCE(mrr.gross_monthly_recurring_revenue, 0) AS monthly_recurring_revenue,
+    COALESCE(mrr.gross_committed_monthly_recurring_revenue, 0) AS committed_monthly_recurring_revenue,
     CASE
         WHEN COALESCE(mrr.active_subscriber_count, 0) > 0
         THEN toInt64(round(COALESCE(mrr.monthly_recurring_revenue, 0) / mrr.active_subscriber_count))
@@ -542,6 +566,12 @@ LEFT JOIN (
             s.ends_at <= toDateTime64(0, 3, 'UTC')
             OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
         ) AS committed_monthly_recurring_revenue,
+        sum(s.gross_monthly_amount) AS gross_monthly_recurring_revenue,
+        sumIf(
+            s.gross_monthly_amount,
+            s.ends_at <= toDateTime64(0, 3, 'UTC')
+            OR date_trunc({{iv:String}}, toDateTime(s.ends_at, {{tz:String}})) < date_trunc({{iv:String}}, toDateTime({{now_dt:String}}, {{tz:String}}))
+        ) AS gross_committed_monthly_recurring_revenue,
         count(DISTINCT s.customer_id) AS active_subscriber_count,
         count(*) AS active_subscriptions,
         countIf(

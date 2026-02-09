@@ -201,9 +201,16 @@ class OrganizationService:
                 ]
             )
 
+        create_data = create_schema.model_dump(
+            exclude_unset=True, exclude_none=True
+        )
+        feature_settings = create_data.get("feature_settings", {})
+        feature_settings["member_model_enabled"] = True
+        create_data["feature_settings"] = feature_settings
+
         organization = await repository.create(
             Organization(
-                **create_schema.model_dump(exclude_unset=True, exclude_none=True),
+                **create_data,
                 customer_invoice_prefix=create_schema.slug.upper(),
             )
         )

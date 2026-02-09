@@ -19,7 +19,6 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
-    EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,
     MergeJSONSchema,
@@ -105,14 +104,6 @@ class OrganizationFeatureSettings(Schema):
     )
 
 
-class OrganizationSubscribePromoteSettings(Schema):
-    promote: bool = Field(True, description="Promote email subscription (free)")
-    show_count: bool = Field(True, description="Show subscription count publicly")
-    count_free: bool = Field(
-        True, description="Include free subscribers in total count"
-    )
-
-
 class OrganizationDetails(Schema):
     about: str = Field(
         ..., description="Brief information about you and your business."
@@ -187,38 +178,6 @@ class OrganizationSocialLink(Schema):
         return data
 
 
-# Deprecated
-class OrganizationProfileSettings(Schema):
-    enabled: bool | None = Field(
-        None, description="If this organization has a profile enabled"
-    )
-    description: Annotated[
-        str | None,
-        Field(max_length=160, description="A description of the organization"),
-        EmptyStrToNoneValidator,
-    ] = None
-    featured_projects: list[UUID4] | None = Field(
-        None, description="A list of featured projects"
-    )
-    featured_organizations: list[UUID4] | None = Field(
-        None, description="A list of featured organizations"
-    )
-    links: list[HttpUrl] | None = Field(
-        None, description="A list of links associated with the organization"
-    )
-    subscribe: OrganizationSubscribePromoteSettings | None = Field(
-        OrganizationSubscribePromoteSettings(
-            promote=True,
-            show_count=True,
-            count_free=True,
-        ),
-        description="Subscription promotion settings",
-    )
-    accent_color: str | None = Field(
-        None, description="Accent color for the organization"
-    )
-
-
 class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
@@ -258,9 +217,6 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     pledge_minimum_amount: SkipJsonSchema[int] = Field(0, deprecated=True)
     pledge_badge_show_amount: SkipJsonSchema[bool] = Field(False, deprecated=True)
     default_upfront_split_to_contributors: SkipJsonSchema[int | None] = Field(
-        None, deprecated=True
-    )
-    profile_settings: SkipJsonSchema[OrganizationProfileSettings | None] = Field(
         None, deprecated=True
     )
 

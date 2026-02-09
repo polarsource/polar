@@ -319,15 +319,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return and_(cls.deleted_at.is_(None), cls.blocked_at.is_(None))
 
     @hybrid_property
-    def storefront_enabled(self) -> bool:
-        return self.profile_settings.get("enabled", False)
-
-    @storefront_enabled.inplace.expression
-    @classmethod
-    def _storefront_enabled_expression(cls) -> ColumnElement[bool]:
-        return Organization.profile_settings["enabled"].as_boolean()
-
-    @hybrid_property
     def is_under_review(self) -> bool:
         return self.status in OrganizationStatus.review_statuses()
 

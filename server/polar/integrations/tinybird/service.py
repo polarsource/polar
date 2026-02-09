@@ -6,12 +6,15 @@ from functools import partial
 from typing import Any, Self
 from uuid import UUID
 
+import logfire
 import structlog
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from sqlalchemy import Column, DateTime, MetaData, String, Table, func, select
 from sqlalchemy.sql import Select
 
 from polar.config import settings
+from polar.event.repository import EventRepository
+from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.models import Event
 from polar.models.event import EventSource
@@ -161,6 +164,66 @@ async def ingest_events(events: Sequence[Event]) -> None:
         log.error(
             "tinybird.ingest_events.failed", error=str(e), event_count=len(events)
         )
+
+
+RECONCILE_BATCH_SIZE = 1000
+
+
+async def reconcile_events(
+    session: AsyncReadSession, start: datetime, end: datetime
+) -> tuple[int, int]:
+    tb_sql = (
+        "SELECT DISTINCT toString(id) AS id "
+        "FROM events_by_ingested_at "
+        "WHERE ingested_at >= {start:DateTime64(3)} "
+        "AND ingested_at < {end:DateTime64(3)}"
+    )
+    tb_rows = await client.query(
+        tb_sql,
+        parameters={"start": start, "end": end},
+        db_statement="SELECT DISTINCT toString(id) FROM events_by_ingested_at WHERE ingested_at >= {start} AND ingested_at < {end}",
+    )
+    tb_ids = {row["id"] for row in tb_rows}
+
+    repository = EventRepository.from_session(session)
+    base_statement = (
+        repository.get_base_statement()
+        .where(Event.ingested_at >= start, Event.ingested_at < end)
+        .order_by(Event.ingested_at, Event.id)
+    )
+
+    total_checked = 0
+    total_missing = 0
+    offset = 0
+
+    while True:
+        statement = base_statement.offset(offset).limit(RECONCILE_BATCH_SIZE)
+        batch = await repository.get_all(statement)
+
+        if not batch:
+            break
+
+        total_checked += len(batch)
+        missing = [e for e in batch if str(e.id) not in tb_ids]
+        total_missing += len(missing)
+
+        if missing:
+            await ingest_events(missing)
+
+        if len(batch) < RECONCILE_BATCH_SIZE:
+            break
+
+        offset += RECONCILE_BATCH_SIZE
+
+    logfire.info(
+        "tinybird.reconciliation",
+        missing_count=total_missing,
+        total_checked=total_checked,
+        start=start.isoformat(),
+        end=end.isoformat(),
+    )
+
+    return total_checked, total_missing
 
 
 def _compile(statement: Select[Any]) -> tuple[str, str]:

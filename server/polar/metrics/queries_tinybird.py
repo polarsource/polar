@@ -69,12 +69,12 @@ def _build_events_sql(
 
     balance_product_filter = ""
     if product_id is not None:
-        balance_product_filter = "AND se.product_id IN {product_ids:Array(String)}"
+        balance_product_filter = "AND be.product_id IN {product_ids:Array(String)}"
 
     balance_billing_filter = ""
     if billing_type is not None:
         params["billing_types"] = list(billing_type)
-        balance_billing_filter = "AND se.billing_type IN {billing_types:Array(String)}"
+        balance_billing_filter = "AND be.billing_type IN {billing_types:Array(String)}"
 
     sql = f"""
 WITH

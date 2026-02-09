@@ -1,6 +1,6 @@
 'use client'
 
-import { getCountryData, getEmojiFlag, TCountryCode } from 'countries-list'
+import { useMemo } from 'react'
 
 import {
   Select,
@@ -10,18 +10,9 @@ import {
   SelectValue,
 } from './Select'
 
-const getCountryList = (codes: TCountryCode[]) => {
-  return codes
-    .map((countryCode) => ({
-      code: countryCode,
-      country: getCountryData(countryCode),
-      emoji: getEmojiFlag(countryCode),
-    }))
-    .sort((a, b) => a.country.name.localeCompare(b.country.name))
-}
-
 const CountryPicker = ({
   allowedCountries,
+  locale,
   value,
   onChange,
   autoComplete,
@@ -32,6 +23,7 @@ const CountryPicker = ({
   placeholder = 'Country',
 }: {
   allowedCountries: readonly string[]
+  locale?: string
   value?: string
   onChange: (value: string) => void
   autoComplete?: string
@@ -41,7 +33,18 @@ const CountryPicker = ({
   contentClassName?: string
   placeholder?: string
 }) => {
-  const countryMap = getCountryList(allowedCountries as TCountryCode[])
+  const countryList = useMemo(() => {
+    const displayNames = new Intl.DisplayNames(locale ? [locale] : [], {
+      type: 'region',
+    })
+    return allowedCountries
+      .map((code) => ({
+        code,
+        name: displayNames.of(code) ?? code,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, locale))
+  }, [allowedCountries, locale])
+
   return (
     <Select
       onValueChange={onChange}
@@ -58,16 +61,16 @@ const CountryPicker = ({
         />
       </SelectTrigger>
       <SelectContent className={contentClassName}>
-        {countryMap.map(({ code, country }) => (
+        {countryList.map(({ code, name }) => (
           <SelectItem
             key={code}
             value={code}
-            textValue={country.name}
+            textValue={name}
             className={itemClassName}
           >
             {/* Wrap in div to workaround an issue with browser automatic translation
               https://github.com/shadcn-ui/ui/issues/852 */}
-            <div>{country.name}</div>
+            <div>{name}</div>
           </SelectItem>
         ))}
       </SelectContent>

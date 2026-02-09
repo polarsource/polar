@@ -745,6 +745,140 @@ async def _run_shadow_mode(
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.asyncio
 @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestCumulativeMetricsHistoricalBaseline:
+    """Test that cumulative metrics include historical data from before the query window.
+
+    This catches the bug where buffer filtering excluded historical events,
+    causing cumulative_revenue to start from 0 instead of including past orders.
+    """
+
+    async def test_cumulative_includes_historical_baseline(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        tinybird_client: TinybirdClient,
+    ) -> None:
+        # Create products
+        monthly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(MONTHLY_PRICE, "usd")],
+        )
+        one_time = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(ONE_TIME_PRICE, "usd")],
+        )
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="historical@test.com",
+            name="historical_customer",
+            stripe_customer_id="cus_historical",
+        )
+
+        all_events: list[Event] = []
+
+        # Create HISTORICAL orders (2023) - these are BEFORE our query window
+        historical_dates = [
+            date(2023, 6, 1),
+            date(2023, 7, 1),
+            date(2023, 8, 1),
+            date(2023, 9, 1),
+            date(2023, 10, 1),
+            date(2023, 11, 1),
+        ]
+        historical_revenue = 0
+        for d in historical_dates:
+            ev = await _create_balance_event(
+                save_fixture,
+                organization,
+                customer,
+                one_time,
+                None,
+                d,
+                ONE_TIME_PRICE,
+            )
+            all_events.append(ev)
+            historical_revenue += ONE_TIME_PRICE
+
+        # Create orders IN the query window (2024)
+        query_window_dates = [date(2024, 1, 15), date(2024, 2, 15)]
+        query_window_revenue = 0
+        for d in query_window_dates:
+            ev = await _create_balance_event(
+                save_fixture,
+                organization,
+                customer,
+                one_time,
+                None,
+                d,
+                ONE_TIME_PRICE,
+            )
+            all_events.append(ev)
+            query_window_revenue += ONE_TIME_PRICE
+
+        # Ingest events into Tinybird
+        tinybird_events = [_event_to_tinybird(e) for e in all_events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        # Query for 2024 ONLY - cumulative should include 2023 historical data
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": True,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+        with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 2, 28),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+                metrics=["cumulative_revenue", "net_cumulative_revenue", "revenue"],
+            )
+
+        assert len(result.periods) == 2
+
+        # January 2024: cumulative should be historical + Jan revenue
+        jan = result.periods[0]
+        assert jan.revenue == ONE_TIME_PRICE, "Jan revenue should be 1 order"
+        expected_jan_cumulative = historical_revenue + ONE_TIME_PRICE
+        assert jan.cumulative_revenue == expected_jan_cumulative, (
+            f"Jan cumulative_revenue should include historical baseline. "
+            f"Expected {expected_jan_cumulative}, got {jan.cumulative_revenue}"
+        )
+        assert jan.net_cumulative_revenue == expected_jan_cumulative, (
+            f"Jan net_cumulative_revenue should include historical baseline. "
+            f"Expected {expected_jan_cumulative}, got {jan.net_cumulative_revenue}"
+        )
+
+        # February 2024: cumulative should be historical + Jan + Feb revenue
+        feb = result.periods[1]
+        assert feb.revenue == ONE_TIME_PRICE, "Feb revenue should be 1 order"
+        expected_feb_cumulative = historical_revenue + query_window_revenue
+        assert feb.cumulative_revenue == expected_feb_cumulative, (
+            f"Feb cumulative_revenue should include historical baseline. "
+            f"Expected {expected_feb_cumulative}, got {feb.cumulative_revenue}"
+        )
+        assert feb.net_cumulative_revenue == expected_feb_cumulative, (
+            f"Feb net_cumulative_revenue should include historical baseline. "
+            f"Expected {expected_feb_cumulative}, got {feb.net_cumulative_revenue}"
+        )
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
 @pytest.mark.usefixtures("scenario_events")
 class TestSettlementComparison:
     """Compare original Postgres metrics with Tinybird settlement metrics.

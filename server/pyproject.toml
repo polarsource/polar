@@ -161,6 +161,11 @@ warn_untyped_fields = true
 
 [tool.sqlfluff.core]
 dialect = "clickhouse"
+templater = "python"
+# Note: Python templater support for f-strings requires further configuration
+# The .py extension is included to attempt linting Python files with SQL
+sql_file_exts = ".sql,.sql.j2,.dml,.ddl,.py"
+large_file_skip_byte_limit = 0
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

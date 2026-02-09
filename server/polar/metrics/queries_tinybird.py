@@ -90,7 +90,24 @@ WITH
         HAVING 1=1
             {sub_product_filter}
     ),
-    system_events_raw AS (
+    subscription_events_raw AS (
+        SELECT
+            e.id,
+            argMax(e.name, e.ingested_at) AS name,
+            argMax(e.subscription_id, e.ingested_at) AS subscription_id,
+            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
+            argMax(e.canceled_at, e.ingested_at) AS canceled_at,
+            argMax(e.customer_cancellation_reason, e.ingested_at) AS customer_cancellation_reason
+        FROM events_by_timestamp AS e
+        WHERE e.source = 'system'
+            AND e.name IN ('subscription.created', 'subscription.canceled')
+            AND e.organization_id IN {{org_ids:Array(String)}}
+            AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
+            AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
+            {customer_filter}
+        GROUP BY e.id
+    ),
+    balance_events_raw AS (
         SELECT
             e.id,
             argMax(e.name, e.ingested_at) AS name,
@@ -99,34 +116,31 @@ WITH
             argMax(e.subscription_id, e.ingested_at) AS subscription_id,
             argMax(e.timestamp, e.ingested_at) AS event_timestamp,
             argMax(e.user_metadata, e.ingested_at) AS user_metadata,
-            argMax(e.canceled_at, e.ingested_at) AS canceled_at,
-            argMax(e.customer_cancellation_reason, e.ingested_at) AS customer_cancellation_reason,
             argMax(e.product_id, e.ingested_at) AS product_id,
             argMax(e.billing_type, e.ingested_at) AS billing_type,
-            argMax(e.customer_id, e.ingested_at) AS customer_id
+            argMax(e.order_id, e.ingested_at) AS order_id
         FROM events_by_timestamp AS e
         WHERE e.source = 'system'
-            AND e.name IN ('balance.order', 'balance.credit_order', 'balance.refund', 'subscription.created', 'subscription.canceled')
+            AND e.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
             AND e.organization_id IN {{org_ids:Array(String)}}
-            AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
             {customer_filter}
         GROUP BY e.id
     ),
     balance_events AS (
         SELECT
-            se.name,
-            se.amount,
-            se.fee,
-            se.subscription_id,
+            be.name,
+            be.amount,
+            be.fee,
+            be.subscription_id,
             COALESCE(
-                JSONExtract(se.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                se.event_timestamp
+                JSONExtract(be.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
+                be.event_timestamp
             ) AS effective_ts,
             ss.started_at AS sub_started_at
-        FROM system_events_raw AS se
-        LEFT JOIN sub_state ss ON se.subscription_id = ss.subscription_id
-        WHERE se.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
+        FROM balance_events_raw AS be
+        LEFT JOIN sub_state ss ON be.subscription_id = ss.subscription_id
+        WHERE be.order_id IS NOT NULL AND be.order_id != ''
             {balance_product_filter}
             {balance_billing_filter}
     ),
@@ -147,7 +161,7 @@ WITH
         SELECT
             date_trunc({{iv:String}}, toDateTime(se.event_timestamp, {{tz:String}})) AS day,
             count(DISTINCT se.subscription_id) AS new_subscriptions
-        FROM system_events_raw AS se
+        FROM subscription_events_raw AS se
         -- TODO: investigate whether this should use bounds_start/bounds_end
         -- like the balance order data, instead of the full window range.
         -- Currently matches Postgres behavior which uses the window range.
@@ -243,7 +257,7 @@ WITH
             countIf(se.customer_cancellation_reason = 'too_expensive') AS canceled_subscriptions_too_expensive,
             countIf(se.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
             countIf(se.customer_cancellation_reason = 'other' OR se.customer_cancellation_reason IS NULL OR se.customer_cancellation_reason = '') AS canceled_subscriptions_other
-        FROM system_events_raw AS se
+        FROM subscription_events_raw AS se
         WHERE se.name = 'subscription.canceled'
             AND se.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
             AND se.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
@@ -340,10 +354,15 @@ WITH
             argMax(e.external_customer_id, e.ingested_at) AS external_customer_id
         FROM events_by_timestamp AS e
         WHERE e.organization_id IN {{org_ids:Array(String)}}
-            AND e.timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
             {customer_filter}
         GROUP BY e.id
+    ),
+    baseline AS (
+        SELECT
+            COALESCE(sum(ae.cost_amount), 0) AS hist_costs
+        FROM all_events_raw AS ae
+        WHERE ae.event_timestamp < toDateTime({{bounds_start:String}}, {{tz:String}})
     ),
     daily_events AS (
         SELECT
@@ -351,12 +370,15 @@ WITH
             COALESCE(sum(ae.cost_amount), 0) AS costs,
             countDistinct(ae.customer_id) + countDistinct(ae.external_customer_id) AS active_user_by_event
         FROM all_events_raw AS ae
+        WHERE ae.event_timestamp >= toDateTime({{bounds_start:String}}, {{tz:String}})
+            AND ae.event_timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
         GROUP BY day
     )
 SELECT
     w.window_start AS timestamp,
     COALESCE(de.costs, 0) AS costs,
-    COALESCE(sum(de.costs) OVER (ORDER BY w.window_start), 0) AS cumulative_costs,
+    COALESCE(sum(de.costs) OVER (ORDER BY w.window_start), 0)
+        + b.hist_costs AS cumulative_costs,
     COALESCE(de.active_user_by_event, 0) AS active_user_by_event,
     CASE
         WHEN COALESCE(de.active_user_by_event, 0) > 0
@@ -365,6 +387,7 @@ SELECT
     END AS cost_per_user
 FROM windows w
 LEFT JOIN daily_events de ON de.day = w.window_start
+CROSS JOIN baseline b
 ORDER BY w.window_start
 """
 

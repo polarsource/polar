@@ -611,6 +611,16 @@ class OrderService:
             billing_address = customer.billing_address
             product = subscription.product
 
+            # Fallback: if customer has no billing address, try the most recent
+            # order for this subscription. This handles cases where the customer's
+            # billing address was never set or was cleared after initial checkout.
+            if billing_address is None:
+                order_repository = OrderRepository.from_session(session)
+                billing_address = (
+                    await order_repository
+                    .get_latest_billing_address_by_subscription(subscription.id)
+                )
+
             subtotal_amount = sum(item.amount for item in items)
 
             discount = subscription.discount

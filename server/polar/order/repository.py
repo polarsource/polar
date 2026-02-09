@@ -89,6 +89,25 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_latest_billing_address_by_subscription(
+        self, subscription_id: UUID
+    ) -> "Address | None":
+        """Get the billing address from the most recent order for a subscription."""
+        from polar.kit.address import Address
+
+        statement = (
+            select(Order.billing_address)
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.billing_address.is_not(None),
+                Order.deleted_at.is_(None),
+            )
+            .order_by(Order.created_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
         """Get orders that are due for dunning retry based on next_payment_attempt_at."""
 

@@ -102,11 +102,11 @@ WITH
     subscription_events_raw AS (
         SELECT
             e.id,
-            argMax(e.name, e.ingested_at) AS name,
-            argMax(e.subscription_id, e.ingested_at) AS subscription_id,
-            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
-            argMax(e.canceled_at, e.ingested_at) AS canceled_at,
-            argMax(e.customer_cancellation_reason, e.ingested_at) AS customer_cancellation_reason
+            e.name,
+            e.subscription_id,
+            e.timestamp AS event_timestamp,
+            e.canceled_at,
+            e.customer_cancellation_reason
         FROM events_by_timestamp AS e
         WHERE e.source = 'system'
             AND e.name IN ('subscription.created', 'subscription.canceled')
@@ -114,27 +114,25 @@ WITH
             AND e.timestamp >= toDateTime({{buffer_start:String}}, {{tz:String}})
             AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
             {customer_filter}
-        GROUP BY e.id
     ),
     balance_events_raw AS (
         SELECT
             e.id,
-            argMax(e.name, e.ingested_at) AS name,
-            argMax(e.amount, e.ingested_at) AS amount,
-            argMax(e.fee, e.ingested_at) AS fee,
-            nullIf(argMax(e.subscription_id, e.ingested_at), '') AS subscription_id,
-            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
-            argMax(e.user_metadata, e.ingested_at) AS user_metadata,
-            argMax(e.product_id, e.ingested_at) AS product_id,
-            argMax(e.billing_type, e.ingested_at) AS billing_type,
-            argMax(e.order_id, e.ingested_at) AS order_id
+            e.name,
+            e.amount,
+            e.fee,
+            e.subscription_id,
+            e.timestamp AS event_timestamp,
+            e.user_metadata,
+            e.product_id,
+            e.billing_type,
+            e.order_id
         FROM events_by_timestamp AS e
         WHERE e.source = 'system'
             AND e.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
             AND e.organization_id IN {{org_ids:Array(String)}}
             AND e.timestamp <= toDateTime({{buffer_end:String}}, {{tz:String}})
             {customer_filter}
-        GROUP BY e.id
     ),
     balance_events AS (
         SELECT
@@ -149,7 +147,7 @@ WITH
             ss.started_at AS sub_started_at
         FROM balance_events_raw AS be
         LEFT JOIN sub_state ss ON be.subscription_id = ss.subscription_id
-        WHERE be.order_id IS NOT NULL AND be.order_id != ''
+        WHERE be.order_id IS NOT NULL
             {balance_product_filter}
             {balance_billing_filter}
     ),
@@ -366,15 +364,14 @@ WITH
     all_events_raw AS (
         SELECT
             e.id,
-            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
-            argMax(e.cost_amount, e.ingested_at) AS cost_amount,
-            argMax(e.customer_id, e.ingested_at) AS customer_id,
-            argMax(e.external_customer_id, e.ingested_at) AS external_customer_id
+            e.timestamp AS event_timestamp,
+            e.cost_amount,
+            e.customer_id,
+            e.external_customer_id
         FROM events_by_timestamp AS e
         WHERE e.organization_id IN {{org_ids:Array(String)}}
             AND e.timestamp <= toDateTime({{bounds_end:String}}, {{tz:String}})
             {customer_filter}
-        GROUP BY e.id
     ),
     baseline AS (
         SELECT
@@ -481,9 +478,9 @@ WITH
     payment_events_raw AS (
         SELECT
             e.id,
-            argMax(e.amount, e.ingested_at) AS amount,
-            argMax(e.timestamp, e.ingested_at) AS event_timestamp,
-            argMax(e.subscription_id, e.ingested_at) AS subscription_id
+            e.amount,
+            e.timestamp AS event_timestamp,
+            e.subscription_id
         FROM events_by_timestamp AS e
         WHERE e.source = 'system'
             AND e.name IN ('balance.order', 'balance.credit_order')
@@ -491,7 +488,6 @@ WITH
             AND e.subscription_id IS NOT NULL
             {payment_product_filter}
             {payment_customer_filter}
-        GROUP BY e.id
     ),
     latest_payment AS (
         SELECT

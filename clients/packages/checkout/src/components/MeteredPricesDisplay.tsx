@@ -1,6 +1,10 @@
 'use client'
 
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
@@ -32,7 +36,10 @@ interface MeteredPricesDisplayProps {
   locale?: AcceptedLocale
 }
 
-const MeteredPricesDisplay = ({ checkout, locale }: MeteredPricesDisplayProps) => {
+const MeteredPricesDisplay = ({
+  checkout,
+  locale,
+}: MeteredPricesDisplayProps) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { product, prices, productPrice } = checkout
 
@@ -51,14 +58,20 @@ const MeteredPricesDisplay = ({ checkout, locale }: MeteredPricesDisplayProps) =
 
   return (
     <div className="text-sm">
-      <h2 className="mb-2 text-base font-medium">+ {t('checkout.pricing.additionalMeteredUsage')}</h2>
+      <h2 className="mb-2 text-base font-medium">
+        + {t('checkout.pricing.additionalMeteredUsage')}
+      </h2>
       {meteredPrices.map((price) => (
         <div
           key={price.id}
           className="dark:text-polar-100 flex flex-row items-center gap-x-2 text-sm text-gray-600"
         >
           <GaugeIcon className="h-4 w-4" />
-          <ProductPriceLabel product={product} price={price as ProductPrice} locale={locale} />
+          <ProductPriceLabel
+            product={product}
+            price={price as ProductPrice}
+            locale={locale}
+          />
         </div>
       ))}
     </div>

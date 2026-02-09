@@ -7,12 +7,35 @@ export const DEFAULT_LOCALE = 'en'
 // Expand bare language codes to include region variants,
 // but keep region-specific codes (like future 'pt-BR') exact
 type Alpha =
-  | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'
-  | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
-type ResolveBCP47<T extends string> =
-  T extends `${string}-${string}`
-    ? T
-    : T | `${T}-${Alpha}${Alpha}`
+  | 'A'
+  | 'B'
+  | 'C'
+  | 'D'
+  | 'E'
+  | 'F'
+  | 'G'
+  | 'H'
+  | 'I'
+  | 'J'
+  | 'K'
+  | 'L'
+  | 'M'
+  | 'N'
+  | 'O'
+  | 'P'
+  | 'Q'
+  | 'R'
+  | 'S'
+  | 'T'
+  | 'U'
+  | 'V'
+  | 'W'
+  | 'X'
+  | 'Y'
+  | 'Z'
+type ResolveBCP47<T extends string> = T extends `${string}-${string}`
+  ? T
+  : T | `${T}-${Alpha}${Alpha}`
 
 export type AcceptedLocale = ResolveBCP47<SupportedLocale>
 
@@ -178,7 +201,8 @@ export function getTranslations(
   locale: AcceptedLocale = DEFAULT_LOCALE,
 ): Translations {
   const translationLocale = getTranslationLocale(locale)
-  return (translations[translationLocale] ?? translations[DEFAULT_LOCALE]) as Translations
+  return (translations[translationLocale] ??
+    translations[DEFAULT_LOCALE]) as Translations
 }
 
 export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
@@ -234,4 +258,3 @@ export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
     [locale],
   )
 }
-

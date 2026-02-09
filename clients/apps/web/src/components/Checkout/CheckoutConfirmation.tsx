@@ -4,7 +4,11 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -194,8 +198,7 @@ export const CheckoutConfirmation = ({
                 })}
             </>
           )}
-          {status === 'failed' &&
-            t('checkout.confirmation.failedDescription')}
+          {status === 'failed' && t('checkout.confirmation.failedDescription')}
         </p>
         {status === 'confirmed' && (
           <div className="flex items-center justify-center">
@@ -203,7 +206,11 @@ export const CheckoutConfirmation = ({
               <Elements stripe={stripePromise}>
                 <ElementsConsumer>
                   {({ stripe }) => (
-                    <StripeRequiresAction stripe={stripe} checkout={checkout} locale={locale} />
+                    <StripeRequiresAction
+                      stripe={stripe}
+                      checkout={checkout}
+                      locale={locale}
+                    />
                   )}
                 </ElementsConsumer>
               </Elements>

@@ -1,7 +1,12 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import { type AcceptedLocale, formatDate, getTranslationLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  type AcceptedLocale,
+  formatDate,
+  getTranslationLocale,
+  useTranslations,
+} from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'

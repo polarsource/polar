@@ -1,7 +1,11 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -245,7 +249,9 @@ const BenefitGrantOAuth = ({
                         {account.account_username}
                       </SelectItem>
                     ))}
-                    <SelectItem value="add">{t('checkout.benefits.connectNewAccount')}</SelectItem>
+                    <SelectItem value="add">
+                      {t('checkout.benefits.connectNewAccount')}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -330,7 +336,11 @@ const BenefitGrantDiscord = ({
   )
 }
 
-export const BenefitGrant = ({ api, benefitGrant, locale }: BenefitGrantProps) => {
+export const BenefitGrant = ({
+  api,
+  benefitGrant,
+  locale,
+}: BenefitGrantProps) => {
   const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { benefit } = benefitGrant
 

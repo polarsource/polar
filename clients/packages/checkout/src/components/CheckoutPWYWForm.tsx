@@ -1,5 +1,9 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
 import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
@@ -52,7 +56,10 @@ export const CheckoutPWYWForm = ({
 
       if (value < minimumAmount) {
         return t('checkout.pwywForm.amountMinimum', {
-          min: formatCurrency('compact', locale)(minimumAmount, checkout.currency),
+          min: formatCurrency('compact', locale)(
+            minimumAmount,
+            checkout.currency,
+          ),
         })
       }
 
@@ -89,7 +96,10 @@ export const CheckoutPWYWForm = ({
     minimumAmount === 0
       ? null
       : t('checkout.pwywForm.minimum', {
-          amount: formatCurrency('compact', locale)(minimumAmount, checkout.currency),
+          amount: formatCurrency('compact', locale)(
+            minimumAmount,
+            checkout.currency,
+          ),
         })
 
   return (

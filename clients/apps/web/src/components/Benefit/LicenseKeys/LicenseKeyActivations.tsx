@@ -2,7 +2,11 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -34,12 +38,16 @@ export const LicenseKeyActivations = ({
         .then(() => {
           toast({
             title: t('checkout.benefits.licenseKey.activationDeleted'),
-            description: t('checkout.benefits.licenseKey.activationDeletedDescription'),
+            description: t(
+              'checkout.benefits.licenseKey.activationDeletedDescription',
+            ),
           })
         })
         .catch((error) => {
           toast({
-            title: t('checkout.benefits.licenseKey.activationDeactivationFailed'),
+            title: t(
+              'checkout.benefits.licenseKey.activationDeactivationFailed',
+            ),
             description: `${error.message}`,
           })
         })
@@ -62,7 +70,10 @@ export const LicenseKeyActivations = ({
             <h3 className="text-sm">{activation.label}</h3>
             <div className="flex flex-row items-center gap-x-4">
               <span className="dark:text-polar-500 text-sm text-gray-500">
-                <FormattedDateTime datetime={activation.created_at} locale={resolvedLocale} />
+                <FormattedDateTime
+                  datetime={activation.created_at}
+                  locale={resolvedLocale}
+                />
               </span>
               <Button
                 className="h-6 w-6"

@@ -1,4 +1,8 @@
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -35,9 +39,15 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       />
     )
   } else if (price.amountType === 'custom') {
-    return <div className="text-[min(1em,24px)]">{t('checkout.pricing.payWhatYouWant')}</div>
+    return (
+      <div className="text-[min(1em,24px)]">
+        {t('checkout.pricing.payWhatYouWant')}
+      </div>
+    )
   } else if (price.amountType === 'free') {
-    return <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
+    return (
+      <div className="text-[min(1em,24px)]">{t('checkout.pricing.free')}</div>
+    )
   } else if (price.amountType === 'metered_unit') {
     return (
       <div className="flex flex-row gap-1 text-[min(1em,24px)]">

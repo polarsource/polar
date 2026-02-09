@@ -25,7 +25,12 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     if (!interval) {
       return ''
     }
-    const formatted = formatRecurringInterval(interval, intervalCount, 'short', locale)
+    const formatted = formatRecurringInterval(
+      interval,
+      intervalCount,
+      'short',
+      locale,
+    )
     return formatted ? ` / ${formatted}` : ''
   }, [interval, intervalCount, locale])
 

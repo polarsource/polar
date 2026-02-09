@@ -1,5 +1,9 @@
 import { schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -91,7 +95,9 @@ export const BenefitList = ({
                   key="show"
                   icon={<ChevronDown className="h-3 w-3" />}
                 >
-                  {t('checkout.benefits.showMoreBenefits', { count: toggled.length })}
+                  {t('checkout.benefits.showMoreBenefits', {
+                    count: toggled.length,
+                  })}
                 </BenefitRow>
               )}
             </a>

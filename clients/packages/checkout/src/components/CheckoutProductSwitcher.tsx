@@ -1,6 +1,10 @@
 'use client'
 
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -77,7 +81,9 @@ const CheckoutProductSwitcher = ({
     const intervalCount = product.recurringIntervalCount
 
     if (interval) {
-      const frequency = capitalize(formatRecurringFrequency(interval, intervalCount, locale))
+      const frequency = capitalize(
+        formatRecurringFrequency(interval, intervalCount, locale),
+      )
       return t('checkout.productSwitcher.billedRecurring', { frequency })
     }
 
@@ -111,7 +117,11 @@ const CheckoutProductSwitcher = ({
                   />
                   <div className="flex grow flex-row items-center justify-between text-sm">
                     <div>{product.name}</div>
-                    <ProductPriceLabel product={product} price={price} locale={locale} />
+                    <ProductPriceLabel
+                      product={product}
+                      price={price}
+                      locale={locale}
+                    />
                   </div>
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">

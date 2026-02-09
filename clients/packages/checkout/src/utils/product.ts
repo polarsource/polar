@@ -50,9 +50,10 @@ export const formatRecurringInterval = (
   const t = getTranslations(locale)
   const count = intervalCount && intervalCount > 1 ? intervalCount : null
   const prefix = count ? `${ordinal(count, locale)} ` : ''
-  const label = format === 'short'
-    ? t.intervals.short[interval]
-    : t.intervals.long[interval]
+  const label =
+    format === 'short'
+      ? t.intervals.short[interval]
+      : t.intervals.long[interval]
 
   return `${prefix}${label}`
 }

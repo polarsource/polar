@@ -27,7 +27,10 @@ const isDiscountPercentage = (
   return discount.type === 'percentage'
 }
 
-export const getDiscountDisplay = (discount: CheckoutDiscount, locale?: AcceptedLocale): string => {
+export const getDiscountDisplay = (
+  discount: CheckoutDiscount,
+  locale?: AcceptedLocale,
+): string => {
   if (isDiscountPercentage(discount)) {
     const percentageFormatter = new Intl.NumberFormat(locale, {
       style: 'percent',
@@ -36,7 +39,10 @@ export const getDiscountDisplay = (discount: CheckoutDiscount, locale?: Accepted
     return percentageFormatter.format(-discount.basisPoints / 10000)
   }
   if (isDiscountFixed(discount)) {
-    return formatCurrency('compact', locale)(-discount.amount, discount.currency)
+    return formatCurrency('compact', locale)(
+      -discount.amount,
+      discount.currency,
+    )
   }
   throw new Error('Unknown discount type')
 }

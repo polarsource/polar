@@ -1,8 +1,12 @@
+import { unreachable } from '@/utils/unreachable'
 import { schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { unreachable } from '@/utils/unreachable'
 import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeyDetails {
@@ -45,12 +49,16 @@ export const LicenseKeyDetails = ({
       <div className="flex flex-col gap-y-6">
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">{t('checkout.benefits.licenseKey.status')}</span>
+            <span className="dark:text-polar-500 text-gray-500">
+              {t('checkout.benefits.licenseKey.status')}
+            </span>
             <span>{getLicenseKeyStatusLabel(licenseKey.status, t)}</span>
           </div>
           {licenseKey.limit_usage && (
             <div className="flex flex-row items-center justify-between">
-              <span className="dark:text-polar-500 text-gray-500">{t('checkout.benefits.licenseKey.usage')}</span>
+              <span className="dark:text-polar-500 text-gray-500">
+                {t('checkout.benefits.licenseKey.usage')}
+              </span>
               <span>
                 {licenseKey.usage} / {licenseKey.limit_usage}
               </span>
@@ -83,7 +91,10 @@ export const LicenseKeyDetails = ({
             </span>
             <span>
               {licenseKey.expires_at ? (
-                <FormattedDateTime datetime={licenseKey.expires_at ?? ''} locale={resolvedLocale} />
+                <FormattedDateTime
+                  datetime={licenseKey.expires_at ?? ''}
+                  locale={resolvedLocale}
+                />
               ) : (
                 <span>{t('checkout.benefits.licenseKey.noExpiry')}</span>
               )}

@@ -1,7 +1,11 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKey } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { LicenseKeyActivations } from './LicenseKeyActivations'
 import { LicenseKeyDetails } from './LicenseKeyDetails'
@@ -29,12 +33,18 @@ const LicenseKey = ({
         onCopy={() => {
           toast({
             title: t('checkout.benefits.licenseKey.copiedToClipboard'),
-            description: t('checkout.benefits.licenseKey.copiedToClipboardDescription'),
+            description: t(
+              'checkout.benefits.licenseKey.copiedToClipboardDescription',
+            ),
           })
         }}
       />
       <LicenseKeyDetails licenseKey={licenseKey} locale={locale} />
-      <LicenseKeyActivations api={api} licenseKey={licenseKey} locale={locale} />
+      <LicenseKeyActivations
+        api={api}
+        licenseKey={licenseKey}
+        locale={locale}
+      />
     </>
   )
 }

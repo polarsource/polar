@@ -2,9 +2,8 @@
 
 import { usePostHog } from '@/hooks/posthog'
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
-import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
+import { ComponentProps, FormEvent, useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -13,14 +12,12 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
-  storefrontOrg?: schemas['CustomerOrganization']
 }
 
 const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
   orgSlug: slug,
-  storefrontOrg,
   size = 'lg',
   ...props
 }: GetStartedButtonProps) => {
@@ -29,20 +26,10 @@ const GetStartedButton = ({
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const text = _text || 'Get Started'
 
-  const signup = useMemo(() => {
-    if (!storefrontOrg?.id) {
-      return undefined
-    }
-
-    return {
-      from_storefront: storefrontOrg.id as string,
-    }
-  }, [storefrontOrg])
-
   const onClick = useCallback(() => {
-    posthog.capture('global:user:signup:click', signup)
+    posthog.capture('global:user:signup:click')
     showModal()
-  }, [signup, posthog, showModal])
+  }, [posthog, showModal])
 
   // Supporting embedding the button in a form
   const onSubmit = useCallback(
@@ -83,7 +70,6 @@ const GetStartedButton = ({
             returnParams={slug ? { slug, auto: 'true' } : {}}
             signup={{
               intent: 'creator',
-              ...signup,
             }}
           />
         }

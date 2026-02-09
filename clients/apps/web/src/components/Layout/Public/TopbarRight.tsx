@@ -13,10 +13,8 @@ import { usePathname } from 'next/navigation'
 
 const TopbarRight = ({
   authenticatedUser,
-  storefrontOrg,
 }: {
   authenticatedUser?: schemas['UserRead']
-  storefrontOrg?: schemas['Organization']
 }) => {
   const posthog = usePostHog()
   const pathname = usePathname()
@@ -50,7 +48,6 @@ const TopbarRight = ({
             className="hidden md:flex"
             size="default"
             text="Sell with Polar"
-            storefrontOrg={storefrontOrg}
           />
 
           <Modal

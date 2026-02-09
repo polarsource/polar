@@ -398,7 +398,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
 
-    DEFAULT_TAX_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+    TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

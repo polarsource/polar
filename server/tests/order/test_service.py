@@ -72,7 +72,11 @@ from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
-from polar.tax.calculation import TaxabilityReason, TaxCalculation
+from polar.tax.calculation import (
+    TaxabilityReason,
+    TaxCalculation,
+    TaxCalculationService,
+)
 from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
@@ -163,9 +167,11 @@ def event_creation_time() -> tuple[datetime, int]:
 
 @pytest.fixture(autouse=True)
 def tax_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = mocker.patch("polar.order.service.get_tax_service")
-    mock.return_value.record = AsyncMock(return_value="TAX_TRANSACTION_ID")
-    return mock.return_value
+    mock = mocker.patch(
+        "polar.order.service.tax_calculation_service", spec=TaxCalculationService
+    )
+    mock.record.return_value = "TAX_TRANSACTION_ID"
+    return mock
 
 
 @pytest.fixture
@@ -178,15 +184,18 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
         address: Address,
         tax_ids: list[TaxID],
         tax_exempted: bool,
-    ) -> TaxCalculation:
-        return {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": polar_round(amount * 0.20),
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": None,
-        }
+    ) -> tuple[TaxCalculation, TaxProcessor]:
+        return (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": polar_round(amount * 0.20),
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": None,
+            },
+            TaxProcessor.numeral,
+        )
 
-    tax_service_mock.calculate = AsyncMock(side_effect=mocked_calculate_tax)
+    tax_service_mock.calculate.side_effect = mocked_calculate_tax
 
     return tax_service_mock.calculate
 
@@ -1670,12 +1679,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1730,12 +1742,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1791,12 +1806,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle
@@ -1852,12 +1870,15 @@ class TestCreateSubscriptionOrder:
 
         # Mock tax calculation to return 0 for simplicity
         calculate_tax_mock.reset_mock(side_effect=True)
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 0,
-            "taxability_reason": TaxabilityReason.not_subject_to_tax,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_subject_to_tax,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         order = await order_service.create_subscription_order(
             session, subscription, OrderBillingReasonInternal.subscription_cycle

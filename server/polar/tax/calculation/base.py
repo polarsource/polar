@@ -11,15 +11,26 @@ from ..tax_id import TaxID
 class TaxError(PolarError): ...
 
 
-class TaxCalculationError(TaxError):
+class TaxCalculationError(TaxError): ...
+
+
+class TaxCalculationTechnicalError(TaxCalculationError):
     def __init__(
         self,
-        message: str = "An error occurred while calculating tax.",
+        message: str = "A technical error occurred while calculating tax.",
     ) -> None:
         super().__init__(message)
 
 
-class InvalidTaxIDError(TaxCalculationError):
+class TaxCalculationLogicalError(TaxError):
+    def __init__(
+        self,
+        message: str = "A logical error occurred while calculating tax.",
+    ) -> None:
+        super().__init__(message)
+
+
+class InvalidTaxIDError(TaxCalculationLogicalError):
     def __init__(self) -> None:
         message = "The provided tax ID is invalid."
         super().__init__(message)

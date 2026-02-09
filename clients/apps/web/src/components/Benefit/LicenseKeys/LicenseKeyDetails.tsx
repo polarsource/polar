@@ -2,12 +2,29 @@ import { schemas } from '@polar-sh/client'
 import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { unreachable } from '@/utils/unreachable'
 import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeyDetails {
   className?: string
   licenseKey: schemas['LicenseKeyRead']
   locale?: AcceptedLocale
+}
+
+const getLicenseKeyStatusLabel = (
+  status: schemas['LicenseKeyStatus'],
+  t: ReturnType<typeof useTranslations>,
+) => {
+  switch (status) {
+    case 'granted':
+      return t('checkout.benefits.licenseKey.statusGranted')
+    case 'revoked':
+      return t('checkout.benefits.licenseKey.statusRevoked')
+    case 'disabled':
+      return t('checkout.benefits.licenseKey.statusDisabled')
+    default:
+      unreachable(status)
+  }
 }
 
 export const LicenseKeyDetails = ({
@@ -29,7 +46,7 @@ export const LicenseKeyDetails = ({
         <div className="flex flex-col gap-y-2">
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">{t('checkout.benefits.licenseKey.status')}</span>
-            <span>{t(`checkout.benefits.licenseKey.status${licenseKey.status.charAt(0).toUpperCase()}${licenseKey.status.slice(1)}`)}</span>
+            <span>{getLicenseKeyStatusLabel(licenseKey.status, t)}</span>
           </div>
           {licenseKey.limit_usage && (
             <div className="flex flex-row items-center justify-between">

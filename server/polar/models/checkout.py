@@ -121,6 +121,7 @@ class Checkout(
         "success_url", String, nullable=True, default=None
     )
     embed_origin: Mapped[str | None] = mapped_column(String, nullable=True)
+    locale: Mapped[str | None] = mapped_column(String(5), nullable=True)
 
     analytics_metadata: Mapped[CheckoutAnalyticsMetadata | None] = mapped_column(
         JSONB, nullable=True, default=None

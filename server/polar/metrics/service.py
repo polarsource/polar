@@ -618,9 +618,9 @@ class MetricsService:
             stmt = select(Customer.external_id).where(
                 Customer.id.in_(customer_id),
                 Customer.external_id.is_not(None),
+                Customer.external_id != "",
             )
-            result = await session.execute(stmt)  # type: ignore[assignment]
-            external_ids: list[str] = list(result.scalars().all())  # type: ignore[call-overload]
+            external_ids = [eid for eid in await session.scalars(stmt) if eid]
             if external_ids:
                 external_customer_id = external_ids
 

@@ -123,7 +123,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       is_archived: includeArchived ? null : false,
       ...(query ? { query } : {}),
       sorting: ['name'],
-      limit: 20,
+      limit: 50,
     }),
     [query, includeArchived],
   )

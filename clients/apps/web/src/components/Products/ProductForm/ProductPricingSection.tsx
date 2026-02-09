@@ -919,7 +919,6 @@ export interface ProductPricingSectionProps {
   className?: string
   update?: boolean
   compact?: boolean
-  multiCurrency?: boolean
 }
 
 export const ProductPricingSection = ({
@@ -927,8 +926,8 @@ export const ProductPricingSection = ({
   className,
   update,
   compact,
-  multiCurrency,
 }: ProductPricingSectionProps) => {
+  console.log(organization.feature_settings)
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
 
@@ -1383,7 +1382,7 @@ export const ProductPricingSection = ({
         </div>
 
         {/* Currency Tabs */}
-        {multiCurrency && (
+        {organization.feature_settings?.presentment_currencies_enabled && (
           <CurrencyTabs
             activeCurrencies={activeCurrencies}
             selectedCurrency={validatedSelectedCurrency}

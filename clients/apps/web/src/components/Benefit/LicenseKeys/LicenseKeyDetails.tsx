@@ -15,7 +15,8 @@ export const LicenseKeyDetails = ({
   licenseKey,
   locale,
 }: LicenseKeyDetails) => {
-  const t = useTranslations(locale ?? 'en')
+  const resolvedLocale = locale ?? 'en'
+  const t = useTranslations(resolvedLocale)
 
   return (
     <ShadowBox
@@ -52,6 +53,7 @@ export const LicenseKeyDetails = ({
               {licenseKey.last_validated_at ? (
                 <FormattedDateTime
                   datetime={licenseKey.last_validated_at ?? ''}
+                  locale={resolvedLocale}
                 />
               ) : (
                 <span>{t('checkout.benefits.licenseKey.neverValidated')}</span>
@@ -64,7 +66,7 @@ export const LicenseKeyDetails = ({
             </span>
             <span>
               {licenseKey.expires_at ? (
-                <FormattedDateTime datetime={licenseKey.expires_at ?? ''} />
+                <FormattedDateTime datetime={licenseKey.expires_at ?? ''} locale={resolvedLocale} />
               ) : (
                 <span>{t('checkout.benefits.licenseKey.noExpiry')}</span>
               )}

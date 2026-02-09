@@ -53,7 +53,7 @@ export const en = {
       },
     },
     trial: {
-      ends: 'Trial ends',
+      ends: 'Trial ends {endDate}',
       duration: {
         days: {
           _mode: 'plural',

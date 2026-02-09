@@ -4,6 +4,44 @@ export const SUPPORTED_LOCALES = ['en', 'nl'] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en'
 
+const formatterCache = new Map<string, Intl.DateTimeFormat>()
+
+function formatCacheKey(
+  locale: SupportedLocale,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const sorted = Object.keys(options)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, k) => {
+      acc[k] = options[k as keyof typeof options]
+      return acc
+    }, {})
+  return `${locale}:${JSON.stringify(sorted)}`
+}
+
+function getDateFormatter(
+  locale: SupportedLocale,
+  options?: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  const opts = options ?? { dateStyle: 'medium' as const }
+  const key = formatCacheKey(locale, opts)
+  let fmt = formatterCache.get(key)
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(locale, opts)
+    formatterCache.set(key, fmt)
+  }
+  return fmt
+}
+
+export function formatDate(
+  date: Date | string,
+  locale: SupportedLocale = DEFAULT_LOCALE,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return getDateFormatter(locale, options).format(d)
+}
+
 export function isSupportedLocale(locale: string): locale is SupportedLocale {
   return SUPPORTED_LOCALES.includes(locale as SupportedLocale)
 }

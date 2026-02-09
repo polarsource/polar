@@ -19,7 +19,8 @@ export const LicenseKeyActivations = ({
   licenseKey,
   locale,
 }: LicenseKeyActivationsProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const resolvedLocale = locale ?? 'en'
+  const t = useTranslations(resolvedLocale)
   const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 
   const handleDeactivateActivation = useCallback(
@@ -61,7 +62,7 @@ export const LicenseKeyActivations = ({
             <h3 className="text-sm">{activation.label}</h3>
             <div className="flex flex-row items-center gap-x-4">
               <span className="dark:text-polar-500 text-sm text-gray-500">
-                <FormattedDateTime datetime={activation.created_at} />
+                <FormattedDateTime datetime={activation.created_at} locale={resolvedLocale} />
               </span>
               <Button
                 className="h-6 w-6"

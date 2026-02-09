@@ -53,7 +53,7 @@ export const nl = {
       },
     },
     trial: {
-      ends: 'Proefperiode eindigt',
+      ends: 'Proefperiode eindigt op {endDate}',
       duration: {
         days: {
           _mode: 'plural',

@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCurrency } from '@polar-sh/currency'
-import { SupportedLocale, useTranslations } from '@polar-sh/i18n'
+import { SupportedLocale, formatDate, useTranslations } from '@polar-sh/i18n'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -10,7 +10,6 @@ import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/check
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
@@ -920,11 +919,9 @@ const BaseCheckoutForm = ({
                       )}
                     {checkout.trialEnd && (
                       <span className="dark:text-polar-500 text-gray-500:w text-sm">
-                        {t('checkout.trial.ends')}{' '}
-                        <FormattedDateTime
-                          datetime={checkout.trialEnd}
-                          resolution="day"
-                        />
+                        {t('checkout.trial.ends', {
+                          endDate: formatDate(checkout.trialEnd, locale),
+                        })}
                       </span>
                     )}
                   </div>

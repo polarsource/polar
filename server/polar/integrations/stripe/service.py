@@ -274,6 +274,16 @@ class StripeService:
             id, stripe_account=stripe_account, expand=expand or []
         )
 
+    async def get_confirmation_token(
+        self,
+        id: str,
+        *,
+        expand: list[str] | None = None,
+    ) -> stripe_lib.ConfirmationToken:
+        return await stripe_lib.ConfirmationToken.retrieve_async(
+            id, expand=expand or []
+        )
+
     async def create_payout(
         self,
         *,

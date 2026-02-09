@@ -92,7 +92,8 @@ WITH
     sub_state AS (
         SELECT
             subscription_id,
-            minMerge(started_at) AS started_at
+            minMerge(started_at) AS started_at,
+            argMaxMerge(ends_at) AS ends_at
         FROM subscription_state
         WHERE organization_id IN {{org_ids:Array(String)}}
         GROUP BY subscription_id
@@ -274,8 +275,10 @@ WITH
             countIf(lc.customer_cancellation_reason = 'unused') AS canceled_subscriptions_unused,
             countIf(lc.customer_cancellation_reason = 'other' OR lc.customer_cancellation_reason IS NULL OR lc.customer_cancellation_reason = '') AS canceled_subscriptions_other
         FROM latest_canceled AS lc
+        INNER JOIN sub_state ss ON lc.subscription_id = ss.subscription_id
         WHERE lc.canceled_at >= toDateTime({{bounds_start:String}}, {{tz:String}})
             AND lc.canceled_at <= toDateTime({{bounds_end:String}}, {{tz:String}})
+            AND ss.ends_at > toDateTime64(0, 3, 'UTC')
         GROUP BY day
     )
 SELECT

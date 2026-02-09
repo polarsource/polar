@@ -85,7 +85,7 @@ export const useCreateOrganization = () =>
       })
       await revalidate(`organizations:${data.id}`)
       await revalidate(`organizations:${data.slug}`)
-      await revalidate(`storefront:${data.slug}`)
+
     },
   })
 

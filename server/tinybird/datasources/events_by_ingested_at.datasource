@@ -31,6 +31,7 @@ SCHEMA >
     `net_amount` Nullable(Int64) `json:$.net_amount`,
     `tax_amount` Nullable(Int64) `json:$.tax_amount`,
     `discount_amount` Nullable(Int64) `json:$.discount_amount`,
+    `discount_basis_points` Nullable(Int32) `json:$.discount_basis_points`,
     `applied_balance_amount` Nullable(Int64) `json:$.applied_balance_amount`,
     `platform_fee` Nullable(Int64) `json:$.platform_fee`,
     `fee` Nullable(Int64) `json:$.fee`,

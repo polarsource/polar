@@ -367,6 +367,7 @@ class BalanceOrderMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    discount_basis_points: NotRequired[int]
 
 
 class BalanceOrderEvent(Event):
@@ -386,6 +387,7 @@ class BalanceCreditOrderMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    discount_basis_points: NotRequired[int]
 
 
 class BalanceCreditOrderEvent(Event):

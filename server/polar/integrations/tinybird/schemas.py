@@ -37,6 +37,7 @@ class TinybirdEvent(TypedDict):
     net_amount: int | None
     tax_amount: int | None
     discount_amount: int | None
+    discount_basis_points: int | None
     applied_balance_amount: int | None
     platform_fee: int | None
     fee: int | None

@@ -1612,6 +1612,10 @@ class OrderService:
                 metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
                 metadata["product_id"] = str(order.product_id)
+            if order.discount_amount > 0 and order.subtotal_amount > 0:
+                metadata["discount_basis_points"] = int(
+                    (order.discount_amount / order.subtotal_amount) * 10000
+                )
 
             balance_order_event = build_system_event(
                 SystemEvent.balance_order,
@@ -1766,6 +1770,10 @@ class OrderService:
                 credit_metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
                 credit_metadata["product_id"] = str(order.product_id)
+            if order.discount_amount > 0 and order.subtotal_amount > 0:
+                credit_metadata["discount_basis_points"] = int(
+                    (order.discount_amount / order.subtotal_amount) * 10000
+                )
 
             credit_event = build_system_event(
                 SystemEvent.balance_credit_order,

@@ -99,7 +99,7 @@ loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
-lint_sql = { cmd = "python -m scripts.lint_tinybird_sql", help = "run sqlfluff linter on Tinybird queries" }
+lint_sql = { cmd = "sqlfluff lint polar/metrics/queries_tinybird.py", help = "run sqlfluff linter on Tinybird queries" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }
@@ -158,6 +158,9 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = false
 warn_untyped_fields = true
+
+[tool.sqlfluff.core]
+dialect = "clickhouse"
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

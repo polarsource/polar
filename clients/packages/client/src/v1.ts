@@ -21177,6 +21177,12 @@ export interface components {
        * @default false
        */
       tinybird_compare: boolean
+      /**
+       * Presentment Currencies Enabled
+       * @description If this organization has multiple presentment currencies enabled
+       * @default false
+       */
+      presentment_currencies_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {

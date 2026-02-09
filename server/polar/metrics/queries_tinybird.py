@@ -170,12 +170,18 @@ WITH
             date_trunc({{iv:String}}, toDateTime(se.event_timestamp, {{tz:String}})) AS day,
             count(DISTINCT se.subscription_id) AS new_subscriptions
         FROM subscription_events_raw AS se
+        INNER JOIN sub_state ss ON se.subscription_id = ss.subscription_id
         -- TODO: investigate whether this should use bounds_start/bounds_end
         -- like the balance order data, instead of the full window range.
         -- Currently matches Postgres behavior which uses the window range.
         WHERE se.name = 'subscription.created'
             AND se.event_timestamp >= toDateTime({{start_dt:String}}, {{tz:String}})
             AND se.event_timestamp <= toDateTime({{end_dt:String}}, {{tz:String}})
+            AND (
+                ss.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR date_trunc({{iv:String}}, toDateTime(ss.ends_at, {{tz:String}}))
+                    > date_trunc({{iv:String}}, toDateTime(se.event_timestamp, {{tz:String}}))
+            )
         GROUP BY day
     ),
     daily_balance AS (

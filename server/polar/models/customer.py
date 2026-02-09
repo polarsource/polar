@@ -147,6 +147,7 @@ class Customer(MetadataMixin, RecordModel):
     )
 
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    locale: Mapped[str | None] = mapped_column(String(5), nullable=True)
     _billing_name: Mapped[str | None] = mapped_column(
         "billing_name", String, nullable=True, default=None
     )

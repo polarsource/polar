@@ -195,7 +195,7 @@ module "production" {
     testing                    = "0"
     auth_cookie_domain         = "polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = "stripe"
+    tax_processors             = "[\"stripe\"]"
   }
 
   backend_secrets = {

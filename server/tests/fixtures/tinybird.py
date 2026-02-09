@@ -64,12 +64,25 @@ def tinybird_workspace() -> Generator[str, None, None]:
     token_response.raise_for_status()
     workspace_token = token_response.json()["token"]
 
-    subprocess.run(
-        ["tb", "--host", host, "--token", workspace_token, "deploy"],
-        check=True,
-        capture_output=True,
-        cwd=TINYBIRD_DIR,
-    )
+    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy"]
+    for attempt in range(3):
+        result = subprocess.run(
+            deploy_cmd,
+            capture_output=True,
+            text=True,
+            cwd=TINYBIRD_DIR,
+        )
+        if result.returncode == 0:
+            break
+        if attempt < 2:
+            time.sleep(0.5)
+    else:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
 
     for _ in range(30):
         try:

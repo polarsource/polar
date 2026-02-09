@@ -2,7 +2,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -19,7 +19,7 @@ export const LicenseKeyActivations = ({
   licenseKey,
   locale,
 }: LicenseKeyActivationsProps) => {
-  const resolvedLocale = locale ?? 'en'
+  const resolvedLocale = locale ?? DEFAULT_LOCALE
   const t = useTranslations(resolvedLocale)
   const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 

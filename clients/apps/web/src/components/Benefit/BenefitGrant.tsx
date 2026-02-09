@@ -1,7 +1,7 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
 import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -67,7 +67,7 @@ const BenefitGrantOAuth = ({
   connectButtonText: string
   selectPlaceholder: string
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const {
@@ -279,7 +279,7 @@ const BenefitGrantGitHubRepository = ({
   benefitGrant: schemas['CustomerBenefitGrantGitHubRepository']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const {
     benefit: {
       properties: { repository_owner, repository_name },
@@ -310,7 +310,7 @@ const BenefitGrantDiscord = ({
   benefitGrant: schemas['CustomerBenefitGrantDiscord']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const {
     benefit: {
       properties: { guild_id },
@@ -331,7 +331,7 @@ const BenefitGrantDiscord = ({
 }
 
 export const BenefitGrant = ({ api, benefitGrant, locale }: BenefitGrantProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { benefit } = benefitGrant
 
   return (

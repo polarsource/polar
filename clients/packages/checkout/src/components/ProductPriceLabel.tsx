@@ -1,4 +1,4 @@
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
@@ -17,7 +17,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   price,
   locale,
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
 
   if (price.amountType === 'fixed') {
     return (

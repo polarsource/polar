@@ -4,7 +4,7 @@ import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
 import { hasProductCheckout } from '@polar-sh/checkout/guards'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -36,7 +36,7 @@ const StripeRequiresAction = ({
   checkout: CheckoutPublic
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
@@ -114,7 +114,7 @@ export const CheckoutConfirmation = ({
   disabled,
   maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)

@@ -1,5 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
 import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
@@ -31,7 +31,7 @@ export const CheckoutPWYWForm = ({
   themePreset,
   locale,
 }: CheckoutPWYWFormProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { amount } = checkout
 
   const form = useForm<{ amount: number }>({

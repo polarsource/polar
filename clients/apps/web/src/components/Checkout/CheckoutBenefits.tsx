@@ -2,7 +2,7 @@ import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { useCustomerSSE } from '@/hooks/sse'
 import { createClientSideAPI } from '@/utils/client'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
@@ -21,7 +21,7 @@ const CheckoutBenefits = ({
   customerSessionToken,
   maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const api = createClientSideAPI(customerSessionToken)
   const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
     checkout_id: checkout.id,

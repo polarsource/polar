@@ -1,6 +1,6 @@
 'use client'
 
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -33,7 +33,7 @@ const CheckoutProductSwitcher = ({
   themePreset,
   locale,
 }: CheckoutProductSwitcherProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
 
   const {
     product: selectedProduct,

@@ -1,5 +1,5 @@
 import { formatCurrency } from '@polar-sh/currency'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit.js'
 
 interface MeteredPriceLabelProps {
@@ -11,7 +11,7 @@ const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   price,
   locale,
 }) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">

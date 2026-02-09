@@ -1,6 +1,6 @@
 'use client'
 
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { ProductCheckoutPublic } from '../guards'
@@ -33,7 +33,7 @@ interface MeteredPricesDisplayProps {
 }
 
 const MeteredPricesDisplay = ({ checkout, locale }: MeteredPricesDisplayProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { product, prices, productPrice } = checkout
 
   // Get the metered prices, minus the currently selected one, in case there are only metered prices

@@ -6,7 +6,7 @@ import {
   CheckoutSeatSelector,
 } from '@polar-sh/checkout/components'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 export interface CheckoutCardProps {
@@ -22,7 +22,7 @@ export const CheckoutCard = ({
   disabled,
   locale,
 }: CheckoutCardProps) => {
-  const t = useTranslations(locale ?? 'en')
+  const t = useTranslations(locale ?? DEFAULT_LOCALE)
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
 

@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, type AcceptedLocale, useTranslations } from '@polar-sh/i18n'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { unreachable } from '@/utils/unreachable'
@@ -32,7 +32,7 @@ export const LicenseKeyDetails = ({
   licenseKey,
   locale,
 }: LicenseKeyDetails) => {
-  const resolvedLocale = locale ?? 'en'
+  const resolvedLocale = locale ?? DEFAULT_LOCALE
   const t = useTranslations(resolvedLocale)
 
   return (

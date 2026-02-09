@@ -29,6 +29,7 @@ def _build_events_sql(
     bounds_end: datetime | None = None,
     product_id: Sequence[UUID] | None = None,
     customer_id: Sequence[UUID] | None = None,
+    external_customer_id: Sequence[str] | None = None,
     billing_type: Sequence[str] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     iv = interval.value
@@ -54,9 +55,17 @@ def _build_events_sql(
         )
 
     customer_filter = ""
-    if customer_id is not None:
-        params["customer_ids"] = [str(id) for id in customer_id]
-        customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
+    if customer_id is not None or external_customer_id is not None:
+        conditions = []
+        if customer_id is not None:
+            params["customer_ids"] = [str(id) for id in customer_id]
+            conditions.append("e.customer_id IN {customer_ids:Array(String)}")
+        if external_customer_id is not None:
+            params["external_customer_ids"] = list(external_customer_id)
+            conditions.append(
+                "e.external_customer_id IN {external_customer_ids:Array(String)}"
+            )
+        customer_filter = f"AND ({' OR '.join(conditions)})"
 
     balance_product_filter = ""
     if product_id is not None:
@@ -313,6 +322,7 @@ def _build_costs_sql(
     bounds_start: datetime | None = None,
     bounds_end: datetime | None = None,
     customer_id: Sequence[UUID] | None = None,
+    external_customer_id: Sequence[str] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     iv = interval.value
     b_start = bounds_start or start
@@ -328,9 +338,17 @@ def _build_costs_sql(
     }
 
     customer_filter = ""
-    if customer_id is not None:
-        params["customer_ids"] = [str(id) for id in customer_id]
-        customer_filter = "AND e.customer_id IN {customer_ids:Array(String)}"
+    if customer_id is not None or external_customer_id is not None:
+        conditions = []
+        if customer_id is not None:
+            params["customer_ids"] = [str(id) for id in customer_id]
+            conditions.append("e.customer_id IN {customer_ids:Array(String)}")
+        if external_customer_id is not None:
+            params["external_customer_ids"] = list(external_customer_id)
+            conditions.append(
+                "e.external_customer_id IN {external_customer_ids:Array(String)}"
+            )
+        customer_filter = f"AND ({' OR '.join(conditions)})"
 
     sql = f"""
 WITH
@@ -565,6 +583,7 @@ async def query_events_metrics(
     bounds_end: datetime | None = None,
     product_id: Sequence[UUID] | None = None,
     customer_id: Sequence[UUID] | None = None,
+    external_customer_id: Sequence[str] | None = None,
     billing_type: Sequence[str] | None = None,
 ) -> list[dict[str, Any]]:
     sql, params = _build_events_sql(
@@ -577,6 +596,7 @@ async def query_events_metrics(
         bounds_end=bounds_end,
         product_id=product_id,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         billing_type=billing_type,
     )
     return await tinybird_client.query(sql, parameters=params, db_statement=sql)
@@ -592,6 +612,7 @@ async def query_costs_metrics(
     bounds_start: datetime | None = None,
     bounds_end: datetime | None = None,
     customer_id: Sequence[UUID] | None = None,
+    external_customer_id: Sequence[str] | None = None,
 ) -> list[dict[str, Any]]:
     sql, params = _build_costs_sql(
         organization_id=organization_id,
@@ -602,6 +623,7 @@ async def query_costs_metrics(
         bounds_start=bounds_start,
         bounds_end=bounds_end,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
     )
     return await tinybird_client.query(sql, parameters=params, db_statement=sql)
 

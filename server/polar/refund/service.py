@@ -36,7 +36,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
-from polar.tax.calculation import get_tax_service
+from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.transaction.service.refund import (
     RefundTransactionAlreadyExistsError,
     RefundTransactionDoesNotExistError,
@@ -454,14 +454,15 @@ class RefundService:
                 and order.tax_amount > 0
             ):
                 assert order.tax_processor is not None
-                tax_service = get_tax_service(order.tax_processor)
                 if refund.total_amount >= order.total_amount:
-                    transaction_id = await tax_service.revert(
+                    transaction_id = await tax_calculation_service.revert(
+                        order.tax_processor,
                         order.tax_transaction_processor_id,
                         reference=str(refund.id),
                     )
                 else:
-                    transaction_id = await tax_service.revert(
+                    transaction_id = await tax_calculation_service.revert(
+                        order.tax_processor,
                         order.tax_transaction_processor_id,
                         reference=str(refund.id),
                         total_amount=refund.total_amount,

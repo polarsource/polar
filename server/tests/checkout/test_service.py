@@ -35,7 +35,12 @@ from polar.config import Environment
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    AccountType,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+    TaxProcessor,
+)
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
@@ -82,8 +87,11 @@ from polar.product.guard import (
 )
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
-from polar.tax.calculation import TaxabilityReason
-from polar.tax.calculation.base import TaxCalculationError
+from polar.tax.calculation import (
+    TaxabilityReason,
+    TaxCalculationLogicalError,
+    TaxCalculationService,
+)
 from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
@@ -129,16 +137,19 @@ def order_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
-    mock = mocker.patch("polar.checkout.service.get_tax_service")
-    mock.return_value.calculate = AsyncMock(
-        return_value={
+    mock = mocker.patch(
+        "polar.checkout.service.tax_calculation_service", spec=TaxCalculationService
+    )
+    mock.calculate.return_value = (
+        {
             "processor_id": "TAX_PROCESSOR_ID",
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
             "tax_rate": {},
-        }
+        },
+        TaxProcessor.numeral,
     )
-    return mock.return_value.calculate
+    return mock.calculate
 
 
 @pytest.fixture
@@ -914,7 +925,7 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -940,12 +951,15 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 100,
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 100,
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -3005,7 +3019,7 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         checkout = await checkout_service.update(
             session,
@@ -3028,12 +3042,15 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 100,
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 100,
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         checkout = await checkout_service.update(
             session,
@@ -3918,7 +3935,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
@@ -4576,7 +4593,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         # Verify this is a setup intent scenario
         assert checkout_discount_percentage_100.is_payment_required is False

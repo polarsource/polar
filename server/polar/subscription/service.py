@@ -91,8 +91,8 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.tax.calculation import get_tax_service
-from polar.tax.calculation.base import TaxCalculationError
+from polar.tax.calculation import TaxCalculationLogicalError
+from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -1847,9 +1847,8 @@ class SubscriptionService:
             and subscription.product.is_tax_applicable
             and subscription.customer.billing_address is not None
         ):
-            tax_service = get_tax_service(settings.DEFAULT_TAX_PROCESSOR)
             try:
-                tax = await tax_service.calculate(
+                tax, _ = await tax_calculation_service.calculate(
                     subscription.id,
                     subscription.currency,
                     taxable_amount,
@@ -1860,7 +1859,7 @@ class SubscriptionService:
                     else [],
                     subscription.tax_exempted,
                 )
-            except TaxCalculationError:
+            except TaxCalculationLogicalError:
                 log.warning(
                     "Failed to calculate tax for subscription due to invalid or incomplete address",
                     subscription_id=subscription.id,

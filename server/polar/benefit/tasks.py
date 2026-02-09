@@ -96,7 +96,9 @@ async def enqueue_benefits_grants(
         )
 
 
-@actor(actor_name="benefit.enqueue_grants", priority=TaskPriority.MEDIUM)
+@actor(
+    actor_name="benefit.reset_meters_and_enqueue_grants", priority=TaskPriority.MEDIUM
+)
 async def benefit_enqueue_grants(
     customer_id: uuid.UUID,
     grant_benefit_ids: list[uuid.UUID],

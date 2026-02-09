@@ -543,8 +543,10 @@ class OrderService:
                 tax_amount=checkout.tax_amount or 0,
                 currency=checkout.currency,
                 billing_reason=billing_reason,
-                billing_name=customer.billing_name,
-                billing_address=customer.billing_address,
+                billing_name=checkout.customer_billing_name
+                or customer.billing_name,
+                billing_address=checkout.customer_billing_address
+                or customer.billing_address,
                 tax_id=customer.tax_id,
                 taxability_reason=checkout.taxability_reason,
                 tax_rate=checkout.tax_rate,
@@ -807,8 +809,14 @@ class OrderService:
                 tax_amount=0,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
-                billing_name=customer.billing_name,
-                billing_address=customer.billing_address,
+                billing_name=(
+                    checkout.customer_billing_name if checkout else None
+                )
+                or customer.billing_name,
+                billing_address=(
+                    checkout.customer_billing_address if checkout else None
+                )
+                or customer.billing_address,
                 taxability_reason=None,
                 tax_id=customer.tax_id,
                 tax_rate=None,

@@ -8,6 +8,7 @@ for all settlement-related metrics.
 Scenario: 1 org, 10 customers with diverse subscription lifecycles across H1 2024.
 """
 
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from typing import Any, NotRequired, TypedDict
@@ -721,6 +722,7 @@ async def _run_shadow_mode(
     timezone: ZoneInfo,
     interval: TimeInterval,
     metrics: Sequence[str],
+    customer_id: Sequence[uuid.UUID] | None = None,
 ) -> MetricsResponse:
     """Run metrics in shadow mode — PG + Tinybird comparison, returns PG values."""
     await _enable_tinybird_compare(save_fixture, organization)
@@ -734,6 +736,7 @@ async def _run_shadow_mode(
             interval=interval,
             organization_id=[organization.id],
             metrics=list(metrics),
+            customer_id=customer_id,
         )
 
 
@@ -919,3 +922,97 @@ class TestSettlementComparison:
                     f"[monthly] Period {i} ({period.timestamp.date()}): "
                     f"{slug} expected {value}, got {actual}"
                 )
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestActiveUserByEventWithCustomerFilter:
+    """Test active_user_by_event metric with customer_id filter."""
+
+    async def test_active_user_matches_with_customer_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        tinybird_client: TinybirdClient,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="test-user@example.com",
+            name="test_user",
+            stripe_customer_id="cus_test_user",
+            external_id="ext-user-123",
+        )
+
+        all_events: list[Event] = []
+
+        ev1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name="customer.created",
+            timestamp=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev1)
+
+        ev2 = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="ext-user-123",
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 11, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev2)
+
+        ev3 = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="ext-user-123",
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev3)
+
+        ev4 = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="other-user",
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 13, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev4)
+
+        tinybird_events = [_event_to_tinybird(e) for e in all_events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": True,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.day,
+                organization_id=[organization.id],
+                customer_id=[customer.id],
+                metrics=["active_user_by_event"],
+            )
+
+        jan_15_period = next((p for p in result.periods if p.timestamp.day == 15), None)
+        assert jan_15_period is not None
+        assert jan_15_period.active_user_by_event == 2

@@ -11,7 +11,7 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Organization, User, UserOrganization
+from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -233,6 +233,7 @@ class MetricsService:
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         metrics: Sequence[str] | None = None,
         now: datetime | None = None,
     ) -> MetricsResponse:
@@ -273,6 +274,7 @@ class MetricsService:
                     bounds_end=original_end_timestamp,
                     product_id=product_id,
                     customer_id=customer_id,
+                    external_customer_id=external_customer_id,
                     billing_type=billing_strs,
                 )
             )
@@ -287,6 +289,7 @@ class MetricsService:
                     bounds_start=original_start_timestamp,
                     bounds_end=original_end_timestamp,
                     customer_id=customer_id,
+                    external_customer_id=external_customer_id,
                 )
             )
         if TinybirdQuery.mrr in tb_queries:
@@ -610,6 +613,17 @@ class MetricsService:
         tinybird_compare = org.feature_settings.get("tinybird_compare", True)
         tinybird_read = org.feature_settings.get("tinybird_read", False)
 
+        external_customer_id: list[str] | None = None
+        if customer_id is not None:
+            stmt = select(Customer.external_id).where(
+                Customer.id.in_(customer_id),
+                Customer.external_id.is_not(None),
+            )
+            result = await session.execute(stmt)  # type: ignore[assignment]
+            external_ids: list[str] = list(result.scalars().all())  # type: ignore[call-overload]
+            if external_ids:
+                external_customer_id = external_ids
+
         try:
             tb_response = await self._get_metrics_from_tinybird(
                 auth_subject,
@@ -623,6 +637,7 @@ class MetricsService:
                 product_id=product_id,
                 billing_type=billing_type,
                 customer_id=customer_id,
+                external_customer_id=external_customer_id,
                 metrics=metrics,
                 now=now,
             )

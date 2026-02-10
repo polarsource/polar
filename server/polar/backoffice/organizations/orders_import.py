@@ -103,6 +103,7 @@ async def orders_import(
     customer_map: dict[str, Customer] = {}
     product_map: dict[str, Any] = {}
     benefit_map: dict[str, Benefit] = {}
+    seen_customer_products: set[tuple[uuid.UUID, uuid.UUID]] = set()
 
     decoded_file = DecodedUploadFile(file)
 
@@ -175,6 +176,26 @@ async def orders_import(
             continue
 
         product_map[product_name] = product
+
+        # Skip duplicate (customer, product) pairs within the same CSV
+        customer_product_key = (customer.id, product.id)
+        if customer_product_key in seen_customer_products:
+            yield i, total_rows
+            continue
+        seen_customer_products.add(customer_product_key)
+
+        # Skip if an imported order already exists for this (customer, product)
+        existing_import_statement = order_repository.get_base_statement().where(
+            Order.customer_id == customer.id,
+            Order.product_id == product.id,
+            Order.checkout_id.is_(None),
+        ).limit(1)
+        existing_import = await order_repository.get_one_or_none(
+            existing_import_statement
+        )
+        if existing_import is not None:
+            yield i, total_rows
+            continue
 
         # Create Order
         lemon_squeezy_id = _getter(row, "id", "identifier")

@@ -1724,7 +1724,8 @@ class SubscriptionService:
         previous_is_canceled = subscription.canceled
 
         now = utc_now()
-        subscription.canceled_at = now
+        if subscription.canceled_at is None:
+            subscription.canceled_at = now
 
         if customer_reason:
             subscription.customer_cancellation_reason = customer_reason

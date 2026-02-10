@@ -50,9 +50,20 @@ class CustomerService:
         if customer_update.billing_name is not None:
             customer.billing_name = customer_update.billing_name
 
-        customer.billing_address = (
-            customer_update.billing_address or customer.billing_address
-        )
+        if "billing_address" in customer_update.model_fields_set:
+            if customer_update.billing_address is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "billing_address"),
+                            "msg": "Customer billing address cannot be reset to null once set.",
+                            "input": customer_update.billing_address,
+                        }
+                    ]
+                )
+            else:
+                customer.billing_address = customer_update.billing_address
 
         tax_id = customer_update.tax_id or (
             customer.tax_id[0] if customer.tax_id else None

@@ -8,7 +8,7 @@ from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.address import AddressInput, CountryAlpha2, CountryAlpha2Input
+from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
@@ -444,6 +444,24 @@ class TestUpdate:
                 CustomerUpdate(external_id=external_id),
             )
             await session.flush()
+
+    async def test_explicit_null_billing_address(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session, customer, CustomerUpdate(billing_address=None)
+            )
+            await session.flush()
+        assert customer.billing_address is not None
 
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer

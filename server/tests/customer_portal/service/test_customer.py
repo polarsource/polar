@@ -87,6 +87,23 @@ class TestUpdate:
                 ),
             )
 
+    async def test_explicit_null_billing_address(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session, customer, CustomerPortalCustomerUpdate(billing_address=None)
+            )
+        assert customer.billing_address is not None
+
     async def test_billing_name_update(
         self,
         save_fixture: SaveFixture,

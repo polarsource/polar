@@ -6,6 +6,7 @@ containers with support for multiple isolated instances via port offsets.
 
 import hashlib
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Annotated, Optional
@@ -22,24 +23,80 @@ ENV_FILE = DOCKER_DIR / ".env.docker"
 VALID_SERVICES = ["api", "worker", "web", "db", "redis", "minio", "minio-setup", "prometheus", "grafana"]
 
 
-def _detect_instance() -> int:
+def _read_stored_instance() -> int | None:
+    """Read POLAR_DOCKER_INSTANCE from .env.docker if set."""
+    if not ENV_FILE.exists():
+        return None
+    for line in ENV_FILE.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("#") or not line:
+            continue
+        match = re.match(r"^POLAR_DOCKER_INSTANCE\s*=\s*(\d+)\s*$", line)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _write_stored_instance(instance: int) -> None:
+    """Write POLAR_DOCKER_INSTANCE to .env.docker."""
+    _ensure_env_file()
+    content = ENV_FILE.read_text()
+    # Replace existing line (commented or not)
+    new_line = f"POLAR_DOCKER_INSTANCE={instance}"
+    if re.search(r"^#?\s*POLAR_DOCKER_INSTANCE\s*=", content, re.MULTILINE):
+        content = re.sub(
+            r"^#?\s*POLAR_DOCKER_INSTANCE\s*=.*$",
+            new_line,
+            content,
+            flags=re.MULTILINE,
+        )
+    else:
+        content = content.rstrip() + f"\n{new_line}\n"
+    ENV_FILE.write_text(content)
+
+
+def _clear_stored_instance() -> bool:
+    """Comment out POLAR_DOCKER_INSTANCE in .env.docker. Returns True if found."""
+    if not ENV_FILE.exists():
+        return False
+    content = ENV_FILE.read_text()
+    if re.search(r"^POLAR_DOCKER_INSTANCE\s*=", content, re.MULTILINE):
+        content = re.sub(
+            r"^POLAR_DOCKER_INSTANCE\s*=.*$",
+            "# POLAR_DOCKER_INSTANCE=",
+            content,
+            flags=re.MULTILINE,
+        )
+        ENV_FILE.write_text(content)
+        return True
+    return False
+
+
+def _detect_instance() -> tuple[int, str]:
     """Auto-detect instance number from environment.
 
     Priority:
-    1. CONDUCTOR_PORT env var → (port - 55000) / 10 + 1 (avoids instance 0)
-    2. Workspace path hash → stable instance derived from ROOT_DIR
+    1. POLAR_DOCKER_INSTANCE in .env.docker
+    2. CONDUCTOR_PORT env var → (port - 55000) / 10 + 1
+    3. Workspace path hash → stable instance derived from ROOT_DIR
+
+    Returns (instance, source) tuple.
     """
+    stored = _read_stored_instance()
+    if stored is not None:
+        return stored, "stored"
+
     conductor_port = os.environ.get("CONDUCTOR_PORT")
     if conductor_port:
         try:
             port = int(conductor_port)
-            return (port - 55000) // 10 + 1
+            return (port - 55000) // 10 + 1, "auto"
         except ValueError:
             pass
 
     # Derive a stable instance from the workspace path
     path_hash = hashlib.md5(str(ROOT_DIR).encode()).hexdigest()
-    return int(path_hash[:4], 16) % 99 + 1  # 1-99, avoids 0
+    return int(path_hash[:4], 16) % 99 + 1, "auto"  # 1-99, avoids 0
 
 
 def _ensure_env_file() -> None:
@@ -128,8 +185,11 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         """Isolated Docker development environment."""
         explicit = instance is not None
         if instance is None:
-            instance = _detect_instance()
-            console.print(f"[dim]Auto-detected instance {instance}[/dim]")
+            instance, source = _detect_instance()
+            if source == "stored":
+                console.print(f"[dim]Using stored instance {instance} (from .env.docker)[/dim]")
+            else:
+                console.print(f"[dim]Auto-detected instance {instance}[/dim]")
         ctx.ensure_object(dict)
         ctx.obj["instance"] = instance
         ctx.obj["instance_explicit"] = explicit
@@ -323,3 +383,26 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         else:
             console.print("[red]Cleanup failed[/red]")
             raise typer.Exit(1)
+
+    @docker_app.command("set-instance")
+    def docker_set_instance(
+        instance: Annotated[
+            int, typer.Argument(help="Instance number to store (0 = default ports)")
+        ],
+    ) -> None:
+        """Store a default instance number in .env.docker."""
+        if instance < 0:
+            console.print("[red]Instance number must be >= 0[/red]")
+            raise typer.Exit(1)
+        _write_stored_instance(instance)
+        offset = instance * 100
+        console.print(f"[green]Stored instance {instance} in .env.docker[/green]")
+        console.print(f"[dim]Ports: API={8000 + offset}, Web={3000 + offset}, DB={5432 + offset}[/dim]")
+
+    @docker_app.command("clear-instance")
+    def docker_clear_instance() -> None:
+        """Remove stored instance number (back to auto-detect)."""
+        if _clear_stored_instance():
+            console.print("[green]Cleared stored instance from .env.docker[/green]")
+        else:
+            console.print("[dim]No stored instance to clear[/dim]")

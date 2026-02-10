@@ -1613,6 +1613,8 @@ class OrderService:
                 metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
                 metadata["product_id"] = str(order.product_id)
+            if payment_transaction.exchange_rate is not None:
+                metadata["exchange_rate"] = payment_transaction.exchange_rate
 
             balance_order_event = build_system_event(
                 SystemEvent.balance_order,

@@ -1,7 +1,7 @@
 """Add exchange_rate to transactions
 
 Revision ID: eee9c7fb3595
-Revises: b43b68670937
+Revises: 519ab6f1dc5f
 Create Date: 2026-02-10 14:21:43.201075
 
 """
@@ -15,7 +15,7 @@ from sqlalchemy import text as sql_text
 
 # revision identifiers, used by Alembic.
 revision = "eee9c7fb3595"
-down_revision = "b43b68670937"
+down_revision = "519ab6f1dc5f"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

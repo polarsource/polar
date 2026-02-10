@@ -210,6 +210,20 @@ class CustomerService:
             customer.email = customer_update.email
             customer.email_verified = False
 
+        # Prevent setting billing address to null
+        if (
+            "billing_address" in customer_update.model_fields_set
+            and customer_update.billing_address is None
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "billing_address"),
+                    "msg": "Customer billing address cannot be reset to null once set.",
+                    "input": customer_update.billing_address,
+                }
+            )
+
         # Validate external_id changes (only for CustomerUpdate schema)
         if (
             isinstance(customer_update, CustomerUpdate)

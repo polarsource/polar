@@ -82,7 +82,8 @@
                 "pages": [
                   "features/checkout/embed",
                   "features/checkout/links",
-                  "features/checkout/session"
+                  "features/checkout/session",
+                  "features/checkout/localization"
                 ]
               },
               "features/trials",

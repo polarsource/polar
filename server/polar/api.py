@@ -7,6 +7,7 @@ from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
+from polar.embed.endpoints import router as embed_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -159,3 +160,5 @@ router.include_router(payout_router)
 router.include_router(wallet_router)
 # /integrations/chargeback-stop
 router.include_router(chargeback_stop_router)
+# /embed
+router.include_router(embed_router)

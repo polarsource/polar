@@ -32,9 +32,14 @@ function getLocaleFromAcceptLanguage(
 
 export async function resolveLocale(
   searchParamLocale?: string,
+  checkoutLocale?: string | null,
 ): Promise<AcceptedLocale> {
   if (searchParamLocale && isAcceptedLocale(searchParamLocale)) {
     return searchParamLocale
+  }
+
+  if (checkoutLocale && isAcceptedLocale(checkoutLocale)) {
+    return checkoutLocale
   }
 
   const headersList = await headers()

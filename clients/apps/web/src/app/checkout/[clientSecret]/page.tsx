@@ -23,8 +23,6 @@ export default async function Page(props: {
 
   const { embed: _embed, theme, locale: _locale } = searchParams
 
-  const locale = await resolveLocale(_locale)
-
   const params = await props.params
 
   const { clientSecret } = params
@@ -81,6 +79,10 @@ export default async function Page(props: {
   if (checkout.status !== 'open') {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
+
+  console.log(_locale, checkout)
+
+  const locale = await resolveLocale(_locale, checkout.locale)
 
   return (
     <CheckoutProvider

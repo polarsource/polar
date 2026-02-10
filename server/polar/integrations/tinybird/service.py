@@ -125,6 +125,7 @@ def _event_to_tinybird(event: Event) -> TinybirdEvent:
         applied_balance_amount=pop("applied_balance_amount"),
         platform_fee=pop("platform_fee"),
         fee=pop("fee"),
+        exchange_rate=pop("exchange_rate"),
         refunded_amount=pop("refunded_amount"),
         refundable_amount=pop("refundable_amount"),
         presentment_amount=pop("presentment_amount"),

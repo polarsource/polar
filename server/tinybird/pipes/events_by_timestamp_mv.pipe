@@ -35,6 +35,7 @@ SQL >
         applied_balance_amount,
         platform_fee,
         fee,
+        exchange_rate,
         refunded_amount,
         refundable_amount,
         presentment_amount,

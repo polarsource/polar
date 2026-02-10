@@ -41,6 +41,7 @@ class TinybirdEvent(TypedDict):
     applied_balance_amount: int | None
     platform_fee: int | None
     fee: int | None
+    exchange_rate: float | None
     refunded_amount: int | None
     refundable_amount: int | None
     presentment_amount: int | None

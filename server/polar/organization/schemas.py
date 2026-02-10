@@ -99,6 +99,10 @@ class OrganizationFeatureSettings(Schema):
             "If this organization has multiple presentment currencies enabled"
         ),
     )
+    checkout_localization_enabled: bool = Field(
+        False,
+        description="If this organization has checkout localization enabled",
+    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

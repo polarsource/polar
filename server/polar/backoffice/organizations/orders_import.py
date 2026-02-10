@@ -18,6 +18,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.kit.address import SUPPORTED_COUNTRIES, Address, CountryAlpha2
+from polar.license_key.repository import LicenseKeyRepository
 from polar.models import Benefit, BenefitGrant, Customer, Order, Organization, Product
 from polar.models.benefit import BenefitType
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -99,10 +100,12 @@ async def orders_import(
     order_repository = OrderRepository.from_session(session)
     benefit_repository = BenefitRepository.from_session(session)
     benefit_grant_repository = BenefitGrantRepository.from_session(session)
+    license_key_repository = LicenseKeyRepository.from_session(session)
 
     customer_map: dict[str, Customer] = {}
     product_map: dict[str, Any] = {}
     benefit_map: dict[str, Benefit] = {}
+    license_keys: set[str] = set()
 
     decoded_file = DecodedUploadFile(file)
 
@@ -267,6 +270,29 @@ async def orders_import(
                         i + 1, f"Benefit is not a license key benefit: {benefit_id}"
                     )
                 )
+            if license_key in license_keys:
+                errors.append(
+                    RowError(
+                        i + 1, f"Duplicate license key in import file: {license_key}"
+                    )
+                )
+                yield i, total_rows
+                continue
+            if (
+                await license_key_repository.get_by_organization_and_key(
+                    organization.id, license_key
+                )
+            ) is not None:
+                errors.append(
+                    RowError(
+                        i + 1,
+                        f"License key already exists in organization: {license_key}",
+                    )
+                )
+                yield i, total_rows
+                continue
+
+            license_keys.add(license_key)
 
             # Create a grant manually to force properties
             # Since it's not granted, it'll be handled automatically by the grant task

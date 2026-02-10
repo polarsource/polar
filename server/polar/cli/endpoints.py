@@ -93,6 +93,9 @@ async def listen(
     async def refresh_listener() -> None:
         await mark_active(redis, org.id)
 
+    # Close the session to avoid holding locks while listening for events
+    await session.commit()
+
     receivers = Receivers(organization_id=org.id)
     event_stream = subscribe(
         redis, receivers.get_channels(), request, on_iteration=refresh_listener

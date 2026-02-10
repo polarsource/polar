@@ -185,11 +185,15 @@ async def orders_import(
         seen_customer_products.add(customer_product_key)
 
         # Skip if an imported order already exists for this (customer, product)
-        existing_import_statement = order_repository.get_base_statement().where(
-            Order.customer_id == customer.id,
-            Order.product_id == product.id,
-            Order.checkout_id.is_(None),
-        ).limit(1)
+        existing_import_statement = (
+            order_repository.get_base_statement()
+            .where(
+                Order.customer_id == customer.id,
+                Order.product_id == product.id,
+                Order.checkout_id.is_(None),
+            )
+            .limit(1)
+        )
         existing_import = await order_repository.get_one_or_none(
             existing_import_statement
         )

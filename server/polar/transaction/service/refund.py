@@ -105,6 +105,7 @@ class RefundTransactionService(BaseTransactionService):
             presentment_currency=refund.currency,
             presentment_amount=-refund.amount,
             presentment_tax_amount=-refund.tax_amount,
+            exchange_rate=exchange_rate,
             refund=refund,
             customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
@@ -149,6 +150,7 @@ class RefundTransactionService(BaseTransactionService):
                     "tax_country": payment_transaction.tax_country,
                     "tax_state": payment_transaction.tax_state,
                     "fee": 0,
+                    "exchange_rate": exchange_rate,
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
@@ -210,6 +212,7 @@ class RefundTransactionService(BaseTransactionService):
             presentment_tax_amount=-refund_transaction.presentment_tax_amount
             if refund_transaction.presentment_tax_amount is not None
             else None,
+            exchange_rate=refund_transaction.exchange_rate,
             customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
             refund=refund,

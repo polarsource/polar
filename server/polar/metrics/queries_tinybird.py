@@ -121,6 +121,7 @@ WITH
             e.id,
             e.name,
             e.amount,
+            e.net_amount,
             e.fee,
             e.subscription_id,
             e.timestamp AS event_timestamp,
@@ -139,6 +140,8 @@ WITH
         SELECT
             be.name,
             be.amount,
+            be.net_amount,
+            COALESCE(be.net_amount, be.amount) AS revenue_amount,
             be.fee,
             be.subscription_id,
             COALESCE(
@@ -155,7 +158,7 @@ WITH
     baseline AS (
         SELECT
             COALESCE(sumIf(
-                be.amount,
+                be.revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
             ), 0) AS hist_revenue,
             COALESCE(
@@ -190,14 +193,14 @@ WITH
 
             countIf(be.name IN ('balance.order', 'balance.credit_order')) AS orders,
 
-            COALESCE(sumIf(be.amount, be.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
+            COALESCE(sumIf(be.revenue_amount, be.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
 
             COALESCE(sum(be.amount) - sum(COALESCE(be.fee, 0)), 0) AS net_revenue,
 
             CASE
                 WHEN countIf(be.name IN ('balance.order', 'balance.credit_order')) > 0
                 THEN toInt64(ceil(
-                    sumIf(be.amount, be.name IN ('balance.order', 'balance.credit_order'))
+                    sumIf(be.revenue_amount, be.name IN ('balance.order', 'balance.credit_order'))
                     / countIf(be.name IN ('balance.order', 'balance.credit_order'))
                 ))
                 ELSE 0
@@ -217,7 +220,7 @@ WITH
                 AND be.subscription_id IS NULL
             ) AS one_time_products,
 
-            COALESCE(sumIf(be.amount,
+            COALESCE(sumIf(be.revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NULL
             ), 0) AS one_time_products_revenue,
@@ -226,7 +229,7 @@ WITH
                 be.subscription_id IS NULL
             ), 0) AS one_time_products_net_revenue,
 
-            COALESCE(sumIf(be.amount,
+            COALESCE(sumIf(be.revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) = day
@@ -243,7 +246,7 @@ WITH
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ) AS renewed_subscriptions,
 
-            COALESCE(sumIf(be.amount,
+            COALESCE(sumIf(be.revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day

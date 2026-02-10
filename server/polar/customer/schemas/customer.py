@@ -9,6 +9,7 @@ from pydantic import UUID4, Field, computed_field
 from polar.config import settings
 from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
+from polar.kit.locale import Locale
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -62,6 +63,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    locale: Locale | None = None
     type: CustomerType | None = Field(
         default=None,
         description=(
@@ -95,6 +97,7 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: TaxID | None = None
+    locale: Locale | None = None
 
 
 class CustomerUpdate(CustomerUpdateBase):
@@ -144,6 +147,7 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     name: str | None = Field(description=_name_description, examples=[_name_example])
     billing_address: Address | None
     tax_id: TaxID | None
+    locale: str | None = None
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the customer.",
         examples=[ORGANIZATION_ID_EXAMPLE],

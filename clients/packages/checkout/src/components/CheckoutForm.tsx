@@ -268,6 +268,7 @@ const BaseCheckoutForm = ({
 
     await confirm({
       ...data,
+      locale: localeProp,
       customFieldData: cleanedFieldData,
     })
   }

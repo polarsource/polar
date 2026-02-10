@@ -1318,6 +1318,31 @@ class TestRevoke:
             session, updated_subscription
         )
 
+    async def test_revoke_scheduled_cancellation_sends_canceled_hook(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        assert subscription.canceled_at is not None
+        assert subscription.cancel_at_period_end is True
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.revoke(session, subscription)
+
+        subscription_hooks.canceled.assert_called_once()
+        subscription_hooks.revoked.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestCancel:

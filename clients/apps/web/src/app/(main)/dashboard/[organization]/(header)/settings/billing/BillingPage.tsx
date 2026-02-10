@@ -9,28 +9,28 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { schemas } from '@polar-sh/client'
 
 export default function BillingPage({
-  organization: org,
+  organization,
 }: {
   organization: schemas['Organization']
 }) {
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-sm)!" title="Billing">
       <div className="flex flex-col gap-y-12">
-        {true && (
+        {organization.feature_settings?.presentment_currencies_enabled && (
           <Section id="currency">
             <SectionDescription title="Currency" />
-            <OrganizationCurrencySettings organization={org} />
+            <OrganizationCurrencySettings organization={organization} />
           </Section>
         )}
 
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
-          <OrganizationSubscriptionSettings organization={org} />
+          <OrganizationSubscriptionSettings organization={organization} />
         </Section>
 
         <Section id="customer_portal">
           <SectionDescription title="Customer portal" />
-          <OrganizationCustomerPortalSettings organization={org} />
+          <OrganizationCustomerPortalSettings organization={organization} />
         </Section>
 
         <Section id="customer_emails">
@@ -38,7 +38,7 @@ export default function BillingPage({
             title="Customer notifications"
             description="Emails automatically sent to customers for purchases, renewals, and other subscription lifecycle events"
           />
-          <OrganizationCustomerEmailSettings organization={org} />
+          <OrganizationCustomerEmailSettings organization={organization} />
         </Section>
       </div>
     </DashboardBody>

@@ -361,6 +361,7 @@ class MetricsService:
     ) -> None:
         tb_slugs = {m.slug for m in METRICS_TINYBIRD_SETTLEMENT}
         mismatches: list[dict[str, object]] = []
+        revenue_mismatches: list[dict[str, object]] = []
 
         for i, (pg_period, tb_period) in enumerate(
             zip(pg_response.periods, tb_response.periods)
@@ -369,24 +370,33 @@ class MetricsService:
                 pg_val = getattr(pg_period, slug, None)
                 tb_val = getattr(tb_period, slug, None)
                 if pg_val is not None and tb_val is not None and pg_val != tb_val:
-                    mismatches.append(
-                        {
-                            "period": i,
-                            "timestamp": str(pg_period.timestamp),
-                            "slug": slug,
-                            "pg": pg_val,
-                            "tinybird": tb_val,
-                        }
-                    )
+                    mismatch_obj = {
+                        "period": i,
+                        "timestamp": str(pg_period.timestamp),
+                        "slug": slug,
+                        "pg": pg_val,
+                        "tinybird": tb_val,
+                    }
+                    if slug in [
+                        "average_revenue_per_user",
+                        "monthly_recurring_revenue",
+                        "committed_monthly_recurring_revenue",
+                        "ltv",
+                    ]:
+                        revenue_mismatches.append(mismatch_obj)
+                    else:
+                        mismatches.append(mismatch_obj)
 
         with logfire.span(
             "tinybird.metrics.shadow.comparison",
             organization_id=str(organization_id),
             pg_periods=len(pg_response.periods),
             tb_periods=len(tb_response.periods),
-            has_diff=len(mismatches) > 0,
+            has_diff=len(mismatches) > 0 or len(revenue_mismatches) > 0,
             mismatches=mismatches,
             mismatch_count=len(mismatches),
+            revenue_mismatches=revenue_mismatches,
+            revenue_mismatch_count=len(revenue_mismatches),
         ):
             pass
 

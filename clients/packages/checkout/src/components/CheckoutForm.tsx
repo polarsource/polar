@@ -1062,7 +1062,13 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       }}
     >
       <ElementsConsumer>
-        {({ stripe, elements }) => (
+        {({
+          stripe,
+          elements,
+        }: {
+          elements: StripeElements | null
+          stripe: Stripe | null
+        }) => (
           <BaseCheckoutForm
             {...props}
             checkout={checkout}

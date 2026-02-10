@@ -38,17 +38,17 @@
   "devDependencies": {
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "^22.16.1",
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.13",
     "dotenv": "^16.4.5",
     "openai": "^4.103.0",
     "prettier": "^3.7.4",
-    "react": "^19.2.3",
+    "react": "^19.2.4",
     "tsx": "^4.19.0",
     "tsup": "^8.5.1",
     "typescript": "latest",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "react": "^19.2.3"
+    "react": "^19.2.4"
   }
 }

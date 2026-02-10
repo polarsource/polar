@@ -70,6 +70,16 @@ def _pop_system_metadata(m: dict[str, Any], is_system: bool, key: str) -> Any:
     return v
 
 
+def _truncate_datetime_to_millis(dt_str: str | None) -> str | None:
+    if dt_str is None:
+        return None
+    try:
+        dt = datetime.fromisoformat(dt_str)
+        return dt.isoformat(timespec="milliseconds")
+    except (ValueError, TypeError):
+        return dt_str
+
+
 def _event_to_tinybird(event: Event) -> TinybirdEvent:
     m = dict(event.user_metadata or {})
     cost = m.pop("_cost", None) or {}
@@ -99,6 +109,7 @@ def _event_to_tinybird(event: Event) -> TinybirdEvent:
         product_id=pop("product_id"),
         subscription_id=pop("subscription_id"),
         order_id=pop("order_id"),
+        order_created_at=_truncate_datetime_to_millis(pop("order_created_at")),
         benefit_id=pop("benefit_id"),
         benefit_grant_id=pop("benefit_grant_id"),
         checkout_id=pop("checkout_id"),

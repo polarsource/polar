@@ -24,6 +24,7 @@ class TinybirdEvent(TypedDict):
     product_id: str | None
     subscription_id: str | None
     order_id: str | None
+    order_created_at: str | None
     benefit_id: str | None
     benefit_grant_id: str | None
     checkout_id: str | None

@@ -19,6 +19,7 @@ SQL >
         product_id,
         subscription_id,
         order_id,
+        order_created_at,
         benefit_id,
         benefit_grant_id,
         checkout_id,

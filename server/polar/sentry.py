@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import TYPE_CHECKING
 
 import sentry_sdk
 from dramatiq import get_broker
@@ -19,24 +18,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
 
-if TYPE_CHECKING:
-    import dramatiq
-
 POSTHOG_ID_TAG = "posthog_distinct_id"
-
-
-class PatchedSentryMiddleware(SentryMiddleware):
-    """
-    Patched Sentry middleware that makes sure to cleanup its stuff when a message
-    is skipped.
-
-    Temporary until the fix is available upstream.
-    """
-
-    def after_skip_message(
-        self, broker: "dramatiq.Broker", message: "dramatiq.MessageProxy"
-    ) -> None:
-        return self.after_process_message(broker, message)  # type: ignore
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -51,7 +33,7 @@ class DramatiqIntegration(_DramatiqIntegration):
     def setup_once() -> None:
         broker = get_broker()
         first_middleware = type(broker.middleware[0])
-        broker.add_middleware(PatchedSentryMiddleware(), before=first_middleware)
+        broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
 def configure_sentry() -> None:

@@ -125,7 +125,7 @@ WITH
             e.fee,
             e.subscription_id,
             e.timestamp AS event_timestamp,
-            e.user_metadata,
+            e.order_created_at,
             e.product_id,
             e.billing_type,
             e.order_id
@@ -144,10 +144,7 @@ WITH
             COALESCE(be.net_amount, be.amount) AS revenue_amount,
             be.fee,
             be.subscription_id,
-            COALESCE(
-                JSONExtract(be.user_metadata, 'order_created_at', 'Nullable(DateTime64(3))'),
-                be.event_timestamp
-            ) AS effective_ts,
+            COALESCE(be.order_created_at, be.event_timestamp) AS effective_ts,
             ss.started_at AS sub_started_at
         FROM balance_events_raw AS be
         LEFT JOIN sub_state ss ON be.subscription_id = ss.subscription_id

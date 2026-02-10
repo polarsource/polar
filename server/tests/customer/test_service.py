@@ -171,6 +171,45 @@ class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
+    async def test_existing_email_race_condition(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """Duplicate email inserted between pre-check and flush should raise
+        PolarRequestValidationError, not IntegrityError (race condition)."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        existing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="race@example.com",
+        )
+
+        # Mock the pre-check to return None, simulating a race condition where
+        # the customer is inserted by another request after the check passes.
+        mocker.patch(
+            "polar.customer.service.CustomerRepository.get_by_email_and_organization",
+            return_value=None,
+        )
+
+        payload: dict[str, Any] = {"email": existing.email}
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_creates_owner_member_when_flag_enabled(
         self,
         session: AsyncSession,

@@ -174,9 +174,7 @@ class CustomerService:
                     customer_create.owner.name if customer_create.owner else None
                 )
                 owner_external_id = (
-                    customer_create.owner.external_id
-                    if customer_create.owner
-                    else None
+                    customer_create.owner.external_id if customer_create.owner else None
                 )
 
                 await member_service.create_owner_member(

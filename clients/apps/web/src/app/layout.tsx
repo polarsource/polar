@@ -146,7 +146,6 @@ export default async function RootLayout({
         )}
       </head>
       <body
-        suppressHydrationWarning
         style={{
           textRendering: 'optimizeLegibility',
         }}

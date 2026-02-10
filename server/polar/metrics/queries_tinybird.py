@@ -123,6 +123,7 @@ WITH
             e.amount,
             e.net_amount,
             e.fee,
+            e.exchange_rate,
             e.subscription_id,
             e.timestamp AS event_timestamp,
             e.order_created_at,
@@ -142,6 +143,10 @@ WITH
             be.amount,
             be.net_amount,
             COALESCE(be.net_amount, be.amount) AS revenue_amount,
+            toInt64(round(
+                COALESCE(be.net_amount, be.amount) *
+                IF(be.exchange_rate IS NULL OR be.exchange_rate = 0, 1, be.exchange_rate)
+            )) AS settlement_revenue_amount,
             be.fee,
             be.subscription_id,
             COALESCE(be.order_created_at, be.event_timestamp) AS effective_ts,
@@ -155,11 +160,11 @@ WITH
     baseline AS (
         SELECT
             COALESCE(sumIf(
-                be.revenue_amount,
+                be.settlement_revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
             ), 0) AS hist_revenue,
             COALESCE(
-                sum(be.amount) - sum(COALESCE(be.fee, 0)),
+                sum(be.settlement_revenue_amount) - sum(COALESCE(be.fee, 0)),
                 0
             ) AS hist_net_revenue
         FROM balance_events AS be
@@ -190,14 +195,14 @@ WITH
 
             countIf(be.name IN ('balance.order', 'balance.credit_order')) AS orders,
 
-            COALESCE(sumIf(be.revenue_amount, be.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
+            COALESCE(sumIf(be.settlement_revenue_amount, be.name IN ('balance.order', 'balance.credit_order')), 0) AS revenue,
 
-            COALESCE(sum(be.amount) - sum(COALESCE(be.fee, 0)), 0) AS net_revenue,
+            COALESCE(sum(be.settlement_revenue_amount) - sum(COALESCE(be.fee, 0)), 0) AS net_revenue,
 
             CASE
                 WHEN countIf(be.name IN ('balance.order', 'balance.credit_order')) > 0
                 THEN toInt64(ceil(
-                    sumIf(be.revenue_amount, be.name IN ('balance.order', 'balance.credit_order'))
+                    sumIf(be.settlement_revenue_amount, be.name IN ('balance.order', 'balance.credit_order'))
                     / countIf(be.name IN ('balance.order', 'balance.credit_order'))
                 ))
                 ELSE 0
@@ -206,7 +211,7 @@ WITH
             CASE
                 WHEN countIf(be.name IN ('balance.order', 'balance.credit_order')) > 0
                 THEN toInt64(ceil(
-                    (sum(be.amount) - sum(COALESCE(be.fee, 0)))
+                    (sum(be.settlement_revenue_amount) - sum(COALESCE(be.fee, 0)))
                     / countIf(be.name IN ('balance.order', 'balance.credit_order'))
                 ))
                 ELSE 0
@@ -217,22 +222,22 @@ WITH
                 AND be.subscription_id IS NULL
             ) AS one_time_products,
 
-            COALESCE(sumIf(be.revenue_amount,
+            COALESCE(sumIf(be.settlement_revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NULL
             ), 0) AS one_time_products_revenue,
 
-            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+            COALESCE(sumIf(be.settlement_revenue_amount - COALESCE(be.fee, 0),
                 be.subscription_id IS NULL
             ), 0) AS one_time_products_net_revenue,
 
-            COALESCE(sumIf(be.revenue_amount,
+            COALESCE(sumIf(be.settlement_revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) = day
             ), 0) AS new_subscriptions_revenue,
 
-            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+            COALESCE(sumIf(be.settlement_revenue_amount - COALESCE(be.fee, 0),
                 be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) = day
             ), 0) AS new_subscriptions_net_revenue,
@@ -243,13 +248,13 @@ WITH
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ) AS renewed_subscriptions,
 
-            COALESCE(sumIf(be.revenue_amount,
+            COALESCE(sumIf(be.settlement_revenue_amount,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ), 0) AS renewed_subscriptions_revenue,
 
-            COALESCE(sumIf(be.amount - COALESCE(be.fee, 0),
+            COALESCE(sumIf(be.settlement_revenue_amount - COALESCE(be.fee, 0),
                 be.subscription_id IS NOT NULL
                 AND date_trunc({{iv:String}}, toDateTime(be.sub_started_at, {{tz:String}})) != day
             ), 0) AS renewed_subscriptions_net_revenue

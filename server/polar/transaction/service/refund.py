@@ -241,6 +241,8 @@ class RefundTransactionService(BaseTransactionService):
                     "tax_state": payment_transaction.tax_state,
                     "fee": 0,
                 }
+                if refund_transaction.exchange_rate is not None:
+                    metadata["exchange_rate"] = refund_transaction.exchange_rate
                 if order is not None:
                     metadata["order_id"] = str(order.id)
                     metadata["order_created_at"] = order.created_at.isoformat()

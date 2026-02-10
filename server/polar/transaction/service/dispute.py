@@ -220,6 +220,7 @@ class DisputeTransactionService(BaseTransactionService):
                     "tax_state": payment_transaction.tax_state,
                     "tax_country": payment_transaction.tax_country,
                     "fee": sum(-fee.amount for fee in dispute_fees),
+                    "exchange_rate": exchange_rate,
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
@@ -250,6 +251,7 @@ class DisputeTransactionService(BaseTransactionService):
                         "tax_state": payment_transaction.tax_state,
                         "tax_country": payment_transaction.tax_country,
                         "fee": sum(-fee.amount for fee in dispute_reversal_fees),
+                        "exchange_rate": exchange_rate,
                     }
                     if order is not None:
                         reversal_metadata["order_id"] = str(order.id)

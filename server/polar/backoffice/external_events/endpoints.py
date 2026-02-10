@@ -120,10 +120,11 @@ async def list(
                 datatable.DatatableAttrColumn(
                     "external_id",
                     "External ID",
-                    external_href=lambda _,
-                    item: f"https://dashboard.stripe.com/events/{item.external_id}"
-                    if item.source == ExternalEventSource.stripe
-                    else None,
+                    external_href=lambda _, item: (
+                        f"https://dashboard.stripe.com/events/{item.external_id}"
+                        if item.source == ExternalEventSource.stripe
+                        else None
+                    ),
                 ),
                 datatable.DatatableAttrColumn("task_name", "Task Name", clipboard=True),
             ).render(request, items, sorting=sorting):

@@ -327,8 +327,9 @@ async def get(
                             description_list.DescriptionListLinkItem[Order](
                                 "stripe_invoice_id",
                                 "Stripe Invoice",
-                                href_getter=lambda _,
-                                i: f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}",
+                                href_getter=lambda _, i: (
+                                    f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}"
+                                ),
                                 external=True,
                             ),
                             InvoicePDFItem(invoice_url),

@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy_utils.types.range import timedelta
 
@@ -157,29 +158,59 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        async with repository.create_context(
-            Customer(
-                organization=organization,
-                **customer_create.model_dump(
-                    exclude={"organization_id", "owner"}, by_alias=True
-                ),
-            )
-        ) as customer:
-            owner_email = customer_create.owner.email if customer_create.owner else None
-            owner_name = customer_create.owner.name if customer_create.owner else None
-            owner_external_id = (
-                customer_create.owner.external_id if customer_create.owner else None
-            )
+        try:
+            async with repository.create_context(
+                Customer(
+                    organization=organization,
+                    **customer_create.model_dump(
+                        exclude={"organization_id", "owner"}, by_alias=True
+                    ),
+                )
+            ) as customer:
+                owner_email = (
+                    customer_create.owner.email if customer_create.owner else None
+                )
+                owner_name = (
+                    customer_create.owner.name if customer_create.owner else None
+                )
+                owner_external_id = (
+                    customer_create.owner.external_id if customer_create.owner else None
+                )
 
-            await member_service.create_owner_member(
-                session,
-                customer,
-                organization,
-                owner_email=owner_email,
-                owner_name=owner_name,
-                owner_external_id=owner_external_id,
-            )
-            return customer
+                await member_service.create_owner_member(
+                    session,
+                    customer,
+                    organization,
+                    owner_email=owner_email,
+                    owner_name=owner_name,
+                    owner_external_id=owner_external_id,
+                )
+                return customer
+        except IntegrityError as e:
+            error_str = str(e)
+            if "ix_customers_organization_id_email_case_insensitive" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "email"),
+                            "msg": "A customer with this email address already exists.",
+                            "input": customer_create.email,
+                        }
+                    ]
+                ) from e
+            if "customers_organization_id_external_id_key" in error_str:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "A customer with this external ID already exists.",
+                            "input": customer_create.external_id,
+                        }
+                    ]
+                ) from e
+            raise
 
     async def update(
         self,

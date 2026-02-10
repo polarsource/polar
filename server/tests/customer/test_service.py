@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_user
+from polar.customer.repository import CustomerRepository
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
@@ -409,6 +410,82 @@ class TestCreate:
         assert member.name == "Customer Name"
         assert member.external_id == "different_owner_ext_id"
         assert member.role == MemberRole.owner
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_create_duplicate_email(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        """Race condition: pre-check passes but INSERT hits unique constraint on email."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_email_and_organization",
+            return_value=None,
+        )
+
+        payload: dict[str, Any] = {
+            "email": customer.email,
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "email")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_concurrent_create_duplicate_external_id(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        """Race condition: pre-check passes but INSERT hits unique constraint on external_id."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_email_and_organization",
+            return_value=None,
+        )
+        mocker.patch.object(
+            CustomerRepository,
+            "get_by_external_id_and_organization",
+            return_value=None,
+        )
+
+        payload: dict[str, Any] = {
+            "email": "unique.race.condition@example.com",
+            "external_id": customer_external_id.external_id,
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+        assert exc_info.value.errors()[0]["loc"] == ("body", "external_id")
 
 
 @pytest.mark.asyncio

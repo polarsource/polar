@@ -1,8 +1,10 @@
 import { useCallback } from 'react'
 
-export const SUPPORTED_LOCALES = ['en', 'nl'] as const
-export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
-export const DEFAULT_LOCALE = 'en'
+export { DEFAULT_LOCALE, LOCALE_NAMES, SUPPORTED_LOCALES } from './config'
+export type { SupportedLocale } from './config'
+
+import type { SupportedLocale } from './config'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
 
 // Expand bare language codes to include region variants,
 // but keep region-specific codes (like future 'pt-BR') exact

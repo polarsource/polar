@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
@@ -31,10 +30,7 @@ from .queries import (
     QueryCallable,
 )
 from .queries_tinybird import (
-    TinybirdQuery,
-    query_costs_metrics,
-    query_events_metrics,
-    query_mrr_metrics,
+    query_metrics,
 )
 from .schemas import MetricsPeriod, MetricsResponse
 
@@ -256,74 +252,30 @@ class MetricsService:
                 {"periods": [], "totals": {}, "metrics": {}}
             )
 
-        tb_queries = {
+        tb_queries = [
             m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed
-        }
+        ]
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
-
-        tb_coros = []
-        if TinybirdQuery.events in tb_queries:
-            tb_coros.append(
-                query_events_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    bounds_start=original_start_timestamp,
-                    bounds_end=original_end_timestamp,
-                    product_id=product_id,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                    billing_type=billing_strs,
-                )
-            )
-        if TinybirdQuery.costs in tb_queries:
-            tb_coros.append(
-                query_costs_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    bounds_start=original_start_timestamp,
-                    bounds_end=original_end_timestamp,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                )
-            )
-        if TinybirdQuery.mrr in tb_queries:
-            tb_coros.append(
-                query_mrr_metrics(
-                    organization_id=org_ids,
-                    start=start_timestamp,
-                    end=end_timestamp,
-                    interval=interval,
-                    timezone=timezone.key,
-                    now=now_dt,
-                    product_id=product_id,
-                    customer_id=customer_id,
-                    billing_type=billing_strs,
-                )
-            )
 
         with logfire.span(
             "Execute Tinybird metric queries",
             queries=[q.value for q in tb_queries],
         ):
-            tb_results = await asyncio.gather(*tb_coros) if tb_coros else []
-
-        tb_rows: list[dict[str, int | float]] = []
-        if len(tb_results) == 1:
-            tb_rows = tb_results[0]
-        elif len(tb_results) >= 2:
-            for i in range(len(tb_results[0])):
-                merged = dict(tb_results[0][i])
-                for j in range(1, len(tb_results)):
-                    merged.update(
-                        {k: v for k, v in tb_results[j][i].items() if k != "timestamp"}
-                    )
-                tb_rows.append(merged)
+            tb_rows = await query_metrics(
+                metric_types=tb_queries,
+                organization_id=org_ids,
+                start=start_timestamp,
+                end=end_timestamp,
+                interval=interval,
+                timezone=timezone.key,
+                bounds_start=original_start_timestamp,
+                bounds_end=original_end_timestamp,
+                now=now_dt,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                billing_type=billing_strs,
+            )
 
         periods: list[MetricsPeriod] = []
         for row in tb_rows:

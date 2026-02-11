@@ -77,11 +77,10 @@ def tinybird_workspace() -> Generator[str, None, None]:
         if attempt < 2:
             time.sleep(0.5)
     else:
-        raise subprocess.CalledProcessError(
-            result.returncode,
-            result.args,
-            output=result.stdout,
-            stderr=result.stderr,
+        raise RuntimeError(
+            f"tb deploy failed after 3 attempts.\n"
+            f"stdout: {result.stdout}\n"
+            f"stderr: {result.stderr}"
         )
 
     for _ in range(30):

@@ -73,6 +73,25 @@ class TinybirdClient:
             )
         return self._clickhouse_client
 
+    async def endpoint(
+        self,
+        endpoint_name: str,
+        params: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        with logfire.span(
+            "ENDPOINT tinybird {endpoint_name}",
+            endpoint_name=endpoint_name,
+        ) as span:
+            span.set_attribute("db.system", "tinybird")
+            span.set_attribute("db.operation", "ENDPOINT")
+            response = await self.client.get(
+                f"/v0/pipes/{endpoint_name}.json",
+                params=params,
+            )
+            response.raise_for_status()
+            result = response.json()
+            return result.get("data", [])
+
     async def ingest(
         self, datasource: str, events: list[TinybirdEvent], *, wait: bool = False
     ) -> None:

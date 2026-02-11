@@ -39,17 +39,6 @@ events_table = Table(
     Column("timestamp", DateTime),
 )
 
-event_types_mv = Table(
-    "event_types",
-    metadata,
-    Column("name", String),
-    Column("source", String),
-    Column("organization_id", String),
-    Column("occurrences", String),
-    Column("first_seen", DateTime),
-    Column("last_seen", DateTime),
-)
-
 
 @dataclass
 class TinybirdEventTypeStats:
@@ -249,14 +238,20 @@ def _compile(statement: Select[Any]) -> tuple[str, str]:
     return literal, template
 
 
+def _parse_datetime(value: datetime | str) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
 def _parse_event_type_stats(rows: list[dict[str, Any]]) -> list[TinybirdEventTypeStats]:
     return [
         TinybirdEventTypeStats(
             name=row["name"],
             source=EventSource(row["source"]),
             occurrences=row["occurrences"],
-            first_seen=row["first_seen"],
-            last_seen=row["last_seen"],
+            first_seen=_parse_datetime(row["first_seen"]),
+            last_seen=_parse_datetime(row["last_seen"]),
         )
         for row in rows
     ]
@@ -348,62 +343,42 @@ class TinybirdEventsQuery:
 
 class TinybirdEventTypesQuery:
     """
-    Query builder for the event_types materialized view.
+    Query builder for the event_types materialized view via Tinybird endpoint.
 
     Supports source filter only. For customer/parent filtering,
     use TinybirdEventsQuery against the raw table.
     """
 
+    _VALID_SORT_COLUMNS = {"name", "first_seen", "last_seen", "occurrences"}
+
     def __init__(self, organization_id: UUID) -> None:
         self._organization_id = str(organization_id)
-        self._filters: list[Any] = []
-        self._order_by_clauses: list[Any] = []
+        self._source: str | None = None
+        self._order_by: str | None = None
+        self._order_direction: str | None = None
 
     def filter_source(self, source: EventSource) -> Self:
-        self._filters.append(event_types_mv.c.source == source.value)
+        self._source = source.value
         return self
 
-    _SORT_COLUMN_MAP = {
-        "name": event_types_mv.c.name,
-        "first_seen": func.minMerge(event_types_mv.c.first_seen),
-        "last_seen": func.maxMerge(event_types_mv.c.last_seen),
-        "occurrences": func.countMerge(event_types_mv.c.occurrences),
-    }
-
     def order_by(self, column: str, descending: bool = False) -> Self:
-        col = self._SORT_COLUMN_MAP.get(column)
-        if col is None:
+        if column not in self._VALID_SORT_COLUMNS:
             raise ValueError(f"Invalid sort column: {column}")
-        self._order_by_clauses.append(col.desc() if descending else col.asc())
+        self._order_by = column
+        self._order_direction = "desc" if descending else "asc"
         return self
 
     async def get_event_type_stats(self) -> list[TinybirdEventTypeStats]:
-        statement = (
-            select(
-                event_types_mv.c.name,
-                event_types_mv.c.source,
-                func.countMerge(event_types_mv.c.occurrences).label("occurrences"),
-                func.minMerge(event_types_mv.c.first_seen).label("first_seen"),
-                func.maxMerge(event_types_mv.c.last_seen).label("last_seen"),
-            )
-            .where(event_types_mv.c.organization_id == self._organization_id)
-            .group_by(event_types_mv.c.name, event_types_mv.c.source)
-        )
-
-        for f in self._filters:
-            statement = statement.where(f)
-
-        if self._order_by_clauses:
-            statement = statement.order_by(*self._order_by_clauses)
-        else:
-            statement = statement.order_by(
-                func.maxMerge(event_types_mv.c.last_seen).desc()
-            )
-
-        sql, template = _compile(statement)
+        params: dict[str, Any] = {"organization_id": self._organization_id}
+        if self._source is not None:
+            params["source"] = self._source
+        if self._order_by is not None:
+            params["order_by"] = self._order_by
+        if self._order_direction is not None:
+            params["order_direction"] = self._order_direction
 
         try:
-            rows = await client.query(sql, db_statement=template)
+            rows = await client.endpoint("event_types_endpoint", params)
             return _parse_event_type_stats(rows)
         except Exception as e:
             log.error("tinybird.get_event_type_stats_from_mv.failed", error=str(e))

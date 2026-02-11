@@ -184,8 +184,8 @@ async def organization_deletion_requested(
 @actor(
     actor_name="organization.backfill_members",
     priority=TaskPriority.LOW,
-    time_limit=3_600_000,  # 1 hour (default is 10 min)
-    max_retries=3,
+    time_limit=600_000,  # 10 min timeout
+    max_retries=0,
 )
 async def backfill_members(organization_id: uuid.UUID) -> None:
     """

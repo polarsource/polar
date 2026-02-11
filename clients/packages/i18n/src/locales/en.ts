@@ -13,14 +13,14 @@ export const en = {
       billingAddress: {
         label: 'Billing address',
         line1: {
-          value: 'Line 1',
+          value: 'Street address',
           _llmContext:
-            'The first line of the billing address, typically including street address and number.',
+            'The first line of the billing address, typically including street address and number. Adjust to fit the most common format for the target locale.',
         },
         line2: {
-          value: 'Line 2',
+          value: 'Apartment or unit number',
           _llmContext:
-            'The second line of the billing address, typically used for apartment, suite, unit, building, floor, etc.',
+            'The second line of the billing address, typically used for apartment, suite, unit, building, floor, etc. Adjust to fit the most common format for the target locale.',
         },
         postalCode: 'Postal code',
         city: 'City',

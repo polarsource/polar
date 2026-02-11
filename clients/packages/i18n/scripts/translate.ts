@@ -22,7 +22,12 @@ import {
   unflattenKeys,
 } from './utils'
 
-import { LOCALE_NAMES, SUPPORTED_LOCALES, SupportedLocale } from '../src/config'
+import {
+  DEFAULT_LOCALE,
+  LOCALE_NAMES,
+  SUPPORTED_LOCALES,
+  type TranslatedLocale,
+} from '../src/config'
 
 dotenv.config({ path: path.join(import.meta.dirname, '../.env.local') })
 dotenv.config({ path: path.join(import.meta.dirname, '../.env') })
@@ -34,7 +39,7 @@ const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
 const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
 async function callLLM(
-  targetLocale: string,
+  targetLocale: TranslatedLocale,
   sourceStrings: Record<string, { value: string; _llmContext?: string }>,
   prompt: string,
 ): Promise<Record<string, string>> {
@@ -149,7 +154,7 @@ async function translate(
   en: NestedObject,
   sourceKeys: Map<string, EntryValue>,
   pluralPaths: Set<string>,
-  targetLocales: string[],
+  targetLocales: TranslatedLocale[],
   locks: Record<string, string[]>,
   prompt: string,
   cache: TranslationCache,
@@ -257,7 +262,7 @@ async function translate(
 
 function validate(
   sourceKeys: Map<string, EntryValue>,
-  targetLocales: string[],
+  targetLocales: TranslatedLocale[],
   localeData: Map<string, NestedObject>,
 ): boolean {
   const errors: string[] = []
@@ -363,7 +368,7 @@ async function main() {
   const sourceKeys = flattenKeys(en)
   const pluralPaths = findPluralPaths(en as Record<string, unknown>)
   const targetLocales = SUPPORTED_LOCALES.filter(
-    (l): l is Exclude<SupportedLocale, 'en'> => l !== 'en',
+    (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
 
   await translate(

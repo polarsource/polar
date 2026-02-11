@@ -405,71 +405,45 @@ async def _backfill_seats(
                     continue
                 old_seat_customer_id = seat.customer_id
 
-                if seat.status == SeatStatus.pending:
-                    if (
-                        old_seat_customer_id is not None
-                        and old_seat_customer_id != billing_customer_id
-                    ):
-                        seat_holder = await customer_repo.get_by_id(
-                            old_seat_customer_id
-                        )
-                        if seat_holder is not None:
-                            seat.email = seat_holder.email
-                        orphaned_customer_ids.add(old_seat_customer_id)
-                    elif old_seat_customer_id is not None:
-                        # Billing manager's own pending seat — use their email
-                        billing_owner = await _get_owner_member(billing_customer_id)
-                        if billing_owner is not None:
-                            seat.email = billing_owner.email
-
-                    seat.customer_id = billing_customer_id
-
-                    # Create member for the pending seat if we have an email
-                    if seat.email:
-                        member = await _get_or_create_member_for_backfill(
-                            session,
-                            member_repository,
-                            billing_customer_id,
-                            organization.id,
-                            seat.email,
-                        )
-                        seat.member_id = member.id
-
-                    count += 1
-                    continue
-
-                if seat.status != SeatStatus.claimed or old_seat_customer_id is None:
-                    continue
-
                 if old_seat_customer_id == billing_customer_id:
-                    # Billing manager holds this seat → use their owner member
+                    # Billing manager's own seat → use their owner member
                     owner_member = await _get_owner_member(billing_customer_id)
                     if owner_member is None:
                         continue
-                    seat.customer_id = billing_customer_id
                     seat.member_id = owner_member.id
                     seat.email = owner_member.email
-                else:
-                    # Someone else holds this seat → get/create member under billing customer
+                elif old_seat_customer_id is not None:
+                    # Someone else holds this seat → create member, track orphan
                     seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
-                    if seat_holder is None:
+                    email = seat_holder.email if seat_holder else seat.email
+                    if not email:
                         continue
                     member = await _get_or_create_member_for_backfill(
                         session,
                         member_repository,
                         billing_customer_id,
                         organization.id,
-                        seat_holder.email,
+                        email,
                     )
-                    seat.customer_id = billing_customer_id
                     seat.member_id = member.id
-                    seat.email = seat_holder.email
+                    seat.email = email
                     orphaned_customer_ids.add(old_seat_customer_id)
-
-                    # Copy OAuth accounts from old seat-holder customer to the new member
-                    if seat_holder._oauth_accounts:
+                    if seat_holder and seat_holder._oauth_accounts:
                         member._oauth_accounts = {**seat_holder._oauth_accounts}
+                elif seat.email:
+                    # No customer assigned yet (pending invite) → create member
+                    member = await _get_or_create_member_for_backfill(
+                        session,
+                        member_repository,
+                        billing_customer_id,
+                        organization.id,
+                        seat.email,
+                    )
+                    seat.member_id = member.id
+                else:
+                    continue
 
+                seat.customer_id = billing_customer_id
                 count += 1
 
             await session.flush()

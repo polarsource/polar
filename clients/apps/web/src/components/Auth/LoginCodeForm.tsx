@@ -22,7 +22,11 @@ interface LoginCodeFormProps {
 }
 
 const LoginCodeForm = ({ returnTo, signup }: LoginCodeFormProps) => {
-  const form = useForm<{ email: string }>()
+  const form = useForm<{ email: string }>({
+    defaultValues: {
+      email: '',
+    },
+  })
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
   const sendLoginCode = useSendLoginCode()

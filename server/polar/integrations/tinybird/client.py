@@ -19,11 +19,55 @@ tracer = trace.get_tracer("polar.integrations.tinybird")
 MAX_PAYLOAD_BYTES = 10 * 1024 * 1024  # 10MB
 
 
-class TinybirdPayloadTooLargeError(Exception):
+class TinybirdError(Exception):
+    """Base exception for Tinybird errors."""
+
+    pass
+
+
+class TinybirdPayloadTooLargeError(TinybirdError):
     def __init__(self, size: int, max_size: int) -> None:
         self.size = size
         self.max_size = max_size
         super().__init__(f"Payload size {size} bytes exceeds maximum {max_size} bytes")
+
+
+class TinybirdRequestError(TinybirdError):
+    """Raised when a Tinybird API request fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int,
+        error_body: dict[str, Any] | str | None = None,
+        endpoint: str | None = None,
+    ) -> None:
+        self.status_code = status_code
+        self.error_body = error_body
+        self.endpoint = endpoint
+        super().__init__(message)
+
+    @classmethod
+    def from_response(
+        cls, response: httpx.Response, endpoint: str | None = None
+    ) -> "TinybirdRequestError":
+        try:
+            error_body: dict[str, Any] | str = response.json()
+            if isinstance(error_body, dict):
+                message = error_body.get("error", response.reason_phrase)
+            else:
+                message = str(error_body)
+        except Exception:
+            error_body = response.text
+            message = response.reason_phrase
+
+        return cls(
+            message,
+            status_code=response.status_code,
+            error_body=error_body,
+            endpoint=endpoint,
+        )
 
 
 class TinybirdClient:
@@ -101,7 +145,10 @@ class TinybirdClient:
                 f"/v0/pipes/{endpoint_name}.json",
                 params=params,
             )
-            response.raise_for_status()
+            if not response.is_success:
+                raise TinybirdRequestError.from_response(
+                    response, endpoint=endpoint_name
+                )
             result = response.json()
             return result.get("data", [])
 
@@ -191,4 +238,10 @@ client = TinybirdClient(
     clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
 )
 
-__all__ = ["TinybirdEvent", "TinybirdPayloadTooLargeError", "client"]
+__all__ = [
+    "TinybirdError",
+    "TinybirdEvent",
+    "TinybirdPayloadTooLargeError",
+    "TinybirdRequestError",
+    "client",
+]

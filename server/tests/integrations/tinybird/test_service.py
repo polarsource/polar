@@ -3,9 +3,11 @@ import json
 import uuid
 from datetime import UTC, datetime
 
+import httpx
 import pytest
+import respx
 
-from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.client import TinybirdClient, TinybirdRequestError
 from polar.integrations.tinybird.service import (
     DATASOURCE_EVENTS,
     TinybirdEventsQuery,
@@ -366,3 +368,55 @@ class TestTinybirdDelete:
         stats_by_name_after = {s.name: s for s in stats_after}
         assert "batch.delete" not in stats_by_name_after
         assert stats_by_name_after["batch.keep"].occurrences == 1
+
+
+@pytest.mark.asyncio
+class TestTinybirdRequestError:
+    async def test_endpoint_400_raises_request_error_with_body(self) -> None:
+        error_response = {
+            "error": "[Error] Illegal type UUID of argument for aggregate function"
+        }
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                return_value=httpx.Response(400, json=error_response)
+            )
+
+            with pytest.raises(TinybirdRequestError) as exc_info:
+                await client.endpoint("metrics", {"org_ids": "123"})
+
+            error = exc_info.value
+            assert error.status_code == 400
+            assert error.endpoint == "metrics"
+            assert error.error_body == error_response
+            assert "Illegal type UUID" in str(error)
+
+    async def test_endpoint_500_raises_request_error(self) -> None:
+        client = TinybirdClient(
+            api_url="https://api.tinybird.co",
+            clickhouse_url="https://clickhouse.tinybird.co",
+            api_token="test_token",
+            read_token="test_token",
+            clickhouse_username="test",
+            clickhouse_token="test_token",
+        )
+
+        with respx.mock:
+            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
+                return_value=httpx.Response(500, text="Internal Server Error")
+            )
+
+            with pytest.raises(TinybirdRequestError) as exc_info:
+                await client.endpoint("metrics")
+
+            error = exc_info.value
+            assert error.status_code == 500
+            assert error.endpoint == "metrics"

@@ -193,8 +193,7 @@ SQL >
             toStartOfYear(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% else %} toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% end %}
-        COALESCE(sum(ae.cost_amount), 0) AS costs,
-        countDistinct(ae.customer_id) + countDistinct(ae.external_customer_id) AS active_user_by_event
+        COALESCE(sum(ae.cost_amount), 0) AS costs
     FROM all_events_raw AS ae
     WHERE
         ae.event_timestamp
@@ -203,17 +202,73 @@ SQL >
         <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
     GROUP BY day
 
+NODE active_users_raw
+SQL >
+    %
+    SELECT hour, customer_id, external_customer_id
+    FROM user_events_by_hour
+    WHERE
+        organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND hour
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND hour <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND external_customer_id
+            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+        {% end %}
+
+NODE active_users_metrics
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
+    FROM
+        {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'week' %} week_intervals
+        {% elif interval == 'month' %} month_intervals
+        {% elif interval == 'year' %} year_intervals
+        {% else %} day_intervals
+        {% end %} w
+    LEFT JOIN
+        active_users_raw au
+        ON {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% else %} toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% end %}
+    GROUP BY w.interval
+    ORDER BY w.interval
+
 NODE costs_metrics
 SQL >
     %
     SELECT
         w.interval AS timestamp,
         COALESCE(de.costs, 0) AS costs,
-        COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs,
-        COALESCE(de.active_user_by_event, 0) AS active_user_by_event,
-        CASE
-            WHEN COALESCE(de.active_user_by_event, 0) > 0 THEN de.costs / de.active_user_by_event ELSE 0
-        END AS cost_per_user
+        COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
         {% elif interval == 'week' %} week_intervals
@@ -1092,7 +1147,15 @@ SQL >
     SELECT
         w.interval AS timestamp
         {% if not defined(metric_types) or 'costs' in metric_types %}
-            , c.costs, c.cumulative_costs, c.active_user_by_event, c.cost_per_user
+            ,
+            c.costs,
+            c.cumulative_costs,
+            a.active_user_by_event,
+            CASE
+                WHEN COALESCE(a.active_user_by_event, 0) > 0
+                THEN c.costs / a.active_user_by_event
+                ELSE 0
+            END AS cost_per_user
         {% end %}
         {% if not defined(metric_types) or 'events' in metric_types %}
             ,
@@ -1140,6 +1203,7 @@ SQL >
         {% end %} w
     {% if not defined(metric_types) or 'costs' in metric_types %}
         LEFT JOIN costs_metrics c ON c.timestamp = w.interval
+        LEFT JOIN active_users_metrics a ON a.timestamp = w.interval
     {% end %}
     {% if not defined(metric_types) or 'events' in metric_types %}
         LEFT JOIN events_metrics e ON e.timestamp = w.interval

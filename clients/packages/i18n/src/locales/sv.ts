@@ -1,0 +1,213 @@
+export const sv = {
+  checkout: {
+    footer: {
+      poweredBy: 'Drivs av',
+      merchantOfRecord:
+        'Denna order behandlas av vår online-återförsäljare och Merchant of Record, Polar, som också hanterar orderrelaterade frågor och returer.',
+    },
+    form: {
+      email: 'E-post',
+      cardholderName: 'Kortinnehavarens namn',
+      purchasingAsBusiness: 'Jag köper som företag',
+      businessName: 'Företagsnamn',
+      billingAddress: {
+        label: 'Faktureringsadress',
+        line1: 'Adressrad 1',
+        line2: 'Adressrad 2',
+        postalCode: 'Postnummer',
+        city: 'Ort',
+        country: 'Land',
+        state: 'Delstat',
+        province: 'Provins',
+        stateProvince: 'Delstat / Provins',
+      },
+      taxId: 'Momsregistreringsnummer',
+      discountCode: 'Rabattkod',
+      optional: 'Valfritt',
+      apply: 'Tillämpa',
+      fieldRequired: 'Detta fält är obligatoriskt',
+    },
+    pricing: {
+      subtotal: 'Delsumma',
+      taxableAmount: 'Momspliktigt belopp',
+      taxes: 'Moms',
+      free: 'Gratis',
+      payWhatYouWant: 'Betala vad du vill',
+      total: 'Totalt',
+      everyInterval: 'Varje {interval}',
+      additionalMeteredUsage: 'Ytterligare mätbaserad användning',
+      perUnit: '/ enhet',
+      discount: {
+        duration: {
+          months: {
+            '=1': 'för den första månaden',
+            other: 'för de första # månaderna',
+            _mode: 'plural',
+          },
+          years: {
+            '=1': 'för det första året',
+            other: 'för de första # åren',
+            _mode: 'plural',
+          },
+        },
+      },
+    },
+    trial: {
+      ends: 'Testperioden avslutas {endDate}',
+      duration: {
+        days: {
+          '=1': '# dags testperiod',
+          other: '# dagars testperiod',
+          _mode: 'plural',
+        },
+        weeks: {
+          '=1': '# veckas testperiod',
+          other: '# veckors testperiod',
+          _mode: 'plural',
+        },
+        months: {
+          '=1': '# månads testperiod',
+          other: '# månaders testperiod',
+          _mode: 'plural',
+        },
+        years: {
+          '=1': '# års testperiod',
+          other: '# års testperiod',
+          _mode: 'plural',
+        },
+      },
+    },
+    pwywForm: {
+      label: 'Ange ett rimligt pris',
+      minimum: 'Minst {amount}',
+      amountMinimum: 'Beloppet måste vara minst {min}',
+      amountFreeOrMinimum: 'Beloppet måste vara 0 kr eller minst {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Debiteras {frequency}',
+      oneTimePurchase: 'Engångsköp',
+    },
+    card: {
+      included: 'Ingår',
+    },
+    benefits: {
+      moreBenefits: {
+        '=1': '# ytterligare förmån',
+        other: '# ytterligare förmåner',
+        _mode: 'plural',
+      },
+      showMoreBenefits: {
+        '=1': 'Visa # ytterligare förmån',
+        other: 'Visa # ytterligare förmåner',
+        _mode: 'plural',
+      },
+      showLess: 'Visa mindre',
+      granting: 'Tilldelar förmåner...',
+      requestNewInvite: 'Begär ny inbjudan',
+      retryIn: {
+        '=1': 'Försök igen om # sekund',
+        other: 'Försök igen om # sekunder',
+        _mode: 'plural',
+      },
+      connectNewAccount: 'Anslut nytt konto',
+      requestMyInvite: 'Begär min inbjudan',
+      github: {
+        connect: 'Anslut GitHub-konto',
+        goTo: 'Gå till {repository}',
+        selectAccount: 'Välj ett GitHub-konto',
+      },
+      discord: {
+        connect: 'Anslut Discord-konto',
+        open: 'Öppna Discord',
+        selectAccount: 'Välj ett Discord-konto',
+      },
+      licenseKey: {
+        copy: 'Kopiera',
+        copiedToClipboard: 'Kopierat till urklipp',
+        copiedToClipboardDescription: 'Licensnyckeln kopierades till urklipp',
+        loading: 'Laddar...',
+        status: 'Status',
+        statusGranted: 'Tilldelad',
+        statusRevoked: 'Återkallad',
+        statusDisabled: 'Inaktiverad',
+        usage: 'Användning',
+        validations: 'Valideringar',
+        validatedAt: 'Validerad den',
+        neverValidated: 'Aldrig validerad',
+        expiryDate: 'Utgångsdatum',
+        noExpiry: 'Inget utgångsdatum',
+        activations: 'Aktiveringar',
+        activationDeleted: 'Licensnyckelaktivering borttagen',
+        activationDeletedDescription: 'Aktivering borttagen',
+        activationDeactivationFailed: 'Deaktivering av aktivering misslyckades',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Bekräfta betalning',
+      processingTitle: 'Vi behandlar din order',
+      successTitle: 'Din order lyckades!',
+      failedTitle: 'Ett problem uppstod vid behandling av din order',
+      processingDescription: 'Vänta medan vi bekräftar din betalning.',
+      successDescription: 'Du är nu berättigad till förmånerna med {product}.',
+      failedDescription: 'Försök igen eller kontakta support.',
+    },
+    loading: {
+      processingOrder: 'Behandlar order...',
+      processingPayment: 'Behandlar betalning',
+      paymentSuccessful: 'Betalning lyckades! Förbereder dina produkter...',
+      confirmationTokenFailed:
+        'Kunde inte skapa bekräftelsetoken, försök igen senare.',
+    },
+    cta: {
+      startTrial: 'Starta testperiod',
+      subscribeNow: 'Prenumerera nu',
+      payNow: 'Betala nu',
+      getFree: 'Få gratis',
+      paymentsUnavailable: 'Betalningar är för närvarande inte tillgängliga',
+    },
+  },
+  intervals: {
+    short: {
+      day: 'd',
+      week: 'v',
+      month: 'mån',
+      year: 'år',
+    },
+    long: {
+      day: 'dag',
+      week: 'vecka',
+      month: 'månad',
+      year: 'år',
+    },
+    frequency: {
+      day: 'dagligen',
+      week: 'veckovis',
+      month: 'månatligen',
+      year: 'årligen',
+      everyOrdinalInterval: 'var {ordinal} {interval}',
+    },
+  },
+  benefitTypes: {
+    usage: {
+      displayName: 'Användning',
+    },
+    license_keys: {
+      displayName: 'Licensnycklar',
+    },
+    github_repository: {
+      displayName: 'Åtkomst till GitHub-repository',
+    },
+    discord: {
+      displayName: 'Discord-inbjudan',
+    },
+    downloadables: {
+      displayName: 'Filnedladdningar',
+    },
+    custom: {
+      displayName: 'Anpassad',
+    },
+    meter_credit: {
+      displayName: 'Mätarkrediter',
+    },
+  },
+} as const

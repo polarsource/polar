@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
+import { usePolarClient } from './PolarClientProvider'
 import { useSession } from './SessionProvider'
 
 Notifications.setNotificationHandler({
@@ -88,15 +89,34 @@ export default function NotificationsProvider({
   const responseListener = useRef<Notifications.EventSubscription>(null)
 
   const { session } = useSession()
+  const { polar } = usePolarClient()
 
   useEffect(() => {
     if (!session) {
       return
     }
 
-    registerForPushNotificationsAsync().then((token) =>
-      setExpoPushToken(token ?? ''),
-    )
+    registerForPushNotificationsAsync().then(async (token) => {
+      if (!token) {
+        return
+      }
+
+      setExpoPushToken(token)
+
+      // Automatically register the token with the backend to ensure
+      // push notifications keep working after app updates (which can
+      // change the Expo push token).
+      try {
+        await polar.POST('/v1/notifications/recipients', {
+          body: {
+            expo_push_token: token,
+            platform: Platform.OS as 'ios' | 'android',
+          },
+        })
+      } catch {
+        // 422 means the token is already registered — that's fine
+      }
+    })
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {

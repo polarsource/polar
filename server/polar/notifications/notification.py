@@ -30,6 +30,9 @@ class NotificationPayloadBase(BaseModel):
     def template_name(cls) -> str:
         pass
 
+    def get_organization_name(self) -> str | None:
+        return None
+
     def render(self) -> tuple[str, str]:
         from polar.email.schemas import EmailAdapter
 
@@ -69,6 +72,9 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_organization_slug: str | None = None
     subscription_id: str | None = None
 
+    def get_organization_name(self) -> str | None:
+        return self.tier_organization_name
+
     @computed_field
     def formatted_price_amount(self) -> str:
         if self.tier_price_amount is None:
@@ -99,6 +105,9 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
     product_price_amount: int
     customer_name: str = ""
     organization_name: str = ""
+
+    def get_organization_name(self) -> str | None:
+        return self.organization_name or None
 
     customer_email: str | None = None
     billing_address_country: str | None = None
@@ -160,6 +169,9 @@ class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
     organization_name: str
     url: str
 
+    def get_organization_name(self) -> str | None:
+        return self.organization_name
+
     def subject(self) -> str:
         return (
             f"Create a payout account for {self.organization_name} now to receive funds"
@@ -178,6 +190,9 @@ class MaintainerCreateAccountNotification(NotificationBase):
 class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase):
     organization_name: str
     amount: int
+
+    def get_organization_name(self) -> str | None:
+        return self.organization_name
 
     @computed_field
     def formatted_amount(self) -> str:

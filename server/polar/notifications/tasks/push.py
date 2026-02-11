@@ -9,6 +9,7 @@ from exponent_server_sdk import (
     PushServerError,
 )
 
+from polar.notification_recipient.repository import NotificationRecipientRepository
 from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
 )
@@ -26,7 +27,10 @@ _push_client = PushClient()
 
 
 def send_push_message(
-    token: str, message: str, extra: PushMessageExtra | None = None
+    token: str,
+    message: str,
+    extra: PushMessageExtra | None = None,
+    subtitle: str = "",
 ) -> None:
     """Send a push message to a specific device token."""
     try:
@@ -44,7 +48,7 @@ def send_push_message(
                 category="default",
                 display_in_foreground=True,
                 channel_id="default",
-                subtitle="",
+                subtitle=subtitle,
                 mutable_content=False,
             )
         )
@@ -84,6 +88,10 @@ async def notifications_push(notification_id: UUID) -> None:
             log.warning("notifications.push.devices_not_found", user_id=notif.user_id)
             return
 
+        notification_payload = notifications.parse_payload(notif)
+        [subject, _] = notification_payload.render()
+        subtitle = notification_payload.get_organization_name() or ""
+
         for notification_recipient in notification_recipients:
             if not notification_recipient.expo_push_token:
                 log.warning(
@@ -92,15 +100,22 @@ async def notifications_push(notification_id: UUID) -> None:
                 )
                 continue
 
-            notification_type = notifications.parse_payload(notif)
-            [subject, _] = notification_type.render()
-
             try:
                 send_push_message(
                     token=notification_recipient.expo_push_token,
                     message=subject,
                     extra={"notification_id": str(notification_id)},
+                    subtitle=subtitle,
                 )
+            except DeviceNotRegisteredError:
+                log.warning(
+                    "notifications.push.removing_stale_token",
+                    user_id=notification_recipient.user_id,
+                    token=notification_recipient.expo_push_token,
+                )
+                repository = NotificationRecipientRepository.from_session(session)
+                await repository.soft_delete(notification_recipient)
+                continue
             except Exception as e:
                 log.error(
                     "notifications.push.send_failed",
@@ -108,4 +123,4 @@ async def notifications_push(notification_id: UUID) -> None:
                     user_id=notification_recipient.user_id,
                     notification_id=notification_id,
                 )
-                return
+                continue

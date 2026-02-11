@@ -1,4 +1,12 @@
-export const SUPPORTED_LOCALES = ['en', 'nl', 'fr', 'sv', 'es', 'de'] as const
+export const SUPPORTED_LOCALES = [
+  'en',
+  'nl',
+  'fr',
+  'sv',
+  'es',
+  'de',
+  'hu',
+] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en' satisfies SupportedLocale
 
@@ -11,4 +19,5 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   es: 'Spanish',
   fr: 'French',
   de: 'German',
+  hu: 'Hungarian',
 }

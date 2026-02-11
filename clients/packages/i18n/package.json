@@ -12,9 +12,13 @@
     "directory": "clients/packages/i18n"
   },
   "scripts": {
+    "translate": "tsx --env-file=.env.local scripts/translate.ts",
+    "validate": "tsx scripts/validate.ts",
     "lint": "prettier -c .",
     "typecheck": "tsc --noEmit",
-    "build": "rm -rf dist && tsup"
+    "build": "rm -rf dist && tsup",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "exports": {
     ".": {
@@ -27,12 +31,17 @@
     "dist"
   ],
   "devDependencies": {
+    "@ai-sdk/google": "^2.0.46",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.2.13",
+    "ai": "^5.0.113",
+    "dotenv": "^16.4.5",
     "prettier": "^3.7.4",
     "react": "^19.2.4",
     "tsup": "^8.5.1",
-    "typescript": "latest"
+    "tsx": "^4.19.0",
+    "typescript": "latest",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "react": "^19.2.4"

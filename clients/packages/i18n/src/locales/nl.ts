@@ -3,19 +3,19 @@ export const nl = {
     footer: {
       poweredBy: 'Mogelijk gemaakt door',
       merchantOfRecord:
-        'Deze bestelling wordt verwerkt door onze online reseller & Merchant of Record, Polar, die ook vragen over bestellingen en terugbetalingen afhandelt.',
+        'Deze bestelling wordt verwerkt door onze online wederverkoper & Merchant of Record, Polar, die ook vragen over bestellingen en retouren afhandelt.',
     },
     form: {
-      email: 'E-mail',
+      email: 'E-mailadres',
       cardholderName: 'Naam kaarthouder',
       purchasingAsBusiness: 'Ik koop als bedrijf',
       businessName: 'Bedrijfsnaam',
       billingAddress: {
         label: 'Factuuradres',
-        line1: 'Regel 1',
-        line2: 'Regel 2',
+        line1: 'Adresregel 1',
+        line2: 'Adresregel 2',
         postalCode: 'Postcode',
-        city: 'Stad',
+        city: 'Plaats',
         country: 'Land',
         state: 'Staat',
         province: 'Provincie',
@@ -30,24 +30,24 @@ export const nl = {
     pricing: {
       subtotal: 'Subtotaal',
       taxableAmount: 'Belastbaar bedrag',
-      taxes: 'BTW',
+      taxes: 'Btw',
       free: 'Gratis',
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       everyInterval: 'Elke {interval}',
-      additionalMeteredUsage: 'Extra verbruikskosten',
+      additionalMeteredUsage: 'Extra gemeten gebruik',
       perUnit: '/ eenheid',
       discount: {
         duration: {
           months: {
-            _mode: 'plural',
             '=1': 'voor de eerste maand',
             other: 'voor de eerste # maanden',
+            _mode: 'plural',
           },
           years: {
-            _mode: 'plural',
             '=1': 'voor het eerste jaar',
-            other: 'voor de eerste # jaar',
+            other: 'voor de eerste # jaren',
+            _mode: 'plural',
           },
         },
       },
@@ -56,35 +56,35 @@ export const nl = {
       ends: 'Proefperiode eindigt op {endDate}',
       duration: {
         days: {
-          _mode: 'plural',
           '=1': '# dag proefperiode',
           other: '# dagen proefperiode',
+          _mode: 'plural',
         },
         weeks: {
-          _mode: 'plural',
           '=1': '# week proefperiode',
           other: '# weken proefperiode',
+          _mode: 'plural',
         },
         months: {
-          _mode: 'plural',
           '=1': '# maand proefperiode',
           other: '# maanden proefperiode',
+          _mode: 'plural',
         },
         years: {
-          _mode: 'plural',
           '=1': '# jaar proefperiode',
-          other: '# jaar proefperiode',
+          other: '# jaren proefperiode',
+          _mode: 'plural',
         },
       },
     },
     pwywForm: {
       label: 'Noem een eerlijke prijs',
-      minimum: '{amount} minimum',
+      minimum: '{amount} minimaal',
       amountMinimum: 'Bedrag moet minimaal {min} zijn',
       amountFreeOrMinimum: 'Bedrag moet $0 of minimaal {min} zijn',
     },
     productSwitcher: {
-      billedRecurring: '{frequency} gefactureerd',
+      billedRecurring: 'Wordt {frequency} gefactureerd',
       oneTimePurchase: 'Eenmalige aankoop',
     },
     card: {
@@ -92,22 +92,22 @@ export const nl = {
     },
     benefits: {
       moreBenefits: {
-        _mode: 'plural',
         '=1': '# extra voordeel',
         other: '# extra voordelen',
+        _mode: 'plural',
       },
       showMoreBenefits: {
-        _mode: 'plural',
         '=1': 'Toon # extra voordeel',
         other: 'Toon # extra voordelen',
+        _mode: 'plural',
       },
-      showLess: 'Toon minder',
-      granting: 'Voordelen worden toegekend...',
+      showLess: 'Minder tonen',
+      granting: 'Voordelen toekennen...',
       requestNewInvite: 'Nieuwe uitnodiging aanvragen',
       retryIn: {
-        _mode: 'plural',
         '=1': 'Probeer opnieuw over # seconde',
         other: 'Probeer opnieuw over # seconden',
+        _mode: 'plural',
       },
       connectNewAccount: 'Nieuw account koppelen',
       requestMyInvite: 'Mijn uitnodiging aanvragen',
@@ -138,39 +138,42 @@ export const nl = {
         expiryDate: 'Vervaldatum',
         noExpiry: 'Geen vervaldatum',
         activations: 'Activaties',
-        activationDeleted: 'Licentiesleutelactivatie verwijderd',
-        activationDeletedDescription: 'Activatie succesvol verwijderd',
-        activationDeactivationFailed: 'Deactivatie mislukt',
+        activationDeleted: 'Activering licentiesleutel verwijderd',
+        activationDeletedDescription: 'Activering succesvol verwijderd',
+        activationDeactivationFailed: 'Deactivering activering mislukt',
       },
     },
     confirmation: {
       confirmPayment: 'Betaling bevestigen',
-      processingTitle: 'We verwerken je bestelling',
-      successTitle: 'Je bestelling is geslaagd!',
+      processingTitle: 'We verwerken uw bestelling',
+      successTitle: 'Uw bestelling is succesvol!',
       failedTitle:
-        'Er is een probleem opgetreden bij het verwerken van je bestelling',
-      processingDescription: 'Even geduld terwijl we je betaling bevestigen.',
-      successDescription: 'Je hebt nu recht op de voordelen van {product}.',
-      failedDescription: 'Probeer het opnieuw of neem contact op met support.',
+        'Er is een probleem opgetreden bij het verwerken van uw bestelling',
+      processingDescription: 'Even geduld terwijl we uw betaling bevestigen.',
+      successDescription:
+        'U komt nu in aanmerking voor de voordelen van {product}.',
+      failedDescription:
+        'Probeer het opnieuw of neem contact op met de ondersteuning.',
     },
     loading: {
       processingOrder: 'Bestelling verwerken...',
       processingPayment: 'Betaling verwerken',
-      paymentSuccessful: 'Betaling geslaagd! Je producten worden klaargezet...',
+      paymentSuccessful:
+        'Betaling succesvol! Uw producten worden klaargemaakt...',
       confirmationTokenFailed:
-        'Bevestigingstoken aanmaken mislukt, probeer het later opnieuw.',
+        'Het aanmaken van een bevestigingstoken is mislukt, probeer het later opnieuw.',
     },
     cta: {
-      startTrial: 'Proefperiode starten',
+      startTrial: 'Start proefperiode',
       subscribeNow: 'Nu abonneren',
       payNow: 'Nu betalen',
-      getFree: 'Gratis verkrijgen',
+      getFree: 'Gratis krijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
   },
   intervals: {
     short: {
-      day: 'dag',
+      day: 'dg',
       week: 'wk',
       month: 'mnd',
       year: 'jr',
@@ -190,27 +193,26 @@ export const nl = {
     },
   },
   benefitTypes: {
-    usage: { displayName: 'Gebruik' },
-    license_keys: { displayName: 'Licentiesleutels' },
-    github_repository: { displayName: 'Toegang tot GitHub-repository' },
-    discord: { displayName: 'Discord-uitnodiging' },
-    downloadables: { displayName: 'Downloads' },
-    custom: { displayName: 'Custom' },
-    meter_credit: { displayName: 'Verbruikstegoed' },
-  },
-  playground: {
-    interpolation: 'Dit is een {test}',
-    plurals: {
-      _mode: 'plural',
-      '=0': 'Geen berichten',
-      '=1': 'Eén bericht',
-      other: '# berichten',
+    usage: {
+      displayName: 'Gebruik',
     },
-    pluralsWithInterpolation: {
-      _mode: 'plural',
-      '=0': 'Geen resultaten gevonden voor {query}',
-      '=1': 'Eén resultaat gevonden voor {query}',
-      other: '# resultaten gevonden voor {query}',
+    license_keys: {
+      displayName: 'Licentiesleutels',
+    },
+    github_repository: {
+      displayName: 'Toegang tot GitHub-repository',
+    },
+    discord: {
+      displayName: 'Discord-uitnodiging',
+    },
+    downloadables: {
+      displayName: 'Bestandsdownloads',
+    },
+    custom: {
+      displayName: 'Aangepast',
+    },
+    meter_credit: {
+      displayName: 'Metertegoed',
     },
   },
 } as const

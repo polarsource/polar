@@ -252,9 +252,9 @@ class MetricsService:
                 {"periods": [], "totals": {}, "metrics": {}}
             )
 
-        tb_queries = [
-            m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed
-        ]
+        tb_queries = list(
+            {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
+        )
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
 
         with logfire.span(

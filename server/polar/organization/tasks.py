@@ -32,6 +32,8 @@ from .repository import OrganizationRepository
 
 log = structlog.get_logger()
 
+_BACKFILL_BATCH_SIZE = 100
+
 
 class OrganizationTaskError(PolarTaskError): ...
 
@@ -254,23 +256,34 @@ async def _backfill_owner_members(
             Member.id.is_(None),
         )
     )
-    result = await session.execute(statement)
-    customers_without_owner = result.scalars().all()
+    results = await session.stream_scalars(
+        statement,
+        execution_options={"yield_per": _BACKFILL_BATCH_SIZE},
+    )
 
+    customers_found = 0
     count = 0
-    for customer in customers_without_owner:
-        member = await member_service.create_owner_member(
-            session, customer, organization
-        )
-        if member is not None:
-            if customer._oauth_accounts:
-                member._oauth_accounts = {**customer._oauth_accounts}
-            count += 1
+    try:
+        async for customer in results:
+            customers_found += 1
+            member = await member_service.create_owner_member(
+                session, customer, organization
+            )
+            if member is not None:
+                if customer._oauth_accounts:
+                    member._oauth_accounts = {**customer._oauth_accounts}
+                count += 1
+            if count > 0 and count % _BACKFILL_BATCH_SIZE == 0:
+                await session.flush()
+    finally:
+        await results.close()
+
+    await session.flush()
 
     log.info(
         "organization.backfill_members.step_a_complete",
         organization_id=str(organization.id),
-        customers_found=len(customers_without_owner),
+        customers_found=customers_found,
         members_created=count,
     )
     return count
@@ -289,10 +302,24 @@ async def _backfill_seats(
     from polar.models import Order, Product, Subscription
 
     member_repository = MemberRepository.from_session(session)
+    customer_repo = CustomerRepository.from_session(session)
 
-    # Find non-revoked seats for this organization's products that don't have
-    # a member_id set yet. We need to join through subscription/order → product
-    # to filter by organization.
+    # Lazy cache of customer_id → owner member
+    owner_members_map: dict[uuid.UUID, Member] = {}
+
+    async def _get_owner_member(customer_id: uuid.UUID) -> Member | None:
+        if customer_id not in owner_members_map:
+            owner = await member_repository.get_owner_by_customer_id(
+                session, customer_id
+            )
+            if owner is not None:
+                owner_members_map[customer_id] = owner
+        return owner_members_map.get(customer_id)
+
+    # Find non-revoked seats for this organization's products.
+    # We need to join through subscription/order → product to filter by organization.
+    # joinedload requires unique() which is incompatible with streaming,
+    # so we use LIMIT/OFFSET batch pagination instead.
     sub_seats_stmt = (
         select(CustomerSeat)
         .join(Subscription, CustomerSeat.subscription_id == Subscription.id)
@@ -305,6 +332,7 @@ async def _backfill_seats(
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.subscription_id.is_not(None),
         )
+        .order_by(CustomerSeat.id)
     )
     order_seats_stmt = (
         select(CustomerSeat)
@@ -318,145 +346,136 @@ async def _backfill_seats(
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.order_id.is_not(None),
         )
+        .order_by(CustomerSeat.id)
     )
 
-    sub_result = await session.execute(sub_seats_stmt)
-    order_result = await session.execute(order_seats_stmt)
-    seats = list(sub_result.scalars().unique().all()) + list(
-        order_result.scalars().unique().all()
-    )
-
-    # Build a map of customer_id → owner member for quick lookup
-    customer_ids: set[uuid.UUID] = set()
-    for seat in seats:
-        if seat.subscription_id is not None and seat.subscription is not None:
-            customer_ids.add(seat.subscription.customer_id)
-        elif seat.order_id is not None and seat.order is not None:
-            customer_ids.add(seat.order.customer_id)
-        if seat.customer_id is not None:
-            customer_ids.add(seat.customer_id)
-
-    owner_members_map: dict[uuid.UUID, Member] = {}
-    for cid in customer_ids:
-        owner = await member_repository.get_owner_by_customer_id(session, cid)
-        if owner is not None:
-            owner_members_map[cid] = owner
-
-    customer_repo = CustomerRepository.from_session(session)
-
+    seats_found = 0
     count = 0
     orphaned_customer_ids: set[uuid.UUID] = set()
 
-    for seat in seats:
-        if seat.subscription_id is not None and seat.subscription is not None:
-            billing_customer_id = seat.subscription.customer_id
-        elif seat.order_id is not None and seat.order is not None:
-            billing_customer_id = seat.order.customer_id
-        else:
-            continue
-        old_seat_customer_id = seat.customer_id
+    for base_stmt in [sub_seats_stmt, order_seats_stmt]:
+        offset = 0
+        while True:
+            batch_stmt = base_stmt.limit(_BACKFILL_BATCH_SIZE).offset(offset)
+            result = await session.execute(batch_stmt)
+            seats = list(result.scalars().unique().all())
+            if not seats:
+                break
+            seats_found += len(seats)
+            offset += _BACKFILL_BATCH_SIZE
 
-        if seat.status == SeatStatus.pending:
-            if (
-                old_seat_customer_id is not None
-                and old_seat_customer_id != billing_customer_id
-            ):
-                seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
-                if seat_holder is not None:
+            for seat in seats:
+                if seat.subscription_id is not None and seat.subscription is not None:
+                    billing_customer_id = seat.subscription.customer_id
+                elif seat.order_id is not None and seat.order is not None:
+                    billing_customer_id = seat.order.customer_id
+                else:
+                    continue
+                old_seat_customer_id = seat.customer_id
+
+                if seat.status == SeatStatus.pending:
+                    if (
+                        old_seat_customer_id is not None
+                        and old_seat_customer_id != billing_customer_id
+                    ):
+                        seat_holder = await customer_repo.get_by_id(
+                            old_seat_customer_id
+                        )
+                        if seat_holder is not None:
+                            seat.email = seat_holder.email
+                        orphaned_customer_ids.add(old_seat_customer_id)
+                    elif old_seat_customer_id is not None:
+                        # Billing manager's own pending seat — use their email
+                        billing_owner = await _get_owner_member(billing_customer_id)
+                        if billing_owner is not None:
+                            seat.email = billing_owner.email
+
+                    seat.customer_id = billing_customer_id
+
+                    # Create member for the pending seat if we have an email
+                    if seat.email:
+                        member = await _get_or_create_member_for_backfill(
+                            session,
+                            member_repository,
+                            billing_customer_id,
+                            organization.id,
+                            seat.email,
+                        )
+                        seat.member_id = member.id
+
+                    count += 1
+                    continue
+
+                if seat.status != SeatStatus.claimed or old_seat_customer_id is None:
+                    continue
+
+                if old_seat_customer_id == billing_customer_id:
+                    # Billing manager holds this seat → use their owner member
+                    owner_member = await _get_owner_member(billing_customer_id)
+                    if owner_member is None:
+                        continue
+                    seat.customer_id = billing_customer_id
+                    seat.member_id = owner_member.id
+                    seat.email = owner_member.email
+                else:
+                    # Someone else holds this seat → get/create member under billing customer
+                    seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
+                    if seat_holder is None:
+                        continue
+                    member = await _get_or_create_member_for_backfill(
+                        session,
+                        member_repository,
+                        billing_customer_id,
+                        organization.id,
+                        seat_holder.email,
+                    )
+                    seat.customer_id = billing_customer_id
+                    seat.member_id = member.id
                     seat.email = seat_holder.email
-                orphaned_customer_ids.add(old_seat_customer_id)
-            elif old_seat_customer_id is not None:
-                # Billing manager's own pending seat — use their email
-                billing_owner = owner_members_map.get(billing_customer_id)
-                if billing_owner is not None:
-                    seat.email = billing_owner.email
+                    orphaned_customer_ids.add(old_seat_customer_id)
 
-            seat.customer_id = billing_customer_id
+                    # Copy OAuth accounts from old seat-holder customer to the new member
+                    if seat_holder._oauth_accounts:
+                        member._oauth_accounts = {**seat_holder._oauth_accounts}
 
-            # Create member for the pending seat if we have an email
-            if seat.email:
-                member = await _get_or_create_member_for_backfill(
-                    session,
-                    member_repository,
-                    billing_customer_id,
-                    organization.id,
-                    seat.email,
-                )
-                seat.member_id = member.id
+                    # Transfer benefit grants and their associated records from old
+                    # seat-holder customer to the new member under the billing customer.
+                    # This preserves existing benefit state (license keys, downloadables,
+                    # GitHub/Discord) instead of re-provisioning.
+                    scope_filter = (
+                        BenefitGrant.subscription_id == seat.subscription_id
+                        if seat.subscription_id is not None
+                        else BenefitGrant.order_id == seat.order_id
+                    )
+                    grants_stmt = select(BenefitGrant).where(
+                        BenefitGrant.customer_id == old_seat_customer_id,
+                        scope_filter,
+                        BenefitGrant.deleted_at.is_(None),
+                    )
+                    grants_result = await session.execute(grants_stmt)
+                    transferred_benefit_ids: set[uuid.UUID] = set()
+                    for grant in grants_result.scalars().all():
+                        grant.customer_id = billing_customer_id
+                        grant.member_id = member.id
+                        transferred_benefit_ids.add(grant.benefit_id)
 
-            count += 1
-            continue
+                    # Transfer benefit-specific records that reference the old customer
+                    if transferred_benefit_ids:
+                        await _transfer_benefit_records(
+                            session,
+                            old_seat_customer_id,
+                            billing_customer_id,
+                            transferred_benefit_ids,
+                        )
 
-        if seat.status != SeatStatus.claimed or old_seat_customer_id is None:
-            continue
+                count += 1
 
-        if old_seat_customer_id == billing_customer_id:
-            # Billing manager holds this seat → use their owner member
-            owner_member = owner_members_map.get(billing_customer_id)
-            if owner_member is None:
-                continue
-            seat.customer_id = billing_customer_id
-            seat.member_id = owner_member.id
-            seat.email = owner_member.email
-        else:
-            # Someone else holds this seat → get/create member under billing customer
-            seat_holder = await customer_repo.get_by_id(old_seat_customer_id)
-            if seat_holder is None:
-                continue
-            member = await _get_or_create_member_for_backfill(
-                session,
-                member_repository,
-                billing_customer_id,
-                organization.id,
-                seat_holder.email,
-            )
-            seat.customer_id = billing_customer_id
-            seat.member_id = member.id
-            seat.email = seat_holder.email
-            orphaned_customer_ids.add(old_seat_customer_id)
-
-            # Copy OAuth accounts from old seat-holder customer to the new member
-            if seat_holder._oauth_accounts:
-                member._oauth_accounts = {**seat_holder._oauth_accounts}
-
-            # Transfer benefit grants and their associated records from old
-            # seat-holder customer to the new member under the billing customer.
-            # This preserves existing benefit state (license keys, downloadables,
-            # GitHub/Discord) instead of re-provisioning.
-            scope_filter = (
-                BenefitGrant.subscription_id == seat.subscription_id
-                if seat.subscription_id is not None
-                else BenefitGrant.order_id == seat.order_id
-            )
-            grants_stmt = select(BenefitGrant).where(
-                BenefitGrant.customer_id == old_seat_customer_id,
-                scope_filter,
-                BenefitGrant.deleted_at.is_(None),
-            )
-            grants_result = await session.execute(grants_stmt)
-            transferred_benefit_ids: set[uuid.UUID] = set()
-            for grant in grants_result.scalars().all():
-                grant.customer_id = billing_customer_id
-                grant.member_id = member.id
-                transferred_benefit_ids.add(grant.benefit_id)
-
-            # Transfer benefit-specific records that reference the old customer
-            if transferred_benefit_ids:
-                await _transfer_benefit_records(
-                    session,
-                    old_seat_customer_id,
-                    billing_customer_id,
-                    transferred_benefit_ids,
-                )
-
-        count += 1
-
-    await session.flush()
+            await session.flush()
 
     log.info(
         "organization.backfill_members.step_b_complete",
         organization_id=str(organization.id),
-        seats_found=len(seats),
+        seats_found=seats_found,
         seats_migrated=count,
         orphaned_customers=len(orphaned_customer_ids),
     )
@@ -543,38 +562,48 @@ async def _backfill_benefit_grants(
             BenefitGrant.deleted_at.is_(None),
         )
     )
-    result = await session.execute(statement)
-    grants = result.scalars().all()
+    results = await session.stream_scalars(
+        statement,
+        execution_options={"yield_per": _BACKFILL_BATCH_SIZE},
+    )
 
-    # Build owner member map
-    customer_ids = {g.customer_id for g in grants}
+    # Lazy cache of customer_id → owner member
     owner_members_map: dict[uuid.UUID, Member] = {}
-    for cid in customer_ids:
-        owner = await member_repository.get_owner_by_customer_id(session, cid)
-        if owner is not None:
-            owner_members_map[cid] = owner
 
+    grants_found = 0
     count = 0
-    for grant in grants:
-        # Check if this grant is seat-based: look for a CustomerSeat matching
-        # the grant's customer and subscription/order scope.
-        seat_member_id = await _find_seat_member_for_grant(session, grant)
-        if seat_member_id is not None:
-            grant.member_id = seat_member_id
-            count += 1
-        else:
-            # No seat found — this is a direct purchase, link to owner member
-            owner = owner_members_map.get(grant.customer_id)
-            if owner is not None:
-                grant.member_id = owner.id
+    try:
+        async for grant in results:
+            grants_found += 1
+            # Check if this grant is seat-based: look for a CustomerSeat matching
+            # the grant's customer and subscription/order scope.
+            seat_member_id = await _find_seat_member_for_grant(session, grant)
+            if seat_member_id is not None:
+                grant.member_id = seat_member_id
                 count += 1
+            else:
+                # No seat found — this is a direct purchase, link to owner member
+                if grant.customer_id not in owner_members_map:
+                    owner = await member_repository.get_owner_by_customer_id(
+                        session, grant.customer_id
+                    )
+                    if owner is not None:
+                        owner_members_map[grant.customer_id] = owner
+                owner = owner_members_map.get(grant.customer_id)
+                if owner is not None:
+                    grant.member_id = owner.id
+                    count += 1
+            if count > 0 and count % _BACKFILL_BATCH_SIZE == 0:
+                await session.flush()
+    finally:
+        await results.close()
 
     await session.flush()
 
     log.info(
         "organization.backfill_members.step_c_complete",
         organization_id=str(organization.id),
-        grants_found=len(grants),
+        grants_found=grants_found,
         grants_linked=count,
     )
     return count

@@ -9448,6 +9448,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -9570,6 +9572,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -9610,6 +9614,8 @@ export interface components {
        * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
        */
       subscription_id?: string | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CheckoutCreatedEvent
@@ -10456,6 +10462,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Product Price Id
        * Format: uuid4
@@ -10683,6 +10691,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
@@ -10825,6 +10835,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
@@ -11055,6 +11067,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11312,6 +11326,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11420,6 +11436,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -11541,6 +11559,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -12874,6 +12894,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -13317,6 +13339,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
        * @example individual
@@ -14797,6 +14821,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -15498,6 +15524,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -15540,6 +15568,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CustomerUpdatedEvent
@@ -15751,6 +15781,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -18151,6 +18183,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -20200,6 +20234,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -21183,6 +21219,12 @@ export interface components {
        * @default false
        */
       presentment_currencies_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description If this organization has checkout localization enabled
+       * @default false
+       */
+      checkout_localization_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -24307,6 +24349,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4

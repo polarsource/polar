@@ -241,6 +241,7 @@ class Settings(BaseSettings):
     # Tinybird
     TINYBIRD_API_URL: str = "http://localhost:7181"
     TINYBIRD_API_TOKEN: str | None = None
+    TINYBIRD_READ_TOKEN: str | None = None
     TINYBIRD_CLICKHOUSE_URL: str = "http://localhost:7182"
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None

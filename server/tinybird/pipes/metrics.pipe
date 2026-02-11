@@ -217,11 +217,14 @@ SQL >
     GROUP BY subscription_id
     {% if defined(product_ids) and product_ids != '' %}
         HAVING
-            argMaxMerge(product_id) IN (
+            argMaxMerge(subscription_state.product_id) IN (
                 SELECT
-                    arrayJoin(
-                        splitByChar(
-                            ',', {{ String(product_ids, description="Comma-separated product UUIDs") }}
+                    toUUIDOrNull(
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(product_ids, description="Comma-separated product UUIDs") }}
+                            )
                         )
                     )
             )
@@ -751,12 +754,12 @@ SQL >
     HAVING
         1 = 1
         {% if defined(product_ids) and product_ids != '' %}
-            AND argMaxMerge(product_id)
-            IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+            AND argMaxMerge(subscription_state.product_id)
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(product_ids) }}))))
         {% end %}
         {% if defined(customer_ids) and customer_ids != '' %}
-            AND argMaxMerge(customer_id)
-            IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+            AND argMaxMerge(subscription_state.customer_id)
+            IN (SELECT toUUIDOrNull(arrayJoin(splitByChar(',', {{ String(customer_ids) }}))))
         {% end %}
 
 NODE payment_events_raw

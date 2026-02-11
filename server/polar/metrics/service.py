@@ -280,7 +280,9 @@ class MetricsService:
         periods: list[MetricsPeriod] = []
         for row in tb_rows:
             ts = row.get("timestamp")
-            if isinstance(ts, date) and not isinstance(ts, datetime):
+            if isinstance(ts, str):
+                row["timestamp"] = datetime.fromisoformat(ts).replace(tzinfo=timezone)
+            elif isinstance(ts, date) and not isinstance(ts, datetime):
                 row["timestamp"] = datetime(ts.year, ts.month, ts.day, tzinfo=timezone)
             elif isinstance(ts, datetime) and ts.tzinfo is None:
                 row["timestamp"] = ts.replace(tzinfo=timezone)

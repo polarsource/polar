@@ -1056,6 +1056,31 @@ class CheckoutService:
         ):
             raise PaymentNotReady()
 
+        # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
+        # for better UX and instead extract the name from Stripe's confirmation token.
+        if (
+            checkout.payment_processor == PaymentProcessor.stripe
+            and checkout_confirm.confirmation_token_id is not None
+            and checkout.customer_name is None
+        ):
+            try:
+                confirmation_token = await stripe_service.get_confirmation_token(
+                    checkout_confirm.confirmation_token_id
+                )
+                if (
+                    confirmation_token.payment_method_preview is not None
+                    and confirmation_token.payment_method_preview.billing_details
+                    is not None
+                ):
+                    wallet_name = (
+                        confirmation_token.payment_method_preview.billing_details.name
+                    )
+                    if wallet_name:
+                        checkout.customer_name = wallet_name
+                        session.add(checkout)
+            except stripe_lib.StripeError:
+                pass
+
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
             if (

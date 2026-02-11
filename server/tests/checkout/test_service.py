@@ -3819,10 +3819,17 @@ class TestConfirm:
         self,
         payload: dict[str, str],
         missing_fields: set[tuple[str, ...]],
+        stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
@@ -4900,6 +4907,192 @@ class TestConfirm:
 
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
+
+    async def test_wallet_payment_extracts_name_from_confirmation_token(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Test that when customer_name is not provided (wallet payment like Apple Pay),
+        the name is extracted from the Stripe confirmation token.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = (
+            "John Appleseed"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_email": "beppe@example.com",
+                    "customer_billing_address": {
+                        "line1": "Some Street",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer_name == "John Appleseed"
+        stripe_service_mock.get_confirmation_token.assert_called_once_with(
+            "CONFIRMATION_TOKEN_ID"
+        )
+
+    async def test_wallet_payment_uses_provided_name_over_token(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Test that when customer_name IS provided, it takes precedence over
+        the name in the confirmation token (backwards compatibility).
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Provided Name",
+                    "customer_email": "beppe@example.com",
+                    "customer_billing_address": {
+                        "line1": "Some Street",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer_name == "Provided Name"
+        stripe_service_mock.get_confirmation_token.assert_not_called()
+
+    async def test_wallet_payment_fails_validation_on_stripe_error(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Checkout fails validation if fetching the confirmation token fails
+        and customer_name is not provided.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.get_confirmation_token.side_effect = stripe_lib.StripeError(
+            "API Error"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_email": "beppe@example.com",
+                        "customer_billing_address": {
+                            "line1": "Some Street",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
+        assert any(
+            error["loc"] == ("body", "customer_name")
+            for error in exc_info.value.errors()
+        )
+
+    async def test_wallet_payment_fails_validation_on_missing_billing_details(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Checkout fails validation when confirmation token has no billing details
+        and customer_name is not provided.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_email": "beppe@example.com",
+                        "customer_billing_address": {
+                            "line1": "Some Street",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
+        assert any(
+            error["loc"] == ("body", "customer_name")
+            for error in exc_info.value.errors()
+        )
 
 
 @pytest.mark.asyncio

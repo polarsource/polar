@@ -90,7 +90,7 @@ NODE all_events_raw
 SQL >
     %
     SELECT e.id, e.timestamp AS event_timestamp, e.cost_amount, e.customer_id, e.external_customer_id
-    FROM events_by_timestamp AS e
+    FROM user_events_costs AS e
     WHERE
         e.organization_id IN (
             SELECT
@@ -267,10 +267,9 @@ SQL >
         e.timestamp AS event_timestamp,
         e.canceled_at,
         e.customer_cancellation_reason
-    FROM events_by_timestamp AS e
+    FROM system_events_by_org AS e
     WHERE
-        e.source = 'system'
-        AND e.name IN ('subscription.created', 'subscription.canceled')
+        e.name IN ('subscription.created', 'subscription.canceled')
         AND e.organization_id IN (
             SELECT
                 toUUID(
@@ -311,10 +310,9 @@ SQL >
         e.product_id,
         e.billing_type,
         e.order_id
-    FROM events_by_timestamp AS e
+    FROM system_events_by_org AS e
     WHERE
-        e.source = 'system'
-        AND e.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
+        e.name IN ('balance.order', 'balance.credit_order', 'balance.refund')
         AND e.organization_id IN (
             SELECT
                 toUUID(
@@ -793,10 +791,9 @@ NODE payment_events_raw
 SQL >
     %
     SELECT e.id, e.amount, e.timestamp AS event_timestamp, e.subscription_id
-    FROM events_by_timestamp AS e
+    FROM system_events_by_org AS e
     WHERE
-        e.source = 'system'
-        AND e.name IN ('balance.order', 'balance.credit_order')
+        e.name IN ('balance.order', 'balance.credit_order')
         AND e.organization_id IN (
             SELECT
                 toUUID(

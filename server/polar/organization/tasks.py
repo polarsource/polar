@@ -330,6 +330,7 @@ async def _backfill_seats(
         are seat-holder customers whose seats were migrated to a billing customer.
     """
     from polar.models import Order, Product, Subscription
+    from polar.models.customer import CustomerType
 
     member_repository = MemberRepository.from_session(session)
     customer_repo = CustomerRepository.from_session(session)
@@ -384,6 +385,7 @@ async def _backfill_seats(
     seats_found = 0
     count = 0
     orphaned_customer_ids: set[uuid.UUID] = set()
+    billing_customer_ids_with_seats: set[uuid.UUID] = set()
 
     for base_stmt in [sub_seats_stmt, order_seats_stmt]:
         offset = 0
@@ -440,13 +442,20 @@ async def _backfill_seats(
                         seat.email,
                     )
                     seat.member_id = member.id
-                else:
-                    continue
+                # else: no customer and no email — just set customer_id below
 
                 seat.customer_id = billing_customer_id
+                billing_customer_ids_with_seats.add(billing_customer_id)
                 count += 1
 
             await session.flush()
+
+    # Set billing customers with seats to team type
+    for billing_cid in billing_customer_ids_with_seats:
+        billing_customer = await customer_repo.get_by_id(billing_cid)
+        if billing_customer is not None and billing_customer.type != CustomerType.team:
+            billing_customer.type = CustomerType.team
+    await session.flush()
 
     log.info(
         "organization.backfill_members.step_b_complete",

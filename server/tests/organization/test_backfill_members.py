@@ -9,7 +9,11 @@ from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerSeat
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrant
-from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
+from polar.models.customer import (
+    CustomerOAuthAccount,
+    CustomerOAuthPlatform,
+    CustomerType,
+)
 from polar.models.customer_seat import SeatStatus
 from polar.models.license_key import LicenseKey
 from polar.models.member import Member, MemberRole
@@ -1175,3 +1179,769 @@ class TestBackfillMembers:
         refreshed_customer = await session.get(Customer, seat_holder_customer.id)
         assert refreshed_customer is not None
         assert refreshed_customer.deleted_at is None
+
+
+@pytest.mark.asyncio
+class TestBackfillMembersB2C:
+    """B2C scenario: individual customers with direct (non-seat-based) subscriptions."""
+
+    async def test_creates_owner_member_per_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Each B2C customer gets an owner member."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        c1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="alice@b2c.com",
+            stripe_customer_id="stripe_b2c_1",
+        )
+        c2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="bob@b2c.com",
+            stripe_customer_id="stripe_b2c_2",
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        for cid in [c1.id, c2.id]:
+            stmt = select(Member).where(
+                Member.customer_id == cid,
+                Member.role == MemberRole.owner,
+                Member.deleted_at.is_(None),
+            )
+            result = await session.execute(stmt)
+            members = result.scalars().all()
+            assert len(members) == 1
+
+    async def test_customer_type_is_individual(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """B2C customers should have type=individual after backfill."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-type@test.com",
+            stripe_customer_id="stripe_b2c_type",
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed = await session.get(Customer, customer.id)
+        assert refreshed is not None
+        assert refreshed.type == CustomerType.individual
+
+    async def test_benefits_linked_to_owner_member_same_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Benefits linked to owner member with customer_id unchanged."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-benefits@test.com",
+            stripe_customer_id="stripe_b2c_ben",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        # customer_id should remain the same (no transfer for B2C)
+        assert refreshed_grant.customer_id == customer.id
+        assert refreshed_grant.member_id is not None
+
+        # Member should be the owner member of the same customer
+        member = await session.get(Member, refreshed_grant.member_id)
+        assert member is not None
+        assert member.customer_id == customer.id
+        assert member.role == MemberRole.owner
+
+    async def test_oauth_copied_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """OAuth accounts on customer are copied to the owner member."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-oauth@test.com",
+            stripe_customer_id="stripe_b2c_oauth",
+        )
+        oauth = CustomerOAuthAccount(
+            access_token="gh_b2c_token",
+            account_id="b2c_123",
+            account_username="b2c_ghuser",
+        )
+        customer.set_oauth_account(oauth, CustomerOAuthPlatform.github)
+        await save_fixture(customer)
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        stmt = select(Member).where(
+            Member.customer_id == customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        owner = result.scalar_one()
+
+        member_oauth = owner.get_oauth_account("b2c_123", CustomerOAuthPlatform.github)
+        assert member_oauth is not None
+        assert member_oauth.access_token == "gh_b2c_token"
+        assert member_oauth.account_username == "b2c_ghuser"
+
+    async def test_license_keys_linked_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """B2C license keys should not be transferred (same customer)."""
+        organization = await create_organization(
+            save_fixture, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-lk@test.com",
+            stripe_customer_id="stripe_b2c_lk",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            description="B2C license key",
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        license_key = LicenseKey(
+            organization_id=organization.id,
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            key="POLAR-B2C-KEY-001",
+        )
+        await save_fixture(license_key)
+        lk_id = license_key.id
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # License key customer_id unchanged for B2C
+        refreshed_lk = await session.get(LicenseKey, lk_id)
+        assert refreshed_lk is not None
+        assert refreshed_lk.customer_id == customer.id
+
+
+@pytest.mark.asyncio
+class TestBackfillMembersB2B:
+    """B2B scenario: team customers with seat-based subscriptions."""
+
+    async def test_creates_owner_member_for_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Billing customer gets an owner member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_owner",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=2
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        stmt = select(Member).where(
+            Member.customer_id == billing.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        assert len(result.scalars().all()) == 1
+
+    async def test_customer_type_set_to_team(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Billing customer with seats should have type=team after backfill."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing-type@b2b.com",
+            stripe_customer_id="stripe_b2b_type",
+        )
+        seat_holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder-type@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_type",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=seat_holder,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed = await session.get(Customer, billing.id)
+        assert refreshed is not None
+        assert refreshed.type == CustomerType.team
+
+    async def test_seat_creates_member_under_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Each seat holder gets a member under the billing customer."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_seat_member",
+        )
+        holder1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder1@b2b.com",
+            stripe_customer_id="stripe_b2b_h1",
+        )
+        holder2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder2@b2b.com",
+            stripe_customer_id="stripe_b2b_h2",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=2
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder1,
+            claimed_at=utc_now(),
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder2,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Each seat holder should have a member (role=member) under billing customer
+        stmt = select(Member).where(
+            Member.customer_id == billing.id,
+            Member.role == MemberRole.member,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        members = result.scalars().all()
+        assert len(members) == 2
+
+        member_emails = {m.email for m in members}
+        assert "holder1@b2b.com" in member_emails
+        assert "holder2@b2b.com" in member_emails
+
+    async def test_seat_assigned_to_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """After backfill, each seat has member_id pointing to its member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_seat_assign",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_assign",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_seat = await session.get(CustomerSeat, seat.id)
+        assert refreshed_seat is not None
+        assert refreshed_seat.member_id is not None
+
+        # Member should be under billing customer with holder's email
+        member = await session.get(Member, refreshed_seat.member_id)
+        assert member is not None
+        assert member.customer_id == billing.id
+        assert member.email == "holder@b2b.com"
+        assert member.role == MemberRole.member
+
+    async def test_seat_customer_id_points_to_billing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """After backfill, seat customer_id is updated to billing customer."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_seat_cid",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_cid",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        # Before backfill, seat points to holder
+        assert seat.customer_id == holder.id
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_seat = await session.get(CustomerSeat, seat.id)
+        assert refreshed_seat is not None
+        assert refreshed_seat.customer_id == billing.id
+
+    async def test_benefits_moved_to_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Seat holder benefits are transferred to the billing customer
+        and linked to the seat member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_ben_move",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_ben",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.custom,
+            description="B2B seat benefit",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        # Grant under old seat-holder customer
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=holder,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        # customer_id transferred to billing customer
+        assert refreshed_grant.customer_id == billing.id
+        # member_id points to seat member
+        assert refreshed_grant.member_id is not None
+
+        member = await session.get(Member, refreshed_grant.member_id)
+        assert member is not None
+        assert member.customer_id == billing.id
+        assert member.email == "holder@b2b.com"
+        assert member.role == MemberRole.member
+
+    async def test_license_keys_moved_to_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """B2B license keys are transferred from seat holder to billing
+        customer and linked to the seat member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_lk_move",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder-lk@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_lk",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            description="B2B license key benefit",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        # Grant and license key under old seat holder
+        await create_benefit_grant(
+            save_fixture,
+            customer=holder,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        license_key = LicenseKey(
+            organization_id=organization.id,
+            customer_id=holder.id,
+            benefit_id=benefit.id,
+            key="POLAR-B2B-KEY-001",
+        )
+        await save_fixture(license_key)
+        lk_id = license_key.id
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_lk = await session.get(LicenseKey, lk_id)
+        assert refreshed_lk is not None
+        # License key transferred to billing customer
+        assert refreshed_lk.customer_id == billing.id
+        # License key linked to seat member
+        assert refreshed_lk.member_id is not None
+
+        member = await session.get(Member, refreshed_lk.member_id)
+        assert member is not None
+        assert member.customer_id == billing.id
+        assert member.email == "holder-lk@b2b.com"
+        assert member.role == MemberRole.member
+
+    async def test_oauth_copied_to_seat_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Seat holder OAuth accounts are copied to the seat member."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_oauth_move",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="holder-oauth@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_oauth",
+        )
+        oauth = CustomerOAuthAccount(
+            access_token="discord_b2b_token",
+            account_id="b2b_discord_99",
+            account_username="b2b_discord_user",
+            refresh_token="b2b_refresh",
+        )
+        holder.set_oauth_account(oauth, CustomerOAuthPlatform.discord)
+        await save_fixture(holder)
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        # Find seat member
+        stmt = select(Member).where(
+            Member.customer_id == billing.id,
+            Member.email == "holder-oauth@b2b.com",
+            Member.role == MemberRole.member,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        seat_member = result.scalar_one()
+
+        member_oauth = seat_member.get_oauth_account(
+            "b2b_discord_99", CustomerOAuthPlatform.discord
+        )
+        assert member_oauth is not None
+        assert member_oauth.access_token == "discord_b2b_token"
+        assert member_oauth.account_username == "b2b_discord_user"
+        assert member_oauth.refresh_token == "b2b_refresh"
+
+    async def test_orphaned_seat_holders_soft_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Seat holder customers with no own subscriptions/orders are soft-deleted."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "member_model_enabled": True,
+                "seat_based_pricing_enabled": True,
+            },
+        )
+        billing = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@b2b.com",
+            stripe_customer_id="stripe_b2b_orphan",
+        )
+        holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="orphan@b2b.com",
+            stripe_customer_id="stripe_b2b_holder_orphan",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing, seats=1
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription,
+            status=SeatStatus.claimed,
+            customer=holder,
+            claimed_at=utc_now(),
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed = await session.get(Customer, holder.id)
+        assert refreshed is not None
+        assert refreshed.deleted_at is not None
+
+        # Billing customer should NOT be soft-deleted
+        billing_refreshed = await session.get(Customer, billing.id)
+        assert billing_refreshed is not None
+        assert billing_refreshed.deleted_at is None

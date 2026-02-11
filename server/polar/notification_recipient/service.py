@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.user import User
 from polar.postgres import AsyncSession
@@ -35,22 +34,16 @@ class NotificationRecipientService:
     ) -> NotificationRecipient:
         repository = NotificationRecipientRepository.from_session(session)
 
-        errors: list[ValidationError] = []
-
-        if await repository.get_by_expo_token(
+        existing = await repository.get_by_expo_token(
             notification_recipient_create.expo_push_token
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "expo_push_token"),
-                    "msg": "A notification recipient with this Expo push token already exists.",
-                    "input": notification_recipient_create.expo_push_token,
-                }
-            )
+        )
 
-        if errors:
-            raise PolarRequestValidationError(errors)
+        if existing:
+            if existing.user_id == auth_subject.subject.id:
+                return existing
+            # Token registered by another user (same device, different account)
+            # Remove the old registration so we can create a new one
+            await repository.soft_delete(existing, flush=True)
 
         return await repository.create(
             NotificationRecipient(

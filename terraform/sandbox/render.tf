@@ -202,6 +202,7 @@ module "sandbox" {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
     api_token           = var.tinybird_api_token
+    read_token          = var.tinybird_read_token
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace

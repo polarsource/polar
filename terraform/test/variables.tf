@@ -282,3 +282,9 @@ variable "tinybird_events_read" {
   type        = bool
   default     = false
 }
+
+variable "tinybird_read_token" {
+  description = "Tinybird Read Token"
+  type        = string
+  sensitive   = true
+}

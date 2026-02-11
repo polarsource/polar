@@ -152,7 +152,7 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": ["guides/encore", "guides/nextjs", "guides/laravel"]
+                "pages": ["guides/encore", "guides/laravel", "guides/nextjs"]
               },
               {
                 "group": "Webhooks",

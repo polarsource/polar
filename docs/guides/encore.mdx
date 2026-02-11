@@ -10,6 +10,10 @@ Because Encore defines infrastructure in code and provides built-in distributed 
 
 Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data.
 
+## Examples
+
+- [With Encore](https://github.com/polarsource/examples/tree/main/with-encore)
+
 ## Install the Polar JavaScript SDK
 
 To get started, install the Polar JavaScript SDK and the webhook verification library:
@@ -22,14 +26,15 @@ npm install @polar-sh/sdk standardwebhooks
 
 Encore has built-in secrets management that works consistently across local development and cloud environments.
 
-### Polar Access Token
+### Polar Access Token and Mode
 
-To authenticate with Polar, you need to create an access token. You can create an organization access token from your organization settings.
+To authenticate with Polar, you need to create an access token and specify if it's production or sandbox mode. You can create an [organization access token from your organization settings](/integrate/oat).
 
 Add it to Encore using the secrets manager:
 
 ```bash Terminal
 encore secret set --type local POLAR_ACCESS_TOKEN
+encore secret set --type local POLAR_MODE
 ```
 
 ### Polar Webhook Secret
@@ -46,27 +51,26 @@ When deploying to Encore Cloud, you'll set production secrets through the dashbo
 
 To interact with the Polar API, create a new instance of the `Polar` class using Encore's secret management.
 
-```typescript
-// payments/polar.ts
+```tsx title="payments/polar.ts"
 import { Polar } from "@polar-sh/sdk";
 import { secret } from "encore.dev/config";
 
+const POLAR_MODE = secret("POLAR_MODE");
 const POLAR_ACCESS_TOKEN = secret("POLAR_ACCESS_TOKEN");
 
 export const polar = new Polar({
   accessToken: POLAR_ACCESS_TOKEN(),
-  server: "sandbox", // Use 'production' or omit the parameter when going live
+  server: POLAR_MODE as "sandbox" | "production",
 });
 ```
 
-Remember to replace `sandbox` with `production` when you're ready to switch to the production environment.
+Remember to set `POLAR_MODE` as `production` when you're ready to switch to the production environment.
 
 ## Generating Polar Checkout Sessions
 
 Create a checkout endpoint that creates a Polar checkout session and redirects the user.
 
-```typescript
-// payments/payments.ts
+```tsx title="payments/payments.ts"
 import { api, APIError } from "encore.dev/api";
 import { polar } from "./polar";
 
@@ -136,8 +140,7 @@ encore secret set --type local POLAR_WEBHOOK_SECRET
 
 Encore webhook handlers use `api.raw()` to access the raw request body, which is required for signature verification.
 
-```typescript
-// payments/payments.ts
+```tsx title="payments/payments.ts"
 import { api } from "encore.dev/api";
 import { secret } from "encore.dev/config";
 import { Webhook } from "standardwebhooks";
@@ -235,7 +238,3 @@ Encore automatically provisions all the infrastructure your app needs. Remember 
 2. Update the `server` parameter from `"sandbox"` to `"production"` in your Polar client
 3. Update your webhook URL in Polar to point to your production domain
 4. Update `successUrl` to your production URL
-
-## Conclusion
-
-If you have issues or need support, feel free to join [our Discord](https://discord.gg/Pnhfz3UThd).

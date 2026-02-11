@@ -1,0 +1,21 @@
+NODE materialize
+SQL >
+    SELECT
+        id,
+        ingested_at,
+        timestamp,
+        name,
+        organization_id,
+        customer_id,
+        external_customer_id,
+        cost_amount,
+        cost_currency,
+        llm_vendor,
+        llm_model,
+        llm_input_tokens,
+        llm_output_tokens
+    FROM events_by_ingested_at
+    WHERE cost_amount IS NOT NULL
+
+TYPE MATERIALIZED
+DATASOURCE user_events_costs

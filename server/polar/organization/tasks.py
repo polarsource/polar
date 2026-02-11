@@ -181,7 +181,12 @@ async def organization_deletion_requested(
         )
 
 
-@actor(actor_name="organization.backfill_members", priority=TaskPriority.LOW)
+@actor(
+    actor_name="organization.backfill_members",
+    priority=TaskPriority.LOW,
+    time_limit=3_600_000,  # 1 hour (default is 10 min)
+    max_retries=3,
+)
 async def backfill_members(organization_id: uuid.UUID) -> None:
     """
     Backfill members when member_model_enabled is turned on for an organization.
@@ -191,6 +196,7 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
     B. Migrate active (non-revoked) seats to member model format
     C. Link existing benefit grants to the correct member (owner or seat)
     """
+    # Validate organization and feature flag
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
@@ -205,35 +211,59 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
             )
             return
 
-        log.info(
-            "organization.backfill_members.start",
-            organization_id=str(organization_id),
-        )
+    log.info(
+        "organization.backfill_members.start",
+        organization_id=str(organization_id),
+    )
 
-        # Step A: Create owner members for all customers without one
+    # Each step runs in its own session/transaction so that:
+    # - partial progress is preserved on failure (task is idempotent)
+    # - DB connections are released between steps
+
+    # Step A: Create owner members for all customers without one
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
         owner_members_created = await _backfill_owner_members(session, organization)
 
-        # Step B: Migrate active seats
+    # Step B: Migrate active seats
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
         seats_migrated, orphaned_customer_ids = await _backfill_seats(
             session, organization
         )
 
-        # Step C: Link benefit grants to correct members (owner or seat)
+    # Step C: Link benefit grants to correct members (owner or seat)
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
         grants_linked = await _backfill_benefit_grants(session, organization)
 
-        # Step D: Soft-delete orphaned seat-holder customers
+    # Step D: Soft-delete orphaned seat-holder customers
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
         customers_deleted = await _cleanup_orphaned_seat_customers(
             session, organization, orphaned_customer_ids
         )
 
-        log.info(
-            "organization.backfill_members.complete",
-            organization_id=str(organization_id),
-            owner_members_created=owner_members_created,
-            seats_migrated=seats_migrated,
-            grants_linked=grants_linked,
-            customers_deleted=customers_deleted,
-        )
+    log.info(
+        "organization.backfill_members.complete",
+        organization_id=str(organization_id),
+        owner_members_created=owner_members_created,
+        seats_migrated=seats_migrated,
+        grants_linked=grants_linked,
+        customers_deleted=customers_deleted,
+    )
 
 
 async def _backfill_owner_members(
@@ -267,7 +297,7 @@ async def _backfill_owner_members(
         async for customer in results:
             customers_found += 1
             member = await member_service.create_owner_member(
-                session, customer, organization
+                session, customer, organization, send_webhook=False
             )
             if member is not None:
                 if customer._oauth_accounts:
@@ -331,6 +361,7 @@ async def _backfill_seats(
             Product.organization_id == organization.id,
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.subscription_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
         )
         .order_by(CustomerSeat.id)
     )
@@ -345,6 +376,7 @@ async def _backfill_seats(
             Product.organization_id == organization.id,
             CustomerSeat.status != SeatStatus.revoked,
             CustomerSeat.order_id.is_not(None),
+            CustomerSeat.member_id.is_(None),
         )
         .order_by(CustomerSeat.id)
     )

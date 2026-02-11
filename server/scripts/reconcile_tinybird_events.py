@@ -20,6 +20,11 @@ async def reconcile(
     end: str = typer.Argument(
         help="End datetime (ISO 8601, e.g. 2025-01-15T11:00:00 or 2025-01-15T11:00:00.123456)",
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Output event IDs that would be reconciled without actually reconciling them",
+    ),
 ) -> None:
     configure_script_logging()
 
@@ -30,20 +35,30 @@ async def reconcile(
         typer.echo("Error: start must be before end", err=True)
         raise typer.Exit(code=1)
 
-    typer.echo(f"Reconciling events from {parsed_start} to {parsed_end}")
+    if dry_run:
+        typer.echo(f"[DRY RUN] Checking events from {parsed_start} to {parsed_end}")
+    else:
+        typer.echo(f"Reconciling events from {parsed_start} to {parsed_end}")
 
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
 
     try:
         async with sessionmaker() as session:
-            total_checked, total_missing = await reconcile_events(
-                session, parsed_start, parsed_end
+            total_checked, total_missing, missing_ids = await reconcile_events(
+                session, parsed_start, parsed_end, dry_run=dry_run
             )
 
-        typer.echo(
-            f"Done. Checked {total_checked} events, re-ingested {total_missing}."
-        )
+        if dry_run:
+            typer.echo(
+                f"Checked {total_checked} events, found {total_missing} missing:"
+            )
+            for event_id in missing_ids:
+                typer.echo(event_id)
+        else:
+            typer.echo(
+                f"Done. Checked {total_checked} events, re-ingested {total_missing}."
+            )
     finally:
         await engine.dispose()
 

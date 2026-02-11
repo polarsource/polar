@@ -8,7 +8,7 @@ export const de = {
     form: {
       email: 'E-Mail',
       cardholderName: 'Karteninhabername',
-      purchasingAsBusiness: 'Ich kaufe als Unternehmen',
+      purchasingAsBusiness: 'Als Unternehmen kaufen',
       businessName: 'Firmenname',
       billingAddress: {
         label: 'Rechnungsadresse',
@@ -35,7 +35,7 @@ export const de = {
       payWhatYouWant: 'Zahle, was du möchtest',
       total: 'Gesamtbetrag',
       everyInterval: 'Alle {interval}',
-      additionalMeteredUsage: 'Zusätzliche nutzungsbasierte Abrechnung',
+      additionalMeteredUsage: 'Zusätzliche Nutzung',
       perUnit: '/ Einheit',
       discount: {
         duration: {
@@ -140,13 +140,12 @@ export const de = {
         activations: 'Aktivierungen',
         activationDeleted: 'Lizenzschlüssel-Aktivierung gelöscht',
         activationDeletedDescription: 'Aktivierung erfolgreich gelöscht',
-        activationDeactivationFailed:
-          'Deaktivierung der Aktivierung fehlgeschlagen',
+        activationDeactivationFailed: 'Deaktivierung fehlgeschlagen',
       },
     },
     confirmation: {
       confirmPayment: 'Zahlung bestätigen',
-      processingTitle: 'Wir bearbeiten Ihre Bestellung',
+      processingTitle: 'Bestellung in Bearbeitung',
       successTitle: 'Ihre Bestellung war erfolgreich!',
       failedTitle:
         'Bei der Bearbeitung Ihrer Bestellung ist ein Problem aufgetreten',
@@ -175,9 +174,9 @@ export const de = {
   },
   intervals: {
     short: {
-      day: 'Tg',
-      week: 'Wo',
-      month: 'Mon',
+      day: 'T.',
+      week: 'W.',
+      month: 'M.',
       year: 'J',
     },
     long: {

@@ -14,5 +14,4 @@ SCHEMA >
     `llm_output_tokens` Nullable(Int64)
 
 ENGINE MergeTree
-ENGINE_PARTITION_KEY toYYYYMM(timestamp)
 ENGINE_SORTING_KEY organization_id, timestamp

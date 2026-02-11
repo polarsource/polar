@@ -13,7 +13,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
       migrations: ${{ steps.filter.outputs.migrations }}
@@ -39,7 +39,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
 
@@ -78,7 +78,7 @@ jobs:
     name: "Server: Tinybird Schema 🐦"
     needs: changes
     if: needs.changes.outputs.tinybird == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     services:
       tinybird:
         image: tinybirdco/tinybird-local:latest
@@ -107,7 +107,7 @@ jobs:
     name: "Server: Migration Check 📚"
     needs: changes
     if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Check for disallowed files
         id: check
@@ -188,7 +188,7 @@ jobs:
     name: "Server: Tests 🐍"
     needs: changes
     if: needs.changes.outputs.server == 'true'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing

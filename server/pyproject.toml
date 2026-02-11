@@ -80,6 +80,7 @@ dev = [
   "freezegun>=1.5.1",
   "fakeredis[lua]>=2.26.1",
   "pytest-xdist[psutil]>=3.6.1",
+  "pytest-split>=0.11.0",
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
   "polar-sdk==0.27.3",

@@ -13,7 +13,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     outputs:
       server: ${{ steps.filter.outputs.server }}
       migrations: ${{ steps.filter.outputs.migrations }}
@@ -39,7 +39,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
@@ -78,7 +78,7 @@ jobs:
     name: "Server: Tinybird Schema 🐦"
     needs: changes
     if: needs.changes.outputs.tinybird == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     services:
       tinybird:
         image: tinybirdco/tinybird-local:latest
@@ -107,7 +107,7 @@ jobs:
     name: "Server: Migration Check 📚"
     needs: changes
     if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Check for disallowed files
         id: check
@@ -185,11 +185,15 @@ jobs:
         run: exit 1
 
   test:
-    name: "Server: Tests 🐍"
+    name: "Server: Tests 🐍 (${{ matrix.group }}/2)"
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2]
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
@@ -295,4 +299,4 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest -n auto --no-cov
+        run: uv run pytest -n auto --no-cov --splits 2 --group ${{ matrix.group }}

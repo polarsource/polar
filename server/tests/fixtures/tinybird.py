@@ -64,7 +64,7 @@ def tinybird_workspace() -> Generator[str, None, None]:
     token_response.raise_for_status()
     workspace_token = token_response.json()["token"]
 
-    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy"]
+    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy", "--wait"]
     for attempt in range(3):
         result = subprocess.run(
             deploy_cmd,

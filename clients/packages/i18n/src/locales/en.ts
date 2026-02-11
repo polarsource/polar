@@ -32,7 +32,10 @@ export const en = {
       taxId: 'Tax ID',
       discountCode: 'Discount code',
       optional: 'Optional',
-      apply: 'Apply',
+      apply: {
+        value: 'Apply',
+        _llmContext: 'Button text for applying a discount code.',
+      },
       fieldRequired: 'This field is required',
     },
     pricing: {
@@ -40,7 +43,11 @@ export const en = {
       taxableAmount: 'Taxable amount',
       taxes: 'Taxes',
       free: 'Free',
-      payWhatYouWant: 'Pay what you want',
+      payWhatYouWant: {
+        value: 'Pay what you want',
+        _llmContext:
+          'A pricing type where the customer can choose how much to pay.',
+      },
       total: 'Total',
       everyInterval: 'Every {interval}',
       additionalMeteredUsage: 'Additional metered usage',
@@ -196,12 +203,12 @@ export const en = {
     },
   },
   benefitTypes: {
-    usage: { displayName: 'Usage' },
-    license_keys: { displayName: 'License Keys' },
-    github_repository: { displayName: 'GitHub Repository Access' },
-    discord: { displayName: 'Discord Invite' },
-    downloadables: { displayName: 'File Downloads' },
-    custom: { displayName: 'Custom' },
-    meter_credit: { displayName: 'Meter Credits' },
+    usage: 'Usage',
+    license_keys: 'License Keys',
+    github_repository: 'GitHub Repository Access',
+    discord: 'Discord Invite',
+    downloadables: 'File Downloads',
+    custom: 'Custom',
+    meter_credit: 'Meter Credits',
   },
 } as const

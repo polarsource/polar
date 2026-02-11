@@ -3,10 +3,10 @@ export const es = {
     footer: {
       poweredBy: 'Desarrollado por',
       merchantOfRecord:
-        'Este pedido es procesado por nuestro distribuidor en línea y comerciante oficial, Polar, quien también gestiona las consultas y devoluciones relacionadas con el pedido.',
+        'Este pedido es procesado por nuestro revendedor en línea y Comerciante registrado, Polar, quien también gestiona las consultas y devoluciones relacionadas con el pedido.',
     },
     form: {
-      email: 'Correo electrónico',
+      email: 'Email',
       cardholderName: 'Nombre del titular de la tarjeta',
       purchasingAsBusiness: 'Compro como empresa',
       businessName: 'Nombre de la empresa',
@@ -35,7 +35,7 @@ export const es = {
       payWhatYouWant: 'Paga lo que quieras',
       total: 'Total',
       everyInterval: 'Cada {interval}',
-      additionalMeteredUsage: 'Uso medido adicional',
+      additionalMeteredUsage: 'Consumo adicional',
       perUnit: '/ unidad',
       discount: {
         duration: {
@@ -105,8 +105,8 @@ export const es = {
       granting: 'Concediendo beneficios...',
       requestNewInvite: 'Solicitar nueva invitación',
       retryIn: {
-        '=1': 'Intentar de nuevo en # segundo',
-        other: 'Intentar de nuevo en # segundos',
+        '=1': 'Inténtalo de nuevo en # segundo',
+        other: 'Inténtalo de nuevo en # segundos',
         _mode: 'plural',
       },
       connectNewAccount: 'Conectar nueva cuenta',
@@ -145,21 +145,21 @@ export const es = {
     },
     confirmation: {
       confirmPayment: 'Confirmar pago',
-      processingTitle: 'Estamos procesando su pedido',
-      successTitle: '¡Su pedido se realizó con éxito!',
-      failedTitle: 'Ocurrió un problema al procesar su pedido',
-      processingDescription: 'Espere mientras confirmamos su pago.',
-      successDescription: 'Ahora es elegible para los beneficios de {product}.',
-      failedDescription:
-        'Por favor, inténtelo de nuevo o póngase en contacto con soporte.',
+      processingTitle: 'Estamos procesando tu pedido',
+      successTitle: '¡Tu pedido se realizó correctamente!',
+      failedTitle: 'Ocurrió un problema al procesar tu pedido',
+      processingDescription: 'Espera mientras confirmamos tu pago.',
+      successDescription:
+        'Ahora puedes disfrutar de los beneficios de {product}.',
+      failedDescription: 'Inténtalo de nuevo o contacta con soporte.',
     },
     loading: {
       processingOrder: 'Procesando pedido...',
       processingPayment: 'Procesando pago',
       paymentSuccessful:
-        '¡Pago realizado con éxito! Preparando sus productos...',
+        '¡Pago realizado con éxito! Preparando tus productos...',
       confirmationTokenFailed:
-        'No se pudo crear el token de confirmación, inténtelo de nuevo más tarde.',
+        'Error al crear el token de confirmación, inténtalo de nuevo más tarde.',
     },
     cta: {
       startTrial: 'Iniciar prueba',
@@ -171,10 +171,10 @@ export const es = {
   },
   intervals: {
     short: {
-      day: 'día',
+      day: 'd',
       week: 'sem',
-      month: 'mes',
-      year: 'año',
+      month: 'm',
+      year: 'a',
     },
     long: {
       day: 'día',
@@ -183,34 +183,20 @@ export const es = {
       year: 'año',
     },
     frequency: {
-      day: 'diariamente',
-      week: 'semanalmente',
-      month: 'mensualmente',
-      year: 'anualmente',
+      day: 'diario',
+      week: 'semanal',
+      month: 'mensual',
+      year: 'anual',
       everyOrdinalInterval: 'cada {ordinal} {interval}',
     },
   },
   benefitTypes: {
-    usage: {
-      displayName: 'Uso',
-    },
-    license_keys: {
-      displayName: 'Claves de licencia',
-    },
-    github_repository: {
-      displayName: 'Acceso a repositorio de GitHub',
-    },
-    discord: {
-      displayName: 'Invitación a Discord',
-    },
-    downloadables: {
-      displayName: 'Descargas de archivos',
-    },
-    custom: {
-      displayName: 'Personalizado',
-    },
-    meter_credit: {
-      displayName: 'Créditos de medición',
-    },
+    usage: 'Uso',
+    license_keys: 'Claves de licencia',
+    github_repository: 'Acceso a repositorio de GitHub',
+    discord: 'Invitación a Discord',
+    downloadables: 'Descargas de archivos',
+    custom: 'Personalizado',
+    meter_credit: 'Créditos de consumo',
   },
 } as const

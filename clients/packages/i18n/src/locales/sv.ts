@@ -3,7 +3,7 @@ export const sv = {
     footer: {
       poweredBy: 'Drivs av',
       merchantOfRecord:
-        'Denna order behandlas av vår online-återförsäljare och Merchant of Record, Polar, som också hanterar orderrelaterade frågor och returer.',
+        'Denna beställning behandlas av vår online-återförsäljare & Merchant of Record, Polar, som också hanterar beställningsrelaterade frågor och returer.',
     },
     form: {
       email: 'E-post',
@@ -53,10 +53,10 @@ export const sv = {
       },
     },
     trial: {
-      ends: 'Testperioden avslutas {endDate}',
+      ends: 'Testperioden slutar {endDate}',
       duration: {
         days: {
-          '=1': '# dags testperiod',
+          '=1': '# dagars testperiod',
           other: '# dagars testperiod',
           _mode: 'plural',
         },
@@ -81,10 +81,10 @@ export const sv = {
       label: 'Ange ett rimligt pris',
       minimum: 'Minst {amount}',
       amountMinimum: 'Beloppet måste vara minst {min}',
-      amountFreeOrMinimum: 'Beloppet måste vara 0 kr eller minst {min}',
+      amountFreeOrMinimum: 'Beloppet måste vara 0 eller minst {min}',
     },
     productSwitcher: {
-      billedRecurring: 'Debiteras {frequency}',
+      billedRecurring: 'Faktureras {frequency}',
       oneTimePurchase: 'Engångsköp',
     },
     card: {
@@ -139,20 +139,20 @@ export const sv = {
         activations: 'Aktiveringar',
         activationDeleted: 'Licensnyckelaktivering borttagen',
         activationDeletedDescription: 'Aktivering borttagen',
-        activationDeactivationFailed: 'Deaktivering av aktivering misslyckades',
+        activationDeactivationFailed: 'Avaktivering misslyckades',
       },
     },
     confirmation: {
       confirmPayment: 'Bekräfta betalning',
-      processingTitle: 'Vi behandlar din order',
-      successTitle: 'Din order lyckades!',
-      failedTitle: 'Ett problem uppstod vid behandling av din order',
+      processingTitle: 'Vi behandlar din beställning',
+      successTitle: 'Din beställning lyckades!',
+      failedTitle: 'Ett problem uppstod vid behandlingen av din beställning',
       processingDescription: 'Vänta medan vi bekräftar din betalning.',
       successDescription: 'Du är nu berättigad till förmånerna med {product}.',
-      failedDescription: 'Försök igen eller kontakta support.',
+      failedDescription: 'Försök igen eller kontakta supporten.',
     },
     loading: {
-      processingOrder: 'Behandlar order...',
+      processingOrder: 'Behandlar beställning...',
       processingPayment: 'Behandlar betalning',
       paymentSuccessful: 'Betalning lyckades! Förbereder dina produkter...',
       confirmationTokenFailed:
@@ -162,8 +162,8 @@ export const sv = {
       startTrial: 'Starta testperiod',
       subscribeNow: 'Prenumerera nu',
       payNow: 'Betala nu',
-      getFree: 'Få gratis',
-      paymentsUnavailable: 'Betalningar är för närvarande inte tillgängliga',
+      getFree: 'Skaffa gratis',
+      paymentsUnavailable: 'Betalningar är för närvarande otillgängliga',
     },
   },
   intervals: {
@@ -188,26 +188,12 @@ export const sv = {
     },
   },
   benefitTypes: {
-    usage: {
-      displayName: 'Användning',
-    },
-    license_keys: {
-      displayName: 'Licensnycklar',
-    },
-    github_repository: {
-      displayName: 'Åtkomst till GitHub-repository',
-    },
-    discord: {
-      displayName: 'Discord-inbjudan',
-    },
-    downloadables: {
-      displayName: 'Filnedladdningar',
-    },
-    custom: {
-      displayName: 'Anpassad',
-    },
-    meter_credit: {
-      displayName: 'Mätarkrediter',
-    },
+    usage: 'Användning',
+    license_keys: 'Licensnycklar',
+    github_repository: 'Åtkomst till GitHub-repository',
+    discord: 'Discord-inbjudan',
+    downloadables: 'Filnedladdningar',
+    custom: 'Anpassad',
+    meter_credit: 'Mätarkrediter',
   },
 } as const

@@ -35,7 +35,7 @@ export const nl = {
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       everyInterval: 'Elke {interval}',
-      additionalMeteredUsage: 'Extra gemeten gebruik',
+      additionalMeteredUsage: 'Aanvullend verbruik',
       perUnit: '/ eenheid',
       discount: {
         duration: {
@@ -79,7 +79,7 @@ export const nl = {
     },
     pwywForm: {
       label: 'Noem een eerlijke prijs',
-      minimum: '{amount} minimaal',
+      minimum: 'Minimaal {amount}',
       amountMinimum: 'Bedrag moet minimaal {min} zijn',
       amountFreeOrMinimum: 'Bedrag moet $0 of minimaal {min} zijn',
     },
@@ -118,14 +118,14 @@ export const nl = {
       },
       discord: {
         connect: 'Discord-account koppelen',
-        open: 'Open Discord',
+        open: 'Discord openen',
         selectAccount: 'Selecteer een Discord-account',
       },
       licenseKey: {
         copy: 'Kopiëren',
         copiedToClipboard: 'Gekopieerd naar klembord',
         copiedToClipboardDescription:
-          'Licentiesleutel is gekopieerd naar het klembord',
+          'Licentiesleutel is gekopieerd naar klembord',
         loading: 'Laden...',
         status: 'Status',
         statusGranted: 'Toegekend',
@@ -137,10 +137,10 @@ export const nl = {
         neverValidated: 'Nooit gevalideerd',
         expiryDate: 'Vervaldatum',
         noExpiry: 'Geen vervaldatum',
-        activations: 'Activaties',
+        activations: 'Activeringen',
         activationDeleted: 'Activering licentiesleutel verwijderd',
         activationDeletedDescription: 'Activering succesvol verwijderd',
-        activationDeactivationFailed: 'Deactivering activering mislukt',
+        activationDeactivationFailed: 'Deactivering van activatie mislukt',
       },
     },
     confirmation: {
@@ -161,13 +161,13 @@ export const nl = {
       paymentSuccessful:
         'Betaling succesvol! Uw producten worden klaargemaakt...',
       confirmationTokenFailed:
-        'Het aanmaken van een bevestigingstoken is mislukt, probeer het later opnieuw.',
+        'Mislukt om bevestigingstoken aan te maken, probeer het later opnieuw.',
     },
     cta: {
       startTrial: 'Start proefperiode',
       subscribeNow: 'Nu abonneren',
       payNow: 'Nu betalen',
-      getFree: 'Gratis krijgen',
+      getFree: 'Gratis verkrijgen',
       paymentsUnavailable: 'Betalingen zijn momenteel niet beschikbaar',
     },
   },
@@ -193,26 +193,12 @@ export const nl = {
     },
   },
   benefitTypes: {
-    usage: {
-      displayName: 'Gebruik',
-    },
-    license_keys: {
-      displayName: 'Licentiesleutels',
-    },
-    github_repository: {
-      displayName: 'Toegang tot GitHub-repository',
-    },
-    discord: {
-      displayName: 'Discord-uitnodiging',
-    },
-    downloadables: {
-      displayName: 'Bestandsdownloads',
-    },
-    custom: {
-      displayName: 'Aangepast',
-    },
-    meter_credit: {
-      displayName: 'Metertegoed',
-    },
+    usage: 'Gebruik',
+    license_keys: 'Licentiesleutels',
+    github_repository: 'Toegang tot GitHub-repository',
+    discord: 'Discord-uitnodiging',
+    downloadables: 'Bestandsdownloads',
+    custom: 'Aangepast',
+    meter_credit: 'Metertegoed',
   },
 } as const

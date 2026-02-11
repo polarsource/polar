@@ -43,6 +43,7 @@ HARD REQUIREMENTS
    - HTML tags, attributes, entities
    - Line breaks (\n), <br>, <br/>, &nbsp;
    - Translate only the human-readable text
+   - If the value starts with a lowercase letter, also start the translated string with a lowercase letter, except when the {TARGET_LOCALE} explicitly requires an uppercase letter (like for nouns in German)
 
 6. Do NOT translate:
    - Brand names

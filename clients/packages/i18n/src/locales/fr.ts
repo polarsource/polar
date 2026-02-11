@@ -3,7 +3,7 @@ export const fr = {
     footer: {
       poweredBy: 'Propulsé par',
       merchantOfRecord:
-        'Cette commande est traitée par notre revendeur en ligne et commerçant officiel, Polar, qui gère également les demandes et retours liés à la commande.',
+        'Cette commande est traitée par notre revendeur en ligne et commerçant enregistré, Polar, qui gère également les demandes et les retours liés à la commande.',
     },
     form: {
       email: 'E-mail',
@@ -21,8 +21,8 @@ export const fr = {
         province: 'Province',
         stateProvince: 'État / Province',
       },
-      taxId: "Numéro d'identification fiscale",
-      discountCode: 'Code promo',
+      taxId: 'ID fiscal',
+      discountCode: 'Code de réduction',
       optional: 'Facultatif',
       apply: 'Appliquer',
       fieldRequired: 'Ce champ est obligatoire',
@@ -35,7 +35,7 @@ export const fr = {
       payWhatYouWant: 'Payez ce que vous voulez',
       total: 'Total',
       everyInterval: 'Tous les {interval}',
-      additionalMeteredUsage: 'Utilisation mesurée supplémentaire',
+      additionalMeteredUsage: 'Consommation supplémentaire',
       perUnit: '/ unité',
       discount: {
         duration: {
@@ -78,7 +78,7 @@ export const fr = {
       },
     },
     pwywForm: {
-      label: 'Fixez un prix juste',
+      label: 'Définissez un prix juste',
       minimum: '{amount} minimum',
       amountMinimum: "Le montant doit être d'au moins {min}",
       amountFreeOrMinimum: "Le montant doit être de 0 $ ou d'au moins {min}",
@@ -112,12 +112,12 @@ export const fr = {
       connectNewAccount: 'Connecter un nouveau compte',
       requestMyInvite: 'Demander mon invitation',
       github: {
-        connect: 'Connecter le compte GitHub',
-        goTo: 'Aller au dépôt {repository}',
+        connect: 'Connecter un compte GitHub',
+        goTo: 'Accéder à {repository}',
         selectAccount: 'Sélectionner un compte GitHub',
       },
       discord: {
-        connect: 'Connecter le compte Discord',
+        connect: 'Connecter un compte Discord',
         open: 'Ouvrir Discord',
         selectAccount: 'Sélectionner un compte Discord',
       },
@@ -128,13 +128,13 @@ export const fr = {
           'La clé de licence a été copiée dans le presse-papiers',
         loading: 'Chargement...',
         status: 'Statut',
-        statusGranted: 'Accordée',
-        statusRevoked: 'Révoquée',
-        statusDisabled: 'Désactivée',
+        statusGranted: 'Accordé',
+        statusRevoked: 'Révoqué',
+        statusDisabled: 'Désactivé',
         usage: 'Utilisation',
         validations: 'Validations',
-        validatedAt: 'Validée le',
-        neverValidated: 'Jamais validée',
+        validatedAt: 'Validé le',
+        neverValidated: 'Jamais validé',
         expiryDate: "Date d'expiration",
         noExpiry: "Pas d'expiration",
         activations: 'Activations',
@@ -147,7 +147,7 @@ export const fr = {
     confirmation: {
       confirmPayment: 'Confirmer le paiement',
       processingTitle: 'Nous traitons votre commande',
-      successTitle: 'Votre commande a été traitée avec succès !',
+      successTitle: 'Votre commande a été effectuée avec succès !',
       failedTitle:
         'Un problème est survenu lors du traitement de votre commande',
       processingDescription:
@@ -164,7 +164,7 @@ export const fr = {
         'Échec de la création du jeton de confirmation, veuillez réessayer plus tard.',
     },
     cta: {
-      startTrial: "Démarrer l'essai",
+      startTrial: "Commencer l'essai",
       subscribeNow: "S'abonner maintenant",
       payNow: 'Payer maintenant',
       getFree: 'Obtenir gratuitement',
@@ -185,34 +185,20 @@ export const fr = {
       year: 'an',
     },
     frequency: {
-      day: 'quotidien',
-      week: 'hebdomadaire',
-      month: 'mensuel',
-      year: 'annuel',
+      day: 'quotidiennement',
+      week: 'hebdomadairement',
+      month: 'mensuellement',
+      year: 'annuellement',
       everyOrdinalInterval: 'tous les {ordinal} {interval}',
     },
   },
   benefitTypes: {
-    usage: {
-      displayName: 'Utilisation',
-    },
-    license_keys: {
-      displayName: 'Clés de licence',
-    },
-    github_repository: {
-      displayName: 'Accès au dépôt GitHub',
-    },
-    discord: {
-      displayName: 'Invitation Discord',
-    },
-    downloadables: {
-      displayName: 'Téléchargements de fichiers',
-    },
-    custom: {
-      displayName: 'Personnalisé',
-    },
-    meter_credit: {
-      displayName: 'Crédits de compteur',
-    },
+    usage: 'Utilisation',
+    license_keys: 'Clés de licence',
+    github_repository: 'Accès au dépôt GitHub',
+    discord: 'Invitation Discord',
+    downloadables: 'Téléchargements de fichiers',
+    custom: 'Personnalisé',
+    meter_credit: 'Crédits de consommation',
   },
 } as const

@@ -65,7 +65,9 @@ class PaymentStatusColumn(
         return None
 
 
-class PaymentProcessorIdColumn(datatable.DatatableAttrColumn[Payment, PaymentSortProperty]):
+class PaymentProcessorIdColumn(
+    datatable.DatatableAttrColumn[Payment, PaymentSortProperty]
+):
     def __init__(self) -> None:
         super().__init__("processor_id", "Processor ID", clipboard=True)
 
@@ -124,16 +126,12 @@ def payments_datatable(
     items: Sequence[Payment],
 ) -> Generator[None]:
     d = datatable.Datatable[Payment, PaymentSortProperty](
-        datatable.DatatableAttrColumn(
-            "id", "ID", clipboard=True
-        ),
+        datatable.DatatableAttrColumn("id", "ID", clipboard=True),
         datatable.DatatableDateTimeColumn(
             "created_at", "Created", sorting=PaymentSortProperty.created_at
         ),
         PaymentStatusColumn("Status"),
-        datatable.DatatableAttrColumn(
-            "processor", "Processor"
-        ),
+        datatable.DatatableAttrColumn("processor", "Processor"),
         PaymentProcessorIdColumn(),
         datatable.DatatableCurrencyColumn(
             "amount", "Amount", sorting=PaymentSortProperty.amount

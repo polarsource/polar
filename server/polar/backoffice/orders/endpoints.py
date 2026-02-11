@@ -13,7 +13,7 @@ from polar.invoice.service import invoice as invoice_service
 from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Customer, Order, Organization, Payment, Product
+from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository

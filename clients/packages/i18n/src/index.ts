@@ -107,13 +107,17 @@ export type Translations = typeof en
 type LeafPaths<T> = T extends object
   ? '_mode' extends keyof T
     ? never
-    : {
-        [K in keyof T & string]: '_mode' extends keyof T[K]
-          ? K
-          : T[K] extends object
-            ? `${K}.${LeafPaths<T[K]>}`
-            : K
-      }[keyof T & string]
+    : '_llmContext' extends keyof T
+      ? never
+      : {
+          [K in keyof T & string]: '_mode' extends keyof T[K]
+            ? K
+            : '_llmContext' extends keyof T[K]
+              ? K
+              : T[K] extends object
+                ? `${K}.${LeafPaths<T[K]>}`
+                : K
+        }[keyof T & string]
   : never
 
 export type TranslationKey = LeafPaths<Translations>
@@ -159,14 +163,20 @@ type PluralShape<T> = {
       : T[K]
 }
 
+type AnnotatedEntryShape<T extends { value: string }> =
+  | StringShape<T['value']>
+  | { value: StringShape<T['value']>; _llmContext: string }
+
 type LocaleShape<T> = {
   [K in keyof T]: T[K] extends { _mode: string }
     ? PluralShape<T[K]>
-    : T[K] extends string
-      ? StringShape<T[K]>
-      : T[K] extends object
-        ? LocaleShape<T[K]>
-        : T[K]
+    : T[K] extends { value: string; _llmContext: string }
+      ? AnnotatedEntryShape<T[K]>
+      : T[K] extends string
+        ? StringShape<T[K]>
+        : T[K] extends object
+          ? LocaleShape<T[K]>
+          : T[K]
 }
 
 // Get all required interpolation keys for a translation key
@@ -175,9 +185,11 @@ type InterpolationKeys<K extends TranslationKey> =
   ValueAtPath<Translations, K> extends infer V
     ? '_mode' extends keyof V
       ? 'count' | ExtractPlaceholders<V[Exclude<keyof V, '_mode'>] & string>
-      : V extends string
-        ? ExtractPlaceholders<V>
-        : never
+      : V extends { value: infer S extends string }
+        ? ExtractPlaceholders<S>
+        : V extends string
+          ? ExtractPlaceholders<V>
+          : never
     : never
 
 type InterpolationValue = string | number | { toString(): string }
@@ -245,8 +257,14 @@ export const useTranslations = (locale: AcceptedLocale): TranslateFn => {
         return result
       }
 
-      // Regular string template
-      const template = value as string
+      // Handle annotated entries — extract the value string
+      const template =
+        typeof value === 'object' &&
+        value !== null &&
+        'value' in value &&
+        typeof (value as { value: unknown }).value === 'string'
+          ? (value as { value: string }).value
+          : (value as string)
 
       if (!interpolations) {
         return template

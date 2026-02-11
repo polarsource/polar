@@ -12,8 +12,16 @@ export const en = {
       businessName: 'Business name',
       billingAddress: {
         label: 'Billing address',
-        line1: 'Line 1',
-        line2: 'Line 2',
+        line1: {
+          value: 'Line 1',
+          _llmContext:
+            'The first line of the billing address, typically including street address and number.',
+        },
+        line2: {
+          value: 'Line 2',
+          _llmContext:
+            'The second line of the billing address, typically used for apartment, suite, unit, building, floor, etc.',
+        },
         postalCode: 'Postal code',
         city: 'City',
         country: 'Country',
@@ -159,7 +167,7 @@ export const en = {
         'Failed to create confirmation token, please try again later.',
     },
     cta: {
-      startTrial: 'Start Trial',
+      startTrial: 'Start trial',
       subscribeNow: 'Subscribe now',
       payNow: 'Pay now',
       getFree: 'Get for free',

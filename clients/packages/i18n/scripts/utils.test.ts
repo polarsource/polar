@@ -24,8 +24,8 @@ describe('getStringValue', () => {
     expect(getStringValue({ value: 'hello' })).toBe('hello')
   })
 
-  it('extracts value from object with value and llmContext', () => {
-    expect(getStringValue({ value: 'hello', llmContext: 'context' })).toBe(
+  it('extracts value from object with value and _llmContext', () => {
+    expect(getStringValue({ value: 'hello', _llmContext: 'context' })).toBe(
       'hello',
     )
   })
@@ -36,16 +36,18 @@ describe('hasLlmContext', () => {
     expect(hasLlmContext('hello')).toBe(false)
   })
 
-  it('returns false for object without llmContext', () => {
+  it('returns false for object without _llmContext', () => {
     expect(hasLlmContext({ value: 'hello' })).toBe(false)
   })
 
-  it('returns true for object with llmContext', () => {
-    expect(hasLlmContext({ value: 'hello', llmContext: 'context' })).toBe(true)
+  it('returns true for object with _llmContext', () => {
+    expect(hasLlmContext({ value: 'hello', _llmContext: 'context' })).toBe(true)
   })
 
-  it('returns false for object with undefined llmContext', () => {
-    expect(hasLlmContext({ value: 'hello', llmContext: undefined })).toBe(false)
+  it('returns false for object with undefined _llmContext', () => {
+    expect(hasLlmContext({ value: 'hello', _llmContext: undefined })).toBe(
+      false,
+    )
   })
 })
 
@@ -156,27 +158,27 @@ describe('flattenKeys', () => {
 
   it('handles object entries with value property', () => {
     const obj = {
-      greeting: { value: 'hello', llmContext: 'A greeting message' },
+      greeting: { value: 'hello', _llmContext: 'A greeting message' },
     }
     const result = flattenKeys(obj)
 
     expect(result.get('greeting')).toEqual({
       value: 'hello',
-      llmContext: 'A greeting message',
+      _llmContext: 'A greeting message',
     })
   })
 
   it('handles mixed string and object entries', () => {
     const obj = {
       simple: 'hello',
-      complex: { value: 'world', llmContext: 'context' },
+      complex: { value: 'world', _llmContext: 'context' },
     }
     const result = flattenKeys(obj)
 
     expect(result.get('simple')).toBe('hello')
     expect(result.get('complex')).toEqual({
       value: 'world',
-      llmContext: 'context',
+      _llmContext: 'context',
     })
   })
 
@@ -220,7 +222,7 @@ describe('flattenKeysToStrings', () => {
   it('extracts string values from all entries', () => {
     const obj = {
       simple: 'hello',
-      complex: { value: 'world', llmContext: 'context' },
+      complex: { value: 'world', _llmContext: 'context' },
     }
     const result = flattenKeysToStrings(obj)
 
@@ -464,17 +466,44 @@ describe('prepareForLLM', () => {
     })
   })
 
-  it('includes llmContext when available', () => {
+  it('includes _llmContext when available', () => {
     const sourceKeys = new Map<
       string,
-      string | { value: string; llmContext?: string }
-    >([['greeting', { value: 'hello', llmContext: 'A friendly greeting' }]])
+      string | { value: string; _llmContext?: string }
+    >([['greeting', { value: 'hello', _llmContext: 'A friendly greeting' }]])
 
     const result = prepareForLLM(sourceKeys, ['greeting'])
 
     expect(result).toEqual({
-      greeting: { value: 'hello', llmContext: 'A friendly greeting' },
+      greeting: { value: 'hello', _llmContext: 'A friendly greeting' },
     })
+  })
+
+  it('_llmContext survives JSON serialization (as sent to LLM)', () => {
+    const sourceKeys = new Map<
+      string,
+      string | { value: string; _llmContext?: string }
+    >([
+      [
+        'checkout.form.email',
+        {
+          value: 'Email',
+          _llmContext: 'Label for the email input on checkout',
+        },
+      ],
+      ['checkout.form.submit', 'Submit'],
+    ])
+
+    const result = prepareForLLM(sourceKeys, [
+      'checkout.form.email',
+      'checkout.form.submit',
+    ])
+    const json = JSON.parse(JSON.stringify(result))
+
+    expect(json['checkout.form.email']._llmContext).toBe(
+      'Label for the email input on checkout',
+    )
+    expect(json['checkout.form.submit']._llmContext).toBeUndefined()
   })
 
   it('only includes requested keys', () => {

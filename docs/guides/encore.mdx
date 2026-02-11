@@ -29,7 +29,7 @@ To authenticate with Polar, you need to create an access token. You can create a
 Add it to Encore using the secrets manager:
 
 ```bash Terminal
-encore secret set --type local PolarAccessToken
+encore secret set --type local POLAR_ACCESS_TOKEN
 ```
 
 ### Polar Webhook Secret
@@ -37,7 +37,7 @@ encore secret set --type local PolarAccessToken
 You'll need a webhook secret to verify incoming webhook events. We'll set this up in the webhook section below.
 
 ```bash Terminal
-encore secret set --type local PolarWebhookSecret
+encore secret set --type local POLAR_WEBHOOK_SECRET
 ```
 
 When deploying to Encore Cloud, you'll set production secrets through the dashboard or CI/CD pipeline.
@@ -51,10 +51,10 @@ To interact with the Polar API, create a new instance of the `Polar` class using
 import { Polar } from "@polar-sh/sdk";
 import { secret } from "encore.dev/config";
 
-const polarAccessToken = secret("PolarAccessToken");
+const POLAR_ACCESS_TOKEN = secret("POLAR_ACCESS_TOKEN");
 
 export const polar = new Polar({
-  accessToken: polarAccessToken(),
+  accessToken: POLAR_ACCESS_TOKEN(),
   server: "sandbox", // Use 'production' or omit the parameter when going live
 });
 ```
@@ -118,7 +118,7 @@ polar listen http://localhost:4000/webhooks/polar
 Make sure to copy the webhook secret and set it using:
 
 ```bash Terminal
-encore secret set --type local PolarWebhookSecret
+encore secret set --type local POLAR_WEBHOOK_SECRET
 ```
 
 ### Add Webhook Endpoint
@@ -129,7 +129,7 @@ encore secret set --type local PolarWebhookSecret
 4. Add the secret key to Encore:
 
 ```bash Terminal
-encore secret set --type local PolarWebhookSecret
+encore secret set --type local POLAR_WEBHOOK_SECRET
 ```
 
 ### Setting up the Webhook handler
@@ -142,7 +142,7 @@ import { api } from "encore.dev/api";
 import { secret } from "encore.dev/config";
 import { Webhook } from "standardwebhooks";
 
-const polarWebhookSecret = secret("PolarWebhookSecret");
+const POLAR_WEBHOOK_SECRET = secret("POLAR_WEBHOOK_SECRET");
 
 export const webhooks = api.raw(
   { expose: true, path: "/webhooks/polar", method: "POST" },
@@ -164,7 +164,7 @@ export const webhooks = api.raw(
     let payload: any;
     try {
       const base64Secret = Buffer.from(
-        polarWebhookSecret().trim(),
+        POLAR_WEBHOOK_SECRET().trim(),
         "utf-8"
       ).toString("base64");
       const wh = new Webhook(base64Secret);

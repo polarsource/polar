@@ -316,10 +316,14 @@ class OrganizationPublicBase(OrganizationBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def localization_enabled(self) -> bool:
+    def default_locale(self) -> str:
         if self.feature_settings is None:
-            return False
-        return bool(self.feature_settings.checkout_localization_enabled)
+            return "en-US"
+
+        if self.feature_settings.checkout_localization_enabled:
+            return "auto"
+
+        return "en-US"
 
 
 class Organization(OrganizationBase):

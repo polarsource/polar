@@ -8991,8 +8991,8 @@ export interface components {
        * @description Whether customers can update their subscriptions from the customer portal.
        */
       allow_customer_updates: boolean
-      /** Localization Enabled */
-      readonly localization_enabled: boolean
+      /** Default Locale */
+      readonly default_locale: string
     }
     /**
      * BenefitType
@@ -10328,8 +10328,8 @@ export interface components {
        * @description Whether customers can update their subscriptions from the customer portal.
        */
       allow_customer_updates: boolean
-      /** Localization Enabled */
-      readonly localization_enabled: boolean
+      /** Default Locale */
+      readonly default_locale: string
     }
     /**
      * CheckoutPriceCreate
@@ -14228,8 +14228,8 @@ export interface components {
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /** @description Feature flags for the customer portal. */
       organization_features?: components['schemas']['CustomerOrganizationFeatureSettings']
-      /** Localization Enabled */
-      readonly localization_enabled: boolean
+      /** Default Locale */
+      readonly default_locale: string
     }
     /**
      * CustomerOrganizationData

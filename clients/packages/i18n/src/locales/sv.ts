@@ -7,13 +7,13 @@ export const sv = {
     },
     form: {
       email: 'Email',
-      cardholderName: 'Kortinnehavarens namn',
+      cardholderName: 'Kortinnehavare',
       purchasingAsBusiness: 'Jag köper som företag',
       businessName: 'Företagsnamn',
       billingAddress: {
         label: 'Faktureringsadress',
         postalCode: 'Postnummer',
-        city: 'Ort',
+        city: 'Stad',
         country: 'Land',
         state: 'Delstat',
         province: 'Län',
@@ -123,8 +123,8 @@ export const sv = {
       },
       licenseKey: {
         copy: 'Kopiera',
-        copiedToClipboard: 'Kopierat till urklipp',
-        copiedToClipboardDescription: 'Licensnyckeln kopierades till urklipp',
+        copiedToClipboard: 'Kopierat',
+        copiedToClipboardDescription: 'Licensnyckeln är kopierad',
         loading: 'Laddar...',
         status: 'Status',
         statusGranted: 'Tilldelad',

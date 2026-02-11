@@ -270,12 +270,25 @@ class OrganizationService:
             organization.onboarded_at = datetime.now(UTC)
 
         if update_schema.feature_settings is not None:
+            old_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
+
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
                     mode="json", exclude_unset=True, exclude_none=True
                 ),
             }
+
+            new_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
+            if not old_member_model and new_member_model:
+                enqueue_job(
+                    "organization.backfill_members",
+                    organization_id=organization.id,
+                )
 
         if update_schema.subscription_settings is not None:
             organization.subscription_settings = update_schema.subscription_settings

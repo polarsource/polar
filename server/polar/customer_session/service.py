@@ -16,6 +16,7 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
 from polar.models import Customer, CustomerSession, MemberSession
 from polar.postgres import AsyncSession
@@ -73,6 +74,14 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             owner_member = await member_repository.get_owner_by_customer_id(
                 session, customer.id
             )
+            if owner_member is None:
+                # Auto-create owner member (graceful fallback during migration)
+                owner_member = await member_service.create_owner_member(
+                    session, customer, customer.organization
+                )
+                # Ensure customer relationship is loaded for response serialization
+                if owner_member is not None:
+                    owner_member.customer = customer
             if owner_member is None:
                 raise PolarRequestValidationError(
                     [

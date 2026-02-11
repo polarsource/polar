@@ -50,6 +50,7 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.worker import enqueue_job
 
 from ..components import button, modal
 from ..layout import layout
@@ -1339,6 +1340,9 @@ async def edit_features(
                 feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
+            old_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
             updated_feature_settings = {
                 **organization.feature_settings,
                 **feature_flags,
@@ -1349,6 +1353,16 @@ async def edit_features(
                 organization,
                 update_dict={"feature_settings": updated_feature_settings},
             )
+
+            # Trigger backfill when member_model transitions False → True
+            new_member_model = updated_feature_settings.get(
+                "member_model_enabled", False
+            )
+            if not old_member_model and new_member_model:
+                enqueue_job(
+                    "organization.backfill_members",
+                    organization_id=organization.id,
+                )
             redirect_url = (
                 str(
                     request.url_for(

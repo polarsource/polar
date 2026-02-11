@@ -398,13 +398,13 @@ class TestRequestMemberEnabledOrg:
                 customer_id=other_customer.id,
             )
 
-    async def test_soft_deleted_member_not_found(
+    async def test_soft_deleted_member_auto_creates_new_owner(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that soft-deleted members are not found."""
+        """Test that soft-deleted members trigger auto-creation of a new owner member."""
         from polar.kit.utils import utc_now
 
         organization.feature_settings = {"member_model_enabled": True}
@@ -422,10 +422,11 @@ class TestRequestMemberEnabledOrg:
         )
         await save_fixture(member)
 
-        with pytest.raises(CustomerDoesNotExist):
-            await customer_session_service.request(
-                session, "deleted@example.com", organization.id
-            )
+        # Graceful fallback: auto-creates a new owner member since customer exists
+        customer_session_code, code = await customer_session_service.request(
+            session, "deleted@example.com", organization.id
+        )
+        assert customer_session_code is not None
 
     async def test_member_email_different_from_customer_email(
         self,
@@ -458,10 +459,65 @@ class TestRequestMemberEnabledOrg:
         # The code should be stored with the member's email
         assert customer_session_code.email == "member@example.com"
 
-        # Request with customer email should NOT work (member has different email)
+        # Request with customer email should now auto-create an owner member
+        # (graceful fallback finds the customer and creates a new owner member)
+        customer_session_code2, code2 = await customer_session_service.request(
+            session, "customer@example.com", organization.id
+        )
+        assert customer_session_code2 is not None
+        assert customer_session_code2.customer.id == customer.id
+
+
+@pytest.mark.asyncio
+class TestRequestMemberEnabledOrgGracefulFallback:
+    """Tests for the graceful fallback: auto-create owner member for existing customers."""
+
+    async def test_auto_creates_owner_member_for_existing_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When member_model enabled but customer has no member, auto-create one."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture, organization=organization, email="existing@example.com"
+        )
+
+        # No member created manually — the fallback should create it
+        customer_session_code, code = await customer_session_service.request(
+            session, "existing@example.com", organization.id
+        )
+
+        assert customer_session_code is not None
+        # Verify an owner member was created
+        from sqlalchemy import select
+
+        stmt = select(Member).where(
+            Member.customer_id == customer.id,
+            Member.role == MemberRole.owner,
+            Member.deleted_at.is_(None),
+        )
+        result = await session.execute(stmt)
+        members = result.scalars().all()
+        assert len(members) == 1
+        assert members[0].email == "existing@example.com"
+
+    async def test_still_raises_when_no_customer_exists(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """When no customer exists for the email, should still raise."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
         with pytest.raises(CustomerDoesNotExist):
             await customer_session_service.request(
-                session, "customer@example.com", organization.id
+                session, "nobody@example.com", organization.id
             )
 
 

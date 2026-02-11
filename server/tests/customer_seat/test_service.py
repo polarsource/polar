@@ -720,12 +720,12 @@ class TestAssignSeat:
         assert seat.member_id is None
 
     @pytest.mark.asyncio
-    async def test_assign_seat_rejects_customer_id_when_member_model_enabled(
+    async def test_assign_seat_with_customer_id_backward_compat_member_model(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
     ) -> None:
-        """Test that assign_seat rejects customer_id when member_model_enabled is true."""
+        """Test that assign_seat auto-resolves customer_id to email when member_model_enabled."""
         organization = await create_organization(
             save_fixture,
             feature_settings={
@@ -751,11 +751,94 @@ class TestAssignSeat:
             save_fixture,
             organization=organization,
             email="seat@example.com",
+            stripe_customer_id="stripe_seat_compat",
+        )
+
+        # Should succeed — auto-resolves customer_id to email and creates member
+        seat = await seat_service.assign_seat(
+            session, subscription, customer_id=seat_customer.id
+        )
+        assert seat is not None
+        assert seat.email == "seat@example.com"
+        assert seat.member_id is not None
+        assert seat.customer_id == billing_customer.id
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_with_external_customer_id_backward_compat(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that assign_seat auto-resolves external_customer_id when member_model_enabled."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
+        )
+        seat_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ext-seat@example.com",
+            external_id="ext-123",
+            stripe_customer_id="stripe_ext_seat",
+        )
+
+        seat = await seat_service.assign_seat(
+            session, subscription, external_customer_id="ext-123"
+        )
+        assert seat is not None
+        assert seat.email == "ext-seat@example.com"
+        assert seat.member_id is not None
+        assert seat.customer_id == billing_customer.id
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_customer_id_not_found_member_model(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        """Test that non-existent customer_id raises error even with backward compat."""
+        organization = await create_organization(
+            save_fixture,
+            feature_settings={
+                "seat_based_pricing_enabled": True,
+                "member_model_enabled": True,
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        billing_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing@example.com",
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=billing_customer, seats=5
         )
 
         with pytest.raises(InvalidSeatAssignmentRequest):
             await seat_service.assign_seat(
-                session, subscription, customer_id=seat_customer.id
+                session, subscription, customer_id=uuid.uuid4()
             )
 
     @pytest.mark.asyncio

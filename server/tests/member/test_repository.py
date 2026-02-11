@@ -20,7 +20,7 @@ class TestListByEmailAndOrganization:
         repository = MemberRepository.from_session(session)
 
         members = await repository.list_by_email_and_organization(
-            "nonexistent@example.com", organization.id
+            session, "nonexistent@example.com", organization.id
         )
 
         assert len(members) == 0
@@ -46,7 +46,7 @@ class TestListByEmailAndOrganization:
 
         repository = MemberRepository.from_session(session)
         members = await repository.list_by_email_and_organization(
-            "test@example.com", organization.id
+            session, "test@example.com", organization.id
         )
 
         assert len(members) == 1
@@ -87,7 +87,7 @@ class TestListByEmailAndOrganization:
 
         repository = MemberRepository.from_session(session)
         members = await repository.list_by_email_and_organization(
-            shared_email, organization.id
+            session, shared_email, organization.id
         )
 
         assert len(members) == 2
@@ -117,14 +117,14 @@ class TestListByEmailAndOrganization:
 
         # Test uppercase
         members_upper = await repository.list_by_email_and_organization(
-            "USER@EXAMPLE.COM", organization.id
+            session, "USER@EXAMPLE.COM", organization.id
         )
         assert len(members_upper) == 1
         assert members_upper[0].id == member.id
 
         # Test mixed case
         members_mixed = await repository.list_by_email_and_organization(
-            "User@Example.Com", organization.id
+            session, "User@Example.Com", organization.id
         )
         assert len(members_mixed) == 1
         assert members_mixed[0].id == member.id
@@ -150,7 +150,7 @@ class TestListByEmailAndOrganization:
 
         repository = MemberRepository.from_session(session)
         members = await repository.list_by_email_and_organization(
-            "deleted@example.com", organization.id
+            session, "deleted@example.com", organization.id
         )
 
         assert len(members) == 0
@@ -191,14 +191,14 @@ class TestListByEmailAndOrganization:
 
         # Query primary organization
         members_org1 = await repository.list_by_email_and_organization(
-            "shared@example.com", organization.id
+            session, "shared@example.com", organization.id
         )
         assert len(members_org1) == 1
         assert members_org1[0].id == member1.id
 
         # Query other organization
         members_org2 = await repository.list_by_email_and_organization(
-            "shared@example.com", other_org.id
+            session, "shared@example.com", other_org.id
         )
         assert len(members_org2) == 1
         assert members_org2[0].id == member2.id
@@ -226,7 +226,7 @@ class TestListByEmailAndOrganization:
 
         repository = MemberRepository.from_session(session)
         members = await repository.list_by_email_and_organization(
-            "test@example.com", organization.id
+            session, "test@example.com", organization.id
         )
 
         assert len(members) == 1

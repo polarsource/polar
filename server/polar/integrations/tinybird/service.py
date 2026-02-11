@@ -171,8 +171,12 @@ RECONCILE_BATCH_SIZE = 1000
 
 
 async def reconcile_events(
-    session: AsyncReadSession, start: datetime, end: datetime
-) -> tuple[int, int]:
+    session: AsyncReadSession,
+    start: datetime,
+    end: datetime,
+    *,
+    dry_run: bool = False,
+) -> tuple[int, int, list[str]]:
     tb_sql = (
         "SELECT DISTINCT toString(id) AS id "
         "FROM events_by_ingested_at "
@@ -195,6 +199,7 @@ async def reconcile_events(
 
     total_checked = 0
     total_missing = 0
+    missing_ids: list[str] = []
     offset = 0
 
     while True:
@@ -209,7 +214,9 @@ async def reconcile_events(
         total_missing += len(missing)
 
         if missing:
-            await ingest_events(missing)
+            missing_ids.extend(str(e.id) for e in missing)
+            if not dry_run:
+                await ingest_events(missing)
 
         if len(batch) < RECONCILE_BATCH_SIZE:
             break
@@ -222,9 +229,10 @@ async def reconcile_events(
         total_checked=total_checked,
         start=start.isoformat(),
         end=end.isoformat(),
+        dry_run=dry_run,
     )
 
-    return total_checked, total_missing
+    return total_checked, total_missing, missing_ids
 
 
 def _compile(statement: Select[Any]) -> tuple[str, str]:

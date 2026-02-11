@@ -1,0 +1,8 @@
+SCHEMA >
+    `organization_id` UUID,
+    `hour` DateTime,
+    `customer_id` Nullable(UUID),
+    `external_customer_id` Nullable(String)
+
+ENGINE MergeTree
+ENGINE_SORTING_KEY organization_id, hour

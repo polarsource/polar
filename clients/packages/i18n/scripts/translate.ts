@@ -22,7 +22,7 @@ import {
   unflattenKeys,
 } from './utils'
 
-import { LOCALE_NAMES, SUPPORTED_LOCALES } from '../src/config'
+import { LOCALE_NAMES, SUPPORTED_LOCALES, SupportedLocale } from '../src/config'
 
 dotenv.config({ path: path.join(import.meta.dirname, '../.env.local') })
 dotenv.config({ path: path.join(import.meta.dirname, '../.env') })
@@ -350,7 +350,7 @@ function validate(
 
 async function main() {
   // Import source locale
-  const enModule = await import('../src/locales/en.ts')
+  const enModule = await import('../src/locales/en')
   const en = enModule.en as NestedObject
 
   const locks = JSON.parse(fs.readFileSync(LOCKS_FILE, 'utf-8')) as Record<
@@ -362,13 +362,9 @@ async function main() {
 
   const sourceKeys = flattenKeys(en)
   const pluralPaths = findPluralPaths(en as Record<string, unknown>)
-  const targetLocales = SUPPORTED_LOCALES.filter((l): l is string => l !== 'en')
-
-  // Safety guard: never write to en.ts
-  if (targetLocales.includes('en')) {
-    log.error('Cannot translate to English (source locale)')
-    process.exit(1)
-  }
+  const targetLocales = SUPPORTED_LOCALES.filter(
+    (l): l is Exclude<SupportedLocale, 'en'> => l !== 'en',
+  )
 
   await translate(
     en,

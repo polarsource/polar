@@ -8,6 +8,7 @@ from pydantic import (
     BeforeValidator,
     Field,
     StringConstraints,
+    computed_field,
     model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
@@ -98,6 +99,10 @@ class OrganizationFeatureSettings(Schema):
         description=(
             "If this organization has multiple presentment currencies enabled"
         ),
+    )
+    checkout_localization_enabled: bool = Field(
+        False,
+        description="If this organization has checkout localization enabled",
     )
 
 
@@ -308,6 +313,13 @@ class OrganizationPublicBase(OrganizationBase):
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
     notification_settings: SkipJsonSchema[OrganizationNotificationSettings]
     customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def localization_enabled(self) -> bool:
+        if self.feature_settings is None:
+            return False
+        return bool(self.feature_settings.checkout_localization_enabled)
 
 
 class Organization(OrganizationBase):

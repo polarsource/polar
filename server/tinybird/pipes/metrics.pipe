@@ -113,7 +113,35 @@ SQL >
             {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
             {{ String(tz, 'UTC') }}
         )
-        {% if defined(customer_ids) and customer_ids != '' %}
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
             AND e.customer_id IN (
                 SELECT
                     arrayJoin(
@@ -123,8 +151,7 @@ SQL >
                         )
                     )
             )
-        {% end %}
-        {% if defined(external_customer_ids) and external_customer_ids != '' %}
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
             AND e.external_customer_id IN (
                 SELECT
                     arrayJoin(

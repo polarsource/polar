@@ -33,11 +33,13 @@ class TinybirdClient:
         api_url: str,
         clickhouse_url: str,
         api_token: str | None,
+        read_token: str | None,
         clickhouse_username: str,
         clickhouse_token: str | None,
     ) -> None:
         self._api_url = api_url
         self._api_token = api_token
+        self._read_token = read_token
         self._clickhouse_url = clickhouse_url
         self._clickhouse_username = clickhouse_username
         self._clickhouse_token = clickhouse_token
@@ -45,13 +47,24 @@ class TinybirdClient:
             clickhouse_connect.driver.asyncclient.AsyncClient | None
         ) = None
 
-        self.client = httpx.AsyncClient(
+        self._write_client = httpx.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {api_token}"} if api_token else {},
             timeout=httpx.Timeout(15.0, connect=3.0),
             transport=(
                 httpx.MockTransport(lambda _: httpx.Response(200))
                 if api_token is None
+                else None
+            ),
+        )
+
+        self._read_client = httpx.AsyncClient(
+            base_url=api_url,
+            headers={"Authorization": f"Bearer {read_token}"} if read_token else {},
+            timeout=httpx.Timeout(15.0, connect=3.0),
+            transport=(
+                httpx.MockTransport(lambda _: httpx.Response(200, json={"data": []}))
+                if read_token is None
                 else None
             ),
         )
@@ -84,7 +97,7 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "ENDPOINT")
-            response = await self.client.get(
+            response = await self._read_client.get(
                 f"/v0/pipes/{endpoint_name}.json",
                 params=params,
             )
@@ -119,7 +132,7 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "INSERT")
-            response = await self.client.post(
+            response = await self._write_client.post(
                 "/v0/events",
                 params={"name": datasource, "wait": str(wait).lower()},
                 content=ndjson,
@@ -156,7 +169,7 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "DELETE")
-            response = await self.client.post(
+            response = await self._write_client.post(
                 f"/v0/datasources/{datasource}/delete",
                 data={"delete_condition": delete_condition},
             )
@@ -164,7 +177,7 @@ class TinybirdClient:
             return response.json()
 
     async def get_job(self, job_id: str) -> dict[str, Any]:
-        response = await self.client.get(f"/v0/jobs/{job_id}")
+        response = await self._write_client.get(f"/v0/jobs/{job_id}")
         response.raise_for_status()
         return response.json()
 
@@ -173,6 +186,7 @@ client = TinybirdClient(
     api_url=settings.TINYBIRD_API_URL,
     clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
     api_token=settings.TINYBIRD_API_TOKEN,
+    read_token=settings.TINYBIRD_READ_TOKEN,
     clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
     clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
 )

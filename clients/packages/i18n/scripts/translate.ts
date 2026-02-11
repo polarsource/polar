@@ -35,7 +35,7 @@ const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
 async function callLLM(
   targetLocale: string,
-  sourceStrings: Record<string, { value: string; llmContext?: string }>,
+  sourceStrings: Record<string, { value: string; _llmContext?: string }>,
   prompt: string,
 ): Promise<Record<string, string>> {
   const localeName = LOCALE_NAMES[targetLocale] || targetLocale

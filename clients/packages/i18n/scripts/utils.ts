@@ -2,7 +2,7 @@
  * Shared utility functions for i18n scripts
  */
 
-export type EntryValue = string | { value: string; llmContext?: string }
+export type EntryValue = string | { value: string; _llmContext?: string }
 export type NestedObject = { [key: string]: EntryValue | NestedObject }
 export type TranslationCache = Record<string, Record<string, string>>
 
@@ -35,11 +35,11 @@ export function getStringValue(entry: EntryValue): string {
  */
 export function hasLlmContext(
   entry: EntryValue,
-): entry is { value: string; llmContext: string } {
+): entry is { value: string; _llmContext: string } {
   return (
     typeof entry === 'object' &&
-    'llmContext' in entry &&
-    entry.llmContext !== undefined
+    '_llmContext' in entry &&
+    entry._llmContext !== undefined
   )
 }
 
@@ -242,15 +242,15 @@ export function findOrphanedKeys(
 export function prepareForLLM(
   sourceKeys: Map<string, EntryValue>,
   keys: string[],
-): Record<string, { value: string; llmContext?: string }> {
-  const result: Record<string, { value: string; llmContext?: string }> = {}
+): Record<string, { value: string; _llmContext?: string }> {
+  const result: Record<string, { value: string; _llmContext?: string }> = {}
 
   for (const key of keys) {
     const entry = sourceKeys.get(key)
     if (!entry) continue
 
     if (hasLlmContext(entry)) {
-      result[key] = { value: entry.value, llmContext: entry.llmContext }
+      result[key] = { value: entry.value, _llmContext: entry._llmContext }
     } else {
       result[key] = { value: getStringValue(entry) }
     }

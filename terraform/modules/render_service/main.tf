@@ -184,6 +184,7 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_API_URL             = { value = var.tinybird_config.api_url }
     POLAR_TINYBIRD_CLICKHOUSE_URL      = { value = var.tinybird_config.clickhouse_url }
     POLAR_TINYBIRD_API_TOKEN           = { value = var.tinybird_config.api_token }
+    POLAR_TINYBIRD_READ_TOKEN          = { value = var.tinybird_config.read_token }
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }

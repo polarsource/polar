@@ -241,6 +241,7 @@ variable "tinybird_config" {
     api_url             = string
     clickhouse_url      = string
     api_token           = string
+    read_token          = string
     clickhouse_username = string
     clickhouse_token    = string
     workspace           = string

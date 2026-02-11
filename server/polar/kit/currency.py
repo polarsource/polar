@@ -49,17 +49,39 @@ def get_presentment_currency(country: str) -> PresentmentCurrency | None:
         return None
 
 
-_CURRENCY_DECIMAL_FACTORS: dict[str, int] = {
-    "aud": 100,
-    "cad": 100,
-    "chf": 100,
-    "eur": 100,
-    "inr": 100,
-    "gbp": 100,
-    "jpy": 1,
-    "sek": 100,
-    "usd": 100,
+_ZERO_DECIMAL_CURRENCIES: set[str] = {
+    "bif",
+    "clp",
+    "djf",
+    "gnf",
+    "jpy",
+    "kmf",
+    "krw",
+    "mga",
+    "pyg",
+    "rwf",
+    "ugx",
+    "vnd",
+    "vuv",
+    "xaf",
+    "xof",
+    "xpf",
 }
+
+
+def _get_currency_decimal_factor(currency: PresentmentCurrency | str) -> int:
+    """Get the decimal factor for a given currency.
+
+    Args:
+        currency: The currency code.
+
+    Returns:
+        The decimal factor (e.g., 100 for usd, 1 for jpy).
+    """
+    if currency.lower() in _ZERO_DECIMAL_CURRENCIES:
+        return 1
+    else:
+        return 100
 
 
 def format_currency(
@@ -80,7 +102,7 @@ def format_currency(
         The formatted currency string.
     """
     return _format_currency(
-        amount / _CURRENCY_DECIMAL_FACTORS[currency],
+        amount / _get_currency_decimal_factor(currency),
         currency.upper(),
         locale="en_US",
         decimal_quantization=decimal_quantization,

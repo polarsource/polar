@@ -100,7 +100,10 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
 }
 
 import { en } from './locales/en'
+import { es } from './locales/es'
+import { fr } from './locales/fr'
 import { nl } from './locales/nl'
+import { sv } from './locales/sv'
 
 export type Translations = typeof en
 
@@ -209,6 +212,9 @@ type TranslateFn = <K extends TranslationKey>(
 const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   en,
   nl,
+  sv,
+  fr,
+  es,
 }
 
 export function getTranslations(

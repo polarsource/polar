@@ -487,10 +487,11 @@ async def _transfer_benefit_records(
     session: AsyncSession,
     old_customer_id: uuid.UUID,
     new_customer_id: uuid.UUID,
+    new_member_id: uuid.UUID,
     benefit_ids: set[uuid.UUID],
 ) -> None:
     """Transfer benefit-specific records (license keys, downloadables)
-    from the old customer to the new billing customer."""
+    from the old customer to the new billing customer and member."""
     from polar.models.downloadable import Downloadable
     from polar.models.license_key import LicenseKey
 
@@ -502,6 +503,7 @@ async def _transfer_benefit_records(
     lk_result = await session.execute(lk_stmt)
     for lk in lk_result.scalars().all():
         lk.customer_id = new_customer_id
+        lk.member_id = new_member_id
 
     # Transfer downloadables
     dl_stmt = select(Downloadable).where(
@@ -511,6 +513,7 @@ async def _transfer_benefit_records(
     dl_result = await session.execute(dl_stmt)
     for dl in dl_result.scalars().all():
         dl.customer_id = new_customer_id
+        dl.member_id = new_member_id
 
 
 async def _backfill_benefit_grants(
@@ -574,17 +577,16 @@ async def _backfill_benefit_grants(
         async for grant in results:
             grants_found += 1
 
-            # Transfer grant to billing customer if it belongs to an old seat-holder
+            # Check if grant belongs to an old seat-holder customer
             billing_customer_id = await _get_billing_customer_id(grant)
-            if (
+            needs_transfer = (
                 billing_customer_id is not None
                 and grant.customer_id != billing_customer_id
-            ):
-                old_customer_id = grant.customer_id
+            )
+            old_customer_id = grant.customer_id if needs_transfer else None
+            if needs_transfer:
+                assert billing_customer_id is not None
                 grant.customer_id = billing_customer_id
-                await _transfer_benefit_records(
-                    session, old_customer_id, billing_customer_id, {grant.benefit_id}
-                )
 
             # Link to seat member or owner member
             seat_member_id = await _find_seat_member_for_grant(session, grant)
@@ -602,6 +604,19 @@ async def _backfill_benefit_grants(
                 if owner is not None:
                     grant.member_id = owner.id
                     count += 1
+
+            # Transfer benefit records now that we know the member
+            if needs_transfer and grant.member_id is not None:
+                assert old_customer_id is not None
+                assert billing_customer_id is not None
+                await _transfer_benefit_records(
+                    session,
+                    old_customer_id,
+                    billing_customer_id,
+                    grant.member_id,
+                    {grant.benefit_id},
+                )
+
             if count > 0 and count % _BACKFILL_BATCH_SIZE == 0:
                 await session.flush()
     finally:

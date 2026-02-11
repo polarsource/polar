@@ -838,15 +838,17 @@ class TestBackfillMembers:
         session.expunge_all()
         await backfill_members(organization.id)
 
-        # License key should be transferred to the billing customer
+        # License key should be transferred to the billing customer and member
         refreshed_lk = await session.get(LicenseKey, lk_id)
         assert refreshed_lk is not None
         assert refreshed_lk.customer_id == billing_customer.id
+        assert refreshed_lk.member_id is not None
 
         # Grant should also be transferred
         refreshed_grant = await session.get(BenefitGrant, grant.id)
         assert refreshed_grant is not None
         assert refreshed_grant.customer_id == billing_customer.id
+        assert refreshed_grant.member_id == refreshed_lk.member_id
 
     async def test_copies_oauth_accounts_to_owner_member(
         self,

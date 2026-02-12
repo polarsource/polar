@@ -64,7 +64,7 @@ def tinybird_workspace() -> Generator[str, None, None]:
     token_response.raise_for_status()
     workspace_token = token_response.json()["token"]
 
-    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy"]
+    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy", "--wait"]
     for attempt in range(3):
         result = subprocess.run(
             deploy_cmd,
@@ -77,11 +77,10 @@ def tinybird_workspace() -> Generator[str, None, None]:
         if attempt < 2:
             time.sleep(0.5)
     else:
-        raise subprocess.CalledProcessError(
-            result.returncode,
-            result.args,
-            output=result.stdout,
-            stderr=result.stderr,
+        raise RuntimeError(
+            f"tb deploy failed after 3 attempts.\n"
+            f"stdout: {result.stdout}\n"
+            f"stderr: {result.stderr}"
         )
 
     for _ in range(30):

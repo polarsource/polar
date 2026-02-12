@@ -59,10 +59,10 @@ async function callLLM(
     .replace('{EN_JSON}', JSON.stringify(sourceStrings, null, 2))
     .trim()
 
-  log.step(`Calling Gemini 2.5 Flash...`)
+  log.step(`Calling Gemini 3 Pro (Preview)...`)
 
   const { text } = await generateText({
-    model: google('gemini-2.5-flash'),
+    model: google('gemini-3-pro-preview'),
     system: systemPromptPart,
     prompt: userPromptPart,
     temperature: 0.3,

@@ -10,7 +10,7 @@ from sqlalchemy import ColumnElement, FromClause, select, text
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.config import settings
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.product import ProductBillingType
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -243,7 +243,8 @@ class MetricsService:
             org_ids = [auth_subject.subject.id]
 
         if metrics is not None:
-            tb_needed = {s for s in metrics if s in tb_slugs}
+            expanded_sql_slugs, _ = _expand_metrics_with_dependencies(metrics)
+            tb_needed = {s for s in expanded_sql_slugs if s in tb_slugs}
         else:
             tb_needed = tb_slugs
 
@@ -252,9 +253,9 @@ class MetricsService:
                 {"periods": [], "totals": {}, "metrics": {}}
             )
 
-        tb_queries = [
-            m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed
-        ]
+        tb_queries = list(
+            {m.query for m in METRICS_TINYBIRD_SETTLEMENT if m.slug in tb_needed}
+        )
         billing_strs = [bt.value for bt in billing_type] if billing_type else None
 
         with logfire.span(
@@ -280,7 +281,9 @@ class MetricsService:
         periods: list[MetricsPeriod] = []
         for row in tb_rows:
             ts = row.get("timestamp")
-            if isinstance(ts, date) and not isinstance(ts, datetime):
+            if isinstance(ts, str):
+                row["timestamp"] = datetime.fromisoformat(ts).replace(tzinfo=timezone)
+            elif isinstance(ts, date) and not isinstance(ts, datetime):
                 row["timestamp"] = datetime(ts.year, ts.month, ts.day, tzinfo=timezone)
             elif isinstance(ts, datetime) and ts.tzinfo is None:
                 row["timestamp"] = ts.replace(tzinfo=timezone)
@@ -365,12 +368,16 @@ class MetricsService:
         )
 
         periods: list[MetricsPeriod] = []
-        for pg_period, tb_period in zip(pg_response.periods, tb_response.periods):
+        tb_periods_map = {p.timestamp: p for p in tb_response.periods}
+
+        for pg_period in pg_response.periods:
             period_dict = pg_period.model_dump()
-            for slug in tb_slugs:
-                tb_val = getattr(tb_period, slug, None)
-                if tb_val is not None:
-                    period_dict[slug] = tb_val
+            tb_period = tb_periods_map.get(pg_period.timestamp)
+            if tb_period is not None:
+                for slug in tb_slugs:
+                    tb_val = getattr(tb_period, slug, None)
+                    if tb_val is not None:
+                        period_dict[slug] = tb_val
 
             temp_dict = dict(period_dict)
             for meta_metric in filtered_post_compute:
@@ -579,14 +586,29 @@ class MetricsService:
 
         external_customer_id: list[str] | None = None
         if customer_id is not None:
-            stmt = select(Customer.external_id).where(
+            customer_stmt = select(Customer.external_id).where(
                 Customer.id.in_(customer_id),
                 Customer.external_id.is_not(None),
                 Customer.external_id != "",
             )
-            external_ids = [eid for eid in await session.scalars(stmt) if eid]
+            external_ids = [eid for eid in await session.scalars(customer_stmt) if eid]
             if external_ids:
                 external_customer_id = external_ids
+
+        tb_product_id = product_id
+        if billing_type is not None:
+            product_stmt = select(Product.id).where(
+                Product.organization_id == org.id,
+                Product.billing_type.in_(billing_type),
+                Product.deleted_at.is_(None),
+            )
+            billing_type_product_ids = list(await session.scalars(product_stmt))
+            if product_id is not None:
+                tb_product_id = [
+                    pid for pid in product_id if pid in billing_type_product_ids
+                ]
+            else:
+                tb_product_id = billing_type_product_ids
 
         try:
             tb_response = await self._get_metrics_from_tinybird(
@@ -598,7 +620,7 @@ class MetricsService:
                 timezone=timezone,
                 interval=interval,
                 organization_id=organization_id,
-                product_id=product_id,
+                product_id=tb_product_id,
                 billing_type=billing_type,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,

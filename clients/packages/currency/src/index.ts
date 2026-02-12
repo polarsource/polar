@@ -1,15 +1,21 @@
-const CURRENCY_DECIMAL_FACTORS: Record<string, number> = {
-  aud: 100,
-  brl: 100,
-  cad: 100,
-  chf: 100,
-  eur: 100,
-  inr: 100,
-  gbp: 100,
-  jpy: 1,
-  sek: 100,
-  usd: 100,
-}
+const ZERO_DECIMAL_CURRENCIES = new Set<string>([
+  'bif',
+  'clp',
+  'djf',
+  'gnf',
+  'jpy',
+  'kmf',
+  'krw',
+  'mga',
+  'pyg',
+  'rwf',
+  'ugx',
+  'vnd',
+  'vuv',
+  'xaf',
+  'xof',
+  'xpf',
+])
 
 /**
  * Returns the decimal factor for a given currency.
@@ -29,7 +35,10 @@ const CURRENCY_DECIMAL_FACTORS: Record<string, number> = {
  * getCurrencyDecimalFactor('jpy')
  */
 export const getCurrencyDecimalFactor = (currency: string): number => {
-  return CURRENCY_DECIMAL_FACTORS[currency.toLowerCase()] ?? 100
+  if (ZERO_DECIMAL_CURRENCIES.has(currency.toLowerCase())) {
+    return 1
+  }
+  return 100
 }
 
 /**

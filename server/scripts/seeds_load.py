@@ -1016,8 +1016,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 await session.flush()
 
         # Downgrade user from admin (for non-admin users)
+        # Preserve admin status if already granted by a previous organization
         await user_repository.update(
-            user, update_dict={"is_admin": org_data.get("is_admin", False)}
+            user,
+            update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
 
     await session.commit()

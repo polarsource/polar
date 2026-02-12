@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -60,6 +61,10 @@ const Checkout = ({
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
+
+  const { variant: walletPaymentExperiment } = useExperiment(
+    'checkout_wallet_payment',
+  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -236,6 +241,7 @@ const Checkout = ({
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
+          walletPaymentExperiment={walletPaymentExperiment}
         />
       </ShadowBox>
     )
@@ -305,6 +311,7 @@ const Checkout = ({
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
+            walletPaymentExperiment={walletPaymentExperiment}
           />
         </div>
       </ShadowBoxOnMd>

@@ -69,6 +69,9 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.dispute
     if "smart disputes" in description:
         return ProcessorFeeType.dispute
+    if "card" in description:
+        # Strange fee that popped-up in Feb 2026 for Dec 2024: txn_1SzVb9DG1jUQrXwCPzHjBjhs
+        return ProcessorFeeType.payment
     raise UnsupportedStripeFeeType(description)
 
 

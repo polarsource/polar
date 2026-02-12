@@ -130,6 +130,7 @@ class MemberRepository(
 
     async def list_by_email_and_organization(
         self,
+        session: AsyncReadSession,
         email: str,
         organization_id: UUID,
     ) -> Sequence[Member]:
@@ -147,7 +148,7 @@ class MemberRepository(
             )
             .options(joinedload(Member.customer))
         )
-        result = await self.session.execute(statement)
+        result = await session.execute(statement)
         return result.scalars().unique().all()
 
     async def list_by_customers(

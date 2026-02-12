@@ -495,14 +495,26 @@ class SeatService:
         )
 
         if member_model_enabled:
-            # Validate member exists for member model
-            if not seat.member_id:
-                raise InvalidInvitationToken(invitation_token)
             # Load billing customer for session
             customer_repository = CustomerRepository.from_session(session)
             session_customer = await customer_repository.get_by_id(seat.customer_id)
             if not session_customer:
                 raise InvalidInvitationToken(invitation_token)
+
+            if not seat.member_id:
+                # Pending seat being claimed: create a member under billing customer
+                if not seat.email:
+                    raise InvalidInvitationToken(invitation_token)
+                member_repository = MemberRepository.from_session(session)
+                member = Member(
+                    customer_id=session_customer.id,
+                    organization_id=organization_id,
+                    email=seat.email,
+                    role=MemberRole.member,
+                )
+                session.add(member)
+                await session.flush()
+                seat.member_id = member.id
         else:
             # Use seat's customer relationship for legacy model
             if not seat.customer:
@@ -519,10 +531,13 @@ class SeatService:
         await self._publish_seat_claimed_event(seat, product_id)
         await self._enqueue_benefit_grant(seat, product_id)
 
-        if member_model_enabled:
-            assert seat.member is not None
+        if member_model_enabled and seat.member_id is not None:
+            member_repository = MemberRepository.from_session(session)
+            claim_member = await member_repository.get_by_id(seat.member_id)
+            if not claim_member:
+                raise InvalidInvitationToken(invitation_token)
             session_token, _ = await member_session_service.create_member_session(
-                session, seat.member
+                session, claim_member
             )
         else:
             session_token, _ = await customer_session_service.create_customer_session(
@@ -873,12 +888,27 @@ class SeatService:
         external_member_id: str | None,
         member_id: uuid.UUID | None,
     ) -> SeatAssignmentTarget:
+        # Backward compat: resolve customer_id/external_customer_id to email
         if customer_id or external_customer_id:
-            raise InvalidSeatAssignmentRequest(
-                "customer_id and external_customer_id are not allowed when "
-                "member_model_enabled is true. Use email, external_member_id, "
-                "or member_id instead."
-            )
+            customer_repository = CustomerRepository.from_session(session)
+            if customer_id:
+                customer = await customer_repository.get_by_id_and_organization(
+                    customer_id, organization_id
+                )
+            else:
+                customer = (
+                    await customer_repository.get_by_external_id_and_organization(
+                        external_customer_id,  # type: ignore[arg-type]
+                        organization_id,
+                    )
+                )
+            if customer is None:
+                raise InvalidSeatAssignmentRequest(
+                    "Customer not found for the provided "
+                    "customer_id or external_customer_id."
+                )
+            if not email:
+                email = customer.email
 
         member = await self._resolve_member(
             session,

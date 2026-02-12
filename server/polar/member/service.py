@@ -146,6 +146,7 @@ class MemberService:
         owner_email: str | None = None,
         owner_name: str | None = None,
         owner_external_id: str | None = None,
+        send_webhook: bool = True,
     ) -> Member | None:
         """
         Create an owner member for a customer if feature flag is enabled.
@@ -205,12 +206,13 @@ class MemberService:
                 member_id=created_member.id,
                 organization_id=organization.id,
             )
-            await webhook_service.send(
-                session,
-                organization,
-                WebhookEventType.member_created,
-                created_member,
-            )
+            if send_webhook:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_created,
+                    created_member,
+                )
             return created_member
         except IntegrityError as e:
             log.info(

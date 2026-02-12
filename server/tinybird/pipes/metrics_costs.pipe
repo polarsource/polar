@@ -1,0 +1,325 @@
+DESCRIPTION >
+    Costs metrics endpoint: costs, active_users.
+    Call in parallel with metrics_events and metrics_mrr for best performance.
+
+NODE day_intervals
+SQL >
+    %
+    WITH
+        toStartOfDay(
+            toDateTime(
+                {{ String(start_dt, '2024-01-01 00:00:00', description="Start datetime") }},
+                {{ String(tz, 'UTC', description="Timezone") }}
+            )
+        ) AS start,
+        toStartOfDay(
+            toDateTime(
+                {{ String(end_dt, '2024-01-02 00:00:00', description="End datetime") }},
+                {{ String(tz, 'UTC') }}
+            )
+        ) AS
+    end,
+    dateDiff('day', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(x -> toDateTime(start + toIntervalDay(x), {{ String(tz, 'UTC') }}), range(0, diff))
+        ) AS interval
+
+NODE week_intervals
+SQL >
+    %
+    WITH
+        toStartOfWeek(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfWeek(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('week', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalWeek(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE month_intervals
+SQL >
+    %
+    WITH
+        toStartOfMonth(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfMonth(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('month', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalMonth(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE year_intervals
+SQL >
+    %
+    WITH
+        toStartOfYear(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfYear(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('year', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalYear(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE all_events_raw
+SQL >
+    %
+    SELECT e.id, e.timestamp AS event_timestamp, e.cost_amount, e.customer_id, e.external_customer_id
+    FROM user_events_costs AS e
+    WHERE
+        e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+        AND e.timestamp <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                        )
+                    )
+            )
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    external_customer_ids,
+                                    description="Comma-separated external customer IDs",
+                                )
+                            }}
+                        )
+                    )
+            )
+        {% end %}
+
+NODE costs_baseline
+SQL >
+    %
+    SELECT COALESCE(sum(ae.cost_amount), 0) AS hist_costs
+    FROM all_events_raw AS ae
+    WHERE
+        ae.event_timestamp < toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+
+NODE costs_daily
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% else %} toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% end %}
+        COALESCE(sum(ae.cost_amount), 0) AS costs
+    FROM all_events_raw AS ae
+    WHERE
+        ae.event_timestamp
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND ae.event_timestamp
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+    GROUP BY day
+
+NODE active_users_raw
+SQL >
+    %
+    SELECT quarter_hour, customer_id, external_customer_id
+    FROM user_events_by_quarter_hour
+    WHERE
+        organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND quarter_hour
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND quarter_hour
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND external_customer_id
+            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+        {% end %}
+
+NODE active_users_metrics
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
+    FROM
+        {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
+        {% elif interval == 'week' %} week_intervals
+        {% elif interval == 'month' %} month_intervals
+        {% elif interval == 'year' %} year_intervals
+        {% else %} day_intervals
+        {% end %} w
+    LEFT JOIN
+        active_users_raw au
+        ON {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% else %} toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% end %}
+    GROUP BY w.interval
+    ORDER BY w.interval
+
+NODE costs_metrics
+SQL >
+    %
+    SELECT
+        w.interval AS timestamp,
+        COALESCE(de.costs, 0) AS costs,
+        COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
+    FROM
+        {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
+        {% elif interval == 'week' %} week_intervals
+        {% elif interval == 'month' %} month_intervals
+        {% elif interval == 'year' %} year_intervals
+        {% else %} day_intervals
+        {% end %} w
+    LEFT JOIN costs_daily de ON de.day = w.interval
+    CROSS JOIN costs_baseline b
+    ORDER BY w.interval
+
+NODE endpoint
+SQL >
+    %
+    SELECT
+        c.timestamp,
+        c.costs,
+        c.cumulative_costs,
+        a.active_user_by_event,
+        CASE
+            WHEN COALESCE(a.active_user_by_event, 0) > 0 THEN c.costs / a.active_user_by_event ELSE 0
+        END AS cost_per_user
+    FROM costs_metrics c
+    LEFT JOIN active_users_metrics a ON a.timestamp = c.timestamp
+    ORDER BY c.timestamp
+
+TYPE ENDPOINT

@@ -113,3 +113,15 @@ class PaymentRepository(
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_order(
+        self, order_id: UUID, *, options: Options = ()
+    ) -> Sequence[Payment]:
+        """Get all payments for a specific order."""
+        statement = (
+            self.get_base_statement()
+            .where(Payment.order_id == order_id)
+            .order_by(Payment.created_at.desc())
+            .options(*options)
+        )
+        return await self.get_all(statement)

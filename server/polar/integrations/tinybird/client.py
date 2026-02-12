@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 from urllib.parse import urlparse
@@ -17,13 +18,60 @@ log: Logger = structlog.get_logger()
 tracer = trace.get_tracer("polar.integrations.tinybird")
 
 MAX_PAYLOAD_BYTES = 10 * 1024 * 1024  # 10MB
+RETRYABLE_STATUS_CODES = {409, 429}
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = [0.1, 0.25, 0.5]
 
 
-class TinybirdPayloadTooLargeError(Exception):
+class TinybirdError(Exception):
+    """Base exception for Tinybird errors."""
+
+    pass
+
+
+class TinybirdPayloadTooLargeError(TinybirdError):
     def __init__(self, size: int, max_size: int) -> None:
         self.size = size
         self.max_size = max_size
         super().__init__(f"Payload size {size} bytes exceeds maximum {max_size} bytes")
+
+
+class TinybirdRequestError(TinybirdError):
+    """Raised when a Tinybird API request fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int,
+        error_body: dict[str, Any] | str | None = None,
+        endpoint: str | None = None,
+    ) -> None:
+        self.status_code = status_code
+        self.error_body = error_body
+        self.endpoint = endpoint
+        super().__init__(message)
+
+    @classmethod
+    def from_response(
+        cls, response: httpx.Response, endpoint: str | None = None
+    ) -> "TinybirdRequestError":
+        try:
+            error_body: dict[str, Any] | str = response.json()
+            if isinstance(error_body, dict):
+                message = error_body.get("error", response.reason_phrase)
+            else:
+                message = str(error_body)
+        except Exception:
+            error_body = response.text
+            message = response.reason_phrase
+
+        return cls(
+            message,
+            status_code=response.status_code,
+            error_body=error_body,
+            endpoint=endpoint,
+        )
 
 
 class TinybirdClient:
@@ -86,6 +134,46 @@ class TinybirdClient:
             )
         return self._clickhouse_client
 
+    async def _request_with_retry(
+        self,
+        client: httpx.AsyncClient,
+        method: str,
+        url: str,
+        *,
+        endpoint_name: str | None = None,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        last_response: httpx.Response | None = None
+        for attempt in range(MAX_RETRIES + 1):
+            response = await client.request(method, url, **kwargs)
+            if response.is_success:
+                return response
+            if response.status_code not in RETRYABLE_STATUS_CODES:
+                return response
+            last_response = response
+            if attempt < MAX_RETRIES:
+                if response.status_code == 429:
+                    retry_after = response.headers.get("Retry-After")
+                    if retry_after:
+                        try:
+                            delay = min(float(retry_after), 1.0)
+                        except ValueError:
+                            delay = RETRY_BACKOFF_SECONDS[attempt]
+                    else:
+                        delay = RETRY_BACKOFF_SECONDS[attempt]
+                else:
+                    delay = RETRY_BACKOFF_SECONDS[attempt]
+                log.debug(
+                    "tinybird.retry",
+                    status_code=response.status_code,
+                    attempt=attempt + 1,
+                    delay=delay,
+                    endpoint=endpoint_name,
+                )
+                await asyncio.sleep(delay)
+        assert last_response is not None
+        return last_response
+
     async def endpoint(
         self,
         endpoint_name: str,
@@ -97,11 +185,17 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "ENDPOINT")
-            response = await self._read_client.get(
+            response = await self._request_with_retry(
+                self._read_client,
+                "GET",
                 f"/v0/pipes/{endpoint_name}.json",
+                endpoint_name=endpoint_name,
                 params=params,
             )
-            response.raise_for_status()
+            if not response.is_success:
+                raise TinybirdRequestError.from_response(
+                    response, endpoint=endpoint_name
+                )
             result = response.json()
             return result.get("data", [])
 
@@ -132,13 +226,17 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "INSERT")
-            response = await self._write_client.post(
+            response = await self._request_with_retry(
+                self._write_client,
+                "POST",
                 "/v0/events",
+                endpoint_name=datasource,
                 params={"name": datasource, "wait": str(wait).lower()},
                 content=ndjson,
                 headers={"Content-Type": "application/x-ndjson"},
             )
-            response.raise_for_status()
+            if not response.is_success:
+                raise TinybirdRequestError.from_response(response, endpoint=datasource)
 
     async def query(
         self,
@@ -169,16 +267,26 @@ class TinybirdClient:
         ) as span:
             span.set_attribute("db.system", "tinybird")
             span.set_attribute("db.operation", "DELETE")
-            response = await self._write_client.post(
+            response = await self._request_with_retry(
+                self._write_client,
+                "POST",
                 f"/v0/datasources/{datasource}/delete",
+                endpoint_name=datasource,
                 data={"delete_condition": delete_condition},
             )
-            response.raise_for_status()
+            if not response.is_success:
+                raise TinybirdRequestError.from_response(response, endpoint=datasource)
             return response.json()
 
     async def get_job(self, job_id: str) -> dict[str, Any]:
-        response = await self._write_client.get(f"/v0/jobs/{job_id}")
-        response.raise_for_status()
+        response = await self._request_with_retry(
+            self._write_client,
+            "GET",
+            f"/v0/jobs/{job_id}",
+            endpoint_name="jobs",
+        )
+        if not response.is_success:
+            raise TinybirdRequestError.from_response(response, endpoint="jobs")
         return response.json()
 
 
@@ -191,4 +299,10 @@ client = TinybirdClient(
     clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
 )
 
-__all__ = ["TinybirdEvent", "TinybirdPayloadTooLargeError", "client"]
+__all__ = [
+    "TinybirdError",
+    "TinybirdEvent",
+    "TinybirdPayloadTooLargeError",
+    "TinybirdRequestError",
+    "client",
+]

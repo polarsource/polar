@@ -205,8 +205,8 @@ SQL >
 NODE active_users_raw
 SQL >
     %
-    SELECT hour, customer_id, external_customer_id
-    FROM user_events_by_hour
+    SELECT quarter_hour, customer_id, external_customer_id
+    FROM user_events_by_quarter_hour
     WHERE
         organization_id IN (
             SELECT
@@ -216,9 +216,10 @@ SQL >
                     )
                 )
         )
-        AND hour
+        AND quarter_hour
         >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND hour <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND quarter_hour
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
         {% if defined(customer_ids) and customer_ids != '' and defined(
             external_customer_ids
         ) and external_customer_ids != '' %}
@@ -250,14 +251,14 @@ SQL >
     LEFT JOIN
         active_users_raw au
         ON {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfMonth(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
-        {% else %} toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfYear(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% else %} toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% end %}
     GROUP BY w.interval
     ORDER BY w.interval

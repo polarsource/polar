@@ -1016,3 +1016,199 @@ class TestActiveUserByEventWithCustomerFilter:
         jan_15_period = next((p for p in result.periods if p.timestamp.day == 15), None)
         assert jan_15_period is not None
         assert jan_15_period.active_user_by_event == 2
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestActiveUserByEventNoFilter:
+    """Test active_user_by_event metric without customer_id filter."""
+
+    async def test_counts_distinct_users_per_day(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        tinybird_client: TinybirdClient,
+    ) -> None:
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user1@example.com",
+            name="user1",
+            stripe_customer_id="cus_user1",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user2@example.com",
+            name="user2",
+            stripe_customer_id="cus_user2",
+        )
+
+        all_events: list[Event] = []
+
+        # Two events from customer1 on Jan 15
+        ev1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev1)
+
+        ev2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 11, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev2)
+
+        # One event from customer2 on Jan 15
+        ev3 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer2,
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC),
+        )
+        all_events.append(ev3)
+
+        tinybird_events = [_event_to_tinybird(e) for e in all_events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": True,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.day,
+                organization_id=[organization.id],
+                metrics=["active_user_by_event"],
+            )
+
+        jan_15 = next((p for p in result.periods if p.timestamp.day == 15), None)
+        assert jan_15 is not None, "Jan 15 period should exist"
+        assert jan_15.active_user_by_event == 2, (
+            f"Jan 15 should have 2 active users, got {jan_15.active_user_by_event}"
+        )
+
+    async def test_half_hour_timezone_day_boundary(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        tinybird_client: TinybirdClient,
+    ) -> None:
+        """Test that events near day boundaries are correctly bucketed for half-hour timezones.
+
+        Asia/Kolkata is UTC+5:30, so midnight Kolkata = 18:30 UTC.
+        - Event at 18:25 UTC = 23:55 Kolkata (same day)
+        - Event at 18:35 UTC = 00:05 Kolkata (next day)
+        """
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="tz_user1@example.com",
+            name="tz_user1",
+            stripe_customer_id="cus_tz_user1",
+        )
+        customer2 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="tz_user2@example.com",
+            name="tz_user2",
+            stripe_customer_id="cus_tz_user2",
+        )
+
+        all_events: list[Event] = []
+
+        # Event at 18:25 UTC on Jan 22 = 23:55 IST on Jan 22
+        ev1 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer1,
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 22, 18, 25, 0, tzinfo=UTC),
+        )
+        all_events.append(ev1)
+
+        # Event at 18:35 UTC on Jan 22 = 00:05 IST on Jan 23
+        ev2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer2,
+            source=EventSource.user,
+            name="api.call",
+            timestamp=datetime(2024, 1, 22, 18, 35, 0, tzinfo=UTC),
+        )
+        all_events.append(ev2)
+
+        tinybird_events = [_event_to_tinybird(e) for e in all_events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": True,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 20),
+                end_date=date(2024, 1, 25),
+                timezone=ZoneInfo("Asia/Kolkata"),
+                interval=TimeInterval.day,
+                organization_id=[organization.id],
+                metrics=["active_user_by_event"],
+            )
+
+        # Periods are returned with UTC timestamps at the Kolkata day boundary (18:30 UTC)
+        # Jan 22 Kolkata = 2024-01-21 18:30:00 UTC
+        # Jan 23 Kolkata = 2024-01-22 18:30:00 UTC
+        kolkata = ZoneInfo("Asia/Kolkata")
+        jan_22 = next(
+            (p for p in result.periods if p.timestamp.astimezone(kolkata).day == 22),
+            None,
+        )
+        jan_23 = next(
+            (p for p in result.periods if p.timestamp.astimezone(kolkata).day == 23),
+            None,
+        )
+
+        assert jan_22 is not None, "Jan 22 Kolkata period should exist"
+        assert jan_23 is not None, "Jan 23 Kolkata period should exist"
+
+        # customer1's event at 18:25 UTC is before midnight Kolkata -> Jan 22
+        # customer2's event at 18:35 UTC is after midnight Kolkata -> Jan 23
+        assert jan_22.active_user_by_event == 1, (
+            f"Jan 22 Kolkata should have 1 user (18:25 UTC = 23:55 IST), "
+            f"got {jan_22.active_user_by_event}"
+        )
+        assert jan_23.active_user_by_event == 1, (
+            f"Jan 23 Kolkata should have 1 user (18:35 UTC = 00:05 IST), "
+            f"got {jan_23.active_user_by_event}"
+        )

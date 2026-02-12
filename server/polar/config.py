@@ -71,8 +71,8 @@ class Settings(BaseSettings):
     PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
 
     WEBHOOK_MAX_RETRIES: int = 10
-    WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS: int = 300  # p95 is 236ms
-    WEBHOOK_ORDERING_AGE_LIMIT: timedelta = timedelta(minutes=1)
+    WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
+    WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 

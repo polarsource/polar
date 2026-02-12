@@ -33,9 +33,9 @@ log: Logger = structlog.get_logger()
 # Safety-guard max_retries: enough for all ordering retries within the age
 # limit window plus the actual HTTP delivery attempts.
 _ordering_max_retries = int(
-    settings.WEBHOOK_ORDERING_AGE_LIMIT.total_seconds()
+    settings.WEBHOOK_FIFO_GUARD_MAX_AGE.total_seconds()
     * 1000
-    / settings.WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS
+    / settings.WEBHOOK_FIFO_GUARD_DELAY_MS
 )
 _webhook_max_retries = _ordering_max_retries + settings.WEBHOOK_MAX_RETRIES
 
@@ -93,9 +93,7 @@ async def _webhook_event_send(
             webhook_endpoint_id=event.webhook_endpoint_id,
             earlier_pending_count=earlier_pending_count,
         )
-        raise Retry(
-            delay=earlier_pending_count * settings.WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS
-        )
+        raise Retry(delay=earlier_pending_count * settings.WEBHOOK_FIFO_GUARD_DELAY_MS)
 
     if event.skipped:
         event.skipped = False

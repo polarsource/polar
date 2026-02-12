@@ -5,7 +5,7 @@ from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
+from sqlalchemy import CursorResult, String, desc, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 
@@ -397,29 +397,13 @@ class WebhookService:
                         html_content=body,
                     )
 
-    async def is_latest_event(self, session: AsyncSession, event: WebhookEvent) -> bool:
+    async def count_pending_events_before(
+        self, session: AsyncSession, event: WebhookEvent
+    ) -> int:
+        """Return the number of undelivered events preceding this one on the same endpoint."""
+        repository = WebhookEventRepository.from_session(session)
         age_limit = utc_now() - datetime.timedelta(minutes=1)
-        statement = (
-            select(func.count(WebhookEvent.id))
-            .join(
-                WebhookDelivery,
-                WebhookDelivery.webhook_event_id == WebhookEvent.id,
-                isouter=True,
-            )
-            .where(
-                WebhookEvent.deleted_at.is_(None),
-                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
-                WebhookEvent.id != event.id,  # Not the current event
-                WebhookDelivery.id.is_(None),  # Not delivered yet
-                WebhookEvent.created_at
-                < event.created_at,  # Older than the current event
-                WebhookEvent.created_at >= age_limit,  # Not too old
-            )
-            .limit(1)
-        )
-        res = await session.execute(statement)
-        count = res.scalar_one()
-        return count == 0
+        return await repository.count_pending_before(event, age_limit=age_limit)
 
     @overload
     async def send(

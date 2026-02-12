@@ -86,14 +86,18 @@ async def _webhook_event_send(
         bound_log.info("Event already succeeded, skipping")
         return
 
-    if not await webhook_service.is_latest_event(session, event):
+    pending_before = await webhook_service.count_pending_events_before(session, event)
+    if pending_before > 0:
+        delay = pending_before * 500
         log.info(
             "Earlier events need to be delivered first, retrying later",
             id=event.id,
             type=event.type,
             webhook_endpoint_id=event.webhook_endpoint_id,
+            pending_before=pending_before,
+            delay_ms=delay,
         )
-        raise Retry(delay=settings.WEBHOOK_RETRY_INTERVAL_MILLISECONDS)
+        raise Retry(delay=delay)
 
     if event.skipped:
         event.skipped = False

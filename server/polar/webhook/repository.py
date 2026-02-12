@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -86,6 +86,29 @@ class WebhookEventRepository(
             WebhookEvent.skipped.is_(False),
         )
         return await self.get_all(statement)
+
+    async def count_pending_before(
+        self, event: WebhookEvent, *, age_limit: datetime
+    ) -> int:
+        """Count undelivered events preceding this one on the same endpoint."""
+        statement = (
+            select(func.count(WebhookEvent.id))
+            .join(
+                WebhookDelivery,
+                WebhookDelivery.webhook_event_id == WebhookEvent.id,
+                isouter=True,
+            )
+            .where(
+                WebhookEvent.deleted_at.is_(None),
+                WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
+                WebhookEvent.id != event.id,
+                WebhookDelivery.id.is_(None),
+                WebhookEvent.created_at < event.created_at,
+                WebhookEvent.created_at >= age_limit,
+            )
+        )
+        res = await self.session.execute(statement)
+        return res.scalar_one()
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

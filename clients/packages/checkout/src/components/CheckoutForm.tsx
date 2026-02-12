@@ -2,11 +2,11 @@
 
 import { formatCurrency } from '@polar-sh/currency'
 import {
-  formatDate,
   getTranslationLocale,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
+import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { CountryAlpha2Input } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'

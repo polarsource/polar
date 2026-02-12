@@ -24,6 +24,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./formatters/date": {
+      "types": "./dist/formatters/date.d.ts",
+      "default": "./dist/formatters/date.js"
     }
   },
   "types": "./dist/index.d.ts",

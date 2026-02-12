@@ -1,45 +1,11 @@
 import { useCallback } from 'react'
 
 export { DEFAULT_LOCALE, LOCALE_NAMES, SUPPORTED_LOCALES } from './config'
-export type { SupportedLocale } from './config'
+export type { AcceptedLocale, SupportedLocale } from './config'
 
+import type { AcceptedLocale } from './config'
 import type { SupportedLocale } from './config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
-
-// Expand bare language codes to include region variants,
-// but keep region-specific codes (like future 'pt-BR') exact
-type Alpha =
-  | 'A'
-  | 'B'
-  | 'C'
-  | 'D'
-  | 'E'
-  | 'F'
-  | 'G'
-  | 'H'
-  | 'I'
-  | 'J'
-  | 'K'
-  | 'L'
-  | 'M'
-  | 'N'
-  | 'O'
-  | 'P'
-  | 'Q'
-  | 'R'
-  | 'S'
-  | 'T'
-  | 'U'
-  | 'V'
-  | 'W'
-  | 'X'
-  | 'Y'
-  | 'Z'
-type ResolveBCP47<T extends string> = T extends `${string}-${string}`
-  ? T
-  : T | `${T}-${Alpha}${Alpha}`
-
-export type AcceptedLocale = ResolveBCP47<SupportedLocale>
 
 export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
   if (SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
@@ -55,44 +21,6 @@ export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {
 export function isAcceptedLocale(value: string): value is AcceptedLocale {
   const language = value.split('-')[0].toLowerCase()
   return SUPPORTED_LOCALES.includes(language as SupportedLocale)
-}
-
-const formatterCache = new Map<string, Intl.DateTimeFormat>()
-
-function formatCacheKey(
-  locale: string,
-  options: Intl.DateTimeFormatOptions,
-): string {
-  const sorted = Object.keys(options)
-    .sort()
-    .reduce<Record<string, unknown>>((acc, k) => {
-      acc[k] = options[k as keyof typeof options]
-      return acc
-    }, {})
-  return `${locale}:${JSON.stringify(sorted)}`
-}
-
-function getDateFormatter(
-  locale: string,
-  options?: Intl.DateTimeFormatOptions,
-): Intl.DateTimeFormat {
-  const opts = options ?? { dateStyle: 'medium' as const }
-  const key = formatCacheKey(locale, opts)
-  let fmt = formatterCache.get(key)
-  if (!fmt) {
-    fmt = new Intl.DateTimeFormat(locale, opts)
-    formatterCache.set(key, fmt)
-  }
-  return fmt
-}
-
-export function formatDate(
-  date: Date | string,
-  locale: AcceptedLocale = DEFAULT_LOCALE,
-  options?: Intl.DateTimeFormatOptions,
-): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return getDateFormatter(locale, options).format(d)
 }
 
 export function isSupportedLocale(locale: string): locale is SupportedLocale {

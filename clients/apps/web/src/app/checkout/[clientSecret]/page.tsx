@@ -80,8 +80,6 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
-  console.log(_locale, checkout)
-
   const locale = await resolveLocale(_locale, checkout.locale)
 
   return (

@@ -3,7 +3,7 @@ export default {
     footer: {
       poweredBy: 'Működteti',
       merchantOfRecord:
-        'Ezt a megrendelést online viszonteladónk és rekordkereskedőnk, a Polar dolgozza fel, aki a megrendeléssel kapcsolatos kérdéseket és visszaküldéseket is kezeli.',
+        'Ezt a megrendelést online viszonteladónk és hivatalos kereskedőnk, a Polar dolgozza fel, aki a megrendeléssel kapcsolatos kérdéseket és visszaküldéseket is kezeli.',
     },
     form: {
       email: 'E-mail cím',
@@ -194,6 +194,6 @@ export default {
     discord: 'Discord meghívó',
     downloadables: 'Fájlletöltések',
     custom: 'Egyedi',
-    meter_credit: 'Mérőegység kreditek',
+    meter_credit: 'Használat alapú kreditek',
   },
 } as const

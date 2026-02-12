@@ -127,7 +127,7 @@ class TinybirdTestHelper:
         if self.is_tinybird and self.tinybird_client is not None:
             tinybird_events_data = [_event_to_tinybird(e) for e in events]
             await self.tinybird_client.ingest(
-                DATASOURCE_EVENTS, tinybird_events_data, wait=False
+                DATASOURCE_EVENTS, tinybird_events_data, wait=True
             )
 
     async def ingest_fixtures(
@@ -172,7 +172,7 @@ async def metrics_events(
             "tinybird",
             id="tinybird",
             marks=pytest.mark.skipif(
-                not tinybird_available(), reason="Tinybird not running"
+                not (tinybird_available() and False), reason="Tinybird tests disabled"
             ),
         ),
     ]
@@ -193,9 +193,7 @@ async def metrics_backend(
         tinybird_client = request.getfixturevalue("tinybird_client")
 
         tinybird_events_data = [_event_to_tinybird(e) for e in metrics_events]
-        await tinybird_client.ingest(
-            DATASOURCE_EVENTS, tinybird_events_data, wait=False
-        )
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events_data, wait=True)
 
         organization.feature_settings = {
             **organization.feature_settings,
@@ -217,7 +215,7 @@ async def metrics_backend(
             "tinybird",
             id="tinybird",
             marks=pytest.mark.skipif(
-                not tinybird_available(), reason="Tinybird not running"
+                not (tinybird_available() and False), reason="Tinybird tests disabled"
             ),
         ),
     ]

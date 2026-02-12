@@ -86,6 +86,26 @@ SQL >
             )
         ) AS interval
 
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
 NODE all_events_raw
 SQL >
     %
@@ -185,6 +205,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'month' %}
@@ -243,6 +265,7 @@ SQL >
         countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -252,6 +275,8 @@ SQL >
         active_users_raw au
         ON {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'month' %}
@@ -272,6 +297,7 @@ SQL >
         COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals

@@ -1810,6 +1810,69 @@ class TestGetMetrics:
         jan_1_all = metrics_all.periods[0]
         assert jan_1_all.costs == 0.60  # Both events: 0.10 + 0.50
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_hourly_interval_order_placement(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Test that orders are placed in the correct hourly period."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(100_00, "usd")],
+        )
+
+        await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subtotal_amount=100_00,
+            created_at=datetime(2024, 1, 15, 6, 30, 0, tzinfo=UTC),
+        )
+
+        await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subtotal_amount=200_00,
+            created_at=datetime(2024, 1, 15, 22, 45, 0, tzinfo=UTC),
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 15),
+            end_date=date(2024, 1, 15),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.hour,
+        )
+
+        assert len(metrics.periods) == 24
+
+        hour_6 = metrics.periods[6]
+        assert hour_6.timestamp == datetime(2024, 1, 15, 6, 0, 0, tzinfo=UTC)
+        assert hour_6.orders == 1
+        assert hour_6.revenue == 100_00
+
+        hour_22 = metrics.periods[22]
+        assert hour_22.timestamp == datetime(2024, 1, 15, 22, 0, 0, tzinfo=UTC)
+        assert hour_22.orders == 1
+        assert hour_22.revenue == 200_00
+
+        for i, period in enumerate(metrics.periods):
+            if i not in (6, 22):
+                assert period.orders == 0, f"Expected 0 orders at hour {i}"
+
 
 @pytest.mark.asyncio
 class TestMetricsFiltering:

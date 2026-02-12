@@ -86,6 +86,26 @@ SQL >
             )
         ) AS interval
 
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
 NODE all_events_raw
 SQL >
     %
@@ -185,6 +205,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'month' %}
@@ -243,6 +265,7 @@ SQL >
         countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -252,6 +275,8 @@ SQL >
         active_users_raw au
         ON {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'month' %}
@@ -272,6 +297,7 @@ SQL >
         COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -445,6 +471,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'month' %}
@@ -467,6 +495,9 @@ SQL >
             {% if not defined(interval) or interval == 'day' %}
                 OR toStartOfDay(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
                 > toStartOfDay(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
+            {% elif interval == 'hour' %}
+                OR toStartOfHour(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
+                > toStartOfHour(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
             {% elif interval == 'week' %}
                 OR toStartOfWeek(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
                 > toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
@@ -489,6 +520,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'month' %}
@@ -578,6 +611,47 @@ SQL >
                     be.settlement_revenue_amount - COALESCE(be.fee, 0),
                     be.subscription_id IS NOT NULL
                     AND toStartOfDay(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                ),
+                0
+            ) AS renewed_subscriptions_net_revenue
+        {% elif interval == 'hour' %}
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount,
+                    be.name IN ('balance.order', 'balance.credit_order')
+                    AND be.subscription_id IS NOT NULL
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                ),
+                0
+            ) AS new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount - COALESCE(be.fee, 0),
+                    be.subscription_id IS NOT NULL
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                ),
+                0
+            ) AS new_subscriptions_net_revenue,
+            countDistinctIf(
+                be.subscription_id,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NOT NULL
+                AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount,
+                    be.name IN ('balance.order', 'balance.credit_order')
+                    AND be.subscription_id IS NOT NULL
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                ),
+                0
+            ) AS renewed_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount - COALESCE(be.fee, 0),
+                    be.subscription_id IS NOT NULL
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
                 ),
                 0
             ) AS renewed_subscriptions_net_revenue
@@ -771,6 +845,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'month' %}
@@ -849,6 +925,7 @@ SQL >
         COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -968,6 +1045,14 @@ SQL >
                     )
                 )
             ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'hour' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
         {% elif interval == 'week' %}
             sumIf(
                 s.monthly_amount,
@@ -1010,6 +1095,13 @@ SQL >
                     toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
                 )
             ) AS committed_subscriptions
+        {% elif interval == 'hour' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
         {% elif interval == 'week' %}
             countIf(
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
@@ -1041,6 +1133,7 @@ SQL >
         {% end %}
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -1056,6 +1149,15 @@ SQL >
             AND (
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
                 OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% elif interval == 'hour' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfHour(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
             )
         {% elif interval == 'week' %}
             (
@@ -1102,6 +1204,8 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'week' %}
             toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'month' %}
@@ -1133,6 +1237,7 @@ SQL >
         COALESCE(churned.churned_subscriptions, 0) AS churned_subscriptions
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -1197,6 +1302,7 @@ SQL >
         {% end %}
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals

@@ -32,8 +32,15 @@ import {
   Stripe,
   StripeElements,
   StripeElementsOptions,
+  StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
+import {
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
@@ -48,6 +55,12 @@ import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import MeteredPriceLabel from './MeteredPriceLabel'
 import PolarLogo from './PolarLogo'
+
+const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay'] as const
+type WalletPaymentMethod = (typeof WALLET_PAYMENT_METHODS)[number]
+
+const isWalletPaymentMethod = (type: string): type is WalletPaymentMethod =>
+  WALLET_PAYMENT_METHODS.includes(type as WalletPaymentMethod)
 
 const DetailRow = ({
   title,
@@ -94,6 +107,8 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  walletPaymentExperiment?: 'treatment' | 'control'
+  isWalletPayment?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +122,8 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  walletPaymentExperiment,
+  isWalletPayment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -373,29 +390,32 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.isPaymentFormRequired && (
-                <FormField
-                  control={control}
-                  name="customerName"
-                  rules={{
-                    required: 'This field is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cardholder name</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          autoComplete="name"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              {checkout.isPaymentFormRequired &&
+                !(
+                  walletPaymentExperiment === 'treatment' && isWalletPayment
+                ) && (
+                  <FormField
+                    control={control}
+                    name="customerName"
+                    rules={{
+                      required: 'This field is required',
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cardholder name</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            autoComplete="name"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
               {(checkout.isPaymentFormRequired ||
                 checkout.requireBillingAddress) && (
@@ -931,6 +951,7 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  walletPaymentExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -943,6 +964,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     disabled,
     isUpdatePending,
     themePreset: themePresetProps,
+    walletPaymentExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -951,6 +973,13 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     () => loadStripe(publishable_key),
     [publishable_key],
   )
+
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    string | undefined
+  >()
+  const isWalletPayment = selectedPaymentMethod
+    ? isWalletPaymentMethod(selectedPaymentMethod)
+    : false
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -1006,10 +1035,16 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
+            walletPaymentExperiment={walletPaymentExperiment}
+            isWalletPayment={isWalletPayment}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement
                 options={{
+                  paymentMethodOrder:
+                    walletPaymentExperiment === 'treatment'
+                      ? ['apple_pay', 'google_pay', 'card']
+                      : undefined,
                   layout: 'tabs',
                   fields: {
                     billingDetails: {
@@ -1019,6 +1054,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                       address: 'never',
                     },
                   },
+                }}
+                onChange={(event: StripePaymentElementChangeEvent) => {
+                  setSelectedPaymentMethod(event.value.type)
                 }}
               />
             )}

@@ -99,8 +99,8 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
   return SUPPORTED_LOCALES.includes(locale as SupportedLocale)
 }
 
-import { en } from './locales/en'
-import { nl } from './locales/nl'
+import en from './locales/en'
+import nl from './locales/nl'
 
 export type Translations = typeof en
 

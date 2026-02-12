@@ -8,7 +8,12 @@ import {
   flattenKeysToStrings,
 } from './utils'
 
-import { LOCALE_NAMES, SUPPORTED_LOCALES, SupportedLocale } from '../src/config'
+import {
+  DEFAULT_LOCALE,
+  LOCALE_NAMES,
+  SUPPORTED_LOCALES,
+  TranslatedLocale,
+} from '../src/config'
 
 const LOCALES_DIR = path.join(import.meta.dirname, '../src/locales')
 
@@ -16,7 +21,7 @@ async function loadLocale(locale: string): Promise<NestedObject | null> {
   const filePath = path.join(LOCALES_DIR, `${locale}.ts`)
   try {
     const mod = await import(filePath)
-    return (mod[locale] ?? null) as NestedObject | null
+    return (mod.default ?? null) as NestedObject | null
   } catch {
     return null
   }
@@ -25,17 +30,19 @@ async function loadLocale(locale: string): Promise<NestedObject | null> {
 async function validate() {
   const errors: string[] = []
 
-  const enModule = await import('../src/locales/en')
-  const en = enModule.en as NestedObject
+  const defaultLocaleModule = await import(`../src/locales/${DEFAULT_LOCALE}`)
+  const defaultLocale = defaultLocaleModule.default as NestedObject
 
-  const sourceKeys = flattenKeys(en)
-  const sourceStrings = flattenKeysToStrings(en)
+  const sourceKeys = flattenKeys(defaultLocale)
+  const sourceStrings = flattenKeysToStrings(defaultLocale)
   const targetLocales = SUPPORTED_LOCALES.filter(
-    (l): l is Exclude<SupportedLocale, 'en'> => l !== 'en',
+    (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
 
   log.header('Polar i18n Validation')
-  log.info(`Source: ${log.bold(sourceKeys.size.toString())} keys in en.ts`)
+  log.info(
+    `Source: ${log.bold(sourceKeys.size.toString())} keys in ${DEFAULT_LOCALE}.ts`,
+  )
   log.info(`Checking: ${targetLocales.map((l) => log.cyan(l)).join(', ')}`)
 
   for (const locale of targetLocales) {

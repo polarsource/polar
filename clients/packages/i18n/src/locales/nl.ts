@@ -1,4 +1,4 @@
-export const nl = {
+export default {
   checkout: {
     footer: {
       poweredBy: 'Mogelijk gemaakt door',

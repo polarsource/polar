@@ -22,7 +22,13 @@ import {
   unflattenKeys,
 } from './utils'
 
-import { LOCALE_NAMES, SUPPORTED_LOCALES, SupportedLocale } from '../src/config'
+import {
+  DEFAULT_LOCALE,
+  LOCALE_NAMES,
+  SUPPORTED_LOCALES,
+  SupportedLocale,
+  type TranslatedLocale,
+} from '../src/config'
 
 dotenv.config({ path: path.join(import.meta.dirname, '../.env.local') })
 dotenv.config({ path: path.join(import.meta.dirname, '../.env') })
@@ -34,7 +40,7 @@ const LOCKS_FILE = path.join(CONFIG_DIR, 'locks.json')
 const CACHE_FILE = path.join(CONFIG_DIR, '.cache.json')
 
 async function callLLM(
-  targetLocale: string,
+  targetLocale: TranslatedLocale,
   sourceStrings: Record<string, { value: string; _llmContext?: string }>,
   prompt: string,
 ): Promise<Record<string, string>> {
@@ -91,7 +97,7 @@ function saveCache(cache: TranslationCache): void {
 
 function writeLocaleFile(locale: string, obj: NestedObject): void {
   const filePath = path.join(LOCALES_DIR, `${locale}.ts`)
-  const content = `export const ${locale} = ${JSON.stringify(obj, null, 2)} as const\n`
+  const content = `export default ${JSON.stringify(obj, null, 2)} as const\n`
   fs.writeFileSync(filePath, content)
 
   // Run prettier on the generated file
@@ -106,14 +112,14 @@ function writeLocaleFile(locale: string, obj: NestedObject): void {
 }
 
 async function loadExistingLocale(
-  locale: string,
+  locale: SupportedLocale,
 ): Promise<NestedObject | null> {
   const filePath = path.join(LOCALES_DIR, `${locale}.ts`)
   if (!fs.existsSync(filePath)) return null
 
   try {
     const mod = await import(`${filePath}?t=${Date.now()}`)
-    return (mod[locale] ?? null) as NestedObject | null
+    return (mod.default ?? null) as NestedObject | null
   } catch {
     log.warning(`Could not import ${locale}.ts`)
     return null
@@ -146,16 +152,17 @@ function seedCacheForLocale(
 }
 
 async function translate(
-  en: NestedObject,
   sourceKeys: Map<string, EntryValue>,
   pluralPaths: Set<string>,
-  targetLocales: string[],
+  targetLocales: TranslatedLocale[],
   locks: Record<string, string[]>,
   prompt: string,
   cache: TranslationCache,
 ) {
   log.header('Polar i18n')
-  log.info(`Source: ${log.bold(sourceKeys.size.toString())} keys in en.ts`)
+  log.info(
+    `Source: ${log.bold(sourceKeys.size.toString())} keys in ${DEFAULT_LOCALE}.ts`,
+  )
   log.info(`Targets: ${targetLocales.map((l) => log.cyan(l)).join(', ')}`)
 
   const stats = { translated: 0, skipped: 0, removed: 0 }
@@ -226,7 +233,7 @@ async function translate(
         translatedCount++
         log.item(`${log.dim(key)}`)
         log.item(
-          `  ${log.gray('en:')} ${getStringValue(sourceKeys.get(key) as EntryValue)}`,
+          `  ${log.gray(DEFAULT_LOCALE + ':')} ${getStringValue(sourceKeys.get(key) as EntryValue)}`,
         )
         log.item(`  ${log.cyan(locale + ':')} ${translations[key]}`)
       } else {
@@ -257,8 +264,8 @@ async function translate(
 
 function validate(
   sourceKeys: Map<string, EntryValue>,
-  targetLocales: string[],
-  localeData: Map<string, NestedObject>,
+  targetLocales: TranslatedLocale[],
+  localeData: Map<SupportedLocale, NestedObject>,
 ): boolean {
   const errors: string[] = []
 
@@ -311,7 +318,7 @@ function validate(
     }
 
     const sourceStrings = flattenKeysToStrings(
-      localeData.get('en') as NestedObject,
+      localeData.get(DEFAULT_LOCALE) as NestedObject,
     )
     const placeholderErrors: string[] = []
     for (const [key, sourceValue] of sourceStrings) {
@@ -350,8 +357,8 @@ function validate(
 
 async function main() {
   // Import source locale
-  const enModule = await import('../src/locales/en')
-  const en = enModule.en as NestedObject
+  const defaultLocaleModule = await import(`../src/locales/${DEFAULT_LOCALE}`)
+  const defaultLocale = defaultLocaleModule.default as NestedObject
 
   const locks = JSON.parse(fs.readFileSync(LOCKS_FILE, 'utf-8')) as Record<
     string,
@@ -360,25 +367,17 @@ async function main() {
   const prompt = fs.readFileSync(PROMPT_FILE, 'utf-8')
   const cache = loadCache()
 
-  const sourceKeys = flattenKeys(en)
-  const pluralPaths = findPluralPaths(en as Record<string, unknown>)
+  const sourceKeys = flattenKeys(defaultLocale)
+  const pluralPaths = findPluralPaths(defaultLocale as Record<string, unknown>)
   const targetLocales = SUPPORTED_LOCALES.filter(
-    (l): l is Exclude<SupportedLocale, 'en'> => l !== 'en',
+    (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
 
-  await translate(
-    en,
-    sourceKeys,
-    pluralPaths,
-    targetLocales,
-    locks,
-    prompt,
-    cache,
-  )
+  await translate(sourceKeys, pluralPaths, targetLocales, locks, prompt, cache)
 
   // Load all locale data for validation
-  const localeData = new Map<string, NestedObject>()
-  localeData.set('en', en)
+  const localeData = new Map<SupportedLocale, NestedObject>()
+  localeData.set(DEFAULT_LOCALE, defaultLocale)
   for (const locale of targetLocales) {
     const data = await loadExistingLocale(locale)
     if (data) localeData.set(locale, data)

@@ -1,0 +1,200 @@
+export default {
+  checkout: {
+    footer: {
+      poweredBy: 'Desenvolvido por',
+      merchantOfRecord:
+        'Este pedido é processado pelo nosso revendedor online e Merchant of Record, Polar, que também cuida de dúvidas sobre pedidos e devoluções.',
+    },
+    form: {
+      email: 'E-mail',
+      cardholderName: 'Nome do titular do cartão',
+      purchasingAsBusiness: 'Estou comprando como empresa',
+      businessName: 'Nome da empresa',
+      billingAddress: {
+        label: 'Endereço de cobrança',
+        line1: 'Endereço',
+        line2: 'Complemento',
+        postalCode: 'Código postal',
+        city: 'Cidade',
+        country: 'País',
+        state: 'Estado',
+        province: 'Província',
+        stateProvince: 'Estado / Província',
+      },
+      taxId: 'ID Fiscal',
+      discountCode: 'Código de desconto',
+      optional: 'Opcional',
+      apply: 'Aplicar',
+      fieldRequired: 'Este campo é obrigatório',
+    },
+    pricing: {
+      subtotal: 'Subtotal',
+      taxableAmount: 'Valor tributável',
+      taxes: 'Impostos',
+      free: 'Grátis',
+      payWhatYouWant: 'Pague quanto quiser',
+      total: 'Total',
+      everyInterval: 'A cada {interval}',
+      additionalMeteredUsage: 'Uso medido adicional',
+      perUnit: '/ unidade',
+      discount: {
+        duration: {
+          months: {
+            '=1': 'pelo primeiro mês',
+            other: 'pelos primeiros # meses',
+            _mode: 'plural',
+          },
+          years: {
+            '=1': 'pelo primeiro ano',
+            other: 'pelos primeiros # anos',
+            _mode: 'plural',
+          },
+        },
+      },
+    },
+    trial: {
+      ends: 'Teste termina em {endDate}',
+      duration: {
+        days: {
+          '=1': 'Teste de # dia',
+          other: 'Teste de # dias',
+          _mode: 'plural',
+        },
+        weeks: {
+          '=1': 'Teste de # semana',
+          other: 'Teste de # semanas',
+          _mode: 'plural',
+        },
+        months: {
+          '=1': 'Teste de # mês',
+          other: 'Teste de # meses',
+          _mode: 'plural',
+        },
+        years: {
+          '=1': 'Teste de # ano',
+          other: 'Teste de # anos',
+          _mode: 'plural',
+        },
+      },
+    },
+    pwywForm: {
+      label: 'Defina um preço justo',
+      minimum: 'Mínimo de {amount}',
+      amountMinimum: 'O valor deve ser de pelo menos {min}',
+      amountFreeOrMinimum: 'O valor deve ser {zero} ou pelo menos {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Cobrado {frequency}',
+      oneTimePurchase: 'Compra única',
+    },
+    card: {
+      included: 'Incluído',
+    },
+    benefits: {
+      moreBenefits: {
+        '=1': 'Mais # benefício',
+        other: 'Mais # benefícios',
+        _mode: 'plural',
+      },
+      showMoreBenefits: {
+        '=1': 'Mostrar mais # benefício',
+        other: 'Mostrar mais # benefícios',
+        _mode: 'plural',
+      },
+      showLess: 'Mostrar menos',
+      granting: 'Liberando benefícios...',
+      requestNewInvite: 'Solicitar novo convite',
+      retryIn: {
+        '=1': 'Tente novamente em # segundo',
+        other: 'Tente novamente em # segundos',
+        _mode: 'plural',
+      },
+      connectNewAccount: 'Conectar nova conta',
+      requestMyInvite: 'Solicitar meu convite',
+      github: {
+        connect: 'Conectar conta do GitHub',
+        goTo: 'Ir para {repository}',
+        selectAccount: 'Selecione uma conta do GitHub',
+      },
+      discord: {
+        connect: 'Conectar conta do Discord',
+        open: 'Abrir Discord',
+        selectAccount: 'Selecione uma conta do Discord',
+      },
+      licenseKey: {
+        copy: 'Copiar',
+        copiedToClipboard: 'Copiado para a área de transferência',
+        copiedToClipboardDescription:
+          'A chave de licença foi copiada para a área de transferência',
+        loading: 'Carregando...',
+        status: 'Status',
+        statusGranted: 'Concedida',
+        statusRevoked: 'Revogada',
+        statusDisabled: 'Desativada',
+        usage: 'Uso',
+        validations: 'Validações',
+        validatedAt: 'Validada em',
+        neverValidated: 'Nunca validada',
+        expiryDate: 'Data de expiração',
+        noExpiry: 'Sem expiração',
+        activations: 'Ativações',
+        activationDeleted: 'Ativação da chave de licença excluída',
+        activationDeletedDescription: 'Ativação excluída com sucesso',
+        activationDeactivationFailed: 'Falha na desativação',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Confirmar pagamento',
+      processingTitle: 'Estamos processando seu pedido',
+      successTitle: 'Seu pedido foi realizado com sucesso!',
+      failedTitle: 'Ocorreu um problema ao processar seu pedido',
+      processingDescription: 'Aguarde enquanto confirmamos seu pagamento.',
+      successDescription: 'Você já pode aproveitar os benefícios de {product}.',
+      failedDescription: 'Tente novamente ou entre em contato com o suporte.',
+    },
+    loading: {
+      processingOrder: 'Processando pedido...',
+      processingPayment: 'Processando pagamento',
+      paymentSuccessful:
+        'Pagamento realizado com sucesso! Preparando seus produtos...',
+      confirmationTokenFailed:
+        'Falha ao criar token de confirmação, tente novamente mais tarde.',
+    },
+    cta: {
+      startTrial: 'Iniciar teste',
+      subscribeNow: 'Assinar agora',
+      payNow: 'Pagar agora',
+      getFree: 'Obter gratuitamente',
+      paymentsUnavailable: 'Pagamentos indisponíveis no momento',
+    },
+  },
+  intervals: {
+    short: {
+      day: 'dia',
+      week: 'sem',
+      month: 'mês',
+      year: 'ano',
+    },
+    long: {
+      day: 'dia',
+      week: 'semana',
+      month: 'mês',
+      year: 'ano',
+    },
+    frequency: {
+      day: 'diariamente',
+      week: 'semanalmente',
+      month: 'mensalmente',
+      year: 'anualmente',
+      everyOrdinalInterval: 'a cada {ordinal} {interval}',
+    },
+  },
+  benefitTypes: {
+    license_keys: 'Chaves de licença',
+    github_repository: 'Acesso ao repositório GitHub',
+    discord: 'Convite do Discord',
+    downloadables: 'Downloads de arquivos',
+    custom: 'Personalizado',
+    meter_credit: 'Créditos de uso',
+  },
+} as const

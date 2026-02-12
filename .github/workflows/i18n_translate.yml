@@ -3,7 +3,8 @@ name: Generate Translations
 on:
   pull_request:
     paths:
-      - 'clients/packages/i18n/src/locales/en.ts'
+      - "clients/packages/i18n/src/locales/en.ts"
+      - "clients/packages/i18n/src/config.ts"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,11 +36,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: clients/.node-version
-          cache: 'pnpm'
-          cache-dependency-path: 'clients/pnpm-lock.yaml'
+          cache: "pnpm"
+          cache-dependency-path: "clients/pnpm-lock.yaml"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --ignore-scripts
 
       - name: Generate translations
         env:

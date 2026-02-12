@@ -139,6 +139,23 @@ SQL >
     GROUP BY subscription_id
     HAVING
         1 = 1
+        AND (
+            started_at IS NULL
+            OR started_at <= toDateTime(
+                {{ String(bounds_end, '2024-01-02 00:00:00', description="End bound for filtering") }},
+                {{ String(tz, 'UTC') }}
+            )
+        )
+        AND (
+            ends_at <= toDateTime64(0, 3, 'UTC')
+            OR ends_at >= toDateTime(
+                {{
+                    String(
+                        bounds_start, '2024-01-01 00:00:00', description="Start bound for filtering"
+                    )
+                }}, {{ String(tz, 'UTC') }}
+            )
+        )
         {% if defined(product_ids) and product_ids != '' %}
             AND argMaxMerge(subscription_state.product_id) IN (
                 SELECT

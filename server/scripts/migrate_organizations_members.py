@@ -129,14 +129,22 @@ async def migrate_organizations(
                 for org in organizations
                 if org.feature_settings.get("member_model_enabled", False)
             ]
+            seat_based = [
+                org
+                for org in organizations
+                if org.feature_settings.get("seat_based_pricing", False)
+                and not org.feature_settings.get("member_model_enabled", False)
+            ]
             to_migrate = [
                 org
                 for org in organizations
                 if not org.feature_settings.get("member_model_enabled", False)
+                and not org.feature_settings.get("seat_based_pricing", False)
             ]
 
             typer.echo(f"Found {len(organizations)} organization(s) matching filters:")
             typer.echo(f"  - {len(already_migrated)} already have member_model_enabled")
+            typer.echo(f"  - {len(seat_based)} skipped (seat_based_pricing enabled)")
             typer.echo(f"  - {len(to_migrate)} to migrate")
             typer.echo()
 

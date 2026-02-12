@@ -81,7 +81,8 @@ export const de = {
       label: 'Nenne einen fairen Preis',
       minimum: 'Mindestens {amount}',
       amountMinimum: 'Der Betrag muss mindestens {min} betragen',
-      amountFreeOrMinimum: 'Der Betrag muss 0 $ oder mindestens {min} betragen',
+      amountFreeOrMinimum:
+        'Der Betrag muss {zero} oder mindestens {min} betragen',
     },
     productSwitcher: {
       billedRecurring: 'Abrechnung {frequency}',

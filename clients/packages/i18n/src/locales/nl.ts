@@ -81,7 +81,7 @@ export const nl = {
       label: 'Kies een eerlijke prijs',
       minimum: 'minimaal {amount}',
       amountMinimum: 'Bedrag moet minimaal {min} zijn',
-      amountFreeOrMinimum: 'Bedrag moet $0 of minimaal {min} zijn',
+      amountFreeOrMinimum: 'Bedrag moet {zero} of minimaal {min} zijn',
     },
     productSwitcher: {
       billedRecurring: '{frequency} gefactureerd',

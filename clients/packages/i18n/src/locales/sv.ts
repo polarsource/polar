@@ -81,7 +81,7 @@ export const sv = {
       label: 'Ange pris',
       minimum: 'Minst {amount}',
       amountMinimum: 'Beloppet måste vara minst {min}',
-      amountFreeOrMinimum: 'Beloppet måste vara 0 eller minst {min}',
+      amountFreeOrMinimum: 'Beloppet måste vara {zero} eller minst {min}',
     },
     productSwitcher: {
       billedRecurring: 'Faktureras {frequency}',

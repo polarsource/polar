@@ -81,7 +81,7 @@ export const fr = {
       label: 'Définissez un prix juste',
       minimum: '{amount} minimum',
       amountMinimum: "Le montant doit être d'au moins {min}",
-      amountFreeOrMinimum: "Le montant doit être de 0 $ ou d'au moins {min}",
+      amountFreeOrMinimum: "Le montant doit être de {zero} ou d'au moins {min}",
     },
     productSwitcher: {
       billedRecurring: 'Facturé {frequency}',

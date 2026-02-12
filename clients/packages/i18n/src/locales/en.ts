@@ -41,7 +41,11 @@ export const en = {
     pricing: {
       subtotal: 'Subtotal',
       taxableAmount: 'Taxable amount',
-      taxes: 'Taxes',
+      taxes: {
+        value: 'Taxes',
+        _llmContext:
+          'Taxes applied to the order. This is VAT or sales tax. Prefer the specific term used in the target locale over a generic taxes (e.g. TVA in French, BTW in Dutch, etc.)',
+      },
       free: 'Free',
       payWhatYouWant: {
         value: 'Pay what you want',
@@ -96,7 +100,7 @@ export const en = {
       label: 'Name a fair price',
       minimum: '{amount} minimum',
       amountMinimum: 'Amount must be at least {min}',
-      amountFreeOrMinimum: 'Amount must be $0 or at least {min}',
+      amountFreeOrMinimum: 'Amount must be {zero} or at least {min}',
     },
     productSwitcher: {
       billedRecurring: 'Billed {frequency}',

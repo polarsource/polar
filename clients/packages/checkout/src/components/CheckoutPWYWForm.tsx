@@ -51,6 +51,7 @@ export const CheckoutPWYWForm = ({
       if (minimumAmount === 0 && value > 0 && value < 50) {
         return t('checkout.pwywForm.amountFreeOrMinimum', {
           min: formatCurrency('compact', locale)(50, checkout.currency),
+          zero: formatCurrency('compact', locale)(0, checkout.currency),
         })
       }
 

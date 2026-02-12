@@ -121,7 +121,6 @@ class StripeRefund:
         payment: Transaction,
         create_schema: RefundCreate,
         expected: dict[str, Any] = {},
-        expected_status: int = 200,
     ) -> Response:
         response = await self.calculate_and_create(
             client,
@@ -131,8 +130,7 @@ class StripeRefund:
             create_schema,
         )
 
-        # TODO: Why 200 vs. 201?
-        assert response.status_code == expected_status
+        assert response.status_code == 201
         if not expected:
             return response
 

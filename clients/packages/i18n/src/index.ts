@@ -103,6 +103,7 @@ import de from './locales/de'
 import en from './locales/en'
 import es from './locales/es'
 import fr from './locales/fr'
+import hu from './locales/hu'
 import nl from './locales/nl'
 import sv from './locales/sv'
 
@@ -217,6 +218,7 @@ const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   fr,
   es,
   de,
+  hu,
 }
 
 export function getTranslations(

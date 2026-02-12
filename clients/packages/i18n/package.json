@@ -12,7 +12,7 @@
     "directory": "clients/packages/i18n"
   },
   "scripts": {
-    "translate": "tsx --env-file=.env.local scripts/translate.ts",
+    "translate": "tsx scripts/translate.ts",
     "validate": "tsx scripts/validate.ts",
     "lint": "prettier -c .",
     "typecheck": "tsc --noEmit",

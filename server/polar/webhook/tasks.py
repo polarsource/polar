@@ -7,6 +7,7 @@ import httpx
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
+from dramatiq.common import compute_backoff
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import Environment, settings
@@ -194,9 +195,14 @@ async def _webhook_event_send(
         if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
             event.succeeded = False
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
-        # Retry
+        # Retry – compute backoff from delivery attempts only, so that
+        # unrelated NotLatestEvent retries don't inflate the delay.
         else:
-            raise DeliveryFailed() from e
+            _, delay = compute_backoff(
+                delivery_count,
+                factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
+            )
+            raise DeliveryFailed(delay=delay) from e
     # Success
     else:
         delivery.succeeded = True

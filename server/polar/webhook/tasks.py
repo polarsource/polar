@@ -14,7 +14,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.webhook.repository import WebhookEventRepository
+from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
 from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
@@ -22,7 +22,6 @@ from polar.worker import (
     TaskQueue,
     actor,
     enqueue_job,
-    get_retries,
 )
 
 from .service import webhook as webhook_service
@@ -37,7 +36,9 @@ class NotLatestEvent(Retry):
 def webhook_retry_when(retries: int, exception: Exception) -> bool:
     if isinstance(exception, NotLatestEvent):
         return True
-    return retries < settings.WEBHOOK_MAX_RETRIES
+    # HTTP delivery retries are gated inside _webhook_event_send by counting
+    # actual delivery attempts, so if a Retry reaches here it's safe to proceed.
+    return isinstance(exception, Retry)
 
 
 @actor(
@@ -180,8 +181,13 @@ async def _webhook_event_send(
         if delivery.response is None:
             delivery.response = str(e)
 
+        # Count actual HTTP delivery attempts (excluding current) to decide
+        # whether to retry. +1 accounts for the current attempt not yet committed.
+        delivery_repository = WebhookDeliveryRepository.from_session(session)
+        delivery_count = await delivery_repository.count_by_event(webhook_event_id) + 1
+
         # Permanent failure
-        if get_retries() >= settings.WEBHOOK_MAX_RETRIES:
+        if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
             event.succeeded = False
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
         # Retry

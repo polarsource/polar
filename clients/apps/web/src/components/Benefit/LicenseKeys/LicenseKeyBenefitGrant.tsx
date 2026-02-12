@@ -13,13 +13,13 @@ import { LicenseKeyDetails } from './LicenseKeyDetails'
 const LicenseKey = ({
   api,
   licenseKey,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   api: Client
   licenseKey: schemas['LicenseKeyWithActivations']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
 
   if (!licenseKey) {
     return <></>
@@ -52,13 +52,13 @@ const LicenseKey = ({
 export const LicenseKeyBenefitGrant = ({
   api,
   benefitGrant,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantLicenseKeys']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const { data: licenseKey, isLoading } = useCustomerLicenseKey(
     api,
     benefitGrant.properties.license_key_id as string,

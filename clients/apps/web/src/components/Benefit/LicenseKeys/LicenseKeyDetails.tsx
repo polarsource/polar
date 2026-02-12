@@ -34,10 +34,9 @@ const getLicenseKeyStatusLabel = (
 export const LicenseKeyDetails = ({
   className,
   licenseKey,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: LicenseKeyDetails) => {
-  const resolvedLocale = locale ?? DEFAULT_LOCALE
-  const t = useTranslations(resolvedLocale)
+  const t = useTranslations(locale)
 
   return (
     <ShadowBox
@@ -78,7 +77,7 @@ export const LicenseKeyDetails = ({
               {licenseKey.last_validated_at ? (
                 <FormattedDateTime
                   datetime={licenseKey.last_validated_at ?? ''}
-                  locale={resolvedLocale}
+                  locale={locale}
                 />
               ) : (
                 <span>{t('checkout.benefits.licenseKey.neverValidated')}</span>
@@ -93,7 +92,7 @@ export const LicenseKeyDetails = ({
               {licenseKey.expires_at ? (
                 <FormattedDateTime
                   datetime={licenseKey.expires_at ?? ''}
-                  locale={resolvedLocale}
+                  locale={locale}
                 />
               ) : (
                 <span>{t('checkout.benefits.licenseKey.noExpiry')}</span>

@@ -38,9 +38,9 @@ interface MeteredPricesDisplayProps {
 
 const MeteredPricesDisplay = ({
   checkout,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: MeteredPricesDisplayProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const { product, prices, productPrice } = checkout
 
   // Get the metered prices, minus the currently selected one, in case there are only metered prices

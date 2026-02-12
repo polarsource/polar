@@ -54,7 +54,7 @@ const BenefitGrantOAuth = ({
   api,
   benefitGrant,
   platform,
-  locale,
+  locale = DEFAULT_LOCALE,
   connectButtonText,
   openButtonUrl,
   openButtonText,
@@ -71,7 +71,7 @@ const BenefitGrantOAuth = ({
   connectButtonText: string
   selectPlaceholder: string
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const {
@@ -279,13 +279,13 @@ const BenefitGrantOAuth = ({
 const BenefitGrantGitHubRepository = ({
   api,
   benefitGrant,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantGitHubRepository']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const {
     benefit: {
       properties: { repository_owner, repository_name },
@@ -310,13 +310,13 @@ const BenefitGrantGitHubRepository = ({
 const BenefitGrantDiscord = ({
   api,
   benefitGrant,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   api: Client
   benefitGrant: schemas['CustomerBenefitGrantDiscord']
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const {
     benefit: {
       properties: { guild_id },
@@ -339,9 +339,9 @@ const BenefitGrantDiscord = ({
 export const BenefitGrant = ({
   api,
   benefitGrant,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: BenefitGrantProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const { benefit } = benefitGrant
 
   return (

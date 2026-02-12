@@ -53,10 +53,10 @@ export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
 export const CheckoutFormProvider = ({
   children,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: React.PropsWithChildren<{ locale?: AcceptedLocale }>) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
   const [isUpdatePending, setIsUpdatePending] = useState(false)

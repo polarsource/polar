@@ -13,9 +13,9 @@ interface MeteredPriceLabelProps {
 
 const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({
   price,
-  locale,
+  locale = DEFAULT_LOCALE,
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
 
   return (
     <div className="flex flex-row items-baseline gap-x-1">

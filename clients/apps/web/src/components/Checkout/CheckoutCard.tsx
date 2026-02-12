@@ -24,9 +24,9 @@ export const CheckoutCard = ({
   checkout,
   update,
   disabled,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: CheckoutCardProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const { product, productPrice } = checkout
   const isSeatBased = productPrice && productPrice.amountType === 'seat_based'
 

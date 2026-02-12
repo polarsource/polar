@@ -33,9 +33,9 @@ export const CheckoutPWYWForm = ({
   checkout,
   productPrice,
   themePreset,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: CheckoutPWYWFormProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const { amount } = checkout
 
   const form = useForm<{ amount: number }>({

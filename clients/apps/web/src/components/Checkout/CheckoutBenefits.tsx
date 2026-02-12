@@ -21,11 +21,11 @@ interface CheckoutBenefitsProps {
 
 const CheckoutBenefits = ({
   checkout,
-  locale,
+  locale = DEFAULT_LOCALE,
   customerSessionToken,
   maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const api = createClientSideAPI(customerSessionToken)
   const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
     checkout_id: checkout.id,

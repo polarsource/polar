@@ -19,9 +19,9 @@ interface ProductPriceLabelProps {
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   price,
-  locale,
+  locale = DEFAULT_LOCALE,
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
 
   if (price.amountType === 'fixed') {
     return (

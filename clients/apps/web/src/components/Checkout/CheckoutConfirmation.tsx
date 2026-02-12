@@ -34,13 +34,13 @@ const isIntegrationError = (
 const StripeRequiresAction = ({
   stripe,
   checkout,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   stripe: Stripe | null
   checkout: CheckoutPublic
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const [pendingHandling, setPendingHandling] = useState(false)
   const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
@@ -113,12 +113,12 @@ export const CheckoutConfirmation = ({
   checkout: _checkout,
   embed,
   theme,
-  locale,
+  locale = DEFAULT_LOCALE,
   customerSessionToken,
   disabled,
   maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)

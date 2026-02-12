@@ -30,7 +30,7 @@ const BenefitRow = ({
 export const BenefitList = ({
   benefits,
   toggle = false,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: {
   benefits:
     | {
@@ -42,7 +42,7 @@ export const BenefitList = ({
   toggle?: boolean
   locale?: AcceptedLocale
 }) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
   const [showAll, setShowAll] = useState(false)
 
   if (!benefits) return <></>

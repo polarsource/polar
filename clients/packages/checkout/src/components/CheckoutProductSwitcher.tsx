@@ -35,9 +35,9 @@ const CheckoutProductSwitcher = ({
   checkout,
   update,
   themePreset,
-  locale,
+  locale = DEFAULT_LOCALE,
 }: CheckoutProductSwitcherProps) => {
-  const t = useTranslations(locale ?? DEFAULT_LOCALE)
+  const t = useTranslations(locale)
 
   const {
     product: selectedProduct,

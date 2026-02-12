@@ -134,7 +134,7 @@ class WebhookEventRepository(
                 WebhookEvent.created_at >= age_limit,
             )
         )
-        res = await self._session.execute(statement)
+        res = await self.session.execute(statement)
         return res.scalar_one()
 
     def get_eager_options(self) -> Options:
@@ -161,7 +161,7 @@ class WebhookDeliveryRepository(
             WebhookDelivery.webhook_event_id == event_id,
             WebhookDelivery.deleted_at.is_(None),
         )
-        res = await self._session.execute(statement)
+        res = await self.session.execute(statement)
         return res.scalar_one()
 
     def get_readable_statement(

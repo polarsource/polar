@@ -1,4 +1,4 @@
-export const sv = {
+export default {
   checkout: {
     footer: {
       poweredBy: 'Drivs av',

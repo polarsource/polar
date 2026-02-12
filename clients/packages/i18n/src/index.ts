@@ -99,12 +99,13 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
   return SUPPORTED_LOCALES.includes(locale as SupportedLocale)
 }
 
-import { de } from './locales/de'
-import { en } from './locales/en'
-import { es } from './locales/es'
-import { fr } from './locales/fr'
-import { nl } from './locales/nl'
-import { sv } from './locales/sv'
+import de from './locales/de'
+import en from './locales/en'
+import es from './locales/es'
+import fr from './locales/fr'
+import nl from './locales/nl'
+import ptBR from './locales/pt-BR'
+import sv from './locales/sv'
 
 export type Translations = typeof en
 
@@ -217,6 +218,7 @@ const translations: Record<SupportedLocale, LocaleShape<Translations>> = {
   fr,
   es,
   de,
+  'pt-BR': ptBR,
 }
 
 export function getTranslations(

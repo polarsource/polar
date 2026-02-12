@@ -31,10 +31,10 @@ SQL >
     %
     WITH
         toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS start,
         toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS
     end,
     dateDiff('week', start, end
@@ -208,7 +208,7 @@ SQL >
         {% elif interval == 'hour' %}
             toStartOfHour(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+            toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }}), 1) AS day,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'year' %}
@@ -278,7 +278,7 @@ SQL >
         {% elif interval == 'hour' %}
             toStartOfHour(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }}), 1) = w.interval
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'year' %}

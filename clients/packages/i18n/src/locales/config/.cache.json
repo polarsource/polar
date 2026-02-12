@@ -95,7 +95,7 @@
     "checkout.loading.processingPayment": "Processing payment",
     "checkout.loading.paymentSuccessful": "Payment successful! Getting your products ready...",
     "checkout.loading.confirmationTokenFailed": "Failed to create confirmation token, please try again later.",
-    "checkout.cta.startTrial": "Start Trial",
+    "checkout.cta.startTrial": "Start trial",
     "checkout.cta.subscribeNow": "Subscribe now",
     "checkout.cta.payNow": "Pay now",
     "checkout.cta.getFree": "Get for free",

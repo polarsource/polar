@@ -81,7 +81,7 @@ export default {
       label: 'Adjon meg egy méltányos árat',
       minimum: 'Minimum {amount}',
       amountMinimum: 'Az összegnek legalább {min} kell lennie',
-      amountFreeOrMinimum: 'Az összegnek 0 $ vagy legalább {min} kell lennie',
+      amountFreeOrMinimum: 'Az összeg legyen {zero} vagy legalább {min}',
     },
     productSwitcher: {
       billedRecurring: '{frequency} számlázva',
@@ -189,7 +189,6 @@ export default {
     },
   },
   benefitTypes: {
-    usage: 'Használat',
     license_keys: 'Licenckulcsok',
     github_repository: 'GitHub tároló hozzáférés',
     discord: 'Discord meghívó',

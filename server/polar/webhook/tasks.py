@@ -33,12 +33,16 @@ class NotLatestEvent(Retry):
     pass
 
 
+class DeliveryFailed(Retry):
+    pass
+
+
 def webhook_retry_when(retries: int, exception: Exception) -> bool:
     if isinstance(exception, NotLatestEvent):
         return True
     # HTTP delivery retries are gated inside _webhook_event_send by counting
     # actual delivery attempts, so if a Retry reaches here it's safe to proceed.
-    return isinstance(exception, Retry)
+    return isinstance(exception, DeliveryFailed)
 
 
 @actor(
@@ -192,7 +196,7 @@ async def _webhook_event_send(
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
         # Retry
         else:
-            raise Retry() from e
+            raise DeliveryFailed() from e
     # Success
     else:
         delivery.succeeded = True

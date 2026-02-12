@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -7,6 +8,7 @@ import { getServerURL } from '@/utils/api'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import {
   CheckoutForm,
+  CheckoutPricingBreakdown,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
 } from '@polar-sh/checkout/components'
@@ -53,6 +55,15 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
   const posthog = usePostHog()
+
+  const { variant: walletPaymentExperiment } = useExperiment(
+    'checkout_wallet_payment',
+  )
+  // const { variant: pricingPositionExperiment } = useExperiment(
+  //   'checkout_pricing_position',
+  // )
+
+  const pricingPositionExperiment = 'treatment'
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
@@ -226,6 +237,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          walletPaymentExperiment={walletPaymentExperiment}
+          pricingPositionExperiment={pricingPositionExperiment}
         />
       </ShadowBox>
     )
@@ -233,9 +246,31 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
   return (
     <div className="flex w-full flex-col gap-y-6">
+      {pricingPositionExperiment === 'treatment' && (
+        <div className="flex flex-row items-center gap-x-4">
+          {checkout.returnUrl && (
+            <Link
+              href={checkout.returnUrl}
+              className="dark:text-polar-500 text-gray-500"
+            >
+              <ArrowBackOutlined fontSize="small" />
+            </Link>
+          )}
+          <div className="flex flex-row items-center gap-x-3">
+            <img
+              src={checkout.organization.avatarUrl}
+              alt={checkout.organization.name}
+              className="h-8 w-8 rounded-full"
+            />
+            <span className="font-medium dark:text-white">
+              {checkout.organization.name}
+            </span>
+          </div>
+        </div>
+      )}
       <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
         <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
-          {checkout.returnUrl && (
+          {pricingPositionExperiment !== 'treatment' && checkout.returnUrl && (
             <Link
               href={checkout.returnUrl}
               className="dark:text-polar-500 flex flex-row items-center gap-x-4 px-4 py-2 text-gray-500"
@@ -249,7 +284,13 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
               <CheckoutProductInfo
                 organization={checkout.organization}
                 product={checkout.product}
+                pricingPositionExperiment={pricingPositionExperiment}
               />
+              {pricingPositionExperiment === 'treatment' && (
+                <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
+                  <CheckoutPricingBreakdown checkout={checkout} />
+                </ShadowBox>
+              )}
               <CheckoutProductSwitcher
                 checkout={checkout}
                 update={
@@ -258,6 +299,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   ) => Promise<ProductCheckoutPublic>
                 }
                 themePreset={themePreset}
+                pricingPositionExperiment={pricingPositionExperiment}
               />
               {checkout.productPrice.amountType === 'custom' && (
                 <CheckoutPWYWForm
@@ -274,6 +316,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                     data: CheckoutUpdatePublic,
                   ) => Promise<ProductCheckoutPublic>
                 }
+                pricingPositionExperiment={pricingPositionExperiment}
               />
             </>
           )}
@@ -291,6 +334,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             themePreset={themePreset}
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
+            walletPaymentExperiment={walletPaymentExperiment}
+            pricingPositionExperiment={pricingPositionExperiment}
           />
         </div>
       </ShadowBoxOnMd>

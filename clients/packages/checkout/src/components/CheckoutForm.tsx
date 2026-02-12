@@ -94,6 +94,7 @@ interface BaseCheckoutFormProps {
   disabled?: boolean
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
+  pricingPositionExperiment?: "treatment" | "control"
 }
 
 const BaseCheckoutForm = ({
@@ -107,6 +108,7 @@ const BaseCheckoutForm = ({
   isUpdatePending,
   children,
   themePreset: themePresetProps,
+  pricingPositionExperiment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? hasLegacyRecurringPrices(checkout.prices[checkout.product.id])
@@ -771,7 +773,7 @@ const BaseCheckoutForm = ({
                   ),
                 )}
             </div>
-            {!checkout.isFreeProductPrice && (
+            {!checkout.isFreeProductPrice && pricingPositionExperiment !== 'treatment' && (
               <div className="flex flex-col gap-y-2">
                 {checkout.currency ? (
                   <>
@@ -931,6 +933,8 @@ interface CheckoutFormProps {
   isUpdatePending?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
+  walletPaymentExperiment?: "treatment" | "control"
+  pricingPositionExperiment?: "treatment" | "control"
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -943,6 +947,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     disabled,
     isUpdatePending,
     themePreset: themePresetProps,
+    walletPaymentExperiment,
+    pricingPositionExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -951,6 +957,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     () => loadStripe(publishable_key),
     [publishable_key],
   )
+
+  console.log({walletPaymentExperiment})
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (

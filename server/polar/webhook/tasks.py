@@ -88,7 +88,7 @@ async def _webhook_event_send(
 
     pending_before = await webhook_service.count_pending_events_before(session, event)
     if pending_before > 0:
-        delay = pending_before * 500
+        delay = pending_before * settings.WEBHOOK_RETRY_INTERVAL_MILLISECONDS
         log.info(
             "Earlier events need to be delivered first, retrying later",
             id=event.id,

@@ -5,7 +5,7 @@ from typing import Literal, cast, overload
 from uuid import UUID
 
 import structlog
-from sqlalchemy import CursorResult, String, desc, or_, select, text, update
+from sqlalchemy import CursorResult, String, desc, func, or_, select, text, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import joinedload
 

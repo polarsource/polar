@@ -101,7 +101,7 @@ class TestRequestDeletion:
         assert result.blocked_reasons == []
         assert user.deleted_at is not None
         assert user.email != original_email
-        assert user.email.endswith("@anonymized.invalid")
+        assert user.email.endswith("@anonymized.polar.sh")
 
     async def test_blocked_with_active_organization(
         self,
@@ -137,7 +137,7 @@ class TestRequestDeletion:
 
         assert result.deleted is True
         assert user.email != original_email
-        assert user.email.endswith("@anonymized.invalid")
+        assert user.email.endswith("@anonymized.polar.sh")
         assert user.avatar_url is None
         assert user.meta == {}
         assert user.deleted_at is not None

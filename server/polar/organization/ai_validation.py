@@ -1,8 +1,10 @@
 import asyncio
+import secrets
 from typing import Literal
 
 import httpx
 import structlog
+from markdownify import markdownify
 from pydantic import Field
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -13,6 +15,13 @@ from polar.kit.schemas import Schema
 from polar.models.organization import Organization
 
 log = structlog.get_logger(__name__)
+
+# User agents to rotate for website fetching
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+]
 
 
 class OrganizationAIValidationVerdict(Schema):
@@ -197,6 +206,71 @@ async def _fetch_policy_content() -> str:
     return _cached_policy_content
 
 
+async def _fetch_website_content(url: str) -> str | None:
+    """
+    Fetch website content and convert to markdown.
+
+    Args:
+        url: The website URL to fetch
+
+    Returns:
+        Markdown content or None if fetch fails
+    """
+    try:
+        # Select a random user agent to avoid bot detection
+        user_agent = secrets.choice(USER_AGENTS)
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+                timeout=10.0,
+                follow_redirects=True,
+                headers={"User-Agent": user_agent},
+            )
+
+            if response.status_code != 200:
+                log.info(
+                    "Failed to fetch website content",
+                    url=url,
+                    status_code=response.status_code,
+                )
+                return None
+
+            # Check content size and enforce 50KB limit
+            content = response.text
+            max_size = 50 * 1024  # 50KB
+            if len(content) > max_size:
+                log.info(
+                    "Website content exceeds size limit, truncating",
+                    url=url,
+                    size=len(content),
+                    max_size=max_size,
+                )
+                content = content[:max_size]
+
+            # Convert HTML to markdown
+            markdown_content = markdownify(content, heading_style="ATX")
+
+            log.info(
+                "Successfully fetched website content",
+                url=url,
+                content_length=len(markdown_content),
+            )
+
+            return markdown_content
+
+    except TimeoutError:
+        log.info("Website fetch timed out", url=url)
+        return None
+    except Exception as e:
+        log.info(
+            "Error fetching website content",
+            url=url,
+            error=str(e),
+        )
+        return None
+
+
 class OrganizationAIValidator:
     """AI-powered organization details validator using pydantic-ai."""
 
@@ -242,7 +316,7 @@ class OrganizationAIValidator:
             policy_content = await _fetch_policy_content()
 
             # Prepare organization context
-            org_context = self._prepare_organization_context(organization)
+            org_context = await self._prepare_organization_context(organization)
 
             # Create the validation prompt
             prompt = f"""
@@ -295,7 +369,7 @@ class OrganizationAIValidator:
                 verdict=verdict, timed_out=False, model=self.model.model_name
             )
 
-    def _prepare_organization_context(self, organization: Organization) -> str:
+    async def _prepare_organization_context(self, organization: Organization) -> str:
         """Prepare organization details for AI analysis."""
         details = organization.details or {}
 
@@ -316,6 +390,12 @@ class OrganizationAIValidator:
 
         if details.get("intended_use"):
             context_parts.append(f"Intended Use: {details['intended_use']}")
+
+        # Fetch and include actual website content if available
+        if organization.website:
+            website_content = await _fetch_website_content(organization.website)
+            if website_content:
+                context_parts.append(f"\nWebsite Content:\n{website_content}")
 
         return "\n".join(context_parts)
 

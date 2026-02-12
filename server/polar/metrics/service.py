@@ -243,7 +243,8 @@ class MetricsService:
             org_ids = [auth_subject.subject.id]
 
         if metrics is not None:
-            tb_needed = {s for s in metrics if s in tb_slugs}
+            expanded_sql_slugs, _ = _expand_metrics_with_dependencies(metrics)
+            tb_needed = {s for s in expanded_sql_slugs if s in tb_slugs}
         else:
             tb_needed = tb_slugs
 

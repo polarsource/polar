@@ -191,7 +191,6 @@ export const nl = {
     },
   },
   benefitTypes: {
-    usage: 'Verbruik',
     license_keys: 'Licentiesleutels',
     github_repository: 'Toegang tot GitHub-repository',
     discord: 'Discord-uitnodiging',

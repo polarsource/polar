@@ -195,7 +195,6 @@ export const de = {
     },
   },
   benefitTypes: {
-    usage: 'Nutzung',
     license_keys: 'Lizenzschlüssel',
     github_repository: 'GitHub-Repository-Zugang',
     discord: 'Discord-Einladung',

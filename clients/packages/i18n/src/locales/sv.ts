@@ -188,7 +188,6 @@ export const sv = {
     },
   },
   benefitTypes: {
-    usage: 'Användning',
     license_keys: 'Licensnycklar',
     github_repository: 'Åtkomst till GitHub-repository',
     discord: 'Discord-inbjudan',

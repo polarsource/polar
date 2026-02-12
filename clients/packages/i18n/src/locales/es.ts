@@ -191,7 +191,6 @@ export const es = {
     },
   },
   benefitTypes: {
-    usage: 'Uso',
     license_keys: 'Claves de licencia',
     github_repository: 'Acceso a repositorio de GitHub',
     discord: 'Invitación a Discord',

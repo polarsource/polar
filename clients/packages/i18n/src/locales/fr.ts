@@ -193,7 +193,6 @@ export const fr = {
     },
   },
   benefitTypes: {
-    usage: 'Utilisation',
     license_keys: 'Clés de licence',
     github_repository: 'Accès au dépôt GitHub',
     discord: 'Invitation Discord',

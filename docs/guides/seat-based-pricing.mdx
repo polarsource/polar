@@ -4,128 +4,99 @@ sidebarTitle: "Seat-Based Pricing"
 description: "Complete guide to implementing team products with seat-based pricing"
 ---
 
-This guide walks you through implementing seat-based pricing for team products, from creating the product to handling seat assignments and claims.
+Seat-based pricing lets you sell products where one person buys seats and assigns them to their team. Each seat holder gets their own benefits — license keys, Discord roles, file downloads, or anything else you offer.
 
-## What you'll build
+<Warning>
+Seat-based pricing is currently in **private beta**. Contact our support team to enable it for your organization.
+</Warning>
 
-By the end of this guide, you'll have:
-- A seat-based product with tiered pricing (subscription or one-time)
-- Checkout flow for purchasing seats
-- Seat assignment and management interface
-- Claim flow for team members
+## Understanding the model
 
-<Info>
-This guide covers both **subscription-based** and **one-time purchase** seat-based products. The implementation is similar for both, with key differences in scaling and billing.
-</Info>
+Before writing any code, there are three entities you need to understand. They change how you think about every API call, webhook, and portal flow.
+
+### Customer, Member, and CustomerSeat
+
+With standard Polar products, one person buys and one person uses — they're the same person. With seat-based products, buying and using are separate concerns, modeled through three distinct entities:
+
+- A **Customer** is the billing entity — who pays. They own subscriptions, orders, and payment methods. On first seat-based purchase, the customer is permanently upgraded to `type: "team"`, which enables members and team management.
+- A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently. The person who purchases the products is created as an `owner` member.
+- A **CustomerSeat** is the link between a product and a member. It tracks assignment status (`pending`, `claimed`, `revoked`), holds the invitation token, and carries optional metadata.
+
+```
+Customer (Jane — billing manager, type: "team")
+  ├── Member: Jane (role: owner)          → manages team, no seat and no product benefits
+  ├── Member: Alice (role: member)        → gets benefits via seat
+  └── Member: Bob (role: member)          → gets benefits via seat
+
+Subscription (Team Pro — 3 seats)
+  ├── CustomerSeat → Alice (claimed)      → benefits granted
+  ├── CustomerSeat → Bob (claimed)        → benefits granted
+  └── CustomerSeat → unassigned           → available
+```
+
+### Why this separation matters
+
+This three-entity model gives you flexibility that a simple "buyer = user" model can't:
+
+- **Members persist across products.** The same member can hold seats from different subscriptions or orders under the same customer.
+- **Roles control portal access.** Owners and billing managers see full team management. Regular members see only their own benefits.
+- **Benefits track to people, not purchases.** Always use `grant.member` to identify who has access — `grant.customer_id` is always the billing entity, not the end user.
+
+### What this means for your integration
+
+- **Benefit grants** reference a `member`, not just a `customer`. Always use `grant.member` to identify who received the benefit.
+- **Webhooks** include a `member` object on seat and grant events. Use it instead of `customer_id` to identify the end user.
+- **Benefits are not granted at purchase time.** Seats must be assigned and claimed before benefits are granted.
+
+```
+Purchase → Assign seats → Members claim → Benefits granted
+```
 
 ## Prerequisites
 
-- Polar organization with `seat_based_pricing_enabled` feature flag
-- Polar SDK installed (`npm install @polar-sh/sdk` or `pip install polar-sdk`)
-  - **Important:** Seat-based pricing requires the latest version of the SDK. Make sure to update to the latest version to access all seat-based pricing features.
+- Polar organization with seat-based pricing enabled
+- Polar SDK installed (`npm install @polar-sh/sdk` or `pip install polar-sdk`) — make sure it's the latest version
 - Basic understanding of Polar products and subscriptions
 
-<Warning>
-Seat-based pricing is currently in **private beta**. To enable the `seat_based_pricing_enabled` feature flag for your organization, please contact our support team.
-</Warning>
+## Implementation
 
-## Step 1: Create a seat-based product
+<Info>
+This guide covers both **subscription** and **one-time purchase** seat-based products. The flow is the same — the only difference is in scaling and billing.
+</Info>
+
+### Step 1: Create a seat-based product
 
 <Steps>
   <Step title="Navigate to Products">
     In the Polar dashboard, go to **Products** and click **Create Product**.
   </Step>
 
-  <Step title="Configure basic settings">
-    Set your product name, description, and media. For example:
-    - **Subscription**: Team Pro Plan - Professional features for your entire team
-    - **One-time**: Enterprise License Pack - Perpetual team licenses
-  </Step>
-
-  <Step title="Select seat-based pricing">
+  <Step title="Configure pricing">
     Under **Pricing**:
-    - **Product type**: Choose **Subscription** for recurring billing or **One-time** for perpetual licenses
-    - **Billing cycle** (subscriptions only): Monthly or Yearly
+    - **Product type**: Subscription (recurring) or One-time (perpetual licenses)
     - **Pricing type**: Seat-based
     - **Min seats**: 1 (or your minimum team size)
-  </Step>
 
-  <Step title="Configure pricing tiers">
-    Define your volume-based pricing:
+    Define volume-based tiers:
 
     | Tier | Max Seats | Price per Seat |
     |------|-----------|----------------|
     | 1    | 4         | $10/month      |
     | 2    | 9         | $9/month       |
     | 3    | Unlimited | $8/month       |
-
-    Example: A team purchasing 6 seats pays 6 × $9 = $54/month.
   </Step>
 
   <Step title="Add benefits">
-    Configure benefits that seat holders will receive:
-    - License Keys
-    - File Downloads
-    - Discord roles
-    - Custom benefits
-
-    <Info>
-    Benefits are granted when seats are claimed, not at purchase time.
-    </Info>
+    Configure benefits that seat holders will receive (license keys, file downloads, Discord roles, etc.). Remember: benefits are granted on seat claim, not at purchase.
   </Step>
 </Steps>
 
-You can also create seat-based products via API:
-
-**Subscription example:**
-
-```typescript
-const subscriptionProduct = await polar.products.create({
-  name: "Team Pro Plan",
-  organization_id: "org_123",
-  is_recurring: true,
-  prices: [{
-    type: "recurring",
-    recurring_interval: "month",
-    amount_type: "seat_based",
-    price_currency: "usd",
-    seat_tiers: [
-      { min_seats: 1, max_seats: 4, price_per_seat: 1000 },   // $10/month
-      { min_seats: 5, max_seats: 9, price_per_seat: 900 },    // $9/month
-      { min_seats: 10, max_seats: null, price_per_seat: 800 } // $8/month
-    ]
-  }]
-});
-```
-
-**One-time purchase example:**
-
-```typescript
-const oneTimeProduct = await polar.products.create({
-  name: "Enterprise License Pack",
-  organization_id: "org_123",
-  is_recurring: false,
-  prices: [{
-    type: "one_time",
-    amount_type: "seat_based",
-    price_currency: "usd",
-    seat_tiers: [
-      { min_seats: 1, max_seats: 10, price_per_seat: 5000 },   // $50 per seat
-      { min_seats: 11, max_seats: 50, price_per_seat: 4500 },  // $45 per seat
-      { min_seats: 51, max_seats: null, price_per_seat: 4000 } // $40 per seat
-    ]
-  }]
-});
-```
-
-## Step 2: Implement checkout flow
-
-Create a checkout session that allows customers to select seat quantity:
+### Step 2: Checkout
 
 ```typescript
 const checkout = await polar.checkouts.create({
-  product_price_id: "price_123",
-  seats: 5, // Customer selects quantity
+  products: ["prod_123"],
+  seats: 5,
   success_url: "https://your-app.com/success",
   customer_email: "billing@company.com"
 });
@@ -133,289 +104,42 @@ const checkout = await polar.checkouts.create({
 // Redirect to checkout.url
 ```
 
-The checkout displays:
-- Price per seat based on quantity
-- Total amount
-- Clear indication this is for team access
+The checkout automatically calculates pricing based on your tiers.
+
+### Step 3: Seat management
+
+After purchase, the billing manager can assign and manage seats directly from the **Customer Portal** — no custom UI required. The portal provides:
+
+- **Assign seats** to team members by email
+- **Revoke seats** to remove access and free up seats for reassignment
+- **Resend invitations** for pending seats
+- **Adjust seat count** on subscriptions (add or reduce)
+
+Polar automatically sends invitation emails to assigned team members with a secure claim link. Once a member claims their seat, benefits are granted immediately.
 
 <Info>
-The checkout automatically calculates pricing based on your tiers. A customer selecting 5 seats will see the $9/seat price, totaling $45.
+Invitation emails are sent automatically when seats are assigned. The claim flow is fully managed by Polar — members click the link, claim their seat, and get immediate access to benefits.
 </Info>
 
-## Step 3: Handle post-purchase webhook
+#### API-driven seat assignment
 
-Listen for purchase webhooks to know when a customer buys seats:
+If you want to manage seat assignment programmatically (e.g., auto-assigning seats when users sign up), use the [Customer Seats API](/api-reference/customer-seats/assign):
 
 ```typescript
-// Webhook handler
-app.post('/webhooks/polar', async (req, res) => {
-  const event = req.body;
-
-  // For subscriptions
-  if (event.type === 'subscription.created') {
-    const subscription = event.data;
-
-    if (subscription.product.has_seat_based_price) {
-      await notifyBillingManager(subscription.customer_id, {
-        message: `Your ${subscription.seats}-seat subscription is active!`,
-        manage_seats_url: `https://yourapp.com/seats/subscription/${subscription.id}`
-      });
-    }
-  }
-
-  // For one-time purchases
-  if (event.type === 'order.created') {
-    const order = event.data;
-
-    if (order.seats) {
-      await notifyBillingManager(order.customer_id, {
-        message: `Your ${order.seats} perpetual seat licenses have been purchased!`,
-        manage_seats_url: `https://yourapp.com/seats/order/${order.id}`
-      });
-    }
-  }
-
-  res.sendStatus(200);
+const seat = await polar.customerSeats.assign({
+  subscription_id: subscriptionId,
+  email: "engineer@company.com",
+  immediate_claim: true  // Skip invitation email, grant benefits immediately
 });
 ```
 
-## Step 4: Build seat management interface
+<Info>
+Use `immediate_claim: true` when you manage your own user authentication and want to bypass the email invitation flow. Benefits are granted immediately without the member needing to click a claim link.
+</Info>
 
-Create an interface for billing managers to assign seats:
+### Step 4: Handle benefit grants
 
-```typescript
-// List available seats (works for both subscriptions and orders)
-async function getSeatInfo(params: { subscription_id?: string; order_id?: string }) {
-  const { seats, available_seats, total_seats } =
-    await polar.customerSeats.list(params);
-
-  return {
-    seats,
-    available: available_seats,
-    total: total_seats,
-    canAssign: available_seats > 0
-  };
-}
-
-// Assign a seat (works for both subscriptions and orders)
-async function assignSeat(
-  params: { subscription_id?: string; order_id?: string },
-  email: string,
-  metadata?: Record<string, any>
-) {
-  try {
-    const seat = await polar.customerSeats.assign({
-      ...params,
-      email: email,
-      metadata: metadata // e.g., { department: "Engineering" }
-    });
-
-    return {
-      success: true,
-      seat: seat,
-      message: `Invitation sent to ${email}`
-    };
-  } catch (error) {
-    if (error.status === 400) {
-      return {
-        success: false,
-        error: "No seats available or customer already has a seat"
-      };
-    }
-    throw error;
-  }
-}
-
-// Example usage:
-// For subscriptions: getSeatInfo({ subscription_id: "sub_123" })
-// For orders: getSeatInfo({ order_id: "order_456" })
-```
-
-Example UI component (React):
-
-```tsx
-function SeatManagement({ subscriptionId }: { subscriptionId: string }) {
-  const [seatInfo, setSeatInfo] = useState(null);
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    loadSeats();
-  }, [subscriptionId]);
-
-  async function loadSeats() {
-    const info = await getSeatInfo(subscriptionId);
-    setSeatInfo(info);
-  }
-
-  async function handleAssign() {
-    const result = await assignSeat(subscriptionId, email, {
-      role: "Developer"
-    });
-
-    if (result.success) {
-      setEmail("");
-      loadSeats(); // Refresh list
-      toast.success("Invitation sent!");
-    }
-  }
-
-  return (
-    <div>
-      <h2>Seat Management</h2>
-      <p>{seatInfo?.available} of {seatInfo?.total} seats available</p>
-
-      {/* Assign new seat */}
-      <div>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="team-member@company.com"
-        />
-        <button
-          onClick={handleAssign}
-          disabled={!seatInfo?.canAssign}
-        >
-          Assign Seat
-        </button>
-      </div>
-
-      {/* List existing seats */}
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Role</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {seatInfo?.seats.map(seat => (
-            <tr key={seat.id}>
-              <td>{seat.customer_email}</td>
-              <td>
-                <SeatStatusBadge status={seat.status} />
-              </td>
-              <td>{seat.seat_metadata?.role}</td>
-              <td>
-                {seat.status === 'pending' && (
-                  <button onClick={() => resendInvitation(seat.id)}>
-                    Resend
-                  </button>
-                )}
-                {seat.status === 'claimed' && (
-                  <button onClick={() => revokeSeat(seat.id)}>
-                    Revoke
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-```
-
-## Step 5: Implement seat claim flow
-
-When a team member receives an invitation email, they'll click a link with the invitation token. Build a claim page:
-
-```typescript
-// Claim page route: /claim?token=abc123...
-
-async function handleClaimPage(token: string) {
-  // Get claim information (no auth required)
-  const claimInfo = await polar.customerSeats.getClaimInfo({
-    invitation_token: token
-  });
-
-  if (!claimInfo.can_claim) {
-    return {
-      error: "This invitation has expired or already been claimed"
-    };
-  }
-
-  return {
-    product: claimInfo.product_name,
-    organization: claimInfo.organization_name,
-    email: claimInfo.customer_email
-  };
-}
-
-async function claimSeat(token: string) {
-  const { seat, customer_session_token } =
-    await polar.customerSeats.claim({
-      invitation_token: token
-    });
-
-  // Store the customer session token
-  // This allows immediate portal access
-  localStorage.setItem('polar_session', customer_session_token);
-
-  return {
-    success: true,
-    seat: seat,
-    sessionToken: customer_session_token
-  };
-}
-```
-
-Example claim page (React):
-
-```tsx
-function ClaimPage() {
-  const [token] = useSearchParams();
-  const [claimInfo, setClaimInfo] = useState(null);
-  const [claiming, setClaiming] = useState(false);
-
-  useEffect(() => {
-    loadClaimInfo();
-  }, [token]);
-
-  async function loadClaimInfo() {
-    const info = await handleClaimPage(token.get('token'));
-    setClaimInfo(info);
-  }
-
-  async function handleClaim() {
-    setClaiming(true);
-    try {
-      const result = await claimSeat(token.get('token'));
-
-      // Redirect to customer portal
-      window.location.href = `/portal?session=${result.sessionToken}`;
-    } catch (error) {
-      toast.error("Failed to claim seat");
-      setClaiming(false);
-    }
-  }
-
-  if (claimInfo?.error) {
-    return <div>Error: {claimInfo.error}</div>;
-  }
-
-  return (
-    <div>
-      <h1>You've been invited!</h1>
-      <p>
-        Join {claimInfo?.organization}'s {claimInfo?.product} plan
-      </p>
-      <p>Email: {claimInfo?.email}</p>
-
-      <button onClick={handleClaim} disabled={claiming}>
-        {claiming ? "Claiming..." : "Claim My Seat"}
-      </button>
-    </div>
-  );
-}
-```
-
-## Step 6: Handle benefit granting
-
-After a seat is claimed, benefits are granted automatically via background jobs. Listen for webhooks to track this:
+Listen for benefit webhooks to sync access in your system. Remember: use `grant.member` to identify the recipient, not `grant.customer_id` (which is the buyer).
 
 ```typescript
 app.post('/webhooks/polar', async (req, res) => {
@@ -423,280 +147,107 @@ app.post('/webhooks/polar', async (req, res) => {
 
   if (event.type === 'benefit_grant.created') {
     const grant = event.data;
-
-    // A team member received their benefits
-    console.log(`Benefit ${grant.benefit_id} granted to ${grant.customer_id}`);
-
-    // Update your app (e.g., create license, grant access)
-    await grantAccess(grant.customer_id, grant.benefit);
+    const recipient = grant.member;
+    await grantAccess(recipient.id, recipient.email, grant.benefit);
   }
 
   if (event.type === 'benefit_grant.revoked') {
     const grant = event.data;
-
-    // A seat was revoked
-    await revokeAccess(grant.customer_id, grant.benefit);
+    await revokeAccess(grant.member.id, grant.benefit);
   }
 
   res.sendStatus(200);
 });
 ```
 
-## Step 7: Implement seat revocation
+### Step 5: Scale seats
 
-Allow billing managers to revoke seats:
-
-```typescript
-async function revokeSeat(seatId: string) {
-  const revokedSeat = await polar.customerSeats.revoke({
-    seat_id: seatId
-  });
-
-  // Benefits are automatically revoked via webhook
-  return {
-    success: true,
-    seat: revokedSeat,
-    message: "Seat revoked successfully"
-  };
-}
-```
-
-<Warning>
-Revoking a seat immediately removes access but does not issue a refund. The billing manager continues to pay for all purchased seats.
-</Warning>
-
-## Step 8: Handle scaling
-
-**For subscriptions**, allow billing managers to add or reduce seats:
+**Subscriptions** — modify the seat count:
 
 ```typescript
-async function addSeats(subscriptionId: string, newTotal: number) {
-  // Update subscription seat count
-  const subscription = await polar.subscriptions.update({
-    id: subscriptionId,
-    seats: newTotal
-  });
-
-  // New seats are immediately available for assignment
-  return subscription;
-}
-
-async function reduceSeats(subscriptionId: string, newTotal: number) {
-  const { seats } = await polar.customerSeats.list({
-    subscription_id: subscriptionId
-  });
-
-  const claimedCount = seats.filter(s => s.status === 'claimed').length;
-
-  if (newTotal < claimedCount) {
-    throw new Error(
-      `Cannot reduce to ${newTotal} seats. ${claimedCount} seats are currently claimed. Revoke seats first.`
-    );
-  }
-
-  // Update will take effect at next renewal
-  const subscription = await polar.subscriptions.update({
-    id: subscriptionId,
-    seats: newTotal
-  });
-
-  return subscription;
-}
-```
-
-**For one-time purchases**, customers buy additional seats via new orders:
-
-```typescript
-async function purchaseMoreSeats(productId: string, additionalSeats: number) {
-  // Create a new checkout for additional seats
-  const checkout = await polar.checkouts.create({
-    product_id: productId,
-    seats: additionalSeats,
-    success_url: "https://your-app.com/success"
-  });
-
-  // Each order is independent with its own seat pool
-  return checkout;
-}
-```
-
-<Info>
-For one-time purchases, each order has its own independent seat pool. Customers can purchase additional seats anytime by creating a new order. All seats remain perpetual.
-</Info>
-
-## Best Practices
-
-### 1. Validate seat availability
-
-Always check available seats before showing the assignment form:
-
-```typescript
-if (available_seats === 0) {
-  return (
-    <div>
-      All seats are assigned.
-      <button onClick={upgradeSubscription}>
-        Add More Seats
-      </button>
-    </div>
-  );
-}
-```
-
-### 2. Use metadata effectively
-
-Store useful context in seat metadata:
-
-```typescript
-await polar.customerSeats.assign({
-  subscription_id: subId,
-  email: "dev@company.com",
-  metadata: {
-    department: "Engineering",
-    role: "Senior Developer",
-    cost_center: "R&D",
-    manager: "jane@company.com"
-  }
+await polar.subscriptions.update({
+  id: subscriptionId,
+  seats: newTotal  // Cannot be less than currently assigned seats (pending + claimed)
 });
 ```
 
-### 3. Handle expired tokens gracefully
+<Warning>
+You cannot reduce seats below the number of currently assigned seats (both pending and claimed). Revoke seats first before reducing the count.
+</Warning>
+
+**One-time purchases** — buy a new order:
 
 ```typescript
-try {
-  await claimSeat(token);
-} catch (error) {
-  if (error.status === 400) {
-    // Show resend option
-    return "This invitation has expired. Contact your admin to resend.";
-  }
-}
+const checkout = await polar.checkouts.create({
+  products: [productId],
+  seats: additionalSeats,
+  success_url: "https://your-app.com/success"
+});
+// Each order has its own independent seat pool
 ```
 
-### 4. Track utilization
+## Member sessions and portal
 
-Monitor seat usage to identify upsell opportunities:
+To give a member access to the customer portal, create a member session:
 
 ```typescript
-const { seats, available_seats, total_seats } = await getSeatInfo(subId);
-const utilization = ((total_seats - available_seats) / total_seats) * 100;
-
-if (utilization > 80) {
-  // Suggest adding more seats
-  showUpgradePrompt();
-}
+const session = await polar.memberSessions.create({
+  member_id: "mem_789"
+});
+// Redirect to session.member_portal_url
 ```
 
-### 5. Clear communication
+- **Billing managers** (owner/billing_manager role) see full team management — assigning seats, managing members, and viewing seat utilization.
+- **Members** see only their own benefits and account details.
 
-Make it clear to billing managers that:
-- They won't receive direct access to benefits
-- Seats must be assigned to team members
-- Revocation doesn't refund costs
-- **For subscriptions**: Reducing seats requires revoking claims first
-- **For one-time purchases**: Seats are perpetual and non-refundable
+## Webhook events
 
-## Common Patterns
+| Event | When | Key fields |
+|---|---|---|
+| `order.paid` | Customer completes purchase | `customer_id`, `product` |
+| `subscription.updated` | Seat count changes | `customer_id`, `seats` |
+| `customer_seat.assigned` | Seat assigned, invitation sent | `member`, `email`, `status: "pending"` |
+| `customer_seat.claimed` | Member claims their seat | `member`, `status: "claimed"` |
+| `benefit_grant.created` | Benefit granted to member | `member`, `customer_id` (buyer) |
+| `customer_seat.revoked` | Seat revoked | `member`, `status: "revoked"` |
+| `benefit_grant.revoked` | Benefit removed from member | `member`, `customer_id` (buyer) |
 
-### Bulk seat assignment
+<Info>
+On subscription cancellation, each seat is revoked individually. A subscription with 5 seats and 3 benefits produces 1 + 5 + 15 = 21 webhook events. Make sure your handlers are idempotent.
+</Info>
 
-```typescript
-async function assignMultipleSeats(
-  subscriptionId: string,
-  emails: string[]
-) {
-  const results = await Promise.allSettled(
-    emails.map(email =>
-      polar.customerSeats.assign({
-        subscription_id: subscriptionId,
-        email: email
-      })
-    )
-  );
+## Best practices
 
-  const succeeded = results.filter(r => r.status === 'fulfilled');
-  const failed = results.filter(r => r.status === 'rejected');
-
-  return {
-    succeeded: succeeded.length,
-    failed: failed.length,
-    errors: failed.map(f => f.reason)
-  };
-}
-```
-
-### Syncing with your user system
-
-```typescript
-// When a user joins your system
-async function onUserSignup(email: string, organizationId: string) {
-  // Check if they have a pending seat
-  const subscriptions = await getOrganizationSubscriptions(organizationId);
-
-  for (const sub of subscriptions) {
-    const { seats } = await polar.customerSeats.list({
-      subscription_id: sub.id
-    });
-
-    const pendingSeat = seats.find(s =>
-      s.status === 'pending' && s.customer_email === email
-    );
-
-    if (pendingSeat) {
-      // Auto-claim on signup
-      const claimLink = `/claim?token=${pendingSeat.invitation_token}`;
-      return { shouldClaim: true, claimLink };
-    }
-  }
-}
-```
-
-### Custom portal integration
-
-```typescript
-// Display team subscriptions in your app
-async function getTeamSubscriptions(customerId: string) {
-  const subs = await polar.customerPortal.seats.listSubscriptions({
-    customer_id: customerId
-  });
-
-  return subs.map(sub => ({
-    product: sub.product.name,
-    status: sub.status,
-    role: sub.seat_metadata?.role,
-    expires: sub.current_period_end
-  }));
-}
-```
+- **Use `grant.member` everywhere** — not `grant.customer_id` — to identify who has access
+- **Use seat metadata** to store department, role, or cost center for your own tracking
+- **Communicate clearly** to billing managers that they won't receive benefits directly
 
 ## Troubleshooting
 
-### Seats not appearing
+| Problem | Solution |
+|---|---|
+| Cannot reduce seats | Revoke assigned seats first. You can't go below the combined pending + claimed count. |
+| Claim link expired | Tokens expire after 24 hours. Resend via the portal or API: `polar.customerSeats.resend({ seat_id })` |
 
-Ensure the feature flag is enabled:
-```
-seat_based_pricing_enabled: true
-```
+## Subscriptions vs one-time purchases
 
-### Benefits not granted after claim
+| | Subscriptions | One-Time Purchases |
+|---|---|---|
+| **Payment** | Recurring (monthly/yearly) | Single payment |
+| **Seat duration** | While subscribed | Perpetual |
+| **Adding seats** | Modify subscription | Purchase new order |
+| **Benefits** | While subscription active | Forever after claim |
 
-Check webhook logs for `benefit_grant.created` events. Benefits are granted asynchronously via background jobs.
+## Limitations
 
-### Cannot reduce seats
+- Seats must be assigned individually (use API for bulk)
+- Claim links expire after 24 hours
+- Maximum 1,000 seats per subscription
+- Metadata limited to 10 keys and 1KB per seat
 
-Make sure to revoke seats before reducing the subscription seat count. You cannot reduce below the currently claimed count.
+## Next steps
 
-### Claim link expired
-
-Invitation tokens expire after 24 hours. Have the billing manager resend the invitation:
-
-```typescript
-await polar.customerSeats.resend({ seat_id: seatId });
-```
-
-## Next Steps
-
-- Review the [Seat-Based Pricing Feature Documentation](/features/seat-based-pricing)
-- Explore the [Customer Seats API Reference](/api-reference/customer-seats/assign)
-- Set up [webhook handlers](/integrate/webhooks/endpoints) for real-time updates
-- Learn about [Customer Portal customization](/features/customer-portal)
+- [Seat-Based Pricing Feature Documentation](/features/seat-based-pricing)
+- [Customer Seats API Reference](/api-reference/customer-seats/assign)
+- [Webhook setup](/integrate/webhooks/endpoints)
+- [Customer Portal customization](/features/customer-portal)

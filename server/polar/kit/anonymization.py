@@ -7,7 +7,7 @@ def anonymize_for_deletion(value: str) -> str:
     return ret.hexdigest()
 
 
-ANONYMIZED_EMAIL_DOMAIN = "anonymized.invalid"
+ANONYMIZED_EMAIL_DOMAIN = "anonymized.polar.sh"
 
 
 def anonymize_email_for_deletion(email: str) -> str:

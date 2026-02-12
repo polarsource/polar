@@ -30,14 +30,6 @@ from .service import webhook as webhook_service
 log: Logger = structlog.get_logger()
 
 
-class NotLatestEvent(Retry):
-    pass
-
-
-class DeliveryFailed(Retry):
-    pass
-
-
 # Safety-guard max_retries: enough for all ordering retries within the age
 # limit window plus the actual HTTP delivery attempts.
 _ordering_max_retries = int(
@@ -115,7 +107,7 @@ async def _webhook_event_send(
             webhook_endpoint_id=event.webhook_endpoint_id,
             earlier_pending_count=earlier_pending_count,
         )
-        raise NotLatestEvent(
+        raise Retry(
             delay=earlier_pending_count * settings.WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS
         )
 
@@ -206,7 +198,7 @@ async def _webhook_event_send(
                 delivery_count,
                 factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
             )
-            raise DeliveryFailed(delay=delay) from e
+            raise Retry(delay=delay) from e
     # Success
     else:
         delivery.succeeded = True

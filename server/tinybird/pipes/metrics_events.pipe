@@ -283,11 +283,17 @@ SQL >
 NODE order_paid_events_raw
 SQL >
     %
-    SELECT e.order_id, e.timestamp AS event_timestamp, e.product_id, e.subscription_id, e.billing_type
-    FROM system_events_by_org AS e
+    SELECT
+        op.order_id,
+        COALESCE(be.order_created_at, op.timestamp) AS event_timestamp,
+        op.product_id,
+        op.subscription_id,
+        op.billing_type
+    FROM system_events_by_org AS op
+    LEFT JOIN balance_events_raw be ON op.order_id = be.order_id
     WHERE
-        e.name = 'order.paid'
-        AND e.organization_id IN (
+        op.name = 'order.paid'
+        AND op.organization_id IN (
             SELECT
                 toUUID(
                     arrayJoin(
@@ -295,18 +301,18 @@ SQL >
                     )
                 )
         )
-        AND e.timestamp
-        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND e.timestamp
-        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND op.timestamp
+        >= toDateTime({{ String(buffer_start, '2023-12-31 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND op.timestamp
+        <= toDateTime({{ String(buffer_end, '2024-01-03 00:00:00') }}, {{ String(tz, 'UTC') }})
         {% if defined(customer_ids) and customer_ids != '' %}
-            AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+            AND op.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
         {% end %}
         {% if defined(product_ids) and product_ids != '' %}
-            AND e.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+            AND op.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
         {% end %}
         {% if defined(billing_types) and billing_types != '' %}
-            AND e.billing_type IN (SELECT arrayJoin(splitByChar(',', {{ String(billing_types) }})))
+            AND op.billing_type IN (SELECT arrayJoin(splitByChar(',', {{ String(billing_types) }})))
         {% end %}
 
 NODE order_paid_daily
@@ -328,6 +334,11 @@ SQL >
         count(DISTINCT op.order_id) AS orders,
         countIf(op.subscription_id IS NULL) AS one_time_products
     FROM order_paid_events_raw AS op
+    WHERE
+        op.event_timestamp
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND op.event_timestamp
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
     GROUP BY day
 
 NODE events_baseline

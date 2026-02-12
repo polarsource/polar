@@ -30,13 +30,9 @@ from .service import webhook as webhook_service
 log: Logger = structlog.get_logger()
 
 
-_WEBHOOK_ORDERING_MAX_RETRIES = 60_000 // settings.WEBHOOK_RETRY_INTERVAL_MILLISECONDS
-_WEBHOOK_TOTAL_MAX_RETRIES = settings.WEBHOOK_MAX_RETRIES + _WEBHOOK_ORDERING_MAX_RETRIES
-
-
 @actor(
     actor_name="webhook_event.send",
-    max_retries=_WEBHOOK_TOTAL_MAX_RETRIES,
+    max_retries=settings.WEBHOOK_MAX_RETRIES,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
@@ -48,7 +44,7 @@ async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) ->
 
 @actor(
     actor_name="webhook_event.send.v2",
-    max_retries=_WEBHOOK_TOTAL_MAX_RETRIES,
+    max_retries=settings.WEBHOOK_MAX_RETRIES,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send_dedicated_queue(

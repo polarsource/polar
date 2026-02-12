@@ -1212,3 +1212,192 @@ class TestActiveUserByEventNoFilter:
             f"Jan 23 Kolkata should have 1 user (18:35 UTC = 00:05 IST), "
             f"got {jan_23.active_user_by_event}"
         )
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestTrialOrdersCounted:
+    """Test that trial orders (free subscription_create) are counted.
+
+    Trial orders emit order.paid events but no balance.order/balance.credit_order events.
+    The orders metric should use order.paid events for counting.
+    """
+
+    async def test_trial_orders_included_in_count(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        tinybird_client: TinybirdClient,
+    ) -> None:
+        monthly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(MONTHLY_PRICE, "usd")],
+        )
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="trial@test.com",
+            name="trial_customer",
+            stripe_customer_id="cus_trial",
+        )
+
+        sub = await create_subscription(
+            save_fixture,
+            product=monthly,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_dt(date(2024, 1, 15)),
+        )
+
+        all_events: list[Event] = []
+
+        # subscription.created event
+        ev = await _create_subscription_created_event(
+            save_fixture, organization, customer, sub, monthly
+        )
+        all_events.append(ev)
+
+        # Create a trial order (free) - this has order.paid but NO balance event
+        trial_order = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=monthly,
+            customer=customer,
+            subtotal_amount=0,
+            created_at=_dt(date(2024, 1, 15)),
+            subscription=sub,
+        )
+
+        # Create order.paid event (always emitted for paid orders)
+        order_paid_ev = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.order_paid.value,
+            timestamp=_dt(date(2024, 1, 15)),
+            metadata={
+                "order_id": str(trial_order.id),
+                "product_id": str(monthly.id),
+                "billing_type": "recurring",
+                "amount": 0,
+                "currency": "usd",
+                "net_amount": 0,
+                "tax_amount": 0,
+                "subscription_id": str(sub.id),
+            },
+        )
+        all_events.append(order_paid_ev)
+
+        # NO balance.order or balance.credit_order event - this is the bug scenario
+
+        # Also create a paid order WITH balance event for comparison
+        paid_order = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=monthly,
+            customer=customer,
+            subtotal_amount=MONTHLY_PRICE,
+            created_at=_dt(date(2024, 2, 15)),
+            subscription=sub,
+        )
+
+        # order.paid event for paid order
+        order_paid_ev2 = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.order_paid.value,
+            timestamp=_dt(date(2024, 2, 15)),
+            metadata={
+                "order_id": str(paid_order.id),
+                "product_id": str(monthly.id),
+                "billing_type": "recurring",
+                "amount": MONTHLY_PRICE,
+                "currency": "usd",
+                "net_amount": MONTHLY_PRICE,
+                "tax_amount": 0,
+                "subscription_id": str(sub.id),
+            },
+        )
+        all_events.append(order_paid_ev2)
+
+        # balance.order event for paid order
+        txn = await create_payment_transaction(
+            save_fixture,
+            order=paid_order,
+            amount=paid_order.net_amount,
+            tax_amount=paid_order.tax_amount,
+        )
+        balance_ev = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.balance_order.value,
+            timestamp=_dt(date(2024, 2, 15)),
+            metadata={
+                "transaction_id": str(txn.id),
+                "order_id": str(paid_order.id),
+                "product_id": str(monthly.id),
+                "subscription_id": str(sub.id),
+                "amount": txn.amount,
+                "currency": txn.currency,
+                "presentment_amount": txn.presentment_amount or txn.amount,
+                "presentment_currency": txn.presentment_currency or txn.currency,
+                "tax_amount": 0,
+                "fee": 0,
+            },
+        )
+        all_events.append(balance_ev)
+
+        tinybird_events = [_event_to_tinybird(e) for e in all_events]
+        await tinybird_client.ingest(DATASOURCE_EVENTS, tinybird_events, wait=True)
+
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": True,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        with patch.object(settings, "TINYBIRD_EVENTS_READ", True):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 2, 28),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+                metrics=["orders", "revenue", "new_subscriptions"],
+            )
+
+        assert len(result.periods) == 2
+
+        jan = result.periods[0]
+        feb = result.periods[1]
+
+        # January: 1 trial order (free) - should be counted!
+        assert jan.orders == 1, (
+            f"Jan should have 1 order (trial), got {jan.orders}. "
+            "Trial orders should be counted via order.paid events."
+        )
+        assert jan.revenue == 0, f"Jan revenue should be 0 (trial), got {jan.revenue}"
+        assert jan.new_subscriptions == 1, (
+            f"Jan should have 1 new subscription, got {jan.new_subscriptions}"
+        )
+
+        # February: 1 paid order
+        assert feb.orders == 1, f"Feb should have 1 order (paid), got {feb.orders}"
+        assert feb.revenue == MONTHLY_PRICE, (
+            f"Feb revenue should be {MONTHLY_PRICE}, got {feb.revenue}"
+        )

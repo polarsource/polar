@@ -97,7 +97,7 @@ function saveCache(cache: TranslationCache): void {
 
 function writeLocaleFile(locale: string, obj: NestedObject): void {
   const filePath = path.join(LOCALES_DIR, `${locale}.ts`)
-  const content = `export const ${locale} = ${JSON.stringify(obj, null, 2)} as const\n`
+  const content = `export default ${JSON.stringify(obj, null, 2)} as const\n`
   fs.writeFileSync(filePath, content)
 
   // Run prettier on the generated file
@@ -119,7 +119,7 @@ async function loadExistingLocale(
 
   try {
     const mod = await import(`${filePath}?t=${Date.now()}`)
-    return (mod[locale] ?? null) as NestedObject | null
+    return (mod.default ?? null) as NestedObject | null
   } catch {
     log.warning(`Could not import ${locale}.ts`)
     return null
@@ -358,7 +358,7 @@ function validate(
 async function main() {
   // Import source locale
   const defaultLocaleModule = await import(`../src/locales/${DEFAULT_LOCALE}`)
-  const defaultLocale = defaultLocaleModule[DEFAULT_LOCALE] as NestedObject
+  const defaultLocale = defaultLocaleModule.default as NestedObject
 
   const locks = JSON.parse(fs.readFileSync(LOCKS_FILE, 'utf-8')) as Record<
     string,

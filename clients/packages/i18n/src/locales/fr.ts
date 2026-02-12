@@ -1,4 +1,4 @@
-export const fr = {
+export default {
   checkout: {
     footer: {
       poweredBy: 'Propulsé par',

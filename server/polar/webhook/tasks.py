@@ -93,7 +93,7 @@ async def _webhook_event_send(
             type=event.type,
             webhook_endpoint_id=event.webhook_endpoint_id,
         )
-        raise Retry()
+        raise Retry(delay=settings.WEBHOOK_RETRY_INTERVAL_MILLISECONDS)
 
     if event.skipped:
         event.skipped = False
@@ -172,7 +172,7 @@ async def _webhook_event_send(
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
         # Retry
         else:
-            raise Retry() from e
+            raise Retry(delay=settings.WEBHOOK_RETRY_INTERVAL_MILLISECONDS) from e
     # Success
     else:
         delivery.succeeded = True

@@ -38,17 +38,19 @@ class DeliveryFailed(Retry):
     pass
 
 
-def webhook_retry_when(retries: int, exception: Exception) -> bool:
-    if isinstance(exception, NotLatestEvent):
-        return True
-    # HTTP delivery retries are gated inside _webhook_event_send by counting
-    # actual delivery attempts, so if a Retry reaches here it's safe to proceed.
-    return isinstance(exception, DeliveryFailed)
+# Safety-guard max_retries: enough for all ordering retries within the age
+# limit window plus the actual HTTP delivery attempts.
+_ordering_max_retries = int(
+    settings.WEBHOOK_ORDERING_AGE_LIMIT.total_seconds()
+    * 1000
+    / settings.WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS
+)
+_webhook_max_retries = _ordering_max_retries + settings.WEBHOOK_MAX_RETRIES
 
 
 @actor(
     actor_name="webhook_event.send",
-    retry_when=webhook_retry_when,
+    max_retries=_webhook_max_retries,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
@@ -60,7 +62,7 @@ async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) ->
 
 @actor(
     actor_name="webhook_event.send.v2",
-    retry_when=webhook_retry_when,
+    max_retries=_webhook_max_retries,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send_dedicated_queue(
@@ -113,7 +115,9 @@ async def _webhook_event_send(
             webhook_endpoint_id=event.webhook_endpoint_id,
             earlier_pending_count=earlier_pending_count,
         )
-        raise NotLatestEvent(delay=earlier_pending_count * 500)
+        raise NotLatestEvent(
+            delay=earlier_pending_count * settings.WEBHOOK_NOT_LATEST_DELAY_MILLISECONDS
+        )
 
     if event.skipped:
         event.skipped = False

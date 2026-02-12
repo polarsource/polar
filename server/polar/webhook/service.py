@@ -400,7 +400,7 @@ class WebhookService:
     async def count_earlier_pending_events(
         self, session: AsyncSession, event: WebhookEvent
     ) -> int:
-        age_limit = utc_now() - datetime.timedelta(minutes=1)
+        age_limit = utc_now() - settings.WEBHOOK_ORDERING_AGE_LIMIT
         repository = WebhookEventRepository.from_session(session)
         return await repository.count_earlier_pending(event, age_limit=age_limit)
 

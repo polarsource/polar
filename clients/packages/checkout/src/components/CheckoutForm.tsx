@@ -424,7 +424,9 @@ const BaseCheckoutForm = ({
                     }}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('checkout.form.cardholderName')}</FormLabel>
+                        <FormLabel>
+                          {t('checkout.form.cardholderName')}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="text"

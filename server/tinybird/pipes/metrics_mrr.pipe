@@ -31,10 +31,10 @@ SQL >
     %
     WITH
         toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS start,
         toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS
     end,
     dateDiff('week', start, end
@@ -270,8 +270,8 @@ SQL >
             sumIf(
                 s.monthly_amount,
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfWeek(
-                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
                 )
             ) AS committed_monthly_recurring_revenue,
         {% elif interval == 'month' %}
@@ -318,8 +318,8 @@ SQL >
         {% elif interval == 'week' %}
             countIf(
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfWeek(
-                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
                 )
             ) AS committed_subscriptions
         {% elif interval == 'month' %}
@@ -375,11 +375,11 @@ SQL >
         {% elif interval == 'week' %}
             (
                 s.started_at IS NULL
-                OR toStartOfWeek(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+                OR toStartOfWeek(toDateTime(s.started_at, {{ String(tz, 'UTC') }}), 1) <= w.interval
             )
             AND (
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) > w.interval
             )
         {% elif interval == 'month' %}
             (
@@ -420,7 +420,7 @@ SQL >
         {% elif interval == 'hour' %}
             toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+            toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) AS window_start,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'year' %}

@@ -21,8 +21,8 @@ from polar.worker import (
     TaskPriority,
     TaskQueue,
     actor,
-    can_retry,
     enqueue_job,
+    get_retries,
 )
 
 from .service import webhook as webhook_service
@@ -30,9 +30,19 @@ from .service import webhook as webhook_service
 log: Logger = structlog.get_logger()
 
 
+class NotLatestEvent(Retry):
+    pass
+
+
+def webhook_retry_when(retries: int, exception: Exception) -> bool:
+    if isinstance(exception, NotLatestEvent):
+        return True
+    return retries < settings.WEBHOOK_MAX_RETRIES
+
+
 @actor(
     actor_name="webhook_event.send",
-    max_retries=settings.WEBHOOK_MAX_RETRIES,
+    retry_when=webhook_retry_when,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
@@ -44,7 +54,7 @@ async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) ->
 
 @actor(
     actor_name="webhook_event.send.v2",
-    max_retries=settings.WEBHOOK_MAX_RETRIES,
+    retry_when=webhook_retry_when,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send_dedicated_queue(
@@ -86,14 +96,18 @@ async def _webhook_event_send(
         bound_log.info("Event already succeeded, skipping")
         return
 
-    if not await webhook_service.is_latest_event(session, event):
+    earlier_pending_count = await webhook_service.count_earlier_pending_events(
+        session, event
+    )
+    if earlier_pending_count > 0:
         log.info(
             "Earlier events need to be delivered first, retrying later",
             id=event.id,
             type=event.type,
             webhook_endpoint_id=event.webhook_endpoint_id,
+            earlier_pending_count=earlier_pending_count,
         )
-        raise Retry()
+        raise NotLatestEvent(delay=earlier_pending_count * 500)
 
     if event.skipped:
         event.skipped = False
@@ -167,7 +181,7 @@ async def _webhook_event_send(
             delivery.response = str(e)
 
         # Permanent failure
-        if not can_retry():
+        if get_retries() >= settings.WEBHOOK_MAX_RETRIES:
             event.succeeded = False
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
         # Retry

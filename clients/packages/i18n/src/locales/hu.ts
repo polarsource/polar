@@ -185,7 +185,7 @@ export default {
       week: 'hetente',
       month: 'havonta',
       year: 'évente',
-      everyOrdinalInterval: 'minden {ordinal}. {interval}',
+      everyOrdinalInterval: 'minden {ordinal} {interval}',
     },
   },
   benefitTypes: {
@@ -195,5 +195,13 @@ export default {
     downloadables: 'Fájlletöltések',
     custom: 'Egyedi',
     meter_credit: 'Használat alapú kreditek',
+  },
+  ordinal: {
+    zero: '.',
+    one: '.',
+    two: '.',
+    few: '.',
+    many: '.',
+    other: '.',
   },
 } as const

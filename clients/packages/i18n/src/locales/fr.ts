@@ -200,4 +200,12 @@ export default {
     custom: 'Personnalisé',
     meter_credit: 'Crédits prépayés',
   },
+  ordinal: {
+    zero: 'e',
+    one: 'er',
+    two: 'e',
+    few: 'e',
+    many: 'e',
+    other: 'e',
+  },
 } as const

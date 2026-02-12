@@ -3,8 +3,7 @@ import { useCallback } from 'react'
 export { DEFAULT_LOCALE, LOCALE_NAMES, SUPPORTED_LOCALES } from './config'
 export type { AcceptedLocale, SupportedLocale } from './config'
 
-import type { AcceptedLocale } from './config'
-import type { SupportedLocale } from './config'
+import type { AcceptedLocale, SupportedLocale } from './config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './config'
 
 export function getTranslationLocale(locale: AcceptedLocale): SupportedLocale {

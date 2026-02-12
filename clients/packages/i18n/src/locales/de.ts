@@ -202,4 +202,12 @@ export default {
     custom: 'Benutzerdefiniert',
     meter_credit: 'Verbrauchsguthaben',
   },
+  ordinal: {
+    zero: '.',
+    one: '.',
+    two: '.',
+    few: '.',
+    many: '.',
+    other: '.',
+  },
 } as const

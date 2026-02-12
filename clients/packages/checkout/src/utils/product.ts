@@ -1,33 +1,9 @@
-import {
-  type AcceptedLocale,
-  getTranslationLocale,
-  getTranslations,
-} from '@polar-sh/i18n'
+import { type AcceptedLocale, getTranslations } from '@polar-sh/i18n'
+import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
-
-const enSuffixes: Record<string, string> = {
-  zero: '',
-  one: 'st',
-  two: 'nd',
-  few: 'rd',
-  many: '',
-  other: 'th',
-}
-
-const ordinal = (number: number, locale: AcceptedLocale = 'en'): string => {
-  const rules = new Intl.PluralRules(locale, { type: 'ordinal' })
-  const category = rules.select(number)
-
-  if (getTranslationLocale(locale) === 'nl') {
-    return `${number}e`
-  }
-
-  const suffix = enSuffixes[category] ?? ''
-  return `${number}${suffix}`
-}
 
 /**
  * Format a recurring interval with optional count for display in amounts/periods
@@ -49,7 +25,7 @@ export const formatRecurringInterval = (
 
   const t = getTranslations(locale)
   const count = intervalCount && intervalCount > 1 ? intervalCount : null
-  const prefix = count ? `${ordinal(count, locale)} ` : ''
+  const prefix = count ? `${formatOrdinal(count, locale)} ` : ''
   const label =
     format === 'short'
       ? t.intervals.short[interval]
@@ -79,7 +55,7 @@ export const formatRecurringFrequency = (
 
   if (count) {
     return t.intervals.frequency.everyOrdinalInterval
-      .replace('{ordinal}', ordinal(count, locale))
+      .replace('{ordinal}', formatOrdinal(count, locale))
       .replace('{interval}', t.intervals.long[interval])
   }
 

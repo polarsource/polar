@@ -198,4 +198,12 @@ export default {
     custom: 'Personalizado',
     meter_credit: 'Créditos de consumo',
   },
+  ordinal: {
+    zero: '.º',
+    one: '.º',
+    two: '.º',
+    few: '.º',
+    many: '.º',
+    other: '.º',
+  },
 } as const

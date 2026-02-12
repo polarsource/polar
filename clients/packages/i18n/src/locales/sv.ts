@@ -195,4 +195,12 @@ export default {
     custom: 'Anpassad',
     meter_credit: 'Mätarkrediter',
   },
+  ordinal: {
+    zero: ':e',
+    one: ':a',
+    two: ':a',
+    few: ':a',
+    many: ':e',
+    other: ':e',
+  },
 } as const

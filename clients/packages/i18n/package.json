@@ -28,6 +28,10 @@
     "./formatters/date": {
       "types": "./dist/formatters/date.d.ts",
       "default": "./dist/formatters/date.js"
+    },
+    "./formatters/ordinal": {
+      "types": "./dist/formatters/ordinal.d.ts",
+      "default": "./dist/formatters/ordinal.js"
     }
   },
   "types": "./dist/index.d.ts",

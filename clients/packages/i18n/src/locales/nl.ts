@@ -198,4 +198,12 @@ export default {
     custom: 'Aangepast',
     meter_credit: 'Verbruikstegoeden',
   },
+  ordinal: {
+    zero: 'e',
+    one: 'e',
+    two: 'e',
+    few: 'e',
+    many: 'e',
+    other: 'e',
+  },
 } as const

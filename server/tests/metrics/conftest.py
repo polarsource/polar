@@ -79,6 +79,7 @@ async def create_events_for_fixtures(
             events.append(ev)
 
     for order in orders.values():
+        product = next((p for p in products.values() if p.id == order.product_id), None)
         metadata = {
             "order_id": str(order.id),
             "product_id": str(order.product_id),
@@ -91,6 +92,8 @@ async def create_events_for_fixtures(
         }
         if order.subscription_id:
             metadata["subscription_id"] = str(order.subscription_id)
+        if product is not None:
+            metadata["billing_type"] = product.billing_type.value
 
         ev = await create_event(
             save_fixture,

@@ -549,7 +549,14 @@ async def approve_organization(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Use provided threshold or default to $250 in cents (max as per requirement)
+    # Check form data for threshold in dollars (from custom approve input)
+    if threshold is None:
+        form_data = await request.form()
+        raw_dollars = form_data.get("threshold_dollars")
+        if raw_dollars:
+            threshold = int(float(str(raw_dollars)) * 100)
+
+    # Use provided threshold or default to $250 in cents
     next_review_threshold = threshold if threshold else 25000
 
     # Approve the organization

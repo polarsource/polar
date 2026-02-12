@@ -1920,6 +1920,67 @@ class TestGetMetrics:
             if i not in (6, 22):
                 assert period.orders == 0, f"Expected 0 orders at hour {i}"
 
+    @pytest.mark.auth
+    async def test_subscription_started_after_bounds_end_not_counted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
+    ) -> None:
+        """Test that subscriptions starting after bounds end_date are not counted.
+
+        This tests the bounds filtering behavior: when querying with end_date=Feb 11
+        and interval=month, a subscription that started on Feb 15 should NOT be
+        counted in the February period, even though date_trunc('month', Feb 15) = Feb 1.
+
+        The bounds filter (started_at <= end_timestamp) should exclude it.
+        """
+        import asyncio
+
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_within_bounds": {
+                "started_at": date(2024, 2, 1),
+                "product": "monthly_subscription",
+            },
+            "subscription_after_bounds": {
+                "started_at": date(2024, 2, 15),
+                "product": "monthly_subscription",
+            },
+        }
+        products, subs, orders = await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
+
+        if metrics_backend_helper.is_tinybird:
+            await asyncio.sleep(2)
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 11),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            organization_id=[organization.id],
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.timestamp == datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        assert jan.active_subscriptions == 0
+        assert jan.committed_subscriptions == 0
+
+        feb = metrics.periods[1]
+        assert feb.timestamp == datetime(2024, 2, 1, 0, 0, 0, tzinfo=UTC)
+        assert feb.active_subscriptions == 1
+        assert feb.committed_subscriptions == 1
+
 
 @pytest.mark.asyncio
 class TestMetricsFiltering:

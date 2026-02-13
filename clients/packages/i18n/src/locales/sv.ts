@@ -53,25 +53,21 @@ export default {
       everyInterval: {
         day: {
           '=1': 'Dagligen',
-          '=2': 'Varannan dag',
           other: 'Var #:e dagar',
           _mode: 'plural',
         },
         week: {
           '=1': 'Veckovis',
-          '=2': 'Varannan vecka',
           other: 'Var #:e vecka',
           _mode: 'plural',
         },
         month: {
           '=1': 'Månadsvis',
-          '=2': 'Varannan månad',
           other: 'Var #:e månad',
           _mode: 'plural',
         },
         year: {
           '=1': 'Årsvis',
-          '=2': 'Varannan år',
           other: 'Var #:e år',
           _mode: 'plural',
         },

@@ -1,0 +1,4 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+RUN uv run playwright install --with-deps chromium

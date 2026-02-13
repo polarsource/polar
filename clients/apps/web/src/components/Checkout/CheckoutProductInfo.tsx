@@ -1,11 +1,19 @@
 'use client'
 
 import { markdownOptions } from '@/utils/markdown'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import type { CheckoutOrganization } from '@polar-sh/sdk/models/components/checkoutorganization'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@polar-sh/ui/components/ui/dialog'
 import Markdown from 'markdown-to-jsx'
-import { useState } from 'react'
 import { Slideshow } from '../Products/Slideshow'
 
 interface CheckoutProductInfoProps {
@@ -19,7 +27,6 @@ const CheckoutProductInfo = ({
   product,
   pricingPositionExperiment,
 }: CheckoutProductInfoProps) => {
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const isTreatment = pricingPositionExperiment === 'treatment'
   const firstImage = product.medias[0]?.publicUrl
   const remainingImages = product.medias.slice(1).map((m) => m.publicUrl)
@@ -37,33 +44,44 @@ const CheckoutProductInfo = ({
               />
             )}
             <div className="flex flex-col gap-y-1">
-              {product.name ? (
-                <h1 className="text-2xl font-medium">{product.name}</h1>
-              ) : (
-                <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
-              )}
-              {product.description && (
-                <p
-                  className="dark:text-polar-400 line-clamp-2 cursor-pointer text-xs text-gray-500"
-                  onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-                >
-                  {product.description}
-                </p>
-              )}
+              <div className="flex flex-row items-center gap-x-2">
+                {product.name ? (
+                  <h1 className="text-2xl font-medium">{product.name}</h1>
+                ) : (
+                  <div className="dark:bg-polar-700 h-6 w-48 animate-pulse rounded-md bg-gray-200" />
+                )}
+                {product.description && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="dark:text-polar-500 cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-polar-300">
+                        <InfoOutlined className="h-5 w-5" fontSize="inherit" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent
+                      className="dark:bg-polar-900 max-h-[80vh] overflow-y-auto"
+                      style={{ '--tw-enter-translate-x': '0', '--tw-enter-translate-y': '0', '--tw-exit-translate-x': '0', '--tw-exit-translate-y': '0' } as React.CSSProperties}
+                    >
+                      <DialogHeader>
+                        <DialogTitle>{product.name}</DialogTitle>
+                        <DialogDescription className="sr-only">
+                          Product description
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="prose dark:prose-invert prose-headings:mt-4 prose-headings:font-medium prose-headings:text-black prose-h1:text-xl prose-h2:text-lg prose-h3:text-md dark:prose-headings:text-white dark:text-polar-300 leading-normal text-gray-800">
+                        <Markdown options={markdownOptions}>
+                          {product.description}
+                        </Markdown>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
             </div>
           </div>
           {remainingImages.length > 0 && (
             <Slideshow images={remainingImages} />
           )}
         </div>
-        {descriptionExpanded && product.description && (
-          <div
-            className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-medium prose-headings:text-black prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-md prose-h5:text-sm prose-h6:text-sm dark:prose-headings:text-white dark:text-polar-300 max-w-4xl cursor-pointer leading-normal text-gray-800"
-            onClick={() => setDescriptionExpanded(false)}
-          >
-            <Markdown options={markdownOptions}>{product.description}</Markdown>
-          </div>
-        )}
       </div>
     )
   }

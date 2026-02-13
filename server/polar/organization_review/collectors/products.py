@@ -8,7 +8,7 @@ def collect_products_data(products: list[Product]) -> ProductsData:
     for product in products:
         prices = []
         for price in product.prices:
-            price_info: dict = {
+            price_info: dict[str, str | int] = {
                 "amount_type": str(price.amount_type),
             }
             if hasattr(price, "price_amount") and price.price_amount is not None:

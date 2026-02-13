@@ -612,9 +612,7 @@ async def run_review_agent(
     session: AsyncSession = Depends(get_db_session),
 ) -> HXRedirectResponse:
     """Trigger the organization review agent as a background task."""
-    from polar.worker import enqueue_job
-
-    repository = OrganizationRepository(session)
+    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(organization_id)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")

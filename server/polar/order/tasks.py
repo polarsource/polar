@@ -3,11 +3,9 @@ import uuid
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
-from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.models import Customer, Order
 from polar.models.order import OrderBillingReasonInternal
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
@@ -133,8 +131,7 @@ async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
-            order_id,
-            options=(joinedload(Order.customer).joinedload(Customer.organization),),
+            order_id, options=repository.get_eager_options()
         )
         if order is None:
             raise OrderDoesNotExist(order_id)

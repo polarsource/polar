@@ -1571,6 +1571,7 @@ class OrderService:
         )
         order.platform_fee_currency = platform_fee_transactions[0][0].currency
         session.add(order)
+        await self._on_order_updated(session, order=order, previous_status=order.status)
 
         await self._create_balance_order_event(
             session,

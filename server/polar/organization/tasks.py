@@ -599,7 +599,11 @@ async def _backfill_benefit_grants(
 
             # Link to seat member or owner member
             seat_member_id = await _find_seat_member_for_grant(
-                session, grant, seat_customer_id=old_customer_id or grant.customer_id
+                session,
+                member_repository,
+                grant,
+                billing_customer_id=billing_customer_id,
+                old_customer_id=old_customer_id,
             )
             if seat_member_id is not None:
                 grant.member_id = seat_member_id
@@ -646,32 +650,45 @@ async def _backfill_benefit_grants(
 
 async def _find_seat_member_for_grant(
     session: AsyncSession,
+    member_repository: MemberRepository,
     grant: BenefitGrant,
-    seat_customer_id: uuid.UUID,
+    billing_customer_id: uuid.UUID | None,
+    old_customer_id: uuid.UUID | None,
 ) -> uuid.UUID | None:
     """Find the seat member for a grant, if the grant is seat-based.
 
     Returns the member_id from the matching CustomerSeat, or None if the
     grant is not seat-based (i.e. the customer purchased directly).
 
-    We match by subscription/order ID AND customer_id to identify the exact
-    seat. The caller provides ``seat_customer_id`` which is the grant's
-    original (pre-transfer) customer_id — the seat-holder customer.
+    For transferred grants (old_customer_id is set), we look up the member
+    by the seat-holder's email rather than querying CustomerSeat directly,
+    because step B already migrated seat.customer_id to the billing customer
+    — so a subscription with multiple seats would return multiple rows.
     """
+    if old_customer_id is not None and billing_customer_id is not None:
+        # Transferred grant: find member via seat-holder customer email
+        seat_holder = await session.get(Customer, old_customer_id)
+        if seat_holder is not None and seat_holder.email:
+            member = await member_repository.get_by_customer_id_and_email(
+                billing_customer_id, seat_holder.email
+            )
+            if member is not None:
+                return member.id
+        return None
+
+    # Non-transferred grant: single-seat lookup is safe
     if grant.subscription_id is not None:
         stmt = select(CustomerSeat.member_id).where(
             CustomerSeat.subscription_id == grant.subscription_id,
-            CustomerSeat.customer_id == seat_customer_id,
             CustomerSeat.member_id.is_not(None),
             CustomerSeat.status != SeatStatus.revoked,
-        )
+        ).limit(1)
     elif grant.order_id is not None:
         stmt = select(CustomerSeat.member_id).where(
             CustomerSeat.order_id == grant.order_id,
-            CustomerSeat.customer_id == seat_customer_id,
             CustomerSeat.member_id.is_not(None),
             CustomerSeat.status != SeatStatus.revoked,
-        )
+        ).limit(1)
     else:
         return None
 

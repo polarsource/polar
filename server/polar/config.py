@@ -82,6 +82,13 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
+    CUSTOMER_STATE_CHANGED_WEBHOOK_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(
+        seconds=1
+    )
+    CUSTOMER_STATE_CHANGED_WEBHOOK_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(
+        seconds=5
+    )
+
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
     CURRENT_JWK_KID: str = "polar_dev"

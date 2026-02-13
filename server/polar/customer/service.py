@@ -443,27 +443,34 @@ class CustomerService:
         customer: Customer,
     ) -> None:
         if event_type == WebhookEventType.customer_state_changed:
-            data = await self.get_state(session, redis, customer, cache=False)
-            await webhook_service.send(
-                session,
-                customer.organization,
-                WebhookEventType.customer_state_changed,
-                data,
-            )
+            await self.send_state_changed_webhook(session, redis, customer)
         else:
             await webhook_service.send(
                 session, customer.organization, event_type, customer
             )
 
-        # For created, updated and deleted events, also trigger a state changed event
+        # For created, updated and deleted events,
+        # also enqueue a debounced state changed webhook
         if event_type in (
             WebhookEventType.customer_created,
             WebhookEventType.customer_updated,
             WebhookEventType.customer_deleted,
         ):
-            await self.webhook(
-                session, redis, WebhookEventType.customer_state_changed, customer
-            )
+            enqueue_job("customer.state_changed_webhook", customer.id)
+
+    async def send_state_changed_webhook(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+    ) -> None:
+        data = await self.get_state(session, redis, customer, cache=False)
+        await webhook_service.send(
+            session,
+            customer.organization,
+            WebhookEventType.customer_state_changed,
+            data,
+        )
 
     async def load_members(
         self,

@@ -26,7 +26,6 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter, MeterEvent
 from polar.models.event import EventSource
-from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
@@ -110,9 +109,7 @@ class CustomerMeterService:
             updated = updated or meter_updated
 
         if updated:
-            enqueue_job(
-                "customer.webhook", WebhookEventType.customer_state_changed, customer.id
-            )
+            enqueue_job("customer.state_changed_webhook", customer.id)
 
     async def update_customer_meter(
         self,

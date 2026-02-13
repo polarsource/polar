@@ -700,11 +700,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         assert loaded is not None
         loaded.previous_properties = previous_grant_properties
         await webhook_service.send(session, benefit.organization, event_type, loaded)
-        enqueue_job(
-            "customer.webhook",
-            WebhookEventType.customer_state_changed,
-            grant.customer_id,
-        )
+        enqueue_job("customer.state_changed_webhook", grant.customer_id)
 
 
 benefit_grant = BenefitGrantService(BenefitGrant)

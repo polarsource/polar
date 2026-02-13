@@ -17,6 +17,7 @@ import { cn } from '@polar-sh/ui/lib/utils'
 import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
 import { hasLegacyRecurringPrices } from '../utils/product'
+import { capitalize } from '../utils/string'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
@@ -80,7 +81,9 @@ const CheckoutProductSwitcher = ({
       const frequency = t(`checkout.pricing.everyInterval.${interval}`, {
         count,
       }).toLowerCase()
-      return t('checkout.productSwitcher.billedRecurring', { frequency })
+      return capitalize(
+        t('checkout.productSwitcher.billedRecurring', { frequency }),
+      )
     }
 
     return t('checkout.productSwitcher.oneTimePurchase')

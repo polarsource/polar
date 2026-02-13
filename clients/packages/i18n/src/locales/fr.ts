@@ -54,21 +54,25 @@ export default {
         day: {
           '=1': 'Quotidien',
           other: 'Tous les # jours',
+          '=2': 'Tous les deux jours',
           _mode: 'plural',
         },
         week: {
           '=1': 'Hebdomadaire',
           other: 'Toutes les # semaines',
+          '=2': 'Toutes les deux semaines',
           _mode: 'plural',
         },
         month: {
           '=1': 'Mensuel',
           other: 'Tous les # mois',
+          '=2': 'Tous les deux mois',
           _mode: 'plural',
         },
         year: {
           '=1': 'Annuel',
           other: 'Tous les # ans',
+          '=2': 'Tous les deux ans',
           _mode: 'plural',
         },
       },

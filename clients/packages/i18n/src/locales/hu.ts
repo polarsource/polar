@@ -54,21 +54,25 @@ export default {
         day: {
           '=1': 'Naponta',
           other: 'Minden # nap',
+          '=2': 'Kétnaponta',
           _mode: 'plural',
         },
         week: {
           '=1': 'Hetente',
           other: 'Minden # hét',
+          '=2': 'Kéthetente',
           _mode: 'plural',
         },
         month: {
           '=1': 'Havonta',
           other: 'Minden # hónap',
+          '=2': 'Kéthavonta',
           _mode: 'plural',
         },
         year: {
           '=1': 'Évente',
           other: 'Minden # év',
+          '=2': 'Kétévente',
           _mode: 'plural',
         },
       },

@@ -141,7 +141,11 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -285,7 +289,11 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -429,7 +437,11 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -573,7 +585,11 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -717,7 +733,11 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -860,6 +880,10 @@
     "intervals.long.month.=1": "month",
     "intervals.long.month.other": "months",
     "intervals.long.year.=1": "year",
-    "intervals.long.year.other": "years"
+    "intervals.long.year.other": "years",
+    "checkout.pricing.everyInterval.day.=2": "Every other day",
+    "checkout.pricing.everyInterval.week.=2": "Every other week",
+    "checkout.pricing.everyInterval.month.=2": "Every other month",
+    "checkout.pricing.everyInterval.year.=2": "Every other year"
   }
 }

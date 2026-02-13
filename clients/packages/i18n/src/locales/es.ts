@@ -54,21 +54,25 @@ export default {
         day: {
           '=1': 'Diario',
           other: 'Cada # días',
+          '=2': 'Cada dos días',
           _mode: 'plural',
         },
         week: {
           '=1': 'Semanal',
           other: 'Cada # semanas',
+          '=2': 'Cada dos semanas',
           _mode: 'plural',
         },
         month: {
           '=1': 'Mensual',
           other: 'Cada # meses',
+          '=2': 'Cada dos meses',
           _mode: 'plural',
         },
         year: {
           '=1': 'Anual',
           other: 'Cada # años',
+          '=2': 'Cada dos años',
           _mode: 'plural',
         },
       },

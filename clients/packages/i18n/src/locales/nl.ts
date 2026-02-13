@@ -54,21 +54,25 @@ export default {
         day: {
           '=1': 'Dagelijks',
           other: 'Elke # dagen',
+          '=2': 'Elke twee dagen',
           _mode: 'plural',
         },
         week: {
           '=1': 'Wekelijks',
           other: 'Elke # weken',
+          '=2': 'Elke twee weken',
           _mode: 'plural',
         },
         month: {
           '=1': 'Maandelijks',
           other: 'Elke # maanden',
+          '=2': 'Elke twee maanden',
           _mode: 'plural',
         },
         year: {
           '=1': 'Jaarlijks',
           other: 'Elke # jaar',
+          '=2': 'Elke twee jaar',
           _mode: 'plural',
         },
       },

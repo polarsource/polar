@@ -54,21 +54,25 @@ export default {
         day: {
           '=1': 'Dagligen',
           other: 'Var #:e dagar',
+          '=2': 'Varannan dag',
           _mode: 'plural',
         },
         week: {
           '=1': 'Veckovis',
           other: 'Var #:e vecka',
+          '=2': 'Varannan vecka',
           _mode: 'plural',
         },
         month: {
           '=1': 'Månadsvis',
           other: 'Var #:e månad',
+          '=2': 'Varannan månad',
           _mode: 'plural',
         },
         year: {
           '=1': 'Årsvis',
           other: 'Var #:e år',
+          '=2': 'Vartannat år',
           _mode: 'plural',
         },
       },

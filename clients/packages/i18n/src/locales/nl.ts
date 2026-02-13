@@ -34,7 +34,6 @@ export default {
       free: 'Gratis',
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
-      everyInterval: 'Per {interval}',
       additionalMeteredUsage: 'Extra verbruikskosten',
       perUnit: '/ eenheid',
       discount: {
@@ -49,6 +48,28 @@ export default {
             other: 'voor de eerste # jaar',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Dagelijks',
+          other: 'Elke # dagen',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Wekelijks',
+          other: 'Elke # weken',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Maandelijks',
+          other: 'Elke # maanden',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Jaarlijks',
+          other: 'Elke # jaar',
+          _mode: 'plural',
         },
       },
     },
@@ -176,18 +197,34 @@ export default {
       month: 'mnd',
       year: 'jr',
     },
-    long: {
-      day: 'dag',
-      week: 'week',
-      month: 'maand',
-      year: 'jaar',
-    },
     frequency: {
       day: 'dagelijks',
       week: 'wekelijks',
       month: 'maandelijks',
       year: 'jaarlijks',
       everyOrdinalInterval: 'elke {ordinal} {interval}',
+    },
+    long: {
+      day: {
+        '=1': 'dag',
+        other: 'dagen',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'week',
+        other: 'weken',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'maand',
+        other: 'maanden',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'jaar',
+        other: 'jaar',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

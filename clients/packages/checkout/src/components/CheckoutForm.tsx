@@ -52,10 +52,10 @@ import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
 import {
-  formatRecurringInterval,
   getMeteredPrices,
   hasLegacyRecurringPrices,
 } from '../utils/product'
+import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import MeteredPriceLabel from './MeteredPriceLabel'
@@ -351,17 +351,21 @@ const BaseCheckoutForm = ({
   }, [checkout.discount, interval, intervalCount, t])
 
   const totalLabel = useMemo(() => {
-    if (interval) {
-      const formatted = formatRecurringInterval(
-        interval,
-        intervalCount,
-        'long',
-        locale,
-      )
-      return t('checkout.pricing.everyInterval', { interval: formatted })
-    }
+    if (!interval) return t('checkout.pricing.total')
 
-    return t('checkout.pricing.total')
+    const count = intervalCount ?? 1
+    switch (interval) {
+      case 'day':
+        return t('checkout.pricing.everyInterval.day', { count })
+      case 'week':
+        return t('checkout.pricing.everyInterval.week', { count })
+      case 'month':
+        return t('checkout.pricing.everyInterval.month', { count })
+      case 'year':
+        return t('checkout.pricing.everyInterval.year', { count })
+      default:
+        unreachable(interval)
+    }
   }, [interval, intervalCount, t])
 
   const checkoutLabel = useMemo(() => {

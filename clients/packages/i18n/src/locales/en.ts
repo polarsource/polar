@@ -53,7 +53,12 @@ export default {
           'A pricing type where the customer can choose how much to pay.',
       },
       total: 'Total',
-      everyInterval: 'Every {interval}',
+      everyInterval: {
+        day: { _mode: 'plural', '=1': 'Daily', other: 'Every # days' },
+        week: { _mode: 'plural', '=1': 'Weekly', other: 'Every # weeks' },
+        month: { _mode: 'plural', '=1': 'Monthly', other: 'Every # months' },
+        year: { _mode: 'plural', '=1': 'Yearly', other: 'Every # years' },
+      },
       additionalMeteredUsage: 'Additional metered usage',
       perUnit: '/ unit',
       discount: {
@@ -193,10 +198,10 @@ export default {
       year: 'yr',
     },
     long: {
-      day: 'day',
-      week: 'week',
-      month: 'month',
-      year: 'year',
+      day: { _mode: 'plural', '=1': 'day', other: 'days' },
+      week: { _mode: 'plural', '=1': 'week', other: 'weeks' },
+      month: { _mode: 'plural', '=1': 'month', other: 'months' },
+      year: { _mode: 'plural', '=1': 'year', other: 'years' },
     },
     frequency: {
       day: 'daily',

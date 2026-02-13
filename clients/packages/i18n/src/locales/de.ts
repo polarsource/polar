@@ -34,7 +34,6 @@ export default {
       free: 'Kostenlos',
       payWhatYouWant: 'Zahle, was du möchtest',
       total: 'Gesamtbetrag',
-      everyInterval: 'Alle {interval}',
       additionalMeteredUsage: 'Zusätzliche Nutzung',
       perUnit: '/ Einheit',
       discount: {
@@ -49,6 +48,28 @@ export default {
             other: 'für die ersten # Jahre',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Täglich',
+          other: 'Alle # Tage',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Wöchentlich',
+          other: 'Alle # Wochen',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Monatlich',
+          other: 'Alle # Monate',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Jährlich',
+          other: 'Alle # Jahre',
+          _mode: 'plural',
         },
       },
     },
@@ -180,18 +201,34 @@ export default {
       month: 'M.',
       year: 'J',
     },
-    long: {
-      day: 'Tag',
-      week: 'Woche',
-      month: 'Monat',
-      year: 'Jahr',
-    },
     frequency: {
       day: 'täglich',
       week: 'wöchentlich',
       month: 'monatlich',
       year: 'jährlich',
       everyOrdinalInterval: 'alle {ordinal} {interval}',
+    },
+    long: {
+      day: {
+        '=1': 'Tag',
+        other: 'Tage',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'Woche',
+        other: 'Wochen',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'Monat',
+        other: 'Monate',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'Jahr',
+        other: 'Jahre',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

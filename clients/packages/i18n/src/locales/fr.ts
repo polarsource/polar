@@ -34,7 +34,6 @@ export default {
       free: 'Gratuit',
       payWhatYouWant: 'Payez ce que vous voulez',
       total: 'Total',
-      everyInterval: 'Tous les {interval}',
       additionalMeteredUsage: "Facturation à l'usage",
       perUnit: '/ unité',
       discount: {
@@ -49,6 +48,28 @@ export default {
             other: 'pour les # premières années',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Quotidien',
+          other: 'Tous les # jours',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Hebdomadaire',
+          other: 'Toutes les # semaines',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Mensuel',
+          other: 'Tous les # mois',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Annuel',
+          other: 'Tous les # ans',
+          _mode: 'plural',
         },
       },
     },
@@ -178,18 +199,34 @@ export default {
       month: 'mois',
       year: 'an',
     },
-    long: {
-      day: 'jour',
-      week: 'semaine',
-      month: 'mois',
-      year: 'an',
-    },
     frequency: {
       day: 'quotidiennement',
       week: 'hebdomadairement',
       month: 'mensuellement',
       year: 'annuellement',
       everyOrdinalInterval: 'tous les {ordinal} {interval}',
+    },
+    long: {
+      day: {
+        '=1': 'jour',
+        other: 'jours',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'semaine',
+        other: 'semaines',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'mois',
+        other: 'mois',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'an',
+        other: 'ans',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

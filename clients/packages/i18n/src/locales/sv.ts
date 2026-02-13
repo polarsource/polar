@@ -34,7 +34,6 @@ export default {
       free: 'Gratis',
       payWhatYouWant: 'Betala vad du vill',
       total: 'Totalt',
-      everyInterval: 'Varje {interval}',
       additionalMeteredUsage: 'Ytterligare mätbaserad användning',
       perUnit: '/ enhet',
       discount: {
@@ -49,6 +48,32 @@ export default {
             other: 'för de första # åren',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Dagligen',
+          '=2': 'Varannan dag',
+          other: 'Var #:e dagar',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Veckovis',
+          '=2': 'Varannan vecka',
+          other: 'Var #:e vecka',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Månadsvis',
+          '=2': 'Varannan månad',
+          other: 'Var #:e månad',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Årsvis',
+          '=2': 'Varannan år',
+          other: 'Var #:e år',
+          _mode: 'plural',
         },
       },
     },
@@ -173,18 +198,34 @@ export default {
       month: 'mån',
       year: 'år',
     },
-    long: {
-      day: 'dag',
-      week: 'vecka',
-      month: 'månad',
-      year: 'år',
-    },
     frequency: {
       day: 'dagligen',
       week: 'veckovis',
       month: 'månatligen',
       year: 'årligen',
       everyOrdinalInterval: 'var {ordinal} {interval}',
+    },
+    long: {
+      day: {
+        '=1': 'dag',
+        other: 'dagar',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'vecka',
+        other: 'veckor',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'månad',
+        other: 'månader',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'år',
+        other: 'år',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

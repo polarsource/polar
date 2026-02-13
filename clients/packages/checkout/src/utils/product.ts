@@ -29,7 +29,7 @@ export const formatRecurringInterval = (
   const label =
     format === 'short'
       ? t.intervals.short[interval]
-      : t.intervals.long[interval]
+      : t.intervals.long[interval]['=1']
 
   return `${prefix}${label}`
 }
@@ -56,7 +56,7 @@ export const formatRecurringFrequency = (
   if (count) {
     return t.intervals.frequency.everyOrdinalInterval
       .replace('{ordinal}', formatOrdinal(count, locale))
-      .replace('{interval}', t.intervals.long[interval])
+      .replace('{interval}', t.intervals.long[interval]['=1'])
   }
 
   return t.intervals.frequency[interval]

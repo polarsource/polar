@@ -34,7 +34,6 @@ export default {
       free: 'Gratis',
       payWhatYouWant: 'Paga lo que quieras',
       total: 'Total',
-      everyInterval: 'Cada {interval}',
       additionalMeteredUsage: 'Consumo adicional',
       perUnit: '/ unidad',
       discount: {
@@ -49,6 +48,28 @@ export default {
             other: 'durante los primeros # años',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Diario',
+          other: 'Cada # días',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Semanal',
+          other: 'Cada # semanas',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Mensual',
+          other: 'Cada # meses',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Anual',
+          other: 'Cada # años',
+          _mode: 'plural',
         },
       },
     },
@@ -176,18 +197,34 @@ export default {
       month: 'm',
       year: 'a',
     },
-    long: {
-      day: 'día',
-      week: 'semana',
-      month: 'mes',
-      year: 'año',
-    },
     frequency: {
       day: 'diario',
       week: 'semanal',
       month: 'mensual',
       year: 'anual',
       everyOrdinalInterval: 'cada {ordinal} {interval}',
+    },
+    long: {
+      day: {
+        '=1': 'día',
+        other: 'días',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'semana',
+        other: 'semanas',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'mes',
+        other: 'meses',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'año',
+        other: 'años',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

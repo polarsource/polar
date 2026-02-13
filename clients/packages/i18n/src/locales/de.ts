@@ -54,25 +54,25 @@ export default {
         day: {
           '=1': 'Täglich',
           other: 'Alle # Tage',
-          '=2': 'Jeden zweiten Tag',
+          '=2': 'Alle 2 Tage',
           _mode: 'plural',
         },
         week: {
           '=1': 'Wöchentlich',
           other: 'Alle # Wochen',
-          '=2': 'Jede zweite Woche',
+          '=2': 'Alle 2 Wochen',
           _mode: 'plural',
         },
         month: {
           '=1': 'Monatlich',
           other: 'Alle # Monate',
-          '=2': 'Jeden zweiten Monat',
+          '=2': 'Alle 2 Monate',
           _mode: 'plural',
         },
         year: {
           '=1': 'Jährlich',
           other: 'Alle # Jahre',
-          '=2': 'Jedes zweite Jahr',
+          '=2': 'Alle 2 Jahre',
           _mode: 'plural',
         },
       },
@@ -110,7 +110,7 @@ export default {
         'Der Betrag muss {zero} oder mindestens {min} betragen',
     },
     productSwitcher: {
-      billedRecurring: 'Abrechnung {frequency}',
+      billedRecurring: '{frequency} abgerechnet',
       oneTimePurchase: 'Einmaliger Kauf',
     },
     card: {

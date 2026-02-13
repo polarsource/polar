@@ -27,7 +27,10 @@ type FormSchema = Pick<
 
 const OrganizationCurrencySettings: React.FC<
   OrganizationCurrencySettingsProps
-> = ({ organization }) => {
+> = ({ organization: _organization }) => {
+  const organization = _organization as schemas['Organization'] & {
+    default_presentment_currency: schemas['PresentmentCurrency']
+  }
   const form = useForm<FormSchema>({
     defaultValues: {
       default_presentment_currency: organization.default_presentment_currency,
@@ -51,7 +54,11 @@ const OrganizationCurrencySettings: React.FC<
       return
     }
 
-    reset(data)
+    reset({
+      ...data,
+      default_presentment_currency:
+        data.default_presentment_currency as schemas['PresentmentCurrency'],
+    })
   }
 
   useAutoSave({

@@ -674,7 +674,10 @@ interface OrganizationProfileSettingsProps {
 
 const OrganizationProfileSettings: React.FC<
   OrganizationProfileSettingsProps
-> = ({ organization, kyc, onSubmitted }) => {
+> = ({ organization: _organization, kyc, onSubmitted }) => {
+  const organization = _organization as schemas['Organization'] & {
+    default_presentment_currency: schemas['PresentmentCurrency']
+  }
   const router = useRouter()
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: organization,
@@ -728,6 +731,8 @@ const OrganizationProfileSettings: React.FC<
 
     reset({
       ...data,
+      default_presentment_currency:
+        data.default_presentment_currency as schemas['PresentmentCurrency'],
       socials: [...(data.socials || []), ...emptySocials],
     })
 

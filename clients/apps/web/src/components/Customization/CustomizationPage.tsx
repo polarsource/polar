@@ -70,6 +70,8 @@ const Customization = ({
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
+      default_presentment_currency:
+        organization.default_presentment_currency as schemas['PresentmentCurrency'],
     },
   })
 

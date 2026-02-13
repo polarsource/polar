@@ -83,7 +83,8 @@ export const CreateProductPage = ({
         {
           amount_type: 'fixed' as const,
           price_amount: 0,
-          price_currency: organization.default_presentment_currency,
+          price_currency:
+            organization.default_presentment_currency as schemas['PresentmentCurrency'],
         },
       ],
       medias: [],

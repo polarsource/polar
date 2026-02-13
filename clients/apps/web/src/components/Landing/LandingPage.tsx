@@ -2,7 +2,6 @@
 
 import { Hero } from '@/components/Landing/Hero/Hero'
 import useIsMobile from '@/utils/mobile'
-import { Stream } from '@cloudflare/stream-react'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -62,19 +61,6 @@ export const PageContent = () => {
 
       <Usage className="py-16 md:py-24" />
 
-      <Section className="flex flex-col md:py-32 xl:max-w-[1620px]">
-        {isMobile ? null : (
-          <div className="relative aspect-video w-full">
-            <Stream
-              src="8fb79c2cb066f3d9e982ad5ad3eb9fc4"
-              letterboxColor="black"
-              autoplay
-              muted
-              loop
-            />
-          </div>
-        )}
-      </Section>
       <Section className="dark:border-polar-700 flex flex-col gap-y-24 border-b border-gray-300 pb-24!">
         <Adapters />
       </Section>

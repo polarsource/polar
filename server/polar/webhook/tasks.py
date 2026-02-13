@@ -93,7 +93,12 @@ async def _webhook_event_send(
             webhook_endpoint_id=event.webhook_endpoint_id,
             earlier_pending_count=earlier_pending_count,
         )
-        raise Retry(delay=earlier_pending_count * settings.WEBHOOK_FIFO_GUARD_DELAY_MS)
+        raise Retry(
+            delay=min(
+                earlier_pending_count * settings.WEBHOOK_FIFO_GUARD_DELAY_MS,
+                int(settings.WEBHOOK_FIFO_GUARD_MAX_AGE.total_seconds() * 1000),
+            )
+        )
 
     if event.skipped:
         event.skipped = False

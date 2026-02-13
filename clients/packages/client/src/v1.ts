@@ -1918,6 +1918,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/cli/listen/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Listen
+     * @description **Scopes**: `webhooks:read` `webhooks:write`
+     */
+    get: operations['cli:listen']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/files/': {
     parameters: {
       query?: never
@@ -4363,6 +4383,31 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'checkout.expired': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * checkout.expired
+     * @description Sent when a checkout expires.
+     *
+     *     This event fires when a checkout reaches its expiration time without being completed.
+     *     Developers can use this to send reminder emails or track checkout abandonment.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointcheckout_expired_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'customer.created': {
     parameters: {
       query?: never
@@ -4527,6 +4572,83 @@ export interface webhooks {
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
      */
     post: operations['_endpointcustomer_seat_revoked_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.created
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.updated
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'member.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * member.deleted
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointmember_deleted_post']
     delete?: never
     options?: never
     head?: never
@@ -5866,7 +5988,6 @@ export interface components {
        *       "metrics:read": "Read metrics",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
-       *       "external_organizations:read": "Read external organizations",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -5952,7 +6073,6 @@ export interface components {
        *       "metrics:read": "Read metrics",
        *       "webhooks:read": "Read webhooks",
        *       "webhooks:write": "Create or modify webhooks",
-       *       "external_organizations:read": "Read external organizations",
        *       "license_keys:read": "Read license keys",
        *       "license_keys:write": "Modify license keys",
        *       "customer_portal:read": "Read your orders, subscriptions and benefits",
@@ -6040,13 +6160,8 @@ export interface components {
       | 'metrics:read'
       | 'webhooks:read'
       | 'webhooks:write'
-      | 'external_organizations:read'
       | 'license_keys:read'
       | 'license_keys:write'
-      | 'repositories:read'
-      | 'repositories:write'
-      | 'issues:read'
-      | 'issues:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -6091,6 +6206,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -6177,6 +6302,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -6274,6 +6409,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -6339,6 +6484,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -6379,6 +6534,8 @@ export interface components {
       subscription_id?: string
       /** Amount */
       amount: number
+      /** Net Amount */
+      net_amount?: number
       /** Currency */
       currency: string
       /** Presentment Amount */
@@ -6430,6 +6587,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -6528,6 +6695,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -6803,6 +6980,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -7553,7 +7740,6 @@ export interface components {
       /** @description The error information if the benefit grant failed with an unrecoverable error. */
       error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['Customer']
-      /** Member */
       member?: components['schemas']['Member'] | null
       /** Benefit */
       benefit: components['schemas']['Benefit']
@@ -7914,6 +8100,8 @@ export interface components {
     }
     /** BenefitGrantLicenseKeysProperties */
     BenefitGrantLicenseKeysProperties: {
+      /** User Provided Key */
+      user_provided_key?: string
       /** License Key Id */
       license_key_id?: string
       /** Display Key */
@@ -8144,6 +8332,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -8701,6 +8899,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -8831,6 +9039,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -9230,6 +9448,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -9352,6 +9572,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -9392,6 +9614,8 @@ export interface components {
        * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
        */
       subscription_id?: string | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CheckoutCreatedEvent
@@ -9429,6 +9653,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -9935,6 +10169,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -10226,6 +10462,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Product Price Id
        * Format: uuid4
@@ -10272,6 +10510,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -10451,6 +10691,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
@@ -10593,6 +10835,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
@@ -10823,6 +11067,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11080,6 +11326,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11188,6 +11436,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -11309,6 +11559,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -12642,6 +12894,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -12710,6 +12964,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitCustomSubscriber']
       properties: components['schemas']['BenefitGrantCustomProperties']
@@ -12765,6 +13020,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitDiscordSubscriber']
       properties: components['schemas']['BenefitGrantDiscordProperties']
@@ -12826,6 +13082,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitDownloadablesSubscriber']
       properties: components['schemas']['BenefitGrantDownloadablesProperties']
@@ -12881,6 +13138,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitGitHubRepositorySubscriber']
       properties: components['schemas']['BenefitGrantGitHubRepositoryProperties']
@@ -12942,6 +13200,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitLicenseKeysSubscriber']
       properties: components['schemas']['BenefitGrantLicenseKeysProperties']
@@ -12997,6 +13256,7 @@ export interface components {
       is_granted: boolean
       /** Is Revoked */
       is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
       customer: components['schemas']['CustomerPortalCustomer']
       benefit: components['schemas']['BenefitMeterCreditSubscriber']
       properties: components['schemas']['BenefitGrantMeterCreditProperties']
@@ -13079,6 +13339,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
        * @example individual
@@ -13128,6 +13390,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -13311,6 +13583,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -13700,6 +13982,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -13938,6 +14222,8 @@ export interface components {
       allow_customer_updates: boolean
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Feature flags for the customer portal. */
+      organization_features?: components['schemas']['CustomerOrganizationFeatureSettings']
     }
     /**
      * CustomerOrganizationData
@@ -13947,6 +14233,18 @@ export interface components {
       organization: components['schemas']['CustomerOrganization']
       /** Products */
       products: components['schemas']['CustomerProduct'][]
+    }
+    /**
+     * CustomerOrganizationFeatureSettings
+     * @description Feature flags exposed to the customer portal.
+     */
+    CustomerOrganizationFeatureSettings: {
+      /**
+       * Member Model Enabled
+       * @description Whether the member model is enabled for this organization.
+       * @default false
+       */
+      member_model_enabled: boolean
     }
     CustomerPaymentMethod:
       | components['schemas']['PaymentMethodCard']
@@ -14165,6 +14463,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -14250,6 +14550,8 @@ export interface components {
        * @description The member ID of the seat occupant
        */
       member_id?: string | null
+      /** @description The member associated with this seat */
+      member?: components['schemas']['Member'] | null
       /**
        * Email
        * @description Email of the seat member (set when member_model_enabled is true)
@@ -14519,6 +14821,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -15098,6 +15402,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -15218,6 +15524,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -15260,6 +15568,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CustomerUpdatedEvent
@@ -15297,6 +15607,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -15461,6 +15781,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -16424,6 +16746,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -16766,6 +17090,11 @@ export interface components {
        * @description ID of the customer in your Polar organization associated with the event.
        */
       customer_id: string
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action. Used for member-level attribution in B2B.
+       */
+      member_id?: string | null
     }
     /** EventCreateExternalCustomer */
     EventCreateExternalCustomer: {
@@ -16814,6 +17143,11 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
+       */
+      external_member_id?: string | null
     }
     /** EventMetadataInput */
     EventMetadataInput: {
@@ -17534,6 +17868,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17553,11 +17889,6 @@ export interface components {
       type: 'recurring'
       /** @description The recurring interval of the price. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
@@ -17610,6 +17941,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17629,11 +17962,6 @@ export interface components {
       type: 'recurring'
       /** @description The recurring interval of the price. */
       recurring_interval: components['schemas']['SubscriptionRecurringInterval']
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Price Amount
        * @description The price in cents.
@@ -17676,6 +18004,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17853,6 +18183,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -18796,6 +19128,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -18895,6 +19237,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -19457,7 +19809,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19522,7 +19874,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19568,7 +19920,7 @@ export interface components {
       response_types: 'code'[]
       /**
        * Scope
-       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
+       * @default openid profile email user:read user:write organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write members:read members:write wallets:read wallets:write disputes:read customer_meters:read customer_sessions:write member_sessions:write customer_seats:read customer_seats:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write license_keys:read license_keys:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write organization_access_tokens:read organization_access_tokens:write
        */
       scope: string
       /** Client Name */
@@ -19882,6 +20234,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -20011,6 +20365,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -20107,6 +20471,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -20169,6 +20535,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -20450,6 +20826,8 @@ export interface components {
        * @description When the business details were submitted.
        */
       details_submitted_at: string | null
+      /** @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available. */
+      default_presentment_currency: components['schemas']['PresentmentCurrency']
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -20684,6 +21062,11 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
+      /**
+       * @description Default presentment currency for the organization
+       * @default usd
+       */
+      default_presentment_currency: components['schemas']['PresentmentCurrency']
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
@@ -20818,6 +21201,30 @@ export interface components {
        * @default false
        */
       member_model_enabled: boolean
+      /**
+       * Tinybird Read
+       * @description If this organization reads from Tinybird
+       * @default false
+       */
+      tinybird_read: boolean
+      /**
+       * Tinybird Compare
+       * @description If this organization compares Tinybird results with database
+       * @default false
+       */
+      tinybird_compare: boolean
+      /**
+       * Presentment Currencies Enabled
+       * @description If this organization has multiple presentment currencies enabled
+       * @default false
+       */
+      presentment_currencies_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description If this organization has checkout localization enabled
+       * @default false
+       */
+      checkout_localization_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -21103,6 +21510,10 @@ export interface components {
         | null
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
+        | null
+      /** @description Default presentment currency for the organization */
+      default_presentment_currency?:
+        | components['schemas']['PresentmentCurrency']
         | null
     }
     /**
@@ -21489,14 +21900,16 @@ export interface components {
      * @enum {string}
      */
     PresentmentCurrency:
-      | 'usd'
-      | 'eur'
-      | 'gbp'
-      | 'cad'
       | 'aud'
-      | 'jpy'
+      | 'brl'
+      | 'cad'
       | 'chf'
+      | 'eur'
+      | 'inr'
+      | 'gbp'
+      | 'jpy'
       | 'sek'
+      | 'usd'
     /**
      * Processor
      * @description Supported payment or payout processors, i.e rails for transactions.
@@ -21542,6 +21955,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -21641,6 +22056,11 @@ export interface components {
        */
       description?: string | null
       /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
+      /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
        */
@@ -21706,6 +22126,11 @@ export interface components {
        * @description The description of the product.
        */
       description?: string | null
+      /**
+       * @description The visibility of the product.
+       * @default public
+       */
+      visibility: components['schemas']['ProductVisibility']
       /**
        * ProductPriceCreateList
        * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
@@ -21866,6 +22291,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -21883,11 +22310,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'. Defaults to 50 cents.
@@ -21915,11 +22337,10 @@ export interface components {
        */
       amount_type: 'custom'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Minimum Amount
        * @description The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value between 1-49, it will be rejected. Defaults to 50 cents.
@@ -21966,6 +22387,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -21984,11 +22407,6 @@ export interface components {
         | components['schemas']['SubscriptionRecurringInterval']
         | null
       /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
-      /**
        * Price Amount
        * @description The price in cents.
        */
@@ -22005,16 +22423,15 @@ export interface components {
        */
       amount_type: 'fixed'
       /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /**
        * Price Amount
        * @description The price in cents.
        */
       price_amount: number
-      /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
-       * @default usd
-       */
-      price_currency: string
     }
     /**
      * ProductPriceFree
@@ -22045,6 +22462,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22073,6 +22492,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
     }
     /**
      * ProductPriceMeter
@@ -22120,6 +22544,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'metered_unit'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22137,11 +22563,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /**
        * Unit Amount
        * @description The price per unit in cents.
@@ -22172,17 +22593,16 @@ export interface components {
        */
       amount_type: 'metered_unit'
       /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /**
        * Meter Id
        * Format: uuid4
        * @description The ID of the meter associated to the price.
        */
       meter_id: string
-      /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
-       * @default usd
-       */
-      price_currency: string
       /**
        * Unit Amount
        * @description The price per unit in cents. Supports up to 12 decimal places.
@@ -22223,6 +22643,8 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'seat_based'
+      /** @description The currency in which the customer will be charged. */
+      price_currency: components['schemas']['PresentmentCurrency']
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22240,11 +22662,6 @@ export interface components {
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
         | null
-      /**
-       * Price Currency
-       * @description The currency.
-       */
-      price_currency: string
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Output']
     }
@@ -22259,11 +22676,10 @@ export interface components {
        */
       amount_type: 'seat_based'
       /**
-       * Price Currency
-       * @description The currency. Currently, only `usd` is supported.
+       * @description The currency in which the customer will be charged.
        * @default usd
        */
-      price_currency: string
+      price_currency: components['schemas']['PresentmentCurrency']
       /** @description Tiered pricing based on seat quantity */
       seat_tiers: components['schemas']['ProductPriceSeatTiers-Input']
     }
@@ -22390,6 +22806,8 @@ export interface components {
        * @description The description of the product.
        */
       description: string | null
+      /** @description The visibility of the product. */
+      visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
       recurring_interval:
         | components['schemas']['SubscriptionRecurringInterval']
@@ -22484,6 +22902,8 @@ export interface components {
        * @description Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
        */
       is_archived?: boolean | null
+      /** @description The visibility of the product. */
+      visibility?: components['schemas']['ProductVisibility'] | null
       /**
        * Prices
        * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
@@ -22510,6 +22930,11 @@ export interface components {
         | components['schemas']['AttachedCustomFieldCreate'][]
         | null
     }
+    /**
+     * ProductVisibility
+     * @enum {string}
+     */
+    ProductVisibility: 'draft' | 'private' | 'public'
     /** PropertyAggregation */
     PropertyAggregation: {
       /**
@@ -22870,13 +23295,8 @@ export interface components {
       | 'metrics:read'
       | 'webhooks:read'
       | 'webhooks:write'
-      | 'external_organizations:read'
       | 'license_keys:read'
       | 'license_keys:write'
-      | 'repositories:read'
-      | 'repositories:write'
-      | 'issues:read'
-      | 'issues:write'
       | 'customer_portal:read'
       | 'customer_portal:write'
       | 'notifications:read'
@@ -22922,6 +23342,8 @@ export interface components {
       product_name: string
       /** Amount */
       amount: number
+      /** Currency */
+      currency: string
     }
     /** SearchResultProduct */
     SearchResultProduct: {
@@ -22962,6 +23384,8 @@ export interface components {
       status: string
       /** Amount */
       amount: number
+      /** Currency */
+      currency: string
     }
     /** SearchResults */
     SearchResults: {
@@ -23005,6 +23429,16 @@ export interface components {
        * @description Customer ID for the seat assignment
        */
       customer_id?: string | null
+      /**
+       * External Member Id
+       * @description External member ID for the seat assignment. Only supported when member_model_enabled is true. Can be used alone (lookup existing member) or with email (create/validate member).
+       */
+      external_member_id?: string | null
+      /**
+       * Member Id
+       * @description Member ID for the seat assignment. Only supported when member_model_enabled is true.
+       */
+      member_id?: string | null
       /**
        * Metadata
        * @description Additional metadata for the seat (max 10 keys, 1KB total)
@@ -23470,6 +23904,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -23588,6 +24032,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -23787,6 +24241,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -23885,6 +24349,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -23939,6 +24405,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -24081,6 +24557,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -24209,6 +24695,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -24288,6 +24784,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -24399,6 +24905,16 @@ export interface components {
        * @description ID of the customer in your system associated with the event.
        */
       external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
       /**
        * Child Count
        * @description Number of direct child events linked to this event.
@@ -25082,6 +25598,16 @@ export interface components {
        */
       external_customer_id: string | null
       /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
        * Child Count
        * @description Number of direct child events linked to this event.
        * @default 0
@@ -25494,6 +26020,29 @@ export interface components {
       data: components['schemas']['Checkout']
     }
     /**
+     * WebhookCheckoutExpiredPayload
+     * @description Sent when a checkout expires.
+     *
+     *     This event fires when a checkout reaches its expiration time without being completed.
+     *     Developers can use this to send reminder emails or track checkout abandonment.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookCheckoutExpiredPayload: {
+      /**
+       * Type
+       * @example checkout.expired
+       * @constant
+       */
+      type: 'checkout.expired'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Checkout']
+    }
+    /**
      * WebhookCheckoutUpdatedPayload
      * @description Sent when a checkout is updated.
      *
@@ -25877,6 +26426,7 @@ export interface components {
     WebhookEventType:
       | 'checkout.created'
       | 'checkout.updated'
+      | 'checkout.expired'
       | 'customer.created'
       | 'customer.updated'
       | 'customer.deleted'
@@ -25884,6 +26434,9 @@ export interface components {
       | 'customer_seat.assigned'
       | 'customer_seat.claimed'
       | 'customer_seat.revoked'
+      | 'member.created'
+      | 'member.updated'
+      | 'member.deleted'
       | 'order.created'
       | 'order.updated'
       | 'order.paid'
@@ -25911,6 +26464,77 @@ export interface components {
      * @enum {string}
      */
     WebhookFormat: 'raw' | 'discord' | 'slack'
+    /**
+     * WebhookMemberCreatedPayload
+     * @description Sent when a new member is created.
+     *
+     *     A member represents an individual within a customer (team).
+     *     This event is triggered when a member is added to a customer,
+     *     either programmatically via the API or when an owner is automatically
+     *     created for a new customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberCreatedPayload: {
+      /**
+       * Type
+       * @example member.created
+       * @constant
+       */
+      type: 'member.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberDeletedPayload
+     * @description Sent when a member is deleted.
+     *
+     *     This event is triggered when a member is removed from a customer.
+     *     Any active seats assigned to the member will be automatically revoked.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberDeletedPayload: {
+      /**
+       * Type
+       * @example member.deleted
+       * @constant
+       */
+      type: 'member.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
+    /**
+     * WebhookMemberUpdatedPayload
+     * @description Sent when a member is updated.
+     *
+     *     This event is triggered when member details are updated,
+     *     such as their name or role within the customer.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookMemberUpdatedPayload: {
+      /**
+       * Type
+       * @example member.updated
+       * @constant
+       */
+      type: 'member.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Member']
+    }
     /**
      * WebhookOrderCreatedPayload
      * @description Sent when a new order is created.
@@ -29528,6 +30152,8 @@ export interface operations {
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */
         benefit_id?: string | string[] | null
+        /** @description Filter by visibility. */
+        visibility?: components['schemas']['ProductVisibility'][] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -30561,6 +31187,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ExpiredCheckoutError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'cli:listen': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
         }
       }
       /** @description Validation Error */
@@ -33327,6 +33984,8 @@ export interface operations {
   'customer_portal:benefit-grants:list': {
     parameters: {
       query?: {
+        /** @description Filter by benefit description. */
+        query?: string | null
         /** @description Filter by benefit type. */
         type?:
           | components['schemas']['BenefitType']
@@ -34596,9 +35255,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -34661,9 +35318,7 @@ export interface operations {
         headers: {
           [name: string]: unknown
         }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
+        content?: never
       }
       /** @description Validation Error */
       422: {
@@ -36971,6 +37626,606 @@ export interface operations {
         end_timestamp: string
         /** @description Interval between two timestamps. */
         interval: components['schemas']['TimeInterval']
+        /** @description Timezone to use for the timestamps. Default is UTC. */
+        timezone?:
+          | 'Africa/Abidjan'
+          | 'Africa/Accra'
+          | 'Africa/Addis_Ababa'
+          | 'Africa/Algiers'
+          | 'Africa/Asmara'
+          | 'Africa/Asmera'
+          | 'Africa/Bamako'
+          | 'Africa/Bangui'
+          | 'Africa/Banjul'
+          | 'Africa/Bissau'
+          | 'Africa/Blantyre'
+          | 'Africa/Brazzaville'
+          | 'Africa/Bujumbura'
+          | 'Africa/Cairo'
+          | 'Africa/Casablanca'
+          | 'Africa/Ceuta'
+          | 'Africa/Conakry'
+          | 'Africa/Dakar'
+          | 'Africa/Dar_es_Salaam'
+          | 'Africa/Djibouti'
+          | 'Africa/Douala'
+          | 'Africa/El_Aaiun'
+          | 'Africa/Freetown'
+          | 'Africa/Gaborone'
+          | 'Africa/Harare'
+          | 'Africa/Johannesburg'
+          | 'Africa/Juba'
+          | 'Africa/Kampala'
+          | 'Africa/Khartoum'
+          | 'Africa/Kigali'
+          | 'Africa/Kinshasa'
+          | 'Africa/Lagos'
+          | 'Africa/Libreville'
+          | 'Africa/Lome'
+          | 'Africa/Luanda'
+          | 'Africa/Lubumbashi'
+          | 'Africa/Lusaka'
+          | 'Africa/Malabo'
+          | 'Africa/Maputo'
+          | 'Africa/Maseru'
+          | 'Africa/Mbabane'
+          | 'Africa/Mogadishu'
+          | 'Africa/Monrovia'
+          | 'Africa/Nairobi'
+          | 'Africa/Ndjamena'
+          | 'Africa/Niamey'
+          | 'Africa/Nouakchott'
+          | 'Africa/Ouagadougou'
+          | 'Africa/Porto-Novo'
+          | 'Africa/Sao_Tome'
+          | 'Africa/Timbuktu'
+          | 'Africa/Tripoli'
+          | 'Africa/Tunis'
+          | 'Africa/Windhoek'
+          | 'America/Adak'
+          | 'America/Anchorage'
+          | 'America/Anguilla'
+          | 'America/Antigua'
+          | 'America/Araguaina'
+          | 'America/Argentina/Buenos_Aires'
+          | 'America/Argentina/Catamarca'
+          | 'America/Argentina/ComodRivadavia'
+          | 'America/Argentina/Cordoba'
+          | 'America/Argentina/Jujuy'
+          | 'America/Argentina/La_Rioja'
+          | 'America/Argentina/Mendoza'
+          | 'America/Argentina/Rio_Gallegos'
+          | 'America/Argentina/Salta'
+          | 'America/Argentina/San_Juan'
+          | 'America/Argentina/San_Luis'
+          | 'America/Argentina/Tucuman'
+          | 'America/Argentina/Ushuaia'
+          | 'America/Aruba'
+          | 'America/Asuncion'
+          | 'America/Atikokan'
+          | 'America/Atka'
+          | 'America/Bahia'
+          | 'America/Bahia_Banderas'
+          | 'America/Barbados'
+          | 'America/Belem'
+          | 'America/Belize'
+          | 'America/Blanc-Sablon'
+          | 'America/Boa_Vista'
+          | 'America/Bogota'
+          | 'America/Boise'
+          | 'America/Buenos_Aires'
+          | 'America/Cambridge_Bay'
+          | 'America/Campo_Grande'
+          | 'America/Cancun'
+          | 'America/Caracas'
+          | 'America/Catamarca'
+          | 'America/Cayenne'
+          | 'America/Cayman'
+          | 'America/Chicago'
+          | 'America/Chihuahua'
+          | 'America/Ciudad_Juarez'
+          | 'America/Coral_Harbour'
+          | 'America/Cordoba'
+          | 'America/Costa_Rica'
+          | 'America/Coyhaique'
+          | 'America/Creston'
+          | 'America/Cuiaba'
+          | 'America/Curacao'
+          | 'America/Danmarkshavn'
+          | 'America/Dawson'
+          | 'America/Dawson_Creek'
+          | 'America/Denver'
+          | 'America/Detroit'
+          | 'America/Dominica'
+          | 'America/Edmonton'
+          | 'America/Eirunepe'
+          | 'America/El_Salvador'
+          | 'America/Ensenada'
+          | 'America/Fort_Nelson'
+          | 'America/Fort_Wayne'
+          | 'America/Fortaleza'
+          | 'America/Glace_Bay'
+          | 'America/Godthab'
+          | 'America/Goose_Bay'
+          | 'America/Grand_Turk'
+          | 'America/Grenada'
+          | 'America/Guadeloupe'
+          | 'America/Guatemala'
+          | 'America/Guayaquil'
+          | 'America/Guyana'
+          | 'America/Halifax'
+          | 'America/Havana'
+          | 'America/Hermosillo'
+          | 'America/Indiana/Indianapolis'
+          | 'America/Indiana/Knox'
+          | 'America/Indiana/Marengo'
+          | 'America/Indiana/Petersburg'
+          | 'America/Indiana/Tell_City'
+          | 'America/Indiana/Vevay'
+          | 'America/Indiana/Vincennes'
+          | 'America/Indiana/Winamac'
+          | 'America/Indianapolis'
+          | 'America/Inuvik'
+          | 'America/Iqaluit'
+          | 'America/Jamaica'
+          | 'America/Jujuy'
+          | 'America/Juneau'
+          | 'America/Kentucky/Louisville'
+          | 'America/Kentucky/Monticello'
+          | 'America/Knox_IN'
+          | 'America/Kralendijk'
+          | 'America/La_Paz'
+          | 'America/Lima'
+          | 'America/Los_Angeles'
+          | 'America/Louisville'
+          | 'America/Lower_Princes'
+          | 'America/Maceio'
+          | 'America/Managua'
+          | 'America/Manaus'
+          | 'America/Marigot'
+          | 'America/Martinique'
+          | 'America/Matamoros'
+          | 'America/Mazatlan'
+          | 'America/Mendoza'
+          | 'America/Menominee'
+          | 'America/Merida'
+          | 'America/Metlakatla'
+          | 'America/Mexico_City'
+          | 'America/Miquelon'
+          | 'America/Moncton'
+          | 'America/Monterrey'
+          | 'America/Montevideo'
+          | 'America/Montreal'
+          | 'America/Montserrat'
+          | 'America/Nassau'
+          | 'America/New_York'
+          | 'America/Nipigon'
+          | 'America/Nome'
+          | 'America/Noronha'
+          | 'America/North_Dakota/Beulah'
+          | 'America/North_Dakota/Center'
+          | 'America/North_Dakota/New_Salem'
+          | 'America/Nuuk'
+          | 'America/Ojinaga'
+          | 'America/Panama'
+          | 'America/Pangnirtung'
+          | 'America/Paramaribo'
+          | 'America/Phoenix'
+          | 'America/Port-au-Prince'
+          | 'America/Port_of_Spain'
+          | 'America/Porto_Acre'
+          | 'America/Porto_Velho'
+          | 'America/Puerto_Rico'
+          | 'America/Punta_Arenas'
+          | 'America/Rainy_River'
+          | 'America/Rankin_Inlet'
+          | 'America/Recife'
+          | 'America/Regina'
+          | 'America/Resolute'
+          | 'America/Rio_Branco'
+          | 'America/Rosario'
+          | 'America/Santa_Isabel'
+          | 'America/Santarem'
+          | 'America/Santiago'
+          | 'America/Santo_Domingo'
+          | 'America/Sao_Paulo'
+          | 'America/Scoresbysund'
+          | 'America/Shiprock'
+          | 'America/Sitka'
+          | 'America/St_Barthelemy'
+          | 'America/St_Johns'
+          | 'America/St_Kitts'
+          | 'America/St_Lucia'
+          | 'America/St_Thomas'
+          | 'America/St_Vincent'
+          | 'America/Swift_Current'
+          | 'America/Tegucigalpa'
+          | 'America/Thule'
+          | 'America/Thunder_Bay'
+          | 'America/Tijuana'
+          | 'America/Toronto'
+          | 'America/Tortola'
+          | 'America/Vancouver'
+          | 'America/Virgin'
+          | 'America/Whitehorse'
+          | 'America/Winnipeg'
+          | 'America/Yakutat'
+          | 'America/Yellowknife'
+          | 'Antarctica/Casey'
+          | 'Antarctica/Davis'
+          | 'Antarctica/DumontDUrville'
+          | 'Antarctica/Macquarie'
+          | 'Antarctica/Mawson'
+          | 'Antarctica/McMurdo'
+          | 'Antarctica/Palmer'
+          | 'Antarctica/Rothera'
+          | 'Antarctica/South_Pole'
+          | 'Antarctica/Syowa'
+          | 'Antarctica/Troll'
+          | 'Antarctica/Vostok'
+          | 'Arctic/Longyearbyen'
+          | 'Asia/Aden'
+          | 'Asia/Almaty'
+          | 'Asia/Amman'
+          | 'Asia/Anadyr'
+          | 'Asia/Aqtau'
+          | 'Asia/Aqtobe'
+          | 'Asia/Ashgabat'
+          | 'Asia/Ashkhabad'
+          | 'Asia/Atyrau'
+          | 'Asia/Baghdad'
+          | 'Asia/Bahrain'
+          | 'Asia/Baku'
+          | 'Asia/Bangkok'
+          | 'Asia/Barnaul'
+          | 'Asia/Beirut'
+          | 'Asia/Bishkek'
+          | 'Asia/Brunei'
+          | 'Asia/Calcutta'
+          | 'Asia/Chita'
+          | 'Asia/Choibalsan'
+          | 'Asia/Chongqing'
+          | 'Asia/Chungking'
+          | 'Asia/Colombo'
+          | 'Asia/Dacca'
+          | 'Asia/Damascus'
+          | 'Asia/Dhaka'
+          | 'Asia/Dili'
+          | 'Asia/Dubai'
+          | 'Asia/Dushanbe'
+          | 'Asia/Famagusta'
+          | 'Asia/Gaza'
+          | 'Asia/Harbin'
+          | 'Asia/Hebron'
+          | 'Asia/Ho_Chi_Minh'
+          | 'Asia/Hong_Kong'
+          | 'Asia/Hovd'
+          | 'Asia/Irkutsk'
+          | 'Asia/Istanbul'
+          | 'Asia/Jakarta'
+          | 'Asia/Jayapura'
+          | 'Asia/Jerusalem'
+          | 'Asia/Kabul'
+          | 'Asia/Kamchatka'
+          | 'Asia/Karachi'
+          | 'Asia/Kashgar'
+          | 'Asia/Kathmandu'
+          | 'Asia/Katmandu'
+          | 'Asia/Khandyga'
+          | 'Asia/Kolkata'
+          | 'Asia/Krasnoyarsk'
+          | 'Asia/Kuala_Lumpur'
+          | 'Asia/Kuching'
+          | 'Asia/Kuwait'
+          | 'Asia/Macao'
+          | 'Asia/Macau'
+          | 'Asia/Magadan'
+          | 'Asia/Makassar'
+          | 'Asia/Manila'
+          | 'Asia/Muscat'
+          | 'Asia/Nicosia'
+          | 'Asia/Novokuznetsk'
+          | 'Asia/Novosibirsk'
+          | 'Asia/Omsk'
+          | 'Asia/Oral'
+          | 'Asia/Phnom_Penh'
+          | 'Asia/Pontianak'
+          | 'Asia/Pyongyang'
+          | 'Asia/Qatar'
+          | 'Asia/Qostanay'
+          | 'Asia/Qyzylorda'
+          | 'Asia/Rangoon'
+          | 'Asia/Riyadh'
+          | 'Asia/Saigon'
+          | 'Asia/Sakhalin'
+          | 'Asia/Samarkand'
+          | 'Asia/Seoul'
+          | 'Asia/Shanghai'
+          | 'Asia/Singapore'
+          | 'Asia/Srednekolymsk'
+          | 'Asia/Taipei'
+          | 'Asia/Tashkent'
+          | 'Asia/Tbilisi'
+          | 'Asia/Tehran'
+          | 'Asia/Tel_Aviv'
+          | 'Asia/Thimbu'
+          | 'Asia/Thimphu'
+          | 'Asia/Tokyo'
+          | 'Asia/Tomsk'
+          | 'Asia/Ujung_Pandang'
+          | 'Asia/Ulaanbaatar'
+          | 'Asia/Ulan_Bator'
+          | 'Asia/Urumqi'
+          | 'Asia/Ust-Nera'
+          | 'Asia/Vientiane'
+          | 'Asia/Vladivostok'
+          | 'Asia/Yakutsk'
+          | 'Asia/Yangon'
+          | 'Asia/Yekaterinburg'
+          | 'Asia/Yerevan'
+          | 'Atlantic/Azores'
+          | 'Atlantic/Bermuda'
+          | 'Atlantic/Canary'
+          | 'Atlantic/Cape_Verde'
+          | 'Atlantic/Faeroe'
+          | 'Atlantic/Faroe'
+          | 'Atlantic/Jan_Mayen'
+          | 'Atlantic/Madeira'
+          | 'Atlantic/Reykjavik'
+          | 'Atlantic/South_Georgia'
+          | 'Atlantic/St_Helena'
+          | 'Atlantic/Stanley'
+          | 'Australia/ACT'
+          | 'Australia/Adelaide'
+          | 'Australia/Brisbane'
+          | 'Australia/Broken_Hill'
+          | 'Australia/Canberra'
+          | 'Australia/Currie'
+          | 'Australia/Darwin'
+          | 'Australia/Eucla'
+          | 'Australia/Hobart'
+          | 'Australia/LHI'
+          | 'Australia/Lindeman'
+          | 'Australia/Lord_Howe'
+          | 'Australia/Melbourne'
+          | 'Australia/NSW'
+          | 'Australia/North'
+          | 'Australia/Perth'
+          | 'Australia/Queensland'
+          | 'Australia/South'
+          | 'Australia/Sydney'
+          | 'Australia/Tasmania'
+          | 'Australia/Victoria'
+          | 'Australia/West'
+          | 'Australia/Yancowinna'
+          | 'Brazil/Acre'
+          | 'Brazil/DeNoronha'
+          | 'Brazil/East'
+          | 'Brazil/West'
+          | 'CET'
+          | 'CST6CDT'
+          | 'Canada/Atlantic'
+          | 'Canada/Central'
+          | 'Canada/Eastern'
+          | 'Canada/Mountain'
+          | 'Canada/Newfoundland'
+          | 'Canada/Pacific'
+          | 'Canada/Saskatchewan'
+          | 'Canada/Yukon'
+          | 'Chile/Continental'
+          | 'Chile/EasterIsland'
+          | 'Cuba'
+          | 'EET'
+          | 'EST'
+          | 'EST5EDT'
+          | 'Egypt'
+          | 'Eire'
+          | 'Etc/GMT'
+          | 'Etc/GMT+0'
+          | 'Etc/GMT+1'
+          | 'Etc/GMT+10'
+          | 'Etc/GMT+11'
+          | 'Etc/GMT+12'
+          | 'Etc/GMT+2'
+          | 'Etc/GMT+3'
+          | 'Etc/GMT+4'
+          | 'Etc/GMT+5'
+          | 'Etc/GMT+6'
+          | 'Etc/GMT+7'
+          | 'Etc/GMT+8'
+          | 'Etc/GMT+9'
+          | 'Etc/GMT-0'
+          | 'Etc/GMT-1'
+          | 'Etc/GMT-10'
+          | 'Etc/GMT-11'
+          | 'Etc/GMT-12'
+          | 'Etc/GMT-13'
+          | 'Etc/GMT-14'
+          | 'Etc/GMT-2'
+          | 'Etc/GMT-3'
+          | 'Etc/GMT-4'
+          | 'Etc/GMT-5'
+          | 'Etc/GMT-6'
+          | 'Etc/GMT-7'
+          | 'Etc/GMT-8'
+          | 'Etc/GMT-9'
+          | 'Etc/GMT0'
+          | 'Etc/Greenwich'
+          | 'Etc/UCT'
+          | 'Etc/UTC'
+          | 'Etc/Universal'
+          | 'Etc/Zulu'
+          | 'Europe/Amsterdam'
+          | 'Europe/Andorra'
+          | 'Europe/Astrakhan'
+          | 'Europe/Athens'
+          | 'Europe/Belfast'
+          | 'Europe/Belgrade'
+          | 'Europe/Berlin'
+          | 'Europe/Bratislava'
+          | 'Europe/Brussels'
+          | 'Europe/Bucharest'
+          | 'Europe/Budapest'
+          | 'Europe/Busingen'
+          | 'Europe/Chisinau'
+          | 'Europe/Copenhagen'
+          | 'Europe/Dublin'
+          | 'Europe/Gibraltar'
+          | 'Europe/Guernsey'
+          | 'Europe/Helsinki'
+          | 'Europe/Isle_of_Man'
+          | 'Europe/Istanbul'
+          | 'Europe/Jersey'
+          | 'Europe/Kaliningrad'
+          | 'Europe/Kiev'
+          | 'Europe/Kirov'
+          | 'Europe/Kyiv'
+          | 'Europe/Lisbon'
+          | 'Europe/Ljubljana'
+          | 'Europe/London'
+          | 'Europe/Luxembourg'
+          | 'Europe/Madrid'
+          | 'Europe/Malta'
+          | 'Europe/Mariehamn'
+          | 'Europe/Minsk'
+          | 'Europe/Monaco'
+          | 'Europe/Moscow'
+          | 'Europe/Nicosia'
+          | 'Europe/Oslo'
+          | 'Europe/Paris'
+          | 'Europe/Podgorica'
+          | 'Europe/Prague'
+          | 'Europe/Riga'
+          | 'Europe/Rome'
+          | 'Europe/Samara'
+          | 'Europe/San_Marino'
+          | 'Europe/Sarajevo'
+          | 'Europe/Saratov'
+          | 'Europe/Simferopol'
+          | 'Europe/Skopje'
+          | 'Europe/Sofia'
+          | 'Europe/Stockholm'
+          | 'Europe/Tallinn'
+          | 'Europe/Tirane'
+          | 'Europe/Tiraspol'
+          | 'Europe/Ulyanovsk'
+          | 'Europe/Uzhgorod'
+          | 'Europe/Vaduz'
+          | 'Europe/Vatican'
+          | 'Europe/Vienna'
+          | 'Europe/Vilnius'
+          | 'Europe/Volgograd'
+          | 'Europe/Warsaw'
+          | 'Europe/Zagreb'
+          | 'Europe/Zaporozhye'
+          | 'Europe/Zurich'
+          | 'Factory'
+          | 'GB'
+          | 'GB-Eire'
+          | 'GMT'
+          | 'GMT+0'
+          | 'GMT-0'
+          | 'GMT0'
+          | 'Greenwich'
+          | 'HST'
+          | 'Hongkong'
+          | 'Iceland'
+          | 'Indian/Antananarivo'
+          | 'Indian/Chagos'
+          | 'Indian/Christmas'
+          | 'Indian/Cocos'
+          | 'Indian/Comoro'
+          | 'Indian/Kerguelen'
+          | 'Indian/Mahe'
+          | 'Indian/Maldives'
+          | 'Indian/Mauritius'
+          | 'Indian/Mayotte'
+          | 'Indian/Reunion'
+          | 'Iran'
+          | 'Israel'
+          | 'Jamaica'
+          | 'Japan'
+          | 'Kwajalein'
+          | 'Libya'
+          | 'MET'
+          | 'MST'
+          | 'MST7MDT'
+          | 'Mexico/BajaNorte'
+          | 'Mexico/BajaSur'
+          | 'Mexico/General'
+          | 'NZ'
+          | 'NZ-CHAT'
+          | 'Navajo'
+          | 'PRC'
+          | 'PST8PDT'
+          | 'Pacific/Apia'
+          | 'Pacific/Auckland'
+          | 'Pacific/Bougainville'
+          | 'Pacific/Chatham'
+          | 'Pacific/Chuuk'
+          | 'Pacific/Easter'
+          | 'Pacific/Efate'
+          | 'Pacific/Enderbury'
+          | 'Pacific/Fakaofo'
+          | 'Pacific/Fiji'
+          | 'Pacific/Funafuti'
+          | 'Pacific/Galapagos'
+          | 'Pacific/Gambier'
+          | 'Pacific/Guadalcanal'
+          | 'Pacific/Guam'
+          | 'Pacific/Honolulu'
+          | 'Pacific/Johnston'
+          | 'Pacific/Kanton'
+          | 'Pacific/Kiritimati'
+          | 'Pacific/Kosrae'
+          | 'Pacific/Kwajalein'
+          | 'Pacific/Majuro'
+          | 'Pacific/Marquesas'
+          | 'Pacific/Midway'
+          | 'Pacific/Nauru'
+          | 'Pacific/Niue'
+          | 'Pacific/Norfolk'
+          | 'Pacific/Noumea'
+          | 'Pacific/Pago_Pago'
+          | 'Pacific/Palau'
+          | 'Pacific/Pitcairn'
+          | 'Pacific/Pohnpei'
+          | 'Pacific/Ponape'
+          | 'Pacific/Port_Moresby'
+          | 'Pacific/Rarotonga'
+          | 'Pacific/Saipan'
+          | 'Pacific/Samoa'
+          | 'Pacific/Tahiti'
+          | 'Pacific/Tarawa'
+          | 'Pacific/Tongatapu'
+          | 'Pacific/Truk'
+          | 'Pacific/Wake'
+          | 'Pacific/Wallis'
+          | 'Pacific/Yap'
+          | 'Poland'
+          | 'Portugal'
+          | 'ROC'
+          | 'ROK'
+          | 'Singapore'
+          | 'Turkey'
+          | 'UCT'
+          | 'US/Alaska'
+          | 'US/Aleutian'
+          | 'US/Arizona'
+          | 'US/Central'
+          | 'US/East-Indiana'
+          | 'US/Eastern'
+          | 'US/Hawaii'
+          | 'US/Indiana-Starke'
+          | 'US/Michigan'
+          | 'US/Mountain'
+          | 'US/Pacific'
+          | 'US/Samoa'
+          | 'UTC'
+          | 'Universal'
+          | 'W-SU'
+          | 'WET'
+          | 'Zulu'
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -37789,6 +39044,39 @@ export interface operations {
       }
     }
   }
+  _endpointcheckout_expired_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookCheckoutExpiredPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointcustomer_created_post: {
     parameters: {
       query?: never
@@ -37997,6 +39285,105 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookCustomerSeatRevokedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointmember_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookMemberDeletedPayload']
       }
     }
     responses: {
@@ -39964,6 +41351,608 @@ export const pathsV1EventsStatisticsTimeseriesGetParametersQueryTimezoneValues: 
   'WET',
   'Zulu',
 ]
+export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: ReadonlyArray<
+  FlattenedDeepRequired<paths>['/v1/meters/{id}/quantities']['get']['parameters']['query']['timezone']
+> = [
+  'Africa/Abidjan',
+  'Africa/Accra',
+  'Africa/Addis_Ababa',
+  'Africa/Algiers',
+  'Africa/Asmara',
+  'Africa/Asmera',
+  'Africa/Bamako',
+  'Africa/Bangui',
+  'Africa/Banjul',
+  'Africa/Bissau',
+  'Africa/Blantyre',
+  'Africa/Brazzaville',
+  'Africa/Bujumbura',
+  'Africa/Cairo',
+  'Africa/Casablanca',
+  'Africa/Ceuta',
+  'Africa/Conakry',
+  'Africa/Dakar',
+  'Africa/Dar_es_Salaam',
+  'Africa/Djibouti',
+  'Africa/Douala',
+  'Africa/El_Aaiun',
+  'Africa/Freetown',
+  'Africa/Gaborone',
+  'Africa/Harare',
+  'Africa/Johannesburg',
+  'Africa/Juba',
+  'Africa/Kampala',
+  'Africa/Khartoum',
+  'Africa/Kigali',
+  'Africa/Kinshasa',
+  'Africa/Lagos',
+  'Africa/Libreville',
+  'Africa/Lome',
+  'Africa/Luanda',
+  'Africa/Lubumbashi',
+  'Africa/Lusaka',
+  'Africa/Malabo',
+  'Africa/Maputo',
+  'Africa/Maseru',
+  'Africa/Mbabane',
+  'Africa/Mogadishu',
+  'Africa/Monrovia',
+  'Africa/Nairobi',
+  'Africa/Ndjamena',
+  'Africa/Niamey',
+  'Africa/Nouakchott',
+  'Africa/Ouagadougou',
+  'Africa/Porto-Novo',
+  'Africa/Sao_Tome',
+  'Africa/Timbuktu',
+  'Africa/Tripoli',
+  'Africa/Tunis',
+  'Africa/Windhoek',
+  'America/Adak',
+  'America/Anchorage',
+  'America/Anguilla',
+  'America/Antigua',
+  'America/Araguaina',
+  'America/Argentina/Buenos_Aires',
+  'America/Argentina/Catamarca',
+  'America/Argentina/ComodRivadavia',
+  'America/Argentina/Cordoba',
+  'America/Argentina/Jujuy',
+  'America/Argentina/La_Rioja',
+  'America/Argentina/Mendoza',
+  'America/Argentina/Rio_Gallegos',
+  'America/Argentina/Salta',
+  'America/Argentina/San_Juan',
+  'America/Argentina/San_Luis',
+  'America/Argentina/Tucuman',
+  'America/Argentina/Ushuaia',
+  'America/Aruba',
+  'America/Asuncion',
+  'America/Atikokan',
+  'America/Atka',
+  'America/Bahia',
+  'America/Bahia_Banderas',
+  'America/Barbados',
+  'America/Belem',
+  'America/Belize',
+  'America/Blanc-Sablon',
+  'America/Boa_Vista',
+  'America/Bogota',
+  'America/Boise',
+  'America/Buenos_Aires',
+  'America/Cambridge_Bay',
+  'America/Campo_Grande',
+  'America/Cancun',
+  'America/Caracas',
+  'America/Catamarca',
+  'America/Cayenne',
+  'America/Cayman',
+  'America/Chicago',
+  'America/Chihuahua',
+  'America/Ciudad_Juarez',
+  'America/Coral_Harbour',
+  'America/Cordoba',
+  'America/Costa_Rica',
+  'America/Coyhaique',
+  'America/Creston',
+  'America/Cuiaba',
+  'America/Curacao',
+  'America/Danmarkshavn',
+  'America/Dawson',
+  'America/Dawson_Creek',
+  'America/Denver',
+  'America/Detroit',
+  'America/Dominica',
+  'America/Edmonton',
+  'America/Eirunepe',
+  'America/El_Salvador',
+  'America/Ensenada',
+  'America/Fort_Nelson',
+  'America/Fort_Wayne',
+  'America/Fortaleza',
+  'America/Glace_Bay',
+  'America/Godthab',
+  'America/Goose_Bay',
+  'America/Grand_Turk',
+  'America/Grenada',
+  'America/Guadeloupe',
+  'America/Guatemala',
+  'America/Guayaquil',
+  'America/Guyana',
+  'America/Halifax',
+  'America/Havana',
+  'America/Hermosillo',
+  'America/Indiana/Indianapolis',
+  'America/Indiana/Knox',
+  'America/Indiana/Marengo',
+  'America/Indiana/Petersburg',
+  'America/Indiana/Tell_City',
+  'America/Indiana/Vevay',
+  'America/Indiana/Vincennes',
+  'America/Indiana/Winamac',
+  'America/Indianapolis',
+  'America/Inuvik',
+  'America/Iqaluit',
+  'America/Jamaica',
+  'America/Jujuy',
+  'America/Juneau',
+  'America/Kentucky/Louisville',
+  'America/Kentucky/Monticello',
+  'America/Knox_IN',
+  'America/Kralendijk',
+  'America/La_Paz',
+  'America/Lima',
+  'America/Los_Angeles',
+  'America/Louisville',
+  'America/Lower_Princes',
+  'America/Maceio',
+  'America/Managua',
+  'America/Manaus',
+  'America/Marigot',
+  'America/Martinique',
+  'America/Matamoros',
+  'America/Mazatlan',
+  'America/Mendoza',
+  'America/Menominee',
+  'America/Merida',
+  'America/Metlakatla',
+  'America/Mexico_City',
+  'America/Miquelon',
+  'America/Moncton',
+  'America/Monterrey',
+  'America/Montevideo',
+  'America/Montreal',
+  'America/Montserrat',
+  'America/Nassau',
+  'America/New_York',
+  'America/Nipigon',
+  'America/Nome',
+  'America/Noronha',
+  'America/North_Dakota/Beulah',
+  'America/North_Dakota/Center',
+  'America/North_Dakota/New_Salem',
+  'America/Nuuk',
+  'America/Ojinaga',
+  'America/Panama',
+  'America/Pangnirtung',
+  'America/Paramaribo',
+  'America/Phoenix',
+  'America/Port-au-Prince',
+  'America/Port_of_Spain',
+  'America/Porto_Acre',
+  'America/Porto_Velho',
+  'America/Puerto_Rico',
+  'America/Punta_Arenas',
+  'America/Rainy_River',
+  'America/Rankin_Inlet',
+  'America/Recife',
+  'America/Regina',
+  'America/Resolute',
+  'America/Rio_Branco',
+  'America/Rosario',
+  'America/Santa_Isabel',
+  'America/Santarem',
+  'America/Santiago',
+  'America/Santo_Domingo',
+  'America/Sao_Paulo',
+  'America/Scoresbysund',
+  'America/Shiprock',
+  'America/Sitka',
+  'America/St_Barthelemy',
+  'America/St_Johns',
+  'America/St_Kitts',
+  'America/St_Lucia',
+  'America/St_Thomas',
+  'America/St_Vincent',
+  'America/Swift_Current',
+  'America/Tegucigalpa',
+  'America/Thule',
+  'America/Thunder_Bay',
+  'America/Tijuana',
+  'America/Toronto',
+  'America/Tortola',
+  'America/Vancouver',
+  'America/Virgin',
+  'America/Whitehorse',
+  'America/Winnipeg',
+  'America/Yakutat',
+  'America/Yellowknife',
+  'Antarctica/Casey',
+  'Antarctica/Davis',
+  'Antarctica/DumontDUrville',
+  'Antarctica/Macquarie',
+  'Antarctica/Mawson',
+  'Antarctica/McMurdo',
+  'Antarctica/Palmer',
+  'Antarctica/Rothera',
+  'Antarctica/South_Pole',
+  'Antarctica/Syowa',
+  'Antarctica/Troll',
+  'Antarctica/Vostok',
+  'Arctic/Longyearbyen',
+  'Asia/Aden',
+  'Asia/Almaty',
+  'Asia/Amman',
+  'Asia/Anadyr',
+  'Asia/Aqtau',
+  'Asia/Aqtobe',
+  'Asia/Ashgabat',
+  'Asia/Ashkhabad',
+  'Asia/Atyrau',
+  'Asia/Baghdad',
+  'Asia/Bahrain',
+  'Asia/Baku',
+  'Asia/Bangkok',
+  'Asia/Barnaul',
+  'Asia/Beirut',
+  'Asia/Bishkek',
+  'Asia/Brunei',
+  'Asia/Calcutta',
+  'Asia/Chita',
+  'Asia/Choibalsan',
+  'Asia/Chongqing',
+  'Asia/Chungking',
+  'Asia/Colombo',
+  'Asia/Dacca',
+  'Asia/Damascus',
+  'Asia/Dhaka',
+  'Asia/Dili',
+  'Asia/Dubai',
+  'Asia/Dushanbe',
+  'Asia/Famagusta',
+  'Asia/Gaza',
+  'Asia/Harbin',
+  'Asia/Hebron',
+  'Asia/Ho_Chi_Minh',
+  'Asia/Hong_Kong',
+  'Asia/Hovd',
+  'Asia/Irkutsk',
+  'Asia/Istanbul',
+  'Asia/Jakarta',
+  'Asia/Jayapura',
+  'Asia/Jerusalem',
+  'Asia/Kabul',
+  'Asia/Kamchatka',
+  'Asia/Karachi',
+  'Asia/Kashgar',
+  'Asia/Kathmandu',
+  'Asia/Katmandu',
+  'Asia/Khandyga',
+  'Asia/Kolkata',
+  'Asia/Krasnoyarsk',
+  'Asia/Kuala_Lumpur',
+  'Asia/Kuching',
+  'Asia/Kuwait',
+  'Asia/Macao',
+  'Asia/Macau',
+  'Asia/Magadan',
+  'Asia/Makassar',
+  'Asia/Manila',
+  'Asia/Muscat',
+  'Asia/Nicosia',
+  'Asia/Novokuznetsk',
+  'Asia/Novosibirsk',
+  'Asia/Omsk',
+  'Asia/Oral',
+  'Asia/Phnom_Penh',
+  'Asia/Pontianak',
+  'Asia/Pyongyang',
+  'Asia/Qatar',
+  'Asia/Qostanay',
+  'Asia/Qyzylorda',
+  'Asia/Rangoon',
+  'Asia/Riyadh',
+  'Asia/Saigon',
+  'Asia/Sakhalin',
+  'Asia/Samarkand',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Asia/Srednekolymsk',
+  'Asia/Taipei',
+  'Asia/Tashkent',
+  'Asia/Tbilisi',
+  'Asia/Tehran',
+  'Asia/Tel_Aviv',
+  'Asia/Thimbu',
+  'Asia/Thimphu',
+  'Asia/Tokyo',
+  'Asia/Tomsk',
+  'Asia/Ujung_Pandang',
+  'Asia/Ulaanbaatar',
+  'Asia/Ulan_Bator',
+  'Asia/Urumqi',
+  'Asia/Ust-Nera',
+  'Asia/Vientiane',
+  'Asia/Vladivostok',
+  'Asia/Yakutsk',
+  'Asia/Yangon',
+  'Asia/Yekaterinburg',
+  'Asia/Yerevan',
+  'Atlantic/Azores',
+  'Atlantic/Bermuda',
+  'Atlantic/Canary',
+  'Atlantic/Cape_Verde',
+  'Atlantic/Faeroe',
+  'Atlantic/Faroe',
+  'Atlantic/Jan_Mayen',
+  'Atlantic/Madeira',
+  'Atlantic/Reykjavik',
+  'Atlantic/South_Georgia',
+  'Atlantic/St_Helena',
+  'Atlantic/Stanley',
+  'Australia/ACT',
+  'Australia/Adelaide',
+  'Australia/Brisbane',
+  'Australia/Broken_Hill',
+  'Australia/Canberra',
+  'Australia/Currie',
+  'Australia/Darwin',
+  'Australia/Eucla',
+  'Australia/Hobart',
+  'Australia/LHI',
+  'Australia/Lindeman',
+  'Australia/Lord_Howe',
+  'Australia/Melbourne',
+  'Australia/NSW',
+  'Australia/North',
+  'Australia/Perth',
+  'Australia/Queensland',
+  'Australia/South',
+  'Australia/Sydney',
+  'Australia/Tasmania',
+  'Australia/Victoria',
+  'Australia/West',
+  'Australia/Yancowinna',
+  'Brazil/Acre',
+  'Brazil/DeNoronha',
+  'Brazil/East',
+  'Brazil/West',
+  'CET',
+  'CST6CDT',
+  'Canada/Atlantic',
+  'Canada/Central',
+  'Canada/Eastern',
+  'Canada/Mountain',
+  'Canada/Newfoundland',
+  'Canada/Pacific',
+  'Canada/Saskatchewan',
+  'Canada/Yukon',
+  'Chile/Continental',
+  'Chile/EasterIsland',
+  'Cuba',
+  'EET',
+  'EST',
+  'EST5EDT',
+  'Egypt',
+  'Eire',
+  'Etc/GMT',
+  'Etc/GMT+0',
+  'Etc/GMT+1',
+  'Etc/GMT+10',
+  'Etc/GMT+11',
+  'Etc/GMT+12',
+  'Etc/GMT+2',
+  'Etc/GMT+3',
+  'Etc/GMT+4',
+  'Etc/GMT+5',
+  'Etc/GMT+6',
+  'Etc/GMT+7',
+  'Etc/GMT+8',
+  'Etc/GMT+9',
+  'Etc/GMT-0',
+  'Etc/GMT-1',
+  'Etc/GMT-10',
+  'Etc/GMT-11',
+  'Etc/GMT-12',
+  'Etc/GMT-13',
+  'Etc/GMT-14',
+  'Etc/GMT-2',
+  'Etc/GMT-3',
+  'Etc/GMT-4',
+  'Etc/GMT-5',
+  'Etc/GMT-6',
+  'Etc/GMT-7',
+  'Etc/GMT-8',
+  'Etc/GMT-9',
+  'Etc/GMT0',
+  'Etc/Greenwich',
+  'Etc/UCT',
+  'Etc/UTC',
+  'Etc/Universal',
+  'Etc/Zulu',
+  'Europe/Amsterdam',
+  'Europe/Andorra',
+  'Europe/Astrakhan',
+  'Europe/Athens',
+  'Europe/Belfast',
+  'Europe/Belgrade',
+  'Europe/Berlin',
+  'Europe/Bratislava',
+  'Europe/Brussels',
+  'Europe/Bucharest',
+  'Europe/Budapest',
+  'Europe/Busingen',
+  'Europe/Chisinau',
+  'Europe/Copenhagen',
+  'Europe/Dublin',
+  'Europe/Gibraltar',
+  'Europe/Guernsey',
+  'Europe/Helsinki',
+  'Europe/Isle_of_Man',
+  'Europe/Istanbul',
+  'Europe/Jersey',
+  'Europe/Kaliningrad',
+  'Europe/Kiev',
+  'Europe/Kirov',
+  'Europe/Kyiv',
+  'Europe/Lisbon',
+  'Europe/Ljubljana',
+  'Europe/London',
+  'Europe/Luxembourg',
+  'Europe/Madrid',
+  'Europe/Malta',
+  'Europe/Mariehamn',
+  'Europe/Minsk',
+  'Europe/Monaco',
+  'Europe/Moscow',
+  'Europe/Nicosia',
+  'Europe/Oslo',
+  'Europe/Paris',
+  'Europe/Podgorica',
+  'Europe/Prague',
+  'Europe/Riga',
+  'Europe/Rome',
+  'Europe/Samara',
+  'Europe/San_Marino',
+  'Europe/Sarajevo',
+  'Europe/Saratov',
+  'Europe/Simferopol',
+  'Europe/Skopje',
+  'Europe/Sofia',
+  'Europe/Stockholm',
+  'Europe/Tallinn',
+  'Europe/Tirane',
+  'Europe/Tiraspol',
+  'Europe/Ulyanovsk',
+  'Europe/Uzhgorod',
+  'Europe/Vaduz',
+  'Europe/Vatican',
+  'Europe/Vienna',
+  'Europe/Vilnius',
+  'Europe/Volgograd',
+  'Europe/Warsaw',
+  'Europe/Zagreb',
+  'Europe/Zaporozhye',
+  'Europe/Zurich',
+  'Factory',
+  'GB',
+  'GB-Eire',
+  'GMT',
+  'GMT+0',
+  'GMT-0',
+  'GMT0',
+  'Greenwich',
+  'HST',
+  'Hongkong',
+  'Iceland',
+  'Indian/Antananarivo',
+  'Indian/Chagos',
+  'Indian/Christmas',
+  'Indian/Cocos',
+  'Indian/Comoro',
+  'Indian/Kerguelen',
+  'Indian/Mahe',
+  'Indian/Maldives',
+  'Indian/Mauritius',
+  'Indian/Mayotte',
+  'Indian/Reunion',
+  'Iran',
+  'Israel',
+  'Jamaica',
+  'Japan',
+  'Kwajalein',
+  'Libya',
+  'MET',
+  'MST',
+  'MST7MDT',
+  'Mexico/BajaNorte',
+  'Mexico/BajaSur',
+  'Mexico/General',
+  'NZ',
+  'NZ-CHAT',
+  'Navajo',
+  'PRC',
+  'PST8PDT',
+  'Pacific/Apia',
+  'Pacific/Auckland',
+  'Pacific/Bougainville',
+  'Pacific/Chatham',
+  'Pacific/Chuuk',
+  'Pacific/Easter',
+  'Pacific/Efate',
+  'Pacific/Enderbury',
+  'Pacific/Fakaofo',
+  'Pacific/Fiji',
+  'Pacific/Funafuti',
+  'Pacific/Galapagos',
+  'Pacific/Gambier',
+  'Pacific/Guadalcanal',
+  'Pacific/Guam',
+  'Pacific/Honolulu',
+  'Pacific/Johnston',
+  'Pacific/Kanton',
+  'Pacific/Kiritimati',
+  'Pacific/Kosrae',
+  'Pacific/Kwajalein',
+  'Pacific/Majuro',
+  'Pacific/Marquesas',
+  'Pacific/Midway',
+  'Pacific/Nauru',
+  'Pacific/Niue',
+  'Pacific/Norfolk',
+  'Pacific/Noumea',
+  'Pacific/Pago_Pago',
+  'Pacific/Palau',
+  'Pacific/Pitcairn',
+  'Pacific/Pohnpei',
+  'Pacific/Ponape',
+  'Pacific/Port_Moresby',
+  'Pacific/Rarotonga',
+  'Pacific/Saipan',
+  'Pacific/Samoa',
+  'Pacific/Tahiti',
+  'Pacific/Tarawa',
+  'Pacific/Tongatapu',
+  'Pacific/Truk',
+  'Pacific/Wake',
+  'Pacific/Wallis',
+  'Pacific/Yap',
+  'Poland',
+  'Portugal',
+  'ROC',
+  'ROK',
+  'Singapore',
+  'Turkey',
+  'UCT',
+  'US/Alaska',
+  'US/Aleutian',
+  'US/Arizona',
+  'US/Central',
+  'US/East-Indiana',
+  'US/Eastern',
+  'US/Hawaii',
+  'US/Indiana-Starke',
+  'US/Michigan',
+  'US/Mountain',
+  'US/Pacific',
+  'US/Samoa',
+  'UTC',
+  'Universal',
+  'W-SU',
+  'WET',
+  'Zulu',
+]
 export const accountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AccountType']
 > = ['stripe', 'manual']
@@ -40534,13 +42523,8 @@ export const availableScopeValues: ReadonlyArray<
   'metrics:read',
   'webhooks:read',
   'webhooks:write',
-  'external_organizations:read',
   'license_keys:read',
   'license_keys:write',
-  'repositories:read',
-  'repositories:write',
-  'issues:read',
-  'issues:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',
@@ -41724,7 +43708,7 @@ export const pledgeStateValues: ReadonlyArray<
 ]
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
-> = ['usd', 'eur', 'gbp', 'cad', 'aud', 'jpy', 'chf', 'sek']
+> = ['aud', 'brl', 'cad', 'chf', 'eur', 'inr', 'gbp', 'jpy', 'sek', 'usd']
 export const processorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Processor']
 > = ['stripe', 'manual']
@@ -41785,6 +43769,9 @@ export const productSortPropertyValues: ReadonlyArray<
   'price_amount',
   '-price_amount',
 ]
+export const productVisibilityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductVisibility']
+> = ['draft', 'private', 'public']
 export const propertyAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PropertyAggregation']['func']
 > = ['avg', 'max', 'min', 'sum']
@@ -41861,13 +43848,8 @@ export const scopeValues: ReadonlyArray<
   'metrics:read',
   'webhooks:read',
   'webhooks:write',
-  'external_organizations:read',
   'license_keys:read',
   'license_keys:write',
-  'repositories:read',
-  'repositories:write',
-  'issues:read',
-  'issues:write',
   'customer_portal:read',
   'customer_portal:write',
   'notifications:read',
@@ -42206,6 +44188,7 @@ export const webhookEventTypeValues: ReadonlyArray<
 > = [
   'checkout.created',
   'checkout.updated',
+  'checkout.expired',
   'customer.created',
   'customer.updated',
   'customer.deleted',
@@ -42213,6 +44196,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'customer_seat.assigned',
   'customer_seat.claimed',
   'customer_seat.revoked',
+  'member.created',
+  'member.updated',
+  'member.deleted',
   'order.created',
   'order.updated',
   'order.paid',

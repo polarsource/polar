@@ -105,6 +105,7 @@ class RefundTransactionService(BaseTransactionService):
             presentment_currency=refund.currency,
             presentment_amount=-refund.amount,
             presentment_tax_amount=-refund.tax_amount,
+            exchange_rate=exchange_rate,
             refund=refund,
             customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
@@ -149,6 +150,7 @@ class RefundTransactionService(BaseTransactionService):
                     "tax_country": payment_transaction.tax_country,
                     "tax_state": payment_transaction.tax_state,
                     "fee": 0,
+                    "exchange_rate": exchange_rate,
                 }
                 if order is not None:
                     metadata["order_id"] = str(order.id)
@@ -183,7 +185,13 @@ class RefundTransactionService(BaseTransactionService):
             session
         )
         payment_transaction = await payment_transaction_repository.get_by_payment_id(
-            refund.payment_id
+            refund.payment_id,
+            options=(
+                joinedload(Transaction.payment_customer).joinedload(
+                    Customer.organization
+                ),
+                joinedload(Transaction.order),
+            ),
         )
         assert payment_transaction is not None
 
@@ -204,6 +212,7 @@ class RefundTransactionService(BaseTransactionService):
             presentment_tax_amount=-refund_transaction.presentment_tax_amount
             if refund_transaction.presentment_tax_amount is not None
             else None,
+            exchange_rate=refund_transaction.exchange_rate,
             customer_id=payment_transaction.customer_id,
             charge_id=payment_transaction.charge_id,
             refund=refund,
@@ -215,6 +224,46 @@ class RefundTransactionService(BaseTransactionService):
             order_id=payment_transaction.order_id,
         )
         session.add(refund_reversal_transaction)
+
+        try:
+            customer = payment_transaction.payment_customer
+            order = payment_transaction.order
+            if customer is not None:
+                organization = customer.organization
+                metadata: BalanceRefundMetadata = {
+                    "transaction_id": str(refund_reversal_transaction.id),
+                    "refund_id": str(refund.id),
+                    "amount": refund_reversal_transaction.amount,
+                    "currency": refund_reversal_transaction.currency,
+                    "presentment_amount": refund_reversal_transaction.presentment_amount
+                    or 0,
+                    "presentment_currency": refund_reversal_transaction.presentment_currency
+                    or "",
+                    "tax_amount": refund_reversal_transaction.tax_amount,
+                    "tax_country": payment_transaction.tax_country,
+                    "tax_state": payment_transaction.tax_state,
+                    "fee": 0,
+                }
+                if refund_transaction.exchange_rate is not None:
+                    metadata["exchange_rate"] = refund_transaction.exchange_rate
+                if order is not None:
+                    metadata["order_id"] = str(order.id)
+                    metadata["order_created_at"] = order.created_at.isoformat()
+                    metadata["product_id"] = str(order.product_id)
+                    if order.subscription_id is not None:
+                        metadata["subscription_id"] = str(order.subscription_id)
+
+                balance_refund_reversal_event = build_system_event(
+                    SystemEvent.balance_refund_reversal,
+                    customer=customer,
+                    organization=organization,
+                    metadata=metadata,
+                )
+                await event_service.create_event(session, balance_refund_reversal_event)
+        except Exception as e:
+            log.error(
+                "Could not save balance.refund_reversal transaction", error=str(e)
+            )
 
         # Create reversal balances if it was already balanced
         await self._create_revert_reversal_balances(

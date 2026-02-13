@@ -65,7 +65,7 @@ const docsCSP = `
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['shiki'],
+  transpilePackages: ['shiki', '@polar-sh/checkout'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
   // This is required to support PostHog trailing slash API requests
@@ -341,6 +341,14 @@ const nextConfig = {
             value: 'blog.polar.sh',
           },
         ],
+        permanent: false,
+      },
+
+      // CLI Install Script
+      {
+        source: '/install.sh',
+        destination:
+          'https://raw.githubusercontent.com/polarsource/cli/main/install.sh',
         permanent: false,
       },
     ]

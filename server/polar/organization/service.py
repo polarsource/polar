@@ -22,6 +22,7 @@ from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationErr
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
@@ -200,9 +201,14 @@ class OrganizationService:
                 ]
             )
 
+        create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
+        feature_settings = create_data.get("feature_settings", {})
+        feature_settings["member_model_enabled"] = True
+        create_data["feature_settings"] = feature_settings
+
         organization = await repository.create(
             Organization(
-                **create_schema.model_dump(exclude_unset=True, exclude_none=True),
+                **create_data,
                 customer_invoice_prefix=create_schema.slug.upper(),
             )
         )
@@ -223,6 +229,35 @@ class OrganizationService:
         )
         return organization
 
+    async def _validate_currency_change(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        new_currency: PresentmentCurrency,
+    ) -> None:
+        """Validate that all active products have the target currency."""
+        if new_currency == organization.default_presentment_currency:
+            return
+
+        product_repo = ProductRepository.from_session(session)
+        products_without_currency = await product_repo.get_products_without_currency(
+            organization.id, new_currency
+        )
+
+        if products_without_currency:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "default_presentment_currency"),
+                        "msg": (
+                            "All active products must have prices in the new currency."
+                        ),
+                        "type": "value_error",
+                        "input": new_currency,
+                    }
+                ]
+            )
+
     async def update(
         self,
         session: AsyncSession,
@@ -235,6 +270,10 @@ class OrganizationService:
             organization.onboarded_at = datetime.now(UTC)
 
         if update_schema.feature_settings is not None:
+            old_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
+
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
@@ -242,11 +281,25 @@ class OrganizationService:
                 ),
             }
 
+            new_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
+            if not old_member_model and new_member_model:
+                enqueue_job(
+                    "organization.backfill_members",
+                    organization_id=organization.id,
+                )
+
         if update_schema.subscription_settings is not None:
             organization.subscription_settings = update_schema.subscription_settings
 
         if update_schema.notification_settings is not None:
             organization.notification_settings = update_schema.notification_settings
+
+        if update_schema.default_presentment_currency is not None:
+            await self._validate_currency_change(
+                session, organization, update_schema.default_presentment_currency
+            )
 
         previous_details = organization.details
         update_dict = update_schema.model_dump(
@@ -615,27 +668,20 @@ class OrganizationService:
     ) -> str:
         match organization.invoice_numbering:
             case InvoiceNumbering.customer:
-                invoice_number = f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{customer.invoice_next_number:04d}"
                 customer_repository = CustomerRepository.from_session(session)
-                customer = await customer_repository.update(
-                    customer,
-                    update_dict={
-                        "invoice_next_number": customer.invoice_next_number + 1
-                    },
+                invoice_number = (
+                    await customer_repository.increment_invoice_next_number(customer.id)
                 )
-                return invoice_number
+                return f"{organization.customer_invoice_prefix}-{customer.short_id_str}-{invoice_number:04d}"
 
             case InvoiceNumbering.organization:
-                invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
                 repository = OrganizationRepository.from_session(session)
-                organization = await repository.update(
-                    organization,
-                    update_dict={
-                        "customer_invoice_next_number": organization.customer_invoice_next_number
-                        + 1
-                    },
+                invoice_number = (
+                    await repository.increment_customer_invoice_next_number(
+                        organization.id
+                    )
                 )
-                return invoice_number
+                return f"{organization.customer_invoice_prefix}-{invoice_number:04d}"
 
     async def _after_update(
         self,

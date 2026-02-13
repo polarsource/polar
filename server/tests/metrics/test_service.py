@@ -1,14 +1,19 @@
 from datetime import UTC, date, datetime
-from typing import NotRequired, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict
+from unittest.mock import AsyncMock, MagicMock, patch
+
+if TYPE_CHECKING:
+    from .conftest import TinybirdTestHelper
 
 import pytest
 import pytest_asyncio
 from apscheduler.util import ZoneInfo
-from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
+from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
@@ -29,6 +34,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_checkout,
     create_discount,
     create_event,
     create_order,
@@ -39,7 +45,7 @@ from tests.fixtures.random_objects import (
 
 class ProductFixture(TypedDict):
     recurring_interval: SubscriptionRecurringInterval | None
-    prices: list[tuple[int, str] | tuple[None]]
+    prices: list[tuple[int, str] | tuple[None, str]]
 
 
 class DiscountFixture(TypedDict):
@@ -83,7 +89,7 @@ PRODUCTS: dict[str, ProductFixture] = {
     },
     "free_subscription": {
         "recurring_interval": SubscriptionRecurringInterval.month,
-        "prices": [(None,)],
+        "prices": [(None, "usd")],
     },
 }
 
@@ -269,6 +275,7 @@ class TestGetMetrics:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -303,6 +310,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -378,6 +386,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """
         Test that metrics correctly filter by date range bounds.
@@ -422,6 +431,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -452,6 +462,7 @@ class TestGetMetrics:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -484,6 +495,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -560,6 +572,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -634,6 +647,7 @@ class TestGetMetrics:
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
@@ -669,6 +683,7 @@ class TestGetMetrics:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         subscriptions: dict[str, SubscriptionFixture] = {
             "subscription_1": {
@@ -681,9 +696,10 @@ class TestGetMetrics:
                 "product": "free_subscription",
             },
         }
-        await _create_fixtures(
+        products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -762,6 +778,7 @@ class TestGetMetrics:
         user: User,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         """
         Tricky case: how a subscription that was canceled during the interval should be
@@ -780,9 +797,10 @@ class TestGetMetrics:
                 "product": "free_subscription",
             }
         }
-        await _create_fixtures(
+        products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -833,6 +851,7 @@ class TestGetMetrics:
         user: User,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         subscriptions: dict[str, SubscriptionFixture] = {
             "subscription_1": {
@@ -841,9 +860,10 @@ class TestGetMetrics:
                 "product": "free_subscription",
             }
         }
-        await _create_fixtures(
+        products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -908,6 +928,7 @@ class TestGetMetrics:
         user: User,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         """
         We have two flavors of MRR:
@@ -925,9 +946,10 @@ class TestGetMetrics:
                 "product": "monthly_subscription",
             },
         }
-        await _create_fixtures(
+        products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -963,6 +985,7 @@ class TestGetMetrics:
         user: User,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         """
         The MRR of a subscription with a forever discount should be the discounted price.
@@ -981,9 +1004,10 @@ class TestGetMetrics:
                 "discount": "discount",
             }
         }
-        await _create_fixtures(
+        products, subs, orders = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions, {}, discounts
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1011,8 +1035,9 @@ class TestGetMetrics:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
-        orders: dict[str, OrderFixture] = {
+        order_fixtures: dict[str, OrderFixture] = {
             "order_1": {
                 "created_at": date(2024, 1, 1),
                 "amount": 100_00,
@@ -1032,9 +1057,10 @@ class TestGetMetrics:
                 "status": OrderStatus.pending,
             },
         }
-        await _create_fixtures(
-            save_fixture, customer, organization, PRODUCTS, {}, orders
+        products, subs, orders = await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, {}, order_fixtures
         )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1070,6 +1096,7 @@ class TestGetMetrics:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         events = [
             await create_event(
@@ -1085,6 +1112,7 @@ class TestGetMetrics:
                 },
             )
         ]
+        await metrics_backend_helper.ingest_events(events)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1111,6 +1139,7 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         subscriptions_customer_1: dict[str, SubscriptionFixture] = {
             "subscription_1": {
@@ -1118,8 +1147,11 @@ class TestGetMetrics:
                 "product": "monthly_subscription",
             }
         }
-        await _create_fixtures(
+        products1, subs1, orders1 = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions_customer_1, {}
+        )
+        await metrics_backend_helper.ingest_fixtures(
+            customer, products1, subs1, orders1
         )
 
         subscriptions_customer_2: dict[str, SubscriptionFixture] = {
@@ -1128,13 +1160,16 @@ class TestGetMetrics:
                 "product": "yearly_subscription",
             }
         }
-        await _create_fixtures(
+        products2, subs2, orders2 = await _create_fixtures(
             save_fixture,
             customer_second,
             organization,
             PRODUCTS,
             subscriptions_customer_2,
             {},
+        )
+        await metrics_backend_helper.ingest_fixtures(
+            customer_second, products2, subs2, orders2
         )
 
         metrics = await metrics_service.get_metrics(
@@ -1151,19 +1186,86 @@ class TestGetMetrics:
         jan = metrics.periods[0]
         assert jan.active_subscriptions == 2
         assert jan.monthly_recurring_revenue == 183_33
-        assert jan.average_revenue_per_user == 91_66
+        assert jan.average_revenue_per_user == 91_67
 
         feb = metrics.periods[1]
         assert feb.active_subscriptions == 2
         assert feb.monthly_recurring_revenue == 183_33
-        assert feb.average_revenue_per_user == 91_66
+        assert feb.average_revenue_per_user == 91_67
 
         mar = metrics.periods[2]
         assert mar.active_subscriptions == 2
         assert mar.monthly_recurring_revenue == 183_33
-        assert mar.average_revenue_per_user == 91_66
+        assert mar.average_revenue_per_user == 91_67
 
-        assert metrics.totals.average_revenue_per_user == 91_66
+        assert metrics.totals.average_revenue_per_user == 91_67
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("recurring_interval", "recurring_interval_count", "amount", "expected_mrr"),
+        [
+            # $300 every 3 months = $100/month MRR
+            (SubscriptionRecurringInterval.month, 3, 300_00, 100_00),
+            # $2400 every 2 years = $100/month MRR
+            (SubscriptionRecurringInterval.year, 2, 2400_00, 100_00),
+            # $50 every 2 weeks = $50 * 52 / (12 * 2) = $108.33/month MRR
+            (SubscriptionRecurringInterval.week, 2, 50_00, 108_33),
+        ],
+    )
+    async def test_mrr_with_recurring_interval_count(
+        self,
+        recurring_interval: SubscriptionRecurringInterval,
+        recurring_interval_count: int,
+        amount: int,
+        expected_mrr: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
+    ) -> None:
+        """
+        Test that MRR is correctly calculated when recurring_interval_count > 1.
+
+        A subscription billed every 3 months at $300 should contribute $100 MRR,
+        not $300 MRR.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=recurring_interval,
+            recurring_interval_count=recurring_interval_count,
+            prices=[(amount, "usd")],
+        )
+
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=_date_to_datetime(date(2024, 1, 1)),
+        )
+        await metrics_backend_helper.ingest_fixtures(
+            customer, {"product": product}, {"subscription": subscription}, {}
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 1
+
+        jan = metrics.periods[0]
+        assert jan.active_subscriptions == 1
+        assert jan.monthly_recurring_revenue == expected_mrr
+        assert jan.average_revenue_per_user == expected_mrr
 
     @pytest.mark.auth
     async def test_average_revenue_per_user_no_customers(
@@ -1198,6 +1300,7 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         subscriptions_customer_1: dict[str, SubscriptionFixture] = {
             "subscription_1": {
@@ -1205,8 +1308,11 @@ class TestGetMetrics:
                 "product": "monthly_subscription",
             }
         }
-        await _create_fixtures(
+        products1, subs1, orders1 = await _create_fixtures(
             save_fixture, customer, organization, PRODUCTS, subscriptions_customer_1, {}
+        )
+        await metrics_backend_helper.ingest_fixtures(
+            customer, products1, subs1, orders1
         )
 
         subscriptions_customer_2: dict[str, SubscriptionFixture] = {
@@ -1215,7 +1321,7 @@ class TestGetMetrics:
                 "product": "monthly_subscription",
             }
         }
-        await _create_fixtures(
+        products2, subs2, orders2 = await _create_fixtures(
             save_fixture,
             customer_second,
             organization,
@@ -1223,58 +1329,61 @@ class TestGetMetrics:
             subscriptions_customer_2,
             {},
         )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer,
-            metadata={
-                "_cost": {
-                    "amount": 0.50,
-                    "currency": "usd",
-                }
-            },
+        await metrics_backend_helper.ingest_fixtures(
+            customer_second, products2, subs2, orders2
         )
 
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer_second,
-            metadata={
-                "_cost": {
-                    "amount": 0.30,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer,
-            metadata={
-                "_cost": {
-                    "amount": 0.20,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 2, 1, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer_second,
-            metadata={
-                "_cost": {
-                    "amount": 0.00,
-                    "currency": "usd",
-                }
-            },
-        )
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                metadata={
+                    "_cost": {
+                        "amount": 0.50,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer_second,
+                metadata={
+                    "_cost": {
+                        "amount": 0.30,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                metadata={
+                    "_cost": {
+                        "amount": 0.20,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 2, 1, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer_second,
+                metadata={
+                    "_cost": {
+                        "amount": 0.00,
+                        "currency": "usd",
+                    }
+                },
+            ),
+        ]
+        await metrics_backend_helper.ingest_events(events)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1314,6 +1423,7 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         subscriptions_customer_1: dict[str, SubscriptionFixture] = {
             "subscription_1": {
@@ -1330,7 +1440,7 @@ class TestGetMetrics:
                 "status": OrderStatus.paid,
             }
         }
-        await _create_fixtures(
+        products1, subs1, ords1 = await _create_fixtures(
             save_fixture,
             customer,
             organization,
@@ -1338,18 +1448,7 @@ class TestGetMetrics:
             subscriptions_customer_1,
             orders_customer_1,
         )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 10, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer,
-            name="order.paid",
-            source=EventSource.system,
-            metadata={
-                "amount": 10000,
-            },
-        )
+        await metrics_backend_helper.ingest_fixtures(customer, products1, subs1, ords1)
 
         subscriptions_customer_2: dict[str, SubscriptionFixture] = {
             "subscription_2": {
@@ -1366,7 +1465,7 @@ class TestGetMetrics:
                 "status": OrderStatus.paid,
             }
         }
-        await _create_fixtures(
+        products2, subs2, ords2 = await _create_fixtures(
             save_fixture,
             customer_second,
             organization,
@@ -1374,44 +1473,59 @@ class TestGetMetrics:
             subscriptions_customer_2,
             orders_customer_2,
         )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer_second,
-            name="order.paid",
-            source=EventSource.system,
-            metadata={
-                "amount": 10000,
-            },
+        await metrics_backend_helper.ingest_fixtures(
+            customer_second, products2, subs2, ords2
         )
 
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer,
-            metadata={
-                "_cost": {
-                    "amount": 25.00,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 2, 10, 10, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer_second,
-            metadata={
-                "_cost": {
-                    "amount": 15.00,
-                    "currency": "usd",
-                }
-            },
-        )
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 10, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                name="order.paid",
+                source=EventSource.system,
+                metadata={
+                    "amount": 10000,
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer_second,
+                name="order.paid",
+                source=EventSource.system,
+                metadata={
+                    "amount": 10000,
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                metadata={
+                    "_cost": {
+                        "amount": 25.00,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 2, 10, 10, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer_second,
+                metadata={
+                    "_cost": {
+                        "amount": 15.00,
+                        "currency": "usd",
+                    }
+                },
+            ),
+        ]
+        await metrics_backend_helper.ingest_events(events)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1472,8 +1586,9 @@ class TestGetMetrics:
         user_organization: UserOrganization,
         customer: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
-        subscriptions: dict[str, SubscriptionFixture] = {
+        subscription_fixtures: dict[str, SubscriptionFixture] = {
             "subscription_1": {
                 "started_at": date(2024, 1, 1),
                 "product": "monthly_subscription",
@@ -1483,23 +1598,15 @@ class TestGetMetrics:
                 "product": "monthly_subscription",
             },
         }
-        await _create_fixtures(
-            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        products, subs, orders = await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscription_fixtures, {}
         )
 
-        subscription_1 = (
-            await session.execute(
-                select(Subscription)
-                .where(
-                    Subscription.customer_id == customer.id,
-                    Subscription.started_at == _date_to_datetime(date(2024, 1, 1)),
-                )
-                .limit(1)
-            )
-        ).scalar_one()
+        subscription_1 = subs["subscription_1"]
         subscription_1.canceled_at = _date_to_datetime(date(2024, 2, 15))
         subscription_1.ended_at = _date_to_datetime(date(2024, 3, 1))
         await save_fixture(subscription_1)
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
 
         metrics = await metrics_service.get_metrics(
             session,
@@ -1543,54 +1650,53 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         # Set external_id on the first customer
         customer.external_id = "external_123"
         await save_fixture(customer)
 
-        # Create cost events for customer via external_customer_id (NOT customer_id)
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=None,  # No direct customer_id link
-            external_customer_id=customer.external_id,
-            metadata={
-                "_cost": {
-                    "amount": 0.25,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        # Create another cost event via external_customer_id
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 2, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=None,  # No direct customer_id link
-            external_customer_id=customer.external_id,
-            metadata={
-                "_cost": {
-                    "amount": 0.35,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        # Create cost event for second customer via direct customer_id
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer_second,
-            metadata={
-                "_cost": {
-                    "amount": 0.50,
-                    "currency": "usd",
-                }
-            },
-        )
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=None,  # No direct customer_id link
+                external_customer_id=customer.external_id,
+                metadata={
+                    "_cost": {
+                        "amount": 0.25,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 2, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=None,  # No direct customer_id link
+                external_customer_id=customer.external_id,
+                metadata={
+                    "_cost": {
+                        "amount": 0.35,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer_second,
+                metadata={
+                    "_cost": {
+                        "amount": 0.50,
+                        "currency": "usd",
+                    }
+                },
+            ),
+        ]
+        await metrics_backend_helper.ingest_events(events)
 
         # Test filtering by first customer - should include external_customer_id events
         metrics = await metrics_service.get_metrics(
@@ -1658,6 +1764,7 @@ class TestGetMetrics:
         customer: Customer,
         customer_second: Customer,
         organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
     ) -> None:
         # Ensure both customers have NO external_id (NULL)
         customer.external_id = None
@@ -1665,36 +1772,35 @@ class TestGetMetrics:
         await save_fixture(customer)
         await save_fixture(customer_second)
 
-        # Create event with NULL external_customer_id for first customer
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
-            organization=organization,
-            customer=customer,
-            external_customer_id=None,
-            metadata={
-                "_cost": {
-                    "amount": 0.10,
-                    "currency": "usd",
-                }
-            },
-        )
-
-        # Create another event with NULL external_customer_id, no customer_id link
-        # This is an "orphaned" event that shouldn't match ANY customer filter
-        await create_event(
-            save_fixture,
-            timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
-            organization=organization,
-            customer=None,  # No direct link
-            external_customer_id=None,  # NULL external_customer_id
-            metadata={
-                "_cost": {
-                    "amount": 0.50,
-                    "currency": "usd",
-                }
-            },
-        )
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 12, 0, tzinfo=UTC),
+                organization=organization,
+                customer=customer,
+                external_customer_id=None,
+                metadata={
+                    "_cost": {
+                        "amount": 0.10,
+                        "currency": "usd",
+                    }
+                },
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=datetime(2024, 1, 1, 14, 0, tzinfo=UTC),
+                organization=organization,
+                customer=None,  # No direct link
+                external_customer_id=None,  # NULL external_customer_id
+                metadata={
+                    "_cost": {
+                        "amount": 0.50,
+                        "currency": "usd",
+                    }
+                },
+            ),
+        ]
+        await metrics_backend_helper.ingest_events(events)
 
         # Filter by first customer
         metrics = await metrics_service.get_metrics(
@@ -1743,6 +1849,138 @@ class TestGetMetrics:
         jan_1_all = metrics_all.periods[0]
         assert jan_1_all.costs == 0.60  # Both events: 0.10 + 0.50
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_hourly_interval_order_placement(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
+    ) -> None:
+        """Test that orders are placed in the correct hourly period."""
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(100_00, "usd")],
+        )
+
+        order1 = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subtotal_amount=100_00,
+            created_at=datetime(2024, 1, 15, 6, 30, 0, tzinfo=UTC),
+        )
+
+        order2 = await create_order(
+            save_fixture,
+            status=OrderStatus.paid,
+            product=product,
+            customer=customer,
+            subtotal_amount=200_00,
+            created_at=datetime(2024, 1, 15, 22, 45, 0, tzinfo=UTC),
+        )
+
+        await metrics_backend_helper.ingest_fixtures(
+            customer,
+            {"product": product},
+            {},
+            {"order1": order1, "order2": order2},
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 15),
+            end_date=date(2024, 1, 15),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.hour,
+        )
+
+        assert len(metrics.periods) == 24
+
+        hour_6 = metrics.periods[6]
+        assert hour_6.timestamp == datetime(2024, 1, 15, 6, 0, 0, tzinfo=UTC)
+        assert hour_6.orders == 1
+        assert hour_6.revenue == 100_00
+
+        hour_22 = metrics.periods[22]
+        assert hour_22.timestamp == datetime(2024, 1, 15, 22, 0, 0, tzinfo=UTC)
+        assert hour_22.orders == 1
+        assert hour_22.revenue == 200_00
+
+        for i, period in enumerate(metrics.periods):
+            if i not in (6, 22):
+                assert period.orders == 0, f"Expected 0 orders at hour {i}"
+
+    @pytest.mark.auth
+    async def test_subscription_started_after_bounds_end_not_counted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        organization: Organization,
+        metrics_backend_helper: "TinybirdTestHelper",
+    ) -> None:
+        """Test that subscriptions starting after bounds end_date are not counted.
+
+        This tests the bounds filtering behavior: when querying with end_date=Feb 11
+        and interval=month, a subscription that started on Feb 15 should NOT be
+        counted in the February period, even though date_trunc('month', Feb 15) = Feb 1.
+
+        The bounds filter (started_at <= end_timestamp) should exclude it.
+        """
+        import asyncio
+
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_within_bounds": {
+                "started_at": date(2024, 2, 1),
+                "product": "monthly_subscription",
+            },
+            "subscription_after_bounds": {
+                "started_at": date(2024, 2, 15),
+                "product": "monthly_subscription",
+            },
+        }
+        products, subs, orders = await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        )
+        await metrics_backend_helper.ingest_fixtures(customer, products, subs, orders)
+
+        if metrics_backend_helper.is_tinybird:
+            await asyncio.sleep(2)
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 11),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            organization_id=[organization.id],
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.timestamp == datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC)
+        assert jan.active_subscriptions == 0
+        assert jan.committed_subscriptions == 0
+
+        feb = metrics.periods[1]
+        assert feb.timestamp == datetime(2024, 2, 1, 0, 0, 0, tzinfo=UTC)
+        assert feb.active_subscriptions == 1
+        assert feb.committed_subscriptions == 1
+
 
 @pytest.mark.asyncio
 class TestMetricsFiltering:
@@ -1757,6 +1995,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that metrics filters the metrics in the response."""
         metrics = await metrics_service.get_metrics(
@@ -1798,6 +2037,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that a single metric works correctly."""
         metrics = await metrics_service.get_metrics(
@@ -1838,6 +2078,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that meta metrics (post-compute) can be requested and computed."""
         metrics = await metrics_service.get_metrics(
@@ -1862,6 +2103,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that gross_margin properly resolves its dependencies (revenue, costs)."""
         # Using the standard fixtures which have orders with revenue
@@ -1937,6 +2179,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that metrics=None returns all metrics (backward compatible)."""
         metrics = await metrics_service.get_metrics(
@@ -2043,6 +2286,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that different SQL metrics can be individually requested."""
         metrics = await metrics_service.get_metrics(
@@ -2067,6 +2311,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test requesting metrics from different query sources."""
         metrics = await metrics_service.get_metrics(
@@ -2102,6 +2347,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test that cumulative calculations handle None values from metrics filtering.
 
@@ -2129,6 +2375,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test average_order_value cumulative handles None values."""
         metrics = await metrics_service.get_metrics(
@@ -2150,6 +2397,7 @@ class TestMetricsFiltering:
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         fixtures: tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]],
+        metrics_backend: str,
     ) -> None:
         """Test checkouts_conversion cumulative handles None values."""
         metrics = await metrics_service.get_metrics(
@@ -2163,3 +2411,466 @@ class TestMetricsFiltering:
         )
 
         assert metrics.totals.checkouts_conversion is not None
+
+
+@pytest.mark.asyncio
+class TestCheckoutMetrics:
+    """Tests for checkout metrics using opened_at tracking.
+
+    The cutoff date for opened_at tracking is 2026-01-22T12:13:00Z.
+    - Before cutoff: all checkouts counted using created_at (historical behavior)
+    - After cutoff: only checkouts with opened_at are counted
+
+    See: https://github.com/polarsource/polar/pull/9071
+    """
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_historical_checkouts_without_opened_at_counted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that historical checkouts (before cutoff) are counted even without opened_at.
+
+        This preserves historical data for checkouts created before the
+        opened_at tracking feature was shipped (2026-01-22T12:13:00Z).
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkouts without opened_at but with created_at before the cutoff
+        # These should be counted using created_at (historical behavior)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            analytics_metadata={},  # No opened_at
+            created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC),
+        )
+
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            analytics_metadata={},  # No opened_at
+            created_at=datetime(2024, 1, 20, 14, 0, tzinfo=UTC),
+        )
+
+        # Query for historical date range (2024, before cutoff)
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.year,
+            metrics=["checkouts"],
+        )
+
+        # Both checkouts should be counted (historical behavior)
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 2
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_only_opened_checkouts_counted_after_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that only checkouts with opened_at are counted after the cutoff.
+
+        API-created checkouts without opened_at should NOT appear in metrics
+        for dates after 2026-01-22T12:13:00Z.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkout that was opened (has opened_at) - after cutoff
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Create checkout that was NOT opened (API-created, no opened_at) - after cutoff
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 0, tzinfo=UTC),
+            analytics_metadata={},
+        )
+
+        # Create another checkout that was NOT opened - after cutoff
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 8, 0, tzinfo=UTC),
+            # Default empty analytics_metadata
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Only the 1 opened checkout should be counted
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 1
+
+        # Verify it appears on the correct day (Feb 15)
+        feb_15 = metrics.periods[14]  # 0-indexed, day 15 is index 14
+        assert feb_15.checkouts == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_time_bucketing_uses_opened_at(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that checkout metrics use opened_at for time bucketing.
+
+        A checkout with opened_at on Feb 20 should appear in Feb 20 metrics.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create checkout with opened_at on a specific date (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 20, 14, 0, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 20, 14, 30, tzinfo=UTC).isoformat()
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Checkout should appear on Feb 20 (opened_at date)
+        feb_20 = metrics.periods[19]  # 0-indexed, day 20 is index 19
+        assert feb_20.checkouts == 1
+
+        # All other days should have 0 checkouts
+        for i, period in enumerate(metrics.periods):
+            if i != 19:
+                assert period.checkouts == 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_checkouts_conversion_uses_opened_checkouts(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """
+        Test that conversion rate uses opened checkouts as denominator.
+
+        If 2 checkouts are opened and 1 succeeds, conversion should be 50%,
+        NOT based on total created checkouts.
+        """
+        from polar.models.checkout import CheckoutStatus
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Create 2 opened checkouts (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.succeeded,
+            created_at=datetime(2026, 2, 15, 10, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 11, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Create 3 API-created checkouts that were never opened (after cutoff)
+        # These should NOT affect conversion rate
+        for i in range(3):
+            await create_checkout(
+                save_fixture,
+                products=[product],
+                created_at=datetime(2026, 2, 15, 12 + i, 0, tzinfo=UTC),
+                analytics_metadata={},
+            )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts", "succeeded_checkouts", "checkouts_conversion"],
+        )
+
+        # Should count 2 opened checkouts
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 2
+
+        # Should count 1 succeeded checkout
+        total_succeeded = sum(p.succeeded_checkouts or 0 for p in metrics.periods)
+        assert total_succeeded == 1
+
+        # Conversion should be 50% (1/2), not ~20% (1/5)
+        assert metrics.totals.checkouts_conversion == 0.5
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_checkouts_outside_date_range_excluded(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """
+        Test that checkouts opened outside the date range are excluded.
+
+        Uses opened_at for filtering, not created_at.
+        """
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+
+        # Checkout opened within range (after cutoff)
+        # Note: created_at must be close to opened_at (within TTL window)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Checkout opened BEFORE range (Jan 2026, but still after cutoff)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 1, 25, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 1, 25, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        # Checkout opened AFTER range (Mar 2026)
+        await create_checkout(
+            save_fixture,
+            products=[product],
+            created_at=datetime(2026, 3, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={
+                "opened_at": datetime(2026, 3, 15, 10, 0, tzinfo=UTC).isoformat()
+            },
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.day,
+            metrics=["checkouts"],
+        )
+
+        # Only the checkout opened within range should be counted
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user"))
+class TestTinybirdDualRead:
+    async def test_uses_pg_when_tinybird_globally_disabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        tb_mock = AsyncMock()
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", False),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+        tb_mock.assert_not_called()
+        assert result.periods is not None
+
+    async def test_uses_pg_when_org_tinybird_disabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_read": False,
+            "tinybird_compare": False,
+        }
+        await save_fixture(organization)
+
+        tb_mock = AsyncMock()
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+        tb_mock.assert_not_called()
+        assert result.periods is not None
+
+    async def test_shadow_mode_returns_pg_and_logs(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_compare": True,
+        }
+        await save_fixture(organization)
+
+        mock_tb_response = MetricsResponse.model_validate(
+            {"periods": [], "totals": {}, "metrics": {}}
+        )
+        tb_mock = AsyncMock(return_value=mock_tb_response)
+        log_mock = MagicMock()
+
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+            patch.object(metrics_service, "_log_tinybird_comparison", log_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+
+        tb_mock.assert_called_once()
+        log_mock.assert_called_once()
+        assert result.periods is not None
+
+    async def test_fallback_on_tinybird_error(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "tinybird_compare": True,
+        }
+        await save_fixture(organization)
+
+        tb_mock = AsyncMock(side_effect=Exception("Tinybird error"))
+
+        with (
+            patch.object(settings, "TINYBIRD_EVENTS_READ", True),
+            patch.object(metrics_service, "_get_metrics_from_tinybird", tb_mock),
+        ):
+            result = await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 1, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+            )
+
+        tb_mock.assert_called_once()
+        assert result.periods is not None

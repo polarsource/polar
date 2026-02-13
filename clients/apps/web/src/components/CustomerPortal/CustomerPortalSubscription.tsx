@@ -1,9 +1,7 @@
 'use client'
 
-import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useAssignSeat,
-  useCustomerBenefitGrants,
   useCustomerCancelSubscription,
   useCustomerOrders,
   useCustomerSeats,
@@ -14,12 +12,11 @@ import {
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { validateEmail } from '@/utils/validation'
 import { Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
@@ -28,6 +25,7 @@ import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { toast } from '../Toast/use-toast'
+import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerSeatQuantityManager } from './CustomerSeatQuantityManager'
 import { SeatManagementTable } from './SeatManagementTable'
 
@@ -49,12 +47,6 @@ const CustomerPortalSubscription = ({
   // Get authenticated user to check billing permissions
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const canManageBilling = hasBillingPermission(authenticatedUser)
-
-  const { data: benefitGrants } = useCustomerBenefitGrants(api, {
-    subscription_id: subscription.id,
-    limit: 100,
-    sorting: ['type'],
-  })
 
   const { data: orders, refetch: refetchOrders } = useCustomerOrders(api, {
     subscription_id: subscription.id,
@@ -309,29 +301,7 @@ const CustomerPortalSubscription = ({
         </div>
       )}
 
-      <div className="flex w-full flex-col gap-4">
-        <h3 className="text-lg">Benefit Grants</h3>
-        {(benefitGrants?.items.length ?? 0) > 0 ? (
-          <div className="flex flex-col gap-4">
-            <List>
-              {benefitGrants?.items.map((benefitGrant) => (
-                <ListItem
-                  key={benefitGrant.id}
-                  className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                >
-                  <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                </ListItem>
-              ))}
-            </List>
-          </div>
-        ) : (
-          <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
-            <span className="dark:text-polar-500 text-gray-500">
-              This subscription has no benefit grants
-            </span>
-          </div>
-        )}
-      </div>
+      <CustomerPortalGrants api={api} subscriptionId={subscription.id} />
 
       <div className="flex w-full flex-col gap-4">
         {hasInvoices && (
@@ -357,10 +327,9 @@ const CustomerPortalSubscription = ({
                   header: 'Amount',
                   cell: ({ row }) => (
                     <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {formatCurrencyAndAmount(
+                      {formatCurrency('compact')(
                         row.original.total_amount,
                         row.original.currency,
-                        0,
                       )}
                     </span>
                   ),

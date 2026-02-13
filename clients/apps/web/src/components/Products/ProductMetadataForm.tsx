@@ -1,4 +1,4 @@
-import { FormField } from '@polar-sh/ui/components/ui/form'
+import { FormField, FormLabel } from '@polar-sh/ui/components/ui/form'
 
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -43,7 +43,24 @@ export const ProductMetadataForm = () => {
   }, [fields, trigger])
 
   return (
-    <FormItem className="flex flex-col gap-6">
+    <FormItem className="flex flex-col gap-2">
+      <div className="flex flex-row items-center justify-between">
+        <FormLabel>Metadata</FormLabel>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="self-start"
+            type="button"
+            onClick={() => {
+              append({ key: '', value: '' })
+            }}
+          >
+            Add Metadata
+          </Button>
+        </p>
+      </div>
+
       {fields.length > 0 && (
         <div className="flex flex-col gap-2">
           {fields.map((field, index) => (
@@ -104,17 +121,12 @@ export const ProductMetadataForm = () => {
           ))}
         </div>
       )}
-      <Button
-        size="sm"
-        variant="secondary"
-        className="self-start"
-        type="button"
-        onClick={() => {
-          append({ key: '', value: '' })
-        }}
-      >
-        Add Metadata
-      </Button>
+
+      {fields.length === 0 && (
+        <p className="dark:text-polar-500 dark:bg-polar-800 flex h-10 items-center justify-center rounded-2xl bg-gray-50 text-center text-sm text-gray-500 italic">
+          No metadata added.
+        </p>
+      )}
     </FormItem>
   )
 }

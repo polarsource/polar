@@ -9,6 +9,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { MemoizedMarkdown } from '@/components/Markdown/MemoizedMarkdown'
+import { useOnboardingTracking } from '@/hooks/onboarding'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -74,6 +75,7 @@ export const AssistantStep = ({
   onFinished: () => void
 }) => {
   const { organization } = useContext(OrganizationContext)
+  const { trackStepCompleted } = useOnboardingTracking()
   const [input, setInput] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -115,9 +117,10 @@ export const AssistantStep = ({
 
   useEffect(() => {
     if (isFinished) {
+      trackStepCompleted('product', organization.id)
       onFinished()
     }
-  }, [isFinished, onFinished])
+  }, [isFinished, onFinished, trackStepCompleted, organization.id])
 
   useEffect(() => {
     if (textareaRef.current) {

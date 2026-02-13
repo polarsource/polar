@@ -59,7 +59,7 @@ const OrganizationCustomerPortalSettings: React.FC<
   useAutoSave({
     form,
     onSave,
-    delay: 1000,
+    delay: 200,
   })
 
   return (

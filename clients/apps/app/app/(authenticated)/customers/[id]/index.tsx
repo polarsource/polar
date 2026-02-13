@@ -11,7 +11,7 @@ import { useMetrics } from '@/hooks/polar/metrics'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import React, { useCallback, useContext, useMemo } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
@@ -126,9 +126,10 @@ export default function Index() {
           >
             <Text color="subtext">Revenue</Text>
             <Text>
-              {formatCurrencyAndAmount(
+              {formatCurrency('statistics')(
                 metrics?.periods[metrics?.periods.length - 1]
                   .cumulative_revenue ?? 0,
+                'usd',
               )}
             </Text>
           </Box>

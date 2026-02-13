@@ -254,7 +254,7 @@ For a fully containerized development environment with hot-reloading, you can us
 ### Quick Start
 
 ```sh
-./dev/docker-dev
+dev docker up
 ```
 
 This single command will:
@@ -277,25 +277,25 @@ This single command will:
 
 ```sh
 # Start in background (detached mode)
-./dev/docker-dev -d
+dev docker up -d
 
 # View logs
-./dev/docker-dev logs
+dev docker logs
 
 # View logs for specific service
-./dev/docker-dev logs api
+dev docker logs api
 
 # Stop all services
-./dev/docker-dev down
+dev docker down
 
 # Rebuild images
-./dev/docker-dev -b
+dev docker build
 
 # Open shell in container
-./dev/docker-dev shell api
+dev docker shell api
 
 # Include monitoring (Prometheus + Grafana)
-./dev/docker-dev --monitoring
+dev docker up --monitoring
 ```
 
 ### Running Multiple Instances
@@ -304,13 +304,13 @@ For parallel development or testing, you can run multiple isolated instances:
 
 ```sh
 # Instance 0 (default): API on 8000, Web on 3000
-./dev/docker-dev -d
+dev docker up -d
 
 # Instance 1: API on 8100, Web on 3100
-./dev/docker-dev -i 1 -d
+dev docker up -i 1 -d
 
 # Instance 2: API on 8200, Web on 3200
-./dev/docker-dev -i 2 -d
+dev docker up -i 2 -d
 ```
 
 Each instance has its own:
@@ -363,5 +363,55 @@ To log in for the first time, follow these steps:
 1. Navigate to the login page.
 2. Enter your email address in the provided field.
 3. Click the "Login" button.
-4. Check the terminal where the API is running (`uv run task api`) to get the OTP code.
-5. Enter the OTP code in the login form.
+4. To use the seeded admin, use **admin@polar.sh** ([seeds_load.py](server/scripts/seeds_load.py)).
+5. Check the terminal where the API is running (`uv run task api`) to get the OTP code.
+6. Enter the OTP code in the login form.
+
+## Testing Apple Pay / Google Pay
+
+Apple Pay and Google Pay require HTTPS to work. To test these payment methods locally, you'll need to use [ngrok](https://ngrok.com/) to expose your local development server.
+
+1. **Start ngrok** to create an HTTPS tunnel to your frontend:
+
+    ```sh
+    ngrok http 3000
+    ```
+
+    Copy the ngrok URL (e.g., `https://abc123.ngrok-free.app`).
+
+2. **Update `clients/apps/web/next.config.mjs`** to allow ngrok connections and proxy API requests:
+
+    Add `https://*.ngrok-free.dev` to the `connect-src` CSP directive:
+
+    ```diff
+    -    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ... https://prod-uk-services-attachm-attachmentsuploadbucket2-1l2e4906o2asm.s3.eu-west-2.amazonaws.com;
+    +    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ... https://prod-uk-services-attachm-attachmentsuploadbucket2-1l2e4906o2asm.s3.eu-west-2.amazonaws.com https://*.ngrok-free.dev;
+    ```
+
+    Add an API proxy rewrite in the `rewrites` function:
+
+    ```javascript
+    // Proxy API requests to backend (useful for ngrok testing)
+    {
+      source: '/api-proxy/:path*',
+      destination: 'http://127.0.0.1:8000/:path*',
+    },
+    ```
+
+3. **Update `clients/apps/web/.env.local`** to use the ngrok proxy:
+
+    ```
+    NEXT_PUBLIC_API_URL="https://your-ngrok-url.ngrok-free.app/api-proxy"
+    ```
+
+4. **Update `server/.env`** to allow CORS from ngrok and set the frontend URL:
+
+    ```
+    POLAR_CORS_ORIGINS='["http://localhost:3000", "http://127.0.0.1:3000", "https://github.com", "https://your-ngrok-url.ngrok-free.app"]'
+    POLAR_FRONTEND_BASE_URL="https://your-ngrok-url.ngrok-free.app"
+    ```
+
+5. **Access your app** via the ngrok HTTPS URL (e.g., `https://abc123.ngrok-free.app`) in Safari (for Apple Pay) or Chrome (for Google Pay).
+
+> [!WARNING]
+> Remember to revert these changes before committing. They are for local development only.

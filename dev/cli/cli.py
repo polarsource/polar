@@ -186,6 +186,14 @@ def help() -> None:
     console.print("\n[bold]Database:[/bold]")
     console.print("  [bold]db migrate[/bold]    Run database migrations")
     console.print("  [bold]db reset[/bold]      Reset database")
+
+    console.print("\n[bold]Docker (Isolated):[/bold]")
+    console.print("  [bold]docker up[/bold]      Start full stack in Docker containers")
+    console.print("  [bold]docker down[/bold]    Stop Docker services")
+    console.print("  [bold]docker logs[/bold]    View Docker service logs")
+    console.print("  [bold]docker ps[/bold]      List running Docker services")
+    console.print("  [bold]docker shell[/bold]   Open shell in a Docker container")
+    console.print("  [bold]docker cleanup[/bold] Remove containers and volumes")
     console.print()
 
 

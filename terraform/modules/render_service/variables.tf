@@ -41,6 +41,7 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
+    image_url          = optional(string, "ghcr.io/polarsource/polar")
     digest             = optional(string)
     tag                = optional(string)
     custom_domains     = optional(list(object({ name = string })), [])
@@ -123,7 +124,7 @@ variable "backend_config" {
     auth_cookie_domain         = string               # "polar.sh"
     auth_cookie_key            = optional(string, "") # "polar.sh"
     invoices_additional_info   = string               # "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = optional(string, "stripe")
+    tax_processors             = optional(string, "[\"stripe\"]")
   })
 }
 
@@ -241,6 +242,7 @@ variable "tinybird_config" {
     api_url             = string
     clickhouse_url      = string
     api_token           = string
+    read_token          = string
     clickhouse_username = string
     clickhouse_token    = string
     workspace           = string

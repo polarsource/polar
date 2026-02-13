@@ -2,8 +2,7 @@ import { Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function NotificationCreditsGranted({
@@ -11,11 +10,10 @@ export function NotificationCreditsGranted({
   formatted_amount,
 }: schemas['MaintainerAccountCreditsGrantedNotificationPayload']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         {organization_name} has received {formatted_amount} in fee credits
       </Preview>
-      <PolarHeader />
       <IntroWithHi>
         Great news! <strong>{organization_name}</strong> has received{' '}
         <strong>{formatted_amount}</strong> in fee credits!
@@ -54,7 +52,7 @@ export function NotificationCreditsGranted({
         </table>
       </Section>
       <Footer email={null} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

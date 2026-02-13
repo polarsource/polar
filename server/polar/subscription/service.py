@@ -70,6 +70,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
+from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -84,13 +85,14 @@ from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
     is_free_price,
+    is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.tax.calculation import get_tax_service
-from polar.tax.calculation.base import TaxCalculationError
+from polar.tax.calculation import TaxCalculationLogicalError
+from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -497,9 +499,6 @@ class SubscriptionService:
         # So we manually trigger it here to keep the same behavior.
         await self._on_subscription_updated(session, subscription)
 
-        # Reset the subscription meters to start fresh
-        await self.reset_meters(session, subscription)
-
         # Enqueue the benefits grants for the subscription
         await self.enqueue_benefits_grants(session, subscription)
 
@@ -655,7 +654,7 @@ class SubscriptionService:
 
         # Subscription is due to cancel, revoke it
         if revoke:
-            subscription.ended_at = subscription.ends_at
+            subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
@@ -959,6 +958,18 @@ class SubscriptionService:
                 ]
             )
 
+        if product.visibility != ProductVisibility.public:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is not available from the Customer Portal.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         if not product.is_recurring:
             raise PolarRequestValidationError(
                 [
@@ -1011,6 +1022,20 @@ class SubscriptionService:
                         }
                     ]
                 )
+
+        old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
+        new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
+        if old_has_seat_prices != new_has_seat_prices:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Can't switch between seat-based and non-seat-based products.",
+                        "input": product_id,
+                    }
+                ]
+            )
 
         # Add event for the subscription plan change
         event = await event_service.create_event(
@@ -1822,9 +1847,8 @@ class SubscriptionService:
             and subscription.product.is_tax_applicable
             and subscription.customer.billing_address is not None
         ):
-            tax_service = get_tax_service(settings.DEFAULT_TAX_PROCESSOR)
             try:
-                tax = await tax_service.calculate(
+                tax, _ = await tax_calculation_service.calculate(
                     subscription.id,
                     subscription.currency,
                     taxable_amount,
@@ -1835,7 +1859,7 @@ class SubscriptionService:
                     else [],
                     subscription.tax_exempted,
                 )
-            except TaxCalculationError:
+            except TaxCalculationLogicalError:
                 log.warning(
                     "Failed to calculate tax for subscription due to invalid or incomplete address",
                     subscription_id=subscription.id,
@@ -1893,7 +1917,7 @@ class SubscriptionService:
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
 
-        if became_canceled:
+        if became_canceled or (became_revoked and previous_is_canceled):
             await self._on_subscription_canceled(
                 session, subscription, revoked=became_revoked
             )

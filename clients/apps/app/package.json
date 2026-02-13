@@ -34,6 +34,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@polar-sh/client": "workspace:*",
+    "@polar-sh/currency": "workspace:^",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "latest",
     "@react-native-community/netinfo": "^11.4.1",

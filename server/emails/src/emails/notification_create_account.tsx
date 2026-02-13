@@ -1,10 +1,9 @@
-import { Link, Preview, Text } from '@react-email/components'
+import { Link, Preview, Section, Text } from '@react-email/components'
 import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function NotificationCreateAccount({
@@ -12,9 +11,8 @@ export function NotificationCreateAccount({
   url,
 }: schemas['MaintainerCreateAccountNotificationPayload']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>Your Polar account is being reviewed</Preview>
-      <PolarHeader />
       <IntroWithHi>
         Now that you got your first payment to {organization_name}, you should
         create a payout account in order to receive your funds.
@@ -24,13 +22,19 @@ export function NotificationCreateAccount({
         money immediately.
       </BodyText>
       <Button href={url}>Create my payout account</Button>
-      <Text>
-        If you're having trouble with the button above, copy and paste the URL
-        below into your web browser.
-      </Text>
-      <Link href={url}>{url}</Link>
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
+        <Text className="m-0 text-xs text-gray-600">
+          If you're having trouble with the button above, copy & paste the URL
+          below into your web browser.
+        </Text>
+        <Text className="mt-2 mb-0 text-xs">
+          <Link href={url} className="break-all text-blue-600 underline">
+            {url}
+          </Link>
+        </Text>
+      </Section>
       <Footer email={null} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

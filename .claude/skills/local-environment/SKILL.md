@@ -11,25 +11,15 @@ metadata:
 
 This skill enables Claude to help manage the Polar local development environment using Docker. Use this when the user needs to start, stop, debug, or understand the local development stack.
 
-## Conductor Integration
+## Instance Auto-Detection
 
-**CRITICAL:** When running in Conductor, always check `CONDUCTOR_PORT` first to determine the instance number:
+The `dev docker` command **automatically detects** the correct instance number. No manual `-i` flag is needed in most cases.
 
-```bash
-echo $CONDUCTOR_PORT
-```
+**Detection priority:**
+1. `CONDUCTOR_PORT` env var → `(port - 55000) / 10 + 1`
+2. Workspace path hash → stable instance derived from the repo root path
 
-- If `CONDUCTOR_PORT` is **not set** → Not running in Conductor, use instance 0
-- If `CONDUCTOR_PORT` is **set** → Calculate instance: `INSTANCE=$((CONDUCTOR_PORT - 55090))`
-
-| CONDUCTOR_PORT | Instance |
-|----------------|----------|
-| 55090 | 0 |
-| 55091 | 1 |
-| 55092 | 2 |
-| 55093 | 3 |
-
-**Always use `-i $INSTANCE` flag** with all docker-dev commands when running in Conductor.
+You can override with `-i N` if needed, but auto-detection handles Conductor workspaces automatically.
 
 ## When to Use
 
@@ -43,17 +33,17 @@ echo $CONDUCTOR_PORT
 
 | Task | Command |
 |------|---------|
-| Start full stack | `./dev/docker-dev -i $INSTANCE -d` |
-| Stop services | `./dev/docker-dev -i $INSTANCE down` |
-| View all logs | `./dev/docker-dev -i $INSTANCE logs` |
-| View service logs | `./dev/docker-dev -i $INSTANCE logs {service}` |
-| Follow logs | `./dev/docker-dev -i $INSTANCE logs -f` |
-| Check status | `./dev/docker-dev -i $INSTANCE ps` |
-| Restart service | `./dev/docker-dev -i $INSTANCE restart {service}` |
-| Shell access | `./dev/docker-dev -i $INSTANCE shell {service}` |
-| Fresh start | `./dev/docker-dev -i $INSTANCE cleanup && ./dev/docker-dev -i $INSTANCE -d` |
-| With monitoring | `./dev/docker-dev -i $INSTANCE --monitoring -d` |
-| Force rebuild | `./dev/docker-dev -i $INSTANCE -b -d` |
+| Start full stack | `dev docker up -d` |
+| Stop services | `dev docker down` |
+| View all logs | `dev docker logs` |
+| View service logs | `dev docker logs {service}` |
+| Follow logs | `dev docker logs -f` |
+| Check status | `dev docker ps` |
+| Restart service | `dev docker restart {service}` |
+| Shell access | `dev docker shell {service}` |
+| Fresh start | `dev docker cleanup -f && dev docker up -d` |
+| With monitoring | `dev docker up --monitoring -d` |
+| Force rebuild | `dev docker up -b -d` |
 
 ## Services
 

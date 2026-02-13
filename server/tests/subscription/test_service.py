@@ -28,6 +28,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -58,7 +59,6 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
-    is_currency_price,
     is_fixed_price,
     is_free_price,
     is_metered_price,
@@ -994,7 +994,12 @@ class TestCycle:
         updated_subscription = await subscription_service.cycle(session, subscription)
 
         assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.ended_at == updated_subscription.ends_at
+        # ended_at should be set to the current time, not to ends_at
+        assert updated_subscription.ended_at is not None
+        assert updated_subscription.ended_at <= utc_now()
+        # ends_at is the scheduled end time (future), ended_at is when it actually ended (now)
+        assert updated_subscription.ends_at is not None
+        assert updated_subscription.ended_at < updated_subscription.ends_at
         assert (
             updated_subscription.current_period_start == previous_current_period_start
         )
@@ -1044,6 +1049,39 @@ class TestCycle:
         enqueue_email_mock.assert_called_once()
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
+
+    @freeze_time("2024-01-15 10:00:00")
+    async def test_cancel_at_period_end_sets_ended_at_to_current_time(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that ended_at is set to the current time when subscription ends, not to ends_at."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+            scheduler_locked_at=utc_now(),
+        )
+
+        # Record when the cycle runs - this should be the ended_at timestamp
+        cycle_time = utc_now()
+
+        # ends_at is set to current_period_end (in the future)
+        assert subscription.ends_at is not None
+        assert subscription.ends_at == subscription.current_period_end
+        assert subscription.ends_at > cycle_time
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        # ended_at should be set to the current time when the cycle ran, not to ends_at
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == cycle_time
 
     async def test_trial_end(
         self,
@@ -1279,6 +1317,31 @@ class TestRevoke:
         enqueue_benefits_grants_mock.assert_called_once_with(
             session, updated_subscription
         )
+
+    async def test_revoke_scheduled_cancellation_sends_canceled_hook(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        assert subscription.canceled_at is not None
+        assert subscription.cancel_at_period_end is True
+        reset_hooks(subscription_hooks)
+
+        await subscription_service.revoke(session, subscription)
+
+        subscription_hooks.canceled.assert_called_once()
+        subscription_hooks.revoked.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -2050,8 +2113,74 @@ class TestUpdateProduct:
         assert updated_subscription.product == product
         assert len(updated_subscription.prices) == 1
         price = updated_subscription.prices[0]
-        assert is_currency_price(price)
         assert price.price_currency == "usd"
+
+    async def test_seat_based_to_fixed_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=customer,
+            seats=2,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=fixed_product.id,
+            )
+
+    async def test_fixed_to_seat_based_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        fixed_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(20000, "usd")],
+        )
+        seat_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 10000, "usd")],
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=fixed_product,
+            customer=customer,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=seat_product.id,
+            )
 
 
 @pytest.mark.asyncio
@@ -2556,7 +2685,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2743,7 +2872,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 3, "max_seats": None, "price_per_seat": 1000},
@@ -2784,7 +2913,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 1, "max_seats": 10, "price_per_seat": 1000},
@@ -2825,7 +2954,7 @@ class TestUpdateSeats:
             prices=[],
         )
         seat_price = ProductPriceSeatUnit(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             seat_tiers={
                 "tiers": [
                     {"min_seats": 2, "max_seats": 20, "price_per_seat": 1000},

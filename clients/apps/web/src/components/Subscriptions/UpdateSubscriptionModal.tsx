@@ -186,7 +186,10 @@ const UpdateProduct = ({
                               </Pill>
                             )}
                           </div>
-                          <ProductPriceLabel product={product} />
+                          <ProductPriceLabel
+                            product={product}
+                            currency={subscription.currency}
+                          />
                         </SelectItem>
                       ))}
                     </SelectContent>

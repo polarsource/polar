@@ -10,11 +10,29 @@ const FooterCustomer = ({
 }) => (
   <>
     <Hr />
-    <Section className="text-center text-sm text-gray-900">
-      <Text className="mb-2">
-        This email was sent to <span className="font-semibold">{email}</span>
+    <Section className="text-center text-sm">
+      <Text className="mb-2 text-gray-500">
+        This email was sent to{' '}
+        <a
+          href={`mailto:${email}`}
+          className="font-semibold"
+          style={{
+            textDecoration: 'none !important',
+            color: 'inherit !important',
+          }}
+        >
+          <span
+            style={{
+              textDecoration: 'none !important',
+              color: 'inherit !important',
+            }}
+          >
+            {email}
+          </span>
+        </a>
+        .
       </Text>
-      <Text>
+      <Text className="text-gray-900">
         Merchant of Record services provided to{' '}
         <span className="font-semibold">{organization.name}</span> by{' '}
         <span className="font-semibold">Polar Software Inc</span>

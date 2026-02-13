@@ -2,13 +2,6 @@
 
 import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
@@ -23,6 +16,7 @@ import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
+import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
@@ -34,7 +28,7 @@ export const MeterCreditBenefitForm = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { data: meters, refetch } = useMeters(organization.id, {
+  const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
     is_archived: false,
   })
@@ -49,25 +43,8 @@ export const MeterCreditBenefitForm = ({
   } = useModal(false)
 
   const onSelectMeter = useCallback(
-    async (meter: schemas['Meter']) => {
-      // This is embarrassing but the <Select /> component has to re-render
-      // with the updated `meters` as options,
-      // before it'll accept this as a valid select value.
-      //
-      // This is an open issue with Radix UI since 2024
-      // (https://github.com/radix-ui/primitives/issues/2817)
-
-      // To work around this, we run an explicit `refetch` that we can await
-      // and then set the value in a double requestAnimationFrame callback.
-      // First rAF ensures this component is updated,
-      // second rAF ensures the <SelectContent /> was updated too.
-      await refetch()
-
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          setValue('properties.meter_id', meter.id)
-        })
-      })
+    (meter: schemas['Meter']) => {
+      setValue('properties.meter_id', meter.id)
     },
     [setValue],
   )
@@ -118,18 +95,11 @@ export const MeterCreditBenefitForm = ({
                     </button>
                   </div>
                   <FormControl>
-                    <Select {...field} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a meter" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {meters.items.map((meter) => (
-                          <SelectItem key={meter.id} value={meter.id}>
-                            {meter.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <MeterSelector
+                      organizationId={organization.id}
+                      value={field.value || null}
+                      onChange={(meterId) => field.onChange(meterId ?? '')}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

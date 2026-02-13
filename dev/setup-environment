@@ -273,10 +273,17 @@ def _write_env_file(
     env_file_path: pathlib.Path,
     replacements: dict[str, str],
 ) -> None:
+    existing_env = dotenv_values(env_file_path) if env_file_path.exists() else {}
+
     with open(env_file_path, "w") as env_file:
         template_env = dotenv_values(template_file_path)
         for key, value in template_env.items():
-            output_value = replacements.get(key, value)
+            if key in replacements:
+                output_value = replacements[key]
+            elif key in existing_env and existing_env[key] != "*** REPLACE ***":
+                output_value = existing_env[key]
+            else:
+                output_value = value
             delimiter = "'" if '"' in str(output_value) else '"'
             env_file.write(f"{key}={delimiter}{output_value}{delimiter}\n")
 

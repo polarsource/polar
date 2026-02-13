@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback } from 'react'
 
 interface ClientPageProps {
@@ -26,6 +26,8 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const currentFilter = searchParams.get('filter') ?? 'active'
 
   const {
     isShown: isEditMeterModalShown,
@@ -55,11 +57,36 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
     })
 
     if (isArchiving) {
-      router.push(
-        `/dashboard/${organization.slug}/products/meters/${meter.id}?filter=all`,
-      )
+      // When archiving with "active" filter, redirect to next active meter
+      // Similar to archiving an email - you stay in inbox and move to next email
+      if (currentFilter === 'active') {
+        const queryString = searchParams.toString()
+        // Redirect to meters list, which will find and redirect to first active meter
+        router.push(
+          `/dashboard/${organization.slug}/products/meters${queryString ? `?${queryString}` : ''}`,
+        )
+      }
+      // When archiving with "all" filter, stay on meter (it's still visible)
+    } else {
+      // When unarchiving with "archived" filter, update to "active" so sidebar shows the meter
+      if (currentFilter === 'archived') {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('filter', 'active')
+        router.push(
+          `/dashboard/${organization.slug}/products/meters/${meter.id}?${params.toString()}`,
+        )
+      }
+      // When unarchiving with "all" or "active" filter, stay on meter
     }
-  }, [updateMeter, toast, organization, meter, router])
+  }, [
+    updateMeter,
+    toast,
+    organization,
+    meter,
+    router,
+    searchParams,
+    currentFilter,
+  ])
 
   return (
     <MasterDetailLayoutContent

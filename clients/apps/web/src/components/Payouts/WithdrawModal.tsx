@@ -1,8 +1,8 @@
 import { api } from '@/utils/client'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Modal } from '../Modal'
@@ -150,7 +150,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <DetailRow
                       label="Gross Amount"
                       valueClassName="justify-end"
-                      value={formatCurrencyAndAmount(
+                      value={formatCurrency('accounting')(
                         payoutEstimate.gross_amount,
                         'usd',
                       )}
@@ -158,7 +158,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <DetailRow
                       label="Fees Amount"
                       valueClassName="justify-end"
-                      value={formatCurrencyAndAmount(
+                      value={formatCurrency('accounting')(
                         payoutEstimate.fees_amount,
                         'usd',
                       )}
@@ -166,7 +166,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <DetailRow
                       label="Net Amount"
                       valueClassName="justify-end"
-                      value={formatCurrencyAndAmount(
+                      value={formatCurrency('accounting')(
                         payoutEstimate.net_amount,
                         'usd',
                       )}

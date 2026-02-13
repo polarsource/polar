@@ -20,6 +20,7 @@ from polar.custom_field.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -35,6 +36,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceSource,
@@ -94,11 +96,8 @@ SeatPriceAmount = Annotated[
     ),
 ]
 PriceCurrency = Annotated[
-    str,
-    Field(
-        pattern="usd",
-        description="The currency. Currently, only `usd` is supported.",
-    ),
+    PresentmentCurrency,
+    Field(description="The currency in which the customer will be charged."),
 ]
 ProductName = Annotated[
     str,
@@ -116,6 +115,7 @@ ProductDescription = Annotated[
 
 class ProductPriceCreateBase(Schema):
     amount_type: ProductPriceAmountType
+    price_currency: PriceCurrency = PresentmentCurrency.usd
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()
@@ -128,7 +128,6 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
-    price_currency: PriceCurrency = "usd"
 
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel
@@ -140,7 +139,6 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.custom]
-    price_currency: PriceCurrency = "usd"
     minimum_amount: int = Field(
         default=MINIMUM_PRICE_AMOUNT,
         ge=0,
@@ -287,7 +285,6 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    price_currency: PriceCurrency = "usd"
     seat_tiers: ProductPriceSeatTiers = Field(
         description="Tiered pricing based on seat quantity"
     )
@@ -306,7 +303,6 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    price_currency: PriceCurrency = "usd"
     unit_amount: Decimal = Field(
         gt=0,
         max_digits=17,
@@ -356,6 +352,10 @@ ProductPriceCreateList = Annotated[
 class ProductCreateBase(MetadataInputMixin, Schema):
     name: ProductName
     description: ProductDescription = None
+    visibility: ProductVisibility = Field(
+        default=ProductVisibility.public,
+        description="The visibility of the product.",
+    )
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
@@ -464,6 +464,10 @@ class ProductUpdate(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
             "and subscriptions will continue normally."
         ),
     )
+    visibility: ProductVisibility | None = Field(
+        default=None,
+        description="The visibility of the product.",
+    )
     prices: list[ProductPriceUpdate] | None = Field(
         default=None,
         description=(
@@ -508,6 +512,7 @@ class ProductPriceBase(TimestampedSchema):
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )
+    price_currency: PriceCurrency
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )
@@ -533,13 +538,11 @@ class ProductPriceBase(TimestampedSchema):
 
 class ProductPriceFixedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.fixed]
-    price_currency: str = Field(description="The currency.")
     price_amount: int = Field(description="The price in cents.")
 
 
 class ProductPriceCustomBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.custom]
-    price_currency: str = Field(description="The currency.")
     minimum_amount: int = Field(
         description=(
             "The minimum amount the customer can pay. "
@@ -566,7 +569,6 @@ class ProductPriceFreeBase(ProductPriceBase):
 
 class ProductPriceSeatBasedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.seat_based]
-    price_currency: str = Field(description="The currency.")
     seat_tiers: ProductPriceSeatTiers = Field(
         description="Tiered pricing based on seat quantity"
     )
@@ -691,7 +693,6 @@ class ProductPriceMeteredUnit(ProductPriceBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
-    price_currency: str = Field(description="The currency.")
     unit_amount: Decimal = Field(description="The price per unit in cents.")
     cap_amount: int | None = Field(
         description=(
@@ -731,6 +732,7 @@ ProductPrice = Annotated[
 class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
     name: str = Field(description="The name of the product.")
     description: str | None = Field(description="The description of the product.")
+    visibility: ProductVisibility = Field(description="The visibility of the product.")
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         description=(
             "The recurring interval of the product. "

@@ -1,3 +1,9 @@
+import { formatCurrency } from '@polar-sh/currency'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic.js'
 import { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic.js'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
@@ -13,33 +19,13 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
-import { formatCurrencyNumber } from '../utils/money'
-
-const DollarSignIcon = ({ className }: { className?: string }) => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <line x1="12" x2="12" y1="2" y2="22" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  )
-}
 
 export interface CheckoutPWYWFormProps {
   update: (data: CheckoutUpdatePublic) => void
   checkout: CheckoutPublic
   productPrice: ProductPriceCustom
   themePreset: ThemingPresetProps
+  locale?: AcceptedLocale
 }
 
 export const CheckoutPWYWForm = ({
@@ -47,7 +33,9 @@ export const CheckoutPWYWForm = ({
   checkout,
   productPrice,
   themePreset,
+  locale = DEFAULT_LOCALE,
 }: CheckoutPWYWFormProps) => {
+  const t = useTranslations(locale)
   const { amount } = checkout
 
   const form = useForm<{ amount: number }>({
@@ -61,16 +49,24 @@ export const CheckoutPWYWForm = ({
     (value: number): string | true => {
       // Handle gap validation when free is allowed (minimumAmount = 0)
       if (minimumAmount === 0 && value > 0 && value < 50) {
-        return `Amount must be $0 or at least ${formatCurrencyNumber(50, checkout.currency)}`
+        return t('checkout.pwywForm.amountFreeOrMinimum', {
+          min: formatCurrency('compact', locale)(50, checkout.currency),
+          zero: formatCurrency('compact', locale)(0, checkout.currency),
+        })
       }
 
       if (value < minimumAmount) {
-        return `Amount must be at least ${formatCurrencyNumber(minimumAmount, checkout.currency)}`
+        return t('checkout.pwywForm.amountMinimum', {
+          min: formatCurrency('compact', locale)(
+            minimumAmount,
+            checkout.currency,
+          ),
+        })
       }
 
       return true
     },
-    [minimumAmount, checkout.currency],
+    [minimumAmount, checkout.currency, locale],
   )
 
   const debouncedAmountUpdate = useDebouncedCallback(
@@ -100,13 +96,18 @@ export const CheckoutPWYWForm = ({
   const minLabelText =
     minimumAmount === 0
       ? null
-      : `${formatCurrencyNumber(minimumAmount, checkout.currency)} minimum`
+      : t('checkout.pwywForm.minimum', {
+          amount: formatCurrency('compact', locale)(
+            minimumAmount,
+            checkout.currency,
+          ),
+        })
 
   return (
     <Form {...form}>
       <form className="flex w-full flex-col gap-3">
         <FormLabel>
-          Name a fair price
+          {t('checkout.pwywForm.label')}
           {minLabelText && (
             <>
               {' '}
@@ -128,11 +129,11 @@ export const CheckoutPWYWForm = ({
                   <MoneyInput
                     className="bg-white shadow-xs"
                     name={field.name}
+                    currency={checkout.currency}
                     value={field.value || undefined}
                     onChange={field.onChange}
                     placeholder={0}
                     disabled={field.disabled}
-                    preSlot={<DollarSignIcon className="h-4 w-4" />}
                   />
                   <FormMessage />
                 </FormItem>

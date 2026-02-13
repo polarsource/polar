@@ -359,6 +359,7 @@ class BalanceOrderMetadata(TypedDict):
     product_id: NotRequired[str]
     subscription_id: NotRequired[str]
     amount: int
+    net_amount: NotRequired[int]
     currency: str
     presentment_amount: int
     presentment_currency: str
@@ -366,6 +367,7 @@ class BalanceOrderMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceOrderEvent(Event):
@@ -410,6 +412,7 @@ class BalanceRefundMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceRefundEvent(Event):
@@ -441,6 +444,7 @@ class BalanceDisputeMetadata(TypedDict):
     tax_state: NotRequired[str | None]
     tax_country: NotRequired[str | None]
     fee: int
+    exchange_rate: NotRequired[float]
 
 
 class BalanceDisputeEvent(Event):
@@ -670,6 +674,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: BalanceDisputeMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.balance_refund_reversal],
+    customer: Customer,
+    organization: Organization,
+    metadata: BalanceRefundMetadata,
 ) -> Event: ...
 
 

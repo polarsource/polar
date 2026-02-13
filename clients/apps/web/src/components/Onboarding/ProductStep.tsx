@@ -1,3 +1,4 @@
+import { useOnboardingTracking } from '@/hooks'
 import {
   useBenefits,
   useCreateProduct,
@@ -8,14 +9,13 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { FadeUp } from '../Animated/FadeUp'
 import { Benefits } from '../Products/Benefits/Benefits'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
-import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
@@ -25,10 +25,20 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
 
 export const ProductStep = () => {
   const { organization } = useContext(OrganizationContext)
+  const searchParams = useSearchParams()
+  const { trackStepStarted, trackStepCompleted, getSession } =
+    useOnboardingTracking()
   // Store full benefit objects instead of just IDs to avoid lookup issues
   const [enabledBenefits, setEnabledBenefits] = useState<schemas['Benefit'][]>(
     [],
   )
+
+  useEffect(() => {
+    const session = getSession()
+    if (session && !searchParams.get('existing_org')) {
+      trackStepStarted('product', organization.id)
+    }
+  }, [organization.id, getSession, searchParams, trackStepStarted])
 
   // Derive IDs from the benefit objects
   const enabledBenefitIds = useMemo(
@@ -55,7 +65,7 @@ export const ProductStep = () => {
           {
             amount_type: 'fixed',
             price_amount: 1000,
-            price_currency: 'usd',
+            price_currency: organization.default_presentment_currency,
           },
         ],
       },
@@ -100,6 +110,11 @@ export const ProductStep = () => {
         },
       })
 
+      const session = getSession()
+      if (session && !searchParams.get('existing_org')) {
+        await trackStepCompleted('product', organization.id)
+      }
+
       router.push(
         `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
       )
@@ -111,6 +126,9 @@ export const ProductStep = () => {
       setError,
       organization,
       router,
+      getSession,
+      searchParams,
+      trackStepCompleted,
     ],
   )
 
@@ -138,14 +156,6 @@ export const ProductStep = () => {
           <div className="flex flex-col md:gap-y-4">
             <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
               <ProductInfoSection compact />
-            </FadeUp>
-
-            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
-              <ProductMediaSection
-                className="py-0"
-                organization={organization}
-                compact
-              />
             </FadeUp>
 
             <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">

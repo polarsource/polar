@@ -4,16 +4,20 @@ import { Text } from '../Shared/Text'
 import AmountLabel from './AmountLabel'
 
 interface ProductPriceLabelProps {
+  currency: string
   product?: schemas['Product'] | schemas['CheckoutProduct']
   loading?: boolean
 }
 
 export const ProductPriceLabel = ({
+  currency,
   product,
   loading,
 }: ProductPriceLabelProps) => {
-  const staticPrice = product?.prices.find(({ amount_type }) =>
-    ['fixed', 'custom', 'free'].includes(amount_type),
+  const staticPrice = product?.prices.find(
+    ({ price_currency, amount_type }) =>
+      price_currency === currency &&
+      ['fixed', 'custom', 'free'].includes(amount_type),
   )
 
   if (!staticPrice) {

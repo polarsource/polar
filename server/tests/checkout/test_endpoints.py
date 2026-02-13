@@ -13,7 +13,7 @@ from polar.auth.scope import Scope
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval, TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -30,6 +30,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
+from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import TaxabilityReason
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -61,16 +62,19 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
-    mock = mocker.patch("polar.checkout.service.get_tax_service")
-    mock.return_value.calculate = AsyncMock(
-        return_value={
+    mock = mocker.patch(
+        "polar.checkout.service.tax_calculation_service", spec=TaxCalculationService
+    )
+    mock.calculate.return_value = (
+        {
             "processor_id": "TAX_PROCESSOR_ID",
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
             "tax_rate": {},
         },
+        TaxProcessor.numeral,
     )
-    return mock.return_value.calculate
+    return mock.calculate
 
 
 @pytest_asyncio.fixture

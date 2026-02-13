@@ -45,6 +45,7 @@ from .order import Order
 from .order_item import OrderItem
 from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
+from .organization_agent_review import OrganizationAgentReview
 from .organization_review import OrganizationReview
 from .payment import Payment
 from .payment_method import PaymentMethod
@@ -53,7 +54,7 @@ from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
 from .processor_transaction import ProcessorTransaction
-from .product import Product
+from .product import Product, ProductVisibility
 from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
 from .product_media import ProductMedia
@@ -137,6 +138,7 @@ __all__ = [
     "OrderItem",
     "Organization",
     "OrganizationAccessToken",
+    "OrganizationAgentReview",
     "OrganizationReview",
     "Payment",
     "PaymentMethod",
@@ -155,6 +157,7 @@ __all__ = [
     "ProductPriceFree",
     "ProductPriceMeteredUnit",
     "ProductPriceSeatUnit",
+    "ProductVisibility",
     "Refund",
     "SeatStatus",
     "Subscription",

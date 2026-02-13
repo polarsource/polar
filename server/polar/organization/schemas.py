@@ -15,6 +15,7 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
@@ -91,6 +92,16 @@ class OrganizationFeatureSettings(Schema):
     tinybird_compare: bool = Field(
         False,
         description="If this organization compares Tinybird results with database",
+    )
+    presentment_currencies_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization has multiple presentment currencies enabled"
+        ),
+    )
+    checkout_localization_enabled: bool = Field(
+        False,
+        description="If this organization has checkout localization enabled",
     )
 
 
@@ -314,6 +325,14 @@ class Organization(OrganizationBase):
         description="When the business details were submitted.",
     )
 
+    default_presentment_currency: PresentmentCurrency = Field(
+        description=(
+            "Default presentment currency. "
+            "Used as fallback in checkout and customer portal, "
+            "if the customer's local currency is not available."
+        )
+    )
+
     feature_settings: OrganizationFeatureSettings | None = Field(
         description="Organization feature settings",
     )
@@ -352,6 +371,10 @@ class OrganizationCreate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency = Field(
+        PresentmentCurrency.usd,
+        description="Default presentment currency for the organization",
+    )
 
 
 class OrganizationUpdate(Schema):
@@ -375,6 +398,9 @@ class OrganizationUpdate(Schema):
     notification_settings: OrganizationNotificationSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    default_presentment_currency: PresentmentCurrency | None = Field(
+        None, description="Default presentment currency for the organization"
+    )
 
 
 class OrganizationPaymentStep(Schema):

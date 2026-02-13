@@ -153,7 +153,7 @@ module "production" {
       dramatiq_prom_port = "10000"
     }
     "worker-medium-priority" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues default medium_priority"
+      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues medium_priority"
       tag                = "latest"
       dramatiq_prom_port = "10001"
     }
@@ -195,7 +195,7 @@ module "production" {
     testing                    = "0"
     auth_cookie_domain         = "polar.sh"
     invoices_additional_info   = "[support@polar.sh](mailto:support@polar.sh)\nVAT: EU372061545"
-    default_tax_processor      = "stripe"
+    tax_processors             = "[\"stripe\"]"
   }
 
   backend_secrets = {
@@ -279,6 +279,7 @@ module "production" {
     api_url             = "https://api.us-east.aws.tinybird.co"
     clickhouse_url      = "https://clickhouse.us-east.aws.tinybird.co"
     api_token           = var.tinybird_api_token
+    read_token          = var.tinybird_read_token
     clickhouse_username = var.tinybird_clickhouse_username
     clickhouse_token    = var.tinybird_clickhouse_token
     workspace           = var.tinybird_workspace

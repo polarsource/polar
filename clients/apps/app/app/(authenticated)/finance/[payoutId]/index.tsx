@@ -1,7 +1,7 @@
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { useTheme } from '@/design-system/useTheme'
 import { usePayout } from '@/hooks/polar/finance'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import React from 'react'
 import { SafeAreaView } from 'react-native'
@@ -49,16 +49,16 @@ export default function Index() {
           />
           <DetailRow
             label="Gross"
-            value={formatCurrencyAndAmount(
+            value={formatCurrency('accounting')(
               payout?.gross_amount ?? 0,
-              payout?.currency,
+              payout?.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Fees"
-            value={formatCurrencyAndAmount(
+            value={formatCurrency('accounting')(
               payout?.fees_amount ?? 0,
-              payout?.currency,
+              payout?.currency ?? 'usd',
             )}
           />
         </Details>

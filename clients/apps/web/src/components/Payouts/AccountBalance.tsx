@@ -1,8 +1,8 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
@@ -64,7 +64,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             ) : (
               <>
                 {summary &&
-                  formatCurrencyAndAmount(
+                  formatCurrency('accounting')(
                     summary.balance.amount,
                     summary.balance.currency,
                   )}
@@ -96,7 +96,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
             ) : (
               <>
                 {summary &&
-                  formatCurrencyAndAmount(account.credit_balance, 'usd')}
+                  formatCurrency('accounting')(account.credit_balance, 'usd')}
               </>
             )}
           </div>

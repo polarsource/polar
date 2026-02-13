@@ -308,3 +308,11 @@ resource "tfe_variable" "tinybird_clickhouse_token_test" {
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "tinybird_read_token_test" {
+  key             = "tinybird_read_token"
+  category        = "terraform"
+  description     = "Tinybird Read Token for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

@@ -165,6 +165,7 @@ class SearchService:
             literal(None).cast(String).label("customer_email"),
             literal(None).cast(String).label("product_name"),
             literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("currency"),
             literal(None).cast(String).label("status"),
         ).where(
             Product.organization_id.in_(organization_subquery),
@@ -198,6 +199,7 @@ class SearchService:
             literal(None).cast(String).label("customer_email"),
             literal(None).cast(String).label("product_name"),
             literal(None).cast(Integer).label("amount"),
+            literal(None).cast(String).label("currency"),
             literal(None).cast(String).label("status"),
         ).where(
             Customer.organization_id.in_(organization_subquery),
@@ -244,6 +246,7 @@ class SearchService:
                 (
                     Order.subtotal_amount - Order.discount_amount + Order.tax_amount
                 ).label("amount"),
+                Order.currency.label("currency"),
                 literal(None).cast(String).label("status"),
             )
             .join(Customer, Order.customer_id == Customer.id)
@@ -293,6 +296,7 @@ class SearchService:
                 Customer.email.label("customer_email"),
                 Product.name.label("product_name"),
                 Subscription.amount.label("amount"),
+                Subscription.currency.label("currency"),
                 Subscription.status.label("status"),
             )
             .join(Customer, Subscription.customer_id == Customer.id)

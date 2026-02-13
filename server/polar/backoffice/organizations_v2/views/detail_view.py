@@ -42,6 +42,16 @@ class OrganizationDetailView:
                 active=current_section == "overview",
             ),
             Tab(
+                "Review",
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=self.org.id
+                    )
+                )
+                + "?section=review",
+                active=current_section == "review",
+            ),
+            Tab(
                 "Team",
                 str(
                     request.url_for(
@@ -199,39 +209,31 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.is_under_review:
-                        # Quick approve with doubled threshold
-                        # Use current threshold (in cents) or $250 default, then double it
-                        current_threshold = self.org.next_review_threshold or 25000
-                        next_threshold = current_threshold * 2
-                        next_threshold_display = f"${next_threshold / 100:,.0f}"
+                        # Quick approve with $250 default threshold
+                        approve_url = str(
+                            request.url_for(
+                                "organizations-v2:approve",
+                                organization_id=self.org.id,
+                            )
+                        )
 
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                hx_post=str(
-                                    request.url_for(
-                                        "organizations-v2:approve",
-                                        organization_id=self.org.id,
-                                    )
-                                )
-                                + f"?threshold={next_threshold}",
-                                hx_confirm=f"Approve this organization with {next_threshold_display} threshold?",
+                                hx_post=approve_url + "?threshold=25000",
+                                hx_confirm="Approve this organization with $250 threshold?",
                             ):
-                                text(f"Approve ({next_threshold_display})")
+                                text("Approve ($250)")
 
                         # Custom approve with input
-                        approve_url = str(
-                            request.url_for(
-                                "organizations-v2:approve", organization_id=self.org.id
-                            )
-                        )
                         with tag.div(classes="flex gap-2"):
                             with tag.input(
                                 type="number",
+                                name="threshold_dollars",
                                 id="custom-threshold",
-                                placeholder="Custom amount",
+                                placeholder="Custom $ amount",
                                 classes="input input-bordered input-sm flex-1",
                             ):
                                 pass
@@ -239,7 +241,9 @@ class OrganizationDetailView:
                                 variant="secondary",
                                 size="sm",
                                 outline=True,
-                                onclick=f"const amount = document.getElementById('custom-threshold').value; if(amount && confirm('Approve with $' + amount + ' threshold?')) {{ htmx.ajax('POST', '{approve_url}?threshold=' + (amount * 100), {{target: 'body'}}); }}",
+                                hx_post=approve_url,
+                                hx_include="#custom-threshold",
+                                hx_confirm="Approve with custom threshold?",
                             ):
                                 text("✓")
 

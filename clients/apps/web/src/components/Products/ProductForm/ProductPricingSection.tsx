@@ -1,9 +1,11 @@
 'use client'
 
 import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
+import MeterSelector from '@/components/Meter/MeterSelector'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -11,7 +13,7 @@ import {
   isStaticPrice,
 } from '@/utils/product'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -23,6 +25,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import {
   FormControl,
   FormDescription,
@@ -38,22 +41,65 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { PlusIcon } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  useFieldArray,
-  UseFieldArrayRemove,
-  useFormContext,
-} from 'react-hook-form'
+import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
 import UnitAmountInput from './UnitAmountInput'
 
+type ProductPrice = schemas['ProductPrice']
+type ProductPriceCreate = schemas['ProductCreate']['prices'][number]
+
+// Price can be either a create schema or an existing price reference
+type AnyPrice = NonNullable<ProductFormType['prices']>[number]
+type PriceEntry = { price: AnyPrice; index: number }
+
+// Type guard to check if price has currency (is a full price, not just an id reference)
+const hasPriceCurrency = (
+  price: AnyPrice,
+): price is AnyPrice & { price_currency: string } => {
+  return 'price_currency' in price && typeof price.price_currency === 'string'
+}
+
+// Helper to group prices by currency
+const groupPricesByCurrency = (
+  prices: ProductFormType['prices'],
+): Map<string, PriceEntry[]> => {
+  const grouped = new Map<string, PriceEntry[]>()
+  if (!prices) return grouped
+  for (let index = 0; index < prices.length; index++) {
+    const price = prices[index]
+    if (hasPriceCurrency(price)) {
+      const currency = price.price_currency || 'usd'
+      if (!grouped.has(currency)) {
+        grouped.set(currency, [])
+      }
+      grouped.get(currency)!.push({ price, index })
+    }
+  }
+  return grouped
+}
+
+// Get currencies that are currently in use
+const getActiveCurrencies = (prices: ProductFormType['prices']): string[] => {
+  const currencies = new Set<string>()
+  if (!prices) return []
+  for (const price of prices) {
+    if (hasPriceCurrency(price)) {
+      currencies.add(price.price_currency || 'usd')
+    }
+  }
+  return Array.from(currencies)
+}
+
 export interface ProductPriceFixedItemProps {
   index: number
+  currency: string
 }
 
 export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
   index,
+  currency,
 }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
@@ -74,6 +120,7 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
                   <div ref={field.ref} tabIndex={-1}>
                     <MoneyInput
                       name={field.name}
+                      currency={currency}
                       value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
@@ -95,10 +142,12 @@ export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
 
 export interface ProductPriceCustomItemProps {
   index: number
+  currency: string
 }
 
 export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
+  currency,
 }) => {
   const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
@@ -113,7 +162,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
       return true
     }
 
-    return 'Must be $0 (for free) or at least $0.50'
+    return 'Must be 0 (for free) or at least 0.50'
   }
 
   return (
@@ -133,6 +182,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                   <div ref={field.ref} tabIndex={-1}>
                     <MoneyInput
                       name={field.name}
+                      currency={currency}
                       value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
@@ -143,7 +193,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                   </div>
                 </FormControl>
                 <FormDescription className="text-muted-foreground text-xs">
-                  Set to $0 to allow free contributions
+                  Set to 0 to allow free contributions
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -176,7 +226,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
             },
             max: {
               value: 1_000_000,
-              message: 'Price cannot be greater than $10,000',
+              message: 'Price cannot be greater than 10,000',
             },
           }}
           render={({ field }) => {
@@ -187,6 +237,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
                   <div ref={field.ref} tabIndex={-1}>
                     <MoneyInput
                       name={field.name}
+                      currency={currency}
                       value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
@@ -208,11 +259,12 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 
 export interface ProductPriceSeatBasedItemProps {
   index: number
+  currency: string
 }
 
 export const ProductPriceSeatBasedItem: React.FC<
   ProductPriceSeatBasedItemProps
-> = ({ index }) => {
+> = ({ index, currency }) => {
   const { control, setValue, watch } = useFormContext<ProductFormType>()
   const { fields, append, remove } = useFieldArray({
     control,
@@ -266,7 +318,10 @@ export const ProductPriceSeatBasedItem: React.FC<
 
   const hasSingleTier = fields.length === 1
 
-  const getTierTitle = (tierIndex: number, tier: any) => {
+  const getTierTitle = (
+    tierIndex: number,
+    tier: { min_seats?: number; max_seats?: number | null } | undefined,
+  ) => {
     if (!tier) return `Tier ${tierIndex + 1}`
 
     const isLast = tierIndex === fields.length - 1
@@ -433,6 +488,7 @@ export const ProductPriceSeatBasedItem: React.FC<
                       <div ref={field.ref} tabIndex={-1}>
                         <MoneyInput
                           name={field.name}
+                          currency={currency}
                           value={field.value}
                           onChange={(v) => {
                             field.onChange(v)
@@ -477,14 +533,15 @@ export const ProductPriceSeatBasedItem: React.FC<
 export interface ProductPriceMeteredUnitItemProps {
   organization: schemas['Organization']
   index: number
+  currency: string
 }
 
 export const ProductPriceMeteredUnitItem: React.FC<
   ProductPriceMeteredUnitItemProps
-> = ({ organization, index }) => {
+> = ({ organization, index, currency }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
-  const { data: meters, refetch } = useMeters(organization.id, {
+  const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
     limit: 30,
     is_archived: false,
@@ -497,25 +554,9 @@ export const ProductPriceMeteredUnitItem: React.FC<
   } = useModal(false)
 
   const onSelectMeter = useCallback(
-    async (meter: schemas['Meter']) => {
-      // This is embarrassing but the <Select /> component has to re-render
-      // with the updated `meters` as options,
-      // before it'll accept this as a valid select value.
-      //
-      // This is an open issue with Radix UI since 2024
-      // (https://github.com/radix-ui/primitives/issues/2817)
-
-      // To work around this, we run an explicit `refetch` that we can await
-      // and then set the value in a double requestAnimationFrame callback.
-      // First rAF ensures this component is updated,
-      // second rAF ensures the <SelectContent /> was updated too.
-      await refetch()
-
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          setValue(`prices.${index}.meter_id`, meter.id)
-        })
-      })
+    (meter: schemas['Meter']) => {
+      setValue(`prices.${index}.meter_id`, meter.id)
+      setValue(`prices.${index}.id`, '')
     },
     [setValue, index],
   )
@@ -566,32 +607,14 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     </button>
                   </div>
                   <FormControl>
-                    <div>
-                      <Select
-                        {...field}
-                        onValueChange={(v) => {
-                          field.onChange(v)
-                          setValue(`prices.${index}.id`, '')
-                        }}
-                      >
-                        <SelectTrigger
-                          className={
-                            field.value
-                              ? ''
-                              : 'dark:text-polar-500 text-gray-400'
-                          }
-                        >
-                          <SelectValue placeholder="Select a meter" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {meters.items.map((meter) => (
-                            <SelectItem key={meter.id} value={meter.id}>
-                              {meter.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <MeterSelector
+                      organizationId={organization.id}
+                      value={field.value || null}
+                      onChange={(meterId) => {
+                        field.onChange(meterId ?? '')
+                        setValue(`prices.${index}.id`, '')
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -613,6 +636,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     <UnitAmountInput
                       {...field}
                       name={field.name}
+                      currency={currency}
                       value={field.value}
                       onValueChange={(v) => {
                         field.onChange(v)
@@ -636,6 +660,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                     <MoneyInput
                       {...field}
                       name={field.name}
+                      currency={currency}
                       value={field.value}
                       onChange={(v) => {
                         field.onChange(v)
@@ -673,73 +698,49 @@ export const ProductPriceMeteredUnitItem: React.FC<
 interface ProductPriceItemProps {
   organization: schemas['Organization']
   index: number
-  remove: UseFieldArrayRemove
+  currency: string
+  onRemove: (index: number) => void
+  onAmountTypeChange: (
+    index: number,
+    amountType: ProductPriceCreate['amount_type'],
+  ) => void
+  canRemove: boolean
 }
 
 const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   organization,
   index,
-  remove,
+  currency,
+  onRemove,
+  onAmountTypeChange,
+  canRemove,
 }) => {
-  const { register, control, setValue, watch } =
-    useFormContext<ProductFormType>()
+  const { register, control, watch } = useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
   const prices = watch('prices')
-  const staticPriceIndex = prices
-    ? (prices as schemas['ProductPrice'][]).findIndex(isStaticPrice)
-    : -1
-
-  const onAmountTypeChange = useCallback(
-    (amountType: schemas['ProductCreate']['prices'][number]['amount_type']) => {
-      const replace = (v: schemas['ProductCreate']['prices'][number]) => {
-        setValue(`prices.${index}`, v)
-      }
-      if (amountType === 'fixed') {
-        replace({
-          amount_type: 'fixed',
-          price_currency: 'usd',
-          price_amount: 0,
-        })
-      } else if (amountType === 'custom') {
-        replace({
-          amount_type: 'custom',
-          price_currency: 'usd',
-          minimum_amount: 0,
-        })
-      } else if (amountType === 'free') {
-        replace({
-          amount_type: 'free',
-        })
-      } else if (amountType === 'seat_based') {
-        replace({
-          amount_type: 'seat_based',
-          price_currency: 'usd',
-          seat_tiers: {
-            tiers: [
-              {
-                min_seats: 1,
-                max_seats: null,
-                price_per_seat: 0,
-              },
-            ],
-          },
-        })
-      } else if (amountType === 'metered_unit') {
-        replace({
-          amount_type: 'metered_unit',
-          price_currency: 'usd',
-          unit_amount: 0,
-          meter_id: '',
-        })
-      }
-    },
-    [index, setValue],
+  // Find static price index within the same currency
+  const pricesForCurrency = (prices || []).filter(
+    (p) => hasPriceCurrency(p) && p.price_currency === currency,
   )
+  const staticPriceForCurrency = pricesForCurrency.find((p) =>
+    isStaticPrice(p as ProductPrice),
+  )
+  const currentPrice = prices?.[index]
+  const isCurrentPriceStatic =
+    currentPrice && isStaticPrice(currentPrice as ProductPrice)
+  const hasOtherStaticPrice = staticPriceForCurrency && !isCurrentPriceStatic
 
   return (
-    <div className="dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-100 rounded-2xl border border-gray-100">
+    <div
+      className={twMerge(
+        'flex flex-col divide-y rounded-2xl border',
+        amountType
+          ? 'dark:border-polar-700 dark:divide-polar-700 divide-gray-200 border-gray-200'
+          : 'dark:border-polar-700 dark:divide-polar-700 divide-gray-100 border-gray-100',
+      )}
+    >
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <FormField
         control={control}
@@ -757,12 +758,12 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       value={field.value}
                       onValueChange={(v) => {
                         field.onChange(v)
-                        onAmountTypeChange(v as NonNullable<typeof amountType>)
-                        setValue(`prices.${index}.id`, '')
+                        onAmountTypeChange(
+                          index,
+                          v as ProductPriceCreate['amount_type'],
+                        )
                       }}
-                      disabled={
-                        staticPriceIndex > -1 && staticPriceIndex !== index
-                      }
+                      disabled={hasOtherStaticPrice}
                     >
                       <SelectTrigger
                         ref={field.ref}
@@ -793,13 +794,13 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       </SelectContent>
                     </Select>
                   </FormControl>
-                  {index > 0 && (
+                  {canRemove && (
                     <Button
                       size="icon"
                       className="aspect-square h-10 w-10"
                       variant="secondary"
                       onClick={() => {
-                        remove(index)
+                        onRemove(index)
                       }}
                     >
                       <CloseOutlined className="h-4 w-4" />
@@ -814,18 +815,100 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       />
       {amountType && amountType !== 'free' && (
         <div className="flex flex-col gap-3 p-3">
-          {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
-          {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
+          {amountType === 'fixed' && (
+            <ProductPriceFixedItem index={index} currency={currency} />
+          )}
+          {amountType === 'custom' && (
+            <ProductPriceCustomItem index={index} currency={currency} />
+          )}
           {amountType === 'seat_based' && (
-            <ProductPriceSeatBasedItem index={index} />
+            <ProductPriceSeatBasedItem index={index} currency={currency} />
           )}
           {amountType === 'metered_unit' && (
             <ProductPriceMeteredUnitItem
               organization={organization}
               index={index}
+              currency={currency}
             />
           )}
         </div>
+      )}
+    </div>
+  )
+}
+
+interface CurrencyTabsProps {
+  activeCurrencies: string[]
+  selectedCurrency: string
+  onSelectCurrency: (currency: string) => void
+  onAddCurrency: (currency: string) => void
+  onRemoveCurrency: (currency: string) => void
+  defaultCurrency: string
+}
+
+const CurrencyTabs: React.FC<CurrencyTabsProps> = ({
+  activeCurrencies,
+  selectedCurrency,
+  onSelectCurrency,
+  onAddCurrency,
+  onRemoveCurrency,
+  defaultCurrency,
+}) => {
+  const availableCurrencies = enums.presentmentCurrencyValues.filter(
+    (c: string) => !activeCurrencies.includes(c),
+  )
+
+  return (
+    <div className="flex flex-row items-center gap-2">
+      <Tabs value={selectedCurrency} onValueChange={onSelectCurrency}>
+        <TabsList>
+          {activeCurrencies.map((currency) => (
+            <TabsTrigger
+              key={currency}
+              value={currency}
+              className="flex h-8 items-center gap-1"
+            >
+              <span>{currency.toUpperCase()}</span>
+              {currency !== defaultCurrency &&
+                selectedCurrency === currency && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRemoveCurrency(currency)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onRemoveCurrency(currency)
+                      }
+                    }}
+                    className="dark:text-polar-400 dark:hover:text-polar-200 cursor-pointer text-gray-400 hover:text-gray-600"
+                  >
+                    <CloseOutlined className="h-3.5 w-3.5" />
+                  </span>
+                )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {availableCurrencies.length > 0 && (
+        <Select onValueChange={onAddCurrency}>
+          <SelectTrigger className="h-8 w-auto gap-1 border-none bg-transparent px-2 shadow-none">
+            <PlusIcon className="h-3.5 w-3.5" />
+            <span className="text-sm">Add Currency</span>
+          </SelectTrigger>
+          <SelectContent>
+            {availableCurrencies.map((currency: string) => (
+              <SelectItem key={currency} value={currency}>
+                {currency.toUpperCase()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
     </div>
   )
@@ -844,22 +927,40 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
-  const {
-    control,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useFormContext<ProductFormType>()
+  console.log(organization.feature_settings)
+  const { control, setValue, watch, getValues } =
+    useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
     name: 'prices',
   })
 
-  const { fields: prices, append, remove } = pricesFieldArray
+  const { fields: prices, append, remove, replace } = pricesFieldArray
+
+  const defaultCurrency = organization.default_presentment_currency
+
+  // Track selected currency tab
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<string>(defaultCurrency)
+
+  // Get active currencies from current prices
+  const activeCurrencies = useMemo(() => {
+    const currencies = getActiveCurrencies(prices as ProductFormType['prices'])
+    // Ensure default currency is always first
+    if (!currencies.includes(defaultCurrency)) {
+      return [defaultCurrency, ...currencies]
+    }
+    return [defaultCurrency, ...currencies.filter((c) => c !== defaultCurrency)]
+  }, [prices, defaultCurrency])
+
+  // Ensure selected currency is valid - use a ref to avoid effect
+  const validatedSelectedCurrency = activeCurrencies.includes(selectedCurrency)
+    ? selectedCurrency
+    : defaultCurrency
 
   const isLegacyRecurringProduct = useMemo(
-    () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
+    () => (prices as ProductPrice[]).some(isLegacyRecurringPrice),
     [prices],
   )
 
@@ -875,12 +976,15 @@ export const ProductPricingSection = ({
     }
 
     setValue('recurring_interval_count', null)
-    prices.forEach((price, index) => {
-      if (isMeteredPrice(price as schemas['ProductPrice'])) {
-        remove(index)
-      }
-    })
-  }, [recurringInterval, recurringIntervalCount, prices, remove, setValue])
+    const currentPrices = getValues('prices')
+    if (!currentPrices) return
+    const filteredPrices = currentPrices.filter(
+      (price) => !isMeteredPrice(price as ProductPrice),
+    )
+    if (filteredPrices.length !== currentPrices.length) {
+      replace(filteredPrices)
+    }
+  }, [recurringInterval, recurringIntervalCount, setValue, getValues, replace])
 
   const [productType, setProductType] = useState<'one_time' | 'recurring'>(
     recurringInterval === null ? 'one_time' : 'recurring',
@@ -899,6 +1003,221 @@ export const ProductPricingSection = ({
       }
     }
   }, [productType, recurringInterval, recurringIntervalCount, setValue])
+
+  // Group prices by currency for display
+  const pricesByCurrency = useMemo(
+    () => groupPricesByCurrency(prices as ProductFormType['prices']),
+    [prices],
+  )
+
+  // Get prices for the selected currency
+  const pricesForSelectedCurrency = useMemo(
+    () => pricesByCurrency.get(validatedSelectedCurrency) || [],
+    [pricesByCurrency, validatedSelectedCurrency],
+  )
+
+  // Handle amount type change - sync across all currencies
+  const handleAmountTypeChange = useCallback(
+    (
+      changedIndex: number,
+      newAmountType: ProductPriceCreate['amount_type'],
+    ) => {
+      const currentPrices = getValues('prices')
+      if (!currentPrices) return
+      const changedPrice = currentPrices[changedIndex]
+      if (!hasPriceCurrency(changedPrice)) return
+      const changedCurrency = changedPrice.price_currency
+
+      // Find corresponding prices in other currencies (same position within their currency group)
+      const pricesByCurr = groupPricesByCurrency(currentPrices)
+      const changedCurrencyPrices = pricesByCurr.get(changedCurrency) || []
+      const positionInCurrency = changedCurrencyPrices.findIndex(
+        (p) => p.index === changedIndex,
+      )
+
+      // Create new price template based on amount type
+      const createPriceForCurrency = (currency: string): ProductPriceCreate => {
+        const base = {
+          price_currency: currency as schemas['PresentmentCurrency'],
+        }
+        if (newAmountType === 'fixed') {
+          return { ...base, amount_type: 'fixed', price_amount: 0 }
+        } else if (newAmountType === 'custom') {
+          return { ...base, amount_type: 'custom', minimum_amount: 0 }
+        } else if (newAmountType === 'free') {
+          return { ...base, amount_type: 'free' }
+        } else if (newAmountType === 'seat_based') {
+          return {
+            ...base,
+            amount_type: 'seat_based',
+            seat_tiers: {
+              tiers: [{ min_seats: 1, max_seats: null, price_per_seat: 0 }],
+            },
+          }
+        } else if (newAmountType === 'metered_unit') {
+          return {
+            ...base,
+            amount_type: 'metered_unit',
+            unit_amount: 0,
+            meter_id: '',
+          }
+        }
+        return { ...base, amount_type: 'free' }
+      }
+
+      // Update the changed price
+      setValue(
+        `prices.${changedIndex}`,
+        createPriceForCurrency(changedCurrency),
+      )
+      setValue(`prices.${changedIndex}.id`, '')
+
+      // Update corresponding prices in other currencies
+      pricesByCurr.forEach((currencyPrices, currency) => {
+        if (currency === changedCurrency) return
+        if (positionInCurrency < currencyPrices.length) {
+          const correspondingPrice = currencyPrices[positionInCurrency]
+          setValue(
+            `prices.${correspondingPrice.index}`,
+            createPriceForCurrency(currency),
+          )
+          setValue(`prices.${correspondingPrice.index}.id`, '')
+        }
+      })
+    },
+    [getValues, setValue],
+  )
+
+  // Add a new currency - clone prices from default currency
+  const handleAddCurrency = useCallback(
+    (newCurrency: string) => {
+      const currentPrices = getValues('prices')
+      if (!currentPrices) return
+      const defaultCurrencyPrices = currentPrices.filter(
+        (p) => hasPriceCurrency(p) && p.price_currency === defaultCurrency,
+      )
+
+      // Clone each price from default currency to new currency
+      defaultCurrencyPrices.forEach((price) => {
+        if (!('amount_type' in price)) return
+
+        let newPrice: ProductPriceCreate
+        const baseCurrency = {
+          price_currency: newCurrency as schemas['PresentmentCurrency'],
+        }
+
+        if (price.amount_type === 'fixed') {
+          newPrice = { ...baseCurrency, amount_type: 'fixed', price_amount: 0 }
+        } else if (price.amount_type === 'custom') {
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'custom',
+            minimum_amount: 0,
+          }
+        } else if (price.amount_type === 'free') {
+          newPrice = { ...baseCurrency, amount_type: 'free' }
+        } else if (price.amount_type === 'seat_based') {
+          const sourceTiers =
+            'seat_tiers' in price && price.seat_tiers?.tiers
+              ? price.seat_tiers.tiers
+              : []
+          const seatTiers = sourceTiers.map((t) => ({
+            min_seats: t.min_seats,
+            max_seats: t.max_seats ?? null,
+            price_per_seat: 0,
+          }))
+          if (seatTiers.length === 0) {
+            seatTiers.push({ min_seats: 1, max_seats: null, price_per_seat: 0 })
+          }
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'seat_based',
+            seat_tiers: { tiers: seatTiers },
+          }
+        } else if (price.amount_type === 'metered_unit') {
+          const meterId = 'meter_id' in price ? price.meter_id : ''
+          newPrice = {
+            ...baseCurrency,
+            amount_type: 'metered_unit',
+            unit_amount: 0,
+            meter_id: meterId,
+          }
+        } else {
+          newPrice = { ...baseCurrency, amount_type: 'free' }
+        }
+
+        append(newPrice)
+      })
+
+      setSelectedCurrency(newCurrency)
+    },
+    [getValues, defaultCurrency, append],
+  )
+
+  // Remove a currency - remove all prices for that currency
+  const handleRemoveCurrency = useCallback(
+    (currencyToRemove: string) => {
+      if (currencyToRemove === defaultCurrency) return // Can't remove default
+
+      const currentPrices = getValues('prices')
+      if (!currentPrices) return
+      const indicesToRemove = currentPrices
+        .map((p, i) =>
+          hasPriceCurrency(p) && p.price_currency === currencyToRemove ? i : -1,
+        )
+        .filter((i) => i !== -1)
+        .reverse() // Remove from end to start to maintain indices
+
+      indicesToRemove.forEach((i) => remove(i))
+      setSelectedCurrency(defaultCurrency)
+    },
+    [getValues, defaultCurrency, remove],
+  )
+
+  // Add metered price for all currencies
+  const handleAddMeteredPrice = useCallback(() => {
+    activeCurrencies.forEach((currency) => {
+      append({
+        amount_type: 'metered_unit',
+        price_currency: currency as schemas['PresentmentCurrency'],
+        meter_id: '',
+        unit_amount: 0,
+      })
+    })
+  }, [activeCurrencies, append])
+
+  // Handle removing a price - sync across currencies for metered prices
+  const handleRemovePrice = useCallback(
+    (indexToRemove: number) => {
+      const currentPrices = getValues('prices')
+      if (!currentPrices) return
+      const priceToRemove = currentPrices[indexToRemove]
+
+      // For metered prices, remove corresponding prices in other currencies
+      if (isMeteredPrice(priceToRemove as ProductPrice)) {
+        const meterId =
+          'meter_id' in priceToRemove ? priceToRemove.meter_id : undefined
+
+        // Find all metered prices with the same meter_id across currencies
+        const indicesToRemove = currentPrices
+          .map((p, i) =>
+            'amount_type' in p &&
+            p.amount_type === 'metered_unit' &&
+            'meter_id' in p &&
+            p.meter_id === meterId
+              ? i
+              : -1,
+          )
+          .filter((i) => i !== -1)
+          .reverse()
+
+        indicesToRemove.forEach((i) => remove(i))
+      } else {
+        remove(indexToRemove)
+      }
+    },
+    [getValues, remove],
+  )
 
   if (isLegacyRecurringProduct) {
     return (
@@ -1062,12 +1381,33 @@ export const ProductPricingSection = ({
           </RadioGroup>
         </div>
 
-        {prices.map((price, index) => (
+        {/* Currency Tabs */}
+        {organization.feature_settings?.presentment_currencies_enabled && (
+          <CurrencyTabs
+            activeCurrencies={activeCurrencies}
+            selectedCurrency={validatedSelectedCurrency}
+            onSelectCurrency={setSelectedCurrency}
+            onAddCurrency={handleAddCurrency}
+            onRemoveCurrency={handleRemoveCurrency}
+            defaultCurrency={defaultCurrency}
+          />
+        )}
+
+        {/* Prices for selected currency */}
+        {pricesForSelectedCurrency.map(({ price, index }) => (
           <ProductPriceItem
             organization={organization}
             index={index}
-            remove={remove}
-            key={price.id}
+            currency={validatedSelectedCurrency}
+            onRemove={handleRemovePrice}
+            onAmountTypeChange={handleAmountTypeChange}
+            canRemove={
+              isMeteredPrice(price as ProductPrice) &&
+              pricesForSelectedCurrency.filter((p) =>
+                isMeteredPrice(p.price as ProductPrice),
+              ).length > 1
+            }
+            key={`${selectedCurrency}-${index}`}
           />
         ))}
 
@@ -1086,19 +1426,14 @@ export const ProductPricingSection = ({
           <Button
             className="self-start"
             variant="secondary"
-            onClick={() =>
-              append({
-                amount_type: 'metered_unit',
-                price_currency: 'usd',
-                meter_id: '',
-                unit_amount: 0,
-              })
-            }
+            onClick={handleAddMeteredPrice}
           >
             Add Additional Price
           </Button>
         )}
       </div>
+
+      {recurringInterval && <TrialConfigurationForm />}
     </Section>
   )
 }

@@ -4,6 +4,7 @@ import BoltOutlined from '@mui/icons-material/BoltOutlined'
 import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import {
@@ -11,7 +12,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -185,7 +185,7 @@ const MaintainerNewPaidSubscription = ({
             )}{' '}
             {payload.tier_price_amount !== null && (
               <>
-                (${getCentsInDollarString(payload.tier_price_amount)}/
+                ({formatCurrency('compact')(payload.tier_price_amount, 'usd')}/
                 {payload.tier_price_recurring_interval})
               </>
             )}
@@ -222,7 +222,7 @@ const MaintainerNewProductSale = ({
             ) : (
               <span className="font-bold">{payload.product_name}</span>
             )}{' '}
-            (${getCentsInDollarString(payload.product_price_amount)})
+            ({formatCurrency('compact')(payload.product_price_amount, 'usd')})
           </>
         ),
         icon: <ShoppingBagOutlined fontSize="small" />,
@@ -268,7 +268,7 @@ const MaintainerAccountCreditsGranted = ({
           <>
             {payload.organization_name} has received{' '}
             <span className="font-bold">
-              ${getCentsInDollarString(payload.amount)}
+              {formatCurrency('compact')(payload.amount, 'usd')}
             </span>{' '}
             in fee credits!
           </>

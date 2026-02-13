@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import Any
 
 import structlog
@@ -51,6 +51,7 @@ async def subscribe(
     redis: Redis,
     channels: list[str],
     request: Request,
+    on_iteration: Callable[[], Awaitable[None]] | None = None,
 ) -> AsyncGenerator[Any, Any]:
     async with redis.pubsub() as pubsub:
         await pubsub.subscribe(*channels)
@@ -59,6 +60,9 @@ async def subscribe(
             if await request.is_disconnected():
                 await pubsub.close()
                 break
+
+            if on_iteration is not None:
+                await on_iteration()
 
             try:
                 message = await pubsub.get_message(

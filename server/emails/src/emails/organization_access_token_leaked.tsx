@@ -1,8 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
 import InfoBox from '../components/InfoBox'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationAccessTokenLeaked({
@@ -12,12 +11,11 @@ export function OrganizationAccessTokenLeaked({
   organization_access_token,
 }: schemas['OrganizationAccessTokenLeakedProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         Important security notice: Your organization access token has been
         leaked
       </Preview>
-      <PolarHeader />
       <Section>
         <Text className="text-xl font-bold text-gray-900">
           Important security notice
@@ -42,7 +40,7 @@ export function OrganizationAccessTokenLeaked({
           <li>URL: {url}</li>
           <li>Organization Access Token: {organization_access_token}</li>
         </ul>
-        <Text className="mb-0 mt-4 text-sm text-gray-600">
+        <Text className="mt-4 mb-0 text-sm text-gray-600">
           As a reminder, organization access tokens are super sensitive values
           that shouldn't be shared publicly on the web or in a code repository.
           Use dedicated features to safely store secrets, like{' '}
@@ -55,8 +53,8 @@ export function OrganizationAccessTokenLeaked({
           .
         </Text>
       </InfoBox>
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-2">
+        <Text className="m-0 text-sm text-gray-600">
           You can read more about why you received this alert in our{' '}
           <Link
             href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar#security"
@@ -68,7 +66,7 @@ export function OrganizationAccessTokenLeaked({
         </Text>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

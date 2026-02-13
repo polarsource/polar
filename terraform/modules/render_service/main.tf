@@ -53,7 +53,7 @@ resource "render_env_group" "backend" {
       POLAR_LOGO_DEV_PUBLISHABLE_KEY   = { value = var.backend_secrets.logo_dev_publishable_key }
       POLAR_SECRET                     = { value = var.backend_secrets.secret }
       POLAR_SENTRY_DSN                 = { value = var.backend_secrets.sentry_dsn }
-      POLAR_DEFAULT_TAX_PROCESSOR      = { value = var.backend_config.default_tax_processor }
+      POLAR_TAX_PROCESSORS             = { value = var.backend_config.tax_processors }
       POLAR_NUMERAL_API_KEY            = { value = var.backend_secrets.numeral_api_key }
     },
     var.backend_config.user_session_cookie_key != "" ? {
@@ -184,6 +184,7 @@ resource "render_env_group" "tinybird" {
     POLAR_TINYBIRD_API_URL             = { value = var.tinybird_config.api_url }
     POLAR_TINYBIRD_CLICKHOUSE_URL      = { value = var.tinybird_config.clickhouse_url }
     POLAR_TINYBIRD_API_TOKEN           = { value = var.tinybird_config.api_token }
+    POLAR_TINYBIRD_READ_TOKEN          = { value = var.tinybird_config.read_token }
     POLAR_TINYBIRD_CLICKHOUSE_USERNAME = { value = var.tinybird_config.clickhouse_username }
     POLAR_TINYBIRD_CLICKHOUSE_TOKEN    = { value = var.tinybird_config.clickhouse_token }
     POLAR_TINYBIRD_WORKSPACE           = { value = var.tinybird_config.workspace }
@@ -272,11 +273,11 @@ resource "render_web_service" "worker" {
 
   runtime_source = {
     image = each.value.digest != null ? {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       digest                 = each.value.digest
       } : {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       tag                    = each.value.tag
     }

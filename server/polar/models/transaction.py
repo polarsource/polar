@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Uuid
+from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import TaxProcessor
@@ -222,6 +222,8 @@ class Transaction(RecordModel):
     """Amount of tax in the presentment currency collected by Polar for this payment."""
     presentment_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     """Currency in which the customer made the payment."""
+    exchange_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    """Exchange rate from presentment currency to settlement currency."""
     tax_processor: Mapped[TaxProcessor | None] = mapped_column(
         StringEnum(TaxProcessor), default=None, nullable=True
     )

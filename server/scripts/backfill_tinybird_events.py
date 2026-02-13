@@ -31,7 +31,7 @@ async def _ingest_batch(
     tinybird_events = [_event_to_tinybird(e) for e in events]
 
     try:
-        await client.ingest("events_by_ingested_at", tinybird_events, wait=True)
+        await client.ingest("events_by_ingested_at", tinybird_events, wait=False)
     except TinybirdPayloadTooLargeError:
         if len(events) <= 1:
             raise
@@ -76,6 +76,7 @@ async def backfill(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=settings.TINYBIRD_API_TOKEN,
+        read_token=settings.TINYBIRD_READ_TOKEN,
         clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
         clickhouse_token=settings.TINYBIRD_CLICKHOUSE_TOKEN,
     )

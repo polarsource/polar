@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class WebhookEventType(StrEnum):
     checkout_created = "checkout.created"
     checkout_updated = "checkout.updated"
+    checkout_expired = "checkout.expired"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
     customer_deleted = "customer.deleted"
@@ -22,6 +23,9 @@ class WebhookEventType(StrEnum):
     customer_seat_assigned = "customer_seat.assigned"
     customer_seat_claimed = "customer_seat.claimed"
     customer_seat_revoked = "customer_seat.revoked"
+    member_created = "member.created"
+    member_updated = "member.updated"
+    member_deleted = "member.deleted"
     order_created = "order.created"
     order_updated = "order.updated"
     order_paid = "order.paid"

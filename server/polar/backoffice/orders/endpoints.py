@@ -10,6 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, classes, tag, text
 
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
@@ -17,6 +18,7 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
+from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import refund as refund_service
@@ -26,7 +28,7 @@ from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
-from .components import orders_datatable
+from .components import orders_datatable, payments_datatable
 from .forms import RefundForm
 
 router = APIRouter()
@@ -248,6 +250,10 @@ async def get(
             # If there's an error getting the URL, we'll show "Not generated"
             pass
 
+    # Get all payments for this order
+    payment_repository = PaymentRepository.from_session(session)
+    payments = await payment_repository.get_all_by_order(order.id)
+
     with layout(
         request,
         [
@@ -326,8 +332,9 @@ async def get(
                             description_list.DescriptionListLinkItem[Order](
                                 "stripe_invoice_id",
                                 "Stripe Invoice",
-                                href_getter=lambda _,
-                                i: f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}",
+                                href_getter=lambda _, i: (
+                                    f"https://dashboard.stripe.com/invoices/{i.stripe_invoice_id}"
+                                ),
                                 external=True,
                             ),
                             InvoicePDFItem(invoice_url),
@@ -603,6 +610,15 @@ async def get(
                                                         }"
                                                     )
 
+                # Payments section
+                if payments:
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Payments")
+                            with payments_datatable(request, payments):
+                                pass
+
 
 @router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])
 async def refund(
@@ -659,15 +675,7 @@ async def refund(
 
     # Calculate max refundable amount
     max_refundable = (order.net_amount or 0) - (order.refunded_amount or 0)
-
-    # Format amount for display
-    from babel.numbers import format_currency
-
-    max_refundable_display = format_currency(
-        max_refundable / 100,
-        order.currency.upper() if order.currency else "USD",
-        locale="en_US",
-    )
+    max_refundable_display = format_currency(max_refundable, order.currency)
 
     with modal("Refund order", open=True):
         with tag.div(classes="flex flex-col gap-4"):

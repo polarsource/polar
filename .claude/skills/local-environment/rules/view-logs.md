@@ -10,32 +10,32 @@ tags: logs, debugging, troubleshooting
 
 **View all logs (last output):**
 ```bash
-./dev/docker-dev logs
+dev docker logs
 ```
 
 **Follow logs in real-time:**
 ```bash
-./dev/docker-dev logs -f
+dev docker logs -f
 ```
 
 **Specific service logs:**
 ```bash
-./dev/docker-dev logs api
-./dev/docker-dev logs worker
-./dev/docker-dev logs web
-./dev/docker-dev logs db
-./dev/docker-dev logs redis
-./dev/docker-dev logs minio
+dev docker logs api
+dev docker logs worker
+dev docker logs web
+dev docker logs db
+dev docker logs redis
+dev docker logs minio
 ```
 
 **Follow specific service:**
 ```bash
-./dev/docker-dev logs -f api
+dev docker logs -f api
 ```
 
 **Instance-specific logs:**
 ```bash
-./dev/docker-dev -i 1 logs api
+dev docker logs -i 1 api
 ```
 
 ## Log Interpretation
@@ -82,20 +82,20 @@ Error: Cannot find module 'xxx'
 
 1. **Follow API logs during development:**
    ```bash
-   ./dev/docker-dev logs -f api
+   dev docker logs -f api
    ```
 
 2. **Check worker for background job issues:**
    ```bash
-   ./dev/docker-dev logs -f worker
+   dev docker logs -f worker
    ```
 
 3. **Database issues - check db:**
    ```bash
-   ./dev/docker-dev logs db
+   dev docker logs db
    ```
 
 4. **Startup issues - check all:**
    ```bash
-   ./dev/docker-dev logs
+   dev docker logs
    ```

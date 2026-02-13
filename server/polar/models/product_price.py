@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
-from babel.numbers import format_currency, format_decimal
+from babel.numbers import format_decimal
 from sqlalchemy import (
     Boolean,
     ColumnElement,
@@ -28,6 +28,7 @@ from sqlalchemy.orm import (
 )
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.currency import format_currency
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.math import polar_round
@@ -71,12 +72,6 @@ class SeatTiersData(TypedDict):
     tiers: list[SeatTier]
 
 
-class HasPriceCurrency:
-    price_currency: Mapped[str] = mapped_column(
-        String(3), nullable=True, use_existing_column=True
-    )
-
-
 LEGACY_IDENTITY_PREFIX = "legacy_"
 
 
@@ -100,6 +95,9 @@ class ProductPrice(RecordModel):
     )
     amount_type: Mapped[ProductPriceAmountType] = mapped_column(
         String, nullable=False, index=True
+    )
+    price_currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, use_existing_column=True
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -219,7 +217,7 @@ class NewProductPrice:
     }
 
 
-class _ProductPriceFixed(HasPriceCurrency, ProductPrice):
+class _ProductPriceFixed(ProductPrice):
     price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -245,7 +243,7 @@ class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPric
     }
 
 
-class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
+class _ProductPriceCustom(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -304,7 +302,7 @@ class LegacyRecurringProductPriceFree(LegacyRecurringProductPrice, _ProductPrice
     }
 
 
-class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
+class ProductPriceMeteredUnit(ProductPrice, NewProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.metered_unit
     )
@@ -330,7 +328,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
         label = f"({format_decimal(units, locale='en_US')} consumed units"
 
-        label += f") × {format_currency(self.unit_amount / 100, self.price_currency.upper(), locale='en_US')}"
+        label += f") × {format_currency(self.unit_amount, self.price_currency)}"
 
         billable_units = Decimal(max(0, units))
         raw_amount = self.unit_amount * billable_units
@@ -338,7 +336,9 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
         if self.cap_amount is not None and amount > self.cap_amount:
             amount = self.cap_amount
-            label += f"— Capped at {format_currency(self.cap_amount / 100, self.price_currency.upper(), locale='en_US')}"
+            label += (
+                f"— Capped at {format_currency(self.cap_amount, self.price_currency)}"
+            )
 
         return amount, label
 
@@ -348,7 +348,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
     }
 
 
-class ProductPriceSeatUnit(NewProductPrice, HasPriceCurrency, ProductPrice):
+class ProductPriceSeatUnit(NewProductPrice, ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.seat_based]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.seat_based
     )

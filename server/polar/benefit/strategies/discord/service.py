@@ -10,7 +10,8 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Organization, User
+from polar.member.repository import MemberRepository
+from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from ..base.service import (
@@ -35,6 +36,7 @@ class BenefitDiscordService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
@@ -68,19 +70,30 @@ class BenefitDiscordService(
                 "The customer needs to connect their Discord account"
             )
 
-        oauth_account = await self._get_customer_oauth_account(customer, account_id)
+        oauth_account = await self._get_oauth_account(
+            customer, account_id, member=member
+        )
 
         try:
             await discord_bot_service.add_member(
                 guild_id, role_id, oauth_account.account_id, oauth_account.access_token
             )
+        except httpx.HTTPStatusError as e:
+            bound_logger.warning(
+                "HTTP error while adding member",
+                error=str(e),
+                status_code=e.response.status_code,
+                body=e.response.text,
+            )
+            if e.response.status_code == 429:
+                raise BenefitRetriableError() from e
+            if e.response.is_client_error:
+                raise BenefitActionRequiredError(
+                    f"Discord error: {e.response.text}"
+                ) from e
+            raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            error_bound_logger = bound_logger.bind(error=str(e))
-            if isinstance(e, httpx.HTTPStatusError):
-                error_bound_logger = error_bound_logger.bind(
-                    status_code=e.response.status_code, body=e.response.text
-                )
-            error_bound_logger.warning("HTTP error while adding member")
+            bound_logger.warning("HTTP error while adding member", error=str(e))
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit granted")
@@ -100,6 +113,7 @@ class BenefitDiscordService(
         grant_properties: BenefitGrantDiscordProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDiscordProperties:
         return grant_properties
 
@@ -110,6 +124,7 @@ class BenefitDiscordService(
         grant_properties: BenefitGrantDiscordProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
@@ -132,13 +147,22 @@ class BenefitDiscordService(
                 await discord_bot_service.remove_member_role(
                     guild_id, role_id, account_id
                 )
+        except httpx.HTTPStatusError as e:
+            bound_logger.warning(
+                "HTTP error while removing member",
+                error=str(e),
+                status_code=e.response.status_code,
+                body=e.response.text,
+            )
+            if e.response.status_code == 429:
+                raise BenefitRetriableError() from e
+            if e.response.is_client_error:
+                raise BenefitActionRequiredError(
+                    f"Discord error: {e.response.text}"
+                ) from e
+            raise BenefitRetriableError() from e
         except httpx.HTTPError as e:
-            error_bound_logger = bound_logger.bind(error=str(e))
-            if isinstance(e, httpx.HTTPStatusError):
-                error_bound_logger = error_bound_logger.bind(
-                    status_code=e.response.status_code, body=e.response.text
-                )
-            error_bound_logger.warning("HTTP error while removing member")
+            bound_logger.warning("HTTP error while removing member", error=str(e))
             raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit revoked")
@@ -192,12 +216,28 @@ class BenefitDiscordService(
 
         return cast(BenefitDiscordProperties, properties)
 
-    async def _get_customer_oauth_account(
-        self, customer: Customer, account_id: str
+    async def _get_oauth_account(
+        self,
+        customer: Customer,
+        account_id: str,
+        member: Member | None = None,
     ) -> CustomerOAuthAccount:
-        oauth_account = customer.get_oauth_account(
-            account_id, CustomerOAuthPlatform.discord
-        )
+        # When member is provided, check member's OAuth accounts first
+        oauth_account = None
+        is_member_account = False
+        if member is not None:
+            oauth_account = member.get_oauth_account(
+                account_id, CustomerOAuthPlatform.discord
+            )
+            if oauth_account is not None:
+                is_member_account = True
+
+        # Fall back to customer OAuth account
+        if oauth_account is None:
+            oauth_account = customer.get_oauth_account(
+                account_id, CustomerOAuthPlatform.discord
+            )
+
         if oauth_account is None:
             raise BenefitActionRequiredError(
                 "The customer needs to connect their Discord account"
@@ -213,6 +253,7 @@ class BenefitDiscordService(
                 "Refresh Discord access token",
                 oauth_account_id=oauth_account.account_id,
                 customer_id=str(customer.id),
+                member_id=str(member.id) if member else None,
             )
             client = DiscordOAuth2(
                 settings.DISCORD_CLIENT_ID,
@@ -236,9 +277,14 @@ class BenefitDiscordService(
             oauth_account.access_token = refreshed_token_data["access_token"]
             oauth_account.expires_at = refreshed_token_data["expires_at"]
             oauth_account.refresh_token = refreshed_token_data["refresh_token"]
-            customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
 
-            customer_repository = CustomerRepository.from_session(self.session)
-            await customer_repository.update(customer)
+            if is_member_account and member is not None:
+                member.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                member_repository = MemberRepository.from_session(self.session)
+                await member_repository.update(member)
+            else:
+                customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                customer_repository = CustomerRepository.from_session(self.session)
+                await customer_repository.update(customer)
 
         return oauth_account

@@ -1,0 +1,37 @@
+---
+title: How Polar became the turning point for Repo Prompt
+slug: repo-prompt
+description: I went from dreading payments to having everything live in a weekend.
+---
+
+import { StillaAI } from '@/components/Landing/Logos'
+
+<InnerHeaderWrapper className="flex flex-col items-center gap-y-12">
+  <span className="dark:text-polar-500 text-lg text-gray-500">
+    Customer Story
+  </span>
+  <h1 className="my-0!">How Polar became the turning point for Repo Prompt</h1>
+  <p className="dark:text-polar-500 my-0! leading-0! text-gray-500">
+    Repo Prompt — January 29th, 2026
+  </p>
+</InnerHeaderWrapper>
+
+<InnerWrapper>
+
+When I started Repo Prompt, which is a native macOS app, I was initially set on just shipping through the App Store. Payment processing was something I had no idea how to handle, and combining auth with billing felt pretty daunting.
+
+That said, distributing through the App Store meant going through review for every release, being limited in my release cadence, paying hefty fees to Apple, and being restricted in what features I could ship. I was basically living at the mercy of their ever-changing terms of service.
+
+The straw that broke the camel&apos;s back came when TestFlight stopped working because the number of users I had signed up caused a backend glitch, preventing many from accessing the app.
+
+As I started ramping up toward monetization, I began looking for a solution that would make integrating payments as painless as possible.
+
+The first I looked at was Paddle. They had great support and helped me with fast-tracked verification, but I quickly realized their license key solution was only available through Paddle Classic, which had long been deprecated. I would have needed a middleware like Keygen to get native licensing working, and they no longer had any native Swift SDKs.
+
+Polar was transformational for me. Not only did they let me enable billing on my own schedule (doing verification after launch), but their license key system was something no other provider offered. Their fees are the lowest in the industry, I did not need to set up a backend just to handle billing, and I did not have to think about taxes.
+
+The ability to spin up a checkout link, drop it into my static website and app, and automatically generate license keys with a built-in customer portal made integration so simple I had it all working in a weekend.
+
+The best part, though, is the team. I have spent time working with both you and Rishi, and you have both been incredibly responsive to customer issues and quick to ship fixes, from small UI bugs to customer-facing UX improvements.
+
+</InnerWrapper>

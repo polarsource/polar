@@ -18,6 +18,7 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import Aggregation, CountAggregation
@@ -76,7 +77,11 @@ from polar.models.benefit_grant import (
     BenefitGrantScope,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.checkout import CheckoutStatus, get_expires_at
+from polar.models.checkout import (
+    CheckoutAnalyticsMetadata,
+    CheckoutStatus,
+    get_expires_at,
+)
 from polar.models.custom_field import (
     CustomFieldCheckbox,
     CustomFieldCheckboxProperties,
@@ -111,7 +116,6 @@ from polar.models.user import OAuthAccount, OAuthPlatform
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
-from polar.product.guard import is_currency_price
 from polar.product.price_set import PriceSet
 from polar.tax.calculation import TaxabilityReason, TaxRate
 from polar.tax.tax_id import TaxID
@@ -361,7 +365,7 @@ async def create_custom_field(
 type PriceFixtureType = (
     tuple[int, str]
     | tuple[int, int | None, int | None, str]
-    | tuple[None]
+    | tuple[None, str]
     | tuple[Meter, Decimal, int | None, str]
     | tuple[Literal["seat"], int, str]
 )
@@ -425,15 +429,16 @@ async def create_product(
             | ProductPriceMeteredUnit
             | ProductPriceSeatUnit
         )
-        if len(price) == 1:
-            product_price = await create_product_price_free(
-                save_fixture, product=product
-            )
-        elif len(price) == 2:
+        if len(price) == 2:
             amount, currency = price
-            product_price = await create_product_price_fixed(
-                save_fixture, product=product, amount=amount, currency=currency
-            )
+            if amount is None:
+                product_price = await create_product_price_free(
+                    save_fixture, product=product
+                )
+            else:
+                product_price = await create_product_price_fixed(
+                    save_fixture, product=product, amount=amount, currency=currency
+                )
         elif _is_metered_price_fixture_type(price):
             meter, unit_amount, cap_amount, currency = price
             product_price = await create_product_price_metered_unit(
@@ -516,9 +521,11 @@ async def create_product_price_free(
     save_fixture: SaveFixture,
     *,
     product: Product,
+    currency: str = "usd",
 ) -> ProductPriceFree:
     price = ProductPriceFree(
         product=product,
+        price_currency=currency,
     )
     await save_fixture(price)
     return price
@@ -638,13 +645,13 @@ async def create_legacy_recurring_product_price(
     if amount_type == ProductPriceAmountType.fixed:
         product_price = LegacyRecurringProductPriceFixed(
             price_amount=amount,
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             product=product,
             is_archived=False,
         )
     elif amount_type == ProductPriceAmountType.custom:
         product_price = LegacyRecurringProductPriceCustom(
-            price_currency="usd",
+            price_currency=PresentmentCurrency.usd,
             minimum_amount=minimum_amount,
             maximum_amount=maximum_amount,
             preset_amount=preset_amount,
@@ -1207,7 +1214,7 @@ async def product_one_time_free_price(
         save_fixture,
         organization=organization,
         recurring_interval=None,
-        prices=[(None,)],
+        prices=[(None, "usd")],
     )
 
 
@@ -1276,7 +1283,7 @@ async def product_recurring_free_price(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(None,)],
+        prices=[(None, "usd")],
     )
 
 
@@ -1387,6 +1394,7 @@ async def create_checkout(
     external_customer_id: str | None = None,
     customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
+    analytics_metadata: CheckoutAnalyticsMetadata | None = None,
     amount: int | None = None,
     tax_amount: int | None = None,
     currency: str | None = None,
@@ -1398,13 +1406,14 @@ async def create_checkout(
     seats: int | None = None,
     require_billing_address: bool = False,
     customer_billing_address: Address | None = None,
+    created_at: datetime | None = None,
 ) -> Checkout:
     product = product or products[0]
     currency = currency or product.organization.default_presentment_currency
     currency_prices = PriceSet.from_product(product, currency)
 
     price = price or currency_prices.get_default_price()
-    if is_currency_price(price) and price.price_currency != currency:
+    if price.price_currency != currency:
         raise ValueError("Price currency does not match checkout currency")
 
     if isinstance(price, ProductPriceFixed):
@@ -1454,6 +1463,10 @@ async def create_checkout(
         customer_billing_address=customer_billing_address,
         tax_processor=TaxProcessor.stripe,
     )
+    if analytics_metadata is not None:
+        checkout.analytics_metadata = analytics_metadata
+    if created_at is not None:
+        checkout.created_at = created_at
     await save_fixture(checkout)
     return checkout
 
@@ -2178,6 +2191,8 @@ async def create_customer_seat(
     metadata: dict[str, Any] | None = None,
     claimed_at: datetime | None = None,
     revoked_at: datetime | None = None,
+    member_id: uuid.UUID | None = None,
+    email: str | None = None,
 ) -> CustomerSeat:
     if subscription is None and order is None:
         raise ValueError("Either subscription or order must be provided")
@@ -2187,13 +2202,15 @@ async def create_customer_seat(
     if invitation_token is None and status == SeatStatus.pending:
         invitation_token = secrets.token_urlsafe(32)
 
-    seat_data = {
+    seat_data: dict[str, Any] = {
         "status": status,
         "customer_id": customer.id if customer else None,
         "invitation_token": invitation_token,
         "claimed_at": claimed_at,
         "revoked_at": revoked_at,
         "seat_metadata": metadata or {},
+        "member_id": member_id,
+        "email": email,
     }
 
     if subscription is not None:

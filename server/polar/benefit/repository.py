@@ -13,6 +13,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Benefit, UserOrganization
+from polar.models.product_benefit import ProductBenefit
 
 from .sorting import BenefitSortProperty
 
@@ -24,6 +25,21 @@ class BenefitRepository(
     RepositoryBase[Benefit],
 ):
     model = Benefit
+
+    async def get_by_id_and_product(
+        self,
+        id: UUID,
+        product_id: UUID,
+        *,
+        options: Options = (),
+    ) -> Benefit | None:
+        statement = (
+            self.get_base_statement()
+            .join(ProductBenefit, onclause=ProductBenefit.benefit_id == Benefit.id)
+            .where(Benefit.id == id, ProductBenefit.product_id == product_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
 
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)

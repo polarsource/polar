@@ -2,13 +2,13 @@ import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
+import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -97,7 +97,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrencyAndAmount(period.revenue ?? 0, 'usd', 0)} in{' '}
+                    {formatCurrency('compact')(period.revenue ?? 0, 'usd')} in{' '}
                     {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>
@@ -108,12 +108,7 @@ const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
                 </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
                   <span className="dark:text-polar-500 text-sm text-gray-500">
-                    $
-                    {((period.revenue ?? 0) / 100).toLocaleString('en-US', {
-                      style: 'decimal',
-                      compactDisplay: 'short',
-                      notation: 'compact',
-                    })}
+                    {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}
                   </span>
                   {!isTrendFlat ? (
                     <Tooltip>

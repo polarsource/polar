@@ -19,10 +19,12 @@ from polar.event.system import (
     BalanceRefundMetadata,
     SystemEvent,
 )
+from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.models import Customer, Dispute, Event, Order, Refund, Transaction
 from polar.models.event import EventSource
+from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderStatus
 from polar.models.refund import RefundStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
@@ -137,6 +139,57 @@ async def fix_balance_order_fees(session: AsyncSession, batch_size: int = 1000) 
         typer.echo(f"  Fixed {count} fees (total: {total_fixed})...")
 
     typer.echo(f"Fixed {total_fixed} fees")
+    return total_fixed
+
+
+async def fix_balance_order_net_amount(
+    session: AsyncSession, batch_size: int = 1000
+) -> int:
+    """Set net_amount on balance.order events from order.net_amount."""
+    typer.echo("\n=== Setting balance.order net_amount ===")
+
+    total_fixed = 0
+    while True:
+        updated_ids = await session.execute(
+            text("""
+                UPDATE events e
+                SET user_metadata = jsonb_set(
+                    e.user_metadata,
+                    '{net_amount}',
+                    to_jsonb(o.subtotal_amount - o.discount_amount)
+                )
+                FROM orders o
+                WHERE e.id IN (
+                    SELECT e2.id
+                    FROM events e2
+                    JOIN orders o2 ON (e2.user_metadata->>'order_id')::uuid = o2.id
+                    WHERE e2.source = 'system'
+                      AND e2.name = 'balance.order'
+                      AND (o2.subtotal_amount - o2.discount_amount) != COALESCE((e2.user_metadata->>'net_amount')::numeric::int, 0)
+                    LIMIT :batch_size
+                )
+                AND (e.user_metadata->>'order_id')::uuid = o.id
+                RETURNING e.id
+            """),
+            {"batch_size": batch_size},
+        )
+        ids = [row[0] for row in updated_ids.fetchall()]
+        await session.commit()
+
+        if not ids:
+            break
+
+        events = (
+            (await session.execute(select(Event).where(Event.id.in_(ids))))
+            .scalars()
+            .all()
+        )
+        await tinybird_ingest_events(events)
+
+        total_fixed += len(ids)
+        typer.echo(f"  Fixed {len(ids)} net_amounts (total: {total_fixed})...")
+
+    typer.echo(f"Fixed {total_fixed} net_amounts")
     return total_fixed
 
 
@@ -419,6 +472,12 @@ async def create_missing_balance_order_events(
             .where(
                 Transaction.type == TransactionType.payment,
                 Transaction.order_id.is_not(None),
+                Transaction.order_id.not_in(
+                    select(HeldBalance.order_id).where(
+                        HeldBalance.deleted_at.is_(None),
+                        HeldBalance.order_id.is_not(None),
+                    )
+                ),
             )
             .order_by(Transaction.created_at, Transaction.id)
             .limit(batch_size)
@@ -463,6 +522,7 @@ async def create_missing_balance_order_events(
                 "transaction_id": str(tx.id),
                 "order_id": str(tx.order.id),
                 "amount": tx.amount,
+                "net_amount": tx.order.net_amount,
                 "currency": tx.currency,
                 "presentment_amount": tx.presentment_amount,
                 "presentment_currency": tx.presentment_currency,
@@ -539,6 +599,7 @@ async def create_missing_balance_credit_order_events(
                         Transaction.order_id.is_not(None),
                     )
                 ),
+                (Order.subtotal_amount - Order.discount_amount + Order.tax_amount) > 0,
             )
             .order_by(Order.created_at, Order.id)
             .limit(batch_size)
@@ -1162,10 +1223,33 @@ async def create_missing_balance_refund_reversal_events(
     return created_count
 
 
+async def delete_invalid_balance_credit_order_events(
+    session: AsyncSession,
+) -> int:
+    """Delete balance.credit_order events that were incorrectly created for $0/trial orders."""
+    typer.echo("\n=== Deleting invalid balance.credit_order events for $0 orders ===")
+
+    result = await session.execute(
+        text("""
+            DELETE FROM events WHERE id IN (
+                SELECT e.id FROM events e
+                JOIN orders o ON (e.user_metadata->>'order_id')::uuid = o.id
+                WHERE e.source = 'system'
+                  AND e.name = 'balance.credit_order'
+                  AND (o.subtotal_amount - o.discount_amount + o.tax_amount) <= 0
+            )
+        """)
+    )
+    deleted = cast(CursorResult[Any], result).rowcount or 0
+    typer.echo(f"Deleted {deleted} invalid balance.credit_order events")
+    return deleted
+
+
 async def run_backfill(
     batch_size: int = settings.DATABASE_STREAM_YIELD_PER,
     rate_limit_delay: float = 0.5,
     session: AsyncSession | None = None,
+    cleanup: bool = False,
 ) -> dict[str, int]:
     """
     Run all backfill operations for balance events.
@@ -1196,6 +1280,9 @@ async def run_backfill(
             session, batch_size
         )
         results["fees_fixed"] = await fix_balance_order_fees(session, batch_size)
+        results["net_amount_fixed"] = await fix_balance_order_net_amount(
+            session, batch_size
+        )
         results["refund_subscription_id_added"] = await fix_refund_subscription_id(
             session, batch_size
         )
@@ -1211,6 +1298,11 @@ async def run_backfill(
         results[
             "refund_reversal_order_created_at_added"
         ] = await fix_refund_reversal_order_created_at(session, batch_size)
+
+        if cleanup:
+            results[
+                "invalid_credit_order_deleted"
+            ] = await delete_invalid_balance_credit_order_events(session)
 
         results["balance_order_created"] = await create_missing_balance_order_events(
             session, batch_size, rate_limit_delay
@@ -1265,6 +1357,9 @@ async def backfill(
     rate_limit_delay: float = typer.Option(
         0.5, help="Delay in seconds between batches"
     ),
+    cleanup: bool = typer.Option(
+        False, help="Delete invalid balance.credit_order events for $0 orders"
+    ),
 ) -> None:
     """
     Backfill balance events for existing transactions.
@@ -1298,7 +1393,9 @@ async def backfill(
         cache_logger_on_first_use=True,
     )
 
-    await run_backfill(batch_size=batch_size, rate_limit_delay=rate_limit_delay)
+    await run_backfill(
+        batch_size=batch_size, rate_limit_delay=rate_limit_delay, cleanup=cleanup
+    )
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -50,10 +50,9 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         </div>
         <h2 className="text-5xl font-light">
           {summary &&
-            formatCurrencyAndAmount(
+            formatCurrency('compact')(
               summary.balance.amount,
               summary.balance.currency,
-              0,
             )}
         </h2>
       </div>
@@ -62,10 +61,9 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
           <div className="flex flex-col">
             <div className="flex flex-row items-center justify-between gap-x-2">
               <h3 className="text-lg">
-                {formatCurrencyAndAmount(
+                {formatCurrency('compact')(
                   lastPayout.amount,
                   lastPayout.currency,
-                  0,
                 )}
               </h3>
               <Status

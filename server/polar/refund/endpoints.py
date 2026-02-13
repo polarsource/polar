@@ -79,6 +79,7 @@ async def list(
     "/",
     summary="Create Refund",
     response_model=RefundSchema,
+    status_code=201,
     responses={
         201: {"description": "Refund created."},
         403: {

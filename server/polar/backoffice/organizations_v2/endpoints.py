@@ -15,7 +15,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
@@ -41,7 +41,9 @@ from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
+from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
+from polar.models.order import Order
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -50,6 +52,7 @@ from polar.organization.schemas import OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.service.transaction import transaction as transaction_service
+from polar.worker import enqueue_job
 
 from ..components import button, modal
 from ..layout import layout
@@ -61,6 +64,7 @@ from .views.modals import DeleteStripeModal, DisconnectStripeModal
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
+from .views.sections.review_section import ReviewSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
@@ -315,6 +319,8 @@ async def get_organization_detail(
     request: Request,
     organization_id: UUID4,
     section: str = Query("overview"),
+    files_page: int = Query(1, ge=1),
+    files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """
@@ -478,6 +484,33 @@ async def get_organization_detail(
                     request, setup_data=setup_data, payment_stats=payment_stats
                 ):
                     pass
+            elif section == "review":
+                from polar.organization_review.repository import (
+                    OrganizationReviewRepository,
+                )
+
+                orders_count_result = await session.execute(
+                    select(func.count(Order.id))
+                    .join(Customer, Order.customer_id == Customer.id)
+                    .where(Customer.organization_id == organization_id)
+                )
+                orders_count = orders_count_result.scalar() or 0
+
+                review_repo = OrganizationReviewRepository.from_session(session)
+                agent_review = await review_repo.get_latest_agent_review(
+                    organization_id
+                )
+
+                review_section = ReviewSection(
+                    organization,
+                    orders_count=orders_count,
+                    agent_report=agent_review.report if agent_review else None,
+                    agent_reviewed_at=agent_review.reviewed_at
+                    if agent_review
+                    else None,
+                )
+                with review_section.render(request):
+                    pass
             elif section == "team":
                 # Get admin user for the organization
                 admin_user = await repository.get_admin_user(session, organization)
@@ -498,17 +531,25 @@ async def get_organization_detail(
                 with account_section.render(request):
                     pass
             elif section == "files":
-                # Fetch downloadable files from repository
+                # Fetch downloadable files from repository with pagination
                 file_sorting: list[Sorting[FileSortProperty]] = [
                     (FileSortProperty.created_at, True)
                 ]
                 file_repository = FileRepository(session)
-                files = await file_repository.get_all_by_organization(
+                files, files_count = await file_repository.paginate_by_organization(
                     organization.id,
                     service=FileServiceTypes.downloadable,
                     sorting=file_sorting,
+                    limit=files_limit,
+                    page=files_page,
                 )
-                files_section = FilesSection(organization, files=list(files))
+                files_section = FilesSection(
+                    organization,
+                    files=files,
+                    page=files_page,
+                    limit=files_limit,
+                    total_count=files_count,
+                )
                 with files_section.render(request):
                     pass
             elif section == "history":
@@ -538,13 +579,45 @@ async def approve_organization(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    # Use provided threshold or default to $250 in cents (max as per requirement)
+    # Check form data for threshold in dollars (from custom approve input)
+    if threshold is None:
+        form_data = await request.form()
+        raw_dollars = form_data.get("threshold_dollars")
+        if raw_dollars:
+            threshold = int(float(str(raw_dollars)) * 100)
+
+    # Use provided threshold or default to $250 in cents
     next_review_threshold = threshold if threshold else 25000
 
     # Approve the organization
     await organization_service.confirm_organization_reviewed(
         session, organization, next_review_threshold
     )
+
+    return HXRedirectResponse(
+        request,
+        str(
+            request.url_for("organizations-v2:detail", organization_id=organization_id)
+        ),
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent"
+)
+async def run_review_agent(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    """Trigger the organization review agent as a background task."""
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    enqueue_job("organization_review.run_agent", organization_id=organization.id)
 
     return HXRedirectResponse(
         request,
@@ -1329,6 +1402,9 @@ async def edit_features(
                 feature_flags[field_name] = field_name in data
 
             # Merge with existing feature_settings
+            old_member_model = organization.feature_settings.get(
+                "member_model_enabled", False
+            )
             updated_feature_settings = {
                 **organization.feature_settings,
                 **feature_flags,
@@ -1339,6 +1415,16 @@ async def edit_features(
                 organization,
                 update_dict={"feature_settings": updated_feature_settings},
             )
+
+            # Trigger backfill when member_model transitions False → True
+            new_member_model = updated_feature_settings.get(
+                "member_model_enabled", False
+            )
+            if not old_member_model and new_member_model:
+                enqueue_job(
+                    "organization.backfill_members",
+                    organization_id=organization.id,
+                )
             redirect_url = (
                 str(
                     request.url_for(

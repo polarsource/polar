@@ -8,7 +8,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
-from polar.models import Benefit, Customer, Organization, User
+from polar.models import Benefit, Customer, Member, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
@@ -31,20 +31,27 @@ class BenefitLicenseKeysService(
         *,
         update: bool = False,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
         if update and "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
-        key = await license_key_service.customer_grant(
+        user_provided_key: str | None = None
+        if not update and "user_provided_key" in grant_properties:
+            user_provided_key = grant_properties["user_provided_key"]
+
+        license_key = await license_key_service.customer_grant(
             self.session,
             customer=customer,
             benefit=benefit,
             license_key_id=current_lk_id,
+            key=user_provided_key,
         )
         return {
-            "license_key_id": str(key.id),
-            "display_key": key.display_key,
+            **grant_properties,
+            "license_key_id": str(license_key.id),
+            "display_key": license_key.display_key,
         }
 
     async def cycle(
@@ -54,6 +61,7 @@ class BenefitLicenseKeysService(
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         return grant_properties
 
@@ -64,6 +72,7 @@ class BenefitLicenseKeysService(
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
         attempt: int = 1,
+        member: Member | None = None,
     ) -> BenefitGrantLicenseKeysProperties:
         license_key_id = grant_properties.get("license_key_id")
         if not license_key_id:

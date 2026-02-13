@@ -1,10 +1,10 @@
 import { ParsedMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 import FormattedUnits from '../Meter/FormattedUnits'
 import MetricChart from '../Metrics/MetricChart'
@@ -119,11 +119,9 @@ export const CustomerMeter = ({
             </span>
             <h3 className="text-lg">
               {unitPrice &&
-                formatCurrencyAndAmount(
+                formatCurrency('compact')(
                   overages || 0,
                   unitPrice.price_currency,
-                  2,
-                  'compact',
                 )}
             </h3>
           </div>

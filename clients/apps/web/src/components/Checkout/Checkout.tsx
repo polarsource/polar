@@ -1,5 +1,6 @@
 'use client'
 
+import { useExperiment } from '@/experiments/client'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
@@ -16,6 +17,7 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
+import { AcceptedLocale } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
@@ -36,9 +38,14 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
+  locale?: AcceptedLocale
 }
 
-const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
+const Checkout = ({
+  embed: _embed,
+  theme: _theme,
+  locale: _locale,
+}: CheckoutProps) => {
   const { client } = useCheckout()
   const {
     checkout,
@@ -52,12 +59,19 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
+  const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
+
+  const { variant: walletPaymentExperiment } = useExperiment(
+    'checkout_wallet_payment',
+  )
 
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
     openedTrackedRef.current = true
+
+    posthog.capture('storefront:checkout:page:view')
 
     const cookies = document.cookie.split(';')
     const distinctIdCookie = cookies.find((c) =>
@@ -202,6 +216,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                 ) => Promise<ProductCheckoutPublic>
               }
               themePreset={themePreset}
+              locale={locale}
             />
             {checkout.productPrice.amountType === 'custom' && (
               <CheckoutPWYWForm
@@ -209,6 +224,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                 update={update}
                 productPrice={checkout.productPrice as ProductPriceCustom}
                 themePreset={themePreset}
+                locale={locale}
               />
             )}
           </>
@@ -224,6 +240,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
+          locale={locale}
+          walletPaymentExperiment={walletPaymentExperiment}
         />
       </ShadowBox>
     )
@@ -256,6 +274,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   ) => Promise<ProductCheckoutPublic>
                 }
                 themePreset={themePreset}
+                locale={locale}
               />
               {checkout.productPrice.amountType === 'custom' && (
                 <CheckoutPWYWForm
@@ -263,6 +282,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   update={update}
                   productPrice={checkout.productPrice as ProductPriceCustom}
                   themePreset={themePreset}
+                  locale={locale}
                 />
               )}
               <CheckoutCard
@@ -272,6 +292,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                     data: CheckoutUpdatePublic,
                   ) => Promise<ProductCheckoutPublic>
                 }
+                locale={locale}
               />
             </>
           )}
@@ -289,6 +310,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             themePreset={themePreset}
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
+            locale={locale}
+            walletPaymentExperiment={walletPaymentExperiment}
           />
         </div>
       </ShadowBoxOnMd>

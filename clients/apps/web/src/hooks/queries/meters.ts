@@ -64,13 +64,17 @@ export const useMeters = (
     retry: defaultRetry,
   })
 
-export const useMeter = (id: string, initialData?: schemas['Meter']) =>
+export const useMeter = (
+  id: string,
+  options?: { initialData?: schemas['Meter']; enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['meters', { id }],
     queryFn: () =>
       unwrap(api.GET('/v1/meters/{id}', { params: { path: { id } } })),
     retry: defaultRetry,
-    initialData,
+    initialData: options?.initialData,
+    enabled: options?.enabled ?? true,
   })
 
 export type ParsedMeterQuantities = schemas['MeterQuantities'] & {
@@ -86,13 +90,17 @@ export const useMeterQuantities = (
     NonNullable<operations['meters:quantities']['parameters']['query']>,
     'id'
   >,
-): UseQueryResult<ParsedMeterQuantities, Error> =>
-  useQuery({
+): UseQueryResult<ParsedMeterQuantities, Error> => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['meters:quantities']['parameters']['query']['timezone']
+
+  return useQuery({
     queryKey: [
       'meters',
       'quantities',
       {
         id,
+        timezone,
         ...(parameters || {}),
       },
     ],
@@ -106,6 +114,7 @@ export const useMeterQuantities = (
               start_timestamp: start_timestamp ?? '',
               end_timestamp: end_timestamp ?? '',
               interval: interval as schemas['TimeInterval'],
+              timezone,
               ...(parameters || {}),
             },
           },
@@ -121,6 +130,7 @@ export const useMeterQuantities = (
     },
     retry: defaultRetry,
   })
+}
 
 export const useCreateMeter = (organizationId: string) =>
   useMutation({

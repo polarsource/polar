@@ -578,7 +578,7 @@ class TestCreateRefundsAndRevokeBenefits(StripeRefund):
                 "revoke_benefits": True,
             },
         )
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert enqueue_revoke_benefits.call_count == 1
         revoked_with = enqueue_revoke_benefits.call_args.kwargs
         assert revoked_with["task"] == "revoke"

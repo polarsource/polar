@@ -1,6 +1,6 @@
 import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useCallback, useState } from 'react'
+import { ReactNode, useCallback, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
@@ -11,7 +11,7 @@ const DropzoneView = ({
   children,
 }: {
   isDragActive: boolean
-  children: ReactElement<any>
+  children: ReactNode
 }) => {
   return (
     <>
@@ -44,14 +44,12 @@ interface ProductMediasFieldProps {
   organization: schemas['Organization']
   value: schemas['ProductMediaFileRead'][] | undefined
   onChange: (value: schemas['ProductMediaFileRead'][]) => void
-  compact?: boolean
 }
 
 const ProductMediasField = ({
   organization,
   value,
   onChange,
-  compact,
 }: ProductMediasFieldProps) => {
   const onFilesUpdated = useCallback(
     (files: FileObject<schemas['ProductMediaFileRead']>[]) => {
@@ -86,12 +84,7 @@ const ProductMediasField = ({
   })
   return (
     <>
-      <div
-        className={twMerge(
-          'grid gap-3 [&>div>*]:aspect-video',
-          compact ? 'grid-cols-1' : 'grid-cols-2',
-        )}
-      >
+      <div className="grid grid-cols-2 gap-3 [&>div>*]:aspect-video">
         <FileList files={files} setFiles={setFiles} removeFile={removeFile} />
         <div {...getRootProps()}>
           <DropzoneView isDragActive={isDragActive}>

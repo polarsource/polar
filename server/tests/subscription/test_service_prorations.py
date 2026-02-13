@@ -463,7 +463,7 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(None,)],
+            prices=[(None, "usd")],
         )
 
         subscription = await create_active_subscription(
@@ -515,7 +515,7 @@ class TestUpdateProductProrations:
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(None,)],
+            prices=[(None, "usd")],
         )
         new_product = await create_product(
             save_fixture,

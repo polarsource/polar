@@ -5,3 +5,5 @@ info:
 actions:
   - target: "$.paths['/v1/metrics/'].get.parameters[?(@.name=='timezone')].schema.enum"
     remove: true
+  - target: "$.paths['/v1/meters/{id}/quantities'].get.parameters[?(@.name=='timezone')].schema.enum"
+    remove: true

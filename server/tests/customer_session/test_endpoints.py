@@ -214,14 +214,15 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_fails_when_member_model_enabled_but_no_owner(
+    async def test_auto_creates_owner_when_member_model_enabled(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        # When member_model_enabled but no owner member exists, should return 422
+        # When member_model_enabled but no owner member exists,
+        # the graceful fallback auto-creates one and returns a MemberSession.
         organization.feature_settings = {
             "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
@@ -234,11 +235,8 @@ class TestCreate:
             email="test@example.com",
         )
 
-        # No member created - should fail
         response = await client.post(
             "/v1/customer-sessions/", json={"customer_id": str(customer.id)}
         )
 
-        assert response.status_code == 422
-        json = response.json()
-        assert "No owner member found" in json["detail"][0]["msg"]
+        assert response.status_code == 201

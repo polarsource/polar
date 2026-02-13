@@ -15,15 +15,10 @@ import {
 } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
-import {
-  formatCurrency,
-  formatHumanFriendlyCurrency,
-  formatPercentage,
-  formatScalar,
-  formatSubCentCurrency,
-} from '@/utils/formatters'
+import { formatPercentage, formatScalar } from '@/utils/formatters'
 import { getPreviousDateRange } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -35,7 +30,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -236,7 +230,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('revenue')}
               >
                 {typeof metricsData?.totals.revenue === 'number'
-                  ? formatHumanFriendlyCurrency(
+                  ? formatCurrency('statistics')(
                       metricsData.totals.revenue,
                       'usd',
                     )
@@ -249,7 +243,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trendUpIsBad
               >
                 {typeof metricsData?.totals.costs === 'number'
-                  ? formatSubCentCurrency(metricsData.totals.costs, 'usd')
+                  ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
                   : '—'}
               </CustomerTrendStatBox>
               <CustomerTrendStatBox
@@ -258,7 +252,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 trend={calculateTrend('gross_margin')}
               >
                 {typeof metricsData?.totals.gross_margin === 'number'
-                  ? formatHumanFriendlyCurrency(
+                  ? formatCurrency('statistics')(
                       metricsData.totals.gross_margin,
                       'usd',
                     )
@@ -278,7 +272,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             <>
               <CustomerStatBox title="Lifetime Revenue" size="lg">
                 {typeof metricsData?.totals.cumulative_revenue === 'number'
-                  ? formatHumanFriendlyCurrency(
+                  ? formatCurrency('statistics')(
                       metricsData.totals.cumulative_revenue,
                       'usd',
                     )
@@ -295,7 +289,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
                   <div key={wallet.id}>
-                    {formatCurrencyAndAmount(wallet.balance, wallet.currency)}
+                    {formatCurrency('statistics')(
+                      wallet.balance,
+                      wallet.currency,
+                    )}
                   </div>
                 ))
               : '—'}
@@ -408,7 +405,10 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Amount',
                 accessorKey: 'amount',
                 cell: ({ row: { original } }) =>
-                  formatCurrency(original.net_amount, original.currency),
+                  formatCurrency('compact')(
+                    original.net_amount,
+                    original.currency,
+                  ),
               },
               {
                 header: '',

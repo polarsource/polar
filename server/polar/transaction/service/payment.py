@@ -1,4 +1,3 @@
-from typing import cast
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -69,17 +68,6 @@ class PaymentTransactionService(BaseTransactionService):
             tax_amount = int(charge.metadata["tax_amount"])
             tax_country = charge.metadata["tax_country"]
             tax_state = charge.metadata.get("tax_state")
-        # Stripe Checkout sets tax info in invoice
-        elif charge.invoice:
-            stripe_invoice = await stripe_service.get_invoice(
-                get_expandable_id(charge.invoice)
-            )
-            if stripe_invoice.tax is not None:
-                tax_amount = stripe_invoice.tax
-            for total_tax_amount in stripe_invoice.total_tax_amounts:
-                tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
-                tax_country = tax_rate.country
-                tax_state = tax_rate.state
 
         settlement_amount = balance_transaction.amount
         settlement_currency = balance_transaction.currency
@@ -100,6 +88,7 @@ class PaymentTransactionService(BaseTransactionService):
             presentment_currency=charge.currency,
             presentment_amount=charge.amount - tax_amount,
             presentment_tax_amount=tax_amount,
+            exchange_rate=exchange_rate,
             customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             charge_id=charge.id,
             risk_level=risk.get("risk_level"),

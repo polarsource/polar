@@ -2,7 +2,7 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { subMonths } from 'date-fns'
 import { useContext, useEffect, useMemo } from 'react'
 import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
@@ -106,12 +106,9 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
           loading={loading}
           placeholderText="$1,234"
         >
-          {formatCurrencyAndAmount(
+          {formatCurrency('statistics')(
             metrics.data?.totals.revenue ?? 0,
             'usd',
-            0,
-            undefined,
-            0,
           )}
         </Text>
       </Box>

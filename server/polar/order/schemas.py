@@ -1,6 +1,5 @@
 from typing import Annotated
 
-from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import (
     UUID4,
@@ -17,6 +16,7 @@ from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
+from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
 from polar.models.order import (
@@ -128,14 +128,10 @@ class OrderBase(TimestampedSchema, IDSchema):
         return self.applied_balance_amount
 
     def get_amount_display(self) -> str:
-        return format_currency(
-            self.net_amount / 100, self.currency.upper(), locale="en_US"
-        )
+        return format_currency(self.net_amount, self.currency)
 
     def get_refunded_amount_display(self) -> str:
-        return format_currency(
-            self.refunded_amount / 100, self.currency.upper(), locale="en_US"
-        )
+        return format_currency(self.refunded_amount, self.currency)
 
 
 class OrderCustomer(CustomerBase): ...

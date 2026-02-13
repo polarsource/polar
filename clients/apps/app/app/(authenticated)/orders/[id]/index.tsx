@@ -6,7 +6,7 @@ import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrder } from '@/hooks/polar/orders'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import * as Clipboard from 'expo-clipboard'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { RefreshControl, ScrollView } from 'react-native'
@@ -122,7 +122,7 @@ export default function Index() {
             >
               <Text numberOfLines={1}>{item.label}</Text>
               <Text variant="bodyMedium">
-                {formatCurrencyAndAmount(item.amount)}
+                {formatCurrency('accounting')(item.amount, order.currency)}
               </Text>
             </Box>
           ))}
@@ -150,24 +150,36 @@ export default function Index() {
           />
           <DetailRow
             label="Subtotal"
-            value={formatCurrencyAndAmount(order.subtotal_amount)}
+            value={formatCurrency('accounting')(
+              order.subtotal_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             label="Discount"
-            value={`-${formatCurrencyAndAmount(order.discount_amount)}`}
+            value={`-${formatCurrency('accounting')(order.discount_amount, order.currency)}`}
           />
           <DetailRow
             label="Net"
-            value={formatCurrencyAndAmount(order.net_amount)}
+            value={formatCurrency('accounting')(
+              order.net_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             label="Tax"
-            value={formatCurrencyAndAmount(order.tax_amount)}
+            value={formatCurrency('accounting')(
+              order.tax_amount,
+              order.currency,
+            )}
           />
           <DetailRow
             labelStyle={{ color: theme.colors.text }}
             label="Total"
-            value={formatCurrencyAndAmount(order.total_amount)}
+            value={formatCurrency('accounting')(
+              order.total_amount,
+              order.currency,
+            )}
           />
         </Details>
       </Box>

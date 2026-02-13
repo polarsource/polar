@@ -2,7 +2,6 @@ from typing import Any
 
 import stripe as stripe_lib
 
-from polar.integrations.stripe.schemas import ProductType
 from polar.kit.utils import generate_uuid
 
 
@@ -71,7 +70,6 @@ def build_stripe_charge(
     invoice: str | None = None,
     payment_intent: str | None = None,
     balance_transaction: str | None = None,
-    type: ProductType | None = None,
     amount_refunded: int = 0,
     metadata: dict[str, str] | None = None,
     billing_details: dict[str, Any] | None = None,

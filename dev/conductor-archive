@@ -3,7 +3,5 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONDUCTOR_PORT="${CONDUCTOR_PORT:-55000}"
-INSTANCE=$(( (CONDUCTOR_PORT - 55000) / 10 ))
 
-"$SCRIPT_DIR/docker-dev" -i "$INSTANCE" cleanup
+"$SCRIPT_DIR/cli/dev" docker cleanup -f

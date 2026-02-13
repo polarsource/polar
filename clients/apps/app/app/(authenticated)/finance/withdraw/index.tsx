@@ -10,7 +10,7 @@ import {
 import { useOrders } from '@/hooks/polar/orders'
 import { useStoreReview } from '@/hooks/useStoreReview'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useMemo, useRef } from 'react'
 import { SafeAreaView, ScrollView } from 'react-native'
@@ -47,23 +47,23 @@ export default function Index() {
         <Details>
           <DetailRow
             label="Amount"
-            value={formatCurrencyAndAmount(
+            value={formatCurrency('accounting')(
               estimate?.gross_amount ?? 0,
-              summary?.balance.currency,
+              summary?.balance.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Fees"
-            value={formatCurrencyAndAmount(
+            value={formatCurrency('accounting')(
               estimate?.fees_amount ?? 0,
-              summary?.balance.currency,
+              summary?.balance.currency ?? 'usd',
             )}
           />
           <DetailRow
             label="Net"
-            value={formatCurrencyAndAmount(
+            value={formatCurrency('accounting')(
               estimate?.net_amount ?? 0,
-              summary?.balance.currency,
+              summary?.balance.currency ?? 'usd',
             )}
           />
         </Details>

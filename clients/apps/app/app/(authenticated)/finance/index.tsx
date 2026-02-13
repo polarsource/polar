@@ -11,7 +11,7 @@ import {
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
@@ -120,7 +120,10 @@ export default function Finance() {
       >
         <Text color="subtext">Account Balance</Text>
         <Text variant="headlineLarge">
-          {formatCurrencyAndAmount(summary?.balance.amount ?? 0, 'USD')}
+          {formatCurrency('accounting')(
+            summary?.balance.amount ?? 0,
+            summary.payout.account_currency,
+          )}
         </Text>
       </Box>
       <Box flexDirection="column" alignItems="center" gap="spacing-16">

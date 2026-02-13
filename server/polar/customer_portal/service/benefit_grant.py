@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
@@ -45,6 +45,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
         *,
+        query: str | None = None,
         type: Sequence[BenefitType] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
@@ -60,6 +61,12 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         statement = self._get_readable_benefit_grant_statement(auth_subject).options(
             joinedload(BenefitGrant.customer)
         )
+
+        if query is not None:
+            ts_query_english = func.websearch_to_tsquery("english", query)
+            statement = statement.where(
+                Benefit.search_vector.op("@@")(ts_query_english)
+            )
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))
@@ -175,13 +182,25 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             if account_id is not None:
                 platform = benefit_grant_update.get_oauth_platform()
 
-                customer_repository = CustomerRepository.from_session(session)
-                customer = await customer_repository.get_by_id(
-                    benefit_grant.customer_id
-                )
-                assert customer is not None
+                # Check member's OAuth accounts first if member_id is set
+                oauth_account = None
+                if benefit_grant.member_id:
+                    from polar.member.repository import MemberRepository
 
-                oauth_account = customer.get_oauth_account(account_id, platform)
+                    member_repository = MemberRepository.from_session(session)
+                    member = await member_repository.get_by_id(benefit_grant.member_id)
+                    if member is not None:
+                        oauth_account = member.get_oauth_account(account_id, platform)
+
+                # Fall back to customer
+                if oauth_account is None:
+                    customer_repository = CustomerRepository.from_session(session)
+                    customer = await customer_repository.get_by_id(
+                        benefit_grant.customer_id
+                    )
+                    assert customer is not None
+                    oauth_account = customer.get_oauth_account(account_id, platform)
+
                 if oauth_account is None:
                     raise PolarRequestValidationError(
                         [

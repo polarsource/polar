@@ -5,8 +5,8 @@ from collections.abc import Generator
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal, override
 
+import stripe as stripe_lib
 import structlog
-from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -26,6 +26,8 @@ from polar.file.repository import FileRepository
 from polar.file.service import file as file_service
 from polar.file.sorting import FileSortProperty
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.currency import format_currency
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import empty_str_to_none
 from polar.kit.sorting import Sorting
@@ -73,6 +75,7 @@ from .analytics import (
     PaymentAnalyticsService,
 )
 from .forms import (
+    AddPaymentMethodDomainForm,
     OrganizationOrdersImportForm,
     OrganizationStatusFormAdapter,
     UpdateOrganizationDetailsForm,
@@ -137,7 +140,7 @@ class NextReviewThresholdColumn(
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         from babel.numbers import format_currency
 
-        text(format_currency(item.next_review_threshold / 100, "USD", locale="en_US"))
+        text(format_currency(item.next_review_threshold, "usd"))
         return None
 
 
@@ -188,16 +191,6 @@ async def get_payment_statistics(
 
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
-    if not account_id:
-        return PaymentStatistics(
-            payment_count=0,
-            p50_risk=0,
-            p90_risk=0,
-            refunds_count=0,
-            transfer_sum=0,
-            refunds_amount=0,
-            total_payment_amount=0,
-        )
 
     # Get payment statistics
     (
@@ -214,10 +207,13 @@ async def get_payment_statistics(
         organization_id
     )
 
-    # Get transfer sum (used for review threshold checking)
-    transfer_sum = await transaction_service.get_transactions_sum(
-        session, account_id, type=TransactionType.balance
-    )
+    if account_id:
+        # Get transfer sum (used for review threshold checking)
+        transfer_sum = await transaction_service.get_transactions_sum(
+            session, account_id, type=TransactionType.balance
+        )
+    else:
+        transfer_sum = 0
 
     return PaymentStatistics(
         payment_count=payment_count,
@@ -323,7 +319,7 @@ async def list(
     pagination = PaginationParams(page, min(100, limit))
     repository = OrganizationRepository.from_session(session)
     statement = (
-        repository.get_base_statement()
+        repository.get_base_statement(include_deleted=True)
         .join(Account, Organization.account_id == Account.id, isouter=True)
         .options(
             contains_eager(Organization.account),
@@ -480,7 +476,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -586,7 +582,7 @@ async def update_details(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -640,7 +636,7 @@ async def update_internal_notes(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -690,9 +686,15 @@ async def delete(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
+
+    if organization.deleted_at is not None:
+        await add_toast(
+            request, "This organization is already deleted", variant="error"
+        )
+        return
 
     if request.method == "POST":
         await organization_service.delete(session, organization)
@@ -863,7 +865,9 @@ async def confirm_change_admin(
     # Get organization and account
     org_repo = OrganizationRepository.from_session(session)
     organization = await org_repo.get_by_id(
-        id, options=(joinedload(Organization.account),)
+        id,
+        include_deleted=True,
+        options=(joinedload(Organization.account),),
     )
 
     if not organization or not organization.account:
@@ -1016,7 +1020,7 @@ async def change_admin(
         # Get organization and account
         org_repo = OrganizationRepository.from_session(session)
         organization = await org_repo.get_by_id(
-            id, options=(joinedload(Organization.account),)
+            id, include_deleted=True, options=(joinedload(Organization.account),)
         )
 
         if not organization or not organization.account:
@@ -1068,7 +1072,7 @@ async def setup_manual_payout(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -1206,7 +1210,7 @@ async def create_plain_thread(
             )
 
         org_repo = OrganizationRepository.from_session(session)
-        organization = await org_repo.get_by_id(id)
+        organization = await org_repo.get_by_id(id, include_deleted=True)
         if not organization:
             raise HTTPException(status_code=404)
 
@@ -1312,6 +1316,8 @@ class FileSizeColumn(datatable.DatatableAttrColumn[File, FileSortProperty]):
 async def get(
     request: Request,
     id: UUID4,
+    files_page: int = Query(1, ge=1),
+    files_limit: int = Query(10, ge=1, le=100),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
@@ -1321,6 +1327,7 @@ async def get(
             joinedload(Organization.account),
             joinedload(Organization.review),
         ),
+        include_deleted=True,
         include_blocked=True,
     )
 
@@ -1429,6 +1436,20 @@ async def get(
                         with tag.div(classes="icon-upload"):
                             pass
                         text("Import Orders")
+                    with tag.button(
+                        classes="btn",
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:add_payment_method_domain",
+                                id=organization.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                        title="Add Domain to Apple Pay / Google Pay Allowlist",
+                    ):
+                        with tag.div(classes="icon-globe"):
+                            pass
+                        text("Add Domain to Allowlist")
                     with button(
                         variant="primary",
                         hx_get=str(
@@ -1460,7 +1481,7 @@ async def get(
                         "created_at", "Created At"
                     ),
                     description_list.DescriptionListDateTimeItem(
-                        "created_at", "Created At"
+                        "deleted_at", "Deleted At"
                     ),
                     description_list.DescriptionListLinkItem(
                         "website", "Website", external=True
@@ -1739,17 +1760,13 @@ async def get(
                                 "future_annual_revenue"
                             )
                             if expected_revenue:
-                                text(
-                                    format_currency(
-                                        expected_revenue, "USD", locale="en_US"
-                                    )
-                                )
+                                text(format_currency(expected_revenue, "usd"))
                             else:
                                 text("—")
                             if organization.details.get("switching"):
                                 with accordion.item(a, "Switching from"):
                                     text(
-                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
+                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'usd')})"
                                     )
 
             # Internal Notes Section
@@ -1803,7 +1820,7 @@ async def get(
                             pass
 
             # Organization Files Section
-            with tag.div(classes="mt-8"):
+            with tag.div(classes="mt-8 flex flex-col gap-4", id="files"):
                 with tag.div(classes="flex items-center gap-4 mb-4"):
                     with tag.h2(classes="text-2xl font-bold"):
                         text("Downloadable Files")
@@ -1812,10 +1829,12 @@ async def get(
                     (FileSortProperty.created_at, True)
                 ]
                 file_repository = FileRepository.from_session(session)
-                files = await file_repository.get_all_by_organization(
+                files, files_count = await file_repository.paginate_by_organization(
                     organization.id,
                     service=FileServiceTypes.downloadable,
                     sorting=sorting,
+                    limit=files_limit,
+                    page=files_page,
                 )
 
                 with datatable.Datatable[File, FileSortProperty](
@@ -1828,6 +1847,11 @@ async def get(
                 ).render(request, files, sorting=sorting):
                     pass
 
+                with datatable.pagination(
+                    request, PaginationParams(files_page, files_limit), files_count
+                ):
+                    pass
+
 
 @router.get("/{id}/plain_search_url", name="organizations:plain_search_url")
 async def get_plain_search_url(
@@ -1837,7 +1861,7 @@ async def get_plain_search_url(
 ) -> Any:
     """Get the Plain search URL for this organization's admin."""
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -1858,7 +1882,7 @@ async def get_create_thread_modal(
 ) -> Any:
     """Get the create thread modal HTML."""
     org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(id)
+    organization = await org_repo.get_by_id(id, include_deleted=True)
     if not organization:
         raise HTTPException(status_code=404)
 
@@ -1943,7 +1967,7 @@ async def import_orders(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(id)
+    organization = await repository.get_by_id(id, include_deleted=True)
 
     if organization is None:
         raise HTTPException(status_code=404)
@@ -1984,3 +2008,76 @@ async def import_orders(
                     variant="primary",
                 ):
                     text("Import")
+
+
+@router.api_route(
+    "/{id}/add-payment-method-domain",
+    name="organizations:add_payment_method_domain",
+    methods=["GET", "POST"],
+)
+async def add_payment_method_domain(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(id)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = AddPaymentMethodDomainForm.model_validate_form(data)
+
+            # Create the payment method domain in Stripe
+            await stripe_service.create_payment_method_domain(form.domain_name)
+
+            await add_toast(
+                request,
+                f"Successfully added {form.domain_name} to allowlist",
+                variant="success",
+            )
+            return
+
+        except ValidationError as e:
+            validation_error = e
+        except stripe_lib.InvalidRequestError as e:
+            logger.error(
+                "Invalid request to Stripe API",
+                organization_id=id,
+                domain=data.get("domain_name"),
+                error=str(e),
+                error_code=e.code if hasattr(e, "code") else None,
+            )
+            error_message = (
+                "Unable to add domain to allowlist. "
+                "Please verify the domain and try again."
+            )
+            await add_toast(request, error_message, variant="error")
+
+    with modal("Add Domain to Allowlist", open=True):
+        with tag.p(classes="text-sm text-base-content-secondary mb-4"):
+            text(
+                "Add a custom domain to the Apple Pay / Google Pay allowlist. "
+                "This allows these payment methods to appear in embeds on the specified domain."
+            )
+
+        with AddPaymentMethodDomainForm.render(
+            {},
+            hx_post=str(request.url),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Add Domain")

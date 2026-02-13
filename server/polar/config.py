@@ -71,6 +71,8 @@ class Settings(BaseSettings):
     PROMETHEUS_REMOTE_WRITE_INTERVAL: Annotated[int, Ge(1)] = 15  # seconds
 
     WEBHOOK_MAX_RETRIES: int = 10
+    WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
+    WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=30)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
@@ -138,7 +140,6 @@ class Settings(BaseSettings):
     CHECKOUT_TTL_SECONDS: int = 60 * 60  # 1 hour
     IP_GEOLOCATION_DATABASE_DIRECTORY_PATH: DirectoryPath = Path(__file__).parent.parent
     IP_GEOLOCATION_DATABASE_NAME: str = "ip-geolocation.mmdb"
-    USE_TEST_CLOCK: bool = False
 
     # Database
     POSTGRES_USER: str = "polar"
@@ -242,6 +243,7 @@ class Settings(BaseSettings):
     # Tinybird
     TINYBIRD_API_URL: str = "http://localhost:7181"
     TINYBIRD_API_TOKEN: str | None = None
+    TINYBIRD_READ_TOKEN: str | None = None
     TINYBIRD_CLICKHOUSE_URL: str = "http://localhost:7182"
     TINYBIRD_CLICKHOUSE_USERNAME: str = "default"
     TINYBIRD_CLICKHOUSE_TOKEN: str | None = None
@@ -399,7 +401,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
 
-    DEFAULT_TAX_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+    TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

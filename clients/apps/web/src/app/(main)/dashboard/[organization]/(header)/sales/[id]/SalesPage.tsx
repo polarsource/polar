@@ -28,13 +28,13 @@ import {
   DisputeStatusDisplayTitle,
 } from '@/utils/dispute'
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { Separator } from '@radix-ui/react-dropdown-menu'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -135,7 +135,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
     >
       {product && (
         <List size="small">
-          <ProductListItem organization={organization} product={product} />
+          <ProductListItem
+            organization={organization}
+            product={product}
+            currency={order.currency}
+          />
         </List>
       )}
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:rounded-3xl!">
@@ -189,14 +193,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DetailRow
                   key={item.id}
                   label={item.label}
-                  value={formatCurrencyAndAmount(item.amount, order.currency)}
+                  value={formatCurrency('accounting')(
+                    item.amount,
+                    order.currency,
+                  )}
                 />
               ))}
             </div>
 
             <DetailRow
               label="Subtotal"
-              value={formatCurrencyAndAmount(
+              value={formatCurrency('accounting')(
                 order.subtotal_amount,
                 order.currency,
               )}
@@ -205,7 +212,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               label="Discount"
               value={
                 order.discount_amount
-                  ? formatCurrencyAndAmount(
+                  ? formatCurrency('accounting')(
                       -order.discount_amount,
                       order.currency,
                     )
@@ -214,15 +221,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
             />
             <DetailRow
               label="Net amount"
-              value={formatCurrencyAndAmount(order.net_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.net_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Tax"
-              value={formatCurrencyAndAmount(order.tax_amount, order.currency)}
+              value={formatCurrency('accounting')(
+                order.tax_amount,
+                order.currency,
+              )}
             />
             <DetailRow
               label="Total"
-              value={formatCurrencyAndAmount(
+              value={formatCurrency('accounting')(
                 order.total_amount,
                 order.currency,
               )}
@@ -231,14 +244,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <>
                 <DetailRow
                   label="Applied balance"
-                  value={formatCurrencyAndAmount(
+                  value={formatCurrency('accounting')(
                     order.applied_balance_amount,
                     order.currency,
                   )}
                 />
                 <DetailRow
                   label="To be paid"
-                  value={formatCurrencyAndAmount(
+                  value={formatCurrency('accounting')(
                     order.due_amount,
                     order.currency,
                   )}
@@ -305,7 +318,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <h3 className="text-lg">Metadata</h3>
             <div className="flex flex-col gap-2">
               {Object.entries(order.metadata).map(([key, value]) => (
-                <DetailRow key={key} label={key} value={value} />
+                <DetailRow
+                  key={key}
+                  label={key}
+                  value={
+                    typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value
+                  }
+                />
               ))}
             </div>
           </div>
@@ -384,7 +403,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrencyAndAmount(
+                  formatCurrency('compact')(
                     row.original.amount,
                     row.original.currency,
                   ),
@@ -449,7 +468,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 accessorKey: 'amount',
                 header: 'Amount',
                 cell: ({ row }) =>
-                  formatCurrencyAndAmount(
+                  formatCurrency('compact')(
                     row.original.amount,
                     row.original.currency,
                   ),

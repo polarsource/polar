@@ -2,7 +2,6 @@ import inspect
 from datetime import datetime
 from typing import Annotated, Literal
 
-from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
 from pydantic.json_schema import SkipJsonSchema
@@ -11,6 +10,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -135,13 +135,9 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     def get_amount_display(self) -> str:
         if self.amount is None or self.currency is None:
             return "Free"
-        return f"{
-            format_currency(
-                self.amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }/{self.recurring_interval}"
+        return (
+            f"{format_currency(self.amount, self.currency)}/{self.recurring_interval}"
+        )
 
 
 SubscriptionDiscount = Annotated[

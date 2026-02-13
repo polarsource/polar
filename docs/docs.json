@@ -82,7 +82,8 @@
                 "pages": [
                   "features/checkout/embed",
                   "features/checkout/links",
-                  "features/checkout/session"
+                  "features/checkout/session",
+                  "features/checkout/localization"
                 ]
               },
               "features/trials",
@@ -152,12 +153,13 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": ["guides/nextjs", "guides/laravel"]
+                "pages": ["guides/encore", "guides/laravel", "guides/nextjs"]
               },
               {
                 "group": "Webhooks",
                 "pages": [
                   "integrate/webhooks/endpoints",
+                  "integrate/webhooks/locally",
                   "integrate/webhooks/delivery",
                   "integrate/webhooks/events"
                 ]

@@ -4,7 +4,7 @@ import {
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { formatCurrency } from '@polar-sh/currency'
 import { useRouter } from 'expo-router'
 import { useContext } from 'react'
 import { Button } from '../Shared/Button'
@@ -39,13 +39,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
             loading={loading}
             placeholderText="$1,234"
           >
-            {formatCurrencyAndAmount(
-              summary?.balance.amount ?? 0,
-              'USD',
-              0,
-              undefined,
-              0,
-            )}
+            {formatCurrency('compact')(summary?.balance.amount ?? 0, 'usd')}
           </Text>
         </Box>
         <Box flexDirection="row" justifyContent="flex-start">

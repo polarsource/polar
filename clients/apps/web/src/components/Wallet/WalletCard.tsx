@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { formatCurrency } from '@polar-sh/currency'
 
 interface WalletCardProps {
   organization: schemas['CustomerOrganization']
@@ -32,7 +32,7 @@ const WalletCard = ({ organization, wallet }: WalletCardProps) => {
             Available Balance
           </div>
           <div className="text-4xl font-bold tracking-tight text-gray-950 dark:text-white">
-            {formatCurrencyAndAmount(wallet.balance, wallet.currency)}
+            {formatCurrency('compact')(wallet.balance, wallet.currency)}
           </div>
         </div>
 

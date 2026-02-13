@@ -84,6 +84,38 @@ export default function FeatureSettings({
               }}
             />
           </SettingsGroupItem>
+          <SettingsGroupItem
+            title="Localized Checkout"
+            description={
+              <>
+                Show{' '}
+                <a
+                  href="https://polar.sh/docs/features/checkout/localization"
+                  target="_blank"
+                  className="underline"
+                  rel="noreferrer noopener"
+                >
+                  translated checkouts
+                </a>{' '}
+                to your customers.
+              </>
+            }
+          >
+            <FormField
+              control={control}
+              name="checkout_localization_enabled"
+              render={({ field }) => {
+                return (
+                  <>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={(enabled) => field.onChange(enabled)}
+                    />
+                  </>
+                )
+              }}
+            />
+          </SettingsGroupItem>
         </SettingsGroup>
       </form>
     </Form>

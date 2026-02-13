@@ -24,7 +24,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.email.react import render_email_template
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import Attachment, enqueue_email
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxProcessor
 from polar.event.service import event as event_service
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -83,10 +83,10 @@ from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     TaxabilityReason,
     TaxCalculation,
-    TaxCalculationError,
+    TaxCalculationLogicalError,
     TaxRate,
-    get_tax_service,
 )
+from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -576,9 +576,8 @@ class OrderService:
         # Record tax transaction
         if checkout.tax_processor_id is not None:
             assert checkout.tax_processor is not None
-            tax_service = get_tax_service(checkout.tax_processor)
-            transaction_id = await tax_service.record(
-                checkout.tax_processor_id, str(order.id)
+            transaction_id = await tax_calculation_service.record(
+                checkout.tax_processor, checkout.tax_processor_id, str(order.id)
             )
             await repository.update(
                 order,
@@ -623,7 +622,7 @@ class OrderService:
                 discount_amount = discount.get_discount_amount(discountable_amount)
 
             # Calculate tax
-            tax_processor = settings.DEFAULT_TAX_PROCESSOR
+            tax_processor: TaxProcessor | None = None
             tax_calculation: TaxCalculation | None = None
             taxable_amount = subtotal_amount - discount_amount
             tax_amount = 0
@@ -637,9 +636,11 @@ class OrderService:
                 and product.is_tax_applicable
                 and billing_address is not None
             ):
-                tax_service = get_tax_service(tax_processor)
                 try:
-                    tax_calculation = await tax_service.calculate(
+                    (
+                        tax_calculation,
+                        tax_processor,
+                    ) = await tax_calculation_service.calculate(
                         order_id,
                         subscription.currency,
                         # Stripe doesn't support calculating negative tax amounts
@@ -649,7 +650,7 @@ class OrderService:
                         [tax_id] if tax_id is not None else [],
                         subscription.tax_exempted,
                     )
-                except TaxCalculationError:
+                except TaxCalculationLogicalError:
                     log.warning(
                         "Failed to calculate tax for subscription order due to invalid or incomplete address",
                         subscription_id=subscription.id,
@@ -895,9 +896,10 @@ class OrderService:
         # Record tax transaction
         if wallet_transaction.tax_calculation_processor_id is not None:
             assert wallet_transaction.tax_processor is not None
-            tax_service = get_tax_service(wallet_transaction.tax_processor)
-            transaction_id = await tax_service.record(
-                wallet_transaction.tax_calculation_processor_id, str(order.id)
+            transaction_id = await tax_calculation_service.record(
+                wallet_transaction.tax_processor,
+                wallet_transaction.tax_calculation_processor_id,
+                str(order.id),
             )
             await repository.update(
                 order,
@@ -1251,9 +1253,8 @@ class OrderService:
             and order.tax_transaction_processor_id is None
         ):
             assert order.tax_processor is not None
-            tax_service = get_tax_service(order.tax_processor)
-            transaction_id = await tax_service.record(
-                order.tax_calculation_processor_id, str(order.id)
+            transaction_id = await tax_calculation_service.record(
+                order.tax_processor, order.tax_calculation_processor_id, str(order.id)
             )
             update_dict["tax_transaction_processor_id"] = transaction_id
 
@@ -1570,6 +1571,7 @@ class OrderService:
         )
         order.platform_fee_currency = platform_fee_transactions[0][0].currency
         session.add(order)
+        await self._on_order_updated(session, order=order, previous_status=order.status)
 
         await self._create_balance_order_event(
             session,
@@ -1596,6 +1598,7 @@ class OrderService:
                 "transaction_id": str(payment_transaction.id),
                 "order_id": str(order.id),
                 "amount": payment_transaction.amount,
+                "net_amount": order.net_amount,
                 "currency": payment_transaction.currency,
                 "presentment_amount": payment_transaction.presentment_amount,
                 "presentment_currency": payment_transaction.presentment_currency,
@@ -1611,6 +1614,8 @@ class OrderService:
                 metadata["subscription_id"] = str(order.subscription_id)
             if order.product_id is not None:
                 metadata["product_id"] = str(order.product_id)
+            if payment_transaction.exchange_rate is not None:
+                metadata["exchange_rate"] = payment_transaction.exchange_rate
 
             balance_order_event = build_system_event(
                 SystemEvent.balance_order,
@@ -1837,6 +1842,11 @@ class OrderService:
 
         assert order.subscription is not None
         await subscription_service.mark_past_due(session, order.subscription)
+
+        # Re-enqueue benefit revocation to check if grace period has expired
+        # We might end up here in the event that a user goes via the subscription product
+        # update flow, so we need to ensure that they don't get benefits they shouldn't have.
+        await subscription_service.enqueue_benefits_grants(session, order.subscription)
 
         return order
 

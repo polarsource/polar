@@ -46,7 +46,6 @@ from polar.exceptions import (
     ResourceNotFound,
     ValidationError,
 )
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
@@ -58,7 +57,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.member import member_service
+from polar.member.service import member_service
 from polar.models import (
     Account,
     Checkout,
@@ -72,6 +71,7 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
+    ProductVisibility,
     Subscription,
     User,
 )
@@ -90,7 +90,6 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.guard import (
-    is_currency_price,
     is_custom_price,
     is_discount_applicable,
     is_fixed_price,
@@ -102,7 +101,9 @@ from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.tax.calculation import TaxCalculationError, TaxCode, get_tax_service
+from polar.tax.calculation import TaxCode
+from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.calculation.base import TaxCalculationLogicalError
 from polar.tax.tax_id import InvalidTaxID, TaxID, to_stripe_tax_id, validate_tax_id
 from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
@@ -112,6 +113,15 @@ from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
+
+if typing.TYPE_CHECKING:
+    from stripe.params._customer_create_params import (
+        CustomerCreateParams,
+    )
+    from stripe.params._customer_modify_params import CustomerModifyParams
+    from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
+    from stripe.params._setup_intent_create_params import SetupIntentCreateParams
+
 
 log: Logger = structlog.get_logger()
 
@@ -308,12 +318,15 @@ class CheckoutService:
             products = await self._get_validated_products(
                 session, auth_subject, checkout_create.products
             )
+            product = products[0]
             if checkout_create.prices:
                 ad_hoc_prices = await self._get_validated_prices(
-                    session, auth_subject, products, checkout_create.prices
+                    session,
+                    auth_subject,
+                    product.organization,
+                    products,
+                    checkout_create.prices,
                 )
-
-            product = products[0]
 
             currencies = self._get_currencies(
                 checkout_create.currency, product, product.organization, ip_country
@@ -489,7 +502,6 @@ class CheckoutService:
             subscription=subscription,
             customer=customer,
             custom_field_data=custom_field_data,
-            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
@@ -525,6 +537,9 @@ class CheckoutService:
                         getattr(checkout.customer, attribute),
                     )
 
+            if checkout.locale is None and checkout.customer.locale is not None:
+                checkout.locale = checkout.customer.locale
+
             # Auto-select business customer if they have both a billing name (without the fallback to customer.name)
             # and a billing address since that means they've previously checked the is_business_customer checkbox
             # Only auto-select if is_business_customer wasn't explicitly set in the request
@@ -550,6 +565,14 @@ class CheckoutService:
                     "customer_session_client_secret": stripe_customer_session.client_secret,
                 }
 
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if not product.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            checkout.locale = "en-US"
+
         session.add(checkout)
 
         checkout = await self._update_ip_country(session, checkout, ip_country)
@@ -558,7 +581,7 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
-        except TaxCalculationError:
+        except TaxCalculationLogicalError:
             pass
 
         await session.flush()
@@ -607,6 +630,18 @@ class CheckoutService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
+                        "input": checkout_create.product_id,
+                    }
+                ]
+            )
+
+        if product.visibility == ProductVisibility.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is a draft.",
                         "input": checkout_create.product_id,
                     }
                 ]
@@ -693,7 +728,6 @@ class CheckoutService:
             customer=None,
             subscription=None,
             customer_email=checkout_create.customer_email,
-            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
         )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
@@ -717,7 +751,7 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
-        except TaxCalculationError:
+        except TaxCalculationLogicalError:
             pass
 
         session.add(checkout)
@@ -739,7 +773,10 @@ class CheckoutService:
     ) -> Checkout:
         products: list[Product] = []
         for product in checkout_link.products:
-            if not product.is_archived:
+            if (
+                not product.is_archived
+                and product.visibility != ProductVisibility.draft
+            ):
                 products.append(product)
 
         if len(products) == 0:
@@ -850,7 +887,6 @@ class CheckoutService:
             payment_processor=checkout_link.payment_processor,
             success_url=checkout_link.success_url,
             user_metadata=checkout_link.user_metadata,
-            tax_processor=settings.DEFAULT_TAX_PROCESSOR,
         )
 
         # Handle query parameter prefill
@@ -920,6 +956,21 @@ class CheckoutService:
                 "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             }
 
+        # Allow people setting locale on checkout links
+        #
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if product.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            if query_prefill:
+                locale = query_prefill.get("locale")
+                if locale is not None and isinstance(locale, str):
+                    checkout.locale = locale
+        else:
+            checkout.locale = "en-US"
+
         session.add(checkout)
 
         checkout = await self._update_ip_country(session, checkout, ip_country)
@@ -928,7 +979,7 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
-        except TaxCalculationError:
+        except TaxCalculationLogicalError:
             pass
 
         await session.flush()
@@ -950,7 +1001,7 @@ class CheckoutService:
             try:
                 checkout = await self._update_checkout_tax(session, checkout)
             # Swallow incomplete tax calculation error: require it only on confirm
-            except TaxCalculationError:
+            except TaxCalculationLogicalError:
                 pass
 
             await self._after_checkout_updated(session, checkout)
@@ -1001,7 +1052,7 @@ class CheckoutService:
         errors: list[ValidationError] = []
         try:
             checkout = await self._update_checkout_tax(session, checkout)
-        except TaxCalculationError as e:
+        except TaxCalculationLogicalError as e:
             errors.append(
                 {
                     "type": "value_error",
@@ -1030,6 +1081,31 @@ class CheckoutService:
             )
         ):
             raise PaymentNotReady()
+
+        # For wallet payments (Apple Pay, Google Pay), we hide the customer name field
+        # for better UX and instead extract the name from Stripe's confirmation token.
+        if (
+            checkout.payment_processor == PaymentProcessor.stripe
+            and checkout_confirm.confirmation_token_id is not None
+            and checkout.customer_name is None
+        ):
+            try:
+                confirmation_token = await stripe_service.get_confirmation_token(
+                    checkout_confirm.confirmation_token_id
+                )
+                if (
+                    confirmation_token.payment_method_preview is not None
+                    and confirmation_token.payment_method_preview.billing_details
+                    is not None
+                ):
+                    wallet_name = (
+                        confirmation_token.payment_method_preview.billing_details.name
+                    )
+                    if wallet_name:
+                        checkout.customer_name = wallet_name
+                        session.add(checkout)
+            except stripe_lib.StripeError:
+                pass
 
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
@@ -1094,7 +1170,7 @@ class CheckoutService:
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
                         "checkout_id": str(checkout.id),
-                        "type": ProductType.product,
+                        "type": "product",
                         "tax_amount": str(checkout.tax_amount),
                         "tax_country": checkout.customer_billing_address.country,
                     }
@@ -1106,7 +1182,7 @@ class CheckoutService:
 
                     try:
                         if checkout.is_payment_required:
-                            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                            payment_intent_params: PaymentIntentCreateParams = {
                                 "amount": checkout.total_amount,
                                 "currency": checkout.currency,
                                 "automatic_payment_methods": {"enabled": True},
@@ -1129,7 +1205,7 @@ class CheckoutService:
                                 **payment_intent_params
                             )
                         else:
-                            setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
+                            setup_intent_params: SetupIntentCreateParams = {
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
@@ -1437,10 +1513,7 @@ class CheckoutService:
                 ]
             )
 
-        if is_currency_price(price):
-            currency = price.price_currency
-        else:
-            currency = product.organization.default_presentment_currency
+        currency = price.price_currency
 
         return [product], product, price, currency
 
@@ -1473,6 +1546,18 @@ class CheckoutService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if product.visibility == ProductVisibility.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is a draft.",
                         "input": product_id,
                     }
                 ]
@@ -1534,6 +1619,17 @@ class CheckoutService:
                 )
                 continue
 
+            if product.visibility == ProductVisibility.draft:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is a draft.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
             products.append(product)
 
         organization_ids = {product.organization_id for product in products}
@@ -1556,6 +1652,7 @@ class CheckoutService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
         products: Sequence[Product],
         prices: dict[uuid.UUID, ProductPriceCreateList],
     ) -> dict[Product, Sequence[ProductPrice]]:
@@ -1582,6 +1679,7 @@ class CheckoutService:
                 price_errors,
             ) = await product_service.get_validated_prices(
                 session,
+                organization,
                 product_prices,
                 product.recurring_interval,
                 product,
@@ -2077,12 +2175,11 @@ class CheckoutService:
     ) -> Checkout:
         checkout.product_price = price
         checkout.amount = 0
+        checkout.seats = None
         if is_fixed_price(price):
             checkout.amount = price.price_amount
-            checkout.seats = None
         elif is_custom_price(price):
             checkout.amount = price.preset_amount or price.minimum_amount
-            checkout.seats = None
         elif is_seat_price(price):
             # Use minimum_seats as default if no seats are set
             minimum_seats = price.get_minimum_seats()
@@ -2091,8 +2188,6 @@ class CheckoutService:
             self._validate_seat_limits(price, seats)
             checkout.seats = seats
             checkout.amount = price.calculate_amount(seats)
-        elif is_currency_price(price):
-            checkout.seats = None
 
         return checkout
 
@@ -2111,10 +2206,11 @@ class CheckoutService:
             return checkout
 
         if checkout.customer_billing_address is not None:
-            assert checkout.tax_processor is not None
-            tax_service = get_tax_service(checkout.tax_processor)
             try:
-                tax_calculation = await tax_service.calculate(
+                (
+                    tax_calculation,
+                    tax_processor,
+                ) = await tax_calculation_service.calculate(
                     checkout.id,
                     checkout.currency,
                     checkout.net_amount,
@@ -2127,11 +2223,13 @@ class CheckoutService:
                     ),
                     customer_exempt=False,
                 )
+                checkout.tax_processor = tax_processor
                 checkout.tax_amount = tax_calculation["amount"]
                 checkout.tax_processor_id = tax_calculation["processor_id"]
                 checkout.taxability_reason = tax_calculation["taxability_reason"]
                 checkout.tax_rate = tax_calculation["tax_rate"]
-            except TaxCalculationError:
+            except TaxCalculationLogicalError:
+                checkout.tax_processor = None
                 checkout.tax_amount = None
                 checkout.tax_processor_id = None
                 checkout.taxability_reason = None
@@ -2164,9 +2262,6 @@ class CheckoutService:
     ) -> Sequence[str]:
         if currency_request is not None:
             return [currency_request]
-
-        if len(product.prices) == 1 and not is_currency_price(product.prices[0]):
-            return [organization.default_presentment_currency]
 
         currencies: list[str] = []
 
@@ -2402,7 +2497,7 @@ class CheckoutService:
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
-            create_params: stripe_lib.Customer.CreateParams = {"email": customer.email}
+            create_params: CustomerCreateParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 create_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2416,7 +2511,7 @@ class CheckoutService:
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
         else:
-            update_params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
+            update_params: CustomerModifyParams = {"email": customer.email}
             if checkout.customer_billing_name is not None:
                 update_params["name"] = checkout.customer_billing_name
             elif checkout.customer_name is not None:
@@ -2441,6 +2536,8 @@ class CheckoutService:
             customer.billing_address = checkout.customer_billing_address
         if checkout.customer_tax_id is not None:
             customer.tax_id = checkout.customer_tax_id
+        if checkout.locale is not None:
+            customer.locale = checkout.locale
 
         customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {
@@ -2496,6 +2593,16 @@ class CheckoutService:
                 CheckoutEvent.webhook_event_delivered,
                 {"status": checkout.status},
             )
+
+    async def send_expiration_events(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.updated, {"status": checkout.status}
+        )
+        await webhook_service.send(
+            session, checkout.organization, WebhookEventType.checkout_expired, checkout
+        )
 
     async def _eager_load_product(
         self, session: AsyncSession, product: Product

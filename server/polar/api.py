@@ -6,6 +6,7 @@ from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
+from polar.cli.endpoints import router as cli_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -106,6 +107,8 @@ router.include_router(refund_router)
 router.include_router(dispute_router)
 # /checkouts
 router.include_router(checkout_router)
+# /cli
+router.include_router(cli_router)
 # /files
 router.include_router(files_router)
 # /metrics

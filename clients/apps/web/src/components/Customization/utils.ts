@@ -21,6 +21,7 @@ const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   is_archived: false,
   modified_at: new Date().toISOString(),
   organization_id: '123',
+  visibility: 'public',
   recurring_interval: null,
   recurring_interval_count: null,
   medias: [

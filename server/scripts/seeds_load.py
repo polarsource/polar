@@ -22,6 +22,7 @@ from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
 from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import CountAggregation
@@ -746,7 +747,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             if product_data.get("metered", False) and coldmail_meter:
                 price_create = ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                     unit_amount=Decimal(str(product_data["unit_amount"])),
                     meter_id=coldmail_meter.id,
                     cap_amount=product_data.get("cap_amount"),
@@ -756,7 +757,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 price_per_seat = product_data.get("price_per_seat", 1000)
                 price_create = ProductPriceSeatBasedCreate(
                     amount_type=ProductPriceAmountType.seat_based,
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                     seat_tiers=ProductPriceSeatTiers(
                         tiers=[
                             ProductPriceSeatTier(
@@ -772,7 +773,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 price_create = ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
                     price_amount=product_data["price"],
-                    price_currency="usd",
+                    price_currency=PresentmentCurrency.usd,
                 )
 
             product_create: ProductCreate
@@ -1015,8 +1016,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 await session.flush()
 
         # Downgrade user from admin (for non-admin users)
+        # Preserve admin status if already granted by a previous organization
         await user_repository.update(
-            user, update_dict={"is_admin": org_data.get("is_admin", False)}
+            user,
+            update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
         )
 
     await session.commit()

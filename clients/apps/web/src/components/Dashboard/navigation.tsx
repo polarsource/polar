@@ -331,6 +331,10 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/settings`,
       },
       {
+        title: 'Billing',
+        link: `/dashboard/${org?.slug}/settings/billing`,
+      },
+      {
         title: 'Members',
         link: `/dashboard/${org?.slug}/settings/members`,
       },

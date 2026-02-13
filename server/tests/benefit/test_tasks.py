@@ -12,6 +12,7 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     CustomerDoesNotExist,
     benefit_delete,
     benefit_delete_grant,
+    benefit_enqueue_grants,
     benefit_grant,
     benefit_grant_service,
     benefit_revoke,
@@ -19,6 +20,8 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
 )
 from polar.models import Benefit, BenefitGrant, Customer, Subscription
 from polar.postgres import AsyncSession
+from polar.subscription.service import SubscriptionService
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 
 
@@ -353,3 +356,108 @@ class TestBenefitDeleteGrant:
 
         with pytest.raises(Retry):
             await benefit_delete_grant(grant.id)
+
+
+@pytest.mark.asyncio
+class TestBenefitEnqueueGrants:
+    async def test_resets_meters_for_subscription(
+        self,
+        mocker: MockerFixture,
+        subscription: Subscription,
+        session: AsyncSession,
+    ) -> None:
+        reset_meters_mock = mocker.patch.object(
+            subscription_service,
+            "reset_meters",
+            spec=SubscriptionService.reset_meters,
+        )
+
+        session.expunge_all()
+
+        await benefit_enqueue_grants(
+            subscription.customer_id, [], subscription_id=subscription.id
+        )
+
+        reset_meters_mock.assert_called_once()
+
+    async def test_skips_meter_reset_without_subscription(
+        self,
+        mocker: MockerFixture,
+        customer: Customer,
+        session: AsyncSession,
+    ) -> None:
+        reset_meters_mock = mocker.patch.object(
+            subscription_service,
+            "reset_meters",
+            spec=SubscriptionService.reset_meters,
+        )
+
+        session.expunge_all()
+
+        await benefit_enqueue_grants(customer.id, [], order_id=uuid.uuid4())
+
+        reset_meters_mock.assert_not_called()
+
+    async def test_enqueues_grants(
+        self,
+        mocker: MockerFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "reset_meters",
+            spec=SubscriptionService.reset_meters,
+        )
+        enqueue_job_mock = mocker.patch("polar.benefit.tasks.enqueue_job")
+
+        benefit_ids = [benefit_organization.id, benefit_organization_second.id]
+
+        session.expunge_all()
+
+        await benefit_enqueue_grants(
+            subscription.customer_id,
+            benefit_ids,
+            subscription_id=subscription.id,
+        )
+
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "benefit.grant",
+            customer_id=subscription.customer_id,
+            benefit_id=benefit_organization.id,
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+        enqueue_job_mock.assert_any_call(
+            "benefit.grant",
+            customer_id=subscription.customer_id,
+            benefit_id=benefit_organization_second.id,
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+
+    async def test_no_grants_skips_enqueue(
+        self,
+        mocker: MockerFixture,
+        subscription: Subscription,
+        session: AsyncSession,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service,
+            "reset_meters",
+            spec=SubscriptionService.reset_meters,
+        )
+        enqueue_job_mock = mocker.patch("polar.benefit.tasks.enqueue_job")
+
+        session.expunge_all()
+
+        await benefit_enqueue_grants(
+            subscription.customer_id,
+            [],
+            subscription_id=subscription.id,
+        )
+
+        enqueue_job_mock.assert_not_called()

@@ -1,32 +1,58 @@
+import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { BenefitGrant } from '../Benefit/BenefitGrant'
+import { CustomerPortalGrantsComplex } from './CustomerPortalGrantsComplex'
+import { CustomerPortalGrantsSimple } from './CustomerPortalGrantsSimple'
+
+const SIMPLIFIED_VIEW_THRESHOLD = 10
 
 export interface CustomerPortalGrantsProps {
-  organization: schemas['CustomerOrganization']
-  benefitGrants: schemas['CustomerBenefitGrant'][]
+  organization?: schemas['CustomerOrganization']
   api: Client
+  subscriptionId?: string
+  orderId?: string
 }
 
 export const CustomerPortalGrants = ({
+  organization,
   api,
-  benefitGrants,
+  subscriptionId,
+  orderId,
 }: CustomerPortalGrantsProps) => {
-  return (
-    <div className="flex w-full flex-col gap-4">
-      <h3 className="text-xl">Benefit Grants</h3>
-      <div className="flex flex-col gap-4">
-        <List>
-          {benefitGrants?.map((benefitGrant) => (
-            <ListItem
-              key={benefitGrant.id}
-              className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-            >
-              <BenefitGrant api={api} benefitGrant={benefitGrant} />
-            </ListItem>
-          ))}
-        </List>
-      </div>
-    </div>
+  // Build filter parameters based on what's provided
+  const filterParams = {
+    ...(subscriptionId ? { subscription_id: subscriptionId } : {}),
+    ...(orderId ? { order_id: orderId } : {}),
+  }
+
+  // Fetch initial data to determine which view to show
+  const { data: initialResponse } = useCustomerBenefitGrants(api, {
+    limit: SIMPLIFIED_VIEW_THRESHOLD,
+    ...filterParams,
+  })
+
+  const totalBenefitGrantCount =
+    initialResponse?.pagination?.total_count ??
+    initialResponse?.items?.length ??
+    0
+  const initialBenefitGrants = initialResponse?.items ?? []
+
+  const isSimplifiedView = totalBenefitGrantCount <= SIMPLIFIED_VIEW_THRESHOLD
+
+  if (totalBenefitGrantCount === 0) {
+    return null
+  }
+
+  return isSimplifiedView ? (
+    <CustomerPortalGrantsSimple
+      organization={organization}
+      benefitGrants={initialBenefitGrants}
+      api={api}
+    />
+  ) : (
+    <CustomerPortalGrantsComplex
+      api={api}
+      subscriptionId={subscriptionId}
+      orderId={orderId}
+    />
   )
 }

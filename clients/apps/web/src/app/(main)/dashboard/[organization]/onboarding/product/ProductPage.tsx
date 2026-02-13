@@ -8,6 +8,7 @@ import { FadeUp } from '@/components/Animated/FadeUp'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { AssistantStep } from '@/components/Onboarding/AssistantStep'
 import { ProductStep } from '@/components/Onboarding/ProductStep'
+import { useOnboardingTracking } from '@/hooks/onboarding'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { twMerge } from 'tailwind-merge'
 
@@ -17,6 +18,7 @@ export default function ClientPage({
   isAssistantEnabled: boolean
 }) {
   const { organization, organizations } = useContext(OrganizationContext)
+  const { trackStepSkipped } = useOnboardingTracking()
   const [mode, setMode] = useState<'assistant' | 'manual'>(
     isAssistantEnabled ? 'assistant' : 'manual',
   )
@@ -96,6 +98,7 @@ export default function ClientPage({
             <Link
               href={`/dashboard/${organization.slug}`}
               className="dark:hover:text-polar-500 dark:hover:bg-polar-700 rounded-full px-2.5 py-1 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-500"
+              onClick={() => trackStepSkipped('product', organization.id)}
             >
               Skip onboarding
             </Link>

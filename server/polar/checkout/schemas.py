@@ -8,7 +8,6 @@ from pydantic import (
     AliasChoices,
     Discriminator,
     Field,
-    HttpUrl,
     IPvAnyAddress,
     Tag,
     computed_field,
@@ -31,6 +30,8 @@ from polar.enums import PaymentProcessor
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
+from polar.kit.http import SuccessUrl
+from polar.kit.locale import Locale
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
     MetadataField,
@@ -107,7 +108,7 @@ CustomerBillingAddress = Annotated[
     Address, Field(description="Billing address of the customer.")
 ]
 SuccessURL = Annotated[
-    HttpUrl | None,
+    SuccessUrl | None,
     Field(
         description=(
             "URL where the customer will be redirected after a successful payment."
@@ -250,6 +251,7 @@ class CheckoutCreateBase(
     success_url: SuccessURL = None
     return_url: ReturnURL = None
     embed_origin: EmbedOrigin = None
+    locale: Locale | None = None
 
 
 class CheckoutPriceCreate(CheckoutCreateBase):
@@ -336,6 +338,7 @@ class CheckoutCreatePublic(Schema):
             "will be copied to the subscription, and existing keys will be overwritten."
         ),
     )
+    locale: Locale | None = None
 
 
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
@@ -370,6 +373,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    locale: Locale | None = None
 
 
 class CheckoutUpdate(
@@ -578,6 +582,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
     customer_tax_id: str | None = Field(
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
+    locale: str | None = None
 
     payment_processor_metadata: dict[str, str]
 

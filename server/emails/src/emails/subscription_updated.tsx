@@ -11,8 +11,7 @@ import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import FooterCustomer from '../components/FooterCustomer'
 import OrderSummary from '../components/OrderSummary'
-import OrganizationHeader from '../components/OrganizationHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperOrganization from '../components/WrapperOrganization'
 import { order, organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -25,10 +24,9 @@ export function SubscriptionUpdated({
   url,
 }: schemas['SubscriptionUpdatedProps']) {
   return (
-    <Wrapper>
+    <WrapperOrganization organization={organization}>
       <Preview>Your subscription has been updated to {product.name}</Preview>
-      <OrganizationHeader organization={organization} />
-      <Section className="pt-10">
+      <Section>
         <Heading as="h1" className="text-xl font-bold text-gray-900">
           Your subscription has been updated
         </Heading>
@@ -61,19 +59,19 @@ export function SubscriptionUpdated({
         </Section>
       )}
 
-      <Section className="mt-6 border-t border-gray-200 pt-6">
-        <Text className="text-sm text-gray-600">
-          If you're having trouble with the button above, copy and paste the URL
+      <Section className="mt-6 border-t border-gray-200 pt-4 pb-4">
+        <Text className="m-0 text-xs text-gray-600">
+          If you're having trouble with the button above, copy & paste the URL
           below into your web browser.
         </Text>
-        <Text className="text-sm">
-          <Link href={url} className="text-blue-600 underline">
+        <Text className="mt-2 mb-0 text-xs">
+          <Link href={url} className="break-all text-blue-600 underline">
             {url}
           </Link>
         </Text>
       </Section>
       <FooterCustomer organization={organization} email={email} />
-    </Wrapper>
+    </WrapperOrganization>
   )
 }
 

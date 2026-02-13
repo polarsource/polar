@@ -15,7 +15,11 @@ from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
 from polar.models.member import Member, MemberRole
 from polar.models.organization import Organization as OrgModel
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.webhook.service import webhook as webhook_service
+from polar.worker import enqueue_job
 
 from .repository import MemberRepository
 from .sorting import MemberSortProperty
@@ -80,6 +84,9 @@ class MemberService:
         """
         Soft delete a member.
 
+        Any active seats assigned to this member will be automatically revoked
+        before deletion.
+
         Args:
             session: Database session
             member: Member to delete
@@ -108,6 +115,8 @@ class MemberService:
                     ]
                 )
 
+        enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
+
         deleted_member = await repository.soft_delete(member)
         log.info(
             "member.delete.success",
@@ -115,6 +124,17 @@ class MemberService:
             customer_id=member.customer_id,
             organization_id=member.organization_id,
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(member.organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.member_deleted,
+                deleted_member,
+            )
+
         return deleted_member
 
     async def create_owner_member(
@@ -126,6 +146,7 @@ class MemberService:
         owner_email: str | None = None,
         owner_name: str | None = None,
         owner_external_id: str | None = None,
+        send_webhook: bool = True,
     ) -> Member | None:
         """
         Create an owner member for a customer if feature flag is enabled.
@@ -178,13 +199,20 @@ class MemberService:
         )
 
         try:
-            created_member = await repository.create(member)
+            created_member = await repository.create(member, flush=True)
             log.info(
                 "member.create_owner_member.success",
                 customer_id=customer.id,
                 member_id=created_member.id,
                 organization_id=organization.id,
             )
+            if send_webhook:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_created,
+                    created_member,
+                )
             return created_member
         except IntegrityError as e:
             log.info(
@@ -430,6 +458,12 @@ class MemberService:
                 organization_id=customer.organization_id,
                 role=role,
             )
+            await webhook_service.send(
+                session,
+                customer.organization,
+                WebhookEventType.member_created,
+                created_member,
+            )
             return created_member
         except IntegrityError as e:
             log.warning(
@@ -457,8 +491,26 @@ class MemberService:
         *,
         name: str | None = None,
         role: MemberRole | None = None,
+        caller_member: Member | None = None,
+        allow_ownership_transfer: bool = False,
     ) -> Member:
-        """Update a member."""
+        """
+        Update a member.
+
+        Args:
+            session: Database session
+            member: Member to update
+            name: Optional new name
+            role: Optional new role
+            caller_member: The member making the request (for customer portal ownership transfer)
+            allow_ownership_transfer: If True, allows ownership transfer without caller_member
+                                      (for admin API). The existing owner will be demoted.
+
+        For ownership transfer:
+            - Customer portal: Only the current owner can transfer ownership (via caller_member)
+            - Admin API: Set allow_ownership_transfer=True to transfer ownership
+            - When promoting to owner, the existing owner is automatically demoted to billing_manager
+        """
         repository = MemberRepository.from_session(session)
 
         if role is not None and member.role != role:
@@ -470,10 +522,56 @@ class MemberService:
             is_losing_owner_role = is_current_owner and not is_becoming_owner
             is_gaining_owner_role = is_becoming_owner and not is_current_owner
 
-            # Prevent removing the last owner or adding a second owner
-            if (is_losing_owner_role and owner_count <= 1) or (
-                is_gaining_owner_role and owner_count >= 1
-            ):
+            # Handle ownership transfer
+            if is_gaining_owner_role and owner_count >= 1:
+                # Check if caller has permission to transfer ownership
+                caller_is_owner = (
+                    caller_member is not None and caller_member.role == MemberRole.owner
+                )
+                if not caller_is_owner and not allow_ownership_transfer:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "role"),
+                                "msg": "Only the owner can transfer ownership.",
+                                "input": role,
+                            }
+                        ]
+                    )
+
+                # Find and demote the current owner
+                if caller_is_owner and caller_member is not None:
+                    # Customer portal: demote the caller (who is the owner)
+                    await repository.update(
+                        caller_member, update_dict={"role": MemberRole.billing_manager}
+                    )
+                    log.info(
+                        "member.update.ownership_transfer",
+                        old_owner_id=caller_member.id,
+                        new_owner_id=member.id,
+                        customer_id=member.customer_id,
+                    )
+                else:
+                    # Admin API: find and demote the existing owner
+                    current_owner = next(
+                        (m for m in members if m.role == MemberRole.owner), None
+                    )
+                    if current_owner:
+                        await repository.update(
+                            current_owner,
+                            update_dict={"role": MemberRole.billing_manager},
+                        )
+                        log.info(
+                            "member.update.ownership_transfer",
+                            old_owner_id=current_owner.id,
+                            new_owner_id=member.id,
+                            customer_id=member.customer_id,
+                            admin_transfer=True,
+                        )
+
+            # Prevent removing the last owner
+            if is_losing_owner_role and owner_count <= 1:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -502,6 +600,17 @@ class MemberService:
             organization_id=member.organization_id,
             updated_fields=list(update_dict.keys()),
         )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(member.organization_id)
+        if organization:
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.member_updated,
+                updated_member,
+            )
+
         return updated_member
 
 

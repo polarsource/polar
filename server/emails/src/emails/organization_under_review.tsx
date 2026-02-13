@@ -3,8 +3,7 @@ import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import IntroWithHi from '../components/IntroWithHi'
-import PolarHeader from '../components/PolarHeader'
-import Wrapper from '../components/Wrapper'
+import WrapperPolar from '../components/WrapperPolar'
 import type { schemas } from '../types'
 
 export function OrganizationUnderReview({
@@ -12,12 +11,11 @@ export function OrganizationUnderReview({
   organization,
 }: schemas['OrganizationUnderReviewProps']) {
   return (
-    <Wrapper>
+    <WrapperPolar>
       <Preview>
         Your organization is under review - a standard part of our onboarding
         process
       </Preview>
-      <PolarHeader />
       <IntroWithHi>
         Your organization <strong>{organization.name}</strong> is currently
         under review as part of our standard onboarding process.
@@ -54,7 +52,7 @@ export function OrganizationUnderReview({
         </BodyText>
       </Section>
       <Footer email={email} />
-    </Wrapper>
+    </WrapperPolar>
   )
 }
 

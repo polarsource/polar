@@ -35,11 +35,15 @@ from polar.config import Environment
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import (
+    AccountType,
+    PaymentProcessor,
+    SubscriptionRecurringInterval,
+    TaxProcessor,
+)
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PaymentNotReady, PolarRequestValidationError
-from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import AddressInput
 from polar.kit.currency import PresentmentCurrency
@@ -73,18 +77,21 @@ from polar.models.product_price import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import (
-    is_currency_price,
     is_fixed_price,
     is_metered_price,
     is_seat_price,
 )
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.subscription.service import SubscriptionService
-from polar.tax.calculation import TaxabilityReason
-from polar.tax.calculation.base import TaxCalculationError
+from polar.tax.calculation import (
+    TaxabilityReason,
+    TaxCalculationLogicalError,
+    TaxCalculationService,
+)
 from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
@@ -130,16 +137,19 @@ def order_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
-    mock = mocker.patch("polar.checkout.service.get_tax_service")
-    mock.return_value.calculate = AsyncMock(
-        return_value={
+    mock = mocker.patch(
+        "polar.checkout.service.tax_calculation_service", spec=TaxCalculationService
+    )
+    mock.calculate.return_value = (
+        {
             "processor_id": "TAX_PROCESSOR_ID",
             "amount": 0,
             "taxability_reason": TaxabilityReason.standard_rated,
             "tax_rate": {},
-        }
+        },
+        TaxProcessor.numeral,
     )
-    return mock.return_value.calculate
+    return mock.calculate
 
 
 @pytest.fixture
@@ -700,9 +710,7 @@ class TestCreate:
         assert checkout.products == [product_one_time_free_price]
         assert checkout.amount == 0
         assert checkout.user_metadata == {"key": "value"}
-        assert checkout.currency == organization.default_presentment_currency, (
-            "Free price should use org currency"
-        )
+        assert checkout.currency == price.price_currency
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -917,7 +925,7 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -943,12 +951,15 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 100,
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 100,
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -1281,7 +1292,6 @@ class TestCreate:
         assert checkout.product == product
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == expected_currency
         assert checkout.products == [product]
         assert checkout.currency == expected_currency
@@ -1314,7 +1324,6 @@ class TestCreate:
         assert checkout.product == product_one_time_multiple_currencies
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == currency
         assert checkout.products == [product_one_time_multiple_currencies]
         assert checkout.currency == currency
@@ -2053,7 +2062,7 @@ class TestCreate:
                             ProductPriceFixedCreate(
                                 amount_type=ProductPriceAmountType.fixed,
                                 price_amount=100_00,
-                                price_currency="usd",
+                                price_currency=PresentmentCurrency.usd,
                             ),
                         ]
                     },
@@ -2081,7 +2090,7 @@ class TestCreate:
                         ProductPriceFixedCreate(
                             amount_type=ProductPriceAmountType.fixed,
                             price_amount=100_00,
-                            price_currency="usd",
+                            price_currency=PresentmentCurrency.usd,
                         ),
                     ]
                 },
@@ -2578,7 +2587,6 @@ class TestCheckoutLinkCreate:
         assert checkout.product == product
         price = checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == expected_currency
         assert checkout.products == [product]
         assert checkout.currency == expected_currency
@@ -3011,7 +3019,7 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         checkout = await checkout_service.update(
             session,
@@ -3034,12 +3042,15 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.return_value = {
-            "processor_id": "TAX_PROCESSOR_ID",
-            "amount": 100,
-            "taxability_reason": TaxabilityReason.standard_rated,
-            "tax_rate": {},
-        }
+        calculate_tax_mock.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 100,
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": {},
+            },
+            TaxProcessor.numeral,
+        )
 
         checkout = await checkout_service.update(
             session,
@@ -3708,7 +3719,6 @@ class TestUpdate:
         assert updated_checkout.product == product_one_time_multiple_currencies
         price = updated_checkout.product_price
         assert price is not None
-        assert is_currency_price(price)
         assert price.price_currency == "usd"
         assert updated_checkout.currency == "usd"
 
@@ -3809,10 +3819,17 @@ class TestConfirm:
         self,
         payload: dict[str, str],
         missing_fields: set[tuple[str, ...]],
+        stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
         with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
@@ -3925,7 +3942,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.confirm(
@@ -4046,7 +4063,7 @@ class TestConfirm:
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             **expected_tax_metadata,
         }
@@ -4112,7 +4129,7 @@ class TestConfirm:
         stripe_service_mock.create_setup_intent.assert_called_once()
         assert stripe_service_mock.create_setup_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             **expected_tax_metadata,
         }
@@ -4168,7 +4185,7 @@ class TestConfirm:
         stripe_service_mock.create_payment_intent.assert_called_once()
         assert stripe_service_mock.create_payment_intent.call_args[1]["metadata"] == {
             "checkout_id": str(checkout.id),
-            "type": ProductType.product,
+            "type": "product",
             "tax_amount": "0",
             "tax_country": "FR",
         }
@@ -4583,7 +4600,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_discount_percentage_100: Checkout,
     ) -> None:
-        calculate_tax_mock.side_effect = TaxCalculationError("ERROR")
+        calculate_tax_mock.side_effect = TaxCalculationLogicalError("ERROR")
 
         # Verify this is a setup intent scenario
         assert checkout_discount_percentage_100.is_payment_required is False
@@ -4890,6 +4907,192 @@ class TestConfirm:
 
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
+
+    async def test_wallet_payment_extracts_name_from_confirmation_token(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Test that when customer_name is not provided (wallet payment like Apple Pay),
+        the name is extracted from the Stripe confirmation token.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = (
+            "John Appleseed"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_email": "beppe@example.com",
+                    "customer_billing_address": {
+                        "line1": "Some Street",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer_name == "John Appleseed"
+        stripe_service_mock.get_confirmation_token.assert_called_once_with(
+            "CONFIRMATION_TOKEN_ID"
+        )
+
+    async def test_wallet_payment_uses_provided_name_over_token(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Test that when customer_name IS provided, it takes precedence over
+        the name in the confirmation token (backwards compatibility).
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Provided Name",
+                    "customer_email": "beppe@example.com",
+                    "customer_billing_address": {
+                        "line1": "Some Street",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer_name == "Provided Name"
+        stripe_service_mock.get_confirmation_token.assert_not_called()
+
+    async def test_wallet_payment_fails_validation_on_stripe_error(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Checkout fails validation if fetching the confirmation token fails
+        and customer_name is not provided.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.get_confirmation_token.side_effect = stripe_lib.StripeError(
+            "API Error"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_email": "beppe@example.com",
+                        "customer_billing_address": {
+                            "line1": "Some Street",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
+        assert any(
+            error["loc"] == ("body", "customer_name")
+            for error in exc_info.value.errors()
+        )
+
+    async def test_wallet_payment_fails_validation_on_missing_billing_details(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        Checkout fails validation when confirmation token has no billing details
+        and customer_name is not provided.
+        """
+        await save_fixture(checkout_one_time_fixed)
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_email": "beppe@example.com",
+                        "customer_billing_address": {
+                            "line1": "Some Street",
+                            "postal_code": "12345",
+                            "city": "New York",
+                            "state": "US-NY",
+                            "country": "US",
+                        },
+                    }
+                ),
+            )
+
+        assert any(
+            error["loc"] == ("body", "customer_name")
+            for error in exc_info.value.errors()
+        )
 
 
 @pytest.mark.asyncio
@@ -5245,3 +5448,27 @@ class TestHandleSuccessPostHogTracking:
 
         assert checkout.status == CheckoutStatus.succeeded
         log_mock.error.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_expiration_events(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    product: Product,
+    mocker: MockerFixture,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        status=CheckoutStatus.expired,
+        expires_at=utc_now() - timedelta(days=1),
+    )
+
+    mock_send = mocker.patch("polar.checkout.service.webhook_service.send")
+
+    await checkout_service.send_expiration_events(session, checkout)
+
+    mock_send.assert_called_once()
+    args = mock_send.call_args
+    assert args[0][2] == WebhookEventType.checkout_expired
+    assert args[0][3].id == checkout.id

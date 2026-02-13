@@ -1,9 +1,9 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { DetailRow } from '../Shared/DetailRow'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
@@ -134,7 +134,7 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
           label="Amount"
           value={
             subscription.amount
-              ? formatCurrencyAndAmount(
+              ? formatCurrency('compact')(
                   subscription.amount,
                   subscription.currency,
                 )

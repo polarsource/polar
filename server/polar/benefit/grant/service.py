@@ -3,7 +3,9 @@ from collections.abc import Sequence
 from typing import Any, Literal, TypeVar, Unpack, overload
 from uuid import UUID
 
+import dramatiq
 import structlog
+from dramatiq import group
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -16,6 +18,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
 from polar.models import Benefit, BenefitGrant, Customer, Member, Product
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
@@ -219,6 +222,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 customer,
                 grant.properties,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -313,6 +317,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     customer,
                     grant.properties,
                     attempt=attempt,
+                    member=member,
                 )
                 grant.properties = properties
             except BenefitActionRequiredError:
@@ -366,48 +371,88 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
 
-        # Get existing grants for this customer and scope to avoid redundant jobs
-        existing_grants = await repository.list_by_customer_and_scope(customer, **scope)
+        # Get existing grants to avoid redundant jobs
+        # When a member_id is provided, only check that member's grants
+        if member_id is not None:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(member_id)
+            if member is not None:
+                existing_grants = await repository.list_by_member_and_scope(
+                    member, **scope
+                )
+            else:
+                existing_grants = []
+        else:
+            existing_grants = await repository.list_by_customer_and_scope(
+                customer, **scope
+            )
+
         granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
-        # Don't retry grants that failed due to required customer action -
-        # they should only be retried when the customer takes that action
+        # Don't retry grants that failed due to required customer action
         errored_benefit_ids = {
             g.benefit_id
             for g in existing_grants
             if g.error and g.error.get("type") == BenefitActionRequiredError.__name__
         }
 
-        if task == "grant":
-            benefits_to_process = [
-                b
+        grant_benefit_ids = (
+            [
+                b.id
                 for b in product.benefits
                 if b.id not in granted_benefit_ids and b.id not in errored_benefit_ids
             ]
-        else:
-            # Only revoke benefits that are actually granted
-            benefits_to_process = [
-                b for b in product.benefits if b.id in granted_benefit_ids
-            ]
+            if task == "grant"
+            else []
+        )
 
-        for benefit in benefits_to_process:
-            enqueue_job(
-                f"benefit.{task}",
-                customer_id=customer.id,
-                benefit_id=benefit.id,
-                member_id=member_id,
-                **scope_to_args(scope),
-            )
+        revoke_benefit_ids = (
+            [b.id for b in product.benefits if b.id in granted_benefit_ids]
+            if task == "revoke"
+            else []
+        )
 
-        # Get granted benefits that are not part of this product.
-        # It happens if the subscription has been upgraded/downgraded.
+        # Include outdated grants (from subscription upgrades/downgrades)
         outdated_grants = await repository.list_outdated_grants(product, **scope)
-        for outdated_grant in outdated_grants:
+        revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
+
+        if not revoke_benefit_ids and not grant_benefit_ids:
+            return
+
+        scope_args = scope_to_args(scope)
+        broker = dramatiq.get_broker()
+        enqueue_grants_actor = broker.get_actor(
+            "benefit.reset_meters_and_enqueue_grants"
+        )
+
+        # Pipeline: revoke group → enqueue_grants (resets meters for subs, then grants)
+        if revoke_benefit_ids:
+            revoke_actor = broker.get_actor("benefit.revoke")
+            revoke_messages = [
+                revoke_actor.message(
+                    customer_id=customer.id,
+                    benefit_id=benefit_id,
+                    member_id=member_id,
+                    **scope_args,
+                )
+                for benefit_id in revoke_benefit_ids
+            ]
+            revoke_group = group(revoke_messages)
+            revoke_group.add_completion_callback(
+                enqueue_grants_actor.message(
+                    customer_id=customer.id,
+                    grant_benefit_ids=grant_benefit_ids,
+                    member_id=member_id,
+                    **scope_args,
+                )
+            )
+            revoke_group.run()
+        else:
             enqueue_job(
-                "benefit.revoke",
+                "benefit.reset_meters_and_enqueue_grants",
                 customer_id=customer.id,
-                benefit_id=outdated_grant.benefit_id,
+                grant_benefit_ids=grant_benefit_ids,
                 member_id=member_id,
-                **scope_to_args(scope),
+                **scope_args,
             )
 
     async def enqueue_benefit_grant_updates(
@@ -446,6 +491,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if customer is None:
             return grant
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
@@ -455,6 +505,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 update=True,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -512,6 +563,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         customer = await customer_repository.get_by_id(grant.customer_id)
         assert customer is not None
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
@@ -520,6 +576,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 customer,
                 grant.properties,
                 attempt=attempt,
+                member=member,
             )
         except BenefitActionRequiredError as e:
             grant.set_grant_failed(e)
@@ -585,6 +642,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
         assert customer is not None
 
+        member = None
+        if grant.member_id:
+            member_repository = MemberRepository.from_session(session)
+            member = await member_repository.get_by_id(grant.member_id)
+
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         properties = await benefit_strategy.revoke(
@@ -592,6 +654,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             customer,
             grant.properties,
             attempt=attempt,
+            member=member,
         )
 
         grant.properties = properties

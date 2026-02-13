@@ -1,7 +1,7 @@
 import { useAccountCredits, useOrganizationAccount } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { formatCurrency } from '@polar-sh/currency'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useContext } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 
@@ -65,7 +65,9 @@ export const FeeCreditGrantsModal = ({
                         )}
                       </span>
                     </div>
-                    <span>{formatCurrencyAndAmount(credit.amount, 'usd')}</span>
+                    <span>
+                      {formatCurrency('accounting')(credit.amount, 'usd')}
+                    </span>
                   </ListItem>
                 ))}
             </List>

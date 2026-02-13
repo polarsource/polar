@@ -280,6 +280,82 @@ SQL >
             )
         {% end %}
 
+NODE subscription_canceled_events_raw
+SQL >
+    %
+    SELECT
+        e.id,
+        e.subscription_id,
+        e.timestamp AS event_timestamp,
+        e.ingested_at AS event_ingested_at,
+        e.canceled_at,
+        e.customer_cancellation_reason
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.canceled'
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                        )
+                    )
+            )
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    external_customer_ids,
+                                    description="Comma-separated external customer IDs",
+                                )
+                            }}
+                        )
+                    )
+            )
+        {% end %}
+
 NODE balance_events_raw
 SQL >
     %
@@ -986,18 +1062,12 @@ SQL >
                     tuple(se.canceled_at, se.customer_cancellation_reason),
                     (
                         COALESCE(se.canceled_at, toDateTime64(0, 3, 'UTC')),
-                        if(
-                            se.customer_cancellation_reason IS NULL
-                            OR se.customer_cancellation_reason = '',
-                            0,
-                            1
-                        ),
                         se.event_timestamp,
                         se.event_ingested_at
                     )
                 ) AS latest_cancel
-            FROM subscription_events_raw AS se
-            WHERE se.name = 'subscription.canceled'
+            FROM subscription_canceled_events_raw AS se
+            WHERE se.canceled_at IS NOT NULL
             GROUP BY se.subscription_id
         ) AS lc
 

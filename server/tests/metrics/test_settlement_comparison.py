@@ -1184,9 +1184,7 @@ class TestDuplicateBalanceEvents:
         feb = result.periods[0]
 
         # Should count only 1 order, not 2
-        assert feb.orders == 1, (
-            f"Should have 1 order (deduplicated), got {feb.orders}"
-        )
+        assert feb.orders == 1, f"Should have 1 order (deduplicated), got {feb.orders}"
 
         # Revenue should be counted only once
         assert feb.revenue == MONTHLY_PRICE, (
@@ -1726,7 +1724,9 @@ class TestTrialOrdersCounted:
             f"Feb should have 0 orders, got {feb.orders}. "
             "Order should not be counted in wrong month."
         )
-        assert jan.revenue == MONTHLY_PRICE, f"Jan revenue should be {MONTHLY_PRICE}, got {jan.revenue}"
+        assert jan.revenue == MONTHLY_PRICE, (
+            f"Jan revenue should be {MONTHLY_PRICE}, got {jan.revenue}"
+        )
         assert feb.revenue == 0, f"Feb revenue should be 0, got {feb.revenue}"
 
     async def test_delayed_payment_day_boundary(
@@ -1842,7 +1842,11 @@ class TestTrialOrdersCounted:
         jan = result.periods[0]
         feb = result.periods[1]
 
-        assert jan.orders == 1, f"Jan should have 1 order (created Jan 31), got {jan.orders}"
+        assert jan.orders == 1, (
+            f"Jan should have 1 order (created Jan 31), got {jan.orders}"
+        )
         assert feb.orders == 0, f"Feb should have 0 orders, got {feb.orders}"
-        assert jan.revenue == MONTHLY_PRICE, f"Jan revenue should be {MONTHLY_PRICE}, got {jan.revenue}"
+        assert jan.revenue == MONTHLY_PRICE, (
+            f"Jan revenue should be {MONTHLY_PRICE}, got {jan.revenue}"
+        )
         assert feb.revenue == 0, f"Feb revenue should be 0, got {feb.revenue}"

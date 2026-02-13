@@ -79,10 +79,12 @@ const formatCurrencyCompact = (
     style: 'currency',
     currency,
     currencyDisplay: 'narrowSymbol',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
   })
 
-  return currencyNumberFormat.format(cents / decimalFactor)
+  return currencyNumberFormat
+    .format(cents / decimalFactor)
+    .replace(/[.,]00$/, '')
 }
 
 const formatCurrencyStandard = (
@@ -95,10 +97,12 @@ const formatCurrencyStandard = (
     style: 'currency',
     currency,
     currencyDisplay: 'symbol',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
   })
 
-  return currencyNumberFormat.format(cents / decimalFactor)
+  return currencyNumberFormat
+    .format(cents / decimalFactor)
+    .replace(/[.,]00$/, '')
 }
 
 const formatCurrencyAccounting = (

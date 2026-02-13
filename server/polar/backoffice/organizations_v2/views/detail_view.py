@@ -271,6 +271,21 @@ class OrganizationDetailView:
                             variant="secondary",
                             size="sm",
                             outline=True,
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations-v2:run_review_agent",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                            hx_confirm="Run the review agent for this organization? This may take up to 2 minutes.",
+                        ):
+                            text("Run Review Agent")
+
+                    with tag.div(classes="w-full"):
+                        with button(
+                            variant="secondary",
+                            size="sm",
+                            outline=True,
                             hx_get=str(
                                 request.url_for(
                                     "organizations-v2:detail",

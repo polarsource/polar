@@ -586,6 +586,31 @@ async def approve_organization(
     )
 
 
+@router.post("/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent")
+async def run_review_agent(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    """Trigger the organization review agent as a background task."""
+    from polar.worker import enqueue_job
+
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    enqueue_job("organization_review.run_agent", organization_id=organization.id)
+
+    return HXRedirectResponse(
+        request,
+        str(
+            request.url_for("organizations-v2:detail", organization_id=organization_id)
+        ),
+        303,
+    )
+
+
 @router.api_route(
     "/{organization_id}/deny-dialog",
     name="organizations-v2:deny_dialog",

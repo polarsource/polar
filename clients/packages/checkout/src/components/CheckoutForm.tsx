@@ -51,10 +51,7 @@ import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
-import {
-  getMeteredPrices,
-  hasLegacyRecurringPrices,
-} from '../utils/product'
+import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
 import { unreachable } from '../utils/unreachable'
 import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'

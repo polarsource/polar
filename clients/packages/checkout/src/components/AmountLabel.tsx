@@ -27,8 +27,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
       return ''
     }
     const t = getTranslations(locale ?? 'en')
-    const count =
-      intervalCount && intervalCount > 1 ? intervalCount : null
+    const count = intervalCount && intervalCount > 1 ? intervalCount : null
     const prefix = count ? `${formatOrdinal(count, locale ?? 'en')} ` : ''
     const formatted = `${prefix}${t.intervals.short[interval]}`
     return formatted ? ` / ${formatted}` : ''

@@ -1,3 +1,4 @@
+import math
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
@@ -176,6 +177,19 @@ def _get_filtered_all_metrics(
     return [m for m in METRICS if m.slug in metrics]
 
 
+def _metric_values_match(pg_val: int | float, tb_val: int | float) -> bool:
+    if pg_val == tb_val:
+        return True
+
+    if isinstance(pg_val, bool) or isinstance(tb_val, bool):
+        return False
+
+    if isinstance(pg_val, float) or isinstance(tb_val, float):
+        return math.isclose(float(pg_val), float(tb_val), rel_tol=1e-12, abs_tol=1e-12)
+
+    return False
+
+
 class MetricsService:
     async def _get_tinybird_enabled_org(
         self,
@@ -324,7 +338,11 @@ class MetricsService:
             for slug in tb_slugs:
                 pg_val = getattr(pg_period, slug, None)
                 tb_val = getattr(tb_period, slug, None)
-                if pg_val is not None and tb_val is not None and pg_val != tb_val:
+                if (
+                    pg_val is not None
+                    and tb_val is not None
+                    and not _metric_values_match(pg_val, tb_val)
+                ):
                     mismatch_obj = {
                         "period": i,
                         "timestamp": str(pg_period.timestamp),

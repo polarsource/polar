@@ -55,13 +55,17 @@ class ReviewSection:
 
     @contextlib.contextmanager
     def agent_report_card(self) -> Generator[None]:
-        """Render the agent review report card."""
+        """Render the combined agent review report and account checklist card."""
         with card(bordered=True):
             if self.agent_report is None:
                 with tag.h2(classes="text-lg font-bold mb-4"):
-                    text("Agent Review Report")
-                with tag.p(classes="text-sm text-base-content/60"):
+                    text("Organization Review")
+                with tag.p(classes="text-sm text-base-content/60 mb-4"):
                     text("No agent review yet")
+
+                # Account checklist (always shown)
+                self._render_checklist()
+
                 yield
                 return
 
@@ -71,7 +75,7 @@ class ReviewSection:
             # Header with timestamp
             with tag.div(classes="flex items-center justify-between mb-4"):
                 with tag.h2(classes="text-lg font-bold"):
-                    text("Agent Review Report")
+                    text("Organization Review")
                 if self.agent_reviewed_at:
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
@@ -138,6 +142,9 @@ class ReviewSection:
                         text("Recommended action: ")
                     text(recommended)
 
+            # Account checklist (always shown)
+            self._render_checklist()
+
             # Usage info
             total_tokens = usage.get("total_tokens", 0)
             cost = usage.get("estimated_cost_usd")
@@ -199,12 +206,11 @@ class ReviewSection:
                 with tag.p(classes="text-xs text-base-content/60 mt-1 italic"):
                     text(recommendation)
 
-    @contextlib.contextmanager
-    def checklist_card(self) -> Generator[None]:
-        """Render the account review checklist card."""
-        with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Account Review Checklist")
+    def _render_checklist(self) -> None:
+        """Render the account checklist inline within the report card."""
+        with tag.div(classes="pt-4 mt-4 border-t border-base-200"):
+            with tag.h3(classes="text-sm font-bold mb-3"):
+                text("Account Checklist")
 
             with tag.div(classes="space-y-3"):
                 # Support Email
@@ -255,8 +261,6 @@ class ReviewSection:
                         text(
                             "This organization has orders that should be auto-refunded before approval."
                         )
-
-            yield
 
     @staticmethod
     def _checklist_row(label: str, is_set: bool, value: str | None) -> None:
@@ -331,9 +335,6 @@ class ReviewSection:
         """Render the complete review section."""
         with tag.div(classes="space-y-6"):
             with self.agent_report_card():
-                pass
-
-            with self.checklist_card():
                 pass
 
             with self.reply_template_card():

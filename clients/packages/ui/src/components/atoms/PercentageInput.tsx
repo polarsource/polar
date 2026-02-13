@@ -1,5 +1,11 @@
 import { Percent } from 'lucide-react'
-import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
+import {
+  ChangeEvent,
+  FocusEvent,
+  InputEvent,
+  useCallback,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
 
@@ -52,11 +58,11 @@ const PercentageInput = (props: Props) => {
     [_onChange],
   )
 
-  const onInput = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+  const onInput = (e: InputEvent<HTMLInputElement>) => {
+    const value = e.currentTarget.value
     const regex = /^\d+([\.,]\d{0,2})?$/
     if (!regex.test(value)) {
-      e.target.value = Number.parseFloat(value).toFixed(2)
+      e.currentTarget.value = Number.parseFloat(value).toFixed(2)
     }
   }
 

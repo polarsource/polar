@@ -537,6 +537,9 @@ class CheckoutService:
                         getattr(checkout.customer, attribute),
                     )
 
+            if checkout.locale is None and checkout.customer.locale is not None:
+                checkout.locale = checkout.customer.locale
+
             # Auto-select business customer if they have both a billing name (without the fallback to customer.name)
             # and a billing address since that means they've previously checked the is_business_customer checkbox
             # Only auto-select if is_business_customer wasn't explicitly set in the request
@@ -561,6 +564,14 @@ class CheckoutService:
                     **(checkout.payment_processor_metadata or {}),
                     "customer_session_client_secret": stripe_customer_session.client_secret,
                 }
+
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if not product.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            checkout.locale = "en-US"
 
         session.add(checkout)
 
@@ -944,6 +955,21 @@ class CheckoutService:
                 **(checkout.payment_processor_metadata or {}),
                 "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             }
+
+        # Allow people setting locale on checkout links
+        #
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if product.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            if query_prefill:
+                locale = query_prefill.get("locale")
+                if locale is not None and isinstance(locale, str):
+                    checkout.locale = locale
+        else:
+            checkout.locale = "en-US"
 
         session.add(checkout)
 
@@ -2510,6 +2536,8 @@ class CheckoutService:
             customer.billing_address = checkout.customer_billing_address
         if checkout.customer_tax_id is not None:
             customer.tax_id = checkout.customer_tax_id
+        if checkout.locale is not None:
+            customer.locale = checkout.locale
 
         customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {

@@ -1,0 +1,68 @@
+---
+title: "Checkout Localization"
+sidebarTitle: "Localization"
+description: "Serve checkout in your customer's preferred language"
+---
+
+<Note>
+  Checkout localization is currently in **beta**. To enable it, turn on the
+  feature flag for your organization.
+</Note>
+
+## How it works
+
+When checkout localization is enabled for your organization, the checkout page automatically detects the customer's preferred language from their browser settings and displays the checkout in that language.
+
+This includes translated labels, placeholders, and descriptions for all standard checkout fields.
+
+## Overriding the language via API
+
+You can explicitly set the checkout language by passing the `locale` parameter when creating a checkout session via the API:
+
+```bash
+curl -X POST https://api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_price_id": "<price_id>",
+    "locale": "fr"
+  }'
+```
+
+When a `locale` is set explicitly, it takes precedence over the browser's language preference.
+
+## Overriding the language via querystring
+
+You can append `?locale=` to any checkout link and that will take precedence over the browser's language preference.
+
+## Supported languages
+
+- English (en) (default)
+- Dutch (nl)
+- Spanish (es)
+- French (fr)
+- Swedish (sv)
+- German (de)
+
+The following languages are coming soon:
+
+- Portuguese (pt)
+- Brazilian Portuguese (pt-BR)
+
+Want to help us review translations for an upcoming language? Reach out at [pieter+i18n@polar.sh](mailto:pieter+i18n@polar.sh).
+
+## Known limitations
+
+During the beta period, localization is scoped to the checkout page itself:
+
+- **Error messages** are displayed in English
+- **Transactional emails** (receipts, confirmations) are sent in English
+- **Customer portal** is displayed in English
+- There is **no language selector** on the checkout page — language is determined automatically from the browser, via the API `locale` parameter or via a querystring `?locale`.
+
+## Feedback
+
+We'd love to hear your feedback on checkout localization:
+
+- Open an issue on [GitHub](https://github.com/polarsource/polar)
+- Email us at [pieter+i18n@polar.sh](mailto:pieter+i18n@polar.sh)

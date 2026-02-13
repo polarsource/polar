@@ -1,4 +1,9 @@
 import { schemas } from '@polar-sh/client'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -25,6 +30,7 @@ const BenefitRow = ({
 export const BenefitList = ({
   benefits,
   toggle = false,
+  locale = DEFAULT_LOCALE,
 }: {
   benefits:
     | {
@@ -34,7 +40,9 @@ export const BenefitList = ({
       }[]
     | undefined
   toggle?: boolean
+  locale?: AcceptedLocale
 }) => {
+  const t = useTranslations(locale)
   const [showAll, setShowAll] = useState(false)
 
   if (!benefits) return <></>
@@ -71,7 +79,7 @@ export const BenefitList = ({
 
           {!toggle && (
             <BenefitRow key="show" icon={<Plus className="h-3 w-3" />}>
-              {toggled.length} more benefits
+              {t('checkout.benefits.moreBenefits', { count: toggled.length })}
             </BenefitRow>
           )}
 
@@ -79,7 +87,7 @@ export const BenefitList = ({
             <a href="#" onClick={onToggle}>
               {showAll && (
                 <BenefitRow key="hide" icon={<ChevronUp className="h-3 w-3" />}>
-                  Show less
+                  {t('checkout.benefits.showLess')}
                 </BenefitRow>
               )}
               {!showAll && (
@@ -87,7 +95,9 @@ export const BenefitList = ({
                   key="show"
                   icon={<ChevronDown className="h-3 w-3" />}
                 >
-                  Show {toggled.length} more benefits
+                  {t('checkout.benefits.showMoreBenefits', {
+                    count: toggled.length,
+                  })}
                 </BenefitRow>
               )}
             </a>

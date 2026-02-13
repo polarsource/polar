@@ -2,6 +2,11 @@ import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { useCustomerSSE } from '@/hooks/sse'
 import { createClientSideAPI } from '@/utils/client'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
@@ -9,15 +14,18 @@ import { SpinnerNoMargin } from '../Shared/Spinner'
 
 interface CheckoutBenefitsProps {
   checkout: ProductCheckoutPublic
+  locale?: AcceptedLocale
   customerSessionToken?: string
   maxWaitingTimeMs?: number
 }
 
 const CheckoutBenefits = ({
   checkout,
+  locale = DEFAULT_LOCALE,
   customerSessionToken,
   maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
+  const t = useTranslations(locale)
   const api = createClientSideAPI(customerSessionToken)
   const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
     checkout_id: checkout.id,
@@ -44,21 +52,25 @@ const CheckoutBenefits = ({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex w-full flex-col gap-4 text-left">
         <List className="rounded-3xl">
           {benefitGrants?.items.map((benefitGrant) => (
             <ListItem
               key={benefitGrant.id}
               className="dark:bg-polar-800 dark:hover:bg-polar-800 bg-white p-4 hover:bg-white"
             >
-              <BenefitGrant api={api} benefitGrant={benefitGrant} />
+              <BenefitGrant
+                api={api}
+                benefitGrant={benefitGrant}
+                locale={locale}
+              />
             </ListItem>
           ))}
           {benefitGrants && benefitGrants.items.length < expectedBenefits && (
             <ListItem className="flex flex-row items-center justify-center gap-2">
               <SpinnerNoMargin className="h-4 w-4" />
               <p className="dark:text-polar-500 text-gray-500">
-                Granting benefits...
+                {t('checkout.benefits.granting')}
               </p>
             </ListItem>
           )}

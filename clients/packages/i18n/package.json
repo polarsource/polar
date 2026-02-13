@@ -1,0 +1,57 @@
+{
+  "name": "@polar-sh/i18n",
+  "version": "0.1.0",
+  "description": "Polar i18n - Locale files and translation utilities",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/i18n"
+  },
+  "scripts": {
+    "translate": "tsx scripts/translate.ts",
+    "validate": "tsx scripts/validate.ts",
+    "lint": "prettier -c .",
+    "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && tsup",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./formatters/date": {
+      "types": "./dist/formatters/date.d.ts",
+      "default": "./dist/formatters/date.js"
+    },
+    "./formatters/ordinal": {
+      "types": "./dist/formatters/ordinal.d.ts",
+      "default": "./dist/formatters/ordinal.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@ai-sdk/google": "^2.0.46",
+    "@polar-sh/typescript-config": "workspace:*",
+    "@types/react": "^19.2.13",
+    "ai": "^5.0.113",
+    "dotenv": "^16.4.5",
+    "prettier": "^3.7.4",
+    "react": "^19.2.4",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.0",
+    "typescript": "latest",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^19.2.4"
+  }
+}

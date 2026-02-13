@@ -2,6 +2,11 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Client, schemas } from '@polar-sh/client'
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -10,12 +15,15 @@ import { useCallback } from 'react'
 interface LicenseKeyActivationsProps {
   api: Client
   licenseKey: schemas['LicenseKeyWithActivations']
+  locale?: AcceptedLocale
 }
 
 export const LicenseKeyActivations = ({
   api,
   licenseKey,
+  locale = DEFAULT_LOCALE,
 }: LicenseKeyActivationsProps) => {
+  const t = useTranslations(locale)
   const onDeactivate = useCustomerLicenseKeyDeactivate(api, licenseKey.id)
 
   const handleDeactivateActivation = useCallback(
@@ -28,18 +36,22 @@ export const LicenseKeyActivations = ({
         })
         .then(() => {
           toast({
-            title: 'License Key Activation Deleted',
-            description: `Activation deleted successfully`,
+            title: t('checkout.benefits.licenseKey.activationDeleted'),
+            description: t(
+              'checkout.benefits.licenseKey.activationDeletedDescription',
+            ),
           })
         })
         .catch((error) => {
           toast({
-            title: 'Activation Deactivation Failed',
-            description: `Error deactivating activation ${activationId}: ${error.message}`,
+            title: t(
+              'checkout.benefits.licenseKey.activationDeactivationFailed',
+            ),
+            description: `${error.message}`,
           })
         })
     },
-    [onDeactivate, licenseKey],
+    [onDeactivate, licenseKey, t],
   )
 
   const hasActivations = (licenseKey?.activations?.length ?? 0) > 0
@@ -50,14 +62,17 @@ export const LicenseKeyActivations = ({
 
   return (
     <div className="flex flex-col gap-y-4">
-      <h3>Activations</h3>
+      <h3>{t('checkout.benefits.licenseKey.activations')}</h3>
       <List size="small">
         {licenseKey?.activations.map((activation) => (
           <ListItem key={activation.id} size="small">
             <h3 className="text-sm">{activation.label}</h3>
             <div className="flex flex-row items-center gap-x-4">
               <span className="dark:text-polar-500 text-sm text-gray-500">
-                <FormattedDateTime datetime={activation.created_at} />
+                <FormattedDateTime
+                  datetime={activation.created_at}
+                  locale={locale}
+                />
               </span>
               <Button
                 className="h-6 w-6"

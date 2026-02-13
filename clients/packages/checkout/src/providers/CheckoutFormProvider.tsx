@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { AddressInput } from '@polar-sh/sdk/models/components/addressinput'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
@@ -46,8 +51,12 @@ export interface CheckoutFormContextProps {
 // @ts-ignore
 export const CheckoutFormContext = createContext<CheckoutFormContextProps>(stub)
 
-export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
+export const CheckoutFormProvider = ({
+  children,
+  locale = DEFAULT_LOCALE,
+}: React.PropsWithChildren<{ locale?: AcceptedLocale }>) => {
   const { checkout, update: updateOuter, confirm: confirmOuter } = useCheckout()
+  const t = useTranslations(locale)
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string | undefined>()
   const [isUpdatePending, setIsUpdatePending] = useState(false)
@@ -129,7 +138,7 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
       setLoading(true)
 
       if (!checkout.isPaymentFormRequired) {
-        setLoadingLabel('Processing order...')
+        setLoadingLabel(t('checkout.loading.processingOrder'))
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
@@ -145,7 +154,7 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
         throw new Error('Stripe elements not provided')
       }
 
-      setLoadingLabel('Processing payment')
+      setLoadingLabel(t('checkout.loading.processingPayment'))
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
@@ -189,15 +198,12 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
       }
 
       if (!confirmationToken || error) {
+        const fallbackMessage = t('checkout.loading.confirmationTokenFailed')
         setError('root', {
-          message:
-            error?.message ||
-            'Failed to create confirmation token, please try again later.',
+          message: error?.message || fallbackMessage,
         })
         setLoading(false)
-        throw new Error(
-          'Failed to create confirmation token, please try again later.',
-        )
+        throw new Error(error?.message || fallbackMessage)
       }
 
       let updatedCheckout: CheckoutPublicConfirmed
@@ -211,7 +217,7 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
         throw e
       }
 
-      setLoadingLabel('Payment successful! Getting your products ready...')
+      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
 
       const { intent_status, intent_client_secret } =
         updatedCheckout.paymentProcessorMetadata as Record<string, string>
@@ -230,7 +236,7 @@ export const CheckoutFormProvider = ({ children }: React.PropsWithChildren) => {
       setLoading(false)
       return updatedCheckout
     },
-    [checkout, setError, _confirm],
+    [checkout, setError, _confirm, t],
   )
 
   return (

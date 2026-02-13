@@ -478,9 +478,9 @@ SQL >
                     )
                 )
         )
-        AND op.timestamp
+        AND COALESCE(boc.order_created_at, op.order_created_at, op.timestamp)
         >= toDateTime({{ String(buffer_start, '2023-12-31 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND op.timestamp
+        AND COALESCE(boc.order_created_at, op.order_created_at, op.timestamp)
         <= toDateTime({{ String(buffer_end, '2024-01-03 00:00:00') }}, {{ String(tz, 'UTC') }})
         {% if defined(customer_ids) and customer_ids != '' and defined(
             external_customer_ids
@@ -555,6 +555,9 @@ SQL >
         count(DISTINCT op.order_id) AS orders,
         countDistinctIf(op.order_id, op.subscription_id IS NULL) AS one_time_products,
         COALESCE(sumIf(op.revenue_amount, op.has_balance_order = 0), 0) AS missing_balance_revenue,
+        COALESCE(
+            sumIf(op.revenue_amount, op.has_balance_order = 0 AND op.subscription_id IS NULL), 0
+        ) AS missing_balance_one_time_products_revenue,
         {% if not defined(interval) or interval == 'day' %}
             countDistinctIf(
                 op.subscription_id,
@@ -1165,8 +1168,10 @@ SQL >
         greatest(
             COALESCE(op.one_time_products, 0), COALESCE(db.one_time_products, 0)
         ) AS one_time_products,
-        COALESCE(db.one_time_products_revenue, 0) AS one_time_products_revenue,
-        COALESCE(db.one_time_products_net_revenue, 0) AS one_time_products_net_revenue,
+        COALESCE(db.one_time_products_revenue, 0)
+        + COALESCE(op.missing_balance_one_time_products_revenue, 0) AS one_time_products_revenue,
+        COALESCE(db.one_time_products_net_revenue, 0)
+        + COALESCE(op.missing_balance_one_time_products_revenue, 0) AS one_time_products_net_revenue,
         COALESCE(sc.new_subscriptions, 0) AS new_subscriptions,
         COALESCE(db.new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
         COALESCE(db.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,

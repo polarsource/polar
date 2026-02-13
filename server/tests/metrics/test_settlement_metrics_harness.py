@@ -192,6 +192,26 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         metrics=("orders",),
     ),
     QueryCase(
+        label="daily_shanghai_delayed_order_paid_without_balance",
+        start_date=date(2026, 2, 13),
+        end_date=date(2026, 2, 14),
+        interval=TimeInterval.day,
+        timezone="Asia/Shanghai",
+        customer_keys=("shanghai_delayed_missing_balance",),
+        metrics=(
+            "orders",
+            "revenue",
+            "net_revenue",
+            "cumulative_revenue",
+            "net_cumulative_revenue",
+            "average_order_value",
+            "net_average_order_value",
+            "one_time_products",
+            "one_time_products_revenue",
+            "one_time_products_net_revenue",
+        ),
+    ),
+    QueryCase(
         label="daily_berlin_refund_join_duplication",
         start_date=date(2026, 1, 22),
         end_date=date(2026, 1, 24),
@@ -1434,6 +1454,45 @@ async def metrics_harness(
                     include_balance=False,
                 )
             )
+            shanghai_delayed_missing_balance_customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email="shanghai-delayed-missing-balance@example.com",
+                name="shanghai_delayed_missing_balance",
+                stripe_customer_id="cus_shanghai_delayed_missing_balance",
+            )
+            customer_ids["shanghai_delayed_missing_balance"] = (
+                shanghai_delayed_missing_balance_customer.id
+            )
+            shanghai_order_created_at = _dt(date(2026, 2, 13), 15, 59)
+            shanghai_delayed_order = await create_order(
+                save_fixture,
+                customer=shanghai_delayed_missing_balance_customer,
+                product=products["one_time"],
+                status=OrderStatus.paid,
+                subtotal_amount=799,
+                created_at=shanghai_order_created_at,
+            )
+            events.append(
+                await create_event(
+                    save_fixture,
+                    organization=organization,
+                    customer=shanghai_delayed_missing_balance_customer,
+                    source=EventSource.system,
+                    name=SystemEvent.order_paid.value,
+                    timestamp=_dt(date(2026, 2, 16), 0, 15),
+                    metadata={
+                        "order_id": str(shanghai_delayed_order.id),
+                        "order_created_at": shanghai_order_created_at.isoformat(),
+                        "product_id": str(products["one_time"].id),
+                        "billing_type": ProductBillingType.one_time.value,
+                        "amount": shanghai_delayed_order.net_amount,
+                        "net_amount": shanghai_delayed_order.net_amount,
+                        "currency": "usd",
+                        "tax_amount": shanghai_delayed_order.tax_amount,
+                    },
+                )
+            )
             events.append(
                 await create_event(
                     save_fixture,
@@ -1699,6 +1758,71 @@ class TestSettlementMetricsHarness:
         assert feb_2_pg.orders == 0
         assert feb_1_pg.orders == feb_1_tb.orders
         assert feb_2_pg.orders == feb_2_tb.orders
+
+    def test_order_paid_delayed_beyond_buffer_uses_order_created_at_without_balance(
+        self, metrics_harness: MetricsHarness
+    ) -> None:
+        snapshot = metrics_harness.snapshots[
+            "daily_shanghai_delayed_order_paid_without_balance"
+        ]
+        shanghai = ZoneInfo("Asia/Shanghai")
+        feb_13_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 13)
+        )
+        feb_13_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 13)
+        )
+        feb_14_pg = next(
+            p
+            for p in snapshot.pg.periods
+            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 14)
+        )
+        feb_14_tb = next(
+            p
+            for p in snapshot.tinybird.periods
+            if p.timestamp.astimezone(shanghai).date() == date(2026, 2, 14)
+        )
+
+        assert feb_13_pg.orders == 1
+        assert feb_13_pg.revenue == 799
+        assert feb_13_pg.net_revenue == 799
+        assert feb_13_pg.cumulative_revenue == 799
+        assert feb_13_pg.net_cumulative_revenue == 799
+        assert feb_13_pg.average_order_value == 799
+        assert feb_13_pg.net_average_order_value == 799
+        assert feb_13_pg.one_time_products == 1
+        assert feb_13_pg.one_time_products_revenue == 799
+        assert feb_13_pg.one_time_products_net_revenue == 799
+        assert feb_13_pg.orders == feb_13_tb.orders
+        assert feb_13_pg.revenue == feb_13_tb.revenue
+        assert feb_13_pg.net_revenue == feb_13_tb.net_revenue
+        assert feb_13_pg.cumulative_revenue == feb_13_tb.cumulative_revenue
+        assert feb_13_pg.net_cumulative_revenue == feb_13_tb.net_cumulative_revenue
+        assert feb_13_pg.average_order_value == feb_13_tb.average_order_value
+        assert feb_13_pg.net_average_order_value == feb_13_tb.net_average_order_value
+        assert feb_13_pg.one_time_products == feb_13_tb.one_time_products
+        assert (
+            feb_13_pg.one_time_products_revenue == feb_13_tb.one_time_products_revenue
+        )
+        assert (
+            feb_13_pg.one_time_products_net_revenue
+            == feb_13_tb.one_time_products_net_revenue
+        )
+
+        assert feb_14_pg.orders == 0
+        assert feb_14_pg.revenue == 0
+        assert feb_14_pg.net_revenue == 0
+        assert feb_14_pg.cumulative_revenue == 799
+        assert feb_14_pg.net_cumulative_revenue == 799
+        assert feb_14_pg.one_time_products == 0
+        assert feb_14_pg.one_time_products_revenue == 0
+        assert feb_14_pg.one_time_products_net_revenue == 0
+        assert feb_14_pg.cumulative_revenue == feb_14_tb.cumulative_revenue
+        assert feb_14_pg.net_cumulative_revenue == feb_14_tb.net_cumulative_revenue
 
     def test_refund_balance_row_does_not_duplicate_renewed_subscriptions(
         self, metrics_harness: MetricsHarness

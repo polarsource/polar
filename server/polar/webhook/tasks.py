@@ -7,6 +7,7 @@ import httpx
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import Retry
+from dramatiq.common import compute_backoff
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import Environment, settings
@@ -14,14 +15,13 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.webhook.repository import WebhookEventRepository
+from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
 from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
     TaskPriority,
     TaskQueue,
     actor,
-    can_retry,
     enqueue_job,
 )
 
@@ -30,26 +30,22 @@ from .service import webhook as webhook_service
 log: Logger = structlog.get_logger()
 
 
+# Safety-guard max_retries: enough for all ordering retries within the age
+# limit window plus the actual HTTP delivery attempts.
+_ordering_max_retries = int(
+    settings.WEBHOOK_FIFO_GUARD_MAX_AGE.total_seconds()
+    * 1000
+    / settings.WEBHOOK_FIFO_GUARD_DELAY_MS
+)
+_webhook_max_retries = _ordering_max_retries + settings.WEBHOOK_MAX_RETRIES
+
+
 @actor(
     actor_name="webhook_event.send",
-    max_retries=settings.WEBHOOK_MAX_RETRIES,
+    max_retries=_webhook_max_retries,
     queue_name=TaskQueue.WEBHOOKS,
 )
 async def webhook_event_send(webhook_event_id: UUID, redeliver: bool = False) -> None:
-    async with AsyncSessionMaker() as session:
-        return await _webhook_event_send(
-            session, webhook_event_id=webhook_event_id, redeliver=redeliver
-        )
-
-
-@actor(
-    actor_name="webhook_event.send.v2",
-    max_retries=settings.WEBHOOK_MAX_RETRIES,
-    queue_name=TaskQueue.WEBHOOKS,
-)
-async def webhook_event_send_dedicated_queue(
-    webhook_event_id: UUID, redeliver: bool = False
-) -> None:
     async with AsyncSessionMaker() as session:
         return await _webhook_event_send(
             session, webhook_event_id=webhook_event_id, redeliver=redeliver
@@ -86,14 +82,18 @@ async def _webhook_event_send(
         bound_log.info("Event already succeeded, skipping")
         return
 
-    if not await webhook_service.is_latest_event(session, event):
+    earlier_pending_count = await webhook_service.count_earlier_pending_events(
+        session, event
+    )
+    if earlier_pending_count > 0:
         log.info(
             "Earlier events need to be delivered first, retrying later",
             id=event.id,
             type=event.type,
             webhook_endpoint_id=event.webhook_endpoint_id,
+            earlier_pending_count=earlier_pending_count,
         )
-        raise Retry()
+        raise Retry(delay=earlier_pending_count * settings.WEBHOOK_FIFO_GUARD_DELAY_MS)
 
     if event.skipped:
         event.skipped = False
@@ -166,13 +166,23 @@ async def _webhook_event_send(
         if delivery.response is None:
             delivery.response = str(e)
 
+        # Count actual HTTP delivery attempts (excluding current) to decide
+        # whether to retry. +1 accounts for the current attempt not yet committed.
+        delivery_repository = WebhookDeliveryRepository.from_session(session)
+        delivery_count = await delivery_repository.count_by_event(webhook_event_id) + 1
+
         # Permanent failure
-        if not can_retry():
+        if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
             event.succeeded = False
             enqueue_job("webhook_event.failed", webhook_event_id=webhook_event_id)
-        # Retry
+        # Retry – compute backoff from delivery attempts only, so that
+        # unrelated NotLatestEvent retries don't inflate the delay.
         else:
-            raise Retry() from e
+            _, delay = compute_backoff(
+                delivery_count,
+                factor=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
+            )
+            raise Retry(delay=delay) from e
     # Success
     else:
         delivery.succeeded = True

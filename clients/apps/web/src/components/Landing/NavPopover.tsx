@@ -40,7 +40,7 @@ export const NavPopover = ({
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
         className={twMerge(
-          'dark:text-polar-500 -m-1 flex cursor-pointer items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
+          'dark:text-polar-500 -m-1 flex cursor-pointer items-center gap-x-2 p-1 text-lg text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
           (isOpen || isActive) && 'text-black dark:text-white',
         )}
         onMouseEnter={() => setIsOpen(true)}

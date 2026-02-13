@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Vestaboard from '../animated/Vestaboard'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -46,7 +45,10 @@ export const Hero = ({
       viewport={{ once: true }}
     >
       <motion.h1
-        className={twMerge("text-7xl leading-tightest! tracking-tight text-balance md:px-0 xl:text-8xl", titleClassName)}
+        className={twMerge(
+          'leading-tightest! tracking-relaxed! text-7xl text-balance md:px-0 xl:text-8xl',
+          titleClassName,
+        )}
         variants={itemVariants}
       >
         {title}

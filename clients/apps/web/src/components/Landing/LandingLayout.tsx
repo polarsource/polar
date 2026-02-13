@@ -1,7 +1,7 @@
 'use client'
 
+import Footer from '@/components/Landing/Footer'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
-import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -18,23 +18,25 @@ import { usePathname } from 'next/navigation'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { NavPopover, NavPopoverSection } from './NavPopover'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 px-0 md:w-full md:flex-1 md:items-center md:px-4">
-      <div className="flex flex-col gap-y-2 md:w-full">
+    <div className="relative flex flex-col bg-white px-0 md:min-h-screen md:w-full md:flex-1 md:items-center md:px-4 dark:bg-black">
+      <div className="flex h-full flex-col gap-y-2 md:w-full">
         <LandingPageDesktopNavigation />
         <SidebarProvider className="absolute inset-0 flex flex-col items-start md:hidden">
           <LandingPageTopbar />
           <LandingPageMobileNavigation />
         </SidebarProvider>
 
-        <div className="dark:bg-polar-950 relative flex flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
+        <div className="relative flex flex-1 flex-col px-4 pt-32 md:w-full md:px-0 md:pt-0">
           {children}
         </div>
+
         <LandingPageFooter />
       </div>
     </div>
@@ -111,15 +113,6 @@ const mobileNavigationItems: NavigationItem[] = [
 const LandingPageMobileNavigation = () => {
   const sidebar = useSidebar()
 
-  const posthog = usePostHog()
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-
-  const onLoginClick = () => {
-    posthog.capture('global:user:login:click')
-    sidebar.toggleSidebar()
-    showModal()
-  }
-
   return (
     <>
       <Sidebar className="md:hidden">
@@ -145,22 +138,13 @@ const LandingPageMobileNavigation = () => {
               )
             })}
           </div>
-          <NavLink
-            href="#"
-            onClick={onLoginClick}
-            className="text-xl tracking-tight"
-          >
-            Login
-          </NavLink>
+          <GetStartedButton
+            size="lg"
+            className="text-lg font-semibold"
+            text="Get Started"
+          />
         </SidebarContent>
       </Sidebar>
-      <Modal
-        title="Login"
-        isShown={isModalShown}
-        hide={hideModal}
-        modalContent={<AuthModal />}
-        className="lg:w-full lg:max-w-[480px]"
-      />
     </>
   )
 }
@@ -285,16 +269,14 @@ const LandingPageDesktopNavigation = () => {
   ]
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:px-8 md:flex">
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-16 md:flex md:px-16">
       <div className="relative flex w-full flex-row items-center justify-between">
-
-
-        <ul className="flex flex-row gap-x-8 font-medium">
+        <ul className="flex flex-row gap-x-12 font-medium">
           <li>
             <NavPopover
               trigger="Features"
               sections={featuresSections}
-              isActive={pathname.startsWith('/features')}
+              isActive={pathname === '/' || pathname.startsWith('/features')}
             />
           </li>
           <li>
@@ -305,19 +287,30 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Link className='absolute left-1/2 mx-auto flex -translate-x-1/2 ' href="/">
-          <PolarLogotype logoVariant="icon" size={64} />
+        <Link
+          className="absolute left-1/2 mx-auto flex -translate-x-1/2"
+          href="/"
+        >
+          <PolarLogotype logoVariant="icon" size={84} />
         </Link>
 
-        <div className='flex flex-row items-center gap-x-4'>
-        <Button onClick={onLoginClick} variant="ghost" className="rounded-full" size="lg">
-          Log In
-        </Button>
+        <div className="flex flex-row items-center gap-x-4">
+          <Button
+            onClick={onLoginClick}
+            variant="ghost"
+            className="rounded-full text-lg"
+            size="lg"
+          >
+            Log In
+          </Button>
 
-        <Button onClick={onLoginClick}
-        className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black" size="lg">
-          Get Started
-        </Button>
+          <Button
+            onClick={onLoginClick}
+            className="dark:hover:bg-polar-50 rounded-full bg-black text-lg font-semibold text-white hover:bg-gray-800 dark:bg-white dark:text-black"
+            size="lg"
+          >
+            Get Started
+          </Button>
         </div>
       </div>
       <Modal

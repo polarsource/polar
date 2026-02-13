@@ -5,6 +5,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import Vestaboard from './animated/Vestaboard'
+import { Section } from './Section'
 
 type PricingTier = {
   name: string
@@ -75,7 +76,7 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
   return (
     <div
       className={twMerge(
-        'relative flex flex-col gap-y-6 overflow-hidden p-6 md:p-10',
+        'relative flex flex-col gap-y-6 overflow-hidden rounded-3xl p-6 md:p-10',
         'dark:bg-polar-950 bg-white',
         tier.highlighted ? 'dark:bg-polar-900 shadow-3xl z-10' : '',
         className,
@@ -96,8 +97,8 @@ const PricingCard = ({ tier, className }: PricingCardProps) => {
           {tier.description}
         </p>
       </div>
-      <div className="relative z-10 flex items-baseline gap-x-1">
-        <span className="text-4xl font-light text-black dark:text-white">
+      <div className="relative z-10 flex items-baseline gap-x-2">
+        <span className="text-5xl font-light text-black dark:text-white">
           {tier.price}
         </span>
         {tier.period && (
@@ -151,23 +152,54 @@ const EnterpriseCard = () => {
   )
 }
 
+const GRADIENT_COUNT = 10
+const MAX_OFFSET = 60
+
+const getGradientStart = (index: number): number => {
+  const center = (GRADIENT_COUNT - 1) / 2
+  const maxDistance = center
+  const distance = Math.abs(index - center)
+  const normalized = distance / maxDistance
+  return MAX_OFFSET * normalized * normalized
+}
+
+const Gradient = () => {
+  return (
+    <div className="absolute inset-0 flex w-full items-end justify-center overflow-hidden py-12 [--gradient-from:var(--color-gray-300)] dark:[--gradient-from:var(--color-polar-700)]">
+      {Array.from({ length: GRADIENT_COUNT }).map((_, i) => {
+        const start = getGradientStart(i)
+        return (
+          <div
+            key={i}
+            className="h-full w-full"
+            style={{
+              background: `linear-gradient(to bottom, transparent ${start}%, var(--gradient-from) 100%)`,
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 export const Pricing = () => {
   return (
-    <div className="flex flex-col gap-y-12">
-      <div className="flex flex-col gap-y-4">
-        <h2 className="text-2xl text-black md:text-4xl dark:text-white">
-          Simple, transparent pricing.
-        </h2>
-        <p className="dark:text-polar-500 text-2xl text-gray-500 md:text-4xl">
-          Start free, scale as you grow. No hidden fees.
-        </p>
-      </div>
-      <div className="dark:bg-polar-800 grid grid-cols-1 gap-px bg-gray-200 p-px md:grid-cols-3">
-        {tiers.map((tier) => (
-          <PricingCard key={tier.name} tier={tier} />
-        ))}
-        <EnterpriseCard />
-      </div>
+    <div className="relative flex flex-col gap-y-12">
+      <Gradient />
+      <Section className="flex flex-col gap-y-12">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-2xl md:text-4xl">Simple, transparent pricing.</h2>
+          <p className="dark:text-polar-500 text-2xl text-gray-500 md:text-4xl">
+            Start free, scale as you grow. No hidden fees.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {tiers.map((tier) => (
+            <PricingCard key={tier.name} tier={tier} />
+          ))}
+          <EnterpriseCard />
+        </div>
+      </Section>
     </div>
   )
 }

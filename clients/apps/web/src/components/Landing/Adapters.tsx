@@ -211,7 +211,7 @@ export const Adapters = () => {
                       cellSize={24}
                     />
                   </div>
-                  <div className="dark:bg-polar-950 z-1 bg-gray-50 p-8">
+                  <div className="dark:bg-polar-950 z-1 bg-white p-8">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

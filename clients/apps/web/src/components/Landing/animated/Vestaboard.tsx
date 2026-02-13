@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useRef, useEffect, useCallback } from 'react'
 import { cx } from 'class-variance-authority'
+import { useCallback, useEffect, useRef } from 'react'
 
 export interface VestaboardProps {
   className?: string
@@ -110,10 +110,12 @@ export const Vestaboard = ({
 
     const isDark = document.documentElement.classList.contains('dark')
 
-    const flashColor = isDark ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 }
+    const flashColor = isDark
+      ? { r: 255, g: 255, b: 255 }
+      : { r: 0, g: 0, b: 0 }
     const baseRgb = isDark
-      ? { r: 111, g: 113, b: 123 }
-      : { r: 106, g: 114, b: 130 }
+      ? { r: 50, g: 50, b: 50 }
+      : { r: 200, g: 200, b: 200 }
     const baseColor = `rgb(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b})`
     const decayDuration = 1000 // 1 second decay
 
@@ -159,9 +161,15 @@ export const Vestaboard = ({
             const progress = elapsed / decayDuration
             // Ease out decay
             const eased = 1 - Math.pow(1 - progress, 2)
-            const r = Math.round(flashColor.r + (baseRgb.r - flashColor.r) * eased)
-            const g = Math.round(flashColor.g + (baseRgb.g - flashColor.g) * eased)
-            const b = Math.round(flashColor.b + (baseRgb.b - flashColor.b) * eased)
+            const r = Math.round(
+              flashColor.r + (baseRgb.r - flashColor.r) * eased,
+            )
+            const g = Math.round(
+              flashColor.g + (baseRgb.g - flashColor.g) * eased,
+            )
+            const b = Math.round(
+              flashColor.b + (baseRgb.b - flashColor.b) * eased,
+            )
             color = `rgb(${r}, ${g}, ${b})`
           } else {
             flashTimesRef.current.delete(key)
@@ -206,7 +214,7 @@ export const Vestaboard = ({
   return (
     <div
       ref={containerRef}
-      className={cx('relative w-full overflow-hidden h-full', className)}
+      className={cx('relative h-full w-full overflow-hidden', className)}
     >
       <canvas
         ref={canvasRef}

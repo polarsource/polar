@@ -15,7 +15,7 @@ Gravem colentes impetus reminiscitur invitusque blanditur ipse
 Iam maiora
 In quoque extulerat tale semper quidque. Fovebat heros quos gaudent et movent agmina fortis.`
 
-const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
+const PRODUCT_PREVIEW: schemas['CheckoutProduct'] = {
   id: '123',
   is_recurring: false,
   is_archived: false,

@@ -2330,66 +2330,6 @@ export interface paths {
     patch: operations['checkout-links:update']
     trace?: never
   }
-  '/v1/storefronts/{slug}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Storefront
-     * @description Get an organization storefront by slug.
-     */
-    get: operations['storefronts:get']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/storefronts/lookup/product/{product_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Slug By Product Id
-     * @description Get organization slug by product ID for legacy redirect purposes.
-     */
-    get: operations['storefronts:get_organization_slug_by_product_id']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/storefronts/lookup/subscription/{subscription_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Slug By Subscription Id
-     * @description Get organization slug by subscription ID for legacy redirect purposes.
-     */
-    get: operations['storefronts:get_organization_slug_by_subscription_id']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/custom-fields/': {
     parameters: {
       query?: never
@@ -21312,50 +21252,6 @@ export interface components {
        */
       completed: boolean
     }
-    /** OrganizationProfileSettings */
-    OrganizationProfileSettings: {
-      /**
-       * Enabled
-       * @description If this organization has a profile enabled
-       */
-      enabled?: boolean | null
-      /**
-       * Description
-       * @description A description of the organization
-       */
-      description?: string | null
-      /**
-       * Featured Projects
-       * @description A list of featured projects
-       */
-      featured_projects?: string[] | null
-      /**
-       * Featured Organizations
-       * @description A list of featured organizations
-       */
-      featured_organizations?: string[] | null
-      /**
-       * Links
-       * @description A list of links associated with the organization
-       */
-      links?: string[] | null
-      /**
-       * @description Subscription promotion settings
-       * @default {
-       *       "promote": true,
-       *       "show_count": true,
-       *       "count_free": true
-       *     }
-       */
-      subscribe:
-        | components['schemas']['OrganizationSubscribePromoteSettings']
-        | null
-      /**
-       * Accent Color
-       * @description Accent color for the organization
-       */
-      accent_color?: string | null
-    }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
       /**
@@ -21385,17 +21281,6 @@ export interface components {
        * @description When appeal was reviewed
        */
       appeal_reviewed_at?: string | null
-    }
-    /**
-     * OrganizationSlugLookup
-     * @description Schema for organization slug lookup response.
-     */
-    OrganizationSlugLookup: {
-      /**
-       * Organization Slug
-       * @description The slug of the organization that owns the product or subscription.
-       */
-      organization_slug: string
     }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
@@ -21447,27 +21332,6 @@ export interface components {
       | 'ongoing_review'
       | 'denied'
       | 'active'
-    /** OrganizationSubscribePromoteSettings */
-    OrganizationSubscribePromoteSettings: {
-      /**
-       * Promote
-       * @description Promote email subscription (free)
-       * @default true
-       */
-      promote: boolean
-      /**
-       * Show Count
-       * @description Show subscription count publicly
-       * @default true
-       */
-      show_count: boolean
-      /**
-       * Count Free
-       * @description Include free subscribers in total count
-       * @default true
-       */
-      count_free: boolean
-    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -22790,91 +22654,6 @@ export interface components {
       | 'price_amount'
       | '-price_amount'
     /**
-     * ProductStorefront
-     * @description Schema of a public product.
-     */
-    ProductStorefront: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /** @description The interval unit for the trial period. */
-      trial_interval: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count: number | null
-      /**
-       * Name
-       * @description The name of the product.
-       */
-      name: string
-      /**
-       * Description
-       * @description The description of the product.
-       */
-      description: string | null
-      /** @description The visibility of the product. */
-      visibility: components['schemas']['ProductVisibility']
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
-      /**
-       * Recurring Interval Count
-       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
-       */
-      recurring_interval_count: number | null
-      /**
-       * Is Recurring
-       * @description Whether the product is a subscription.
-       */
-      is_recurring: boolean
-      /**
-       * Is Archived
-       * @description Whether the product is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the product.
-       */
-      organization_id: string
-      /**
-       * Prices
-       * @description List of available prices for this product.
-       */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
-      /**
-       * BenefitPublic
-       * @description The benefits granted by the product.
-       */
-      benefits: components['schemas']['BenefitPublic'][]
-      /**
-       * Medias
-       * @description The medias associated to the product.
-       */
-      medias: components['schemas']['ProductMediaFileRead'][]
-    }
-    /**
      * ProductUpdate
      * @description Schema to update a product.
      */
@@ -23583,29 +23362,6 @@ export interface components {
       | 'under_review'
       | 'denied'
       | 'active'
-    /**
-     * Storefront
-     * @description Schema of a public storefront.
-     */
-    Storefront: {
-      organization: components['schemas']['Organization']
-      /** Products */
-      products: components['schemas']['ProductStorefront'][]
-      donation_product: components['schemas']['ProductStorefront'] | null
-      customers: components['schemas']['StorefrontCustomers']
-    }
-    /** StorefrontCustomer */
-    StorefrontCustomer: {
-      /** Name */
-      name: string
-    }
-    /** StorefrontCustomers */
-    StorefrontCustomers: {
-      /** Total */
-      total: number
-      /** Customers */
-      customers: components['schemas']['StorefrontCustomer'][]
-    }
     /**
      * StripeAccountCountry
      * @enum {string}
@@ -25744,8 +25500,6 @@ export interface components {
       subscription?: string | null
       /** Pledge */
       pledge?: string | null
-      /** From Storefront */
-      from_storefront?: string | null
       /** Path */
       path?: string | null
       /** Host */
@@ -32813,126 +32567,6 @@ export interface operations {
         }
       }
       /** @description Checkout link not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        slug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Storefront']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get_organization_slug_by_product_id': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        product_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['OrganizationSlugLookup']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get_organization_slug_by_subscription_id': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        subscription_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['OrganizationSlugLookup']
-        }
-      }
-      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown

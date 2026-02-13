@@ -1,4 +1,3 @@
-import revalidate from '@/app/actions'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
@@ -113,8 +112,6 @@ export const useCreateProduct = (organization: schemas['Organization']) =>
       getQueryClient().invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })
-
-      await revalidate(`storefront:${organization.slug}`)
     },
   })
 
@@ -143,7 +140,6 @@ export const useUpdateProduct = (organization: schemas['Organization']) =>
       queryClient.invalidateQueries({
         queryKey: ['products', { id: variables.id }],
       })
-      await revalidate(`storefront:${organization.slug}`)
     },
   })
 
@@ -175,7 +171,5 @@ export const useUpdateProductBenefits = (
       queryClient.invalidateQueries({
         queryKey: ['products', { id: variables.id }],
       })
-
-      await revalidate(`storefront:${organization.slug}`)
     },
   })

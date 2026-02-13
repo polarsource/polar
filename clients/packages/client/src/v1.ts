@@ -6371,6 +6371,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceDisputeReversalEvent
@@ -6550,6 +6552,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceRefundEvent
@@ -6658,6 +6662,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceRefundReversalEvent
@@ -6773,8 +6779,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'custom'
       /**
@@ -7044,8 +7050,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'discord'
       /**
@@ -7262,8 +7268,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'downloadables'
       /**
@@ -7459,8 +7465,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'github_repository'
       /**
@@ -8415,8 +8421,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'license_keys'
       /**
@@ -8625,8 +8631,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'meter_credit'
       /**
@@ -9102,17 +9108,6 @@ export interface components {
     'Body_email-update_verify_email_update': {
       /** Token */
       token: string
-    }
-    /** Body_integrations_apple:integrations.apple.callback */
-    'Body_integrations_apple_integrations.apple.callback': {
-      /** Code */
-      code?: string | null
-      /** Code Verifier */
-      code_verifier?: string | null
-      /** State */
-      state?: string | null
-      /** Error */
-      error?: string | null
     }
     /** Body_login_code:authenticate_login_code */
     Body_login_code_authenticate_login_code: {
@@ -17868,8 +17863,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17941,8 +17939,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -18004,8 +18005,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -20826,8 +20830,11 @@ export interface components {
        * @description When the business details were submitted.
        */
       details_submitted_at: string | null
-      /** @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available. */
-      default_presentment_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Default Presentment Currency
+       * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
+       */
+      default_presentment_currency: string
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -22291,8 +22298,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22387,8 +22397,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22462,8 +22475,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22544,8 +22560,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'metered_unit'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22643,8 +22662,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'seat_based'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -25800,6 +25822,10 @@ export interface components {
       msg: string
       /** Error Type */
       type: string
+      /** Input */
+      input?: unknown
+      /** Context */
+      ctx?: Record<string, never>
     }
     /**
      * Wallet
@@ -26892,6 +26918,17 @@ export interface components {
       timestamp: string
       data: components['schemas']['Subscription']
     }
+    /** Body_integrations_apple:integrations.apple.callback */
+    callback: {
+      /** Code */
+      code?: string | null
+      /** Code Verifier */
+      code_verifier?: string | null
+      /** State */
+      state?: string | null
+      /** Error */
+      error?: string | null
+    }
     /** MetadataQuery */
     MetadataQuery: {
       [key: string]: string | number | boolean | string[] | number[] | boolean[]
@@ -27549,7 +27586,7 @@ export interface operations {
     }
     requestBody?: {
       content: {
-        'application/x-www-form-urlencoded': components['schemas']['Body_integrations_apple_integrations.apple.callback']
+        'application/x-www-form-urlencoded': components['schemas']['callback']
       }
     }
     responses: {
@@ -30681,21 +30718,14 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Successful Response */
-      200: {
+      /** @description Refund created. */
+      201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': components['schemas']['Refund']
         }
-      }
-      /** @description Refund created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
       }
       /** @description Order is already fully refunded. */
       403: {
@@ -42552,18 +42582,30 @@ export const balanceRefundEventNameValues: ReadonlyArray<
 export const balanceRefundReversalEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BalanceRefundReversalEvent']['name']
 > = ['balance.refund_reversal']
+export const benefitCustomTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitCustom']['type']
+> = ['custom']
 export const benefitCustomCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCustomCreate']['type']
 > = ['custom']
 export const benefitCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCycledEvent']['name']
 > = ['benefit.cycled']
+export const benefitDiscordTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDiscord']['type']
+> = ['discord']
 export const benefitDiscordCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDiscordCreate']['type']
 > = ['discord']
+export const benefitDownloadablesTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDownloadables']['type']
+> = ['downloadables']
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesCreate']['type']
 > = ['downloadables']
+export const benefitGitHubRepositoryTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepository']['type']
+> = ['github_repository']
 export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryCreate']['type']
 > = ['github_repository']
@@ -42592,9 +42634,15 @@ export const benefitGrantedEventNameValues: ReadonlyArray<
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeyExpirationProperties']['timeframe']
 > = ['year', 'month', 'day']
+export const benefitLicenseKeysTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeys']['type']
+> = ['license_keys']
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysCreate']['type']
 > = ['license_keys']
+export const benefitMeterCreditTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
+> = ['meter_credit']
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']

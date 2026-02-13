@@ -119,7 +119,7 @@ class ReviewSection:
             with tag.span(
                 classes="text-sm" + (" text-base-content/60" if not is_set else "")
             ):
-                text(value if is_set else "Missing")
+                text((value or "Set") if is_set else "Missing")
 
     @contextlib.contextmanager
     def reply_template_card(self) -> Generator[None]:

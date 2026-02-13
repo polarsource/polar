@@ -485,13 +485,30 @@ async def get_organization_detail(
                 ):
                     pass
             elif section == "review":
+                from polar.organization_review.repository import (
+                    OrganizationReviewRepository,
+                )
+
                 orders_count_result = await session.execute(
                     select(func.count(Order.id))
                     .join(Customer, Order.customer_id == Customer.id)
                     .where(Customer.organization_id == organization_id)
                 )
                 orders_count = orders_count_result.scalar() or 0
-                review_section = ReviewSection(organization, orders_count=orders_count)
+
+                review_repo = OrganizationReviewRepository.from_session(session)
+                agent_review = await review_repo.get_latest_agent_review(
+                    organization_id
+                )
+
+                review_section = ReviewSection(
+                    organization,
+                    orders_count=orders_count,
+                    agent_report=agent_review.report if agent_review else None,
+                    agent_reviewed_at=agent_review.reviewed_at
+                    if agent_review
+                    else None,
+                )
                 with review_section.render(request):
                     pass
             elif section == "team":
@@ -576,6 +593,33 @@ async def approve_organization(
     await organization_service.confirm_organization_reviewed(
         session, organization, next_review_threshold
     )
+
+    return HXRedirectResponse(
+        request,
+        str(
+            request.url_for("organizations-v2:detail", organization_id=organization_id)
+        ),
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent"
+)
+async def run_review_agent(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    """Trigger the organization review agent as a background task."""
+    from polar.worker import enqueue_job
+
+    repository = OrganizationRepository(session)
+    organization = await repository.get_by_id(organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    enqueue_job("organization_review.run_agent", organization_id=organization.id)
 
     return HXRedirectResponse(
         request,

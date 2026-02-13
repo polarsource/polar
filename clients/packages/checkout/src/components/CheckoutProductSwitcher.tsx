@@ -16,11 +16,8 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
-import {
-  capitalize,
-  formatRecurringFrequency,
-  hasLegacyRecurringPrices,
-} from '../utils/product'
+import { hasLegacyRecurringPrices } from '../utils/product'
+import { capitalize, decapitalize } from '../utils/string'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
@@ -78,13 +75,20 @@ const CheckoutProductSwitcher = ({
     const interval = hasLegacyRecurringPrices(prices[product.id])
       ? price.recurringInterval
       : product.recurringInterval
-    const intervalCount = product.recurringIntervalCount
+    const count = product.recurringIntervalCount ?? 1
 
     if (interval) {
-      const frequency = capitalize(
-        formatRecurringFrequency(interval, intervalCount, locale),
+      const frequency = decapitalize(
+        t(`checkout.pricing.everyInterval.${interval}`, {
+          count,
+        }),
       )
-      return t('checkout.productSwitcher.billedRecurring', { frequency })
+
+      // We have to capitalize again since {frequency} may come first
+      // in the translation string, e.g. "{frequency} gefactureerd" in Dutch
+      return capitalize(
+        t('checkout.productSwitcher.billedRecurring', { frequency }),
+      )
     }
 
     return t('checkout.productSwitcher.oneTimePurchase')

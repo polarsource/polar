@@ -34,7 +34,6 @@ export default {
       free: 'Ingyenes',
       payWhatYouWant: 'Választható ár',
       total: 'Végösszeg',
-      everyInterval: 'Minden {interval}',
       additionalMeteredUsage: 'További mért használat',
       perUnit: '/ egység',
       discount: {
@@ -49,6 +48,32 @@ export default {
             other: 'az első # évre',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Naponta',
+          other: 'Minden # nap',
+          '=2': 'Kétnaponta',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Hetente',
+          other: 'Minden # hét',
+          '=2': 'Kéthetente',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Havonta',
+          other: 'Minden # hónap',
+          '=2': 'Kéthavonta',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Évente',
+          other: 'Minden # év',
+          '=2': 'Kétévente',
+          _mode: 'plural',
         },
       },
     },
@@ -173,19 +198,6 @@ export default {
       week: 'hét',
       month: 'hó',
       year: 'év',
-    },
-    long: {
-      day: 'nap',
-      week: 'hét',
-      month: 'hónap',
-      year: 'év',
-    },
-    frequency: {
-      day: 'naponta',
-      week: 'hetente',
-      month: 'havonta',
-      year: 'évente',
-      everyOrdinalInterval: 'minden {ordinal} {interval}',
     },
   },
   benefitTypes: {

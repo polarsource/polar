@@ -34,7 +34,6 @@ export default {
       free: 'Kostenlos',
       payWhatYouWant: 'Zahle, was du möchtest',
       total: 'Gesamtbetrag',
-      everyInterval: 'Alle {interval}',
       additionalMeteredUsage: 'Zusätzliche Nutzung',
       perUnit: '/ Einheit',
       discount: {
@@ -49,6 +48,32 @@ export default {
             other: 'für die ersten # Jahre',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Täglich',
+          other: 'Alle # Tage',
+          '=2': 'Alle 2 Tage',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Wöchentlich',
+          other: 'Alle # Wochen',
+          '=2': 'Alle 2 Wochen',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Monatlich',
+          other: 'Alle # Monate',
+          '=2': 'Alle 2 Monate',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Jährlich',
+          other: 'Alle # Jahre',
+          '=2': 'Alle 2 Jahre',
+          _mode: 'plural',
         },
       },
     },
@@ -85,7 +110,7 @@ export default {
         'Der Betrag muss {zero} oder mindestens {min} betragen',
     },
     productSwitcher: {
-      billedRecurring: 'Abrechnung {frequency}',
+      billedRecurring: '{frequency} abgerechnet',
       oneTimePurchase: 'Einmaliger Kauf',
     },
     card: {
@@ -179,19 +204,6 @@ export default {
       week: 'W.',
       month: 'M.',
       year: 'J',
-    },
-    long: {
-      day: 'Tag',
-      week: 'Woche',
-      month: 'Monat',
-      year: 'Jahr',
-    },
-    frequency: {
-      day: 'täglich',
-      week: 'wöchentlich',
-      month: 'monatlich',
-      year: 'jährlich',
-      everyOrdinalInterval: 'alle {ordinal} {interval}',
     },
   },
   benefitTypes: {

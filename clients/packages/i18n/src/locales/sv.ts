@@ -34,7 +34,6 @@ export default {
       free: 'Gratis',
       payWhatYouWant: 'Betala vad du vill',
       total: 'Totalt',
-      everyInterval: 'Varje {interval}',
       additionalMeteredUsage: 'Ytterligare mätbaserad användning',
       perUnit: '/ enhet',
       discount: {
@@ -49,6 +48,32 @@ export default {
             other: 'för de första # åren',
             _mode: 'plural',
           },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': 'Dagligen',
+          other: 'Var #:e dagar',
+          '=2': 'Varannan dag',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Veckovis',
+          other: 'Var #:e vecka',
+          '=2': 'Varannan vecka',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Månadsvis',
+          other: 'Var #:e månad',
+          '=2': 'Varannan månad',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Årsvis',
+          other: 'Var #:e år',
+          '=2': 'Vartannat år',
+          _mode: 'plural',
         },
       },
     },
@@ -172,19 +197,6 @@ export default {
       week: 'v',
       month: 'mån',
       year: 'år',
-    },
-    long: {
-      day: 'dag',
-      week: 'vecka',
-      month: 'månad',
-      year: 'år',
-    },
-    frequency: {
-      day: 'dagligen',
-      week: 'veckovis',
-      month: 'månatligen',
-      year: 'årligen',
-      everyOrdinalInterval: 'var {ordinal} {interval}',
     },
   },
   benefitTypes: {

@@ -53,7 +53,32 @@ export default {
           'A pricing type where the customer can choose how much to pay.',
       },
       total: 'Total',
-      everyInterval: 'Every {interval}',
+      everyInterval: {
+        day: {
+          _mode: 'plural',
+          '=1': 'Daily',
+          '=2': 'Every other day',
+          other: 'Every # days',
+        },
+        week: {
+          _mode: 'plural',
+          '=1': 'Weekly',
+          '=2': 'Every other week',
+          other: 'Every # weeks',
+        },
+        month: {
+          _mode: 'plural',
+          '=1': 'Monthly',
+          '=2': 'Every other month',
+          other: 'Every # months',
+        },
+        year: {
+          _mode: 'plural',
+          '=1': 'Yearly',
+          '=2': 'Every other year',
+          other: 'Every # years',
+        },
+      },
       additionalMeteredUsage: 'Additional metered usage',
       perUnit: '/ unit',
       discount: {
@@ -191,19 +216,6 @@ export default {
       week: 'wk',
       month: 'mo',
       year: 'yr',
-    },
-    long: {
-      day: 'day',
-      week: 'week',
-      month: 'month',
-      year: 'year',
-    },
-    frequency: {
-      day: 'daily',
-      week: 'weekly',
-      month: 'monthly',
-      year: 'yearly',
-      everyOrdinalInterval: 'every {ordinal} {interval}',
     },
   },
   benefitTypes: {

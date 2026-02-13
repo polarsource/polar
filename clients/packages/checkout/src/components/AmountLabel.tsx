@@ -1,8 +1,9 @@
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
+import { getTranslations } from '@polar-sh/i18n'
+import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
 import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import { useMemo } from 'react'
-import { formatRecurringInterval } from '../utils/product'
 
 interface AmountLabelProps {
   amount: number
@@ -25,12 +26,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
     if (!interval) {
       return ''
     }
-    const formatted = formatRecurringInterval(
-      interval,
-      intervalCount,
-      'short',
-      locale,
-    )
+    const t = getTranslations(locale ?? 'en')
+    const count = intervalCount && intervalCount > 1 ? intervalCount : null
+    const prefix = count ? `${formatOrdinal(count, locale ?? 'en')} ` : ''
+    const formatted = `${prefix}${t.intervals.short[interval]}`
     return formatted ? ` / ${formatted}` : ''
   }, [interval, intervalCount, locale])
 

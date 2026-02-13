@@ -491,9 +491,7 @@ async def get_organization_detail(
                     .where(Customer.organization_id == organization_id)
                 )
                 orders_count = orders_count_result.scalar() or 0
-                review_section = ReviewSection(
-                    organization, orders_count=orders_count
-                )
+                review_section = ReviewSection(organization, orders_count=orders_count)
                 with review_section.render(request):
                     pass
             elif section == "team":

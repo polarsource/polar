@@ -14,9 +14,7 @@ from ....components import card
 class ReviewSection:
     """Render the review section with account checklist and reply template."""
 
-    def __init__(
-        self, organization: Organization, orders_count: int = 0
-    ) -> None:
+    def __init__(self, organization: Organization, orders_count: int = 0) -> None:
         self.org = organization
         self.orders_count = orders_count
 
@@ -105,9 +103,7 @@ class ReviewSection:
             yield
 
     @staticmethod
-    def _checklist_row(
-        label: str, is_set: bool, value: str | None
-    ) -> None:
+    def _checklist_row(label: str, is_set: bool, value: str | None) -> None:
         """Render a single checklist row."""
         with tag.div(
             classes="flex items-center justify-between py-2 border-b border-base-200"
@@ -121,8 +117,7 @@ class ReviewSection:
                 with tag.span(classes="text-sm font-medium"):
                     text(label)
             with tag.span(
-                classes="text-sm"
-                + (" text-base-content/60" if not is_set else "")
+                classes="text-sm" + (" text-base-content/60" if not is_set else "")
             ):
                 text(value if is_set else "Missing")
 
@@ -154,7 +149,9 @@ class ReviewSection:
         template_text = "\n".join(template_lines)
 
         # Escape for JS
-        escaped = template_text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
+        escaped = (
+            template_text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
+        )
 
         with card(bordered=True):
             with tag.h2(classes="text-lg font-bold mb-4"):

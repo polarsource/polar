@@ -33,6 +33,7 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckoutCard } from './CheckoutCard'
+import { CheckoutDiscountInput } from './CheckoutDiscountInput'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
 export interface CheckoutProps {
@@ -268,8 +269,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           </div>
         </div>
       )}
-      <ShadowBoxOnMd className="md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent">
-        <div className="md:dark:bg-polar-950 flex flex-col gap-y-8 md:bg-gray-50 md:p-12">
+      <ShadowBoxOnMd className={`md:dark:border-polar-700 dark:md:bg-polar-900 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-gray-200 rounded-3xl md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:border md:border-gray-100 md:bg-white md:p-0 md:shadow-xs dark:divide-transparent ${pricingPositionExperiment === 'treatment' ? 'md:overflow-clip' : 'md:overflow-hidden'}`}>
+        <div className="md:dark:bg-polar-950 md:bg-gray-50 md:p-12">
+          <div className={`flex flex-col gap-y-8 ${pricingPositionExperiment === 'treatment' ? 'md:sticky md:top-8' : ''}`}>
           {pricingPositionExperiment !== 'treatment' && checkout.returnUrl && (
             <Link
               href={checkout.returnUrl}
@@ -287,8 +289,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                 pricingPositionExperiment={pricingPositionExperiment}
               />
               {pricingPositionExperiment === 'treatment' && (
-                <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-6 rounded-3xl! border border-gray-200 bg-white shadow-xs">
+                <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
                   <CheckoutPricingBreakdown checkout={checkout} />
+                  <CheckoutDiscountInput checkout={checkout} update={update} />
                 </ShadowBox>
               )}
               <CheckoutProductSwitcher
@@ -320,6 +323,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
               />
             </>
           )}
+          </div>
         </div>
         <div className="flex flex-col gap-y-8 md:p-12">
           <PaymentNotReadyBanner />

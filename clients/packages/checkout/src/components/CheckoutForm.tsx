@@ -693,7 +693,7 @@ const BaseCheckoutForm = ({
                   )}
                 </>
               )}
-              {checkout.allowDiscountCodes && checkout.isDiscountApplicable && (
+              {checkout.allowDiscountCodes && checkout.isDiscountApplicable && pricingPositionExperiment !== 'treatment' && (
                 <FormField
                   control={control}
                   name="discountCode"

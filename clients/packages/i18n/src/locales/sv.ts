@@ -53,7 +53,7 @@ export default {
       everyInterval: {
         day: {
           '=1': 'Dagligen',
-          other: 'Var #:e dagar',
+          other: 'Var #:e dag',
           '=2': 'Varannan dag',
           _mode: 'plural',
         },

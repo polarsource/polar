@@ -201,35 +201,6 @@ export default {
       month: 'M.',
       year: 'J',
     },
-    frequency: {
-      day: 'täglich',
-      week: 'wöchentlich',
-      month: 'monatlich',
-      year: 'jährlich',
-      everyOrdinalInterval: 'alle {ordinal} {interval}',
-    },
-    long: {
-      day: {
-        '=1': 'Tag',
-        other: 'Tage',
-        _mode: 'plural',
-      },
-      week: {
-        '=1': 'Woche',
-        other: 'Wochen',
-        _mode: 'plural',
-      },
-      month: {
-        '=1': 'Monat',
-        other: 'Monate',
-        _mode: 'plural',
-      },
-      year: {
-        '=1': 'Jahr',
-        other: 'Jahre',
-        _mode: 'plural',
-      },
-    },
   },
   benefitTypes: {
     license_keys: 'Lizenzschlüssel',

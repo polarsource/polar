@@ -197,35 +197,6 @@ export default {
       month: 'mnd',
       year: 'jr',
     },
-    frequency: {
-      day: 'dagelijks',
-      week: 'wekelijks',
-      month: 'maandelijks',
-      year: 'jaarlijks',
-      everyOrdinalInterval: 'elke {ordinal} {interval}',
-    },
-    long: {
-      day: {
-        '=1': 'dag',
-        other: 'dagen',
-        _mode: 'plural',
-      },
-      week: {
-        '=1': 'week',
-        other: 'weken',
-        _mode: 'plural',
-      },
-      month: {
-        '=1': 'maand',
-        other: 'maanden',
-        _mode: 'plural',
-      },
-      year: {
-        '=1': 'jaar',
-        other: 'jaar',
-        _mode: 'plural',
-      },
-    },
   },
   benefitTypes: {
     license_keys: 'Licentiesleutels',

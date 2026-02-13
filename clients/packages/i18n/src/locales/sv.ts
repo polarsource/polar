@@ -194,35 +194,6 @@ export default {
       month: 'mån',
       year: 'år',
     },
-    frequency: {
-      day: 'dagligen',
-      week: 'veckovis',
-      month: 'månatligen',
-      year: 'årligen',
-      everyOrdinalInterval: 'var {ordinal} {interval}',
-    },
-    long: {
-      day: {
-        '=1': 'dag',
-        other: 'dagar',
-        _mode: 'plural',
-      },
-      week: {
-        '=1': 'vecka',
-        other: 'veckor',
-        _mode: 'plural',
-      },
-      month: {
-        '=1': 'månad',
-        other: 'månader',
-        _mode: 'plural',
-      },
-      year: {
-        '=1': 'år',
-        other: 'år',
-        _mode: 'plural',
-      },
-    },
   },
   benefitTypes: {
     license_keys: 'Licensnycklar',

@@ -98,6 +98,7 @@ Benefit = Annotated[
     | BenefitDownloadables
     | BenefitLicenseKeys
     | BenefitMeterCredit,
+    Discriminator("type"),
     SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
     ClassName("Benefit"),

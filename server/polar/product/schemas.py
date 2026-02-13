@@ -512,7 +512,9 @@ class ProductPriceBase(TimestampedSchema):
     amount_type: ProductPriceAmountType = Field(
         description="The type of amount, either fixed or custom."
     )
-    price_currency: PriceCurrency
+    price_currency: str = Field(
+        description="The currency in which the customer will be charged."
+    )
     is_archived: bool = Field(
         description="Whether the price is archived and no longer available."
     )

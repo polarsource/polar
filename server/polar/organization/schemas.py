@@ -325,7 +325,7 @@ class Organization(OrganizationBase):
         description="When the business details were submitted.",
     )
 
-    default_presentment_currency: PresentmentCurrency = Field(
+    default_presentment_currency: str = Field(
         description=(
             "Default presentment currency. "
             "Used as fallback in checkout and customer portal, "

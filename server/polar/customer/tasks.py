@@ -3,6 +3,7 @@ from typing import Literal
 
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.event.service import event as event_service
 from polar.event.system import CustomerUpdatedFields, SystemEvent, build_system_event
 from polar.exceptions import PolarTaskError
@@ -41,6 +42,38 @@ async def customer_webhook(
 
         await customer_service.webhook(
             session, RedisMiddleware.get(), event_type, customer
+        )
+
+
+def _state_changed_webhook_debounce_key(customer_id: uuid.UUID) -> str:
+    return f"customer.state_changed_webhook:{customer_id}"
+
+
+@actor(
+    actor_name="customer.state_changed_webhook",
+    priority=TaskPriority.MEDIUM,
+    debounce_key=_state_changed_webhook_debounce_key,
+    debounce_min_threshold=int(
+        settings.CUSTOMER_STATE_CHANGED_WEBHOOK_DEBOUNCE_MIN_THRESHOLD.total_seconds()
+    ),
+    debounce_max_threshold=int(
+        settings.CUSTOMER_STATE_CHANGED_WEBHOOK_DEBOUNCE_MAX_THRESHOLD.total_seconds()
+    ),
+)
+async def customer_state_changed_webhook(customer_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_id(
+            customer_id,
+            include_deleted=True,
+            options=(joinedload(Customer.organization),),
+        )
+
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+
+        await customer_service.send_state_changed_webhook(
+            session, RedisMiddleware.get(), customer
         )
 
 

@@ -1031,10 +1031,14 @@ class TestWebhook:
         customer: Customer,
     ) -> None:
         send_mock = mocker.patch("polar.webhook.service.webhook.send")
+        enqueue_mock = mocker.patch("polar.customer.service.enqueue_job")
 
         await customer_service.webhook(session, redis, event_type, customer)
 
-        assert send_mock.call_count == 2
+        assert send_mock.call_count == 1
+        enqueue_mock.assert_called_once_with(
+            "customer.state_changed_webhook", customer.id
+        )
 
     async def test_state_changed_event(
         self,

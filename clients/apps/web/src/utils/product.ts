@@ -128,7 +128,10 @@ export const productToCreateForm = (
         source,
         ...priceRest
       } = price
-      return priceRest
+      return {
+        ...priceRest,
+        price_currency: price.price_currency as schemas['PresentmentCurrency'],
+      }
     }),
     attached_custom_fields: product.attached_custom_fields.map((field) => ({
       custom_field_id: field.custom_field_id,

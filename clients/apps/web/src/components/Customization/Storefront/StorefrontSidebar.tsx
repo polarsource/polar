@@ -215,7 +215,11 @@ export const StorefrontSidebar = ({
         title: 'Organization Updated',
         description: `Organization ${organization.name} was successfully updated`,
       })
-      reset(org)
+      reset({
+        ...org,
+        default_presentment_currency:
+          organization.default_presentment_currency as schemas['PresentmentCurrency'],
+      })
     },
     [organization, setError, updateOrganization, reset],
   )

@@ -65,7 +65,8 @@ export const ProductStep = () => {
           {
             amount_type: 'fixed',
             price_amount: 1000,
-            price_currency: organization.default_presentment_currency,
+            price_currency:
+              organization.default_presentment_currency as schemas['PresentmentCurrency'],
           },
         ],
       },

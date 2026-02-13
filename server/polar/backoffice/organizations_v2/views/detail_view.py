@@ -17,6 +17,7 @@ from ...components import (
     status_badge,
     tab_nav,
 )
+from ...components._clipboard_button import clipboard_button
 
 
 class OrganizationDetailView:
@@ -312,13 +313,8 @@ class OrganizationDetailView:
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1"
                             ):
                                 text(self.org.slug)
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                ghost=True,
-                                onclick=f"navigator.clipboard.writeText('{self.org.slug}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
-                            ):
-                                text("Copy")
+                            with clipboard_button(self.org.slug):
+                                pass
 
                     # ID (copyable)
                     with tag.div():
@@ -329,13 +325,8 @@ class OrganizationDetailView:
                                 classes="font-mono text-xs bg-base-200 px-2 py-1 rounded flex-1 break-all"
                             ):
                                 text(str(self.org.id))
-                            with button(
-                                variant="secondary",
-                                size="sm",
-                                ghost=True,
-                                onclick=f"navigator.clipboard.writeText('{self.org.id}'); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 1000)",
-                            ):
-                                text("Copy")
+                            with clipboard_button(str(self.org.id)):
+                                pass
 
                     # Created
                     with tag.div():

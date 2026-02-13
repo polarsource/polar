@@ -214,7 +214,6 @@ resource "render_web_service" "api" {
 
   lifecycle {
     ignore_changes = [
-      runtime_source.image.image_url,
       runtime_source.image.digest,
       runtime_source.image.tag,
     ]
@@ -285,7 +284,6 @@ resource "render_web_service" "worker" {
 
   lifecycle {
     ignore_changes = [
-      runtime_source.image.image_url,
       runtime_source.image.tag,
       runtime_source.image.digest,
     ]

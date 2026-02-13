@@ -168,6 +168,7 @@ async def redirect(
     customer_email: str | None = Query(None),
     customer_name: str | None = Query(None),
     discount_code: str | None = Query(None),
+    locale: str | None = Query(None),
     # Metadata that can be set from query parameters
     reference_id: str | None = Query(None),
     utm_source: str | None = Query(None),
@@ -194,6 +195,7 @@ async def redirect(
         "customer_email": customer_email,
         "customer_name": customer_name,
         "discount_code": discount_code,
+        "locale": locale,
     }
 
     # Extract custom_field_data.* parameters from query string

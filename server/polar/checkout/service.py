@@ -956,6 +956,21 @@ class CheckoutService:
                 "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             }
 
+        # Allow people setting locale on checkout links
+        #
+        # `None` locale would opt in to browser-based language detection.
+        # If people haven't opted in to this yet, we hardcode the default locale
+        # to `en-US` to keep the current behavior
+        if product.organization.feature_settings.get(
+            "checkout_localization_enabled", False
+        ):
+            if query_prefill:
+                locale = query_prefill.get("locale")
+                if locale is not None and isinstance(locale, str):
+                    checkout.locale = locale
+        else:
+            checkout.locale = "en-US"
+
         session.add(checkout)
 
         checkout = await self._update_ip_country(session, checkout, ip_country)

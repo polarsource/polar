@@ -4,6 +4,82 @@ import {
   type CheckoutPublic,
 } from '@polar-sh/sdk/models/components/checkoutpublic'
 
+const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
+## Clipeo mentiris arquato obliqua lacerta
+Lorem markdownum bifidosque tenus quod gutture parte genialiter Manto, et potuit: medio mea rogando Hector: bene? Bracchia pectus Acrisioneas adsumus? O Aeaeae flammae, est ait fleverunt illi iamdudum; captatur e. Caede et lues praecipites corrige gessit montis, aspera miserum si facit. Cum milia docta amens nec solito manifesta fitque incognita haec enim, sed resupinus enim.
+
+### Nox flebilis torva
+Repetito cum furtum altera
+Mare prius gelidumque perde
+Gravem colentes impetus reminiscitur invitusque blanditur ipse
+Iam maiora
+In quoque extulerat tale semper quidque. Fovebat heros quos gaudent et movent agmina fortis.`
+
+const PRODUCT_PREVIEW: schemas['CheckoutProduct'] = {
+  id: '123',
+  is_recurring: false,
+  is_archived: false,
+  modified_at: new Date().toISOString(),
+  organization_id: '123',
+  visibility: 'public',
+  recurring_interval: null,
+  recurring_interval_count: null,
+  medias: [
+    {
+      id: '123',
+      created_at: new Date().toISOString(),
+      public_url: '/assets/docs/og/bg.jpg',
+      is_uploaded: false,
+      service: 'product_media',
+      mime_type: 'image/png',
+      organization_id: '123',
+      name: 'blend.png',
+      path: '/assets/docs/og/bg.png',
+      size: 123,
+      size_readable: '123 B',
+      storage_version: '1',
+      checksum_etag: '123',
+      checksum_sha256_base64: '123',
+      checksum_sha256_hex: '123',
+      version: '1',
+      last_modified_at: new Date().toISOString(),
+    },
+  ],
+  prices: [
+    {
+      id: '123',
+      source: 'catalog',
+      amount_type: 'fixed',
+      price_amount: 10000,
+      price_currency: 'usd',
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      modified_at: new Date().toISOString(),
+      product_id: '123',
+      // Legacy deprecated field
+      type: 'one_time',
+      recurring_interval: null,
+    },
+  ],
+  name: 'Pro Tier',
+  description: PRODUCT_DESCRIPTION,
+  benefits: [
+    {
+      id: '123',
+      description: 'Premium feature',
+      type: 'custom',
+      created_at: new Date().toISOString(),
+      modified_at: null,
+      selectable: false,
+      deletable: false,
+      organization_id: '123',
+    },
+  ],
+  created_at: new Date().toISOString(),
+  trial_interval: null,
+  trial_interval_count: null,
+}
+
 const ORGANIZATION: schemas['CustomerOrganization'] = {
   id: '123',
   name: 'My Organization',

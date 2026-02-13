@@ -58,29 +58,17 @@
   --color-red-900: oklch(0.396 0.141 25.723);
   --color-red-950: oklch(0.258 0.092 26.042);
 
-  --color-gray-50: oklch(0.985 0.002 247.839);
-  --color-gray-100: oklch(0.967 0.003 264.542);
-  --color-gray-200: oklch(0.928 0.006 264.531);
-  --color-gray-300: oklch(0.872 0.01 258.338);
-  --color-gray-400: oklch(0.707 0.022 261.325);
-  --color-gray-500: oklch(0.551 0.027 264.364);
-  --color-gray-600: oklch(0.446 0.03 256.802);
-  --color-gray-700: oklch(0.373 0.034 259.733);
-  --color-gray-800: oklch(0.278 0.033 256.848);
-  --color-gray-900: oklch(0.21 0.034 264.665);
-  --color-gray-950: oklch(0.13 0.028 261.692);
-
-  --color-polar-50: hsl(233, 2%, 85%);
-  --color-polar-100: hsl(233, 2%, 79%);
-  --color-polar-200: hsl(233, 2%, 68%);
-  --color-polar-300: hsl(233, 2%, 62%);
-  --color-polar-400: hsl(233, 2%, 52%);
-  --color-polar-500: hsl(233, 2%, 46%);
-  --color-polar-600: hsl(233, 2%, 12%);
-  --color-polar-700: hsl(233, 2%, 9.5%);
-  --color-polar-800: hsl(233, 2%, 6.5%);
-  --color-polar-900: hsl(233, 2%, 3%);
-  --color-polar-950: hsl(233, 2%, 0%);
+  --color-polar-50: hsl(233, 0%, 85%);
+  --color-polar-100: hsl(233, 0%, 79%);
+  --color-polar-200: hsl(233, 0%, 68%);
+  --color-polar-300: hsl(233, 0%, 62%);
+  --color-polar-400: hsl(233, 0%, 52%);
+  --color-polar-500: hsl(233, 0%, 46%);
+  --color-polar-600: hsl(233, 0%, 12%);
+  --color-polar-700: hsl(233, 0%, 10%);
+  --color-polar-800: hsl(233, 0%, 6.5%);
+  --color-polar-900: hsl(233, 0%, 3.5%);
+  --color-polar-950: hsl(233, 0%, 0%);
 
   /* shadcn */
   --color-border: var(--border);

@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Footer from '../Organization/Footer'
+import Footer from '../Landing/Footer'
 import EmptyLayout from './EmptyLayout'
 
 const PublicLayout = ({

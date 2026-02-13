@@ -1,7 +1,6 @@
 'use client'
 
 import { usePostHog } from '@/hooks/posthog'
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
@@ -22,6 +21,7 @@ const GetStartedButton = ({
   orgSlug: slug,
   storefrontOrg,
   size = 'lg',
+  className,
   ...props
 }: GetStartedButtonProps) => {
   const posthog = usePostHog()
@@ -64,14 +64,13 @@ const GetStartedButton = ({
         size={size}
         onClick={onClick}
         onSubmit={onSubmit}
-        className="dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
+        className={twMerge(
+          'dark:hover:bg-polar-50 rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black',
+          className,
+        )}
         {...props}
       >
-        <div>{text}</div>
-        <KeyboardArrowRight
-          className={size === 'lg' ? 'text-lg' : 'text-md'}
-          fontSize="inherit"
-        />
+        {text}
       </Button>
 
       <Modal

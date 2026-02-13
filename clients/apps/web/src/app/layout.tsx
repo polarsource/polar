@@ -11,8 +11,8 @@ import { CONFIG } from '@/utils/config'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { GeistMono } from 'geist/font/mono'
-import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
+import { Inter } from 'next/font/google'
 import { Metadata } from 'next/types'
 import {
   NavigationHistoryProvider,
@@ -20,6 +20,10 @@ import {
   PolarPostHogProvider,
   PolarQueryClientProvider,
 } from './providers'
+
+const inter = Inter({
+  weight: ['300', '400', '500'],
+})
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseMetadata: Metadata = {
@@ -114,7 +118,7 @@ export default async function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`antialiased ${GeistSans.variable} ${GeistMono.variable}`}
+      className={`antialiased ${inter.variable} ${GeistMono.variable}`}
     >
       <head>
         {CONFIG.ENVIRONMENT === 'development' ? (

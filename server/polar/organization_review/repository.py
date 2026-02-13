@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -12,6 +14,7 @@ from polar.kit.repository.base import (
 from polar.models.account import Account
 from polar.models.dispute import Dispute
 from polar.models.organization import Organization
+from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.payment import Payment, PaymentStatus
 from polar.models.product import Product
@@ -26,6 +29,39 @@ class OrganizationReviewRepository(
     RepositoryBase[OrganizationReview],
 ):
     model = OrganizationReview
+
+    async def save_agent_review(
+        self,
+        organization_id: UUID,
+        report: dict[str, Any],
+        model_used: str,
+        reviewed_at: datetime,
+    ) -> OrganizationAgentReview:
+        """Create a new agent review record for the organization."""
+        agent_review = OrganizationAgentReview(
+            organization_id=organization_id,
+            report=report,
+            model_used=model_used,
+            reviewed_at=reviewed_at,
+        )
+        self.session.add(agent_review)
+        return agent_review
+
+    async def get_latest_agent_review(
+        self, organization_id: UUID
+    ) -> OrganizationAgentReview | None:
+        """Get the most recent agent review for an organization."""
+        statement = (
+            select(OrganizationAgentReview)
+            .where(
+                OrganizationAgentReview.organization_id == organization_id,
+                OrganizationAgentReview.deleted_at.is_(None),
+            )
+            .order_by(OrganizationAgentReview.reviewed_at.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
 
     async def get_account_with_admin(
         self, account_id: UUID

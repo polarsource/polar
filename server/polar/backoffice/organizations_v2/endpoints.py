@@ -485,13 +485,28 @@ async def get_organization_detail(
                 ):
                     pass
             elif section == "review":
+                from polar.organization_review.repository import (
+                    OrganizationReviewRepository,
+                )
+
                 orders_count_result = await session.execute(
                     select(func.count(Order.id))
                     .join(Customer, Order.customer_id == Customer.id)
                     .where(Customer.organization_id == organization_id)
                 )
                 orders_count = orders_count_result.scalar() or 0
-                review_section = ReviewSection(organization, orders_count=orders_count)
+
+                review_repo = OrganizationReviewRepository.from_session(session)
+                agent_review = await review_repo.get_latest_agent_review(
+                    organization_id
+                )
+
+                review_section = ReviewSection(
+                    organization,
+                    orders_count=orders_count,
+                    agent_report=agent_review.report if agent_review else None,
+                    agent_reviewed_at=agent_review.reviewed_at if agent_review else None,
+                )
                 with review_section.render(request):
                     pass
             elif section == "team":

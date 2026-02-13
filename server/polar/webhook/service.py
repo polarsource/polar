@@ -752,7 +752,21 @@ class WebhookService:
                 session.add(event_type)
                 events.append(event_type)
                 await session.flush()
-                enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
+
+                earlier_pending_count = await self.count_earlier_pending_events(
+                    session, event_type
+                )
+                delay: int | None = None
+                if earlier_pending_count > 0:
+                    delay = min(
+                        earlier_pending_count * settings.WEBHOOK_FIFO_GUARD_DELAY_MS,
+                        int(settings.WEBHOOK_FIFO_GUARD_MAX_AGE.total_seconds() * 1000),
+                    )
+                enqueue_job(
+                    "webhook_event.send",
+                    webhook_event_id=event_type.id,
+                    delay=delay,
+                )
             except UnsupportedTarget as e:
                 # Log the error but do not raise to not fail the whole request
                 log.error(e.message)

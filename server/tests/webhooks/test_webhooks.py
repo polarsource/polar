@@ -56,7 +56,45 @@ async def test_webhook_send(
     assert event.webhook_endpoint == endpoint
 
     enqueue_job_mock.assert_called_once_with(
-        "webhook_event.send", webhook_event_id=event.id
+        "webhook_event.send", webhook_event_id=event.id, delay=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_webhook_send_with_earlier_pending_events(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    enqueue_job_mock: MagicMock,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.raw,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_created],
+    )
+    await save_fixture(endpoint)
+
+    # Create an earlier pending (undelivered) event
+    earlier_event = WebhookEvent(
+        webhook_endpoint=endpoint,
+        type=WebhookEventType.subscription_created,
+        payload='{"earlier":"event"}',
+    )
+    await save_fixture(earlier_event)
+
+    events = await webhook_service.send(
+        session, organization, WebhookEventType.subscription_created, subscription
+    )
+    assert len(events) == 1
+
+    event = events[0]
+    enqueue_job_mock.assert_called_once_with(
+        "webhook_event.send",
+        webhook_event_id=event.id,
+        delay=settings.WEBHOOK_FIFO_GUARD_DELAY_MS,
     )
 
 

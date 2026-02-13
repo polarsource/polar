@@ -208,6 +208,31 @@ class TestCreate:
 
 
 @pytest.mark.asyncio
+class TestEstimate:
+    async def test_regular_currency(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that regular currencies return net_amount unchanged."""
+        mocker.patch(
+            "polar.payout.service.platform_fee_transaction_service.get_payout_fees",
+            return_value=[],
+        )
+
+        account = await create_account(save_fixture, organization, user, currency="usd")
+        await create_balance_transaction(save_fixture, account=account, amount=12345)
+
+        estimate = await payout_service.estimate(session, account=account)
+
+        assert estimate.gross_amount == 12345
+        assert estimate.net_amount == 12345
+
+
+@pytest.mark.asyncio
 class TestTriggerStripePayouts:
     async def test_valid(
         self,
@@ -295,6 +320,65 @@ class TestTransferStripe:
         )
         assert updated_transaction is not None
         assert updated_transaction.transfer_id == "STRIPE_TRANSFER_ID"
+
+    @pytest.mark.parametrize(
+        ("account_currency", "stripe_amount", "expected_amount"),
+        [
+            # Zero-decimal currencies should be rounded down to nearest 100
+            pytest.param("twd", 1204324, 1204300, id="TWD with remainder"),
+            pytest.param("twd", 1204300, 1204300, id="TWD no remainder"),
+            pytest.param("huf", 50099, 50000, id="HUF with remainder"),
+            pytest.param("isk", 12345, 12300, id="ISK with remainder"),
+            pytest.param("ugx", 10050, 10000, id="UGX with remainder"),
+            # Regular currencies should not be adjusted
+            pytest.param("eur", 12345, 12345, id="EUR unchanged"),
+        ],
+    )
+    async def test_zero_decimal_currency_adjustment(
+        self,
+        account_currency: str,
+        stripe_amount: int,
+        expected_amount: int,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that zero-decimal currency amounts are adjusted at transfer time."""
+        # Mock the transfer with a destination_payment (indicating FX conversion)
+        stripe_service_mock.transfer.return_value = SimpleNamespace(
+            id="STRIPE_TRANSFER_ID", destination_payment="py_123"
+        )
+        # Mock the charge with a balance_transaction containing the converted amount
+        stripe_service_mock.get_charge.return_value = SimpleNamespace(
+            balance_transaction=SimpleNamespace(amount=stripe_amount)
+        )
+
+        country_map = {"twd": "TW", "huf": "HU", "isk": "IS", "ugx": "UG", "eur": "DE"}
+        country = country_map.get(account_currency, "US")
+
+        account = await create_account(
+            save_fixture, organization, user, country=country, currency=account_currency
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            account_currency=account_currency,
+        )
+        transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account_currency,
+            payout=payout,
+        )
+
+        result = await payout_service.transfer_stripe(session, payout)
+
+        # Verify the payout's account_amount was adjusted for zero-decimal currencies
+        assert result.account_amount == expected_amount
 
 
 @pytest.mark.asyncio

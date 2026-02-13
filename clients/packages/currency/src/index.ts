@@ -59,6 +59,9 @@ export const getCurrencyDecimalFactor = (currency: string): number => {
 export const isDecimalCurrency = (currency: string): boolean =>
   getCurrencyDecimalFactor(currency) === 100
 
+const scrubTrailingZeros = (formatted: string): string =>
+  formatted.replace(/[.,]00([^\d]*)$/, '$1')
+
 /**
  * Formatting modes for currency display
  */
@@ -82,9 +85,7 @@ const formatCurrencyCompact = (
     minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
   })
 
-  return currencyNumberFormat
-    .format(cents / decimalFactor)
-    .replace(/[.,]00$/, '')
+  return scrubTrailingZeros(currencyNumberFormat.format(cents / decimalFactor))
 }
 
 const formatCurrencyStandard = (
@@ -100,9 +101,7 @@ const formatCurrencyStandard = (
     minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
   })
 
-  return currencyNumberFormat
-    .format(cents / decimalFactor)
-    .replace(/[.,]00$/, '')
+  return scrubTrailingZeros(currencyNumberFormat.format(cents / decimalFactor))
 }
 
 const formatCurrencyAccounting = (

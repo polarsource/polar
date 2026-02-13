@@ -104,8 +104,8 @@ async def migrate_organizations(
                         .is_(False),
                     ),
                     or_(
-                        Organization.feature_settings["seat_based_pricing"].is_(None),
-                        Organization.feature_settings["seat_based_pricing"]
+                        Organization.feature_settings["seat_based_pricing_enabled"].is_(None),
+                        Organization.feature_settings["seat_based_pricing_enabled"]
                         .as_boolean()
                         .is_(False),
                     ),

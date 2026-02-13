@@ -161,8 +161,8 @@ async def query_metrics(
 
     if TinybirdQuery.events in metric_types:
         events_params = base_params.copy()
-        events_params["buffer_start"] = _format_dt(b_start - timedelta(days=1))
-        events_params["buffer_end"] = _format_dt(b_end + timedelta(days=1))
+        events_params["buffer_start"] = _format_dt(start - timedelta(days=1))
+        events_params["buffer_end"] = _format_dt(end + timedelta(days=1))
         tasks.append(asyncio.create_task(_query_events_metrics(events_params)))
         task_types.append(TinybirdQuery.events)
 

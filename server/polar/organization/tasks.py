@@ -678,17 +678,25 @@ async def _find_seat_member_for_grant(
 
     # Non-transferred grant: single-seat lookup is safe
     if grant.subscription_id is not None:
-        stmt = select(CustomerSeat.member_id).where(
-            CustomerSeat.subscription_id == grant.subscription_id,
-            CustomerSeat.member_id.is_not(None),
-            CustomerSeat.status != SeatStatus.revoked,
-        ).limit(1)
+        stmt = (
+            select(CustomerSeat.member_id)
+            .where(
+                CustomerSeat.subscription_id == grant.subscription_id,
+                CustomerSeat.member_id.is_not(None),
+                CustomerSeat.status != SeatStatus.revoked,
+            )
+            .limit(1)
+        )
     elif grant.order_id is not None:
-        stmt = select(CustomerSeat.member_id).where(
-            CustomerSeat.order_id == grant.order_id,
-            CustomerSeat.member_id.is_not(None),
-            CustomerSeat.status != SeatStatus.revoked,
-        ).limit(1)
+        stmt = (
+            select(CustomerSeat.member_id)
+            .where(
+                CustomerSeat.order_id == grant.order_id,
+                CustomerSeat.member_id.is_not(None),
+                CustomerSeat.status != SeatStatus.revoked,
+            )
+            .limit(1)
+        )
     else:
         return None
 

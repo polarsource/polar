@@ -112,7 +112,6 @@ export const useCreateProduct = (organization: schemas['Organization']) =>
       getQueryClient().invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })
-
     },
   })
 

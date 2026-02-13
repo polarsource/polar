@@ -1,0 +1,227 @@
+export default {
+  checkout: {
+    footer: {
+      poweredBy: '제공:',
+      merchantOfRecord:
+        '이 주문은 온라인 리셀러이자 Merchant of Record인 Polar가 처리하며, 주문 관련 문의 및 반품도 Polar에서 담당합니다.',
+      mandateSubscriptionTrial:
+        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 체험 기간 종료 시점 및 이후 매 결제일에 선택하신 결제 수단으로 위 금액을 청구하는 것을 승인하게 됩니다. 체험 기간이 종료되기 전에 언제든지 취소하여 청구를 방지할 수 있습니다.',
+      mandateSubscription:
+        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 즉시 선택하신 결제 수단으로 위 금액을 청구하고, 이후 매 결제일에 동일한 금액을 청구하는 것을 승인하게 됩니다. 언제든지 취소할 수 있습니다.',
+      mandateOneTime:
+        '"{buttonLabel}" 버튼을 클릭하면 온라인 리셀러이자 공식 판매자인 Polar Software, Inc.가 선택하신 결제 수단으로 위 금액을 청구하는 것을 승인하게 됩니다. 이는 일회성 결제입니다.',
+    },
+    form: {
+      email: '이메일',
+      cardholderName: '카드 명의자',
+      purchasingAsBusiness: '사업자로 구매합니다',
+      businessName: '상호명',
+      billingAddress: {
+        label: '청구지 주소',
+        line1: '주소',
+        line2: '상세 주소',
+        postalCode: '우편번호',
+        city: '도시',
+        country: '국가',
+        state: '주',
+        province: '도',
+        stateProvince: '주 / 도',
+      },
+      taxId: '납세자 번호',
+      discountCode: '할인 코드',
+      optional: '선택 사항',
+      apply: '적용',
+      fieldRequired: '필수 입력 항목입니다',
+      addBusinessDetails: '사업자 정보 추가',
+      removeBusinessDetails: '사업자 정보 삭제',
+      billingDetails: '사업자 정보',
+    },
+    pricing: {
+      subtotal: '소계',
+      taxableAmount: '과세 대상 금액',
+      taxes: '부가세',
+      free: '무료',
+      payWhatYouWant: '원하는 금액 지불',
+      total: '합계',
+      additionalMeteredUsage: '추가 종량제 사용량',
+      perUnit: '/ 단위',
+      discount: {
+        duration: {
+          months: {
+            '=1': '첫 1개월 동안',
+            other: '첫 #개월 동안',
+            _mode: 'plural',
+          },
+          years: {
+            '=1': '첫 1년 동안',
+            other: '첫 #년 동안',
+            _mode: 'plural',
+          },
+        },
+      },
+      everyInterval: {
+        day: {
+          '=1': '매일',
+          '=2': '2일마다',
+          other: '#일마다',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': '매주',
+          '=2': '2주마다',
+          other: '#주마다',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': '매월',
+          '=2': '2개월마다',
+          other: '#개월마다',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': '매년',
+          '=2': '2년마다',
+          other: '#년마다',
+          _mode: 'plural',
+        },
+      },
+    },
+    trial: {
+      ends: '체험 종료일: {endDate}',
+      duration: {
+        days: {
+          '=1': '#일 무료 체험',
+          other: '#일 무료 체험',
+          _mode: 'plural',
+        },
+        weeks: {
+          '=1': '#주 무료 체험',
+          other: '#주 무료 체험',
+          _mode: 'plural',
+        },
+        months: {
+          '=1': '#개월 무료 체험',
+          other: '#개월 무료 체험',
+          _mode: 'plural',
+        },
+        years: {
+          '=1': '#년 무료 체험',
+          other: '#년 무료 체험',
+          _mode: 'plural',
+        },
+      },
+    },
+    pwywForm: {
+      label: '원하는 가격 입력',
+      minimum: '최소 {amount}',
+      amountMinimum: '금액은 최소 {min}이어야 합니다',
+      amountFreeOrMinimum: '금액은 {zero} 또는 최소 {min}이어야 합니다',
+    },
+    productSwitcher: {
+      billedRecurring: '{frequency} 결제',
+      oneTimePurchase: '1회 결제',
+    },
+    card: {
+      included: '포함됨',
+    },
+    benefits: {
+      moreBenefits: {
+        '=1': '#개 추가 혜택',
+        other: '#개 추가 혜택',
+        _mode: 'plural',
+      },
+      showMoreBenefits: {
+        '=1': '혜택 #개 더 보기',
+        other: '혜택 #개 더 보기',
+        _mode: 'plural',
+      },
+      showLess: '접기',
+      granting: '혜택 제공 중...',
+      requestNewInvite: '새 초대 요청',
+      retryIn: {
+        '=1': '#초 후 재시도',
+        other: '#초 후 재시도',
+        _mode: 'plural',
+      },
+      connectNewAccount: '새 계정 연결',
+      requestMyInvite: '내 초대 요청',
+      github: {
+        connect: 'GitHub 계정 연결',
+        goTo: '{repository}(으)로 이동',
+        selectAccount: 'GitHub 계정 선택',
+      },
+      discord: {
+        connect: 'Discord 계정 연결',
+        open: 'Discord 열기',
+        selectAccount: 'Discord 계정 선택',
+      },
+      licenseKey: {
+        copy: '복사',
+        copiedToClipboard: '클립보드에 복사됨',
+        copiedToClipboardDescription: '라이선스 키가 클립보드에 복사되었습니다',
+        loading: '로딩 중...',
+        status: '상태',
+        statusGranted: '발급됨',
+        statusRevoked: '취소됨',
+        statusDisabled: '비활성화됨',
+        usage: '사용량',
+        validations: '검증',
+        validatedAt: '검증 일시',
+        neverValidated: '검증된 적 없음',
+        expiryDate: '만료일',
+        noExpiry: '만료 없음',
+        activations: '활성화',
+        activationDeleted: '라이선스 키 활성화 삭제됨',
+        activationDeletedDescription: '활성화가 성공적으로 삭제되었습니다',
+        activationDeactivationFailed: '활성화 비활성화 실패',
+      },
+    },
+    confirmation: {
+      confirmPayment: '결제 확인',
+      processingTitle: '주문을 처리하고 있습니다',
+      successTitle: '주문이 완료되었습니다!',
+      failedTitle: '주문 처리 중 문제가 발생했습니다',
+      processingDescription: '결제 확인 중입니다. 잠시만 기다려 주세요.',
+      successDescription: '이제 {product}의 혜택을 이용하실 수 있습니다.',
+      failedDescription: '다시 시도하거나 고객지원팀에 문의해 주세요.',
+    },
+    loading: {
+      processingOrder: '주문 처리 중...',
+      processingPayment: '결제 처리 중',
+      paymentSuccessful: '결제 성공! 상품을 준비하고 있습니다...',
+      confirmationTokenFailed:
+        '확인 토큰 생성에 실패했습니다. 나중에 다시 시도해 주세요.',
+    },
+    cta: {
+      startTrial: '체험 시작',
+      subscribeNow: '지금 구독하기',
+      payNow: '지금 결제하기',
+      getFree: '무료로 받기',
+      paymentsUnavailable: '현재 결제를 이용할 수 없습니다',
+    },
+  },
+  intervals: {
+    short: {
+      day: '일',
+      week: '주',
+      month: '월',
+      year: '년',
+    },
+  },
+  benefitTypes: {
+    license_keys: '라이선스 키',
+    github_repository: 'GitHub 저장소 액세스',
+    discord: 'Discord 초대',
+    downloadables: '파일 다운로드',
+    custom: '사용자 지정',
+    meter_credit: '미터 크레딧',
+  },
+  ordinal: {
+    zero: '번째',
+    one: '번째',
+    two: '번째',
+    few: '번째',
+    many: '번째',
+    other: '번째',
+  },
+} as const

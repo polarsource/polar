@@ -199,7 +199,7 @@ export default {
     zero: ':e',
     one: ':a',
     two: ':a',
-    few: ':a',
+    few: ':e',
     many: ':e',
     other: ':e',
   },

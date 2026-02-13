@@ -199,7 +199,7 @@ export default {
     meter_credit: 'Verbruikstegoeden',
   },
   ordinal: {
-    zero: 'e',
+    zero: 'de',
     one: 'e',
     two: 'e',
     few: 'e',

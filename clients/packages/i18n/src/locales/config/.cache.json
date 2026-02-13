@@ -119,7 +119,13 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -241,7 +247,13 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -363,7 +375,13 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -485,7 +503,13 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -607,7 +631,13 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -728,6 +758,12 @@
     "benefitTypes.discord": "Discord Invite",
     "benefitTypes.downloadables": "File Downloads",
     "benefitTypes.custom": "Custom",
-    "benefitTypes.meter_credit": "Meter Credits"
+    "benefitTypes.meter_credit": "Meter Credits",
+    "ordinal.zero": "",
+    "ordinal.one": "st",
+    "ordinal.two": "nd",
+    "ordinal.few": "rd",
+    "ordinal.many": "",
+    "ordinal.other": "th"
   }
 }

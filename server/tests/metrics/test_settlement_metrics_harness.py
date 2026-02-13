@@ -858,6 +858,7 @@ async def metrics_harness(
                 started_on: date = date(2026, 1, 1),
                 canceled_on: date,
                 reason: CustomerCancellationReason,
+                initial_event_reason: str | None = None,
                 replay_timestamp: datetime | None = None,
                 replay_canceled_at: datetime | None = None,
                 replay_ends_at: datetime | None = None,
@@ -906,7 +907,11 @@ async def metrics_harness(
                         subscription,
                         canceled_at=canceled_on,
                         ends_at=canceled_on,
-                        customer_cancellation_reason=reason.value,
+                        customer_cancellation_reason=(
+                            initial_event_reason
+                            if initial_event_reason is not None
+                            else reason.value
+                        ),
                     )
                 )
 
@@ -943,6 +948,11 @@ async def metrics_harness(
             await create_canceled_subscription_with_events(
                 canceled_on=date(2026, 1, 14),
                 reason=CustomerCancellationReason.other,
+                initial_event_reason=CustomerCancellationReason.low_quality.value,
+                replay_timestamp=_dt(date(2026, 1, 18), 10, 0),
+                replay_canceled_at=_dt(date(2026, 1, 14), 10, 0),
+                replay_ends_at=_dt(date(2026, 1, 14), 10, 0),
+                replay_reason="",
             )
             await create_canceled_subscription_with_events(
                 canceled_on=date(2026, 1, 14),

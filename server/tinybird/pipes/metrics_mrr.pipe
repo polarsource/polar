@@ -106,20 +106,33 @@ SQL >
             )
         ) AS interval
 
-NODE subs
+NODE subscription_latest_product
 SQL >
     %
     SELECT
-        subscription_id,
-        minMerge(started_at) AS started_at,
-        argMaxMerge(ends_at) AS ends_at,
-        argMaxMerge(recurring_interval) AS recurring_interval,
-        argMaxMerge(recurring_interval_count) AS recurring_interval_count,
-        argMaxMerge(customer_id) AS customer_id,
-        argMaxMerge(product_id) AS product_id
-    FROM subscription_state
+        e.subscription_id,
+        argMax(
+            COALESCE(e.new_product_id, e.product_id),
+            (
+                e.timestamp,
+                e.ingested_at,
+                multiIf(
+                    e.name = 'subscription.product_updated', 3, e.name = 'subscription.created', 2, 1
+                )
+            )
+        ) AS latest_product_id
+    FROM system_events_by_org AS e
     WHERE
-        organization_id IN (
+        e.subscription_id IS NOT NULL
+        AND COALESCE(e.new_product_id, e.product_id) IS NOT NULL
+        AND e.name IN (
+            'subscription.created',
+            'subscription.product_updated',
+            'order.paid',
+            'balance.order',
+            'balance.credit_order'
+        )
+        AND e.organization_id IN (
             SELECT
                 toUUID(
                     arrayJoin(
@@ -136,7 +149,40 @@ SQL >
                     )
                 )
         )
-    GROUP BY subscription_id
+    GROUP BY e.subscription_id
+
+NODE subs
+SQL >
+    %
+    SELECT
+        ss.subscription_id,
+        minMerge(ss.started_at) AS started_at,
+        argMaxMerge(ss.ends_at) AS ends_at,
+        argMaxMerge(ss.recurring_interval) AS recurring_interval,
+        argMaxMerge(ss.recurring_interval_count) AS recurring_interval_count,
+        argMaxMerge(ss.customer_id) AS customer_id,
+        COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) AS product_id
+    FROM subscription_state AS ss
+    LEFT JOIN subscription_latest_product slp ON ss.subscription_id = slp.subscription_id
+    WHERE
+        ss.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY ss.subscription_id, slp.latest_product_id
     HAVING
         1 = 1
         AND (
@@ -157,7 +203,7 @@ SQL >
             )
         )
         {% if defined(product_ids) and product_ids != '' %}
-            AND argMaxMerge(subscription_state.product_id) IN (
+            AND COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) IN (
                 SELECT
                     toUUIDOrNull(
                         arrayJoin(
@@ -429,7 +475,16 @@ SQL >
         {% end %}
         count(*) AS churned_subscriptions
     FROM subs s
-    WHERE s.ends_at > toDateTime64(0, 3, 'UTC')
+    WHERE
+        s.ends_at > toDateTime64(0, 3, 'UTC')
+        AND s.ends_at >= toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        AND s.ends_at <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
     GROUP BY window_start
 
 NODE endpoint

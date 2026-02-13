@@ -349,6 +349,7 @@ SQL >
         e.name,
         e.subscription_id,
         e.timestamp AS event_timestamp,
+        e.ingested_at AS event_ingested_at,
         e.canceled_at,
         e.customer_cancellation_reason
     FROM system_events_by_org AS e
@@ -832,12 +833,31 @@ NODE latest_canceled
 SQL >
     %
     SELECT
-        se.subscription_id,
-        argMax(se.canceled_at, se.event_timestamp) AS canceled_at,
-        argMax(se.customer_cancellation_reason, se.event_timestamp) AS customer_cancellation_reason
-    FROM subscription_events_raw AS se
-    WHERE se.name = 'subscription.canceled'
-    GROUP BY se.subscription_id
+        lc.subscription_id,
+        tupleElement(lc.latest_cancel, 1) AS canceled_at,
+        tupleElement(lc.latest_cancel, 2) AS customer_cancellation_reason
+    FROM
+        (
+            SELECT
+                se.subscription_id,
+                argMax(
+                    tuple(se.canceled_at, se.customer_cancellation_reason),
+                    (
+                        COALESCE(se.canceled_at, toDateTime64(0, 3, 'UTC')),
+                        if(
+                            se.customer_cancellation_reason IS NULL
+                            OR se.customer_cancellation_reason = '',
+                            0,
+                            1
+                        ),
+                        se.event_timestamp,
+                        se.event_ingested_at
+                    )
+                ) AS latest_cancel
+            FROM subscription_events_raw AS se
+            WHERE se.name = 'subscription.canceled'
+            GROUP BY se.subscription_id
+        ) AS lc
 
 NODE canceled
 SQL >
@@ -1216,7 +1236,16 @@ SQL >
         {% end %}
         count(*) AS churned_subscriptions
     FROM subs s
-    WHERE s.ends_at > toDateTime64(0, 3, 'UTC')
+    WHERE
+        s.ends_at > toDateTime64(0, 3, 'UTC')
+        AND s.ends_at >= toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        AND s.ends_at <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
     GROUP BY window_start
 
 NODE mrr_metrics

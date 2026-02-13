@@ -6,7 +6,6 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.kit.repository.base import (
-    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -63,9 +62,7 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def get_account_with_admin(
-        self, account_id: UUID
-    ) -> Account | None:
+    async def get_account_with_admin(self, account_id: UUID) -> Account | None:
         statement = (
             select(Account)
             .where(Account.id == account_id, Account.deleted_at.is_(None))
@@ -74,9 +71,7 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return result.unique().scalar_one_or_none()
 
-    async def get_products_with_prices(
-        self, organization_id: UUID
-    ) -> list[Product]:
+    async def get_products_with_prices(self, organization_id: UUID) -> list[Product]:
         statement = (
             select(Product)
             .where(
@@ -88,15 +83,11 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().unique().all())
 
-    async def get_payment_stats(
-        self, organization_id: UUID
-    ) -> tuple[int, int, int]:
+    async def get_payment_stats(self, organization_id: UUID) -> tuple[int, int, int]:
         """Returns (total_payments, succeeded_payments, total_amount_cents)."""
         statement = select(
             func.count(Payment.id),
-            func.count(Payment.id).filter(
-                Payment.status == PaymentStatus.succeeded
-            ),
+            func.count(Payment.id).filter(Payment.status == PaymentStatus.succeeded),
             func.coalesce(
                 func.sum(Payment.amount).filter(
                     Payment.status == PaymentStatus.succeeded
@@ -111,9 +102,7 @@ class OrganizationReviewRepository(
         row = result.one()
         return row[0], row[1], row[2]
 
-    async def get_risk_scores(
-        self, organization_id: UUID
-    ) -> list[int]:
+    async def get_risk_scores(self, organization_id: UUID) -> list[int]:
         statement = select(Payment.risk_score).where(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
@@ -123,9 +112,7 @@ class OrganizationReviewRepository(
         result = await self.session.execute(statement)
         return [row[0] for row in result.all()]
 
-    async def get_refund_stats(
-        self, organization_id: UUID
-    ) -> tuple[int, int]:
+    async def get_refund_stats(self, organization_id: UUID) -> tuple[int, int]:
         """Returns (refund_count, refund_amount_cents)."""
         statement = select(
             func.count(Refund.id),
@@ -139,9 +126,7 @@ class OrganizationReviewRepository(
         row = result.one()
         return row[0], row[1]
 
-    async def get_dispute_stats(
-        self, organization_id: UUID
-    ) -> tuple[int, int]:
+    async def get_dispute_stats(self, organization_id: UUID) -> tuple[int, int]:
         """Returns (dispute_count, dispute_amount_cents)."""
         statement = select(
             func.count(Dispute.id),

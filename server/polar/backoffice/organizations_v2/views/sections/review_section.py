@@ -93,7 +93,9 @@ class ReviewSection:
                     score_color = (
                         "text-success"
                         if risk_score < 30
-                        else "text-warning" if risk_score < 70 else "text-error"
+                        else "text-warning"
+                        if risk_score < 70
+                        else "text-error"
                     )
                     with tag.div(classes="flex items-center gap-1"):
                         with tag.span(classes="text-sm font-medium"):
@@ -172,7 +174,9 @@ class ReviewSection:
         score_color = (
             "badge-success"
             if score < 30
-            else "badge-warning" if score < 70 else "badge-error"
+            else "badge-warning"
+            if score < 70
+            else "badge-error"
         )
 
         with tag.div(classes="border border-base-200 rounded p-3"):

@@ -6,7 +6,6 @@ from pydantic import Field
 
 from polar.kit.schemas import Schema
 
-
 # --- Collector output schemas ---
 
 
@@ -104,7 +103,9 @@ class ReviewDimension(StrEnum):
 
 
 class DimensionAssessment(Schema):
-    dimension: ReviewDimension = Field(description="The review dimension being assessed")
+    dimension: ReviewDimension = Field(
+        description="The review dimension being assessed"
+    )
     score: float = Field(
         ge=0, le=100, description="Risk score 0-100 (0=no risk, 100=highest risk)"
     )

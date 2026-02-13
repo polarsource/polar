@@ -108,7 +108,9 @@ async def _collect_data(
     )
 
     # History (DB queries via repository, then transform)
-    user = await review_repository.get_user_by_id(admin_user_id) if admin_user_id else None
+    user = (
+        await review_repository.get_user_by_id(admin_user_id) if admin_user_id else None
+    )
     other_orgs = (
         await review_repository.get_other_organizations_for_user(
             admin_user_id, organization.id

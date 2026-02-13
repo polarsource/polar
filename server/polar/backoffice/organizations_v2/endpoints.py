@@ -505,7 +505,9 @@ async def get_organization_detail(
                     organization,
                     orders_count=orders_count,
                     agent_report=agent_review.report if agent_review else None,
-                    agent_reviewed_at=agent_review.reviewed_at if agent_review else None,
+                    agent_reviewed_at=agent_review.reviewed_at
+                    if agent_review
+                    else None,
                 )
                 with review_section.render(request):
                     pass
@@ -601,7 +603,9 @@ async def approve_organization(
     )
 
 
-@router.post("/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent")
+@router.post(
+    "/{organization_id}/run-review-agent", name="organizations-v2:run_review_agent"
+)
 async def run_review_agent(
     request: Request,
     organization_id: UUID4,

@@ -7,7 +7,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
-from polar.organization.ai_validation import FALLBACK_POLICY, _fetch_policy_content
+from polar.organization.ai_validation import _fetch_policy_content
 
 from .schemas import DataSnapshot, ReviewAgentReport, UsageInfo
 
@@ -164,9 +164,7 @@ class ReviewAnalyzer:
         if org.switching_from:
             parts.append(f"Switching From: {org.switching_from}")
         if org.socials:
-            socials_str = ", ".join(
-                f"{s['platform']}: {s['url']}" for s in org.socials
-            )
+            socials_str = ", ".join(f"{s['platform']}: {s['url']}" for s in org.socials)
             parts.append(f"Social Links: {socials_str}")
 
         # Products
@@ -216,11 +214,15 @@ class ReviewAnalyzer:
                 parts.append(f"P50 Risk Score: {metrics.p50_risk_score}")
             if metrics.p90_risk_score is not None:
                 parts.append(f"P90 Risk Score: {metrics.p90_risk_score}")
-            parts.append(f"Refunds: {metrics.refund_count} (${metrics.refund_amount_cents / 100:,.2f})")
+            parts.append(
+                f"Refunds: {metrics.refund_count} (${metrics.refund_amount_cents / 100:,.2f})"
+            )
             if metrics.succeeded_payments > 0:
                 refund_rate = metrics.refund_count / metrics.succeeded_payments * 100
                 parts.append(f"Refund Rate: {refund_rate:.1f}%")
-            parts.append(f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})")
+            parts.append(
+                f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})"
+            )
 
         # Prior History
         parts.append("\n## User History")

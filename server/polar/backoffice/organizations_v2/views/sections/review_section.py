@@ -1,6 +1,7 @@
 """Review section with agent report, account checklist and reply template."""
 
 import contextlib
+import json
 from collections.abc import Generator
 from datetime import datetime
 from typing import Any
@@ -10,7 +11,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 
-from ....components import card
+from ....components import button, card
 
 
 class ReviewSection:
@@ -54,12 +55,28 @@ class ReviewSection:
         return items
 
     @contextlib.contextmanager
-    def agent_report_card(self) -> Generator[None]:
+    def agent_report_card(self, request: Request) -> Generator[None]:
         """Render the combined agent review report and account checklist card."""
+        run_agent_url = str(
+            request.url_for(
+                "organizations-v2:run_review_agent",
+                organization_id=self.org.id,
+            )
+        )
+
         with card(bordered=True):
             if self.agent_report is None:
-                with tag.h2(classes="text-lg font-bold mb-4"):
-                    text("Organization Review")
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Organization Review")
+                    with button(
+                        variant="primary",
+                        size="sm",
+                        outline=True,
+                        hx_post=run_agent_url,
+                        hx_confirm="Run organization review agent?",
+                    ):
+                        text("Run Agent")
                 with tag.p(classes="text-sm text-base-content/60 mb-4"):
                     text("No agent review yet")
 
@@ -72,15 +89,25 @@ class ReviewSection:
             report = self.agent_report.get("report", {})
             usage = self.agent_report.get("usage", {})
 
-            # Header with timestamp
+            # Header with timestamp and re-run button
             with tag.div(classes="flex items-center justify-between mb-4"):
                 with tag.h2(classes="text-lg font-bold"):
                     text("Organization Review")
-                if self.agent_reviewed_at:
-                    with tag.span(classes="text-xs text-base-content/60"):
-                        text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
+                with tag.div(classes="flex items-center gap-3"):
+                    if self.agent_reviewed_at:
+                        with tag.span(classes="text-xs text-base-content/60"):
+                            text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        outline=True,
+                        hx_post=run_agent_url,
+                        hx_confirm="Re-run organization review agent?",
+                    ):
+                        text("Re-run Agent")
 
             # Verdict badge + risk score
+            has_missing = bool(self.missing_items)
             with tag.div(classes="flex items-center gap-4 mb-4"):
                 verdict = report.get("verdict", "")
                 verdict_classes = {
@@ -88,9 +115,15 @@ class ReviewSection:
                     "DENY": "badge-error",
                     "NEEDS_HUMAN_REVIEW": "badge-warning",
                 }
-                badge_class = verdict_classes.get(verdict, "badge-ghost")
+                # Override APPROVE to warning when checklist items are missing
+                if verdict == "APPROVE" and has_missing:
+                    badge_class = "badge-warning"
+                    display_verdict = "APPROVE (checklist incomplete)"
+                else:
+                    badge_class = verdict_classes.get(verdict, "badge-ghost")
+                    display_verdict = verdict
                 with tag.div(classes=f"badge {badge_class} badge-lg"):
-                    text(verdict)
+                    text(display_verdict)
 
                 risk_score = report.get("overall_risk_score")
                 if risk_score is not None:
@@ -103,7 +136,7 @@ class ReviewSection:
                     )
                     with tag.div(classes="flex items-center gap-1"):
                         with tag.span(classes="text-sm font-medium"):
-                            text("Risk:")
+                            text("AI Risk:")
                         with tag.span(classes=f"text-sm font-bold {score_color}"):
                             text(f"{risk_score:.0f}/100")
 
@@ -166,6 +199,19 @@ class ReviewSection:
                     if duration is not None:
                         with tag.span():
                             text(f"Duration: {duration:.1f}s")
+
+            # Data snapshot (collapsible)
+            data_snapshot = self.agent_report.get("data_snapshot")
+            if data_snapshot:
+                with tag.details(classes="mt-4"):
+                    with tag.summary(
+                        classes="text-xs text-base-content/60 cursor-pointer hover:text-base-content"
+                    ):
+                        text("View data snapshot used for this review")
+                    with tag.pre(
+                        classes="text-xs bg-base-200 p-4 rounded mt-2 overflow-x-auto max-h-96 overflow-y-auto"
+                    ):
+                        text(json.dumps(data_snapshot, indent=2, default=str))
 
             yield
 
@@ -334,7 +380,7 @@ class ReviewSection:
     def render(self, request: Request) -> Generator[None]:
         """Render the complete review section."""
         with tag.div(classes="space-y-6"):
-            with self.agent_report_card():
+            with self.agent_report_card(request):
                 pass
 
             with self.reply_template_card():

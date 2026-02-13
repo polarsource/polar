@@ -15,7 +15,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from pydantic_core import PydanticCustomError
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import joinedload
 from tagflow import tag, text
 
@@ -41,7 +41,9 @@ from polar.file.repository import FileRepository
 from polar.file.sorting import FileSortProperty
 from polar.kit.sorting import Sorting
 from polar.models import AccountCredit, Organization, User, UserOrganization
+from polar.models.customer import Customer
 from polar.models.file import FileServiceTypes
+from polar.models.order import Order
 from polar.models.organization import OrganizationStatus
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
@@ -62,6 +64,7 @@ from .views.modals import DeleteStripeModal, DisconnectStripeModal
 from .views.sections.account_section import AccountSection
 from .views.sections.files_section import FilesSection
 from .views.sections.overview_section import OverviewSection
+from .views.sections.review_section import ReviewSection
 from .views.sections.settings_section import SettingsSection
 from .views.sections.team_section import TeamSection
 
@@ -480,6 +483,16 @@ async def get_organization_detail(
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats
                 ):
+                    pass
+            elif section == "review":
+                orders_count_result = await session.execute(
+                    select(func.count(Order.id))
+                    .join(Customer, Order.customer_id == Customer.id)
+                    .where(Customer.organization_id == organization_id)
+                )
+                orders_count = orders_count_result.scalar() or 0
+                review_section = ReviewSection(organization, orders_count=orders_count)
+                with review_section.render(request):
                     pass
             elif section == "team":
                 # Get admin user for the organization

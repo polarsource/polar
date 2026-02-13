@@ -42,6 +42,16 @@ class OrganizationDetailView:
                 active=current_section == "overview",
             ),
             Tab(
+                "Review",
+                str(
+                    request.url_for(
+                        "organizations-v2:detail", organization_id=self.org.id
+                    )
+                )
+                + "?section=review",
+                active=current_section == "review",
+            ),
+            Tab(
                 "Team",
                 str(
                     request.url_for(

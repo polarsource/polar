@@ -17,11 +17,9 @@ import { LinkItem, ListItem, Profile } from './Navigation'
 const PublicProfileDropdown = ({
   className,
   authenticatedUser,
-  anchor,
 }: {
   className?: string
   authenticatedUser: schemas['UserRead'] | undefined
-  anchor?: 'topbar' | 'bottombar'
 }) => {
   const classNames = twMerge('relative', className)
 
@@ -60,7 +58,7 @@ const PublicProfileDropdown = ({
             ref={ref}
             className={twMerge(
               'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
-              anchor === 'bottombar' ? 'bottom-12 left-0' : 'top-12 right-0',
+              'top-12 right-0',
             )}
           >
             <Link href={`${CONFIG.FRONTEND_BASE_URL}/start`} className="w-full">

@@ -598,7 +598,9 @@ async def _backfill_benefit_grants(
                 grant.customer_id = billing_customer_id
 
             # Link to seat member or owner member
-            seat_member_id = await _find_seat_member_for_grant(session, grant)
+            seat_member_id = await _find_seat_member_for_grant(
+                session, grant, seat_customer_id=old_customer_id or grant.customer_id
+            )
             if seat_member_id is not None:
                 grant.member_id = seat_member_id
                 count += 1
@@ -645,25 +647,28 @@ async def _backfill_benefit_grants(
 async def _find_seat_member_for_grant(
     session: AsyncSession,
     grant: BenefitGrant,
+    seat_customer_id: uuid.UUID,
 ) -> uuid.UUID | None:
     """Find the seat member for a grant, if the grant is seat-based.
 
     Returns the member_id from the matching CustomerSeat, or None if the
     grant is not seat-based (i.e. the customer purchased directly).
 
-    We match by subscription/order ID only (not customer_id) because the
-    grant's customer_id may still point to an old seat-holder while the
-    seat's customer_id was already migrated to the billing customer.
+    We match by subscription/order ID AND customer_id to identify the exact
+    seat. The caller provides ``seat_customer_id`` which is the grant's
+    original (pre-transfer) customer_id — the seat-holder customer.
     """
     if grant.subscription_id is not None:
         stmt = select(CustomerSeat.member_id).where(
             CustomerSeat.subscription_id == grant.subscription_id,
+            CustomerSeat.customer_id == seat_customer_id,
             CustomerSeat.member_id.is_not(None),
             CustomerSeat.status != SeatStatus.revoked,
         )
     elif grant.order_id is not None:
         stmt = select(CustomerSeat.member_id).where(
             CustomerSeat.order_id == grant.order_id,
+            CustomerSeat.customer_id == seat_customer_id,
             CustomerSeat.member_id.is_not(None),
             CustomerSeat.status != SeatStatus.revoked,
         )

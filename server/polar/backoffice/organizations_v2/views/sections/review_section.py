@@ -354,11 +354,6 @@ class ReviewSection:
         )
         template_text = "\n".join(template_lines)
 
-        # Escape for JS
-        escaped = (
-            template_text.replace("\\", "\\\\").replace("`", "\\`").replace("$", "\\$")
-        )
-
         with card(bordered=True):
             with tag.h2(classes="text-lg font-bold mb-4"):
                 text("Review Reply Template")
@@ -370,7 +365,8 @@ class ReviewSection:
 
             with tag.button(
                 classes="btn btn-sm btn-outline",
-                onclick=f"navigator.clipboard.writeText(`{escaped}`); this.textContent='Copied!'; setTimeout(() => this.textContent='Copy to Clipboard', 1000)",
+                **{"data-copy-text": template_text},
+                _="on click call navigator.clipboard.writeText(my.dataset.copyText) then put 'Copied!' into me then wait 1s then put 'Copy to Clipboard' into me",
             ):
                 text("Copy to Clipboard")
 

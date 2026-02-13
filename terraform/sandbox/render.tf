@@ -91,6 +91,7 @@ module "sandbox" {
   workers = {
     worker-sandbox = {
       start_command      = "uv run dramatiq polar.worker.run -p 4 -t 8 -f polar.worker.scheduler:start --queues high_priority medium_priority low_priority"
+      image_url          = "ghcr.io/polarsource/polar-playwright"
       tag                = "latest"
       dramatiq_prom_port = "10000"
     }

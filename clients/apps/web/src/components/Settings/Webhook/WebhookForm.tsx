@@ -53,6 +53,7 @@ export const FieldUrl = () => {
               {...field}
               value={field.value || ''}
               placeholder="https://..."
+              onBlur={(e) => field.onChange(e.target.value.trim())}
             />
           </FormControl>
           <FormMessage />

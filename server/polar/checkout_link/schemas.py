@@ -12,6 +12,7 @@ from polar.kit.metadata import (
     MetadataOutputMixin,
 )
 from polar.kit.schemas import (
+    HttpUrlToStr,
     IDSchema,
     MergeJSONSchema,
     Schema,
@@ -35,6 +36,16 @@ SuccessURL = Annotated[
             "URL where the customer will be redirected after a successful payment."
             "You can add the `checkout_id={CHECKOUT_ID}` query parameter "
             "to retrieve the checkout session id."
+        )
+    ),
+]
+
+ReturnURL = Annotated[
+    HttpUrlToStr | None,
+    Field(
+        description=(
+            "When set, a back button will be shown in the checkout "
+            "to return to this URL."
         )
     ),
 ]
@@ -74,6 +85,7 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
         default=None, description=_discount_id_description
     )
     success_url: SuccessURL = None
+    return_url: ReturnURL = None
 
 
 class CheckoutLinkCreateProductPrice(CheckoutLinkCreateBase):
@@ -132,6 +144,7 @@ class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
         default=None, description=_discount_id_description
     )
     success_url: SuccessURL = None
+    return_url: ReturnURL = None
 
 
 class CheckoutLinkBase(
@@ -144,6 +157,12 @@ class CheckoutLinkBase(
     success_url: str | None = Field(
         description=(
             "URL where the customer will be redirected after a successful payment."
+        )
+    )
+    return_url: str | None = Field(
+        description=(
+            "When set, a back button will be shown in the checkout "
+            "to return to this URL."
         )
     )
     label: str | None = Field(

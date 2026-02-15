@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import Discount, DiscountRedemption
@@ -35,3 +35,17 @@ class DiscountRedemptionRepository(
             .where(DiscountRedemption.checkout_id == checkout_id)
         )
         await self.session.execute(statement)
+
+    async def count_by_discount_and_customer(
+        self, discount_id: UUID, customer_id: UUID
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(DiscountRedemption)
+            .where(
+                DiscountRedemption.discount_id == discount_id,
+                DiscountRedemption.customer_id == customer_id,
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0

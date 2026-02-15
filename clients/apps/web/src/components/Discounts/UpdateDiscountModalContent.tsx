@@ -26,6 +26,7 @@ const UpdateDiscountModalContent = ({
   const form = useForm<schemas['DiscountUpdate']>({
     defaultValues: {
       ...discount,
+      currency: 'currency' in discount ? (discount.currency as schemas['PresentmentCurrency']) : undefined,
       products: discount.products.map((product) => product.id),
     },
   })

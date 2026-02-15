@@ -30,6 +30,7 @@ class CheckoutLink(TrialConfigurationMixin, MetadataMixin, RecordModel):
     _success_url: Mapped[str | None] = mapped_column(
         "success_url", String, nullable=True, default=None
     )
+    return_url: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     label: Mapped[UUID] = mapped_column(String, nullable=True)
     allow_discount_codes: Mapped[bool] = mapped_column(

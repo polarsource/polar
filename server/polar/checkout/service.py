@@ -886,6 +886,7 @@ class CheckoutService:
             customer_ip_address=ip_address,
             payment_processor=checkout_link.payment_processor,
             success_url=checkout_link.success_url,
+            return_url=checkout_link.return_url,
             user_metadata=checkout_link.user_metadata,
         )
 

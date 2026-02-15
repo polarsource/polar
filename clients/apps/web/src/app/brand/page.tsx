@@ -10,7 +10,7 @@ import {
   SpacingSection,
   TypographySection,
   VoiceSection,
-} from './components/Brand'
+} from '../../components/Brand'
 
 const sectionComponents = [
   { id: 'cover', Component: CoverSection },

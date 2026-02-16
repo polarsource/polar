@@ -670,6 +670,10 @@ def get_events_metrics_cte(
     start_timestamp, end_timestamp = bounds
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
     day_column = interval.sql_date_trunc(Event.timestamp)
+    has_cumulative_costs = any(
+        metric.query == MetricQuery.events and metric.slug == "cumulative_costs"
+        for metric in metrics
+    )
 
     daily_statement = (
         select(
@@ -729,6 +733,39 @@ def get_events_metrics_cte(
 
     daily_statement = daily_statement.group_by(day_column)
     daily_metrics = cte(daily_statement)
+    historical_baseline = None
+    if has_cumulative_costs:
+        readable_cost_events_statement = _get_readable_cost_events_statement(
+            auth_subject=auth_subject,
+            organization_id=organization_id,
+            customer_id=customer_id,
+        )
+        historical_baseline = cte(
+            select(
+                func.coalesce(
+                    func.sum(Event.user_metadata["_cost"]["amount"].as_numeric(17, 12)),
+                    0,
+                ).label("hist_cumulative_costs")
+            )
+            .select_from(Event)
+            .where(
+                Event.user_metadata["_cost"].is_not(None),
+                Event.id.in_(readable_cost_events_statement),
+                Event.timestamp < start_timestamp,
+            )
+        )
+
+    from_clause = timestamp_series.join(
+        daily_metrics,
+        onclause=daily_metrics.c.day == timestamp_column,
+        isouter=True,
+    )
+    if historical_baseline is not None:
+        from_clause = from_clause.join(
+            historical_baseline,
+            isouter=False,
+            onclause=literal(True),
+        )
 
     return cte(
         select(
@@ -741,6 +778,11 @@ def get_events_metrics_cte(
                         ),
                         0,
                     )
+                    + (
+                        historical_baseline.c.hist_cumulative_costs
+                        if historical_baseline is not None
+                        else 0
+                    )
                     if metric.slug == "cumulative_costs"
                     else func.coalesce(getattr(daily_metrics.c, metric.slug), 0)
                 ).label(metric.slug)
@@ -748,13 +790,7 @@ def get_events_metrics_cte(
                 if metric.query == MetricQuery.events
             ],
         )
-        .select_from(
-            timestamp_series.join(
-                daily_metrics,
-                onclause=daily_metrics.c.day == timestamp_column,
-                isouter=True,
-            )
-        )
+        .select_from(from_clause)
         .order_by(timestamp_column.asc())
     )
 

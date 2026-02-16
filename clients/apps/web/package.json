@@ -32,7 +32,6 @@
     "@mdx-js/react": "^3.1.1",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@mui/icons-material": "^7.3.8",
-    "@mui/material": "^7.3.8",
     "@next/mdx": "^16.1.6",
     "@next/third-parties": "^16.1.6",
     "@polar-sh/checkout": "workspace:^",

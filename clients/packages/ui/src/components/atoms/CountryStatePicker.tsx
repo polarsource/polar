@@ -63,17 +63,20 @@ const US_STATES: Record<string, string> = {
   'US-DC': 'District of Columbia',
 }
 
-const CA_PROVINCES: Record<string, string> = {
+const CA_SUBDIVISIONS: Record<string, string> = {
   'CA-AB': 'Alberta',
   'CA-BC': 'British Columbia',
   'CA-MB': 'Manitoba',
   'CA-NB': 'New Brunswick',
   'CA-NL': 'Newfoundland and Labrador',
   'CA-NS': 'Nova Scotia',
+  'CA-NT': 'Northwest Territories',
+  'CA-NU': 'Nunavut',
   'CA-ON': 'Ontario',
   'CA-PE': 'Prince Edward Island',
   'CA-QC': 'Quebec',
   'CA-SK': 'Saskatchewan',
+  'CA-YT': 'Yukon',
 }
 
 const CountryStatePicker = ({
@@ -100,7 +103,7 @@ const CountryStatePicker = ({
   fallbackPlaceholder?: string
 }) => {
   if (country === 'US' || country === 'CA') {
-    const states = country === 'US' ? US_STATES : CA_PROVINCES
+    const states = country === 'US' ? US_STATES : CA_SUBDIVISIONS
     return (
       <Select
         onValueChange={onChange}

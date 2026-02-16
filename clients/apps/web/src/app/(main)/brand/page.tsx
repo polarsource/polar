@@ -4,6 +4,7 @@ import { DitherSection } from '@/components/Brand/DitherSection'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
 import {
+  CarouselSection,
   ColorsSection,
   CoverSection,
   EndSection,
@@ -25,6 +26,7 @@ const sectionComponents = [
   { id: 'spacing', Component: SpacingSection },
   { id: 'imagery', Component: ImagerySection },
   { id: 'voice', Component: VoiceSection },
+  { id: 'carousel', Component: CarouselSection },
   { id: 'end', Component: EndSection },
 ]
 

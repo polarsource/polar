@@ -1,9 +1,10 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180)
-const LERP_SPEED = 0.08
+const LERP_SPEED = 0.04
 
 export interface Dot {
   x: number
@@ -28,13 +29,10 @@ export function generatePhyllotaxis(
   return dots
 }
 
-export function PhyllotaxisSunflower({
-  size = 400,
-  fill = 'black',
-}: {
-  size?: number
-  fill?: string
-}) {
+export function PhyllotaxisSunflower({ size = 400 }: { size?: number }) {
+  const { resolvedTheme } = useTheme()
+  const fill = resolvedTheme === 'dark' ? 'white' : 'black'
+
   const center = size / 2
   const svgRef = useRef<SVGSVGElement>(null)
   const mouseRef = useRef<{ x: number; y: number } | null>(null)
@@ -52,8 +50,8 @@ export function PhyllotaxisSunflower({
     })
   }, [center, size])
 
-  const influenceRadius = size * 0.8
-  const maxDisplacement = size * 0.04
+  const influenceRadius = size * 2
+  const maxDisplacement = size * 0.08
 
   const computeTargets = useCallback(
     (mouse: { x: number; y: number } | null): Dot[] => {

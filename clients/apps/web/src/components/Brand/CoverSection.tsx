@@ -12,7 +12,7 @@ export function CoverSection() {
         <PhyllotaxisSunflower size={400} />
       </div>
       <div className="flex items-end justify-between">
-        <h1 className="text-7xl tracking-tight">
+        <h1 className="text-8xl font-light tracking-tight">
           Brand
           <br />
           Guidelines

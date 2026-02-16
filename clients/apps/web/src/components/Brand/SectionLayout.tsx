@@ -14,10 +14,12 @@ export function SectionLayout({
 }) {
   return (
     <div
-      className={twMerge('flex h-full w-full flex-col justify-between p-16')}
+      className={twMerge(
+        'flex h-full w-full flex-col justify-between gap-y-16 p-16',
+      )}
     >
       {label ? (
-        <span className="text-xs font-medium tracking-widest text-neutral-400 uppercase">
+        <span className="dark:text-polar-500 text-3xl text-neutral-500">
           {label}
         </span>
       ) : (

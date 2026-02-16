@@ -242,6 +242,9 @@ const Checkout = ({
           isUpdatePending={isUpdatePending}
           locale={locale}
           walletPaymentExperiment={walletPaymentExperiment}
+          stripePaymentMethodConfiguration={
+            process.env.NEXT_PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION
+          }
         />
       </ShadowBox>
     )
@@ -312,6 +315,9 @@ const Checkout = ({
             isUpdatePending={isUpdatePending}
             locale={locale}
             walletPaymentExperiment={walletPaymentExperiment}
+            stripePaymentMethodConfiguration={
+              process.env.NEXT_PUBLIC_STRIPE_PAYMENT_METHOD_CONFIGURATION
+            }
           />
         </div>
       </ShadowBoxOnMd>

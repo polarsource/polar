@@ -1020,6 +1020,7 @@ interface CheckoutFormProps {
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
   walletPaymentExperiment?: 'treatment' | 'control'
+  stripePaymentMethodConfiguration?: string
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -1034,6 +1035,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     themePreset: themePresetProps,
     locale,
     walletPaymentExperiment,
+    stripePaymentMethodConfiguration,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -1058,6 +1060,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     ) {
       return {
         mode: 'subscription',
+        setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
         currency: checkout.currency,
@@ -1091,6 +1094,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           }
         ).customer_session_client_secret,
         appearance: themePresetProps.stripe,
+        paymentMethodConfiguration: stripePaymentMethodConfiguration,
       }}
     >
       <ElementsConsumer>

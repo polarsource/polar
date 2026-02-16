@@ -927,7 +927,6 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
-  console.log(organization.feature_settings)
   const { control, setValue, watch, getValues } =
     useFormContext<ProductFormType>()
 
@@ -1403,9 +1402,12 @@ export const ProductPricingSection = ({
             onAmountTypeChange={handleAmountTypeChange}
             canRemove={
               isMeteredPrice(price as ProductPrice) &&
-              pricesForSelectedCurrency.filter((p) =>
+              (pricesForSelectedCurrency.filter((p) =>
                 isMeteredPrice(p.price as ProductPrice),
-              ).length > 1
+              ).length > 1 ||
+                pricesForSelectedCurrency.filter(
+                  (p) => !isMeteredPrice(p.price as ProductPrice),
+                ).length >= 1)
             }
             key={`${selectedCurrency}-${index}`}
           />
@@ -1428,7 +1430,7 @@ export const ProductPricingSection = ({
             variant="secondary"
             onClick={handleAddMeteredPrice}
           >
-            Add Additional Price
+            Add additional price
           </Button>
         )}
       </div>

@@ -118,17 +118,20 @@ class USState(StrEnum):
     US_DC = "US-DC"
 
 
-class CAProvince(StrEnum):
+class CASubdivision(StrEnum):
     CA_AB = "CA-AB"
     CA_BC = "CA-BC"
     CA_MB = "CA-MB"
     CA_NB = "CA-NB"
     CA_NL = "CA-NL"
     CA_NS = "CA-NS"
+    CA_NT = "CA-NT"
+    CA_NU = "CA-NU"
     CA_ON = "CA-ON"
     CA_PE = "CA-PE"
     CA_QC = "CA-QC"
     CA_SK = "CA-SK"
+    CA_YT = "CA-YT"
 
 
 class AddressDict(TypedDict):
@@ -161,8 +164,8 @@ class Address(BaseModel):
         # Validate US and CA state
         if self.country == "US" and self.state not in USState:
             raise ValueError("Invalid US state")
-        if self.country == "CA" and self.state not in CAProvince:
-            raise ValueError("Invalid CA province")
+        if self.country == "CA" and self.state not in CASubdivision:
+            raise ValueError("Invalid CA subdivision")
 
         return self
 

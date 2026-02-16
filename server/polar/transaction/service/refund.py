@@ -224,6 +224,7 @@ class RefundTransactionService(BaseTransactionService):
             order_id=payment_transaction.order_id,
         )
         session.add(refund_reversal_transaction)
+        await session.flush()
 
         try:
             customer = payment_transaction.payment_customer

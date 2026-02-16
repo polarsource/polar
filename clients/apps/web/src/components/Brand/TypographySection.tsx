@@ -36,6 +36,9 @@ export function TypographySection() {
             <span className="dark:text-polar-700 text-[clamp(80px,10vw,140px)] leading-[0.9] font-light tracking-tighter text-neutral-300">
               AaBb
             </span>
+            <span className="dark:text-polar-700 text-[clamp(80px,10vw,140px)] leading-[0.9] font-light tracking-tighter text-neutral-300">
+              0123
+            </span>
           </div>
         </div>
       </div>

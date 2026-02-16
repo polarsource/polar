@@ -52,7 +52,7 @@ export function PhyllotaxisSunflower({
     })
   }, [center, size])
 
-  const influenceRadius = size * 0.5
+  const influenceRadius = size * 0.8
   const maxDisplacement = size * 0.04
 
   const computeTargets = useCallback(

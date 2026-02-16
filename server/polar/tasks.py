@@ -18,6 +18,7 @@ from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.order import tasks as order
 from polar.organization import tasks as organization
+from polar.organization.review import tasks as organization_review
 from polar.organization_access_token import tasks as organization_access_token
 from polar.organization_review import tasks as organization_review
 from polar.payout import tasks as payout
@@ -48,6 +49,7 @@ __all__ = [
     "notifications",
     "order",
     "organization",
+    "organization_review",
     "organization_access_token",
     "organization_review",
     "payout",

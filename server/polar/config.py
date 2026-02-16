@@ -403,6 +403,15 @@ class Settings(BaseSettings):
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
 
+    # Risk Monitoring Thresholds
+    RISK_AUTH_RATE_THRESHOLD: float = 0.75  # <75% triggers review
+    RISK_REFUND_RATE_THRESHOLD: float = 0.15  # >15% triggers review
+    RISK_P90_SCORE_THRESHOLD: float = 75.0  # >75 triggers review
+    RISK_DISPUTE_RATE_THRESHOLD: float = 0.0075  # >0.75% triggers review
+    RISK_CHARGEBACK_RATE_THRESHOLD: float = 0.003  # >0.30% triggers review
+    RISK_MIN_PAYMENTS_FOR_CHECK: int = 10
+    RISK_CHECK_DEBOUNCE_MINUTES: int = 5
+
     model_config = SettingsConfigDict(
         env_prefix="polar_",
         env_file_encoding="utf-8",

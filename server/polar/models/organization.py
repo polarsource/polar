@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Self, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, Self, TypedDict
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -135,11 +135,47 @@ _default_customer_portal_settings: OrganizationCustomerPortalSettings = {
 }
 
 
+class RiskTimeframeMetrics(TypedDict, total=False):
+    auth_rate: float | None
+    payment_count: int
+    payment_attempt_count: int
+    refund_rate: float | None
+    refund_count: int
+    p90_risk_score: float | None
+    dispute_rate: float | None
+    dispute_count: int
+    chargeback_rate: float | None
+    chargeback_count: int
+    calculated_at: str
+
+
+# Risk metrics keyed by timeframe: "30d" and "all_time"
+# Can't use TypedDict since "30d" isn't a valid Python identifier
+OrganizationRiskMetrics = dict[str, RiskTimeframeMetrics]
+
+
+class RiskThresholdOverride(TypedDict):
+    value: float
+    expires_at: str | None
+    set_at: str
+    set_by_user_id: NotRequired[str | None]
+    reason: NotRequired[str | None]
+
+
+class OrganizationRiskThresholdOverrides(TypedDict, total=False):
+    auth_rate: RiskThresholdOverride
+    refund_rate: RiskThresholdOverride
+    risk_score: RiskThresholdOverride
+    dispute_rate: RiskThresholdOverride
+    chargeback_rate: RiskThresholdOverride
+
+
 class OrganizationStatus(StrEnum):
     CREATED = "created"
     ONBOARDING_STARTED = "onboarding_started"
     INITIAL_REVIEW = "initial_review"
     ONGOING_REVIEW = "ongoing_review"
+    RISK_REVIEW = "risk_review"
     DENIED = "denied"
     ACTIVE = "active"
 
@@ -149,13 +185,14 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ONBOARDING_STARTED: "Onboarding Started",
             OrganizationStatus.INITIAL_REVIEW: "Initial Review",
             OrganizationStatus.ONGOING_REVIEW: "Ongoing Review",
+            OrganizationStatus.RISK_REVIEW: "Risk Review",
             OrganizationStatus.DENIED: "Denied",
             OrganizationStatus.ACTIVE: "Active",
         }[self]
 
     @classmethod
     def review_statuses(cls) -> set[Self]:
-        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW}  # pyright: ignore
+        return {cls.INITIAL_REVIEW, cls.ONGOING_REVIEW, cls.RISK_REVIEW}  # pyright: ignore
 
     @classmethod
     def payment_ready_statuses(cls) -> set[Self]:
@@ -282,6 +319,17 @@ class Organization(RateLimitGroupMixin, RecordModel):
     #
 
     feature_settings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
+
+    #
+    # Risk Monitoring
+    #
+
+    risk_metrics: Mapped[OrganizationRiskMetrics] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
+    risk_threshold_overrides: Mapped[OrganizationRiskThresholdOverrides] = mapped_column(
         JSONB, nullable=False, default=dict
     )
 

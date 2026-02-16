@@ -46,6 +46,7 @@ from polar.transaction.service.refund import (
 )
 from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
+from polar.worker import enqueue_job
 
 from .repository import RefundRepository
 from .schemas import RefundCreate
@@ -418,6 +419,12 @@ class RefundService:
 
         if refund.succeeded:
             await self._on_succeeded(session, refund)
+
+            # Enqueue risk monitoring task for refund rate check
+            enqueue_job(
+                "organization.review.check_refund_rate",
+                organization_id=organization.id,
+            )
 
         if refund.revoke_benefits and order.product is not None:
             await benefit_grant_service.enqueue_benefits_grants(

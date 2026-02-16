@@ -22,6 +22,7 @@ from polar.product.repository import ProductRepository
 from polar.refund.service import refund as refund_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
+from polar.organization.review.service import organization_review as organization_review_service
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
@@ -169,7 +170,11 @@ class DisputeService:
                 )
                 await self._revoke(session, dispute)
 
-        return await repository.update(dispute)
+        updated_dispute = await repository.update(dispute)
+
+        organization_id = updated_dispute.order.customer.organization_id
+        organization_review_service.enqueue_review_disputes(organization_id)
+        return updated_dispute
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert
@@ -228,7 +233,11 @@ class DisputeService:
         elif not dispute.closed:
             dispute.status = DisputeStatus.early_warning
 
-        return await repository.update(dispute)
+        updated_dispute = await repository.update(dispute)
+
+        organization_id = updated_dispute.order.customer.organization_id
+        organization_review_service.enqueue_review_disputes(organization_id)
+        return updated_dispute
 
     async def _get_payment_and_order_from_processor_id(
         self, session: AsyncSession, processor: PaymentProcessor, processor_id: str

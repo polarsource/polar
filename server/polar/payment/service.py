@@ -12,6 +12,7 @@ from polar.kit.utils import generate_uuid
 from polar.models import Checkout, Order, Payment, Wallet
 from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.organization.review.service import organization_review as organization_review_service
 
 from .repository import PaymentRepository
 from .sorting import PaymentSortProperty
@@ -152,7 +153,15 @@ class PaymentService:
         else:
             raise UnlinkedPaymentError(charge.id)
 
-        return await repository.update(payment)
+        updated_payment = await repository.update(payment)
+
+        # Enqueue payment metrics check for both successful and failed payments (auth rate)
+        if updated_payment.status in (PaymentStatus.succeeded, PaymentStatus.failed):
+            organization_review_service.enqueue_review_payments(
+                updated_payment.organization
+            )
+
+        return updated_payment
 
     async def upsert_from_stripe_payment_intent(
         self,
@@ -207,7 +216,12 @@ class PaymentService:
         else:
             raise UnlinkedPaymentError(payment_intent.id)
 
-        return await repository.update(payment)
+        updated_payment = await repository.update(payment)
+
+        organization_review_service.enqueue_review_payments(
+            updated_payment.organization
+        )
+        return updated_payment
 
 
 payment = PaymentService()

@@ -19,45 +19,46 @@ import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
-interface AuthenticationMethodProps {
-  icon: React.ReactNode
-  title: React.ReactNode
-  subtitle: React.ReactNode
-  action: React.ReactNode
-}
 
-const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
+const AuthenticationMethod = ({
   icon,
   title,
   subtitle,
   action,
+  hideTitle = false,
+}: {
+  icon: React.ReactNode
+  title: React.ReactNode
+  subtitle: React.ReactNode
+  action: React.ReactNode
+  hideTitle?: boolean
 }) => {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
-      <div>{icon}</div>
-      <div className="grow">
-        <div className="font-medium">{title}</div>
-        <div className="dark:text-polar-500 text-sm text-gray-500">
-          {subtitle}
+      <div className="self-start">{icon}</div>
+      {!hideTitle && (
+        <div className="grow">
+          <div className="font-medium">{title}</div>
+          <div className="dark:text-polar-500 text-sm text-gray-500">
+            {subtitle}
+          </div>
         </div>
-      </div>
-      <div>{action}</div>
+      )}
+      <div className={hideTitle ? 'w-full' : 'flex-0'}>{action}</div>
     </div>
   )
 }
 
-interface GitHubAuthenticationMethodProps {
-  oauthAccount: schemas['OAuthAccountRead'] | undefined
-  returnTo: string
-  onDisconnect: () => void
-  isDisconnecting: boolean
-}
-
-const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
+const GitHubAuthenticationMethod = ({
   oauthAccount,
   returnTo,
   onDisconnect,
   isDisconnecting,
+}: {
+  oauthAccount: schemas['OAuthAccountRead'] | undefined
+  returnTo: string
+  onDisconnect: () => void
+  isDisconnecting: boolean
 }) => {
   const authorizeURL = getGitHubAuthorizeLinkURL({ return_to: returnTo })
 
@@ -105,18 +106,16 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
   )
 }
 
-interface GoogleAuthenticationMethodProps {
-  oauthAccount: schemas['OAuthAccountRead'] | undefined
-  returnTo: string
-  onDisconnect: () => void
-  isDisconnecting: boolean
-}
-
-const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
+const GoogleAuthenticationMethod = ({
   oauthAccount,
   returnTo,
   onDisconnect,
   isDisconnecting,
+}: {
+  oauthAccount: schemas['OAuthAccountRead'] | undefined
+  returnTo: string
+  onDisconnect: () => void
+  isDisconnecting: boolean
 }) => {
   const authorizeURL = getGoogleAuthorizeLinkURL({ return_to: returnTo })
 
@@ -191,12 +190,12 @@ const AuthenticationSettings = () => {
       />
     ),
     request: (
-      <div className="dark:text-polar-400 text-center text-sm text-gray-500">
+      <div className="dark:text-polar-300 dark:bg-polar-600 flex h-10 items-center justify-center rounded-lg bg-gray-100 text-center text-sm text-gray-500">
         A verification email was sent to this address.
       </div>
     ),
     verified: (
-      <div className="text-center text-sm text-green-700 dark:text-green-500">
+      <div className="flex h-10 items-center justify-center rounded-lg bg-green-50 text-center text-sm text-green-700 dark:bg-green-950 dark:text-green-500">
         Your email has been updated!
       </div>
     ),
@@ -226,8 +225,9 @@ const AuthenticationSettings = () => {
         <AuthenticationMethod
           icon={<AlternateEmailOutlined />}
           title={currentUser?.email}
-          subtitle="You can sign in with OTP codes sent to your email"
+          subtitle="You can sign in with OTP codes sent to your email."
           action={updateEmailContent[updateEmailStage]}
+          hideTitle={updateEmailStage !== 'off'}
         />
       </ShadowListGroup.Item>
     </ShadowListGroup>

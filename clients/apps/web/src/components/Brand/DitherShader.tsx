@@ -21,12 +21,11 @@ const FRAGMENT_SHADER = `
   uniform vec3 u_colorA;
   uniform vec3 u_colorB;
 
-  // 8x8 Bayer matrix (normalized to 0-1)
+  // 8x8 Bayer matrix
   float bayer8(vec2 p) {
     ivec2 ip = ivec2(mod(p, 8.0));
     int index = ip.x + ip.y * 8;
 
-    // Bayer 8x8 thresholds
     float m[64];
     m[0]  =  0.0; m[1]  = 32.0; m[2]  =  8.0; m[3]  = 40.0;
     m[4]  =  2.0; m[5]  = 34.0; m[6]  = 10.0; m[7]  = 42.0;
@@ -59,18 +58,38 @@ const FRAGMENT_SHADER = `
     vec2 pixelCoord = floor(gl_FragCoord.xy / u_pixelSize);
     vec2 uv = (pixelCoord * u_pixelSize) / u_resolution;
 
-    // Gradient pattern - radial with subtle animation
-    vec2 center = vec2(0.5, 0.5);
-    float dist = distance(uv, center);
+    // Warp the coordinate space with flowing distortion
+    float t = u_time * 0.08;
 
-    float wave1 = sin(dist * 6.0 - u_time * 0.3) * 0.5 + 0.5;
-    float wave2 = sin(uv.x * 4.0 + u_time * 0.2) * 0.3;
-    float wave3 = cos(uv.y * 3.0 - u_time * 0.15) * 0.2;
+    // Domain warping - bend the x coordinate with stacked sine waves
+    float x = uv.x;
+    float y = uv.y;
 
-    float luminance = wave1 + wave2 + wave3;
-    luminance = clamp(luminance, 0.0, 1.0);
+    // Multiple layers of sinusoidal displacement
+    float warp = 0.0;
+    warp += sin(y * 4.0 + t * 1.2) * 0.3;
+    warp += sin(y * 7.0 - t * 0.8 + 1.5) * 0.15;
+    warp += sin(y * 13.0 + t * 0.5 + 3.0) * 0.08;
+    warp += sin(y * 2.5 - t * 1.5) * 0.2;
 
-    // Apply Bayer dithering
+    // Additional y-dependent warping for organic flow
+    float warp2 = 0.0;
+    warp2 += cos(y * 3.0 + t * 0.7 + x * 2.0) * 0.15;
+    warp2 += sin(y * 9.0 - t * 0.4 + 2.0) * 0.06;
+
+    float wx = x + warp + warp2;
+
+    // Create stripe pattern from warped x
+    float stripe = sin(wx * 10.0) * 0.5 + 0.5;
+
+    // Add secondary stripe layer for complexity
+    float stripe2 = sin(wx * 6.0 + 1.5) * 0.5 + 0.5;
+    float stripe3 = sin(wx * 16.0 + 0.8) * 0.5 + 0.5;
+
+    // Blend stripes with varying weights
+    float luminance = stripe * 0.55 + stripe2 * 0.3 + stripe3 * 0.15;
+
+    // Dither
     float threshold = bayer8(pixelCoord);
     float dithered = step(threshold, luminance);
 

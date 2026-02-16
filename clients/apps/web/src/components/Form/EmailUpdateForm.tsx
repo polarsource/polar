@@ -2,23 +2,25 @@
 
 import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
-import { FormControl } from '@mui/material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { Form, FormField, FormItem } from '@polar-sh/ui/components/ui/form'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
-interface EmailUpdateformProps {
-  returnTo?: string
-  onEmailUpdateRequest?: () => void
-  onCancel?: () => void
-}
-
-const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
+const EmailUpdateForm = ({
   returnTo,
   onEmailUpdateRequest,
   onCancel,
+}: {
+  returnTo?: string
+  onEmailUpdateRequest?: () => void
+  onCancel?: () => void
 }) => {
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
@@ -72,7 +74,6 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
                     />
                     <Button
                       type="submit"
-                      size="lg"
                       variant="secondary"
                       loading={loading}
                       disabled={loading}
@@ -82,7 +83,6 @@ const EmailUpdateForm: React.FC<EmailUpdateformProps> = ({
                     {onCancel && (
                       <Button
                         type="button"
-                        size="lg"
                         variant="ghost"
                         onClick={onCancel}
                         disabled={loading}

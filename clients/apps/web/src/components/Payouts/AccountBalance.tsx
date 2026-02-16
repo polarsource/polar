@@ -1,5 +1,4 @@
 import { useTransactionsSummary } from '@/hooks/queries'
-import { Skeleton } from '@mui/material'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -60,7 +59,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         <WellContent>
           <div className="text-4xl">
             {isLoading ? (
-              <Skeleton />
+              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
+                &nbps;
+              </div>
             ) : (
               <>
                 {summary &&
@@ -92,7 +93,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
         <WellContent>
           <div className="text-4xl">
             {isLoading ? (
-              <Skeleton />
+              <div className="animate-pulse rounded-lg bg-gray-200 text-gray-200">
+                &nbps;
+              </div>
             ) : (
               <>
                 {summary &&

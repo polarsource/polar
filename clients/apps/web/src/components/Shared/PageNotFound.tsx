@@ -29,13 +29,12 @@ const PageNotFound = () => {
           ·
         </li>
         <li>
-          <Link
-            href="/docs"
+          <a
+            href="https://polar.sh/docs"
             className="dark:hover:text-polar-300 block p-1 hover:text-gray-700 hover:underline"
-            prefetch={false}
           >
             Documentation
-          </Link>
+          </a>
         </li>
         <li className="dark:text-polar-500 user-select-none text-gray-400">
           ·

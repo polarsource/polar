@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Uuid
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -41,6 +41,10 @@ class DiscountRedemption(RecordModel):
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True, index=True
+    )
+
+    customer_email: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
     )
 
     @declared_attr

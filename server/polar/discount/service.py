@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import structlog
+from email_validator.validate_email import validate_email
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload
@@ -296,6 +297,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         currency: str | None = None,
         redeemable: bool = True,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
@@ -319,7 +321,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                         return None
 
         if redeemable and not await self.is_redeemable_discount(
-            session, discount, customer_id
+            session, discount, customer_email=customer_email
         ):
             return None
 
@@ -333,6 +335,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         *,
         redeemable: bool = True,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount | None:
         statement = select(Discount).where(
             func.upper(Discount.code) == code.upper(),
@@ -346,7 +349,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             return None
 
         if redeemable and not await self.is_redeemable_discount(
-            session, discount, customer_id
+            session, discount, customer_email=customer_email
         ):
             return None
 
@@ -362,9 +365,15 @@ class DiscountService(ResourceServiceReader[Discount]):
         *,
         redeemable: bool = True,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount | None:
         discount = await self.get_by_code_and_organization(
-            session, code, organization, redeemable=redeemable, customer_id=customer_id
+            session,
+            code,
+            organization,
+            redeemable=redeemable,
+            customer_id=customer_id,
+            customer_email=customer_email,
         )
 
         if discount is None:
@@ -384,6 +393,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         customer_id: uuid.UUID | None = None,
+        *,
+        customer_email: str | None = None,
     ) -> bool:
         if discount.starts_at is not None and discount.starts_at > utc_now():
             return False
@@ -393,16 +404,18 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.max_redemptions is not None:
             await session.refresh(discount, {"redemptions_count"})
-            return discount.redemptions_count < discount.max_redemptions
+            if discount.redemptions_count >= discount.max_redemptions:
+                return False
 
         if (
             discount.max_redemptions_per_customer is not None
-            and customer_id is not None
+            and customer_email is not None
         ):
+            normalized_email = self._get_unaliased_email(customer_email)
             redemption_repository = DiscountRedemptionRepository.from_session(session)
             customer_redemptions = (
-                await redemption_repository.count_by_discount_and_customer(
-                    discount.id, customer_id
+                await redemption_repository.count_by_discount_and_email(
+                    discount.id, normalized_email
                 )
             )
             if customer_redemptions >= discount.max_redemptions_per_customer:
@@ -416,6 +429,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         customer_id: uuid.UUID | None = None,
+        *,
+        customer_email: str | None = None,
     ) -> AsyncIterator[DiscountRedemption]:
         """
         Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
@@ -433,11 +448,19 @@ class DiscountService(ResourceServiceReader[Discount]):
                 raise DiscountNotRedeemableError(discount) from e
             raise
 
-        if not await self.is_redeemable_discount(session, discount, customer_id):
+        normalized_email = (
+            self._get_unaliased_email(customer_email) if customer_email else None
+        )
+
+        if not await self.is_redeemable_discount(
+            session, discount, customer_id, customer_email=customer_email
+        ):
             raise DiscountNotRedeemableError(discount)
 
         discount_redemption = DiscountRedemption(
-            discount=discount, customer_id=customer_id
+            discount=discount,
+            customer_id=customer_id,
+            customer_email=normalized_email,
         )
 
         yield discount_redemption
@@ -453,6 +476,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             DiscountRedemption.checkout_id == checkout.id
         )
         await session.execute(statement)
+
+    def _get_unaliased_email(self, email: str) -> str:
+        parsed_email = validate_email(email, check_deliverability=False)
+        return f"{parsed_email.local_part.split('+', 1)[0]}@{parsed_email.domain}"
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]

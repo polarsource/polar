@@ -36,15 +36,16 @@ class DiscountRedemptionRepository(
         )
         await self.session.execute(statement)
 
-    async def count_by_discount_and_customer(
-        self, discount_id: UUID, customer_id: UUID
+    async def count_by_discount_and_email(
+        self, discount_id: UUID, customer_email: str
     ) -> int:
         statement = (
             select(func.count())
             .select_from(DiscountRedemption)
             .where(
                 DiscountRedemption.discount_id == discount_id,
-                DiscountRedemption.customer_id == customer_id,
+                func.lower(DiscountRedemption.customer_email)
+                == customer_email.lower(),
             )
         )
         result = await self.session.execute(statement)

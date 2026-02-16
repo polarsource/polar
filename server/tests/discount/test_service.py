@@ -43,9 +43,13 @@ async def create_discount_redemption(
     discount: Discount,
     checkout: Checkout,
     customer_id: uuid.UUID | None = None,
+    customer_email: str | None = None,
 ) -> DiscountRedemption:
     discount_redemption = DiscountRedemption(
-        discount=discount, checkout=checkout, customer_id=customer_id
+        discount=discount,
+        checkout=checkout,
+        customer_id=customer_id,
+        customer_email=customer_email,
     )
     await save_fixture(discount_redemption)
     return discount_redemption
@@ -512,7 +516,9 @@ class TestIsRedeemableDiscount:
         product: Product,
     ) -> None:
         max_redemptions_per_customer = 2
-        customer = await create_customer(save_fixture, organization=organization)
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -529,11 +535,12 @@ class TestIsRedeemableDiscount:
                 discount=discount,
                 checkout=checkout,
                 customer_id=customer.id,
+                customer_email="customer@example.com",
             )
 
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer.id
+                session, discount, customer_email="customer@example.com"
             )
         ) is False
 
@@ -545,7 +552,9 @@ class TestIsRedeemableDiscount:
         product: Product,
     ) -> None:
         max_redemptions_per_customer = 3
-        customer = await create_customer(save_fixture, organization=organization)
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -562,24 +571,27 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout,
             customer_id=customer.id,
+            customer_email="customer@example.com",
         )
 
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer.id
+                session, discount, customer_email="customer@example.com"
             )
         ) is True
 
-    async def test_max_redemptions_per_customer_no_customer_id(
+    async def test_max_redemptions_per_customer_no_email(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         product: Product,
     ) -> None:
-        """Per-customer limit is not checked when customer_id is not provided."""
+        """Per-customer limit is not checked when customer_email is not provided."""
         max_redemptions_per_customer = 1
-        customer = await create_customer(save_fixture, organization=organization)
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
         discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
@@ -596,9 +608,10 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout,
             customer_id=customer.id,
+            customer_email="customer@example.com",
         )
 
-        # Without customer_id, the per-customer limit is not checked
+        # Without customer_email, the per-customer limit is not checked
         assert (
             await discount_service.is_redeemable_discount(session, discount)
         ) is True
@@ -635,19 +648,20 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout1,
             customer_id=customer1.id,
+            customer_email="customer1@example.com",
         )
 
         # customer1 has reached their limit
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer1.id
+                session, discount, customer_email="customer1@example.com"
             )
         ) is False
 
         # customer2 can still redeem
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer2.id
+                session, discount, customer_email="customer2@example.com"
             )
         ) is True
 
@@ -693,22 +707,22 @@ class TestIsRedeemableDiscount:
         # Initially, all customers can redeem
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer1.id
+                session, discount, customer_email="customer1@example.com"
             )
         ) is True
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer2.id
+                session, discount, customer_email="customer2@example.com"
             )
         ) is True
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer3.id
+                session, discount, customer_email="customer3@example.com"
             )
         ) is True
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer4.id
+                session, discount, customer_email="customer4@example.com"
             )
         ) is True
 
@@ -719,18 +733,19 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout1,
             customer_id=customer1.id,
+            customer_email="customer1@example.com",
         )
 
         # Customer1 can no longer redeem (per-customer limit reached)
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer1.id
+                session, discount, customer_email="customer1@example.com"
             )
         ) is False
         # Other customers can still redeem
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer2.id
+                session, discount, customer_email="customer2@example.com"
             )
         ) is True
 
@@ -741,6 +756,7 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout2,
             customer_id=customer2.id,
+            customer_email="customer2@example.com",
         )
 
         # Customer3 redeems (last available redemption)
@@ -750,20 +766,73 @@ class TestIsRedeemableDiscount:
             discount=discount,
             checkout=checkout3,
             customer_id=customer3.id,
+            customer_email="customer3@example.com",
         )
 
         # Total max_redemptions reached (3 redemptions)
         # Customer4 cannot redeem anymore even though they haven't used theirs
         assert (
             await discount_service.is_redeemable_discount(
-                session, discount, customer_id=customer4.id
+                session, discount, customer_email="customer4@example.com"
             )
         ) is False
 
-        # Without customer_id, discount is not redeemable (total limit reached)
+        # Without customer_email, discount is not redeemable (total limit reached)
         assert (
             await discount_service.is_redeemable_discount(session, discount)
         ) is False
+
+    async def test_email_alias_bypass_prevention(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Test that email aliases (e.g., user+1@example.com) are normalized
+        and counted as the same customer for per-customer limits.
+        """
+        max_redemptions_per_customer = 1
+        customer1 = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="user+alias1@example.com",
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=1,
+            organization=organization,
+            max_redemptions_per_customer=max_redemptions_per_customer,
+        )
+
+        # Redeem with user+alias1@example.com (normalized to user@example.com)
+        checkout1 = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture,
+            discount=discount,
+            checkout=checkout1,
+            customer_id=customer1.id,
+            customer_email="user@example.com",
+        )
+
+        # Trying with user+alias2@example.com should be blocked
+        # (normalizes to user@example.com, same as first redemption)
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_email="user+alias2@example.com"
+            )
+        ) is False
+
+        # A genuinely different email should still be allowed
+        assert (
+            await discount_service.is_redeemable_discount(
+                session, discount, customer_email="other@example.com"
+            )
+        ) is True
 
 
 @pytest.mark.asyncio

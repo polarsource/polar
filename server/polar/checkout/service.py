@@ -437,6 +437,9 @@ class CheckoutService:
                 currency,
                 discount_id=checkout_create.discount_id,
                 customer_id=customer.id if customer else None,
+                customer_email=customer.email
+                if customer
+                else checkout_create.customer_email,
             )
 
         amount = checkout_create.amount
@@ -971,7 +974,10 @@ class CheckoutService:
             if checkout.discount is not None:
                 try:
                     async with discount_service.redeem_discount(
-                        session, checkout.discount, checkout.customer_id
+                        session,
+                        checkout.discount,
+                        checkout.customer_id,
+                        customer_email=checkout.customer_email,
                     ) as discount_redemption:
                         discount_redemption.checkout = checkout
                         return await self._confirm_inner(
@@ -1163,16 +1169,22 @@ class CheckoutService:
                             "intent_status": intent.status,
                         }
 
-                # Validate per-customer limit now that we have the customer_id
+                # Validate per-customer limit now that we have the customer
                 if (
                     checkout.discount is not None
                     and checkout.discount.max_redemptions_per_customer is not None
-                    and customer.id is not None
+                    and customer is not None
                     and discount_redemption is not None
                 ):
                     discount_redemption.customer_id = customer.id
+                    discount_redemption.customer_email = (
+                        discount_service._get_unaliased_email(customer.email)
+                    )
                     if not await discount_service.is_redeemable_discount(
-                        session, checkout.discount, customer.id
+                        session,
+                        checkout.discount,
+                        customer.id,
+                        customer_email=customer.email,
                     ):
                         raise DiscountNotRedeemableError(checkout.discount)
 
@@ -1632,6 +1644,7 @@ class CheckoutService:
         *,
         discount_id: uuid.UUID,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount: ...
 
     @typing.overload
@@ -1645,6 +1658,7 @@ class CheckoutService:
         *,
         discount_code: str,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount: ...
 
     async def _get_validated_discount(
@@ -1658,6 +1672,7 @@ class CheckoutService:
         discount_id: uuid.UUID | None = None,
         discount_code: str | None = None,
         customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
     ) -> Discount:
         loc_field = "discount_id" if discount_id is not None else "discount_code"
 
@@ -1682,6 +1697,7 @@ class CheckoutService:
                 currency=currency,
                 products=[product],
                 customer_id=customer_id,
+                customer_email=customer_email,
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(
@@ -1691,6 +1707,7 @@ class CheckoutService:
                 product,
                 currency,
                 customer_id=customer_id,
+                customer_email=customer_email,
             )
 
         if discount is None:
@@ -1979,6 +1996,7 @@ class CheckoutService:
                     checkout.currency,
                     discount_id=checkout_update.discount_id,
                     customer_id=checkout.customer_id,
+                    customer_email=checkout.customer_email,
                 )
             # User explicitly removed the discount
             elif "discount_id" in checkout_update.model_fields_set:
@@ -1999,6 +2017,7 @@ class CheckoutService:
                     checkout.currency,
                     discount_code=checkout_update.discount_code,
                     customer_id=checkout.customer_id,
+                    customer_email=checkout.customer_email,
                 )
                 checkout.discount = discount
             # User explicitly removed the discount

@@ -351,6 +351,12 @@ const nextConfig = {
           'https://raw.githubusercontent.com/polarsource/cli/main/install.sh',
         permanent: false,
       },
+
+      {
+        source: '/signup',
+        destination: '/login',
+        permanent: false,
+      },
     ]
   },
   async headers() {

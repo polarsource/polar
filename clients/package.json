@@ -21,21 +21,21 @@
     "prettier": "^3.8.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "turbo": "^2.7.6"
+    "turbo": "^2.8.9"
   },
   "resolutions": {
     "sharp": "0.33.3"
   },
   "pnpm": {
     "overrides": {
-      "@types/react": "19.2.3",
+      "@types/react": "19.2.13",
       "@types/react-dom": "19.2.3"
     },
     "patchedDependencies": {
       "openapi-typescript@7.10.1": "patches/openapi-typescript@7.10.1.patch"
     }
   },
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@10.29.3",
   "manypkg": {
     "ignoredRules": [
       "INTERNAL_MISMATCH"

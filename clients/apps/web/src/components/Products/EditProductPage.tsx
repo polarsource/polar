@@ -56,6 +56,7 @@ export const EditProductPage = ({
       full_medias: product.medias,
       prices: product.prices.map((price) => ({
         ...price,
+        price_currency: price.price_currency as schemas['PresentmentCurrency'],
       })),
       metadata: Object.entries(product.metadata).map(([key, value]) => ({
         key,

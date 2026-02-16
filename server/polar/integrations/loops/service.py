@@ -86,7 +86,6 @@ class Loops:
                 "organizationCount": 0,
                 "productCreated": False,
                 "userPatCreated": False,
-                "storefrontEnabled": False,
                 "githubOrgInstalled": False,
                 "githubIssueBadged": False,
                 **properties,

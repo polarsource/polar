@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  DEFAULT_LOCALE,
+  useTranslations,
+  type AcceptedLocale,
+} from '@polar-sh/i18n'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
@@ -11,10 +16,8 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { Fragment, useCallback } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
-import {
-  formatRecurringFrequency,
-  hasLegacyRecurringPrices,
-} from '../utils/product'
+import { hasLegacyRecurringPrices } from '../utils/product'
+import { capitalize, decapitalize } from '../utils/string'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface CheckoutProductSwitcherProps {
@@ -22,6 +25,7 @@ interface CheckoutProductSwitcherProps {
   update?: (data: CheckoutUpdatePublic) => Promise<ProductCheckoutPublic>
   disabled?: boolean
   themePreset: ThemingPresetProps
+  locale?: AcceptedLocale
   pricingPositionExperiment?: 'treatment' | 'control'
 }
 
@@ -29,9 +33,12 @@ const CheckoutProductSwitcher = ({
   checkout,
   update,
   themePreset,
+  locale = DEFAULT_LOCALE,
   pricingPositionExperiment,
 }: CheckoutProductSwitcherProps) => {
+  const t = useTranslations(locale)
   const isTreatment = pricingPositionExperiment === 'treatment'
+
   const {
     product: selectedProduct,
     productPrice: selectedPrice,
@@ -71,14 +78,23 @@ const CheckoutProductSwitcher = ({
     const interval = hasLegacyRecurringPrices(prices[product.id])
       ? price.recurringInterval
       : product.recurringInterval
-    const intervalCount = product.recurringIntervalCount
+    const count = product.recurringIntervalCount ?? 1
 
     if (interval) {
-      const recurringLabel = formatRecurringFrequency(interval, intervalCount)
-      return `Billed ${recurringLabel}`
+      const frequency = decapitalize(
+        t(`checkout.pricing.everyInterval.${interval}`, {
+          count,
+        }),
+      )
+
+      // We have to capitalize again since {frequency} may come first
+      // in the translation string, e.g. "{frequency} gefactureerd" in Dutch
+      return capitalize(
+        t('checkout.productSwitcher.billedRecurring', { frequency }),
+      )
     }
 
-    return `One-time purchase`
+    return t('checkout.productSwitcher.oneTimePurchase')
   }
 
   // Compact horizontal layout for treatment group
@@ -174,7 +190,11 @@ const CheckoutProductSwitcher = ({
                   />
                   <div className="flex grow flex-row items-center justify-between text-sm">
                     <div>{product.name}</div>
-                    <ProductPriceLabel product={product} price={price} />
+                    <ProductPriceLabel
+                      product={product}
+                      price={price}
+                      locale={locale}
+                    />
                   </div>
                 </div>
                 <div className="flex grow flex-row items-center justify-between p-4 text-sm">
@@ -206,6 +226,7 @@ const CheckoutProductSwitcher = ({
                 <ProductPriceLabel
                   product={product}
                   price={prices[product.id][0]}
+                  locale={locale}
                 />
               </div>
             </div>

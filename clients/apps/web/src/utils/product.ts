@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 export const hasIntervals = (
-  product: schemas['ProductStorefront'] | schemas['CheckoutProduct'],
+  product: schemas['CheckoutProduct'],
 ): [boolean, boolean, boolean, boolean, boolean] => {
   const hasDayInterval = product.prices.some(
     (price) => price.type === 'recurring' && price.recurring_interval === 'day',
@@ -37,7 +37,7 @@ export const isLegacyRecurringPrice = (
 ): price is schemas['LegacyRecurringProductPrice'] => 'legacy' in price
 
 export const hasLegacyRecurringPrices = (
-  product: schemas['ProductStorefront'] | schemas['CheckoutProduct'],
+  product: schemas['CheckoutProduct'],
 ): product is schemas['Product'] & {
   prices: schemas['LegacyRecurringProductPrice'][]
 } => product.prices.some(isLegacyRecurringPrice)
@@ -128,7 +128,10 @@ export const productToCreateForm = (
         source,
         ...priceRest
       } = price
-      return priceRest
+      return {
+        ...priceRest,
+        price_currency: price.price_currency as schemas['PresentmentCurrency'],
+      }
     }),
     attached_custom_fields: product.attached_custom_fields.map((field) => ({
       custom_field_id: field.custom_field_id,

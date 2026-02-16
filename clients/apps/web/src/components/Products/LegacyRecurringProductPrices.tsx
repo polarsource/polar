@@ -4,19 +4,13 @@ import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
-interface LegacyRecurringProductPricesProps {
-  product: (
-    | schemas['Product']
-    | schemas['ProductStorefront']
-    | schemas['CheckoutProduct']
-  ) & {
+const LegacyRecurringProductPrices = ({
+  product,
+}: {
+  product: (schemas['Product'] | schemas['CheckoutProduct']) & {
     prices: schemas['LegacyRecurringProductPrice'][]
   }
-}
-
-const LegacyRecurringProductPrices: React.FC<
-  LegacyRecurringProductPricesProps
-> = ({ product }) => {
+}) => {
   const { prices } = product
   const currency = prices[0].price_currency
 

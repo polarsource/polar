@@ -31,10 +31,10 @@ SQL >
     %
     WITH
         toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS start,
         toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS
     end,
     dateDiff('week', start, end
@@ -83,6 +83,26 @@ SQL >
         arrayJoin(
             arrayMap(
                 x -> toDateTime(start + toIntervalYear(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
             )
         ) AS interval
 
@@ -185,8 +205,10 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+            toStartOfWeek(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }}), 1) AS day,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(ae.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'year' %}
@@ -205,8 +227,8 @@ SQL >
 NODE active_users_raw
 SQL >
     %
-    SELECT hour, customer_id, external_customer_id
-    FROM user_events_by_hour
+    SELECT quarter_hour, customer_id, external_customer_id
+    FROM user_events_by_quarter_hour
     WHERE
         organization_id IN (
             SELECT
@@ -216,9 +238,10 @@ SQL >
                     )
                 )
         )
-        AND hour
+        AND quarter_hour
         >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
-        AND hour <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND quarter_hour
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
         {% if defined(customer_ids) and customer_ids != '' and defined(
             external_customer_ids
         ) and external_customer_ids != '' %}
@@ -242,6 +265,7 @@ SQL >
         countDistinct(au.customer_id) + countDistinct(au.external_customer_id) AS active_user_by_event
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -250,14 +274,16 @@ SQL >
     LEFT JOIN
         active_users_raw au
         ON {% if not defined(interval) or interval == 'day' %}
-            toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfWeek(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }}), 1) = w.interval
         {% elif interval == 'month' %}
-            toStartOfMonth(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfMonth(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% elif interval == 'year' %}
-            toStartOfYear(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
-        {% else %} toStartOfDay(toDateTime(au.hour, {{ String(tz, 'UTC') }})) = w.interval
+            toStartOfYear(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
+        {% else %} toStartOfDay(toDateTime(au.quarter_hour, {{ String(tz, 'UTC') }})) = w.interval
         {% end %}
     GROUP BY w.interval
     ORDER BY w.interval
@@ -271,6 +297,7 @@ SQL >
         COALESCE(sum(de.costs) OVER (ORDER BY w.interval), 0) + b.hist_costs AS cumulative_costs
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals

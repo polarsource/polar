@@ -1,6 +1,13 @@
 from typing import Annotated
 
-from pydantic import UUID4, AnyUrl, Field, PlainSerializer, UrlConstraints
+from pydantic import (
+    UUID4,
+    AnyUrl,
+    Field,
+    PlainSerializer,
+    UrlConstraints,
+    field_validator,
+)
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
@@ -78,6 +85,13 @@ class WebhookEndpointCreate(Schema):
         ),
     )
 
+    @field_validator("url", mode="before")
+    @classmethod
+    def strip_url(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
 
 class WebhookEndpointUpdate(Schema):
     """
@@ -95,6 +109,13 @@ class WebhookEndpointUpdate(Schema):
     enabled: bool | None = Field(
         default=None, description="Whether the webhook endpoint is enabled."
     )
+
+    @field_validator("url", mode="before")
+    @classmethod
+    def strip_url(cls, v: str | None) -> str | None:
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
 
 class WebhookEvent(IDSchema, TimestampedSchema):

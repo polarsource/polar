@@ -10,12 +10,14 @@ const CopyToClipboardInput = ({
   buttonLabel,
   disabled = false,
   className = '',
+  variant = 'default',
 }: {
   value: string
   onCopy?: () => void
   buttonLabel?: string
   disabled?: boolean
   className?: string
+  variant?: 'default' | 'mono'
 }) => {
   const [isCopied, setIsCopied] = useState(false)
 
@@ -41,7 +43,10 @@ const CopyToClipboardInput = ({
       )}
     >
       <Input
-        className="dark:text-polar-400 !focus:border-transparent !focus:ring-transparent !dark:focus:border-transparent !dark:focus:ring-transparent w-full grow border-none bg-transparent text-gray-600 shadow-none! focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:ring-transparent"
+        className={twMerge(
+          'dark:text-polar-400 !focus:border-transparent !focus:ring-transparent !dark:focus:border-transparent !dark:focus:ring-transparent w-full grow border-none bg-transparent text-gray-600 shadow-none! focus-visible:ring-transparent dark:bg-transparent dark:focus-visible:ring-transparent',
+          variant === 'mono' ? 'font-mono text-sm' : '',
+        )}
         value={value}
         readOnly={true}
       />

@@ -5,6 +5,8 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.enums import AccountType
+from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
@@ -488,6 +490,7 @@ class TestRevert:
             tax_amount=0,
             charge_id=charge.id,
             order=order,
+            payment_customer=customer,
         )
         await save_fixture(payment_transaction)
 
@@ -566,6 +569,15 @@ class TestRevert:
         assert refund_reversal_transaction.type == TransactionType.refund_reversal
         assert refund_reversal_transaction.processor == Processor.stripe
         assert refund_reversal_transaction.amount == refund.amount
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.balance_refund_reversal
+        )
+        assert len(events) == 1
+        assert events[0].user_metadata["transaction_id"] == str(
+            refund_reversal_transaction.id
+        )
 
         balance_transaction_repository = BalanceTransactionRepository.from_session(
             session

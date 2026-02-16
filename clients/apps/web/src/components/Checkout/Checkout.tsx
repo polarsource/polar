@@ -18,12 +18,14 @@ import {
 } from '@polar-sh/checkout/guards'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
+import { AcceptedLocale } from '@polar-sh/i18n'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
+import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -39,9 +41,14 @@ import CheckoutProductInfo from './CheckoutProductInfo'
 export interface CheckoutProps {
   embed?: boolean
   theme?: 'light' | 'dark'
+  locale?: AcceptedLocale
 }
 
-const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
+const Checkout = ({
+  embed: _embed,
+  theme: _theme,
+  locale: _locale,
+}: CheckoutProps) => {
   const { client } = useCheckout()
   const {
     checkout,
@@ -55,11 +62,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
+  const locale: AcceptedLocale = _locale || 'en'
   const posthog = usePostHog()
 
-  const { variant: walletPaymentExperiment } = useExperiment(
-    'checkout_wallet_payment',
-  )
   // const { variant: pricingPositionExperiment } = useExperiment(
   //   'checkout_pricing_position',
   // )
@@ -216,6 +221,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                 ) => Promise<ProductCheckoutPublic>
               }
               themePreset={themePreset}
+              locale={locale}
             />
             {checkout.productPrice.amountType === 'custom' && (
               <CheckoutPWYWForm
@@ -223,6 +229,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                 update={update}
                 productPrice={checkout.productPrice as ProductPriceCustom}
                 themePreset={themePreset}
+                locale={locale}
               />
             )}
           </>
@@ -238,7 +245,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           themePreset={themePreset}
           disabled={shouldBlockCheckout}
           isUpdatePending={isUpdatePending}
-          walletPaymentExperiment={walletPaymentExperiment}
+          locale={locale}
           pricingPositionExperiment={pricingPositionExperiment}
         />
       </ShadowBox>
@@ -258,10 +265,10 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             </Link>
           )}
           <div className="flex flex-row items-center gap-x-3">
-            <img
-              src={checkout.organization.avatarUrl}
-              alt={checkout.organization.name}
-              className="h-8 w-8 rounded-full"
+            <Avatar
+              avatar_url={checkout.organization.avatarUrl}
+              name={checkout.organization.name}
+              className="h-8 w-8"
             />
             <span className="font-medium dark:text-white">
               {checkout.organization.name}
@@ -290,7 +297,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
               />
               {pricingPositionExperiment === 'treatment' && (
                 <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-4 rounded-3xl! border border-gray-200 bg-white shadow-xs">
-                  <CheckoutPricingBreakdown checkout={checkout} />
+                  <CheckoutPricingBreakdown checkout={checkout} locale={locale} />
                   <CheckoutDiscountInput checkout={checkout} update={update} />
                 </ShadowBox>
               )}
@@ -302,6 +309,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   ) => Promise<ProductCheckoutPublic>
                 }
                 themePreset={themePreset}
+                locale={locale}
                 pricingPositionExperiment={pricingPositionExperiment}
               />
               {checkout.productPrice.amountType === 'custom' && (
@@ -310,6 +318,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                   update={update}
                   productPrice={checkout.productPrice as ProductPriceCustom}
                   themePreset={themePreset}
+                  locale={locale}
                 />
               )}
               <CheckoutCard
@@ -319,6 +328,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
                     data: CheckoutUpdatePublic,
                   ) => Promise<ProductCheckoutPublic>
                 }
+                locale={locale}
                 pricingPositionExperiment={pricingPositionExperiment}
               />
             </>
@@ -338,7 +348,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
             themePreset={themePreset}
             disabled={shouldBlockCheckout}
             isUpdatePending={isUpdatePending}
-            walletPaymentExperiment={walletPaymentExperiment}
+            locale={locale}
             pricingPositionExperiment={pricingPositionExperiment}
           />
         </div>

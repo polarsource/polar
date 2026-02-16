@@ -213,7 +213,7 @@ class TestOnEventSuccess:
 
 
 @pytest.mark.asyncio
-class TestIsLatestEvent:
+class TestCountEarlierPendingEvents:
     async def test_single_event(
         self,
         session: AsyncSession,
@@ -228,7 +228,7 @@ class TestIsLatestEvent:
         )
         await save_fixture(event)
 
-        assert await webhook_service.is_latest_event(session, event) is True
+        assert await webhook_service.count_earlier_pending_events(session, event) == 0
 
     async def test_delivered_previous_event(
         self,
@@ -261,7 +261,7 @@ class TestIsLatestEvent:
         )
         await save_fixture(event)
 
-        assert await webhook_service.is_latest_event(session, event) is True
+        assert await webhook_service.count_earlier_pending_events(session, event) == 0
 
     async def test_delivered_previous_event_no_http_code(
         self,
@@ -294,7 +294,7 @@ class TestIsLatestEvent:
         )
         await save_fixture(event)
 
-        assert await webhook_service.is_latest_event(session, event) is True
+        assert await webhook_service.count_earlier_pending_events(session, event) == 0
 
     async def test_undelivered_previous_event(
         self,
@@ -319,7 +319,7 @@ class TestIsLatestEvent:
         )
         await save_fixture(event)
 
-        assert await webhook_service.is_latest_event(session, event) is False
+        assert await webhook_service.count_earlier_pending_events(session, event) == 1
 
     async def test_undelivered_previous_event_old(
         self,
@@ -345,4 +345,4 @@ class TestIsLatestEvent:
         )
         await save_fixture(event)
 
-        assert await webhook_service.is_latest_event(session, event) is True
+        assert await webhook_service.count_earlier_pending_events(session, event) == 0

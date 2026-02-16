@@ -31,10 +31,10 @@ SQL >
     %
     WITH
         toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS start,
         toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS
     end,
     dateDiff('week', start, end
@@ -86,17 +86,53 @@ SQL >
             )
         ) AS interval
 
-NODE sub_state
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE subscription_latest_product
 SQL >
     %
     SELECT
-        subscription_id,
-        minMerge(started_at) AS started_at,
-        argMaxMerge(ends_at) AS ends_at,
-        argMaxMerge(product_id) AS product_id
-    FROM subscription_state
+        e.subscription_id,
+        argMax(
+            COALESCE(e.new_product_id, e.product_id),
+            (
+                e.timestamp,
+                e.ingested_at,
+                multiIf(
+                    e.name = 'subscription.product_updated', 3, e.name = 'subscription.created', 2, 1
+                )
+            )
+        ) AS latest_product_id
+    FROM system_events_by_org AS e
     WHERE
-        organization_id IN (
+        e.subscription_id IS NOT NULL
+        AND COALESCE(e.new_product_id, e.product_id) IS NOT NULL
+        AND e.name IN (
+            'subscription.created',
+            'subscription.product_updated',
+            'order.paid',
+            'balance.order',
+            'balance.credit_order'
+        )
+        AND e.organization_id IN (
             SELECT
                 toUUID(
                     arrayJoin(
@@ -113,10 +149,40 @@ SQL >
                     )
                 )
         )
-    GROUP BY subscription_id
+    GROUP BY e.subscription_id
+
+NODE sub_state
+SQL >
+    %
+    SELECT
+        ss.subscription_id,
+        minMerge(ss.started_at) AS started_at,
+        argMaxMerge(ss.ends_at) AS ends_at,
+        COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) AS product_id
+    FROM subscription_state AS ss
+    LEFT JOIN subscription_latest_product slp ON ss.subscription_id = slp.subscription_id
+    WHERE
+        ss.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY ss.subscription_id, slp.latest_product_id
     {% if defined(product_ids) and product_ids != '' %}
         HAVING
-            argMaxMerge(subscription_state.product_id) IN (
+            COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) IN (
                 SELECT
                     toUUIDOrNull(
                         arrayJoin(
@@ -137,6 +203,7 @@ SQL >
         e.name,
         e.subscription_id,
         e.timestamp AS event_timestamp,
+        e.ingested_at AS event_ingested_at,
         e.canceled_at,
         e.customer_cancellation_reason
     FROM system_events_by_org AS e
@@ -158,7 +225,35 @@ SQL >
             {{ String(buffer_end, '2024-01-03 00:00:00', description="Buffer end datetime") }},
             {{ String(tz, 'UTC') }}
         )
-        {% if defined(customer_ids) and customer_ids != '' %}
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
             AND e.customer_id IN (
                 SELECT
                     arrayJoin(
@@ -168,8 +263,83 @@ SQL >
                         )
                     )
             )
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND e.external_customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    external_customer_ids,
+                                    description="Comma-separated external customer IDs",
+                                )
+                            }}
+                        )
+                    )
+            )
         {% end %}
-        {% if defined(external_customer_ids) and external_customer_ids != '' %}
+
+NODE subscription_canceled_events_raw
+SQL >
+    %
+    SELECT
+        e.id,
+        e.subscription_id,
+        e.timestamp AS event_timestamp,
+        e.ingested_at AS event_ingested_at,
+        e.canceled_at,
+        e.customer_cancellation_reason
+    FROM system_events_by_org AS e
+    WHERE
+        e.name = 'subscription.canceled'
+        AND e.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                            )
+                        )
+                )
+                OR e.external_customer_id IN (
+                    SELECT
+                        arrayJoin(
+                            splitByChar(
+                                ',',
+                                {{
+                                    String(
+                                        external_customer_ids,
+                                        description="Comma-separated external customer IDs",
+                                    )
+                                }}
+                            )
+                        )
+                )
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND e.customer_id IN (
+                SELECT
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{ String(customer_ids, description="Comma-separated customer UUIDs") }}
+                        )
+                    )
+            )
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
             AND e.external_customer_id IN (
                 SELECT
                     arrayJoin(
@@ -215,13 +385,36 @@ SQL >
         )
         AND e.timestamp
         <= toDateTime({{ String(buffer_end, '2024-01-03 00:00:00') }}, {{ String(tz, 'UTC') }})
-        {% if defined(customer_ids) and customer_ids != '' %}
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR e.external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
             AND e.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
-        {% end %}
-        {% if defined(external_customer_ids) and external_customer_ids != '' %}
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
             AND e.external_customer_id
             IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
         {% end %}
+
+NODE balance_order_created_at
+SQL >
+    %
+    SELECT be.order_id, minOrNull(COALESCE(be.order_created_at, be.event_timestamp)) AS order_created_at
+    FROM balance_events_raw AS be
+    WHERE be.order_id IS NOT NULL AND be.name IN ('balance.order', 'balance.credit_order')
+    GROUP BY be.order_id
+
+NODE subscription_first_order
+SQL >
+    %
+    SELECT be.subscription_id, min(COALESCE(be.order_created_at, be.event_timestamp)) AS first_order_ts
+    FROM balance_events_raw AS be
+    WHERE be.subscription_id IS NOT NULL AND be.name IN ('balance.order', 'balance.credit_order')
+    GROUP BY be.subscription_id
 
 NODE balance_events
 SQL >
@@ -238,11 +431,13 @@ SQL >
             )
         ) AS settlement_revenue_amount,
         be.fee,
+        be.order_id,
         be.subscription_id,
         COALESCE(be.order_created_at, be.event_timestamp) AS effective_ts,
-        ss.started_at AS sub_started_at
+        COALESCE(ss.started_at, sfo.first_order_ts) AS sub_started_at
     FROM balance_events_raw AS be
     LEFT JOIN sub_state ss ON be.subscription_id = ss.subscription_id
+    LEFT JOIN subscription_first_order sfo ON be.subscription_id = sfo.subscription_id
     WHERE
         be.order_id IS NOT NULL
         {% if defined(product_ids) and product_ids != '' %}
@@ -259,6 +454,280 @@ SQL >
                     )
             )
         {% end %}
+
+NODE order_paid_events_raw
+SQL >
+    %
+    SELECT
+        op.order_id,
+        COALESCE(boc.order_created_at, op.order_created_at, op.timestamp) AS event_timestamp,
+        op.product_id,
+        op.subscription_id,
+        op.billing_type,
+        op.amount,
+        op.net_amount
+    FROM system_events_by_org AS op
+    LEFT JOIN balance_order_created_at boc ON op.order_id = boc.order_id
+    WHERE
+        op.name = 'order.paid'
+        AND op.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(',', {{ String(org_ids, '00000000-0000-0000-0000-000000000000') }})
+                    )
+                )
+        )
+        AND COALESCE(boc.order_created_at, op.order_created_at, op.timestamp)
+        >= toDateTime({{ String(buffer_start, '2023-12-31 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND COALESCE(boc.order_created_at, op.order_created_at, op.timestamp)
+        <= toDateTime({{ String(buffer_end, '2024-01-03 00:00:00') }}, {{ String(tz, 'UTC') }})
+        {% if defined(customer_ids) and customer_ids != '' and defined(
+            external_customer_ids
+        ) and external_customer_ids != '' %}
+            AND (
+                op.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+                OR op.external_customer_id
+                IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+            )
+        {% elif defined(customer_ids) and customer_ids != '' %}
+            AND op.customer_id IN (SELECT arrayJoin(splitByChar(',', {{ String(customer_ids) }})))
+        {% elif defined(external_customer_ids) and external_customer_ids != '' %}
+            AND op.external_customer_id
+            IN (SELECT arrayJoin(splitByChar(',', {{ String(external_customer_ids) }})))
+        {% end %}
+        {% if defined(product_ids) and product_ids != '' %}
+            AND op.product_id IN (SELECT arrayJoin(splitByChar(',', {{ String(product_ids) }})))
+        {% end %}
+        {% if defined(billing_types) and billing_types != '' %}
+            AND op.billing_type IN (SELECT arrayJoin(splitByChar(',', {{ String(billing_types) }})))
+        {% end %}
+
+NODE balance_order_ids
+SQL >
+    %
+    SELECT DISTINCT be.order_id
+    FROM balance_events AS be
+    WHERE be.order_id IS NOT NULL AND be.name IN ('balance.order', 'balance.credit_order')
+
+NODE subscription_first_paid_order
+SQL >
+    %
+    SELECT op.subscription_id, min(op.event_timestamp) AS first_paid_order_ts
+    FROM order_paid_events_raw AS op
+    WHERE op.subscription_id IS NOT NULL
+    GROUP BY op.subscription_id
+
+NODE order_paid_events
+SQL >
+    %
+    SELECT
+        op.order_id,
+        op.event_timestamp,
+        op.product_id,
+        op.subscription_id,
+        op.billing_type,
+        COALESCE(op.net_amount, op.amount, 0) AS revenue_amount,
+        bo.order_id IS NOT NULL AS has_balance_order,
+        COALESCE(ss.started_at, sfo.first_order_ts, sfpo.first_paid_order_ts) AS sub_started_at
+    FROM order_paid_events_raw AS op
+    LEFT JOIN balance_order_ids bo ON op.order_id = bo.order_id
+    LEFT JOIN sub_state ss ON op.subscription_id = ss.subscription_id
+    LEFT JOIN subscription_first_order sfo ON op.subscription_id = sfo.subscription_id
+    LEFT JOIN subscription_first_paid_order sfpo ON op.subscription_id = sfpo.subscription_id
+
+NODE order_paid_daily
+SQL >
+    %
+    SELECT
+        {% if not defined(interval) or interval == 'day' %}
+            toStartOfDay(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'week' %}
+            toStartOfWeek(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }}), 1) AS day,
+        {% elif interval == 'month' %}
+            toStartOfMonth(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'year' %}
+            toStartOfYear(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% else %} toStartOfDay(toDateTime(op.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% end %}
+        count(DISTINCT op.order_id) AS orders,
+        countDistinctIf(op.order_id, op.subscription_id IS NULL) AS one_time_products,
+        COALESCE(sumIf(op.revenue_amount, op.has_balance_order = 0), 0) AS missing_balance_revenue,
+        COALESCE(
+            sumIf(op.revenue_amount, op.has_balance_order = 0 AND op.subscription_id IS NULL), 0
+        ) AS missing_balance_one_time_products_revenue,
+        {% if not defined(interval) or interval == 'day' %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% elif interval == 'hour' %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfHour(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfHour(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfHour(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% elif interval == 'week' %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfWeek(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfWeek(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfWeek(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% elif interval == 'month' %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfMonth(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfMonth(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfMonth(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% elif interval == 'year' %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfYear(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfYear(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfYear(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% else %}
+            countDistinctIf(
+                op.subscription_id,
+                op.subscription_id IS NOT NULL
+                AND op.sub_started_at IS NOT NULL
+                AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    op.revenue_amount,
+                    op.subscription_id IS NOT NULL
+                    AND op.sub_started_at IS NOT NULL
+                    AND toStartOfDay(toDateTime(op.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND op.has_balance_order = 0
+                ),
+                0
+            ) AS missing_balance_renewed_subscriptions_revenue
+        {% end %}
+    FROM order_paid_events AS op
+    WHERE
+        op.event_timestamp
+        >= toDateTime({{ String(bounds_start, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        AND op.event_timestamp
+        <= toDateTime({{ String(bounds_end, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+    GROUP BY day
 
 NODE events_baseline
 SQL >
@@ -281,8 +750,10 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
+            toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}), 1) AS day,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'year' %}
@@ -303,9 +774,12 @@ SQL >
             {% if not defined(interval) or interval == 'day' %}
                 OR toStartOfDay(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
                 > toStartOfDay(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
+            {% elif interval == 'hour' %}
+                OR toStartOfHour(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
+                > toStartOfHour(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
             {% elif interval == 'week' %}
-                OR toStartOfWeek(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
-                > toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
+                OR toStartOfWeek(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}), 1)
+                > toStartOfWeek(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}), 1)
             {% elif interval == 'month' %}
                 OR toStartOfMonth(toDateTime(ss.ends_at, {{ String(tz, 'UTC') }}))
                 > toStartOfMonth(toDateTime(se.event_timestamp, {{ String(tz, 'UTC') }}))
@@ -325,15 +799,17 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
+            toStartOfWeek(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }}), 1) AS day,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'year' %}
             toStartOfYear(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% else %} toStartOfDay(toDateTime(be.effective_ts, {{ String(tz, 'UTC') }})) AS day,
         {% end %}
-        countIf(be.name IN ('balance.order', 'balance.credit_order')) AS orders,
+        countDistinctIf(be.order_id, be.name IN ('balance.order', 'balance.credit_order')) AS orders,
         COALESCE(
             sumIf(be.settlement_revenue_amount, be.name IN ('balance.order', 'balance.credit_order')), 0
         ) AS revenue,
@@ -363,7 +839,8 @@ SQL >
                 )
             ELSE 0
         END AS net_average_order_value,
-        countIf(
+        countDistinctIf(
+            be.order_id,
             be.name IN ('balance.order', 'balance.credit_order') AND be.subscription_id IS NULL
         ) AS one_time_products,
         COALESCE(
@@ -417,13 +894,13 @@ SQL >
                 ),
                 0
             ) AS renewed_subscriptions_net_revenue
-        {% elif interval == 'week' %}
+        {% elif interval == 'hour' %}
             COALESCE(
                 sumIf(
                     be.settlement_revenue_amount,
                     be.name IN ('balance.order', 'balance.credit_order')
                     AND be.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
                 ),
                 0
             ) AS new_subscriptions_revenue,
@@ -431,7 +908,7 @@ SQL >
                 sumIf(
                     be.settlement_revenue_amount - COALESCE(be.fee, 0),
                     be.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) = day
                 ),
                 0
             ) AS new_subscriptions_net_revenue,
@@ -439,14 +916,14 @@ SQL >
                 be.subscription_id,
                 be.name IN ('balance.order', 'balance.credit_order')
                 AND be.subscription_id IS NOT NULL
-                AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
             ) AS renewed_subscriptions,
             COALESCE(
                 sumIf(
                     be.settlement_revenue_amount,
                     be.name IN ('balance.order', 'balance.credit_order')
                     AND be.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
                 ),
                 0
             ) AS renewed_subscriptions_revenue,
@@ -454,7 +931,48 @@ SQL >
                 sumIf(
                     be.settlement_revenue_amount - COALESCE(be.fee, 0),
                     be.subscription_id IS NOT NULL
-                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                    AND toStartOfHour(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }})) != day
+                ),
+                0
+            ) AS renewed_subscriptions_net_revenue
+        {% elif interval == 'week' %}
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount,
+                    be.name IN ('balance.order', 'balance.credit_order')
+                    AND be.subscription_id IS NOT NULL
+                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
+                ),
+                0
+            ) AS new_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount - COALESCE(be.fee, 0),
+                    be.subscription_id IS NOT NULL
+                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }}), 1) = day
+                ),
+                0
+            ) AS new_subscriptions_net_revenue,
+            countDistinctIf(
+                be.subscription_id,
+                be.name IN ('balance.order', 'balance.credit_order')
+                AND be.subscription_id IS NOT NULL
+                AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
+            ) AS renewed_subscriptions,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount,
+                    be.name IN ('balance.order', 'balance.credit_order')
+                    AND be.subscription_id IS NOT NULL
+                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
+                ),
+                0
+            ) AS renewed_subscriptions_revenue,
+            COALESCE(
+                sumIf(
+                    be.settlement_revenue_amount - COALESCE(be.fee, 0),
+                    be.subscription_id IS NOT NULL
+                    AND toStartOfWeek(toDateTime(be.sub_started_at, {{ String(tz, 'UTC') }}), 1) != day
                 ),
                 0
             ) AS renewed_subscriptions_net_revenue
@@ -596,12 +1114,25 @@ NODE latest_canceled
 SQL >
     %
     SELECT
-        se.subscription_id,
-        argMax(se.canceled_at, se.event_timestamp) AS canceled_at,
-        argMax(se.customer_cancellation_reason, se.event_timestamp) AS customer_cancellation_reason
-    FROM subscription_events_raw AS se
-    WHERE se.name = 'subscription.canceled'
-    GROUP BY se.subscription_id
+        lc.subscription_id,
+        tupleElement(lc.latest_cancel, 1) AS canceled_at,
+        tupleElement(lc.latest_cancel, 2) AS customer_cancellation_reason
+    FROM
+        (
+            SELECT
+                se.subscription_id,
+                argMax(
+                    tuple(se.canceled_at, se.customer_cancellation_reason),
+                    (
+                        COALESCE(se.canceled_at, toDateTime64(0, 3, 'UTC')),
+                        se.event_timestamp,
+                        se.event_ingested_at
+                    )
+                ) AS latest_cancel
+            FROM subscription_canceled_events_raw AS se
+            WHERE se.canceled_at IS NOT NULL
+            GROUP BY se.subscription_id
+        ) AS lc
 
 NODE canceled
 SQL >
@@ -609,8 +1140,10 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
+            toStartOfWeek(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }}), 1) AS day,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(lc.canceled_at, {{ String(tz, 'UTC') }})) AS day,
         {% elif interval == 'year' %}
@@ -653,23 +1186,66 @@ SQL >
     %
     SELECT
         w.interval AS timestamp,
-        COALESCE(db.orders, 0) AS orders,
-        COALESCE(db.revenue, 0) AS revenue,
-        COALESCE(db.net_revenue, 0) AS net_revenue,
-        COALESCE(sum(db.revenue) OVER (ORDER BY w.interval), 0) + b.hist_revenue AS cumulative_revenue,
-        COALESCE(sum(db.net_revenue) OVER (ORDER BY w.interval), 0)
+        greatest(COALESCE(op.orders, 0), COALESCE(db.orders, 0)) AS orders,
+        COALESCE(db.revenue, 0) + COALESCE(op.missing_balance_revenue, 0) AS revenue,
+        COALESCE(db.net_revenue, 0) + COALESCE(op.missing_balance_revenue, 0) AS net_revenue,
+        COALESCE(
+            sum(COALESCE(db.revenue, 0) + COALESCE(op.missing_balance_revenue, 0)) OVER (
+                ORDER BY w.interval
+            ),
+            0
+        )
+        + b.hist_revenue AS cumulative_revenue,
+        COALESCE(
+            sum(COALESCE(db.net_revenue, 0) + COALESCE(op.missing_balance_revenue, 0)) OVER (
+                ORDER BY w.interval
+            ),
+            0
+        )
         + b.hist_net_revenue AS net_cumulative_revenue,
-        COALESCE(db.average_order_value, 0) AS average_order_value,
-        COALESCE(db.net_average_order_value, 0) AS net_average_order_value,
-        COALESCE(db.one_time_products, 0) AS one_time_products,
-        COALESCE(db.one_time_products_revenue, 0) AS one_time_products_revenue,
-        COALESCE(db.one_time_products_net_revenue, 0) AS one_time_products_net_revenue,
+        CASE
+            WHEN greatest(COALESCE(op.orders, 0), COALESCE(db.orders, 0)) > 0
+            THEN
+                toInt64(
+                    ceil(
+                        (COALESCE(db.revenue, 0) + COALESCE(op.missing_balance_revenue, 0))
+                        / greatest(COALESCE(op.orders, 0), COALESCE(db.orders, 0))
+                    )
+                )
+            ELSE 0
+        END AS average_order_value,
+        CASE
+            WHEN greatest(COALESCE(op.orders, 0), COALESCE(db.orders, 0)) > 0
+            THEN
+                toInt64(
+                    ceil(
+                        (COALESCE(db.net_revenue, 0) + COALESCE(op.missing_balance_revenue, 0))
+                        / greatest(COALESCE(op.orders, 0), COALESCE(db.orders, 0))
+                    )
+                )
+            ELSE 0
+        END AS net_average_order_value,
+        greatest(
+            COALESCE(op.one_time_products, 0), COALESCE(db.one_time_products, 0)
+        ) AS one_time_products,
+        COALESCE(db.one_time_products_revenue, 0)
+        + COALESCE(op.missing_balance_one_time_products_revenue, 0) AS one_time_products_revenue,
+        COALESCE(db.one_time_products_net_revenue, 0)
+        + COALESCE(op.missing_balance_one_time_products_revenue, 0) AS one_time_products_net_revenue,
         COALESCE(sc.new_subscriptions, 0) AS new_subscriptions,
-        COALESCE(db.new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
-        COALESCE(db.new_subscriptions_net_revenue, 0) AS new_subscriptions_net_revenue,
-        COALESCE(db.renewed_subscriptions, 0) AS renewed_subscriptions,
-        COALESCE(db.renewed_subscriptions_revenue, 0) AS renewed_subscriptions_revenue,
-        COALESCE(db.renewed_subscriptions_net_revenue, 0) AS renewed_subscriptions_net_revenue,
+        COALESCE(db.new_subscriptions_revenue, 0)
+        + COALESCE(op.missing_balance_new_subscriptions_revenue, 0) AS new_subscriptions_revenue,
+        COALESCE(db.new_subscriptions_net_revenue, 0)
+        + COALESCE(op.missing_balance_new_subscriptions_revenue, 0) AS new_subscriptions_net_revenue,
+        greatest(
+            COALESCE(op.renewed_subscriptions, 0), COALESCE(db.renewed_subscriptions, 0)
+        ) AS renewed_subscriptions,
+        COALESCE(db.renewed_subscriptions_revenue, 0) + COALESCE(
+            op.missing_balance_renewed_subscriptions_revenue, 0
+        ) AS renewed_subscriptions_revenue,
+        COALESCE(db.renewed_subscriptions_net_revenue, 0) + COALESCE(
+            op.missing_balance_renewed_subscriptions_revenue, 0
+        ) AS renewed_subscriptions_net_revenue,
         COALESCE(c.canceled_subscriptions, 0) AS canceled_subscriptions,
         COALESCE(
             c.canceled_subscriptions_customer_service, 0
@@ -687,11 +1263,13 @@ SQL >
         COALESCE(c.canceled_subscriptions_other, 0) AS canceled_subscriptions_other
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
         {% else %} day_intervals
         {% end %} w
+    LEFT JOIN order_paid_daily op ON op.day = w.interval
     LEFT JOIN daily_balance db ON db.day = w.interval
     LEFT JOIN sub_created_daily sc ON sc.day = w.interval
     LEFT JOIN canceled c ON c.day = w.interval

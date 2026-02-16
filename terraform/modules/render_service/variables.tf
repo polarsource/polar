@@ -41,6 +41,7 @@ variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
     start_command      = string
+    image_url          = optional(string, "ghcr.io/polarsource/polar")
     digest             = optional(string)
     tag                = optional(string)
     custom_domains     = optional(list(object({ name = string })), [])

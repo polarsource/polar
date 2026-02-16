@@ -273,11 +273,11 @@ resource "render_web_service" "worker" {
 
   runtime_source = {
     image = each.value.digest != null ? {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       digest                 = each.value.digest
       } : {
-      image_url              = "ghcr.io/polarsource/polar"
+      image_url              = each.value.image_url
       registry_credential_id = var.registry_credential_id
       tag                    = each.value.tag
     }

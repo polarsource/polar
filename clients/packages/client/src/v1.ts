@@ -2330,66 +2330,6 @@ export interface paths {
     patch: operations['checkout-links:update']
     trace?: never
   }
-  '/v1/storefronts/{slug}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Storefront
-     * @description Get an organization storefront by slug.
-     */
-    get: operations['storefronts:get']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/storefronts/lookup/product/{product_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Slug By Product Id
-     * @description Get organization slug by product ID for legacy redirect purposes.
-     */
-    get: operations['storefronts:get_organization_slug_by_product_id']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/storefronts/lookup/subscription/{subscription_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Organization Slug By Subscription Id
-     * @description Get organization slug by subscription ID for legacy redirect purposes.
-     */
-    get: operations['storefronts:get_organization_slug_by_subscription_id']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/custom-fields/': {
     parameters: {
       query?: never
@@ -6371,6 +6311,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceDisputeReversalEvent
@@ -6550,6 +6492,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceRefundEvent
@@ -6658,6 +6602,8 @@ export interface components {
       tax_country?: string | null
       /** Fee */
       fee: number
+      /** Exchange Rate */
+      exchange_rate?: number
     }
     /**
      * BalanceRefundReversalEvent
@@ -6773,8 +6719,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'custom'
       /**
@@ -7044,8 +6990,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'discord'
       /**
@@ -7262,8 +7208,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'downloadables'
       /**
@@ -7459,8 +7405,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'github_repository'
       /**
@@ -8415,8 +8361,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'license_keys'
       /**
@@ -8625,8 +8571,8 @@ export interface components {
        */
       modified_at: string | null
       /**
-       * Type
-       * @constant
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
        */
       type: 'meter_credit'
       /**
@@ -9103,17 +9049,6 @@ export interface components {
       /** Token */
       token: string
     }
-    /** Body_integrations_apple:integrations.apple.callback */
-    'Body_integrations_apple_integrations.apple.callback': {
-      /** Code */
-      code?: string | null
-      /** Code Verifier */
-      code_verifier?: string | null
-      /** State */
-      state?: string | null
-      /** Error */
-      error?: string | null
-    }
     /** Body_login_code:authenticate_login_code */
     Body_login_code_authenticate_login_code: {
       /** Code */
@@ -9448,6 +9383,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -9570,6 +9507,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -9610,6 +9549,8 @@ export interface components {
        * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
        */
       subscription_id?: string | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CheckoutCreatedEvent
@@ -10456,6 +10397,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Product Price Id
        * Format: uuid4
@@ -10683,6 +10626,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Product Id
@@ -10825,6 +10770,8 @@ export interface components {
        * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
        */
       embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Products
@@ -11055,6 +11002,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11312,6 +11261,8 @@ export interface components {
       customer_billing_address: components['schemas']['Address'] | null
       /** Customer Tax Id */
       customer_tax_id: string | null
+      /** Locale */
+      locale?: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -11420,6 +11371,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -11541,6 +11494,8 @@ export interface components {
       customer_billing_address?: components['schemas']['AddressInput'] | null
       /** Customer Tax Id */
       customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -12874,6 +12829,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -13317,6 +13274,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * @description The type of customer. Defaults to 'individual'. Set to 'team' for customers that can have multiple members.
        * @example individual
@@ -14797,6 +14756,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -15498,6 +15459,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * External Id
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -15540,6 +15503,8 @@ export interface components {
       billing_address?: components['schemas']['AddressInput'] | null
       /** Tax Id */
       tax_id?: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
     }
     /**
      * CustomerUpdatedEvent
@@ -15751,6 +15716,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -17836,8 +17803,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17909,8 +17879,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -17972,8 +17945,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -18151,6 +18127,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -20200,6 +20178,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -20790,8 +20770,11 @@ export interface components {
        * @description When the business details were submitted.
        */
       details_submitted_at: string | null
-      /** @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available. */
-      default_presentment_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Default Presentment Currency
+       * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
+       */
+      default_presentment_currency: string
       /** @description Organization feature settings */
       feature_settings:
         | components['schemas']['OrganizationFeatureSettings']
@@ -21183,6 +21166,12 @@ export interface components {
        * @default false
        */
       presentment_currencies_enabled: boolean
+      /**
+       * Checkout Localization Enabled
+       * @description If this organization has checkout localization enabled
+       * @default false
+       */
+      checkout_localization_enabled: boolean
     }
     /** OrganizationMember */
     OrganizationMember: {
@@ -21263,50 +21252,6 @@ export interface components {
        */
       completed: boolean
     }
-    /** OrganizationProfileSettings */
-    OrganizationProfileSettings: {
-      /**
-       * Enabled
-       * @description If this organization has a profile enabled
-       */
-      enabled?: boolean | null
-      /**
-       * Description
-       * @description A description of the organization
-       */
-      description?: string | null
-      /**
-       * Featured Projects
-       * @description A list of featured projects
-       */
-      featured_projects?: string[] | null
-      /**
-       * Featured Organizations
-       * @description A list of featured organizations
-       */
-      featured_organizations?: string[] | null
-      /**
-       * Links
-       * @description A list of links associated with the organization
-       */
-      links?: string[] | null
-      /**
-       * @description Subscription promotion settings
-       * @default {
-       *       "promote": true,
-       *       "show_count": true,
-       *       "count_free": true
-       *     }
-       */
-      subscribe:
-        | components['schemas']['OrganizationSubscribePromoteSettings']
-        | null
-      /**
-       * Accent Color
-       * @description Accent color for the organization
-       */
-      accent_color?: string | null
-    }
     /** OrganizationReviewStatus */
     OrganizationReviewStatus: {
       /**
@@ -21336,17 +21281,6 @@ export interface components {
        * @description When appeal was reviewed
        */
       appeal_reviewed_at?: string | null
-    }
-    /**
-     * OrganizationSlugLookup
-     * @description Schema for organization slug lookup response.
-     */
-    OrganizationSlugLookup: {
-      /**
-       * Organization Slug
-       * @description The slug of the organization that owns the product or subscription.
-       */
-      organization_slug: string
     }
     /** OrganizationSocialLink */
     OrganizationSocialLink: {
@@ -21398,27 +21332,6 @@ export interface components {
       | 'ongoing_review'
       | 'denied'
       | 'active'
-    /** OrganizationSubscribePromoteSettings */
-    OrganizationSubscribePromoteSettings: {
-      /**
-       * Promote
-       * @description Promote email subscription (free)
-       * @default true
-       */
-      promote: boolean
-      /**
-       * Show Count
-       * @description Show subscription count publicly
-       * @default true
-       */
-      show_count: boolean
-      /**
-       * Count Free
-       * @description Include free subscribers in total count
-       * @default true
-       */
-      count_free: boolean
-    }
     /** OrganizationSubscriptionSettings */
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
@@ -22249,8 +22162,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'custom'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22345,8 +22261,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'fixed'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22420,8 +22339,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'free'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22502,8 +22424,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'metered_unit'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22601,8 +22526,11 @@ export interface components {
        * @enum {string}
        */
       amount_type: 'seat_based'
-      /** @description The currency in which the customer will be charged. */
-      price_currency: components['schemas']['PresentmentCurrency']
+      /**
+       * Price Currency
+       * @description The currency in which the customer will be charged.
+       */
+      price_currency: string
       /**
        * Is Archived
        * @description Whether the price is archived and no longer available.
@@ -22725,91 +22653,6 @@ export interface components {
       | '-price_amount_type'
       | 'price_amount'
       | '-price_amount'
-    /**
-     * ProductStorefront
-     * @description Schema of a public product.
-     */
-    ProductStorefront: {
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /** @description The interval unit for the trial period. */
-      trial_interval: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count: number | null
-      /**
-       * Name
-       * @description The name of the product.
-       */
-      name: string
-      /**
-       * Description
-       * @description The description of the product.
-       */
-      description: string | null
-      /** @description The visibility of the product. */
-      visibility: components['schemas']['ProductVisibility']
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
-      /**
-       * Recurring Interval Count
-       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
-       */
-      recurring_interval_count: number | null
-      /**
-       * Is Recurring
-       * @description Whether the product is a subscription.
-       */
-      is_recurring: boolean
-      /**
-       * Is Archived
-       * @description Whether the product is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The ID of the organization owning the product.
-       */
-      organization_id: string
-      /**
-       * Prices
-       * @description List of available prices for this product.
-       */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
-      /**
-       * BenefitPublic
-       * @description The benefits granted by the product.
-       */
-      benefits: components['schemas']['BenefitPublic'][]
-      /**
-       * Medias
-       * @description The medias associated to the product.
-       */
-      medias: components['schemas']['ProductMediaFileRead'][]
-    }
     /**
      * ProductUpdate
      * @description Schema to update a product.
@@ -23519,29 +23362,6 @@ export interface components {
       | 'under_review'
       | 'denied'
       | 'active'
-    /**
-     * Storefront
-     * @description Schema of a public storefront.
-     */
-    Storefront: {
-      organization: components['schemas']['Organization']
-      /** Products */
-      products: components['schemas']['ProductStorefront'][]
-      donation_product: components['schemas']['ProductStorefront'] | null
-      customers: components['schemas']['StorefrontCustomers']
-    }
-    /** StorefrontCustomer */
-    StorefrontCustomer: {
-      /** Name */
-      name: string
-    }
-    /** StorefrontCustomers */
-    StorefrontCustomers: {
-      /** Total */
-      total: number
-      /** Customers */
-      customers: components['schemas']['StorefrontCustomer'][]
-    }
     /**
      * StripeAccountCountry
      * @enum {string}
@@ -24307,6 +24127,8 @@ export interface components {
       billing_address: components['schemas']['Address'] | null
       /** Tax Id */
       tax_id: [string, components['schemas']['TaxIDFormat']] | null
+      /** Locale */
+      locale?: string | null
       /**
        * Organization Id
        * Format: uuid4
@@ -25678,8 +25500,6 @@ export interface components {
       subscription?: string | null
       /** Pledge */
       pledge?: string | null
-      /** From Storefront */
-      from_storefront?: string | null
       /** Path */
       path?: string | null
       /** Host */
@@ -25756,6 +25576,10 @@ export interface components {
       msg: string
       /** Error Type */
       type: string
+      /** Input */
+      input?: unknown
+      /** Context */
+      ctx?: Record<string, never>
     }
     /**
      * Wallet
@@ -26848,6 +26672,17 @@ export interface components {
       timestamp: string
       data: components['schemas']['Subscription']
     }
+    /** Body_integrations_apple:integrations.apple.callback */
+    callback: {
+      /** Code */
+      code?: string | null
+      /** Code Verifier */
+      code_verifier?: string | null
+      /** State */
+      state?: string | null
+      /** Error */
+      error?: string | null
+    }
     /** MetadataQuery */
     MetadataQuery: {
       [key: string]: string | number | boolean | string[] | number[] | boolean[]
@@ -27505,7 +27340,7 @@ export interface operations {
     }
     requestBody?: {
       content: {
-        'application/x-www-form-urlencoded': components['schemas']['Body_integrations_apple_integrations.apple.callback']
+        'application/x-www-form-urlencoded': components['schemas']['callback']
       }
     }
     responses: {
@@ -30637,21 +30472,14 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Successful Response */
-      200: {
+      /** @description Refund created. */
+      201: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json': components['schemas']['Refund']
         }
-      }
-      /** @description Refund created. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
       }
       /** @description Order is already fully refunded. */
       403: {
@@ -32739,126 +32567,6 @@ export interface operations {
         }
       }
       /** @description Checkout link not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        slug: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Storefront']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get_organization_slug_by_product_id': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        product_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['OrganizationSlugLookup']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'storefronts:get_organization_slug_by_subscription_id': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        subscription_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['OrganizationSlugLookup']
-        }
-      }
-      /** @description Organization not found. */
       404: {
         headers: {
           [name: string]: unknown
@@ -42508,18 +42216,30 @@ export const balanceRefundEventNameValues: ReadonlyArray<
 export const balanceRefundReversalEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BalanceRefundReversalEvent']['name']
 > = ['balance.refund_reversal']
+export const benefitCustomTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitCustom']['type']
+> = ['custom']
 export const benefitCustomCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCustomCreate']['type']
 > = ['custom']
 export const benefitCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitCycledEvent']['name']
 > = ['benefit.cycled']
+export const benefitDiscordTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDiscord']['type']
+> = ['discord']
 export const benefitDiscordCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDiscordCreate']['type']
 > = ['discord']
+export const benefitDownloadablesTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitDownloadables']['type']
+> = ['downloadables']
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitDownloadablesCreate']['type']
 > = ['downloadables']
+export const benefitGitHubRepositoryTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepository']['type']
+> = ['github_repository']
 export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGitHubRepositoryCreate']['type']
 > = ['github_repository']
@@ -42548,9 +42268,15 @@ export const benefitGrantedEventNameValues: ReadonlyArray<
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeyExpirationProperties']['timeframe']
 > = ['year', 'month', 'day']
+export const benefitLicenseKeysTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeys']['type']
+> = ['license_keys']
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysCreate']['type']
 > = ['license_keys']
+export const benefitMeterCreditTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
+> = ['meter_credit']
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']

@@ -18,6 +18,8 @@ from polar.models import Event
 from polar.models.event import EventSource
 from tests.fixtures.tinybird import tinybird_available
 
+pytestmark = pytest.mark.xdist_group(name="tinybird")
+
 
 def create_test_event(
     *,

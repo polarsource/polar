@@ -19,8 +19,9 @@ on:
         type: string
       render-worker-service-ids:
         description: "Comma-separated list of Render worker service IDs"
-        required: true
+        required: false
         type: string
+        default: ""
       has-migrations:
         description: "Whether this deployment includes database migrations"
         required: false
@@ -36,6 +37,16 @@ on:
         required: false
         type: boolean
         default: false
+      docker-digest-playwright:
+        description: "Playwright Docker image digest to deploy"
+        required: false
+        type: string
+        default: ""
+      render-playwright-worker-service-ids:
+        description: "Comma-separated list of Render playwright worker service IDs"
+        required: false
+        type: string
+        default: ""
     secrets:
       RENDER_API_TOKEN:
         required: true
@@ -101,7 +112,9 @@ jobs:
             ${{ inputs.docker-digest }} \
             ${{ inputs.has-migrations }} \
             "${{ inputs.render-api-service-id }}" \
-            "${{ inputs.render-worker-service-ids }}"
+            "${{ inputs.render-worker-service-ids }}" \
+            "${{ inputs.docker-digest-playwright }}" \
+            "${{ inputs.render-playwright-worker-service-ids }}"
         env:
           RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
 

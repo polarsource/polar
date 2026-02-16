@@ -1917,7 +1917,7 @@ class SubscriptionService:
         if became_past_due:
             await self._on_subscription_past_due(session, subscription)
 
-        if became_canceled:
+        if became_canceled or (became_revoked and previous_is_canceled):
             await self._on_subscription_canceled(
                 session, subscription, revoked=became_revoked
             )

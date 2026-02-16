@@ -1,4 +1,5 @@
 import { getPublicServerURL, getServerURL } from '@/utils/api'
+import { resolveLocale } from '@/utils/i18n'
 import {
   CheckoutFormProvider,
   CheckoutProvider,
@@ -12,11 +13,15 @@ import CheckoutPage from './CheckoutPage'
 
 export default async function Page(props: {
   params: Promise<{ clientSecret: string }>
-  searchParams: Promise<{ embed?: string; theme?: 'light' | 'dark' }>
+  searchParams: Promise<{
+    embed?: string
+    theme?: 'light' | 'dark'
+    locale?: string
+  }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed: _embed, theme } = searchParams
+  const { embed: _embed, theme, locale: _locale } = searchParams
 
   const params = await props.params
 
@@ -75,13 +80,15 @@ export default async function Page(props: {
     redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
+  const locale = await resolveLocale(_locale, checkout.locale)
+
   return (
     <CheckoutProvider
       clientSecret={checkout.clientSecret}
       serverURL={getPublicServerURL()}
     >
-      <CheckoutFormProvider>
-        <CheckoutPage theme={theme} embed={embed} />
+      <CheckoutFormProvider locale={locale}>
+        <CheckoutPage theme={theme} embed={embed} locale={locale} />
       </CheckoutFormProvider>
     </CheckoutProvider>
   )

@@ -1,7 +1,3 @@
-import {
-  hasLegacyRecurringPrices,
-  isLegacyRecurringPrice,
-} from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -53,41 +49,4 @@ export const SubscriptionStatusLabel = ({
       <span className="capitalize">{label}</span>
     </div>
   )
-}
-
-export const getRecurringProductPrice = (
-  subscriptionTier: schemas['ProductStorefront'],
-  recurringInterval: schemas['SubscriptionRecurringInterval'],
-):
-  | schemas['ProductPrice']
-  | schemas['LegacyRecurringProductPrice']
-  | undefined => {
-  if (hasLegacyRecurringPrices(subscriptionTier)) {
-    return subscriptionTier.prices.find(
-      (price) =>
-        isLegacyRecurringPrice(price) &&
-        price.recurring_interval === recurringInterval,
-    )
-  }
-
-  if (subscriptionTier.is_recurring) {
-    return subscriptionTier.prices[0]
-  }
-
-  return undefined
-}
-
-export const getRecurringBillingLabel = (
-  recurringInterval: schemas['SubscriptionRecurringInterval'],
-) => {
-  switch (recurringInterval) {
-    case 'day':
-      return '/day'
-    case 'week':
-      return '/week'
-    case 'month':
-      return '/mo'
-    case 'year':
-      return '/year'
-  }
 }

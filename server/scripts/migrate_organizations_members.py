@@ -32,7 +32,7 @@ from typing import Any
 import dramatiq
 import structlog
 import typer
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -91,11 +91,26 @@ async def migrate_organizations(
     async with JobQueueManager.open(dramatiq.get_broker(), redis):
         async with sessionmaker() as session:
             # Build query for eligible organizations
+            # Exclude orgs already migrated or with seat-based pricing at the DB level
             statement = (
                 select(Organization)
                 .where(
                     Organization.deleted_at.is_(None),
                     Organization.blocked_at.is_(None),
+                    or_(
+                        Organization.feature_settings["member_model_enabled"].is_(None),
+                        Organization.feature_settings["member_model_enabled"]
+                        .as_boolean()
+                        .is_(False),
+                    ),
+                    or_(
+                        Organization.feature_settings["seat_based_pricing_enabled"].is_(
+                            None
+                        ),
+                        Organization.feature_settings["seat_based_pricing_enabled"]
+                        .as_boolean()
+                        .is_(False),
+                    ),
                 )
                 .order_by(Organization.next_review_threshold.asc())
             )
@@ -123,58 +138,32 @@ async def migrate_organizations(
                 typer.echo("No eligible organizations found.")
                 return
 
-            # Separate already-migrated from eligible
-            already_migrated = [
-                org
-                for org in organizations
-                if org.feature_settings.get("member_model_enabled", False)
-            ]
-            seat_based = [
-                org
-                for org in organizations
-                if org.feature_settings.get("seat_based_pricing", False)
-                and not org.feature_settings.get("member_model_enabled", False)
-            ]
-            to_migrate = [
-                org
-                for org in organizations
-                if not org.feature_settings.get("member_model_enabled", False)
-                and not org.feature_settings.get("seat_based_pricing", False)
-            ]
-
-            typer.echo(f"Found {len(organizations)} organization(s) matching filters:")
-            typer.echo(f"  - {len(already_migrated)} already have member_model_enabled")
-            typer.echo(f"  - {len(seat_based)} skipped (seat_based_pricing enabled)")
-            typer.echo(f"  - {len(to_migrate)} to migrate")
+            typer.echo(f"Found {len(organizations)} organization(s) to migrate")
             typer.echo()
-
-            if not to_migrate:
-                typer.echo("Nothing to migrate.")
-                return
 
             # Display organizations to migrate
             typer.echo("Organizations to migrate (ordered by next_review_threshold):")
             typer.echo(f"{'Slug':<40} {'Threshold':>10} {'ID'}")
             typer.echo("-" * 90)
-            for org in to_migrate:
+            for org in organizations:
                 typer.echo(f"{org.slug:<40} {org.next_review_threshold:>10} {org.id}")
             typer.echo()
 
             if dry_run:
                 typer.echo("DRY RUN - No changes will be made.")
                 typer.echo(
-                    f"Would migrate {len(to_migrate)} organization(s) and enqueue backfill jobs."
+                    f"Would migrate {len(organizations)} organization(s) and enqueue backfill jobs."
                 )
                 return
 
             # Perform migration
-            typer.echo(f"Migrating {len(to_migrate)} organization(s)...")
+            typer.echo(f"Migrating {len(organizations)} organization(s)...")
             typer.echo()
 
             migrated_count = 0
             failed_count = 0
 
-            for org in to_migrate:
+            for org in organizations:
                 try:
                     # Enable member_model_enabled
                     org.feature_settings = {
@@ -192,7 +181,7 @@ async def migrate_organizations(
 
                     migrated_count += 1
                     typer.echo(
-                        f"  [{migrated_count}/{len(to_migrate)}] "
+                        f"  [{migrated_count}/{len(organizations)}] "
                         f"{org.slug} (threshold={org.next_review_threshold})"
                     )
 

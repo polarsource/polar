@@ -31,10 +31,10 @@ SQL >
     %
     WITH
         toStartOfWeek(
-            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS start,
         toStartOfWeek(
-            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
         ) AS
     end,
     dateDiff('week', start, end
@@ -86,20 +86,53 @@ SQL >
             )
         ) AS interval
 
-NODE subs
+NODE hour_intervals
+SQL >
+    %
+    WITH
+        toStartOfHour(
+            toDateTime({{ String(start_dt, '2024-01-01 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS start,
+        toStartOfHour(
+            toDateTime({{ String(end_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+        ) AS
+    end,
+    dateDiff('hour', start, end
+    ) + 1 AS diff
+    SELECT
+        arrayJoin(
+            arrayMap(
+                x -> toDateTime(start + toIntervalHour(x), {{ String(tz, 'UTC') }}), range(0, diff)
+            )
+        ) AS interval
+
+NODE subscription_latest_product
 SQL >
     %
     SELECT
-        subscription_id,
-        minMerge(started_at) AS started_at,
-        argMaxMerge(ends_at) AS ends_at,
-        argMaxMerge(recurring_interval) AS recurring_interval,
-        argMaxMerge(recurring_interval_count) AS recurring_interval_count,
-        argMaxMerge(customer_id) AS customer_id,
-        argMaxMerge(product_id) AS product_id
-    FROM subscription_state
+        e.subscription_id,
+        argMax(
+            COALESCE(e.new_product_id, e.product_id),
+            (
+                e.timestamp,
+                e.ingested_at,
+                multiIf(
+                    e.name = 'subscription.product_updated', 3, e.name = 'subscription.created', 2, 1
+                )
+            )
+        ) AS latest_product_id
+    FROM system_events_by_org AS e
     WHERE
-        organization_id IN (
+        e.subscription_id IS NOT NULL
+        AND COALESCE(e.new_product_id, e.product_id) IS NOT NULL
+        AND e.name IN (
+            'subscription.created',
+            'subscription.product_updated',
+            'order.paid',
+            'balance.order',
+            'balance.credit_order'
+        )
+        AND e.organization_id IN (
             SELECT
                 toUUID(
                     arrayJoin(
@@ -116,11 +149,61 @@ SQL >
                     )
                 )
         )
-    GROUP BY subscription_id
+    GROUP BY e.subscription_id
+
+NODE subs
+SQL >
+    %
+    SELECT
+        ss.subscription_id,
+        minMerge(ss.started_at) AS started_at,
+        argMaxMerge(ss.ends_at) AS ends_at,
+        argMaxMerge(ss.recurring_interval) AS recurring_interval,
+        argMaxMerge(ss.recurring_interval_count) AS recurring_interval_count,
+        argMaxMerge(ss.customer_id) AS customer_id,
+        COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) AS product_id
+    FROM subscription_state AS ss
+    LEFT JOIN subscription_latest_product slp ON ss.subscription_id = slp.subscription_id
+    WHERE
+        ss.organization_id IN (
+            SELECT
+                toUUID(
+                    arrayJoin(
+                        splitByChar(
+                            ',',
+                            {{
+                                String(
+                                    org_ids,
+                                    '00000000-0000-0000-0000-000000000000',
+                                    description="Comma-separated organization UUIDs",
+                                )
+                            }}
+                        )
+                    )
+                )
+        )
+    GROUP BY ss.subscription_id, slp.latest_product_id
     HAVING
         1 = 1
+        AND (
+            started_at IS NULL
+            OR started_at <= toDateTime(
+                {{ String(bounds_end, '2024-01-02 00:00:00', description="End bound for filtering") }},
+                {{ String(tz, 'UTC') }}
+            )
+        )
+        AND (
+            ends_at <= toDateTime64(0, 3, 'UTC')
+            OR ends_at >= toDateTime(
+                {{
+                    String(
+                        bounds_start, '2024-01-01 00:00:00', description="Start bound for filtering"
+                    )
+                }}, {{ String(tz, 'UTC') }}
+            )
+        )
         {% if defined(product_ids) and product_ids != '' %}
-            AND argMaxMerge(subscription_state.product_id) IN (
+            AND COALESCE(slp.latest_product_id, argMaxMerge(ss.product_id)) IN (
                 SELECT
                     toUUIDOrNull(
                         arrayJoin(
@@ -221,12 +304,20 @@ SQL >
                     )
                 )
             ) AS committed_monthly_recurring_revenue,
+        {% elif interval == 'hour' %}
+            sumIf(
+                s.monthly_amount,
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_monthly_recurring_revenue,
         {% elif interval == 'week' %}
             sumIf(
                 s.monthly_amount,
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfWeek(
-                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
                 )
             ) AS committed_monthly_recurring_revenue,
         {% elif interval == 'month' %}
@@ -263,11 +354,18 @@ SQL >
                     toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
                 )
             ) AS committed_subscriptions
+        {% elif interval == 'hour' %}
+            countIf(
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfHour(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                )
+            ) AS committed_subscriptions
         {% elif interval == 'week' %}
             countIf(
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) < toStartOfWeek(
-                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }})
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) < toStartOfWeek(
+                    toDateTime({{ String(now_dt, '2024-01-02 00:00:00') }}, {{ String(tz, 'UTC') }}), 1
                 )
             ) AS committed_subscriptions
         {% elif interval == 'month' %}
@@ -294,6 +392,7 @@ SQL >
         {% end %}
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals
@@ -310,14 +409,23 @@ SQL >
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
                 OR toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
             )
-        {% elif interval == 'week' %}
+        {% elif interval == 'hour' %}
             (
                 s.started_at IS NULL
-                OR toStartOfWeek(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
+                OR toStartOfHour(toDateTime(s.started_at, {{ String(tz, 'UTC') }})) <= w.interval
             )
             AND (
                 s.ends_at <= toDateTime64(0, 3, 'UTC')
-                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+                OR toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) > w.interval
+            )
+        {% elif interval == 'week' %}
+            (
+                s.started_at IS NULL
+                OR toStartOfWeek(toDateTime(s.started_at, {{ String(tz, 'UTC') }}), 1) <= w.interval
+            )
+            AND (
+                s.ends_at <= toDateTime64(0, 3, 'UTC')
+                OR toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) > w.interval
             )
         {% elif interval == 'month' %}
             (
@@ -355,8 +463,10 @@ SQL >
     SELECT
         {% if not defined(interval) or interval == 'day' %}
             toStartOfDay(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+        {% elif interval == 'hour' %}
+            toStartOfHour(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'week' %}
-            toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
+            toStartOfWeek(toDateTime(s.ends_at, {{ String(tz, 'UTC') }}), 1) AS window_start,
         {% elif interval == 'month' %}
             toStartOfMonth(toDateTime(s.ends_at, {{ String(tz, 'UTC') }})) AS window_start,
         {% elif interval == 'year' %}
@@ -365,7 +475,16 @@ SQL >
         {% end %}
         count(*) AS churned_subscriptions
     FROM subs s
-    WHERE s.ends_at > toDateTime64(0, 3, 'UTC')
+    WHERE
+        s.ends_at > toDateTime64(0, 3, 'UTC')
+        AND s.ends_at >= toDateTime(
+            {{ String(bounds_start, '2024-01-01 00:00:00', description="Bounds start datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
+        AND s.ends_at <= toDateTime(
+            {{ String(bounds_end, '2024-01-02 00:00:00', description="Bounds end datetime") }},
+            {{ String(tz, 'UTC') }}
+        )
     GROUP BY window_start
 
 NODE endpoint
@@ -386,6 +505,7 @@ SQL >
         COALESCE(churned.churned_subscriptions, 0) AS churned_subscriptions
     FROM
         {% if not defined(interval) or interval == 'day' %} day_intervals
+        {% elif interval == 'hour' %} hour_intervals
         {% elif interval == 'week' %} week_intervals
         {% elif interval == 'month' %} month_intervals
         {% elif interval == 'year' %} year_intervals

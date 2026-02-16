@@ -1,0 +1,105 @@
+import type en from './locales/en'
+
+export type Translations = typeof en
+
+type LeafPaths<T> = T extends object
+  ? '_mode' extends keyof T
+    ? never
+    : '_llmContext' extends keyof T
+      ? never
+      : {
+          [K in keyof T & string]: '_mode' extends keyof T[K]
+            ? K
+            : '_llmContext' extends keyof T[K]
+              ? K
+              : T[K] extends object
+                ? `${K}.${LeafPaths<T[K]>}`
+                : K
+        }[keyof T & string]
+  : never
+
+export type TranslationKey = LeafPaths<Translations>
+
+// Get the literal string value at a dot-separated path
+type ValueAtPath<
+  T,
+  Path extends string,
+> = Path extends `${infer First}.${infer Rest}`
+  ? First extends keyof T
+    ? ValueAtPath<T[First], Rest>
+    : never
+  : Path extends keyof T
+    ? T[Path]
+    : never
+
+// Recursively extract {placeholder} names from a string
+type ExtractPlaceholders<S extends string> =
+  S extends `${string}{${infer Key}}${infer Rest}`
+    ? Key | ExtractPlaceholders<Rest>
+    : never
+
+type UnionToIntersection<U> = (
+  U extends unknown ? (k: U) => void : never
+) extends (k: infer I) => void
+  ? I
+  : never
+
+type StringShape<S extends string> =
+  ExtractPlaceholders<S> extends never
+    ? string
+    : UnionToIntersection<
+        ExtractPlaceholders<S> extends infer P extends string
+          ? `${string}{${P}}${string}`
+          : never
+      >
+
+type PluralShape<T> = {
+  [K in keyof T]: K extends '_mode'
+    ? T[K]
+    : T[K] extends string
+      ? StringShape<T[K]>
+      : T[K]
+}
+
+type AnnotatedEntryShape<T extends { value: string }> =
+  | StringShape<T['value']>
+  | { value: StringShape<T['value']>; _llmContext: string }
+
+export type LocaleShape<T> = {
+  [K in keyof T]: T[K] extends { _mode: string }
+    ? PluralShape<T[K]>
+    : T[K] extends { value: string; _llmContext: string }
+      ? AnnotatedEntryShape<T[K]>
+      : T[K] extends string
+        ? StringShape<T[K]>
+        : T[K] extends object
+          ? LocaleShape<T[K]>
+          : T[K]
+}
+
+// Get all required interpolation keys for a translation key
+// Plurals always require 'count' + any {placeholders} in the templates
+type InterpolationKeys<K extends TranslationKey> =
+  ValueAtPath<Translations, K> extends infer V
+    ? '_mode' extends keyof V
+      ? 'count' | ExtractPlaceholders<V[Exclude<keyof V, '_mode'>] & string>
+      : V extends { value: infer S extends string }
+        ? ExtractPlaceholders<S>
+        : V extends string
+          ? ExtractPlaceholders<V>
+          : never
+    : never
+
+type InterpolationValue = string | number | { toString(): string }
+
+type InterpolationsRecord<Keys extends string> = {
+  [K in Keys]: K extends 'count' ? number : InterpolationValue
+}
+
+// The translate function type with conditional interpolations
+export type TranslateFn = <K extends TranslationKey>(
+  key: K,
+  ...args: InterpolationKeys<K> extends never
+    ? []
+    : [interpolations: InterpolationsRecord<InterpolationKeys<K>>]
+) => string

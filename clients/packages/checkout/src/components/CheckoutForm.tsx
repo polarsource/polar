@@ -110,7 +110,6 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  walletPaymentExperiment?: 'treatment' | 'control'
   isWalletPayment?: boolean
 }
 
@@ -126,7 +125,6 @@ const BaseCheckoutForm = ({
   children,
   themePreset: themePresetProps,
   locale: localeProp,
-  walletPaymentExperiment,
   isWalletPayment,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
@@ -413,34 +411,29 @@ const BaseCheckoutForm = ({
 
               {children}
 
-              {checkout.isPaymentFormRequired &&
-                !(
-                  walletPaymentExperiment === 'treatment' && isWalletPayment
-                ) && (
-                  <FormField
-                    control={control}
-                    name="customerName"
-                    rules={{
-                      required: t('checkout.form.fieldRequired'),
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t('checkout.form.cardholderName')}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="text"
-                            autoComplete="name"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+              {checkout.isPaymentFormRequired && !isWalletPayment && (
+                <FormField
+                  control={control}
+                  name="customerName"
+                  rules={{
+                    required: t('checkout.form.fieldRequired'),
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('checkout.form.cardholderName')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          autoComplete="name"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {(checkout.isPaymentFormRequired ||
                 checkout.requireBillingAddress) && (
@@ -1019,7 +1012,6 @@ interface CheckoutFormProps {
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
   locale?: AcceptedLocale
-  walletPaymentExperiment?: 'treatment' | 'control'
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -1033,7 +1025,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     isUpdatePending,
     themePreset: themePresetProps,
     locale,
-    walletPaymentExperiment,
   } = props
   const {
     paymentProcessorMetadata: { publishable_key },
@@ -1110,16 +1101,12 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             loading={loading}
             loadingLabel={loadingLabel}
             isUpdatePending={isUpdatePending}
-            walletPaymentExperiment={walletPaymentExperiment}
             isWalletPayment={isWalletPayment}
           >
             {checkout.isPaymentFormRequired && (
               <PaymentElement
                 options={{
-                  paymentMethodOrder:
-                    walletPaymentExperiment === 'treatment'
-                      ? ['apple_pay', 'google_pay', 'card']
-                      : undefined,
+                  paymentMethodOrder: ['apple_pay', 'google_pay', 'card'],
                   layout: 'tabs',
                   fields: {
                     billingDetails: {

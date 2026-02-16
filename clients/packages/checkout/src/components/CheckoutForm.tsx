@@ -1058,7 +1058,6 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     ) {
       return {
         mode: 'subscription',
-        setupFutureUsage: 'off_session',
         paymentMethodCreation: 'manual',
         amount: checkout.totalAmount,
         currency: checkout.currency,
